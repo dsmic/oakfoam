@@ -384,19 +384,22 @@ void evalcommand(char *cmdstr)
       out_success(id);
       //think_show_board();
       printf("\n");
-      for (y=engine.getBoardSize()-1;y>=0;y--)
       {
-        for (x=0;x<engine.getBoardSize();x++)
+        int size=engine.getBoardSize();
+        for (y=size-1;y>=0;y--)
         {
-          Go::Color col=engine.getCurrentBoard()->colorAt(x,y);
-          if (col==Go::BLACK)
-            printf("X");
-          else if (col==Go::WHITE)
-            printf("O");
-          else
-            printf(".");
+          for (x=0;x<size;x++)
+          {
+            Go::Color col=engine.getCurrentBoard()->boardData()[y*size+x].color;
+            if (col==Go::BLACK)
+              printf("X");
+            else if (col==Go::WHITE)
+              printf("O");
+            else
+              printf(".");
+          }
+          printf("\n");
         }
-        printf("\n");
       }
       printf("\n");
       break;

@@ -10,12 +10,12 @@ namespace Go
     BLACK,
     WHITE
   };
-
+  
   class Exception {
     public:
       Exception(std::string m = "undefined") : message(m) {}
       std::string msg() {return message;}
-
+    
     private:
       std::string message;
   };
@@ -51,17 +51,22 @@ namespace Go
       Go::Color color;
       int x,y;
   };
-
+  
   class Board
   {
     public:
       Board(int s);
       ~Board();
       
-      int getSize();
+      struct Vertex{
+        Go::Color color;
+        int group;
+        int liberties;
+      };
       
-      Go::Color colorAt(int x, int y);
-      void setColorAt(int x, int y, Go::Color col);
+      Go::Board::Vertex *boardData();
+      
+      int getSize();
       
       Go::Board *copy();
       
@@ -71,9 +76,24 @@ namespace Go
     
     private:
       int size;
-      Go::Color *data;
+      Go::Board::Vertex *data;
+      int koX, koY;
       
-      inline void checkCoords(int x, int y);
+      Go::Color colorAt(int x, int y);
+      void setColorAt(int x, int y, Go::Color col);
+      
+      int groupAt(int x, int y);
+      void setGroupAt(int x, int y, int group);
+      
+      int libertiesAt(int x, int y);
+      void setLibertiesAt(int x, int y, int liberties);
+      
+      void checkCoords(int x, int y);
+      
+      int directLiberties(int x, int y);
+      int currentLiberties(int x, int y);
+      
+      void setKo(int x, int y);
   };
 };
 
