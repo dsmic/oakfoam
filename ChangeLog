@@ -1,6 +1,6 @@
-0.01:
+0.0.1:
 
-2010-05-09  Francois van Niekerk <flash.slash@gmail.com>
+2010-06-06  Francois van Niekerk <flash.slash@gmail.com>
 
 	* all: working player. plays random moves. very weak.
 
