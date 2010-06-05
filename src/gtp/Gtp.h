@@ -25,6 +25,8 @@ typedef enum {
   CMD_PLAY,
   CMD_GENMOVE,
   
+  CMD_VALIDMOVE,
+  
   CMD_SHOWBOARD,
   CMD_SHOWGROUPS,
   CMD_SHOWLIBERTIES,
@@ -47,6 +49,7 @@ static char *command_names[] = {
   "komi",
   "play",
   "genmove",
+  "validmove",
   "showboard",
   "showgroups",
   "showliberties",

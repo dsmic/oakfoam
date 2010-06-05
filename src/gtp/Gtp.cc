@@ -82,6 +82,16 @@ void genmove(color_type color)
   delete move;
 }
 
+bool validmove(color_type color, int x, int y)
+{
+  
+  if (!(x==-1 && y==-1))
+    return engine.isMoveAllowed(Go::Move(gocol(color),x,y));
+  else
+    return engine.isMoveAllowed(Go::Move(gocol(color),Go::Move::PASS));
+}
+
+
 int parsevertex(char *move, int *x, int *y)
 {
   char c;
@@ -380,6 +390,63 @@ void evalcommand(char *cmdstr)
         out_end();
       }
       break;
+    case CMD_VALIDMOVE:
+      tok=next_tok();
+      if (tok!=NULL)
+      {
+        switch (tok[0])
+        {
+          case 'b':
+            c=BLACK;
+            break;
+          case 'w':
+            c=WHITE;
+            break;
+          default:
+            c=EMPTY;
+            break;
+        }
+        
+        tok=next_tok();
+        if (tok!=NULL)
+        {
+          i=parsevertex(tok,&x,&y);
+          if (c!=EMPTY && i==0)
+          {
+            //i=playmove(c,x,y);
+            if (validmove(c,x,y))
+            {
+              out_success(id);
+              out_end();
+            }
+            else
+            {
+              out_error(id);
+              printf("illegal move");
+              out_end();
+            }
+          }
+          else
+          {
+            out_error(id);
+            printf("illegal move");
+            out_end();
+          }
+        }
+        else
+        {
+          out_error(id);
+          printf("syntax error");
+          out_end();
+        }
+      }
+      else
+      {
+        out_error(id);
+        printf("syntax error");
+        out_end();
+      }
+      break;
     case CMD_SHOWBOARD:
       out_success(id);
       //think_show_board();
@@ -392,11 +459,11 @@ void evalcommand(char *cmdstr)
           {
             Go::Color col=engine.getCurrentBoard()->boardData()[y*size+x].color;
             if (col==Go::BLACK)
-              printf("X");
+              printf("X ");
             else if (col==Go::WHITE)
-              printf("O");
+              printf("O ");
             else
-              printf(".");
+              printf(". ");
           }
           printf("\n");
         }
@@ -407,10 +474,42 @@ void evalcommand(char *cmdstr)
       out_success(id);
       //think_show_groups();
       printf("\n");
+      {
+        int size=engine.getBoardSize();
+        for (y=size-1;y>=0;y--)
+        {
+          for (x=0;x<size;x++)
+          {
+            int group=engine.getCurrentBoard()->boardData()[y*size+x].group;
+            if (group!=-1)
+              printf("%2d",group);
+            else
+              printf(". ");
+          }
+          printf("\n");
+        }
+      }
+      printf("\n");
       break;
     case CMD_SHOWLIBERTIES:
       out_success(id);
       //think_show_liberties();
+      printf("\n");
+      {
+        int size=engine.getBoardSize();
+        for (y=size-1;y>=0;y--)
+        {
+          for (x=0;x<size;x++)
+          {
+            int liberties=engine.getCurrentBoard()->boardData()[y*size+x].liberties;
+            if (liberties!=-1)
+              printf("%2d",liberties);
+            else
+              printf(". ");
+          }
+          printf("\n");
+        }
+      }
       printf("\n");
       break;
     case CMD_SHOWEVAL:

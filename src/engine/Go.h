@@ -11,6 +11,16 @@ namespace Go
     WHITE
   };
   
+  static Go::Color otherColor(Go::Color col)
+  {
+    if (col==Go::BLACK)
+      return Go::WHITE;
+    else if (col==Go::WHITE)
+      return Go::BLACK;
+    else
+      return Go::EMPTY;
+  }
+  
   class Exception {
     public:
       Exception(std::string m = "undefined") : message(m) {}
@@ -64,7 +74,7 @@ namespace Go
         int liberties;
       };
       
-      Go::Board::Vertex *boardData();
+      Go::Board::Vertex *boardData(); //must only be used for read-only access
       
       int getSize();
       
@@ -90,8 +100,12 @@ namespace Go
       
       void checkCoords(int x, int y);
       
+      void updateLiberties();
       int directLiberties(int x, int y);
-      int currentLiberties(int x, int y);
+      int directLiberties(int x, int y, bool dirty);
+      int updateGroups();
+      void spreadGroup(int x, int y, int group);
+      int removeGroup(int group);
       
       void setKo(int x, int y);
   };
