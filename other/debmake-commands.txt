@@ -1,0 +1,3 @@
+in oakfoam-0.0.1/:
+% dh_make --createorig
+% dpkg-buildpackage -rfakeroot -uc -b -d
