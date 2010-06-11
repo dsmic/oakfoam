@@ -15,8 +15,15 @@ void Engine::init()
 
 void Engine::generateMove(Go::Color col, Go::Move **move)
 {
+  Go::Board *playoutboard;
+  
+  //playoutboard=currentboard->copy();
+  //randomPlayout(playoutboard,col);
+  //playoutboard->print();
+  //delete playoutboard;
+  
   //*move=new Go::Move(col,Go::Move::PASS);
-  this->randomValidMove(col,move);
+  this->randomValidMove(currentboard,col,move);
   this->makeMove(**move);
 }
 
@@ -64,7 +71,7 @@ void Engine::setKomi(float k)
   komi=k;
 }
 
-void Engine::randomValidMove(Go::Color col, Go::Move **move)
+void Engine::randomValidMove(Go::Board *board, Go::Color col, Go::Move **move)
 {
   int i,x,y;
   
@@ -79,9 +86,57 @@ void Engine::randomValidMove(Go::Color col, Go::Move **move)
       *move=new Go::Move(col,Go::Move::PASS);
       return;
     }
-  } while (!currentboard->validMove(Go::Move(col,x,y)));
+  } while (!board->validMove(Go::Move(col,x,y)));
   
   *move=new Go::Move(col,x,y);
+}
+
+bool Engine::scoreableBoard(Go::Board *board)
+{
+  //no more valid moves
+  Go::Move *move;
+  for (int x;x<boardsize;x++)
+  {
+    for (int y;y<boardsize;y++)
+    {
+      move=new Go::Move(Go::BLACK,x,y);
+      if (board->validMove(*move))
+        return false;
+      
+      move=new Go::Move(Go::WHITE,x,y);
+      if (board->validMove(*move))
+        return false;
+    }
+  }
+  
+  return true;
+}
+
+void Engine::randomPlayout(Go::Board *board, Go::Color col)
+{
+  Go::Color coltomove;
+  Go::Move *move;
+  int passes;
+  
+  coltomove=col;
+  
+  printf("random playout\n");
+  
+  while (!this->scoreableBoard(board))
+  {
+    this->randomValidMove(board,coltomove,&move);
+    printf("random move at (%d,%d)\n",move->getX(),move->getY());
+    board->makeMove(*move);
+    coltomove=Go::otherColor(coltomove);
+    if (move->isResign())
+      break;
+    if (move->isPass())
+      passes++;
+    else
+      passes=0;
+    if (passes>=2)
+      break;
+  }
 }
 
 

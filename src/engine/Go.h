@@ -2,6 +2,7 @@
 #define DEF_OAKFOAM_GO_H
 
 #include <string>
+#include <cstdio>
 
 namespace Go
 {
@@ -83,6 +84,8 @@ namespace Go
       bool validMove(Go::Move move);
       
       void makeMove(Go::Move move);
+      
+      void print();
     
     private:
       int size;

@@ -430,4 +430,22 @@ int Go::Board::removeGroup(int group)
   return stones;
 }
 
+void Go::Board::print()
+{
+  for (int y=size-1;y>=0;y--)
+  {
+    for (int x=0;x<size;x++)
+    {
+      Go::Color col=this->colorAt(x,y);
+      if (col==Go::BLACK)
+        printf("X ");
+      else if (col==Go::WHITE)
+        printf("O ");
+      else
+        printf(". ");
+    }
+    printf("\n");
+  }
+}
+
 
