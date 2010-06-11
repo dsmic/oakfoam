@@ -15,16 +15,84 @@ void Engine::init()
 
 void Engine::generateMove(Go::Color col, Go::Move **move)
 {
-  Go::Board *playoutboard;
-  
-  //playoutboard=currentboard->copy();
-  //randomPlayout(playoutboard,col);
-  //playoutboard->print();
-  //delete playoutboard;
-  
   //*move=new Go::Move(col,Go::Move::PASS);
-  this->randomValidMove(currentboard,col,move);
+  //this->randomValidMove(currentboard,col,move);
+  //this->makeMove(**move);
+  
+  /*
+  playoutboard=currentboard->copy();
+  randomPlayout(playoutboard,col);
+  playoutboard->print();
+  printf("scoreable: %d\n",playoutboard->scoreable());
+  delete playoutboard;
+  */
+  
+  Util::MoveTree *movetree;
+  Go::Board *playoutboard;
+  Go::Move playoutmove;
+  
+  playoutmove=Go::Move();//Go::Move(col,Go:Move::PASS);
+  movetree= new Util::MoveTree(playoutmove);
+  movetree->addLose();
+  
+  for (int x=0;x<boardsize;x++)
+  {
+    for (int y=0;y<boardsize;y++)
+    {
+      playoutmove=Go::Move(col,x,y);
+      if (currentboard->validMove(playoutmove))
+      {
+        Util::MoveTree *nmt=new Util::MoveTree(playoutmove);
+        
+        for (int i=0;i<10;i++)
+        {
+          playoutboard=currentboard->copy();
+          playoutboard->makeMove(playoutmove);
+          randomPlayout(playoutboard,Go::otherColor(col));
+          if (Util::isWinForColor(col,playoutboard->score()-komi))
+            nmt->addWin();
+          else
+            nmt->addLose();
+          delete playoutboard;
+        }
+        
+        movetree->addSibling(nmt);
+      }
+    }
+  }
+  
+  float bestratio=0;
+  Go::Move bestmove;//=new Go::Move(col,Go:Move::PASS);
+  bestratio=0;
+  //bestmove=new Go::Move(col,Go:Move::PASS);
+  
+  Util::MoveTree *cmt=movetree;
+  
+  while (cmt!=NULL)
+  {
+    if (cmt->getPlayouts()>0)
+    {
+      float r=(float)cmt->getWins()/cmt->getPlayouts();
+      //printf("ratio for (%d,%d) %f\n",cmt->getMove().getX(),cmt->getMove().getY(),r);
+      if (r>bestratio)
+      {
+        bestratio=r;
+        bestmove=cmt->getMove();
+      }
+    }
+    cmt=cmt->getSibling();
+  }
+  
+  //bestmove.print();
+  
+  if (bestratio==0)
+    *move=new Go::Move(col,Go::Move::PASS);
+  else
+    *move=new Go::Move(col,bestmove.getX(),bestmove.getY());
+  
   this->makeMove(**move);
+  
+  delete movetree;
 }
 
 bool Engine::isMoveAllowed(Go::Move move)
@@ -85,7 +153,7 @@ void Engine::randomValidMove(Go::Board *board, Go::Color col, Go::Move **move)
       *move=new Go::Move(col,Go::Move::PASS);
       return;
     }
-  } while (!board->validMove(Go::Move(col,x,y)));
+  } while (!board->validMove(Go::Move(col,x,y)) || board->weakEye(col,x,y));
   
   *move=new Go::Move(col,x,y);
 }
@@ -98,12 +166,12 @@ void Engine::randomPlayout(Go::Board *board, Go::Color col)
   
   coltomove=col;
   
-  printf("random playout\n");
+  //printf("random playout\n");
   
   while (!board->scoreable())
   {
     this->randomValidMove(board,coltomove,&move);
-    printf("random move at (%d,%d)\n",move->getX(),move->getY());
+    //printf("random move at (%d,%d)\n",move->getX(),move->getY());
     board->makeMove(*move);
     coltomove=Go::otherColor(coltomove);
     if (move->isResign())

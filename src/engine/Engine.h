@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <ctime>
 #include "Go.h"
+#include "Util.h"
 
 class Engine
 {

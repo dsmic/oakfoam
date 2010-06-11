@@ -21,7 +21,7 @@ namespace Go
       return Go::BLACK;
     else
       return Go::EMPTY;
-  }
+  };
   
   class Exception
   {
@@ -61,6 +61,8 @@ namespace Go
       
       bool isPass() {return (x==-1 && y==-1)?true:false;};
       bool isResign() {return (x==-2 && y==-2)?true:false;};
+      
+      void print();
     
     private:
       Go::Color color;
@@ -79,19 +81,19 @@ namespace Go
         int liberties;
       };
       
+      Go::Board *copy();
       Go::Board::Vertex *boardData(); //must only be used for read-only access
       
       int getSize();
       
-      Go::Board *copy();
-      
       bool validMove(Go::Move move);
-      
       void makeMove(Go::Move move);
       
       void print();
       
       bool scoreable();
+      int score();
+      bool weakEye(Go::Color col, int x, int y);
     
     private:
       int size;

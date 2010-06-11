@@ -34,22 +34,22 @@ void Util::MoveTree::addChild(Util::MoveTree *node)
     firstchild->addSibling(node);
 }
 
-Util::MoveSequence::MoveSequence(Go::Move firstmove)
+Util::MoveList::MoveList(Go::Move firstmove)
 {
   move=firstmove;
   next=NULL;
 }
 
-Util::MoveSequence::~MoveSequence()
+Util::MoveList::~MoveList()
 {
   if (next!=NULL)
     delete next;
 }
 
-void Util::MoveSequence::addMove(Go::Move newmove)
+void Util::MoveList::addMove(Go::Move newmove)
 {
   if (next==NULL)
-    next=new Util::MoveSequence(newmove);
+    next=new Util::MoveList(newmove);
   else
     next->addMove(newmove);
 }

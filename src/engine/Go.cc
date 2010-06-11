@@ -452,22 +452,101 @@ bool Go::Board::scoreable()
 {
   //no more valid moves
   
-  Go::Move *move;
-  for (int x;x<size;x++)
+  //printf("check scoreable\n");
+  
+  Go::Move move;
+  for (int x=0;x<size;x++)
   {
-    for (int y;y<size;y++)
+    for (int y=0;y<size;y++)
     {
-      move=new Go::Move(Go::BLACK,x,y);
-      if (this->validMove(*move))
-        return false;
-      
-      move=new Go::Move(Go::WHITE,x,y);
-      if (this->validMove(*move))
-        return false;
+      //printf("test move at (%d,%d)\n",x,y);
+      if (this->colorAt(x,y)==EMPTY)
+      {
+        move=Go::Move(Go::BLACK,x,y);
+        if (this->validMove(move))
+        {
+          //printf("valid move B(%d,%d)\n",x,y);
+          return false;
+        }
+        
+        move=Go::Move(Go::WHITE,x,y);
+        if (this->validMove(move))
+        {
+          //printf("valid move W(%d,%d)\n",x,y);
+          return false;
+        }
+        
+        //printf("invalid move at (%d,%d)\n",x,y);
+      }
     }
   }
   
+  //printf("scoreable!\n");
+  
   return true;
+}
+
+int Go::Board::score()
+{
+  int s=0;
+  
+  for (int x=0;x<size;x++)
+  {
+    for (int y=0;y<size;y++)
+    {
+      Go::Color col=this->colorAt(x,y);
+      if (col==Go::BLACK)
+        s++;
+      else if (col==Go::WHITE)
+        s--;
+      else
+      {
+        if (this->weakEye(Go::BLACK,x,y))
+          s++;
+        else if (this->weakEye(Go::WHITE,x,y))
+          s--;
+      }
+    }
+  }
+  return s;
+}
+
+bool Go::Board::weakEye(Go::Color col, int x, int y)
+{
+  if (directLiberties(x,y)>0)
+    return false;
+  else
+  {
+    if (x>0 && this->colorAt(x-1,y)!=col)
+      return false;
+    
+    if (y>0 && this->colorAt(x,y-1)!=col)
+      return false;
+    
+    if (x<(size-1) && this->colorAt(x+1,y)!=col)
+      return false;
+    
+    if (y<(size-1) && this->colorAt(x,y+1)!=col)
+      return false;
+    
+    return true;
+  }
+}
+
+void Go::Move::print()
+{
+  if (this->isPass())
+    printf("PASS\n");
+  else if (this->isResign())
+    printf("RESIGN\n");
+  else
+  {
+    if (color==Go::BLACK)
+      printf("B");
+    else if (color==Go::WHITE)
+      printf("W");
+    printf("(%d,%d)\n",x,y);
+  }
 }
 
 

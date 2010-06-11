@@ -5,6 +5,20 @@
 
 namespace Util
 {
+  static bool isWinForColor(Go::Color col, float score)
+  {
+    float k=0;
+    
+    if (col==Go::BLACK)
+      k=1;
+    else if (col==Go::WHITE)
+      k=-1;
+    else
+      return false;
+    
+    return ((score*k)>0);
+  };
+  
   class MoveTree
   {
     public:
@@ -31,19 +45,19 @@ namespace Util
       int wins;
   };
   
-  class MoveSequence
+  class MoveList
   {
     public:
-      MoveSequence(Go::Move firstmove);
-      ~MoveSequence();
+      MoveList(Go::Move firstmove);
+      ~MoveList();
       
       Go::Move getMove() { return move; };
-      Util::MoveSequence *getNext() { return next; };
+      Util::MoveList *getNext() { return next; };
       void addMove(Go::Move newmove);
     
     private:
       Go::Move move;
-      Util::MoveSequence *next;
+      Util::MoveList *next;
   };
 };
 #endif
