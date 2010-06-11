@@ -42,6 +42,8 @@ namespace Go
         RESIGN
       };
       
+      Move() {color=Go::EMPTY;x=-2;y=-2;};
+      
       Move(Go::Color col, int ix, int iy) {color=col;x=ix;y=iy;};
       Move(Go::Color col, Go::Move::Type type)
       {
