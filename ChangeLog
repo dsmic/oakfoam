@@ -1,9 +1,8 @@
-0.0.1:
-2010-06-06  Francois van Niekerk <flash.slash@gmail.com>
-  * all:  working player. plays random moves. very weak.
 
+version 0.0.2: 2010-06-12
+  * simple Monte Carlo player. still very weak.
 
-0.0.2:
-2010-06-00  Francois van Niekerk <flash.slash@gmail.com>
-  * all:  todo
+version 0.0.1: 2010-06-06 
+  * working player. plays random moves. very weak.
+
 
