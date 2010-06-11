@@ -1,0 +1,20 @@
+Instructions to try:
+--------------------
+
+to create a local clone of the repo:
+  $ sudo apt-get install mercurial
+  $ hg clone http://bitbucket.org/francoisvn/oakfoam
+  $ cd oakfoam
+
+you may want to get a specific version:
+  $ hg up v0.0.x
+
+to get the latest changes do:
+  $ hg pull
+  $ hg up tip
+
+to compile:
+  $ ./configure
+  $ make
+  $ ./oakfoam
+
