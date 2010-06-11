@@ -448,4 +448,26 @@ void Go::Board::print()
   }
 }
 
+bool Go::Board::scoreable()
+{
+  //no more valid moves
+  
+  Go::Move *move;
+  for (int x;x<size;x++)
+  {
+    for (int y;y<size;y++)
+    {
+      move=new Go::Move(Go::BLACK,x,y);
+      if (this->validMove(*move))
+        return false;
+      
+      move=new Go::Move(Go::WHITE,x,y);
+      if (this->validMove(*move))
+        return false;
+    }
+  }
+  
+  return true;
+}
+
 

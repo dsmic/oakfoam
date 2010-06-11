@@ -60,7 +60,6 @@ Go::Board *Engine::getCurrentBoard()
   return currentboard;
 }
 
-
 float Engine::getKomi()
 {
   return komi;
@@ -91,27 +90,6 @@ void Engine::randomValidMove(Go::Board *board, Go::Color col, Go::Move **move)
   *move=new Go::Move(col,x,y);
 }
 
-bool Engine::scoreableBoard(Go::Board *board)
-{
-  //no more valid moves
-  Go::Move *move;
-  for (int x;x<boardsize;x++)
-  {
-    for (int y;y<boardsize;y++)
-    {
-      move=new Go::Move(Go::BLACK,x,y);
-      if (board->validMove(*move))
-        return false;
-      
-      move=new Go::Move(Go::WHITE,x,y);
-      if (board->validMove(*move))
-        return false;
-    }
-  }
-  
-  return true;
-}
-
 void Engine::randomPlayout(Go::Board *board, Go::Color col)
 {
   Go::Color coltomove;
@@ -122,7 +100,7 @@ void Engine::randomPlayout(Go::Board *board, Go::Color col)
   
   printf("random playout\n");
   
-  while (!this->scoreableBoard(board))
+  while (!board->scoreable())
   {
     this->randomValidMove(board,coltomove,&move);
     printf("random move at (%d,%d)\n",move->getX(),move->getY());

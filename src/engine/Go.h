@@ -6,7 +6,8 @@
 
 namespace Go
 {
-  enum Color{
+  enum Color
+  {
     EMPTY,
     BLACK,
     WHITE
@@ -22,7 +23,8 @@ namespace Go
       return Go::EMPTY;
   }
   
-  class Exception {
+  class Exception
+  {
     public:
       Exception(std::string m = "undefined") : message(m) {}
       std::string msg() {return message;}
@@ -86,6 +88,8 @@ namespace Go
       void makeMove(Go::Move move);
       
       void print();
+      
+      bool scoreable();
     
     private:
       int size;

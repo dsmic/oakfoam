@@ -20,7 +20,6 @@ class Engine
     void setKomi(float k);
   private:
     void randomValidMove(Go::Board *board, Go::Color col, Go::Move **move);
-    bool scoreableBoard(Go::Board *board);
     void randomPlayout(Go::Board *board, Go::Color col);
 };
 
