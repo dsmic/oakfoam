@@ -1,6 +1,8 @@
 #ifndef DEF_OAKFOAM_ENGINE_H
 #define DEF_OAKFOAM_ENGINE_H
 
+#define PLAYOUTS_PER_MOVE 100
+
 #include <cstdlib>
 #include <ctime>
 #include "Go.h"

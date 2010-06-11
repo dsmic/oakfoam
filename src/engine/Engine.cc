@@ -44,7 +44,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move)
       {
         Util::MoveTree *nmt=new Util::MoveTree(playoutmove);
         
-        for (int i=0;i<10;i++)
+        for (int i=0;i<PLAYOUTS_PER_MOVE;i++)
         {
           playoutboard=currentboard->copy();
           playoutboard->makeMove(playoutmove);
