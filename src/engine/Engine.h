@@ -25,7 +25,12 @@ class Engine
     float getKomi();
     void setKomi(float k);
     
-    void gtpBoardSize(Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpBoardSize(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpClearBoard(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpKomi(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpPlay(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpGenMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpShowBoard(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
   
   private:
     Gtp::Engine *gtpe;

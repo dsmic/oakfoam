@@ -20,15 +20,138 @@ Engine::~Engine()
 
 void Engine::addGtpCommands()
 {
-  //gtpe->addFunctionCommand("boardsize",(Gtp::Engine::CommandFunction)(&(this->gtpBoardSize)));
+  gtpe->addFunctionCommand("boardsize",this,&Engine::gtpBoardSize);
+  gtpe->addFunctionCommand("clear_board",this,&Engine::gtpClearBoard);
+  gtpe->addFunctionCommand("komi",this,&Engine::gtpKomi);
+  gtpe->addFunctionCommand("play",this,&Engine::gtpPlay);
+  gtpe->addFunctionCommand("genmove",this,&Engine::gtpGenMove);
+  gtpe->addFunctionCommand("showboard",this,&Engine::gtpShowBoard);
 }
 
-void Engine::gtpBoardSize(Gtp::Engine* gtpe, Gtp::Command* cmd)
+void Engine::gtpBoardSize(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
-  this->setBoardSize(9);
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("size is required");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  me->setBoardSize(cmd->getIntArg(0)); //TODO:: check for valid size
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->endResponse();
+}
+
+void Engine::gtpClearBoard(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  me->clearBoard();
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->endResponse();
+}
+
+void Engine::gtpKomi(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("komi is required");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  me->setKomi(cmd->getFloatArg(0));
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->endResponse();
+}
+
+void Engine::gtpPlay(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=2)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("move is required");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  Gtp::Color gtpcol = cmd->getColorArg(0);
+  Gtp::Vertex vert = cmd->getVertexArg(1);
+  
+  if (gtpcol==Gtp::INVALID || (vert.x==-1 && vert.y==-1))
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("invalid move");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  Go::Move move=Go::Move((gtpcol==Gtp::BLACK ? Go::BLACK : Go::WHITE),vert.x,vert.y);
+  if (!me->isMoveAllowed(move))
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("illegal move");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  me->makeMove(move);
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->endResponse();
+}
+
+void Engine::gtpGenMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("color is required");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  Gtp::Color gtpcol = cmd->getColorArg(0);
+  
+  if (gtpcol==Gtp::INVALID)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("invalid color");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  Go::Move *move;
+  me->generateMove((gtpcol==Gtp::BLACK ? Go::BLACK : Go::WHITE),&move);
+  
+  Gtp::Vertex vert= {move->getX(),move->getY()};
+  delete move;
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printVertex(vert);
+  gtpe->getOutput()->endResponse();
+}
+
+void Engine::gtpShowBoard(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("current board:\n");
+  me->currentboard->print();
+  gtpe->getOutput()->endResponse(true);
 }
 
 void Engine::generateMove(Go::Color col, Go::Move **move)
