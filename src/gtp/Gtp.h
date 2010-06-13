@@ -1,73 +1,82 @@
 #ifndef DEF_OAKFOAM_GTP_H
 #define DEF_OAKFOAM_GTP_H
 
-#include <config.h>
 #include <iostream>
-#include <string>
 #include <cstdio>
-#include <cstring>
+#include <string>
+#include <sstream>
+#include <list>
 
-#include "../engine/Engine.h"
-
-typedef enum {
-  CMD_PROTO_VERSION,
-  CMD_NAME,
-  CMD_VERSION,
-  
-  CMD_KNOWN_COMMAND,
-  CMD_LIST_COMMANDS,
-  CMD_QUIT,
-  
-  CMD_BOARDSIZE,
-  CMD_CLEAR_BOARD,
-  CMD_KOMI,
-  
-  CMD_PLAY,
-  CMD_GENMOVE,
-  
-  CMD_VALIDMOVE,
-  
-  CMD_SHOWBOARD,
-  CMD_SHOWGROUPS,
-  CMD_SHOWLIBERTIES,
-  CMD_SHOWEVAL,
-  
-  CMD_SCORE,
-  
-  CMD_ENUM_END
-} command_type;
-
-static char *command_names[] = {
-  "protocol_version",
-  "name",
-  "version",
-  "known_command",
-  "list_commands",
-  "quit",
-  "boardsize",
-  "clear_board",
-  "komi",
-  "play",
-  "genmove",
-  "validmove",
-  "showboard",
-  "showgroups",
-  "showliberties",
-  "showeval",
-  "score"
-};
-
-typedef enum {
-  EMPTY,
-  BLACK,
-  WHITE
-} color_type;
-
-class Gtp
+namespace Gtp
 {
-  public:
-    void run();
-    void setEngine(Engine eng);
+  class Arguments
+  {
+    public:
+      Arguments(std::string cmd, std::list<std::string> args) { command=cmd; arguments=args; };
+      
+      std::string getCommand() { return command; };
+      
+    private:
+      std::string command;
+      std::list<std::string> arguments;
+  };
+  
+  class Engine
+  {
+    public:
+      Engine();
+      ~Engine();
+      
+      typedef void (*CommandFunction)(Gtp::Engine*, Gtp::Arguments*);
+      
+      class FunctionList
+      {
+        public:
+          FunctionList(std::string cmd, Gtp::Engine::CommandFunction func) { command=cmd; function=func; };
+          ~FunctionList() { if (next!=NULL) delete next; };
+          
+          std::string getCommand() { return command; };
+          Gtp::Engine::CommandFunction getFunction() { return function; };
+          void setNext(Gtp::Engine::FunctionList *n) { next=n; };
+          Gtp::Engine::FunctionList *getNext() { return next; };
+          void add(Gtp::Engine::FunctionList *newfunclist);
+        
+        private:
+          std::string command;
+          Gtp::Engine::CommandFunction function;
+          Gtp::Engine::FunctionList *next;
+      };
+      
+      class ConstantList
+      {
+        public:
+          ConstantList(std::string cmd, std::string val) { command=cmd; value=val; };
+          ~ConstantList() { if (next!=NULL) delete next; };
+          
+          std::string getCommand() { return command; };
+          std::string getValue() { return value; };
+          void setNext(Gtp::Engine::ConstantList *n) { next=n; };
+          Gtp::Engine::ConstantList *getNext() { return next; };
+          void add(Gtp::Engine::ConstantList *newfunclist);
+        
+        private:
+          std::string command;
+          std::string value;
+          Gtp::Engine::ConstantList *next;
+      };
+      
+      void run();
+      
+      void addConstantCommand(std::string cmd, std::string value);
+      void addFunctionCommand(std::string cmd, Gtp::Engine::CommandFunction func);
+      
+    private:
+      Gtp::Engine::FunctionList *functionlist;
+      Gtp::Engine::ConstantList *constantlist;
+      
+      void parseInput(std::string in, int *id, std::string *cmd, Gtp::Arguments **args);
+      void doCommand(std::string cmd, Gtp::Arguments *args);
+  };
 };
 
 #endif
