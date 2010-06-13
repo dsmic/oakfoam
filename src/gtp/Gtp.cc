@@ -2,12 +2,14 @@
 
 Gtp::Engine::Engine()
 {
+  output=new Gtp::Output();
   functionlist=NULL;
   constantlist=NULL;
 }
 
 Gtp::Engine::~Engine()
 {
+  delete output;
   if (functionlist!=NULL)
     delete functionlist;
   if (constantlist!=NULL)
@@ -17,8 +19,8 @@ Gtp::Engine::~Engine()
 void Gtp::Engine::run()
 {
   int id;
-  std::string buff,cmd;
-  Gtp::Arguments *args;
+  std::string buff,cmdname;
+  Gtp::Command *cmd;
   bool running=true;
   
   while (running)
@@ -26,53 +28,61 @@ void Gtp::Engine::run()
     if (!std::getline(std::cin,buff))
       break;
     
-    this->parseInput(std::string(buff),&id,&cmd,&args);
+    this->parseInput(std::string(buff),&cmd);
+    id=cmd->getId();
+    cmdname=cmd->getCommandName();
     
-    if (cmd=="quit")
+    if (cmdname=="quit")
     {
-      printf("=\n"); //TODO: replace printf
+      this->getOutput()->startResponse(cmd);
+      this->getOutput()->endResponse();
       running=false;
     }
     else
-      doCommand(cmd,args); //TODO: pass id
+      doCommand(cmd);
     
-    delete args;
+    std::cout.flush();
+    
+    delete cmd;
   }
 }
 
-void Gtp::Engine::parseInput(std::string in, int *id, std::string *cmd, Gtp::Arguments **args)
+void Gtp::Engine::parseInput(std::string in, Gtp::Command **cmd)
 {
   std::string token;
   std::istringstream iss(in);
   std::list<std::string> tokens;
+  int id;
+  std::string cmdname;
   
-  *id=-1; //TODO: check for and get an id
+  id=-1; //TODO: check for and get an id
   
-  if (!getline(iss, *cmd, ' '))
+  if (!getline(iss, cmdname, ' '))
   {
-    cmd=NULL;
-    *args=NULL;
+    *cmd=NULL;
     return;
   }
   
-  std::transform(cmd->begin(),cmd->end(),cmd->begin(),::tolower);
+  std::transform(cmdname.begin(),cmdname.end(),cmdname.begin(),::tolower);
   
   while (getline(iss,token,' '))
     tokens.push_back(token);
   
-  *args=new Gtp::Arguments(*cmd,tokens);
+  *cmd=new Gtp::Command(id,cmdname,tokens);
 }
 
-void Gtp::Engine::doCommand(std::string cmd, Gtp::Arguments *args)
+void Gtp::Engine::doCommand(Gtp::Command *cmd)
 {
   Gtp::Engine::ConstantList *clist=constantlist;
   Gtp::Engine::FunctionList *flist=functionlist;
   
   while (clist!=NULL)
   {
-    if (clist->getCommand()==cmd)
+    if (clist->getCommandName()==cmd->getCommandName())
     {
-      printf("= %s\n",clist->getValue().c_str()); //TODO: replace printf
+      this->getOutput()->startResponse(cmd);
+      this->getOutput()->printString(clist->getValue());
+      this->getOutput()->endResponse();
       return;
     }
     clist=clist->getNext();
@@ -80,17 +90,19 @@ void Gtp::Engine::doCommand(std::string cmd, Gtp::Arguments *args)
   
   while (flist!=NULL)
   {
-    if (flist->getCommand()==cmd)
+    if (flist->getCommandName()==cmd->getCommandName())
     {
       Gtp::Engine::CommandFunction func;
       func=flist->getFunction();
-      (*func)(this,args);
+      (*func)(this,cmd);
       return;
     }
     flist=flist->getNext();
   }
   
-  printf("? unknown command '%s'\n",cmd.c_str()); //TODO: replace printf
+  this->getOutput()->startResponse(cmd,false);
+  this->getOutput()->printString("unknown command");
+  this->getOutput()->endResponse();
 }
 
 void Gtp::Engine::addConstantCommand(std::string cmd, std::string value)
@@ -107,5 +119,23 @@ void Gtp::Engine::addFunctionCommand(std::string cmd, Gtp::Engine::CommandFuncti
     functionlist=new Gtp::Engine::FunctionList(cmd,func);
   else
     functionlist->add(new Gtp::Engine::FunctionList(cmd,func));
+}
+
+void Gtp::Output::startResponse(Gtp::Command *cmd, bool success)
+{
+  std::cout << (success ? "=" : "?");
+  if (cmd->getId()>=0)
+    std::cout << cmd->getId();
+  std::cout << " ";
+}
+
+void Gtp::Output::endResponse()
+{
+  std::cout << std::endl << std::endl;
+}
+
+void Gtp::Output::printString(std::string str)
+{
+  std::cout << str;
 }
 

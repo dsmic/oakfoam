@@ -1,8 +1,10 @@
 #include "Oakfoam.h"
 
-void cmdTest(Gtp::Engine* gtpe, Gtp::Arguments* args)
+void cmdTest(Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
-  std::cout << "= test complete\n";
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("test complete");
+  gtpe->getOutput()->endResponse();
 }
 
 Oakfoam::Oakfoam()

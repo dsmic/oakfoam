@@ -9,17 +9,28 @@
 #include <algorithm>
 
 namespace Gtp
-{
-  class Arguments
+{ 
+  class Command
   {
     public:
-      Arguments(std::string cmd, std::list<std::string> args) { command=cmd; arguments=args; };
+      Command(int i, std::string cmdname, std::list<std::string> args) { id=i; commandname=cmdname; arguments=args; };
       
-      std::string getCommand() { return command; };
+      int getId() { return id; };
+      std::string getCommandName() { return commandname; };
       
     private:
-      std::string command;
+      int id;
+      std::string commandname;
       std::list<std::string> arguments;
+  };
+  
+  class Output
+  {
+    public:
+      void startResponse(Gtp::Command *cmd, bool success = true);
+      void endResponse();
+      
+      void printString(std::string str);
   };
   
   class Engine
@@ -28,15 +39,15 @@ namespace Gtp
       Engine();
       ~Engine();
       
-      typedef void (*CommandFunction)(Gtp::Engine*, Gtp::Arguments*);
+      typedef void (*CommandFunction)(Gtp::Engine*, Gtp::Command*);
       
       class FunctionList
       {
         public:
-          FunctionList(std::string cmd, Gtp::Engine::CommandFunction func) { command=cmd; function=func; next=NULL; };
+          FunctionList(std::string cmdname, Gtp::Engine::CommandFunction func) { commandname=cmdname; function=func; next=NULL; };
           ~FunctionList() { if (next!=NULL) delete next; };
           
-          std::string getCommand() { return command; };
+          std::string getCommandName() { return commandname; };
           Gtp::Engine::CommandFunction getFunction() { return function; };
           void setNext(Gtp::Engine::FunctionList *n) { next=n; };
           Gtp::Engine::FunctionList *getNext() { return next; };
@@ -49,7 +60,7 @@ namespace Gtp
           };
         
         private:
-          std::string command;
+          std::string commandname;
           Gtp::Engine::CommandFunction function;
           Gtp::Engine::FunctionList *next;
       };
@@ -57,10 +68,10 @@ namespace Gtp
       class ConstantList
       {
         public:
-          ConstantList(std::string cmd, std::string val) { command=cmd; value=val; next=NULL; };
+          ConstantList(std::string cmdname, std::string val) { commandname=cmdname; value=val; next=NULL; };
           ~ConstantList() { if (next!=NULL) delete next; };
           
-          std::string getCommand() { return command; };
+          std::string getCommandName() { return commandname; };
           std::string getValue() { return value; };
           void setNext(Gtp::Engine::ConstantList *n) { next=n; };
           Gtp::Engine::ConstantList *getNext() { return next; };
@@ -73,7 +84,7 @@ namespace Gtp
           };
         
         private:
-          std::string command;
+          std::string commandname;
           std::string value;
           Gtp::Engine::ConstantList *next;
       };
@@ -83,12 +94,15 @@ namespace Gtp
       void addConstantCommand(std::string cmd, std::string value);
       void addFunctionCommand(std::string cmd, Gtp::Engine::CommandFunction func);
       
+      Gtp::Output *getOutput() { return output; };
+      
     private:
       Gtp::Engine::FunctionList *functionlist;
       Gtp::Engine::ConstantList *constantlist;
+      Gtp::Output *output;
       
-      void parseInput(std::string in, int *id, std::string *cmd, Gtp::Arguments **args);
-      void doCommand(std::string cmd, Gtp::Arguments *args);
+      void parseInput(std::string in, Gtp::Command **cmd);
+      void doCommand(Gtp::Command *cmd);
   };
 };
 
