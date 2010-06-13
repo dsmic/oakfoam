@@ -22,7 +22,6 @@ Gtp::Engine::~Engine()
 
 void Gtp::Engine::run()
 {
-  int id;
   std::string buff,cmdname;
   Gtp::Command *cmd;
   bool running=true;
@@ -35,21 +34,23 @@ void Gtp::Engine::run()
     //TODO: remove invalid chars
     
     this->parseInput(std::string(buff),&cmd);
-    id=cmd->getId();
-    cmdname=cmd->getCommandName();
-    
-    if (cmdname=="quit")
+    if (cmd!=NULL)
     {
-      this->getOutput()->startResponse(cmd);
-      this->getOutput()->endResponse();
-      running=false;
+      cmdname=cmd->getCommandName();
+      
+      if (cmdname=="quit")
+      {
+        this->getOutput()->startResponse(cmd);
+        this->getOutput()->endResponse();
+        running=false;
+      }
+      else
+        doCommand(cmd);
+      
+      std::cout.flush();
+      
+      delete cmd;
     }
-    else
-      doCommand(cmd);
-    
-    std::cout.flush();
-    
-    delete cmd;
   }
 }
 
@@ -61,13 +62,23 @@ void Gtp::Engine::parseInput(std::string in, Gtp::Command **cmd)
   int id;
   std::string cmdname;
   
-  id=-1; //TODO: check for and get an id
-  
   if (!getline(iss, cmdname, ' '))
   {
     *cmd=NULL;
     return;
   }
+  
+  std::istringstream issid(cmdname);
+  if (issid >> id)
+  {
+    if (!getline(iss, cmdname, ' '))
+    {
+      *cmd=NULL;
+      return;
+    }
+  }
+  else
+    id=-1;
   
   std::transform(cmdname.begin(),cmdname.end(),cmdname.begin(),::tolower);
   
@@ -296,7 +307,7 @@ void Gtp::Output::printVertex(Gtp::Vertex vert)
   char xletter='A'+vert.x;
   if (vert.x>=8)
     xletter++;
-  std::cout << xletter << (vert.y+1); //TODO:: not correct
+  std::cout << xletter << (vert.y+1);
 }
 
 
