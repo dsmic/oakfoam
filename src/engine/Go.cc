@@ -155,6 +155,7 @@ void Go::Board::makeMove(Go::Move move)
 {
   int x,y,poskox,poskoy;
   Go::Color col,othercol;
+  bool removedagroup;
   
   if (move.isPass() || move.isResign())
   {
@@ -172,9 +173,11 @@ void Go::Board::makeMove(Go::Move move)
   othercol=Go::otherColor(col);
   poskox=-1;
   poskoy=-1;
+  removedagroup=false;
   
   if (x>0 && this->libertiesAt(x-1,y)==1 && this->colorAt(x-1,y)==othercol)
   {
+    removedagroup=true;
     if (removeGroup(this->groupAt(x-1,y))==1)
     {
       if (poskox==-1 && poskoy==-1)
@@ -192,6 +195,7 @@ void Go::Board::makeMove(Go::Move move)
   
   if (y>0 && this->libertiesAt(x,y-1)==1 && this->colorAt(x,y-1)==othercol)
   {
+    removedagroup=true;
     if (removeGroup(this->groupAt(x,y-1))==1)
     {
       if (poskox==-1 && poskoy==-1)
@@ -209,6 +213,7 @@ void Go::Board::makeMove(Go::Move move)
   
   if (x<(size-1) && this->libertiesAt(x+1,y)==1 && this->colorAt(x+1,y)==othercol)
   {
+    removedagroup=true;
     if (removeGroup(this->groupAt(x+1,y))==1)
     {
       if (poskox==-1 && poskoy==-1)
@@ -226,6 +231,7 @@ void Go::Board::makeMove(Go::Move move)
   
   if (y<(size-1) && this->libertiesAt(x,y+1)==1 && this->colorAt(x,y+1)==othercol)
   {
+    removedagroup=true;
     if (removeGroup(this->groupAt(x,y+1))==1)
     {
       if (poskox==-1 && poskoy==-1)
@@ -247,7 +253,16 @@ void Go::Board::makeMove(Go::Move move)
     this->setKo(-1,-1);
   
   this->setColorAt(x,y,col);
-  this->updateLiberties();
+  if (removedagroup)
+    this->updateLiberties();
+  else if (this->solidLinksFrom(x,y)==0)
+  {
+    this->setGroupAt(x,y,totalgroups);
+    totalgroups++;
+    this->setLibertiesAt(x,y,this->directLiberties(x,y));
+  }
+  else
+    this->updateLiberties();
 }
 
 void Go::Board::updateLiberties()
@@ -273,16 +288,7 @@ void Go::Board::updateLiberties()
       for (int y=0;y<size;y++)
       {
         if (g==this->groupAt(x,y))
-          lib+=directLiberties(x,y,true);
-      }
-    }
-    
-    for (int x=0;x<size;x++)
-    {
-      for (int y=0;y<size;y++)
-      {
-        if (this->libertiesAt(x,y)==-2)
-          this->setLibertiesAt(x,y,-1);
+          lib+=this->directLiberties(x,y,true);
       }
     }
     
@@ -291,7 +297,9 @@ void Go::Board::updateLiberties()
       for (int y=0;y<size;y++)
       {
         if (g==this->groupAt(x,y))
-          setLibertiesAt(x,y,lib);
+          this->setLibertiesAt(x,y,lib);
+        else if (this->libertiesAt(x,y)==-2)
+          this->setLibertiesAt(x,y,-1);
       }
     }
   }
@@ -365,6 +373,27 @@ int Go::Board::directLiberties(int x, int y, bool dirty)
   return lib;
 }
 
+int Go::Board::solidLinksFrom(int x, int y)
+{
+  int links;
+  Go::Color col;
+  this->checkCoords(x,y);
+  
+  col=this->colorAt(x,y);
+  links=0;
+  
+  if (x>0 && this->colorAt(x-1,y)==col)
+    links++;
+  if (y>0 && this->colorAt(x,y-1)==col)
+    links++;
+  if (x<(size-1) && this->colorAt(x+1,y)==col)
+    links++;
+  if (y<(size-1) && this->colorAt(x,y+1)==col)
+    links++;
+  
+  return links;
+}
+
 int Go::Board::updateGroups()
 {
   int group=0;
@@ -388,6 +417,8 @@ int Go::Board::updateGroups()
       }
     }
   }
+  
+  totalgroups=group;
   
   return group;
 }

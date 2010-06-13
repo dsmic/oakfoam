@@ -99,6 +99,7 @@ namespace Go
       int size;
       Go::Board::Vertex *data;
       int koX, koY;
+      int totalgroups;
       
       Go::Color colorAt(int x, int y);
       void setColorAt(int x, int y, Go::Color col);
@@ -117,6 +118,8 @@ namespace Go
       int updateGroups();
       void spreadGroup(int x, int y, int group);
       int removeGroup(int group);
+      
+      int solidLinksFrom(int x, int y);
       
       void setKo(int x, int y);
   };
