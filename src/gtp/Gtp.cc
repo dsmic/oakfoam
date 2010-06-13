@@ -5,6 +5,9 @@ Gtp::Engine::Engine()
   output=new Gtp::Output();
   functionlist=NULL;
   constantlist=NULL;
+  
+  this->addConstantCommand("protocol_version","2");
+  this->addFunctionCommand("list_commands",&Gtp::Engine::cmdListCommands);
 }
 
 Gtp::Engine::~Engine()
@@ -129,13 +132,40 @@ void Gtp::Output::startResponse(Gtp::Command *cmd, bool success)
   std::cout << " ";
 }
 
-void Gtp::Output::endResponse()
+void Gtp::Output::endResponse(bool single)
 {
-  std::cout << std::endl << std::endl;
+  std::cout << std::endl;
+  if (!single)
+    std::cout << std::endl;
 }
 
 void Gtp::Output::printString(std::string str)
 {
   std::cout << str;
+}
+
+void Gtp::Engine::cmdListCommands(Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Gtp::Engine::ConstantList *clist=gtpe->constantlist;
+  Gtp::Engine::FunctionList *flist=gtpe->functionlist;
+  
+  gtpe->getOutput()->startResponse(cmd);
+  
+  while (clist!=NULL)
+  {
+    gtpe->getOutput()->printString(clist->getCommandName());
+    gtpe->getOutput()->printString("\n");
+    clist=clist->getNext();
+  }
+  
+  while (flist!=NULL)
+  {
+    gtpe->getOutput()->printString(flist->getCommandName());
+    gtpe->getOutput()->printString("\n");
+    flist=flist->getNext();
+  }
+  
+  gtpe->getOutput()->printString("quit");
+  gtpe->getOutput()->endResponse();
 }
 

@@ -1,19 +1,12 @@
 #include "Oakfoam.h"
 
-void cmdTest(Gtp::Engine* gtpe, Gtp::Command* cmd)
-{
-  gtpe->getOutput()->startResponse(cmd);
-  gtpe->getOutput()->printString("test complete");
-  gtpe->getOutput()->endResponse();
-}
-
 Oakfoam::Oakfoam()
 {
   gtpe=new Gtp::Engine();
-  engine=new Engine();
+  engine=new Engine(gtpe);
   
-  engine->init();
-  this->addGtpCommands();
+  gtpe->addConstantCommand("name",PACKAGE_NAME);
+  gtpe->addConstantCommand("version",PACKAGE_VERSION);
 }
 
 Oakfoam::~Oakfoam()
@@ -25,14 +18,5 @@ Oakfoam::~Oakfoam()
 void Oakfoam::run()
 {
   gtpe->run();
-}
-
-void Oakfoam::addGtpCommands() //TODO: move into engine
-{
-  gtpe->addConstantCommand("protocol_version","2");
-  gtpe->addConstantCommand("name",PACKAGE_NAME);
-  gtpe->addConstantCommand("version",PACKAGE_VERSION);
-  
-  gtpe->addFunctionCommand("test",&cmdTest);
 }
 

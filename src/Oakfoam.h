@@ -21,8 +21,6 @@ class Oakfoam
   private:
     Gtp::Engine *gtpe;
     Engine *engine;
-    
-    void addGtpCommands();
 };
 
 #endif

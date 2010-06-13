@@ -1,16 +1,34 @@
 #include "Engine.h"
 
-Go::Board *currentboard;
-float komi;
-int boardsize;
-
-void Engine::init()
+Engine::Engine(Gtp::Engine *ge)
 {
+  gtpe=ge;
+  
   std::srand(std::time(0));
   
   boardsize=9;
   currentboard=new Go::Board(boardsize);
   komi=5.5;
+  
+  this->addGtpCommands();
+}
+
+Engine::~Engine()
+{
+  delete currentboard;
+}
+
+void Engine::addGtpCommands()
+{
+  //gtpe->addFunctionCommand("boardsize",(Gtp::Engine::CommandFunction)(&(this->gtpBoardSize)));
+}
+
+void Engine::gtpBoardSize(Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  this->setBoardSize(9);
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->endResponse();
 }
 
 void Engine::generateMove(Go::Color col, Go::Move **move)

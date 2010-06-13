@@ -28,7 +28,7 @@ namespace Gtp
   {
     public:
       void startResponse(Gtp::Command *cmd, bool success = true);
-      void endResponse();
+      void endResponse(bool single = false);
       
       void printString(std::string str);
   };
@@ -103,6 +103,8 @@ namespace Gtp
       
       void parseInput(std::string in, Gtp::Command **cmd);
       void doCommand(Gtp::Command *cmd);
+      
+      static void cmdListCommands(Gtp::Engine* gtpe, Gtp::Command* cmd);
   };
 };
 
