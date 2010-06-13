@@ -16,6 +16,28 @@ Gtp::Engine::~Engine()
 
 void Gtp::Engine::run()
 {
+  int id;
+  std::string buff,cmd;
+  Gtp::Arguments *args;
+  bool running=true;
+  
+  while (running)
+  {
+    if (!std::getline(std::cin,buff))
+      break;
+    
+    this->parseInput(std::string(buff),&id,&cmd,&args);
+    
+    if (cmd=="quit")
+    {
+      printf("=\n"); //TODO: replace printf
+      running=false;
+    }
+    else
+      doCommand(cmd,args); //TODO: pass id
+    
+    delete args;
+  }
 }
 
 void Gtp::Engine::parseInput(std::string in, int *id, std::string *cmd, Gtp::Arguments **args)
@@ -32,6 +54,8 @@ void Gtp::Engine::parseInput(std::string in, int *id, std::string *cmd, Gtp::Arg
     *args=NULL;
     return;
   }
+  
+  std::transform(cmd->begin(),cmd->end(),cmd->begin(),::tolower);
   
   while (getline(iss,token,' '))
     tokens.push_back(token);
@@ -66,7 +90,7 @@ void Gtp::Engine::doCommand(std::string cmd, Gtp::Arguments *args)
     flist=flist->getNext();
   }
   
-  printf("? unknown command\n"); //TODO: replace printf
+  printf("? unknown command '%s'\n",cmd.c_str()); //TODO: replace printf
 }
 
 void Gtp::Engine::addConstantCommand(std::string cmd, std::string value)

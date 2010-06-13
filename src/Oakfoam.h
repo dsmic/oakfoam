@@ -13,7 +13,16 @@
 class Oakfoam
 {
   public:
+    Oakfoam();
+    ~Oakfoam();
+    
     void run();
+  
+  private:
+    Gtp::Engine *gtpe;
+    Engine *engine;
+    
+    void addGtpCommands();
 };
 
 #endif

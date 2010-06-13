@@ -162,7 +162,7 @@ void Engine::randomPlayout(Go::Board *board, Go::Color col)
 {
   Go::Color coltomove;
   Go::Move *move;
-  int passes;
+  int passes=0; //not always true
   
   coltomove=col;
   

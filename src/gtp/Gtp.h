@@ -6,6 +6,7 @@
 #include <string>
 #include <sstream>
 #include <list>
+#include <algorithm>
 
 namespace Gtp
 {
@@ -32,14 +33,20 @@ namespace Gtp
       class FunctionList
       {
         public:
-          FunctionList(std::string cmd, Gtp::Engine::CommandFunction func) { command=cmd; function=func; };
+          FunctionList(std::string cmd, Gtp::Engine::CommandFunction func) { command=cmd; function=func; next=NULL; };
           ~FunctionList() { if (next!=NULL) delete next; };
           
           std::string getCommand() { return command; };
           Gtp::Engine::CommandFunction getFunction() { return function; };
           void setNext(Gtp::Engine::FunctionList *n) { next=n; };
           Gtp::Engine::FunctionList *getNext() { return next; };
-          void add(Gtp::Engine::FunctionList *newfunclist);
+          void add(Gtp::Engine::FunctionList *newfunclist)
+          {
+            if (next==NULL)
+              next=newfunclist;
+            else
+              next->add(newfunclist);
+          };
         
         private:
           std::string command;
@@ -50,14 +57,20 @@ namespace Gtp
       class ConstantList
       {
         public:
-          ConstantList(std::string cmd, std::string val) { command=cmd; value=val; };
+          ConstantList(std::string cmd, std::string val) { command=cmd; value=val; next=NULL; };
           ~ConstantList() { if (next!=NULL) delete next; };
           
           std::string getCommand() { return command; };
           std::string getValue() { return value; };
           void setNext(Gtp::Engine::ConstantList *n) { next=n; };
           Gtp::Engine::ConstantList *getNext() { return next; };
-          void add(Gtp::Engine::ConstantList *newfunclist);
+          void add(Gtp::Engine::ConstantList *newconstlist)
+          {
+            if (next==NULL)
+              next=newconstlist;
+            else
+              next->add(newconstlist);
+          };
         
         private:
           std::string command;

@@ -11,7 +11,7 @@
 class Engine
 {
   public:
-    void init();
+    void init(); //TODO: replace with constructor and add deconstructor
     void generateMove(Go::Color col, Go::Move **move);
     bool isMoveAllowed(Go::Move move);
     void makeMove(Go::Move move);
