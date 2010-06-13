@@ -1,0 +1,12 @@
+syntax: glob
+*~
+*.o
+*/.dirstamp
+*.Po
+
+syntax: regexp
+^oakfoam$
+^Makefile$
+^config\..*$
+^stamp-h1$
+
