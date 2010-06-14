@@ -2,6 +2,7 @@
 #define DEF_OAKFOAM_ENGINE_H
 
 #define PLAYOUTS_PER_MOVE 100
+#define RESIGN_THRESHOLD 0.05
 
 #include <cstdlib>
 #include <ctime>

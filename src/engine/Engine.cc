@@ -89,7 +89,7 @@ void Engine::gtpPlay(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   Gtp::Color gtpcol = cmd->getColorArg(0);
   Gtp::Vertex vert = cmd->getVertexArg(1);
   
-  if (gtpcol==Gtp::INVALID || (vert.x==-1 && vert.y==-1))
+  if (gtpcol==Gtp::INVALID || (vert.x==-3 && vert.y==-3))
   {
     gtpe->getOutput()->startResponse(cmd,false);
     gtpe->getOutput()->printString("invalid move");
@@ -226,8 +226,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move)
   
   //bestmove.print();
   
-  if (bestratio==0)
-    *move=new Go::Move(col,Go::Move::PASS);
+  if (bestratio<RESIGN_THRESHOLD)
+    *move=new Go::Move(col,Go::Move::RESIGN);
   else
     *move=new Go::Move(col,bestmove.getX(),bestmove.getY());
   

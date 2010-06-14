@@ -282,10 +282,23 @@ Gtp::Vertex Gtp::Command::getVertexArg(int i)
   std::string arg=this->getStringArg(i);
   std::transform(arg.begin(),arg.end(),arg.begin(),::tolower);
   Gtp::Vertex vert;
-  Gtp::Vertex invalidvertex = {-1,-1};
+  Gtp::Vertex invalidvertex = {-3,-3};
   
   if (arg.length()<2)
     return invalidvertex;
+  
+  if (arg=="pass")
+  {
+    vert.x=-1;
+    vert.y=-1;
+    return vert;
+  }
+  else if (arg=="resign")
+  {
+    vert.x=-2;
+    vert.y=-2;
+    return vert;
+  }
   
   char xletter=arg.at(0);
   vert.x=((int)xletter)-'a';
@@ -304,10 +317,17 @@ Gtp::Vertex Gtp::Command::getVertexArg(int i)
 
 void Gtp::Output::printVertex(Gtp::Vertex vert)
 {
-  char xletter='A'+vert.x;
-  if (vert.x>=8)
-    xletter++;
-  std::cout << xletter << (vert.y+1);
+  if (vert.x==-1 && vert.y==-1)
+    std::cout << "PASS";
+  else if (vert.x==-2 && vert.y==-2)
+    std::cout << "RESIGN";
+  else
+  {
+    char xletter='A'+vert.x;
+    if (vert.x>=8)
+      xletter++;
+    std::cout << xletter << (vert.y+1);
+  }
 }
 
 
