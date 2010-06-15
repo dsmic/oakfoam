@@ -242,11 +242,6 @@ void Engine::makeMove(Go::Move move)
   currentboard->makeMove(move);
 }
 
-int Engine::getBoardSize()
-{
-  return currentboard->getSize();
-}
-
 void Engine::setBoardSize(int s)
 {
   if (s<BOARDSIZE_MIN || s>BOARDSIZE_MAX)
@@ -261,21 +256,6 @@ void Engine::clearBoard()
   int size=currentboard->getSize();
   delete currentboard;
   currentboard = new Go::Board(size);
-}
-
-Go::Board *Engine::getCurrentBoard()
-{
-  return currentboard;
-}
-
-float Engine::getKomi()
-{
-  return komi;
-}
-
-void Engine::setKomi(float k)
-{
-  komi=k;
 }
 
 void Engine::randomValidMove(Go::Board *board, Go::Color col, Go::Move **move)

@@ -23,12 +23,12 @@ class Engine
     void generateMove(Go::Color col, Go::Move **move);
     bool isMoveAllowed(Go::Move move);
     void makeMove(Go::Move move);
-    int getBoardSize();
+    int getBoardSize() { return currentboard->getSize(); };
     void setBoardSize(int s);
-    Go::Board *getCurrentBoard();
+    Go::Board *getCurrentBoard() { return currentboard; };
     void clearBoard();
-    float getKomi();
-    void setKomi(float k);
+    float getKomi() { return komi; };
+    void setKomi(float k) { komi=k; };
     
     static void gtpBoardSize(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpClearBoard(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
