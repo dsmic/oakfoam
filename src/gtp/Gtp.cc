@@ -330,4 +330,19 @@ void Gtp::Output::printVertex(Gtp::Vertex vert)
   }
 }
 
+void Gtp::Output::printScore(float score)
+{
+  if (score==0)
+    std::cout << "0";
+  else if (score>0)
+    std::cout << "B+" << score;
+  else
+    std::cout << "W+" << -score;
+}
+
+void Gtp::Output::printDebugString(std::string str)
+{
+  std::cerr << str;
+}
+
 

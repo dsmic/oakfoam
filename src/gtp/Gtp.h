@@ -53,6 +53,9 @@ namespace Gtp
       
       void printString(std::string str);
       void printVertex(Gtp::Vertex vert);
+      void printScore(float score);
+      
+      void printDebugString(std::string str);
   };
   
   class Engine

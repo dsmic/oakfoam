@@ -26,6 +26,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("play",this,&Engine::gtpPlay);
   gtpe->addFunctionCommand("genmove",this,&Engine::gtpGenMove);
   gtpe->addFunctionCommand("showboard",this,&Engine::gtpShowBoard);
+  gtpe->addFunctionCommand("final_score",this,&Engine::gtpFinalScore);
 }
 
 void Engine::gtpBoardSize(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
@@ -164,6 +165,34 @@ void Engine::gtpShowBoard(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   gtpe->getOutput()->endResponse(true);
 }
 
+void Engine::gtpFinalScore(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  float score;
+  
+  //gtpe->getOutput()->printDebugString("[final_score]:start\n");
+  
+  if (me->currentboard->scoreable())
+  {
+    //gtpe->getOutput()->printDebugString("[final_score]:scoreable\n");
+    score=me->currentboard->score()-me->komi;
+  }
+  else
+  {
+    //gtpe->getOutput()->printDebugString("[final_score]:playout start\n");
+    Go::Board *playoutboard;
+    playoutboard=me->currentboard->copy();
+    me->randomPlayout(playoutboard,Go::BLACK); //should be next color to move
+    score=playoutboard->score()-me->komi;
+    delete playoutboard;
+    //gtpe->getOutput()->printDebugString("[final_score]:playout done\n");
+  }
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printScore(score);
+  gtpe->getOutput()->endResponse();
+}
+
 void Engine::generateMove(Go::Color col, Go::Move **move)
 {
   //*move=new Go::Move(col,Go::Move::PASS);
@@ -174,8 +203,22 @@ void Engine::generateMove(Go::Color col, Go::Move **move)
   Go::Board *playoutboard;
   Go::Move playoutmove;
   
-  movetree= new Util::MoveTree();
-  movetree->addLose();
+  movetree=new Util::MoveTree();
+  
+  playoutmove=Go::Move(col,Go::Move::PASS);
+  Util::MoveTree *nmt=new Util::MoveTree(playoutmove);
+  for (int i=0;i<PLAYOUTS_PER_MOVE;i++)
+  {
+    playoutboard=currentboard->copy();
+    playoutboard->makeMove(playoutmove);
+    randomPlayout(playoutboard,Go::otherColor(col));
+    if (Util::isWinForColor(col,playoutboard->score()-komi))
+      nmt->addWin();
+    else
+      nmt->addLose();
+    delete playoutboard;
+  }
+  movetree->addChild(nmt);
   
   for (int x=0;x<boardsize;x++)
   {

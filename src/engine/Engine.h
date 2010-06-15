@@ -36,6 +36,7 @@ class Engine
     static void gtpPlay(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpGenMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowBoard(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpFinalScore(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
   
   private:
     Gtp::Engine *gtpe;
