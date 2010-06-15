@@ -28,19 +28,21 @@ namespace Util
       
       std::list<Util::MoveTree*> *getChildren() { return children; };
       Go::Move getMove() { return move; };
-      int getWins() { return wins; };
       int getPlayouts() { return playouts; };
+      float getRatio() { return ratio; };
+      float getMean() { return mean; };
       
       void addChild(Util::MoveTree *node) { children->push_back(node); };
-      void addWin() { playouts++; wins++; };
-      void addLose() { playouts++; };
+      void addWin(float score=0);
+      void addLose(float score=0);
       
     private:
       std::list<Util::MoveTree*> *children;
       
       Go::Move move;
       int playouts;
-      int wins;
+      float ratio;
+      float mean;
   };
 };
 #endif

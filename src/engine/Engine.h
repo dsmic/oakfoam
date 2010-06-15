@@ -2,13 +2,16 @@
 #define DEF_OAKFOAM_ENGINE_H
 
 #define PLAYOUTS_PER_MOVE 100
-#define RESIGN_THRESHOLD 0.05
+#define RESIGN_RATIO_THRESHOLD 0.05
+#define RESIGN_MEAN_THRESHOLD 10
+
 #define BOARDSIZE_MIN 2
 #define BOARDSIZE_MAX 25
 
 
 #include <cstdlib>
 #include <ctime>
+#include <cmath>
 #include <string>
 #include <list>
 #include "Go.h"
@@ -21,7 +24,7 @@ class Engine
     Engine(Gtp::Engine *ge);
     ~Engine();
     
-    void generateMove(Go::Color col, Go::Move **move, float *ratio=NULL);
+    void generateMove(Go::Color col, Go::Move **move, float *ratio=NULL, float *mean=NULL);
     bool isMoveAllowed(Go::Move move);
     void makeMove(Go::Move move);
     int getBoardSize() { return currentboard->getSize(); };

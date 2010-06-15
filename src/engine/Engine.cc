@@ -148,13 +148,13 @@ void Engine::gtpGenMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   }
   
   Go::Move *move;
-  float ratio;
-  me->generateMove((gtpcol==Gtp::BLACK ? Go::BLACK : Go::WHITE),&move,&ratio);
+  float ratio,mean;
+  me->generateMove((gtpcol==Gtp::BLACK ? Go::BLACK : Go::WHITE),&move,&ratio,&mean);
   
   Gtp::Vertex vert= {move->getX(),move->getY()};
   delete move;
   
-  gtpe->getOutput()->printfDebug("[genmove]:ratio:%.2f\n",ratio);
+  gtpe->getOutput()->printfDebug("[genmove]: ratio:%.2f mean:%+.1f\n",ratio,mean);
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printVertex(vert);
@@ -243,7 +243,7 @@ void Engine::gtpShowLiberties(void *instance, Gtp::Engine* gtpe, Gtp::Command* c
   gtpe->getOutput()->endResponse(true);
 }
 
-void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
+void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *mean)
 {
   //*move=new Go::Move(col,Go::Move::PASS);
   //this->randomValidMove(currentboard,col,move);
@@ -285,9 +285,9 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
           playoutboard->makeMove(playoutmove);
           randomPlayout(playoutboard,Go::otherColor(col));
           if (Util::isWinForColor(col,playoutboard->score()-komi))
-            nmt->addWin();
+            nmt->addWin(playoutboard->score()-komi);
           else
-            nmt->addLose();
+            nmt->addLose(playoutboard->score()-komi);
           delete playoutboard;
         }
         
@@ -296,9 +296,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
     }
   }
   
-  float bestratio=0;
+  float bestratio=0,bestmean=0;
   Go::Move bestmove;
-  bestratio=0;
   
   std::list<Util::MoveTree*>::iterator iter;
   
@@ -306,21 +305,27 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
   {
     if ((*iter)->getPlayouts()>0)
     {
-      float r=(float)(*iter)->getWins()/(*iter)->getPlayouts();
-      if (r>bestratio)
+      if ((*iter)->getRatio()>bestratio)
       {
-        bestratio=r;
         bestmove=(*iter)->getMove();
+        bestratio=(*iter)->getRatio();
+        bestmean=(*iter)->getMean();
       }
     }
   }
   
-  if (bestratio<=RESIGN_THRESHOLD)
+  if (bestratio==0)
+    *move=new Go::Move(col,Go::Move::RESIGN);
+  else if (bestratio<=RESIGN_RATIO_THRESHOLD && std::fabs(bestmean)>RESIGN_MEAN_THRESHOLD)
     *move=new Go::Move(col,Go::Move::RESIGN);
   else
     *move=new Go::Move(col,bestmove.getX(),bestmove.getY());
+  
   if (ratio!=NULL)
     *ratio=bestratio;
+  
+  if (mean!=NULL)
+    *mean=bestmean;
   
   this->makeMove(**move);
   
