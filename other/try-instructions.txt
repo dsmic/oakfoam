@@ -6,7 +6,7 @@ to create a local clone of the repo:
   $ hg clone http://bitbucket.org/francoisvn/oakfoam
   $ cd oakfoam
 
-you may want to get a specific version:
+you may want to get a specific version (use "$ hg tags" to see available):
   $ hg up v0.0.x
 
 to get the latest changes do:
