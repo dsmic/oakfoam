@@ -35,7 +35,7 @@ void Gtp::Engine::run()
     
     //TODO: remove invalid chars
     
-    this->parseInput(std::string(buff),&cmd);
+    this->parseInput(buff,&cmd);
     if (cmd!=NULL)
     {
       cmdname=cmd->getCommandName();
@@ -59,12 +59,23 @@ void Gtp::Engine::run()
 void Gtp::Engine::parseInput(std::string in, Gtp::Command **cmd)
 {
   std::string token;
-  std::istringstream iss(in);
   std::vector<std::string> tokens;
   int id;
   std::string cmdname;
   
-  if (!getline(iss, cmdname, ' '))
+  std::string inproper="";
+  for (int i=0;i<(int)in.length();i++)
+  {
+    if (in.at(i)=='#')
+      break;
+    else if (in.at(i)=='\t')
+      inproper+=' ';
+    else if (in.at(i)=='\n' || ((int)in.at(i)>=32 && (int)in.at(i)<127))
+      inproper+=in.at(i);
+  }
+  std::istringstream iss(inproper);
+  
+  if (inproper.length()==0 || !getline(iss, cmdname, ' '))
   {
     *cmd=NULL;
     return;

@@ -2,7 +2,6 @@ TODO
 ------------------
 
 Gtp:
-  remove invalid chars and comments from input
   replace FunctionList and ConstantList with std::list<>
 
 Engine:
