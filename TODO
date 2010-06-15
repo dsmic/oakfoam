@@ -7,8 +7,5 @@ Gtp:
   replace FunctionList and ConstantList with std::list<>
   add output to stderr
 
-Util:
-  replace MoveTree and MoveList with C++ STL objects
-
 Engine:
-  add size constraints for board size
+  rename/refactor to better name

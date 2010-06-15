@@ -3,9 +3,13 @@
 
 #define PLAYOUTS_PER_MOVE 100
 #define RESIGN_THRESHOLD 0.05
+#define BOARDSIZE_MIN 2
+#define BOARDSIZE_MAX 25
+
 
 #include <cstdlib>
 #include <ctime>
+#include <list>
 #include "Go.h"
 #include "Util.h"
 #include "../gtp/Gtp.h"

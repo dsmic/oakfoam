@@ -40,7 +40,17 @@ void Engine::gtpBoardSize(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     return;
   }
   
-  me->setBoardSize(cmd->getIntArg(0)); //TODO:: check for valid size
+  int newsize=cmd->getIntArg(0);
+  
+  if (newsize<BOARDSIZE_MIN || newsize>BOARDSIZE_MAX)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("unacceptable size");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  me->setBoardSize(newsize);
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->endResponse();
@@ -160,20 +170,11 @@ void Engine::generateMove(Go::Color col, Go::Move **move)
   //this->randomValidMove(currentboard,col,move);
   //this->makeMove(**move);
   
-  /*
-  playoutboard=currentboard->copy();
-  randomPlayout(playoutboard,col);
-  playoutboard->print();
-  printf("scoreable: %d\n",playoutboard->scoreable());
-  delete playoutboard;
-  */
-  
   Util::MoveTree *movetree;
   Go::Board *playoutboard;
   Go::Move playoutmove;
   
-  playoutmove=Go::Move();//Go::Move(col,Go:Move::PASS);
-  movetree= new Util::MoveTree(playoutmove);
+  movetree= new Util::MoveTree();
   movetree->addLose();
   
   for (int x=0;x<boardsize;x++)
@@ -197,36 +198,31 @@ void Engine::generateMove(Go::Color col, Go::Move **move)
           delete playoutboard;
         }
         
-        movetree->addSibling(nmt);
+        movetree->addChild(nmt);
       }
     }
   }
   
   float bestratio=0;
-  Go::Move bestmove;//=new Go::Move(col,Go:Move::PASS);
+  Go::Move bestmove;
   bestratio=0;
-  //bestmove=new Go::Move(col,Go:Move::PASS);
   
-  Util::MoveTree *cmt=movetree;
+  std::list<Util::MoveTree*>::iterator iter;
   
-  while (cmt!=NULL)
+  for(iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
   {
-    if (cmt->getPlayouts()>0)
+    if ((*iter)->getPlayouts()>0)
     {
-      float r=(float)cmt->getWins()/cmt->getPlayouts();
-      //printf("ratio for (%d,%d) %f\n",cmt->getMove().getX(),cmt->getMove().getY(),r);
+      float r=(float)(*iter)->getWins()/(*iter)->getPlayouts();
       if (r>bestratio)
       {
         bestratio=r;
-        bestmove=cmt->getMove();
+        bestmove=(*iter)->getMove();
       }
     }
-    cmt=cmt->getSibling();
   }
   
-  //bestmove.print();
-  
-  if (bestratio<RESIGN_THRESHOLD)
+  if (bestratio<=RESIGN_THRESHOLD)
     *move=new Go::Move(col,Go::Move::RESIGN);
   else
     *move=new Go::Move(col,bestmove.getX(),bestmove.getY());
@@ -253,6 +249,9 @@ int Engine::getBoardSize()
 
 void Engine::setBoardSize(int s)
 {
+  if (s<BOARDSIZE_MIN || s>BOARDSIZE_MAX)
+    return;
+  
   delete currentboard;
   currentboard = new Go::Board(s);
 }
@@ -307,12 +306,10 @@ void Engine::randomPlayout(Go::Board *board, Go::Color col)
   
   coltomove=col;
   
-  //printf("random playout\n");
   
   while (!board->scoreable())
   {
     this->randomValidMove(board,coltomove,&move);
-    //printf("random move at (%d,%d)\n",move->getX(),move->getY());
     board->makeMove(*move);
     coltomove=Go::otherColor(coltomove);
     if (move->isResign())

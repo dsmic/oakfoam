@@ -1,6 +1,7 @@
 #ifndef DEF_OAKFOAM_UTIL_H
 #define DEF_OAKFOAM_UTIL_H
 
+#include <list>
 #include "Go.h"
 
 namespace Util
@@ -22,42 +23,24 @@ namespace Util
   class MoveTree
   {
     public:
-      MoveTree(Go::Move mov);
+      MoveTree(Go::Move mov = Go::Move(Go::EMPTY,Go::Move::PASS));
       ~MoveTree();
       
-      Util::MoveTree *getSibling() { return sibling; };
-      Util::MoveTree *getFirstChild() { return firstchild; };
+      std::list<Util::MoveTree*> *getChildren() { return children; };
       Go::Move getMove() { return move; };
       int getWins() { return wins; };
       int getPlayouts() { return playouts; };
       
-      void addSibling(Util::MoveTree *node);
-      void addChild(Util::MoveTree *node);
+      void addChild(Util::MoveTree *node) { children->push_back(node); };
       void addWin() { playouts++; wins++; };
       void addLose() { playouts++; };
       
     private:
-      Util::MoveTree *sibling;
-      Util::MoveTree *firstchild;
+      std::list<Util::MoveTree*> *children;
       
       Go::Move move;
       int playouts;
       int wins;
-  };
-  
-  class MoveList
-  {
-    public:
-      MoveList(Go::Move firstmove);
-      ~MoveList();
-      
-      Go::Move getMove() { return move; };
-      Util::MoveList *getNext() { return next; };
-      void addMove(Go::Move newmove);
-    
-    private:
-      Go::Move move;
-      Util::MoveList *next;
   };
 };
 #endif
