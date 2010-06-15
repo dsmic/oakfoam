@@ -59,6 +59,7 @@ namespace Gtp
       
       void printDebugString(std::string str);
       void printfDebug(std::string format,...);
+      void printDebugVertex(Gtp::Vertex vert);
   };
   
   class Engine
@@ -123,6 +124,7 @@ namespace Gtp
       
       void addConstantCommand(std::string cmd, std::string value);
       void addFunctionCommand(std::string cmd, void *inst, Gtp::Engine::CommandFunction func);
+      void addAnalyzeCommand(std::string cmd, std::string label, std::string type);
       
       Gtp::Output *getOutput() { return output; };
       
@@ -130,12 +132,14 @@ namespace Gtp
       Gtp::Engine::FunctionList *functionlist;
       Gtp::Engine::ConstantList *constantlist;
       Gtp::Output *output;
+      std::list<std::string> analyzeList;
       
       void parseInput(std::string in, Gtp::Command **cmd);
       void doCommand(Gtp::Command *cmd);
       
       static void cmdListCommands(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
       static void cmdKnownCommand(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+      static void cmdAnalyzeCommands(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
   };
 };
 

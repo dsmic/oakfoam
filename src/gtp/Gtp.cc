@@ -9,6 +9,8 @@ Gtp::Engine::Engine()
   this->addConstantCommand("protocol_version","2");
   this->addFunctionCommand("list_commands",this,&Gtp::Engine::cmdListCommands);
   this->addFunctionCommand("known_command",this,&Gtp::Engine::cmdKnownCommand);
+  
+  this->addFunctionCommand("gogui-analyze_commands",this,&Gtp::Engine::cmdAnalyzeCommands);
 }
 
 Gtp::Engine::~Engine()
@@ -364,6 +366,41 @@ void Gtp::Output::printfDebug(std::string format,...)
   va_start (ap, format);
   vfprintf (stderr, format.c_str(), ap);
   va_end (ap);
+}
+
+void Gtp::Output::printDebugVertex(Gtp::Vertex vert)
+{
+  if (vert.x==-1 && vert.y==-1)
+    std::cerr << "PASS";
+  else if (vert.x==-2 && vert.y==-2)
+    std::cerr << "RESIGN";
+  else
+  {
+    char xletter='A'+vert.x;
+    if (vert.x>=8)
+      xletter++;
+    std::cerr << xletter << (vert.y+1);
+  }
+}
+
+void Gtp::Engine::addAnalyzeCommand(std::string cmd, std::string label, std::string type)
+{
+  std::transform(cmd.begin(),cmd.end(),cmd.begin(),::tolower);
+  std::transform(type.begin(),type.end(),type.begin(),::tolower);
+  std::string entry=type+"/"+label+"/"+cmd;
+  analyzeList.push_back(entry);
+}
+
+void Gtp::Engine::cmdAnalyzeCommands(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  gtpe->getOutput()->startResponse(cmd);
+  
+  for(std::list<std::string>::iterator iter=gtpe->analyzeList.begin();iter!=gtpe->analyzeList.end();++iter)
+  {
+    gtpe->getOutput()->printString((*iter)+"\n");
+  }
+  
+  gtpe->getOutput()->endResponse(true);
 }
 
 

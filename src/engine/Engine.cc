@@ -30,6 +30,9 @@ void Engine::addGtpCommands()
   
   gtpe->addFunctionCommand("showgroups",this,&Engine::gtpShowGroups);
   gtpe->addFunctionCommand("showliberties",this,&Engine::gtpShowLiberties);
+  
+  gtpe->addAnalyzeCommand("showboard","Show Board","string");
+  gtpe->addAnalyzeCommand("final_score","Final Score","string");
 }
 
 void Engine::gtpBoardSize(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
@@ -248,6 +251,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
   
   movetree=new Util::MoveTree();
   
+  gtpe->getOutput()->printfDebug("gogui-gfx: TEXT [genmove]: starting...\n");
+  
   playoutmove=Go::Move(col,Go::Move::PASS);
   Util::MoveTree *nmt=new Util::MoveTree(playoutmove);
   for (int i=0;i<PLAYOUTS_PER_MOVE;i++)
@@ -270,6 +275,11 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
       playoutmove=Go::Move(col,x,y);
       if (currentboard->validMove(playoutmove))
       {
+        gtpe->getOutput()->printfDebug("gogui-gfx: TEXT [genmove]: evaluating move (%d,%d)\n",x,y);
+        gtpe->getOutput()->printfDebug("gogui-gfx: VAR %c ",(col==Go::BLACK?'B':'W'));
+        Gtp::Vertex vert={x,y};
+        gtpe->getOutput()->printDebugVertex(vert);
+        gtpe->getOutput()->printfDebug("\n");
         Util::MoveTree *nmt=new Util::MoveTree(playoutmove);
         
         for (int i=0;i<PLAYOUTS_PER_MOVE;i++)
@@ -323,6 +333,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
   this->makeMove(**move);
   
   delete movetree;
+  gtpe->getOutput()->printfDebug("gogui-gfx: CLEAR\n");
 }
 
 bool Engine::isMoveAllowed(Go::Move move)
