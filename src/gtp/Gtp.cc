@@ -33,8 +33,6 @@ void Gtp::Engine::run()
     if (!std::getline(std::cin,buff))
       break;
     
-    //TODO: remove invalid chars
-    
     this->parseInput(buff,&cmd);
     if (cmd!=NULL)
     {
@@ -75,7 +73,7 @@ void Gtp::Engine::parseInput(std::string in, Gtp::Command **cmd)
   }
   std::istringstream iss(inproper);
   
-  if (inproper.length()==0 || !getline(iss, cmdname, ' '))
+  if (inproper.length()==0 || !getline(iss, cmdname, ' ') || cmdname.length()==0)
   {
     *cmd=NULL;
     return;
@@ -84,7 +82,7 @@ void Gtp::Engine::parseInput(std::string in, Gtp::Command **cmd)
   std::istringstream issid(cmdname);
   if (issid >> id)
   {
-    if (!getline(iss, cmdname, ' '))
+    if (!getline(iss, cmdname, ' ') || cmdname.length()==0)
     {
       *cmd=NULL;
       return;
