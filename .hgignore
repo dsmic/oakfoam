@@ -9,5 +9,7 @@ syntax: regexp
 ^Makefile$
 ^config\..*$
 ^stamp-h1$
+^autom4te.cache/.*$
 ^trials/.*$
+
 

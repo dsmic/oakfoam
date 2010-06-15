@@ -2250,7 +2250,7 @@ am__tar='${AMTAR} chof - "$$tardir"'; am__untar='${AMTAR} xf -'
 
 ac_config_headers="$ac_config_headers config.h"
 
-CXXFLAGS="-O2 -Wall -g -pg -Wno-unused-function"
+CXXFLAGS="-O2 -Wall -g -Wno-unused-function"
 
 ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
