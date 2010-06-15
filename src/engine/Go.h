@@ -120,6 +120,7 @@ namespace Go
       int removeGroup(int group);
       
       int solidLinksFrom(int x, int y);
+      int solidlyTouches(int x, int y);
       
       void setKo(int x, int y);
   };

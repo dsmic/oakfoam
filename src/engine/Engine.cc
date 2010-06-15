@@ -27,6 +27,9 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("genmove",this,&Engine::gtpGenMove);
   gtpe->addFunctionCommand("showboard",this,&Engine::gtpShowBoard);
   gtpe->addFunctionCommand("final_score",this,&Engine::gtpFinalScore);
+  
+  gtpe->addFunctionCommand("showgroups",this,&Engine::gtpShowGroups);
+  gtpe->addFunctionCommand("showliberties",this,&Engine::gtpShowLiberties);
 }
 
 void Engine::gtpBoardSize(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
@@ -191,6 +194,50 @@ void Engine::gtpFinalScore(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printScore(score);
   gtpe->getOutput()->endResponse();
+}
+
+void Engine::gtpShowGroups(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("current groups:\n");
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      int group=me->currentboard->boardData()[y*me->boardsize+x].group;
+      if (group!=-1)
+        printf("%2d",group);
+      else
+        printf(". ");
+    }
+    printf("\n");
+  }
+
+  gtpe->getOutput()->endResponse(true);
+}
+
+void Engine::gtpShowLiberties(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("current liberties:\n");
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      int lib=me->currentboard->boardData()[y*me->boardsize+x].liberties;
+      if (lib!=-1)
+        printf("%2d",lib);
+      else
+        printf(". ");
+    }
+    printf("\n");
+  }
+
+  gtpe->getOutput()->endResponse(true);
 }
 
 void Engine::generateMove(Go::Color col, Go::Move **move)

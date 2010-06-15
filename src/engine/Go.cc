@@ -175,8 +175,11 @@ void Go::Board::makeMove(Go::Move move)
   poskoy=-1;
   removedagroup=false;
   
+  //fprintf(stderr,"[makeMove]:start\n");
+  
   if (x>0 && this->libertiesAt(x-1,y)==1 && this->colorAt(x-1,y)==othercol)
   {
+    //fprintf(stderr,"[makeMove]:remove a group\n");
     removedagroup=true;
     if (removeGroup(this->groupAt(x-1,y))==1)
     {
@@ -195,6 +198,7 @@ void Go::Board::makeMove(Go::Move move)
   
   if (y>0 && this->libertiesAt(x,y-1)==1 && this->colorAt(x,y-1)==othercol)
   {
+    //fprintf(stderr,"[makeMove]:remove a group\n");
     removedagroup=true;
     if (removeGroup(this->groupAt(x,y-1))==1)
     {
@@ -213,6 +217,7 @@ void Go::Board::makeMove(Go::Move move)
   
   if (x<(size-1) && this->libertiesAt(x+1,y)==1 && this->colorAt(x+1,y)==othercol)
   {
+    //fprintf(stderr,"[makeMove]:remove a group\n");
     removedagroup=true;
     if (removeGroup(this->groupAt(x+1,y))==1)
     {
@@ -231,6 +236,7 @@ void Go::Board::makeMove(Go::Move move)
   
   if (y<(size-1) && this->libertiesAt(x,y+1)==1 && this->colorAt(x,y+1)==othercol)
   {
+    //fprintf(stderr,"[makeMove]:remove a group\n");
     removedagroup=true;
     if (removeGroup(this->groupAt(x,y+1))==1)
     {
@@ -255,7 +261,7 @@ void Go::Board::makeMove(Go::Move move)
   this->setColorAt(x,y,col);
   if (removedagroup)
     this->updateLiberties();
-  else if (this->solidLinksFrom(x,y)==0)
+  else if (this->solidlyTouches(x,y)==0)
   {
     this->setGroupAt(x,y,totalgroups);
     totalgroups++;
@@ -389,6 +395,27 @@ int Go::Board::solidLinksFrom(int x, int y)
   if (x<(size-1) && this->colorAt(x+1,y)==col)
     links++;
   if (y<(size-1) && this->colorAt(x,y+1)==col)
+    links++;
+  
+  return links;
+}
+
+int Go::Board::solidlyTouches(int x, int y)
+{
+  int links;
+  Go::Color col;
+  this->checkCoords(x,y);
+  
+  col=this->colorAt(x,y);
+  links=0;
+  
+  if (x>0 && this->colorAt(x-1,y)!=Go::EMPTY)
+    links++;
+  if (y>0 && this->colorAt(x,y-1)!=Go::EMPTY)
+    links++;
+  if (x<(size-1) && this->colorAt(x+1,y)!=Go::EMPTY)
+    links++;
+  if (y<(size-1) && this->colorAt(x,y+1)!=Go::EMPTY)
     links++;
   
   return links;

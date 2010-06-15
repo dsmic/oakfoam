@@ -9,3 +9,5 @@ Gtp:
 
 Engine:
   rename/refactor to better name
+  record mean and playouts
+
