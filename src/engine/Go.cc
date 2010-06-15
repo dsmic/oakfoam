@@ -14,6 +14,7 @@ Go::Board::Board(int s)
     }
   }
   this->setKo(-1,-1);
+  nexttomove=Go::BLACK;
 }
 
 Go::Board::~Board()
@@ -160,6 +161,7 @@ void Go::Board::makeMove(Go::Move move)
   if (move.isPass() || move.isResign())
   {
     this->setKo(-1,-1);
+    nexttomove=Go::otherColor(nexttomove);
     return;
   }
   
@@ -269,6 +271,8 @@ void Go::Board::makeMove(Go::Move move)
   }
   else
     this->updateLiberties();
+  
+  nexttomove=Go::otherColor(nexttomove);
 }
 
 void Go::Board::updateLiberties()

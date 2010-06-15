@@ -176,22 +176,15 @@ void Engine::gtpFinalScore(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   Engine *me=(Engine*)instance;
   float score;
   
-  //gtpe->getOutput()->printDebugString("[final_score]:start\n");
-  
   if (me->currentboard->scoreable())
-  {
-    //gtpe->getOutput()->printDebugString("[final_score]:scoreable\n");
     score=me->currentboard->score()-me->komi;
-  }
   else
   {
-    //gtpe->getOutput()->printDebugString("[final_score]:playout start\n");
     Go::Board *playoutboard;
     playoutboard=me->currentboard->copy();
-    me->randomPlayout(playoutboard,Go::BLACK); //should be next color to move
+    me->randomPlayout(playoutboard,me->currentboard->nextToMove());
     score=playoutboard->score()-me->komi;
     delete playoutboard;
-    //gtpe->getOutput()->printDebugString("[final_score]:playout done\n");
   }
   
   gtpe->getOutput()->startResponse(cmd);

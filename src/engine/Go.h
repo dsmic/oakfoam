@@ -89,6 +89,8 @@ namespace Go
       bool validMove(Go::Move move);
       void makeMove(Go::Move move);
       
+      Go::Color nextToMove() { return nexttomove; };
+      
       void print();
       
       bool scoreable();
@@ -100,6 +102,7 @@ namespace Go
       Go::Board::Vertex *data;
       int koX, koY;
       int totalgroups;
+      Go::Color nexttomove;
       
       Go::Color colorAt(int x, int y);
       void setColorAt(int x, int y, Go::Color col);
