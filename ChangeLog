@@ -1,4 +1,7 @@
 
+version 0.0.4: 2010-xx-xx
+  * todo
+
 version 0.0.3: 2010-06-16
   * added new GTP engine with support for GoGui's Analyze Commands
   * made a number for minor improvements
