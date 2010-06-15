@@ -10,6 +10,8 @@ Engine::Engine(Gtp::Engine *ge)
   currentboard=new Go::Board(boardsize);
   komi=5.5;
   
+  playoutspermove=PLAYOUTS_PER_MOVE;
+  
   this->addGtpCommands();
 }
 
@@ -28,11 +30,15 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("showboard",this,&Engine::gtpShowBoard);
   gtpe->addFunctionCommand("final_score",this,&Engine::gtpFinalScore);
   
+  gtpe->addFunctionCommand("param",this,&Engine::gtpParam);
   gtpe->addFunctionCommand("showgroups",this,&Engine::gtpShowGroups);
   gtpe->addFunctionCommand("showliberties",this,&Engine::gtpShowLiberties);
   
-  gtpe->addAnalyzeCommand("showboard","Show Board","string");
   gtpe->addAnalyzeCommand("final_score","Final Score","string");
+  gtpe->addAnalyzeCommand("showboard","Show Board","string");
+  gtpe->addAnalyzeCommand("showgroups","Show Groups","sboard");
+  gtpe->addAnalyzeCommand("showliberties","Show Liberties","sboard");
+  gtpe->addAnalyzeCommand("param","Parameters","param");
 }
 
 void Engine::gtpBoardSize(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
@@ -169,7 +175,7 @@ void Engine::gtpShowBoard(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   Engine *me=(Engine*)instance;
   
   gtpe->getOutput()->startResponse(cmd);
-  gtpe->getOutput()->printString("current board:\n");
+  gtpe->getOutput()->printString("\n");
   me->currentboard->print();
   gtpe->getOutput()->endResponse(true);
 }
@@ -200,18 +206,18 @@ void Engine::gtpShowGroups(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   Engine *me=(Engine*)instance;
   
   gtpe->getOutput()->startResponse(cmd);
-  gtpe->getOutput()->printString("current groups:\n");
+  gtpe->getOutput()->printString("\n");
   for (int y=me->boardsize-1;y>=0;y--)
   {
     for (int x=0;x<me->boardsize;x++)
     {
       int group=me->currentboard->boardData()[y*me->boardsize+x].group;
       if (group!=-1)
-        printf("%2d",group);
+        gtpe->getOutput()->printf("\"%d\" ",group);
       else
-        printf(". ");
+        gtpe->getOutput()->printf("\"\" ");
     }
-    printf("\n");
+    gtpe->getOutput()->printf("\n");
   }
 
   gtpe->getOutput()->endResponse(true);
@@ -222,21 +228,54 @@ void Engine::gtpShowLiberties(void *instance, Gtp::Engine* gtpe, Gtp::Command* c
   Engine *me=(Engine*)instance;
   
   gtpe->getOutput()->startResponse(cmd);
-  gtpe->getOutput()->printString("current liberties:\n");
+  gtpe->getOutput()->printString("\n");
   for (int y=me->boardsize-1;y>=0;y--)
   {
     for (int x=0;x<me->boardsize;x++)
     {
       int lib=me->currentboard->boardData()[y*me->boardsize+x].liberties;
       if (lib!=-1)
-        printf("%2d",lib);
+        gtpe->getOutput()->printf("\"%d\" ",lib);
       else
-        printf(". ");
+        gtpe->getOutput()->printf("\"\" ");
     }
-    printf("\n");
+    gtpe->getOutput()->printf("\n");
   }
 
   gtpe->getOutput()->endResponse(true);
+}
+
+void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()==0)
+  {
+    gtpe->getOutput()->startResponse(cmd);
+    gtpe->getOutput()->printf("[string] playouts_per_move %d\n",me->playoutspermove);
+    gtpe->getOutput()->endResponse(true);
+  }
+  else if (cmd->numArgs()==2)
+  {
+    std::string param=cmd->getStringArg(0);
+    if (param=="playouts_per_move")
+        me->playoutspermove=cmd->getIntArg(1);
+    else
+    {
+        gtpe->getOutput()->startResponse(cmd,false);
+        gtpe->getOutput()->printf("unknown parameter: %s",param.c_str());
+        gtpe->getOutput()->endResponse();
+        return;
+    }
+    gtpe->getOutput()->startResponse(cmd);
+    gtpe->getOutput()->endResponse();
+  }
+  else
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("need 0 or 2 args");
+    gtpe->getOutput()->endResponse();
+  }
 }
 
 void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *mean)
@@ -255,7 +294,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
   
   playoutmove=Go::Move(col,Go::Move::PASS);
   Util::MoveTree *nmt=new Util::MoveTree(playoutmove);
-  for (int i=0;i<PLAYOUTS_PER_MOVE;i++)
+  for (int i=0;i<playoutspermove;i++)
   {
     playoutboard=currentboard->copy();
     playoutboard->makeMove(playoutmove);
@@ -282,7 +321,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
         gtpe->getOutput()->printfDebug("\n");
         Util::MoveTree *nmt=new Util::MoveTree(playoutmove);
         
-        for (int i=0;i<PLAYOUTS_PER_MOVE;i++)
+        for (int i=0;i<playoutspermove;i++)
         {
           playoutboard=currentboard->copy();
           playoutboard->makeMove(playoutmove);

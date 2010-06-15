@@ -42,6 +42,7 @@ class Engine
     static void gtpShowBoard(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpFinalScore(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     
+    static void gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowGroups(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowLiberties(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
   
@@ -50,6 +51,7 @@ class Engine
     Go::Board *currentboard;
     float komi;
     int boardsize;
+    int playoutspermove;
     
     void addGtpCommands();
     
