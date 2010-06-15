@@ -209,6 +209,9 @@ void Gtp::Engine::cmdKnownCommand(void *instance, Gtp::Engine* gtpe, Gtp::Comman
 
 void Gtp::Output::startResponse(Gtp::Command *cmd, bool success)
 {
+  std::cout.flush();
+  std::cerr.flush();
+  
   std::cout << (success ? "=" : "?");
   if (cmd->getId()>=0)
     std::cout << cmd->getId();
@@ -343,6 +346,24 @@ void Gtp::Output::printScore(float score)
 void Gtp::Output::printDebugString(std::string str)
 {
   std::cerr << str;
+}
+
+void Gtp::Output::printf(std::string format,...)
+{
+  std::va_list ap;
+  
+  va_start (ap, format);
+  vfprintf (stdout, format.c_str(), ap);
+  va_end (ap);
+}
+
+void Gtp::Output::printfDebug(std::string format,...)
+{
+  std::va_list ap;
+  
+  va_start (ap, format);
+  vfprintf (stderr, format.c_str(), ap);
+  va_end (ap);
 }
 
 

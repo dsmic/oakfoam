@@ -9,6 +9,7 @@
 
 #include <cstdlib>
 #include <ctime>
+#include <string>
 #include <list>
 #include "Go.h"
 #include "Util.h"
@@ -20,7 +21,7 @@ class Engine
     Engine(Gtp::Engine *ge);
     ~Engine();
     
-    void generateMove(Go::Color col, Go::Move **move);
+    void generateMove(Go::Color col, Go::Move **move, float *ratio=NULL);
     bool isMoveAllowed(Go::Move move);
     void makeMove(Go::Move move);
     int getBoardSize() { return currentboard->getSize(); };

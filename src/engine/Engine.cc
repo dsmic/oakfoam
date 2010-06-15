@@ -148,10 +148,13 @@ void Engine::gtpGenMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   }
   
   Go::Move *move;
-  me->generateMove((gtpcol==Gtp::BLACK ? Go::BLACK : Go::WHITE),&move);
+  float ratio;
+  me->generateMove((gtpcol==Gtp::BLACK ? Go::BLACK : Go::WHITE),&move,&ratio);
   
   Gtp::Vertex vert= {move->getX(),move->getY()};
   delete move;
+  
+  gtpe->getOutput()->printfDebug("[genmove]:ratio:%.2f\n",ratio);
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printVertex(vert);
@@ -240,7 +243,7 @@ void Engine::gtpShowLiberties(void *instance, Gtp::Engine* gtpe, Gtp::Command* c
   gtpe->getOutput()->endResponse(true);
 }
 
-void Engine::generateMove(Go::Color col, Go::Move **move)
+void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
 {
   //*move=new Go::Move(col,Go::Move::PASS);
   //this->randomValidMove(currentboard,col,move);
@@ -316,6 +319,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move)
     *move=new Go::Move(col,Go::Move::RESIGN);
   else
     *move=new Go::Move(col,bestmove.getX(),bestmove.getY());
+  if (ratio!=NULL)
+    *ratio=bestratio;
   
   this->makeMove(**move);
   

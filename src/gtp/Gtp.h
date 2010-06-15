@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <cstdio>
+#include <cstdarg>
 #include <string>
 #include <sstream>
 #include <vector>
@@ -54,8 +55,10 @@ namespace Gtp
       void printString(std::string str);
       void printVertex(Gtp::Vertex vert);
       void printScore(float score);
+      void printf(std::string format,...);
       
       void printDebugString(std::string str);
+      void printfDebug(std::string format,...);
   };
   
   class Engine
