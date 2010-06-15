@@ -9,4 +9,5 @@ syntax: regexp
 ^Makefile$
 ^config\..*$
 ^stamp-h1$
+^trials/.*$
 
