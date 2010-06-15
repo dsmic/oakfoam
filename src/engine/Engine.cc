@@ -11,6 +11,7 @@ Engine::Engine(Gtp::Engine *ge)
   komi=5.5;
   
   playoutspermove=PLAYOUTS_PER_MOVE;
+  livegfx=LIVEGFX_ON;
   
   this->addGtpCommands();
 }
@@ -253,6 +254,7 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   {
     gtpe->getOutput()->startResponse(cmd);
     gtpe->getOutput()->printf("[string] playouts_per_move %d\n",me->playoutspermove);
+    gtpe->getOutput()->printf("[bool] live_gfx %d\n",me->livegfx);
     gtpe->getOutput()->endResponse(true);
   }
   else if (cmd->numArgs()==2)
@@ -260,6 +262,8 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     std::string param=cmd->getStringArg(0);
     if (param=="playouts_per_move")
         me->playoutspermove=cmd->getIntArg(1);
+    else if (param=="live_gfx")
+        me->livegfx=(cmd->getIntArg(1)==1);
     else
     {
         gtpe->getOutput()->startResponse(cmd,false);
@@ -290,7 +294,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
   
   movetree=new Util::MoveTree();
   
-  gtpe->getOutput()->printfDebug("gogui-gfx: TEXT [genmove]: starting...\n");
+  if (livegfx)
+    gtpe->getOutput()->printfDebug("gogui-gfx: TEXT [genmove]: starting...\n");
   
   playoutmove=Go::Move(col,Go::Move::PASS);
   Util::MoveTree *nmt=new Util::MoveTree(playoutmove);
@@ -314,11 +319,14 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
       playoutmove=Go::Move(col,x,y);
       if (currentboard->validMove(playoutmove))
       {
-        gtpe->getOutput()->printfDebug("gogui-gfx: TEXT [genmove]: evaluating move (%d,%d)\n",x,y);
-        gtpe->getOutput()->printfDebug("gogui-gfx: VAR %c ",(col==Go::BLACK?'B':'W'));
-        Gtp::Vertex vert={x,y};
-        gtpe->getOutput()->printDebugVertex(vert);
-        gtpe->getOutput()->printfDebug("\n");
+        if (livegfx)
+        {
+          gtpe->getOutput()->printfDebug("gogui-gfx: TEXT [genmove]: evaluating move (%d,%d)\n",x,y);
+          gtpe->getOutput()->printfDebug("gogui-gfx: VAR %c ",(col==Go::BLACK?'B':'W'));
+          Gtp::Vertex vert={x,y};
+          gtpe->getOutput()->printDebugVertex(vert);
+          gtpe->getOutput()->printfDebug("\n");
+        }
         Util::MoveTree *nmt=new Util::MoveTree(playoutmove);
         
         for (int i=0;i<playoutspermove;i++)
@@ -372,7 +380,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
   this->makeMove(**move);
   
   delete movetree;
-  gtpe->getOutput()->printfDebug("gogui-gfx: CLEAR\n");
+  if (livegfx)
+    gtpe->getOutput()->printfDebug("gogui-gfx: CLEAR\n");
 }
 
 bool Engine::isMoveAllowed(Go::Move move)

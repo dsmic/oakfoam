@@ -4,6 +4,7 @@
 #define PLAYOUTS_PER_MOVE 100
 #define RESIGN_RATIO_THRESHOLD 0.05
 #define RESIGN_MEAN_THRESHOLD 10
+#define LIVEGFX_ON false
 
 #define BOARDSIZE_MIN 2
 #define BOARDSIZE_MAX 25
@@ -52,6 +53,7 @@ class Engine
     float komi;
     int boardsize;
     int playoutspermove;
+    bool livegfx;
     
     void addGtpCommands();
     
