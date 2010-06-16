@@ -49,6 +49,11 @@ namespace Gtp
   class Output
   {
     public:
+      Output() { outputon=true; };
+      
+      bool isOutputOn() { return outputon; };
+      void setOutputOn(bool outon) { outputon=outon; };
+      
       void startResponse(Gtp::Command *cmd, bool success = true);
       void endResponse(bool single = false);
       
@@ -60,6 +65,9 @@ namespace Gtp
       void printDebugString(std::string str);
       void printfDebug(std::string format,...);
       void printDebugVertex(Gtp::Vertex vert);
+    
+    private:
+      bool outputon;
   };
   
   class Engine
@@ -125,6 +133,8 @@ namespace Gtp
       void addConstantCommand(std::string cmd, std::string value);
       void addFunctionCommand(std::string cmd, void *inst, Gtp::Engine::CommandFunction func);
       void addAnalyzeCommand(std::string cmd, std::string label, std::string type);
+      
+      bool executeCommand(std::string line);
       
       Gtp::Output *getOutput() { return output; };
       

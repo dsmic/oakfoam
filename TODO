@@ -2,7 +2,6 @@ TODO
 ------------------
 
 Now: (before next release)
-  add "-c"/"--config" cmd line arg
   add time settings
   adjust playouts according to time settings
 

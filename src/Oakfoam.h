@@ -17,8 +17,7 @@ class Oakfoam
     ~Oakfoam();
     
     void run();
-  
-  private:
+    
     Gtp::Engine *gtpe;
     Engine *engine;
 };

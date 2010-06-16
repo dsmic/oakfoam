@@ -24,34 +24,42 @@ Gtp::Engine::~Engine()
 
 void Gtp::Engine::run()
 {
-  std::string buff,cmdname;
-  Gtp::Command *cmd;
-  bool running=true;
+  std::string buff;
   
-  while (running)
+  while (true)
   {
     if (!std::getline(std::cin,buff))
       break;
     
-    this->parseInput(buff,&cmd);
-    if (cmd!=NULL)
-    {
-      cmdname=cmd->getCommandName();
-      
-      if (cmdname=="quit")
-      {
-        this->getOutput()->startResponse(cmd);
-        this->getOutput()->endResponse();
-        running=false;
-      }
-      else
-        doCommand(cmd);
-      
-      std::cout.flush();
-      
-      delete cmd;
-    }
+    if (!this->executeCommand(buff))
+      break;
   }
+}
+
+bool Gtp::Engine::executeCommand(std::string line)
+{
+  std::string cmdname;
+  Gtp::Command *cmd;
+  bool running=true;
+  
+  this->parseInput(line,&cmd);
+  if (cmd!=NULL)
+  {
+    cmdname=cmd->getCommandName();
+    
+    if (cmdname=="quit")
+    {
+      this->getOutput()->startResponse(cmd);
+      this->getOutput()->endResponse();
+      running=false;
+    }
+    else
+      doCommand(cmd);
+    
+    delete cmd;
+  }
+  
+  return running;
 }
 
 void Gtp::Engine::parseInput(std::string in, Gtp::Command **cmd)
@@ -220,6 +228,9 @@ void Gtp::Engine::cmdKnownCommand(void *instance, Gtp::Engine* gtpe, Gtp::Comman
 
 void Gtp::Output::startResponse(Gtp::Command *cmd, bool success)
 {
+  if (!outputon)
+    return;
+  
   std::cout.flush();
   std::cerr.flush();
   
@@ -231,13 +242,21 @@ void Gtp::Output::startResponse(Gtp::Command *cmd, bool success)
 
 void Gtp::Output::endResponse(bool single)
 {
+  if (!outputon)
+    return;
+  
   std::cout << std::endl;
   if (!single)
     std::cout << std::endl;
+  
+  std::cout.flush();
 }
 
 void Gtp::Output::printString(std::string str)
 {
+  if (!outputon)
+    return;
+  
   std::cout << str;
 }
 
@@ -331,6 +350,9 @@ Gtp::Vertex Gtp::Command::getVertexArg(int i)
 
 void Gtp::Output::printVertex(Gtp::Vertex vert)
 {
+  if (!outputon)
+    return;
+  
   if (vert.x==-1 && vert.y==-1)
     std::cout << "PASS";
   else if (vert.x==-2 && vert.y==-2)
@@ -346,6 +368,9 @@ void Gtp::Output::printVertex(Gtp::Vertex vert)
 
 void Gtp::Output::printScore(float score)
 {
+  if (!outputon)
+    return;
+  
   if (score==0)
     std::cout << "0";
   else if (score>0)
@@ -356,13 +381,18 @@ void Gtp::Output::printScore(float score)
 
 void Gtp::Output::printDebugString(std::string str)
 {
+  if (!outputon)
+    return;
+  
   std::cerr << str;
 }
 
 void Gtp::Output::printf(std::string format,...)
 {
-  std::va_list ap;
+  if (!outputon)
+    return;
   
+  std::va_list ap;
   va_start (ap, format);
   vfprintf (stdout, format.c_str(), ap);
   va_end (ap);
@@ -370,8 +400,10 @@ void Gtp::Output::printf(std::string format,...)
 
 void Gtp::Output::printfDebug(std::string format,...)
 {
-  std::va_list ap;
+  if (!outputon)
+    return;
   
+  std::va_list ap;
   va_start (ap, format);
   vfprintf (stderr, format.c_str(), ap);
   va_end (ap);
@@ -379,6 +411,9 @@ void Gtp::Output::printfDebug(std::string format,...)
 
 void Gtp::Output::printDebugVertex(Gtp::Vertex vert)
 {
+  if (!outputon)
+    return;
+  
   if (vert.x==-1 && vert.y==-1)
     std::cerr << "PASS";
   else if (vert.x==-2 && vert.y==-2)
