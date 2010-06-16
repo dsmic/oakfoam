@@ -9,6 +9,7 @@ Now: (before next release)
 Soon: (before next major release)
   replace FunctionList and ConstantList with std::list<>
   rename/refactor to better name
+  move main() info Oakfoam.cc
   add prefix to custom commands
   add handicap settings
   fix final_score and implement final_status_list
