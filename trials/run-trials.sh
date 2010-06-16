@@ -3,8 +3,8 @@
 BLACK="../oakfoam"
 #WHITE="gnugo --mode gtp"
 #WHITE="/data/go/software/brown-1.0/brown"
-#WHITE="/data/go/software/amigogtp-1.6/amigogtp/amigogtp"
-WHITE="fuego"
+WHITE="/data/go/software/amigogtp-1.6/amigogtp/amigogtp"
+#WHITE="fuego"
 
 REFEREE="fuego"
 GAMES=10
