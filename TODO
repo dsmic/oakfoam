@@ -1,10 +1,18 @@
 TODO
 ------------------
 
-Gtp:
-  replace FunctionList and ConstantList with std::list<>
+Now: (before next release)
+  add "-c"/"--config" cmd line arg
+  add time settings
+  adjust playouts according to time settings
 
-Engine:
+Soon: (before next major release)
+  replace FunctionList and ConstantList with std::list<>
   rename/refactor to better name
+  add prefix to custom commands
+  add handicap settings
+  fix final_score and implement final_status_list
+
+Later: (at some point)
 
 
