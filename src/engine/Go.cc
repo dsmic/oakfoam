@@ -19,7 +19,7 @@ Go::Board::Board(int s)
 
 Go::Board::~Board()
 {
-  delete data;
+  delete[] data;
 }
 
 int Go::Board::getSize()

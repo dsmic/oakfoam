@@ -11,6 +11,10 @@ Util::MoveTree::MoveTree(Go::Move mov)
 
 Util::MoveTree::~MoveTree()
 {
+  for(std::list<Util::MoveTree*>::iterator iter=children->begin();iter!=children->end();++iter) 
+  {
+    delete (*iter);
+  }
   delete children;
 }
 

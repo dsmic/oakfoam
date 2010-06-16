@@ -441,12 +441,16 @@ void Engine::randomPlayout(Go::Board *board, Go::Color col)
   
   while (!board->scoreable())
   {
+    bool resign,pass;
     this->randomValidMove(board,coltomove,&move);
     board->makeMove(*move);
+    resign=move->isResign();
+    pass=move->isPass();
+    delete move;
     coltomove=Go::otherColor(coltomove);
-    if (move->isResign())
+    if (resign)
       break;
-    if (move->isPass())
+    if (pass)
       passes++;
     else
       passes=0;
