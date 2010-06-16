@@ -299,16 +299,30 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
   
   playoutmove=Go::Move(col,Go::Move::PASS);
   Util::MoveTree *nmt=new Util::MoveTree(playoutmove);
-  for (int i=0;i<playoutspermove;i++)
+  
+  playoutboard=currentboard->copy();
+  playoutboard->makeMove(playoutmove);
+  playoutboard->makeMove(Go::Move(Go::otherColor(col),Go::Move::PASS));
+  randomPlayout(playoutboard,col);
+  if (Util::isWinForColor(col,playoutboard->score()-komi))
+    nmt->addWin();
+  else
+    nmt->addLose();
+  delete playoutboard;
+  
+  if (nmt->getRatio()==1)
   {
-    playoutboard=currentboard->copy();
-    playoutboard->makeMove(playoutmove);
-    randomPlayout(playoutboard,Go::otherColor(col));
-    if (Util::isWinForColor(col,playoutboard->score()-komi))
-      nmt->addWin();
-    else
-      nmt->addLose();
-    delete playoutboard;
+    for (int i=0;i<playoutspermove;i++)
+    {
+      playoutboard=currentboard->copy();
+      playoutboard->makeMove(playoutmove);
+      randomPlayout(playoutboard,Go::otherColor(col));
+      if (Util::isWinForColor(col,playoutboard->score()-komi))
+        nmt->addWin();
+      else
+        nmt->addLose();
+      delete playoutboard;
+    }
   }
   movetree->addChild(nmt);
   
@@ -434,10 +448,11 @@ void Engine::randomPlayout(Go::Board *board, Go::Color col)
 {
   Go::Color coltomove;
   Go::Move *move;
-  int passes=0; //not always true
+  int passes=board->getPassesPlayed(); //not always true
+  if (passes>=2)
+    return;
   
   coltomove=col;
-  
   
   while (!board->scoreable())
   {

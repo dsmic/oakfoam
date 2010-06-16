@@ -85,6 +85,7 @@ namespace Go
       Go::Board::Vertex *boardData(); //must only be used for read-only access
       
       int getSize();
+      int getPassesPlayed() { return passesplayed; };
       
       bool validMove(Go::Move move);
       void makeMove(Go::Move move);
@@ -103,6 +104,7 @@ namespace Go
       int koX, koY;
       int totalgroups;
       Go::Color nexttomove;
+      int passesplayed;
       
       Go::Color colorAt(int x, int y);
       void setColorAt(int x, int y, Go::Color col);
