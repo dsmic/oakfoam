@@ -13,6 +13,10 @@ Engine::Engine(Gtp::Engine *ge)
   playoutspermove=PLAYOUTS_PER_MOVE;
   livegfx=LIVEGFX_ON;
   
+  timemain=0;
+  timeblack=0;
+  timewhite=0;
+  
   this->addGtpCommands();
 }
 
@@ -34,6 +38,9 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("param",this,&Engine::gtpParam);
   gtpe->addFunctionCommand("showgroups",this,&Engine::gtpShowGroups);
   gtpe->addFunctionCommand("showliberties",this,&Engine::gtpShowLiberties);
+  
+  gtpe->addFunctionCommand("time_settings",this,&Engine::gtpTimeSettings);
+  gtpe->addFunctionCommand("time_left",this,&Engine::gtpTimeLeft);
   
   gtpe->addAnalyzeCommand("final_score","Final Score","string");
   gtpe->addAnalyzeCommand("showboard","Show Board","string");
@@ -164,7 +171,8 @@ void Engine::gtpGenMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   Gtp::Vertex vert= {move->getX(),move->getY()};
   delete move;
   
-  gtpe->getOutput()->printfDebug("[genmove]: ratio:%.2f mean:%+.1f\n",ratio,mean);
+  long timeleft=(gtpcol==Gtp::BLACK ? me->timeblack : me->timewhite);
+  gtpe->getOutput()->printfDebug("[genmove]: r:%.2f m:%+.1f tl:%ld\n",ratio,mean,timeleft);
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printVertex(vert);
@@ -282,11 +290,90 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   }
 }
 
+void Engine::gtpTimeSettings(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=3)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("invalid arguments");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  if ((cmd->getIntArg(1)!=0 && cmd->getIntArg(2)==0) || (cmd->getIntArg(0)==0 && cmd->getIntArg(1)==0 && cmd->getIntArg(2)==0))
+  {
+    me->timemain=0;
+    me->timeblack=0;
+    me->timewhite=0;
+    gtpe->getOutput()->startResponse(cmd);
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  if (cmd->getIntArg(1)!=0)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("only absolute time supported");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  me->timemain=cmd->getIntArg(0)*1000;
+  me->timeblack=me->timemain;
+  me->timewhite=me->timemain;
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->endResponse();
+}
+
+void Engine::gtpTimeLeft(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=3)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("invalid arguments");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  if (cmd->getIntArg(2)!=0)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("only absolute time supported");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  Gtp::Color gtpcol = cmd->getColorArg(0);
+  if (gtpcol==Gtp::INVALID)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("invalid color");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  int time=cmd->getIntArg(1)*1000;
+  long *timevar=(gtpcol==Gtp::BLACK ? &me->timeblack : &me->timewhite);
+  gtpe->getOutput()->printfDebug("[time_left]: diff:%ld\n",time-*timevar);
+  *timevar=time;
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->endResponse();
+}
+
 void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *mean)
 {
   //*move=new Go::Move(col,Go::Move::PASS);
   //this->randomValidMove(currentboard,col,move);
   //this->makeMove(**move);
+  
+  long *timeleft=(col==Go::BLACK ? &timeblack : &timewhite);
+  long timestart=getCurrentTime();
   
   Util::MoveTree *movetree;
   Go::Board *playoutboard;
@@ -396,6 +483,10 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
   delete movetree;
   if (livegfx)
     gtpe->getOutput()->printfDebug("gogui-gfx: CLEAR\n");
+  
+  long timeend=getCurrentTime();
+  if (*timeleft!=0)
+    *timeleft-=(timeend-timestart);
 }
 
 bool Engine::isMoveAllowed(Go::Move move)

@@ -46,6 +46,9 @@ class Engine
     static void gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowGroups(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowLiberties(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    
+    static void gtpTimeSettings(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpTimeLeft(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
   
   private:
     Gtp::Engine *gtpe;
@@ -54,11 +57,14 @@ class Engine
     int boardsize;
     int playoutspermove;
     bool livegfx;
+    long timemain,timeblack,timewhite;
     
     void addGtpCommands();
     
     void randomValidMove(Go::Board *board, Go::Color col, Go::Move **move);
     void randomPlayout(Go::Board *board, Go::Color col);
+    
+    long getCurrentTime() { return std::clock()/CLOCKS_PER_SEC*1000; };
 };
 
 #endif
