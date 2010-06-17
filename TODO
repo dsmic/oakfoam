@@ -3,6 +3,7 @@ TODO
 
 Now: (before next release)
   replace current Go::Board with a fast, incremental one
+  add time settings parameters
 
 Soon: (before next major release)
   replace FunctionList and ConstantList with std::list<>

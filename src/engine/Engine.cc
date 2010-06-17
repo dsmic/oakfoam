@@ -584,10 +584,10 @@ void Engine::randomPlayout(Go::Board *board, Go::Color col)
 long Engine::getTimeAllowedThisTurn(Go::Color col)
 {
   long timeleft=(col==Go::BLACK ? timeblack : timewhite);
-  timeleft-=10000;
+  timeleft-=20000;
   if (timeleft<0)
     timeleft=1;
-  int estimatedmovespergame=boardsize*boardsize/3; //fill some the board
+  int estimatedmovespergame=(float)boardsize*boardsize/2.5; //fill some the board
   int movesmade=currentboard->getMovesMade();
   int movesleft=estimatedmovespergame-movesmade;
   if (movesleft<0)
