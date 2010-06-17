@@ -4,4 +4,5 @@ param playouts_per_move 150
 param time_buffer 30000
 param time_percentage_board 0.4
 param time_move_buffer 10
-param time_factor 2
+param time_factor 1.5
+param time_move_minimum 100

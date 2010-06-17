@@ -10,6 +10,7 @@
 #define TIME_PERCENTAGE_BOARD 0.4
 #define TIME_MOVE_BUFFER 10
 #define TIME_FACTOR 2
+#define TIME_MOVE_MINIMUM 100
 
 #define BOARDSIZE_MIN 2
 #define BOARDSIZE_MAX 25
@@ -64,7 +65,7 @@ class Engine
     long timemain,timeblack,timewhite;
     float playoutspermilli;
     float resignratiothreshold,resignmeanthreshold;
-    long timebuffer;
+    long timebuffer,timemoveminimum;
     int timemovebuffer;
     float timepercentageboard,timefactor;
     

@@ -20,6 +20,7 @@ Engine::Engine(Gtp::Engine *ge)
   timepercentageboard=TIME_PERCENTAGE_BOARD;
   timemovebuffer=TIME_MOVE_BUFFER;
   timefactor=TIME_FACTOR;
+  timemoveminimum=TIME_MOVE_MINIMUM;
   
   timemain=0;
   timeblack=0;
@@ -271,14 +272,15 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   if (cmd->numArgs()==0)
   {
     gtpe->getOutput()->startResponse(cmd);
-    gtpe->getOutput()->printf("[string] playouts_per_move %d\n",me->playoutspermove);
     gtpe->getOutput()->printf("[bool] live_gfx %d\n",me->livegfx);
+    gtpe->getOutput()->printf("[string] playouts_per_move %d\n",me->playoutspermove);
     gtpe->getOutput()->printf("[string] resign_ratio_threshold %.3f\n",me->resignratiothreshold);
     gtpe->getOutput()->printf("[string] resign_mean_threshold %.1f\n",me->resignmeanthreshold);
     gtpe->getOutput()->printf("[string] time_buffer %ld\n",me->timebuffer);
     gtpe->getOutput()->printf("[string] time_percentage_board %.2f\n",me->timepercentageboard);
     gtpe->getOutput()->printf("[string] time_move_buffer %d\n",me->timemovebuffer);
     gtpe->getOutput()->printf("[string] time_factor %.2f\n",me->timefactor);
+    gtpe->getOutput()->printf("[string] time_move_minimum %ld\n",me->timemoveminimum);
     gtpe->getOutput()->endResponse(true);
   }
   else if (cmd->numArgs()==2)
@@ -300,6 +302,8 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
       me->timemovebuffer=cmd->getIntArg(1);
     else if (param=="time_factor")
       me->timefactor=cmd->getFloatArg(1);
+    else if (param=="time_move_minimum")
+      me->timemoveminimum=cmd->getIntArg(1);
     else
     {
       gtpe->getOutput()->startResponse(cmd,false);
@@ -620,6 +624,8 @@ long Engine::getTimeAllowedThisTurn(Go::Color col)
     movesleft=0;
   movesleft+=timemovebuffer; //be able to play ~10 more moves
   long timepermove=timeleft/movesleft*timefactor; //allow more time in beginning
+  if (timepermove<timemoveminimum)
+    timepermove=timemoveminimum;
   return timepermove;
 }
 
