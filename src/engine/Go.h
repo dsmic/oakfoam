@@ -86,6 +86,7 @@ namespace Go
       
       int getSize();
       int getPassesPlayed() { return passesplayed; };
+      int getMovesMade() { return movesmade; };
       
       bool validMove(Go::Move move);
       void makeMove(Go::Move move);
@@ -105,6 +106,7 @@ namespace Go
       int totalgroups;
       Go::Color nexttomove;
       int passesplayed;
+      int movesmade;
       
       Go::Color colorAt(int x, int y);
       void setColorAt(int x, int y, Go::Color col);

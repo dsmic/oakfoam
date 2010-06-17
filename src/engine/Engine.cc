@@ -172,7 +172,9 @@ void Engine::gtpGenMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   delete move;
   
   long timeleft=(gtpcol==Gtp::BLACK ? me->timeblack : me->timewhite);
-  gtpe->getOutput()->printfDebug("[genmove]: r:%.2f m:%+.1f tl:%ld\n",ratio,mean,timeleft);
+  gtpe->getOutput()->printfDebug("[genmove]: r:%.2f m:%+.1f tl:%ld ppmo:%d ppmi:%.3f\n",ratio,mean,timeleft,me->playoutspermove,me->playoutspermilli);
+  if (me->livegfx)
+    gtpe->getOutput()->printfDebug("gogui-gfx: TEXT [genmove]: r:%.2f m:%+.1f tl:%ld ppmo:%d ppmi:%.3f\n",ratio,mean,timeleft,me->playoutspermove,me->playoutspermilli);
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printVertex(vert);
@@ -374,6 +376,14 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
   
   long *timeleft=(col==Go::BLACK ? &timeblack : &timewhite);
   long timestart=getCurrentTime();
+  int totalplayouts=0;
+  
+  if (*timeleft>0 && playoutspermilli>0)
+  {
+    playoutspermove=playoutspermilli*this->getTimeAllowedThisTurn(col)/(boardsize*boardsize-currentboard->getMovesMade());
+    if (playoutspermove<10)
+      playoutspermove=10;
+  }
   
   Util::MoveTree *movetree;
   Go::Board *playoutboard;
@@ -396,6 +406,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
   else
     nmt->addLose();
   delete playoutboard;
+  totalplayouts++;
   
   if (nmt->getRatio()==1)
   {
@@ -409,6 +420,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
       else
         nmt->addLose();
       delete playoutboard;
+      totalplayouts++;
     }
   }
   movetree->addChild(nmt);
@@ -440,6 +452,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
           else
             nmt->addLose(playoutboard->score()-komi);
           delete playoutboard;
+          totalplayouts++;
         }
         
         movetree->addChild(nmt);
@@ -485,8 +498,11 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
     gtpe->getOutput()->printfDebug("gogui-gfx: CLEAR\n");
   
   long timeend=getCurrentTime();
+  long timeused=timeend-timestart;
+  if (timeused>0)
+    playoutspermilli=(float)totalplayouts/timeused;
   if (*timeleft!=0)
-    *timeleft-=(timeend-timestart);
+    *timeleft-=timeused;
 }
 
 bool Engine::isMoveAllowed(Go::Move move)
@@ -563,6 +579,22 @@ void Engine::randomPlayout(Go::Board *board, Go::Color col)
     if (passes>=2)
       break;
   }
+}
+
+long Engine::getTimeAllowedThisTurn(Go::Color col)
+{
+  long timeleft=(col==Go::BLACK ? timeblack : timewhite);
+  timeleft-=5000;
+  if (timeleft<0)
+    timeleft=1;
+  int estimatedmovespergame=boardsize*boardsize/3; //fill some the board
+  int movesmade=currentboard->getMovesMade();
+  int movesleft=estimatedmovespergame-movesmade;
+  if (movesleft<0)
+    movesleft=0;
+  movesleft+=10; //be able to play ~10 more moves
+  long timepermove=timeleft/(movesleft/2); //allow more time in beginning
+  return timepermove;
 }
 
 

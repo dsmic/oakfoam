@@ -2,7 +2,6 @@ TODO
 ------------------
 
 Now: (before next release)
-  adjust playouts according to time settings
   replace current Go::Board with a fast, incremental one
 
 Soon: (before next major release)

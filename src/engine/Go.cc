@@ -16,6 +16,7 @@ Go::Board::Board(int s)
   this->setKo(-1,-1);
   nexttomove=Go::BLACK;
   passesplayed=0;
+  movesmade=0;
 }
 
 Go::Board::~Board()
@@ -89,7 +90,9 @@ Go::Board *Go::Board::copy()
   }
   
   copyboard->setKo(koX,koY);
+  copyboard->nexttomove=nexttomove;
   copyboard->passesplayed=passesplayed;
+  copyboard->movesmade=movesmade;
   
   return copyboard;
 }
@@ -166,6 +169,7 @@ void Go::Board::makeMove(Go::Move move)
       passesplayed++;
     this->setKo(-1,-1);
     nexttomove=Go::otherColor(nexttomove);
+    movesmade++;
     return;
   }
   
@@ -278,6 +282,7 @@ void Go::Board::makeMove(Go::Move move)
     this->updateLiberties();
   
   nexttomove=Go::otherColor(nexttomove);
+  movesmade++;
 }
 
 void Go::Board::updateLiberties()

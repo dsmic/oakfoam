@@ -2,8 +2,8 @@
 #define DEF_OAKFOAM_ENGINE_H
 
 #define PLAYOUTS_PER_MOVE 100
-#define RESIGN_RATIO_THRESHOLD 0.05
-#define RESIGN_MEAN_THRESHOLD 10
+#define RESIGN_RATIO_THRESHOLD 0.03
+#define RESIGN_MEAN_THRESHOLD 20
 #define LIVEGFX_ON false
 
 #define BOARDSIZE_MIN 2
@@ -58,6 +58,7 @@ class Engine
     int playoutspermove;
     bool livegfx;
     long timemain,timeblack,timewhite;
+    float playoutspermilli;
     
     void addGtpCommands();
     
@@ -65,6 +66,7 @@ class Engine
     void randomPlayout(Go::Board *board, Go::Color col);
     
     long getCurrentTime() { return std::clock()/CLOCKS_PER_SEC*1000; };
+    long getTimeAllowedThisTurn(Go::Color col);
 };
 
 #endif
