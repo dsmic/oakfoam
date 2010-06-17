@@ -6,9 +6,13 @@
 #define RESIGN_MEAN_THRESHOLD 20
 #define LIVEGFX_ON false
 
+#define TIME_BUFFER 30000
+#define TIME_PERCENTAGE_BOARD 0.4
+#define TIME_MOVE_BUFFER 10
+#define TIME_FACTOR 2
+
 #define BOARDSIZE_MIN 2
 #define BOARDSIZE_MAX 25
-
 
 #include <cstdlib>
 #include <ctime>
@@ -59,6 +63,10 @@ class Engine
     bool livegfx;
     long timemain,timeblack,timewhite;
     float playoutspermilli;
+    float resignratiothreshold,resignmeanthreshold;
+    long timebuffer;
+    int timemovebuffer;
+    float timepercentageboard,timefactor;
     
     void addGtpCommands();
     

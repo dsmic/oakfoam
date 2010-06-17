@@ -13,6 +13,14 @@ Engine::Engine(Gtp::Engine *ge)
   playoutspermove=PLAYOUTS_PER_MOVE;
   livegfx=LIVEGFX_ON;
   
+  resignratiothreshold=RESIGN_RATIO_THRESHOLD;
+  resignmeanthreshold=RESIGN_MEAN_THRESHOLD;
+  
+  timebuffer=TIME_BUFFER;
+  timepercentageboard=TIME_PERCENTAGE_BOARD;
+  timemovebuffer=TIME_MOVE_BUFFER;
+  timefactor=TIME_FACTOR;
+  
   timemain=0;
   timeblack=0;
   timewhite=0;
@@ -265,21 +273,39 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     gtpe->getOutput()->startResponse(cmd);
     gtpe->getOutput()->printf("[string] playouts_per_move %d\n",me->playoutspermove);
     gtpe->getOutput()->printf("[bool] live_gfx %d\n",me->livegfx);
+    gtpe->getOutput()->printf("[string] resign_ratio_threshold %.3f\n",me->resignratiothreshold);
+    gtpe->getOutput()->printf("[string] resign_mean_threshold %.1f\n",me->resignmeanthreshold);
+    gtpe->getOutput()->printf("[string] time_buffer %ld\n",me->timebuffer);
+    gtpe->getOutput()->printf("[string] time_percentage_board %.2f\n",me->timepercentageboard);
+    gtpe->getOutput()->printf("[string] time_move_buffer %d\n",me->timemovebuffer);
+    gtpe->getOutput()->printf("[string] time_factor %.2f\n",me->timefactor);
     gtpe->getOutput()->endResponse(true);
   }
   else if (cmd->numArgs()==2)
   {
     std::string param=cmd->getStringArg(0);
     if (param=="playouts_per_move")
-        me->playoutspermove=cmd->getIntArg(1);
+      me->playoutspermove=cmd->getIntArg(1);
     else if (param=="live_gfx")
-        me->livegfx=(cmd->getIntArg(1)==1);
+      me->livegfx=(cmd->getIntArg(1)==1);
+    else if (param=="resign_ratio_threshold")
+      me->resignratiothreshold=cmd->getFloatArg(1);
+    else if (param=="resign_mean_threshold")
+      me->resignmeanthreshold=cmd->getFloatArg(1);
+    else if (param=="time_buffer")
+      me->timebuffer=cmd->getIntArg(1);
+    else if (param=="time_percentage_board")
+      me->timepercentageboard=cmd->getFloatArg(1);
+    else if (param=="time_move_buffer")
+      me->timemovebuffer=cmd->getIntArg(1);
+    else if (param=="time_factor")
+      me->timefactor=cmd->getFloatArg(1);
     else
     {
-        gtpe->getOutput()->startResponse(cmd,false);
-        gtpe->getOutput()->printf("unknown parameter: %s",param.c_str());
-        gtpe->getOutput()->endResponse();
-        return;
+      gtpe->getOutput()->startResponse(cmd,false);
+      gtpe->getOutput()->printf("unknown parameter: %s",param.c_str());
+      gtpe->getOutput()->endResponse();
+      return;
     }
     gtpe->getOutput()->startResponse(cmd);
     gtpe->getOutput()->endResponse();
@@ -480,7 +506,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
   
   if (bestratio==0)
     *move=new Go::Move(col,Go::Move::RESIGN);
-  else if (bestratio<=RESIGN_RATIO_THRESHOLD && std::fabs(bestmean)>RESIGN_MEAN_THRESHOLD)
+  else if (bestratio<=resignratiothreshold && std::fabs(bestmean)>resignmeanthreshold)
     *move=new Go::Move(col,Go::Move::RESIGN);
   else
     *move=new Go::Move(col,bestmove.getX(),bestmove.getY());
@@ -584,16 +610,16 @@ void Engine::randomPlayout(Go::Board *board, Go::Color col)
 long Engine::getTimeAllowedThisTurn(Go::Color col)
 {
   long timeleft=(col==Go::BLACK ? timeblack : timewhite);
-  timeleft-=20000;
+  timeleft-=timebuffer;
   if (timeleft<0)
     timeleft=1;
-  int estimatedmovespergame=(float)boardsize*boardsize/2.5; //fill some the board
+  int estimatedmovespergame=(float)boardsize*boardsize*timepercentageboard; //fill only some of the board
   int movesmade=currentboard->getMovesMade();
   int movesleft=estimatedmovespergame-movesmade;
   if (movesleft<0)
     movesleft=0;
-  movesleft+=10; //be able to play ~10 more moves
-  long timepermove=timeleft/(movesleft/2); //allow more time in beginning
+  movesleft+=timemovebuffer; //be able to play ~10 more moves
+  long timepermove=timeleft/movesleft*timefactor; //allow more time in beginning
   return timepermove;
 }
 

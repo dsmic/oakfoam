@@ -2,6 +2,7 @@
 version 0.0.4: 2010-xx-xx
   * fixed memory leak
   * added command line arguments
+  * added time settings
 
 version 0.0.3: 2010-06-16
   * added new GTP engine with support for GoGui's Analyze Commands
