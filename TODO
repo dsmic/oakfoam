@@ -12,6 +12,7 @@ Soon: (before next major release)
   add prefix to custom commands
   add handicap settings
   fix final_score and implement final_status_list
+  add a "--log" command line arg
 
 Later: (at some point)
 
