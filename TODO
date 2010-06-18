@@ -5,6 +5,7 @@ Now: (before next release)
   replace current Go::Board with a fast, incremental one
   add a "-l"/"--log" command line arg
   fix time settings
+  resign less
 
 Soon: (before next major release)
   replace FunctionList and ConstantList with std::list<>
