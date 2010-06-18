@@ -10,6 +10,7 @@ Engine::Engine(Gtp::Engine *ge)
   currentboard=new Go::Board(boardsize);
   komi=5.5;
   
+  playoutspermilli=0;
   playoutspermove=PLAYOUTS_PER_MOVE;
   livegfx=LIVEGFX_ON;
   
@@ -91,6 +92,11 @@ void Engine::gtpClearBoard(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   Engine *me=(Engine*)instance;
   
   me->clearBoard();
+  
+  //assume that this will be a new game
+  me->playoutspermilli=0;
+  me->timeblack=me->timemain;
+  me->timewhite=me->timemain;
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->endResponse();
