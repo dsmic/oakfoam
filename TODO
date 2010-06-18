@@ -3,7 +3,8 @@ TODO
 
 Now: (before next release)
   replace current Go::Board with a fast, incremental one
-  add time settings parameters
+  add a "-l"/"--log" command line arg
+  fix time settings
 
 Soon: (before next major release)
   replace FunctionList and ConstantList with std::list<>
@@ -12,7 +13,6 @@ Soon: (before next major release)
   add prefix to custom commands
   add handicap settings
   fix final_score and implement final_status_list
-  add a "--log" command line arg
 
 Later: (at some point)
 
