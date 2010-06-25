@@ -643,6 +643,11 @@ Go::IncrementalBoard::IncrementalBoard(int s)
 
 Go::IncrementalBoard::~IncrementalBoard()
 {
+  for(std::list<Go::IncrementalBoard::Group*>::iterator iter=groups.begin();iter!=groups.end();++iter) 
+  {
+    delete (*iter);
+  }
+  groups.resize(0);
   delete[] data;
 }
 
@@ -1153,18 +1158,6 @@ void Go::IncrementalBoard::makeMove(Go::Move move)
   
   this->setColorAt(x,y,col);
   
-  /*if (removedagroup)
-    this->updateLiberties();
-  else if (this->solidlyTouches(x,y)==0)
-  {
-    this->setGroupAt(x,y,totalgroups);
-    totalgroups++;
-    this->setLibertiesAt(x,y,this->directLiberties(x,y));
-  }
-  else
-    this->updateLiberties();*/
-  //update groups!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  
   if (friendlygroups->size()>0)
   {
     Go::IncrementalBoard::Group *firstgroup=friendlygroups->front();
@@ -1204,7 +1197,9 @@ void Go::IncrementalBoard::makeMove(Go::Move move)
     (*iter)->liberties--;
   }
   
+  friendlygroups->resize(0);
   delete friendlygroups;
+  enemygroups->resize(0);
   delete enemygroups;
   
   nexttomove=Go::otherColor(nexttomove);
