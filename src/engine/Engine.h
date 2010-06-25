@@ -49,6 +49,7 @@ class Engine
     static void gtpGenMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowBoard(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpFinalScore(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpFinalStatusList(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     
     static void gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     //static void gtpShowGroups(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);

@@ -4,7 +4,7 @@ TODO
 Now: (before next release)
   fix time settings
   fix score to count large areas enclosed completely
-  fix final_score and implement final_status_list
+  fix final_score
   change board->print() to use the gtpe
   remove old board and rename new board
 

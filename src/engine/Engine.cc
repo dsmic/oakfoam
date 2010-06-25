@@ -45,6 +45,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("genmove",this,&Engine::gtpGenMove);
   gtpe->addFunctionCommand("showboard",this,&Engine::gtpShowBoard);
   gtpe->addFunctionCommand("final_score",this,&Engine::gtpFinalScore);
+  gtpe->addFunctionCommand("final_status_list",this,&Engine::gtpFinalStatusList);
   
   gtpe->addFunctionCommand("param",this,&Engine::gtpParam);
   //gtpe->addFunctionCommand("showgroups",this,&Engine::gtpShowGroups);
@@ -229,6 +230,51 @@ void Engine::gtpFinalScore(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   gtpe->getOutput()->endResponse();
 }
 
+void Engine::gtpFinalStatusList(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("argument is required");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  std::string arg = cmd->getStringArg(0);
+  std::transform(arg.begin(),arg.end(),arg.begin(),::tolower);
+  
+  if (arg=="dead")
+  {
+    gtpe->getOutput()->startResponse(cmd);
+    gtpe->getOutput()->endResponse();
+  }
+  else if (arg=="alive")
+  {
+    gtpe->getOutput()->startResponse(cmd);
+    for (int x=0;x<me->boardsize;x++)
+    {
+      for (int y=0;y<me->boardsize;y++)
+      {
+        if (me->currentboard->boardData()[y*me->boardsize+x].color!=Go::EMPTY)
+        {
+          Gtp::Vertex vert={x,y};
+          gtpe->getOutput()->printVertex(vert);
+          gtpe->getOutput()->printf(" ");
+        }
+      }
+    }
+    gtpe->getOutput()->endResponse();
+  }
+  else
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("argument is not supported");
+    gtpe->getOutput()->endResponse();
+  }
+}
+
 /*void Engine::gtpShowGroups(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
@@ -297,6 +343,7 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   else if (cmd->numArgs()==2)
   {
     std::string param=cmd->getStringArg(0);
+    std::transform(param.begin(),param.end(),param.begin(),::tolower);
     if (param=="playouts_per_move")
       me->playoutspermove=cmd->getIntArg(1);
     else if (param=="live_gfx")
