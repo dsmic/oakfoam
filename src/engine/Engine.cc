@@ -215,7 +215,7 @@ void Engine::gtpFinalScore(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     score=me->currentboard->score()-me->komi;
   else
   {
-    Go::IncrementalBoard *playoutboard = new Go::IncrementalBoard();
+    Go::IncrementalBoard *playoutboard = new Go::IncrementalBoard(me->boardsize);
     playoutboard->import(me->currentboard);
     me->randomPlayout(playoutboard,me->currentboard->nextToMove());
     score=playoutboard->score()-me->komi;
@@ -422,7 +422,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
   }
   
   Util::MoveTree *movetree;
-  Go::Board *playoutboard;
+  //Go::Board *playoutboard;
+  Go::IncrementalBoard *playoutboard = new Go::IncrementalBoard(boardsize);
   Go::Move playoutmove;
   
   movetree=new Util::MoveTree();
@@ -433,7 +434,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
   playoutmove=Go::Move(col,Go::Move::PASS);
   Util::MoveTree *nmt=new Util::MoveTree(playoutmove);
   
-  playoutboard=currentboard->copy();
+  //playoutboard=currentboard->copy();
+  playoutboard->import(currentboard);
   playoutboard->makeMove(playoutmove);
   playoutboard->makeMove(Go::Move(Go::otherColor(col),Go::Move::PASS));
   randomPlayout(playoutboard,col);
@@ -441,21 +443,22 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
     nmt->addWin();
   else
     nmt->addLose();
-  delete playoutboard;
+  //delete playoutboard;
   totalplayouts++;
   
   if (nmt->getRatio()==1)
   {
     for (int i=0;i<playoutspermove;i++)
     {
-      playoutboard=currentboard->copy();
+      //playoutboard=currentboard->copy();
+      playoutboard->import(currentboard);
       playoutboard->makeMove(playoutmove);
       randomPlayout(playoutboard,Go::otherColor(col));
       if (Util::isWinForColor(col,playoutboard->score()-komi))
         nmt->addWin();
       else
         nmt->addLose();
-      delete playoutboard;
+      //delete playoutboard;
       totalplayouts++;
     }
   }
@@ -480,14 +483,15 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
         
         for (int i=0;i<playoutspermove;i++)
         {
-          playoutboard=currentboard->copy();
+          //playoutboard=currentboard->copy();
+          playoutboard->import(currentboard);
           playoutboard->makeMove(playoutmove);
           randomPlayout(playoutboard,Go::otherColor(col));
           if (Util::isWinForColor(col,playoutboard->score()-komi))
             nmt->addWin(playoutboard->score()-komi);
           else
             nmt->addLose(playoutboard->score()-komi);
-          delete playoutboard;
+          //delete playoutboard;
           totalplayouts++;
         }
         

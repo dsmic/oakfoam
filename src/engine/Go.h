@@ -101,8 +101,7 @@ namespace Go
       bool scoreable();
       int score();
       bool weakEye(Go::Color col, int x, int y);
-    
-    private:
+      
       int size;
       Go::Board::Vertex *data;
       int koX, koY;
@@ -110,6 +109,8 @@ namespace Go
       Go::Color nexttomove;
       int passesplayed;
       int movesmade;
+      
+    private:
       
       Go::Color colorAt(int x, int y);
       void setColorAt(int x, int y, Go::Color col);
@@ -163,7 +164,7 @@ namespace Go
       };
       
       //Go::IncrementalBoard *copy();
-      void import(Go::IncrementalBoard *board);
+      void import(Go::Board *board);
       
       int getSize() { return size; };
       int getPassesPlayed() { return passesplayed; };

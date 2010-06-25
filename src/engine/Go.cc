@@ -693,13 +693,13 @@ inline void Go::IncrementalBoard::setKo(int x, int y)
   koY=y;
 }
 
-void Go::IncrementalBoard::import(Go::IncrementalBoard *board)
+void Go::IncrementalBoard::import(Go::Board *board)
 {
   for (int x=0;x<size;x++)
   {
     for (int y=0;y<size;y++)
     {
-      this->setColorAt(x,y,board->colorAt(x,y));
+      this->setColorAt(x,y,board->boardData()[y*size+x].color);
     }
   }
   
