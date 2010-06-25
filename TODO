@@ -17,6 +17,7 @@ Soon: (before next major release)
   move main() into Oakfoam.cc
   add prefix to custom commands?
   fix final_score and implement final_status_list
+  implement superko
 
 Later: (at some point)
   add handicap settings
