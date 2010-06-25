@@ -12,6 +12,7 @@ Soon: (before next major release)
   move away from playouts per move
   replace FunctionList and ConstantList with std::list<>
   rename/refactor to better name?
+  move Go:: objects into own files
   move main() into Oakfoam.cc
   add prefix to custom commands?
   fix final_score and implement final_status_list
