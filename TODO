@@ -4,7 +4,9 @@ TODO
 Now: (before next release)
   fix time settings
   fix score to count large areas enclosed completely
+  fix final_score and implement final_status_list
   change board->print() to use the gtpe
+  remove old board and rename new board
 
 Soon: (before next major release)
   replace Go::IncrementalBoard's liberty system
@@ -14,7 +16,6 @@ Soon: (before next major release)
   move Go:: objects into own files
   move main() into Oakfoam.cc
   add prefix to custom commands?
-  fix final_score and implement final_status_list
   implement superko
   keep record of valid moves in the board
   copy all board data with a copy()
