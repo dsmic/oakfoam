@@ -3,6 +3,7 @@ TODO
 
 Now: (before next release)
   replace current Go::Board with a fast, incremental one
+  put valid moves in a list to choose from
   add a "-l"/"--log" command line arg
   fix time settings
   resign less
