@@ -1216,6 +1216,79 @@ int Go::IncrementalBoard::removeGroup(Go::IncrementalBoard::Group *group)
   {
     Go::IncrementalBoard::Vertex *vert=(*iter);
     
+    std::list<Go::IncrementalBoard::Group*> *enemygroups = new std::list<Go::IncrementalBoard::Group*>();
+    Go::Color othercol=Go::otherColor(vert->color);
+    int x=vert->point.x,y=vert->point.y;
+    
+    if (x>0 && this->colorAt(x-1,y)==othercol)
+    {
+      Go::IncrementalBoard::Point pt={x-1,y};
+      bool found=false;
+      for(std::list<Go::IncrementalBoard::Group*>::iterator iter=enemygroups->begin();iter!=enemygroups->end();++iter)
+      {
+        if ((*iter)==this->groupAt(pt.x,pt.y))
+        {
+          found=true;
+          break;
+        }
+      }
+      if (!found)
+        enemygroups->push_back(this->groupAt(pt.x,pt.y));
+    }
+    if (y>0 && this->colorAt(x,y-1)==othercol)
+    {
+      Go::IncrementalBoard::Point pt={x,y-1};
+      bool found=false;
+      for(std::list<Go::IncrementalBoard::Group*>::iterator iter=enemygroups->begin();iter!=enemygroups->end();++iter)
+      {
+        if ((*iter)==this->groupAt(pt.x,pt.y))
+        {
+          found=true;
+          break;
+        }
+      }
+      if (!found)
+        enemygroups->push_back(this->groupAt(pt.x,pt.y));
+    }
+    if (x<(size-1) && this->colorAt(x+1,y)==othercol)
+    {
+      Go::IncrementalBoard::Point pt={x+1,y};
+      bool found=false;
+      for(std::list<Go::IncrementalBoard::Group*>::iterator iter=enemygroups->begin();iter!=enemygroups->end();++iter)
+      {
+        if ((*iter)==this->groupAt(pt.x,pt.y))
+        {
+          found=true;
+          break;
+        }
+      }
+      if (!found)
+        enemygroups->push_back(this->groupAt(pt.x,pt.y));
+    }
+    if (y<(size-1) && this->colorAt(x,y+1)==othercol)
+    {
+      Go::IncrementalBoard::Point pt={x,y+1};
+      bool found=false;
+      for(std::list<Go::IncrementalBoard::Group*>::iterator iter=enemygroups->begin();iter!=enemygroups->end();++iter)
+      {
+        if ((*iter)==this->groupAt(pt.x,pt.y))
+        {
+          found=true;
+          break;
+        }
+      }
+      if (!found)
+        enemygroups->push_back(this->groupAt(pt.x,pt.y));
+    }
+    
+    for(std::list<Go::IncrementalBoard::Group*>::iterator iter=enemygroups->begin();iter!=enemygroups->end();++iter)
+    {
+      (*iter)->liberties++;
+    }
+    
+    enemygroups->resize(0);
+    delete enemygroups;
+    
     vert->color=Go::EMPTY;
     vert->group=NULL;
   }
