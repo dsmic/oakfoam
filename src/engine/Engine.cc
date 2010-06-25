@@ -213,17 +213,16 @@ void Engine::gtpFinalScore(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   Engine *me=(Engine*)instance;
   float score;
   
-  if (me->currentboard->scoreable())
+  /*if (me->currentboard->scoreable())
     score=me->currentboard->score()-me->komi;
   else
   {
-    //Go::IncrementalBoard *playoutboard = new Go::IncrementalBoard(me->boardsize);
-    //playoutboard->import(me->currentboard);
     Go::IncrementalBoard *playoutboard=me->currentboard->copy();
     me->randomPlayout(playoutboard,me->currentboard->nextToMove());
     score=playoutboard->score()-me->komi;
     delete playoutboard;
-  }
+  }*/
+  score=me->currentboard->score()-me->komi;
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printScore(score);
