@@ -500,6 +500,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
     }
   }
   
+  delete playoutboard;
+  
   float bestratio=0,bestmean=0;
   Go::Move bestmove;
   
