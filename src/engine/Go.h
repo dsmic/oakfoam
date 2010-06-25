@@ -3,6 +3,7 @@
 
 #include <string>
 #include <cstdio>
+#include <list>
 
 namespace Go
 {
@@ -36,7 +37,8 @@ namespace Go
   class Move
   {
     public:
-      enum Type{
+      enum Type
+      {
         NORMAL,
         PASS,
         RESIGN
@@ -75,7 +77,8 @@ namespace Go
       Board(int s);
       ~Board();
       
-      struct Vertex{
+      struct Vertex
+      {
         Go::Color color;
         int group;
         int liberties;
@@ -128,6 +131,77 @@ namespace Go
       
       int solidLinksFrom(int x, int y);
       int solidlyTouches(int x, int y);
+      
+      void setKo(int x, int y);
+  };
+  
+  class IncrementalBoard
+  {
+    public:
+      IncrementalBoard(int s);
+      ~IncrementalBoard();
+      
+      class Group;
+      
+      struct Point
+      {
+        int x;
+        int y;
+      };
+      
+      struct Vertex
+      {
+        Go::IncrementalBoard::Point point;
+        Go::Color color;
+        Go::IncrementalBoard::Group *group;
+      };
+      
+      struct Group
+      {
+        int liberties;
+        std::list<Go::IncrementalBoard::Vertex*> stones;
+      };
+      
+      //Go::IncrementalBoard *copy();
+      void import(Go::IncrementalBoard *board);
+      
+      int getSize() { return size; };
+      int getPassesPlayed() { return passesplayed; };
+      int getMovesMade() { return movesmade; };
+      
+      bool validMove(Go::Move move);
+      void makeMove(Go::Move move);
+      
+      Go::Color nextToMove() { return nexttomove; };
+      
+      bool scoreable();
+      int score();
+      bool weakEye(Go::Color col, int x, int y);
+    
+    private:
+      int size;
+      Go::IncrementalBoard::Vertex *data;
+      int koX, koY;
+      std::list<Go::IncrementalBoard::Group*> groups;
+      Go::Color nexttomove;
+      int passesplayed;
+      int movesmade;
+      
+      Go::IncrementalBoard::Vertex *vertexAt(int x, int y);
+      Go::Color colorAt(int x, int y);
+      void setColorAt(int x, int y, Go::Color col);
+      Go::IncrementalBoard::Group *groupAt(int x, int y);
+      void setGroupAt(int x, int y, Go::IncrementalBoard::Group *group);
+      int libertiesAt(int x, int y);
+      
+      void checkCoords(int x, int y);
+      
+      void refreshGroups();
+      void spreadGroup(int x, int y, Go::Color col, Go::IncrementalBoard::Group *group);
+      void addLiberties(int x, int y, std::list<Go::IncrementalBoard::Point> *liberties);
+      int directLiberties(int x, int y);
+      int removeGroup(Go::IncrementalBoard::Group *group);
+      void mergeGroups(Go::IncrementalBoard::Group *first, Go::IncrementalBoard::Group *second);
       
       void setKo(int x, int y);
   };
