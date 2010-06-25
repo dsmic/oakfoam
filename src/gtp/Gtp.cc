@@ -386,8 +386,7 @@ void Gtp::Output::printf(std::string format,...)
   std::va_list ap;
   va_start (ap, format);
   vfprintf (stdout, format.c_str(), ap);
-  if (logfile!=NULL)
-    vfprintf (logfile, format.c_str(), ap);
+  this->printfLog(format, ap);
   va_end (ap);
 }
 
@@ -399,8 +398,7 @@ void Gtp::Output::printfDebug(std::string format,...)
   std::va_list ap;
   va_start (ap, format);
   vfprintf (stderr, format.c_str(), ap);
-  if (logfile!=NULL)
-    vfprintf (logfile, format.c_str(), ap);
+  this->printfLog(format, ap);
   va_end (ap);
 }
 
@@ -414,6 +412,8 @@ void Gtp::Output::printfLog(std::string format,...)
   if (logfile!=NULL)
     vfprintf (logfile, format.c_str(), ap);
   va_end (ap);
+  
+  fflush(logfile);
 }
 
 void Gtp::Output::printDebugVertex(Gtp::Vertex vert)
