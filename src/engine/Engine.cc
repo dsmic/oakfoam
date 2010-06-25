@@ -7,7 +7,8 @@ Engine::Engine(Gtp::Engine *ge)
   std::srand(std::time(0));
   
   boardsize=9;
-  currentboard=new Go::Board(boardsize);
+  //currentboard=new Go::Board(boardsize);
+  currentboard=new Go::IncrementalBoard(boardsize);
   komi=5.5;
   
   playoutspermilli=0;
@@ -46,7 +47,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("final_score",this,&Engine::gtpFinalScore);
   
   gtpe->addFunctionCommand("param",this,&Engine::gtpParam);
-  gtpe->addFunctionCommand("showgroups",this,&Engine::gtpShowGroups);
+  //gtpe->addFunctionCommand("showgroups",this,&Engine::gtpShowGroups);
   gtpe->addFunctionCommand("showliberties",this,&Engine::gtpShowLiberties);
   
   gtpe->addFunctionCommand("time_settings",this,&Engine::gtpTimeSettings);
@@ -54,7 +55,7 @@ void Engine::addGtpCommands()
   
   gtpe->addAnalyzeCommand("final_score","Final Score","string");
   gtpe->addAnalyzeCommand("showboard","Show Board","string");
-  gtpe->addAnalyzeCommand("showgroups","Show Groups","sboard");
+  //gtpe->addAnalyzeCommand("showgroups","Show Groups","sboard");
   gtpe->addAnalyzeCommand("showliberties","Show Liberties","sboard");
   gtpe->addAnalyzeCommand("param","Parameters","param");
 }
@@ -202,7 +203,7 @@ void Engine::gtpShowBoard(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printString("\n");
-  me->currentboard->print();
+  me->currentboard->print(); //TODO: redirect to gtpe output
   gtpe->getOutput()->endResponse(true);
 }
 
@@ -215,8 +216,9 @@ void Engine::gtpFinalScore(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     score=me->currentboard->score()-me->komi;
   else
   {
-    Go::IncrementalBoard *playoutboard = new Go::IncrementalBoard(me->boardsize);
-    playoutboard->import(me->currentboard);
+    //Go::IncrementalBoard *playoutboard = new Go::IncrementalBoard(me->boardsize);
+    //playoutboard->import(me->currentboard);
+    Go::IncrementalBoard *playoutboard=me->currentboard->copy();
     me->randomPlayout(playoutboard,me->currentboard->nextToMove());
     score=playoutboard->score()-me->komi;
     delete playoutboard;
@@ -227,7 +229,7 @@ void Engine::gtpFinalScore(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   gtpe->getOutput()->endResponse();
 }
 
-void Engine::gtpShowGroups(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+/*void Engine::gtpShowGroups(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
   
@@ -247,7 +249,7 @@ void Engine::gtpShowGroups(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   }
 
   gtpe->getOutput()->endResponse(true);
-}
+}*/
 
 void Engine::gtpShowLiberties(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
@@ -259,11 +261,13 @@ void Engine::gtpShowLiberties(void *instance, Gtp::Engine* gtpe, Gtp::Command* c
   {
     for (int x=0;x<me->boardsize;x++)
     {
-      int lib=me->currentboard->boardData()[y*me->boardsize+x].liberties;
-      if (lib!=-1)
-        gtpe->getOutput()->printf("\"%d\" ",lib);
-      else
+      if (me->currentboard->boardData()[y*me->boardsize+x].group==NULL)
         gtpe->getOutput()->printf("\"\" ");
+      else
+      {
+        int lib=me->currentboard->boardData()[y*me->boardsize+x].group->liberties;
+        gtpe->getOutput()->printf("\"%d\" ",lib);
+      }
     }
     gtpe->getOutput()->printf("\n");
   }
@@ -423,7 +427,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
   
   Util::MoveTree *movetree;
   //Go::Board *playoutboard;
-  Go::IncrementalBoard *playoutboard = new Go::IncrementalBoard(boardsize);
+  //Go::IncrementalBoard *playoutboard = new Go::IncrementalBoard(boardsize);
+  Go::IncrementalBoard *playoutboard;
   Go::Move playoutmove;
   
   movetree=new Util::MoveTree();
@@ -434,8 +439,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
   playoutmove=Go::Move(col,Go::Move::PASS);
   Util::MoveTree *nmt=new Util::MoveTree(playoutmove);
   
-  //playoutboard=currentboard->copy();
-  playoutboard->import(currentboard);
+  playoutboard=currentboard->copy();
+  //playoutboard->import(currentboard);
   playoutboard->makeMove(playoutmove);
   playoutboard->makeMove(Go::Move(Go::otherColor(col),Go::Move::PASS));
   randomPlayout(playoutboard,col);
@@ -443,22 +448,22 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
     nmt->addWin();
   else
     nmt->addLose();
-  //delete playoutboard;
+  delete playoutboard;
   totalplayouts++;
   
   if (nmt->getRatio()==1)
   {
     for (int i=0;i<playoutspermove;i++)
     {
-      //playoutboard=currentboard->copy();
-      playoutboard->import(currentboard);
+      playoutboard=currentboard->copy();
+      //playoutboard->import(currentboard);
       playoutboard->makeMove(playoutmove);
       randomPlayout(playoutboard,Go::otherColor(col));
       if (Util::isWinForColor(col,playoutboard->score()-komi))
         nmt->addWin();
       else
         nmt->addLose();
-      //delete playoutboard;
+      delete playoutboard;
       totalplayouts++;
     }
   }
@@ -483,15 +488,15 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
         
         for (int i=0;i<playoutspermove;i++)
         {
-          //playoutboard=currentboard->copy();
-          playoutboard->import(currentboard);
+          playoutboard=currentboard->copy();
+          //playoutboard->import(currentboard);
           playoutboard->makeMove(playoutmove);
           randomPlayout(playoutboard,Go::otherColor(col));
           if (Util::isWinForColor(col,playoutboard->score()-komi))
             nmt->addWin(playoutboard->score()-komi);
           else
             nmt->addLose(playoutboard->score()-komi);
-          //delete playoutboard;
+          delete playoutboard;
           totalplayouts++;
         }
         
@@ -500,7 +505,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
     }
   }
   
-  delete playoutboard;
+  //delete playoutboard;
   
   float bestratio=0,bestmean=0;
   Go::Move bestmove;
@@ -563,17 +568,19 @@ void Engine::setBoardSize(int s)
     return;
   
   delete currentboard;
-  currentboard = new Go::Board(s);
+  //currentboard = new Go::Board(s);
+  currentboard = new Go::IncrementalBoard(s);
 }
 
 void Engine::clearBoard()
 {
   int size=currentboard->getSize();
   delete currentboard;
-  currentboard = new Go::Board(size);
+  //currentboard = new Go::Board(size);
+  currentboard = new Go::IncrementalBoard(size);
 }
 
-void Engine::randomValidMove(Go::Board *board, Go::Color col, Go::Move **move)
+/*void Engine::randomValidMove(Go::Board *board, Go::Color col, Go::Move **move)
 {
   int i,x,y;
   
@@ -591,7 +598,7 @@ void Engine::randomValidMove(Go::Board *board, Go::Color col, Go::Move **move)
   } while (!board->validMove(Go::Move(col,x,y)) || board->weakEye(col,x,y));
   
   *move=new Go::Move(col,x,y);
-}
+}*/
 
 void Engine::randomValidMove(Go::IncrementalBoard *board, Go::Color col, Go::Move **move)
 {
@@ -613,7 +620,7 @@ void Engine::randomValidMove(Go::IncrementalBoard *board, Go::Color col, Go::Mov
   *move=new Go::Move(col,x,y);
 }
 
-void Engine::randomPlayout(Go::Board *board, Go::Color col)
+/*void Engine::randomPlayout(Go::Board *board, Go::Color col)
 {
   Go::Color coltomove;
   Go::Move *move;
@@ -641,7 +648,7 @@ void Engine::randomPlayout(Go::Board *board, Go::Color col)
     if (passes>=2)
       break;
   }
-}
+}*/
 
 void Engine::randomPlayout(Go::IncrementalBoard *board, Go::Color col)
 {

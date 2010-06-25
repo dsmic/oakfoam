@@ -163,8 +163,11 @@ namespace Go
         std::list<Go::IncrementalBoard::Vertex*> stones;
       };
       
-      //Go::IncrementalBoard *copy();
+      Go::IncrementalBoard *copy();
       void import(Go::Board *board);
+      
+      Go::IncrementalBoard::Vertex *boardData() { return data; }; //must only be used for read-only access
+      void print();
       
       int getSize() { return size; };
       int getPassesPlayed() { return passesplayed; };

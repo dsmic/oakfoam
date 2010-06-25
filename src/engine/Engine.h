@@ -35,7 +35,8 @@ class Engine
     void makeMove(Go::Move move);
     int getBoardSize() { return currentboard->getSize(); };
     void setBoardSize(int s);
-    Go::Board *getCurrentBoard() { return currentboard; };
+    //Go::Board *getCurrentBoard() { return currentboard; };
+    Go::IncrementalBoard *getCurrentBoard() { return currentboard; };
     void clearBoard();
     float getKomi() { return komi; };
     void setKomi(float k) { komi=k; };
@@ -49,7 +50,7 @@ class Engine
     static void gtpFinalScore(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     
     static void gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpShowGroups(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    //static void gtpShowGroups(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowLiberties(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     
     static void gtpTimeSettings(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
@@ -57,7 +58,7 @@ class Engine
   
   private:
     Gtp::Engine *gtpe;
-    Go::Board *currentboard;
+    Go::IncrementalBoard *currentboard;
     float komi;
     int boardsize;
     int playoutspermove;
@@ -71,8 +72,8 @@ class Engine
     
     void addGtpCommands();
     
-    void randomValidMove(Go::Board *board, Go::Color col, Go::Move **move);
-    void randomPlayout(Go::Board *board, Go::Color col);
+    //void randomValidMove(Go::Board *board, Go::Color col, Go::Move **move);
+    //void randomPlayout(Go::Board *board, Go::Color col);
     void randomValidMove(Go::IncrementalBoard *board, Go::Color col, Go::Move **move);
     void randomPlayout(Go::IncrementalBoard *board, Go::Color col);
     

@@ -689,7 +689,10 @@ inline void Go::IncrementalBoard::setGroupAt(int x, int y, Go::IncrementalBoard:
 inline int Go::IncrementalBoard::libertiesAt(int x, int y)
 {
   //this->checkCoords(x,y);
-  return data[y*size+x].group->liberties;
+  if (data[y*size+x].group==NULL)
+    return 0;
+  else
+    return data[y*size+x].group->liberties;
 }
 
 inline void Go::IncrementalBoard::setKo(int x, int y)
@@ -714,6 +717,29 @@ void Go::IncrementalBoard::import(Go::Board *board)
   this->movesmade=board->movesmade;
   
   this->refreshGroups();
+}
+
+Go::IncrementalBoard *Go::IncrementalBoard::copy()
+{
+  Go::IncrementalBoard *copyboard;
+  copyboard=new Go::IncrementalBoard(size);
+  
+  for (int x=0;x<size;x++)
+  {
+    for (int y=0;y<size;y++)
+    {
+      copyboard->data[y*size+x]=this->data[y*size+x];
+    }
+  }
+  
+  copyboard->setKo(this->koX,this->koY);
+  copyboard->nexttomove=this->nexttomove;
+  copyboard->passesplayed=this->passesplayed;
+  copyboard->movesmade=this->movesmade;
+  
+  copyboard->refreshGroups();
+  
+  return copyboard;
 }
 
 bool Go::IncrementalBoard::validMove(Go::Move move)
@@ -818,7 +844,7 @@ void Go::IncrementalBoard::refreshGroups()
         std::list<Go::IncrementalBoard::Point> *liberties = new std::list<Go::IncrementalBoard::Point>();
         for(std::list<Go::IncrementalBoard::Vertex*>::iterator iter=newgroup->stones.begin();iter!=newgroup->stones.end();++iter) 
         {
-          addLiberties((*iter)->point.x,(*iter)->point.y,liberties);
+          this->addLiberties((*iter)->point.x,(*iter)->point.y,liberties);
         }
         newgroup->liberties=liberties->size();
         delete liberties;
@@ -843,7 +869,7 @@ void Go::IncrementalBoard::spreadGroup(int x, int y, Go::Color col, Go::Incremen
     if (x<(size-1))
       this->spreadGroup(x+1,y,col,group);
     if (y<(size-1))
-      this->spreadGroup(x,y-1,col,group);
+      this->spreadGroup(x,y+1,col,group);
   }
 }
 
@@ -1382,6 +1408,24 @@ bool Go::IncrementalBoard::weakEye(Go::Color col, int x, int y)
       return false;
     
     return true;
+  }
+}
+
+void Go::IncrementalBoard::print()
+{
+  for (int y=size-1;y>=0;y--)
+  {
+    for (int x=0;x<size;x++)
+    {
+      Go::Color col=this->colorAt(x,y);
+      if (col==Go::BLACK)
+        printf("X ");
+      else if (col==Go::WHITE)
+        printf("O ");
+      else
+        printf(". ");
+    }
+    printf("\n");
   }
 }
 
