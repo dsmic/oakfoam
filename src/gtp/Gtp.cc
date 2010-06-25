@@ -69,6 +69,8 @@ void Gtp::Engine::parseInput(std::string in, Gtp::Command **cmd)
   int id;
   std::string cmdname;
   
+  this->getOutput()->printfLog("%s\n",in.c_str());
+  
   std::string inproper="";
   for (int i=0;i<(int)in.length();i++)
   {
@@ -231,13 +233,13 @@ void Gtp::Output::startResponse(Gtp::Command *cmd, bool success)
   if (!outputon)
     return;
   
-  std::cout.flush();
-  std::cerr.flush();
+  fflush(stdout);
+  fflush(stderr);
   
-  std::cout << (success ? "=" : "?");
+  this->printf((success ? "=" : "?"));
   if (cmd->getId()>=0)
-    std::cout << cmd->getId();
-  std::cout << " ";
+    this->printf("%d",cmd->getId());
+  this->printf(" ");
 }
 
 void Gtp::Output::endResponse(bool single)
@@ -245,19 +247,17 @@ void Gtp::Output::endResponse(bool single)
   if (!outputon)
     return;
   
-  std::cout << std::endl;
+  this->printf("\n");
   if (!single)
-    std::cout << std::endl;
+    this->printf("\n");
   
-  std::cout.flush();
+  fflush(stdout);
+  fflush(stderr);
 }
 
 void Gtp::Output::printString(std::string str)
 {
-  if (!outputon)
-    return;
-  
-  std::cout << str;
+  this->printf(str);
 }
 
 unsigned int Gtp::Command::numArgs()
@@ -350,41 +350,32 @@ Gtp::Vertex Gtp::Command::getVertexArg(int i)
 
 void Gtp::Output::printVertex(Gtp::Vertex vert)
 {
-  if (!outputon)
-    return;
-  
   if (vert.x==-1 && vert.y==-1)
-    std::cout << "PASS";
+    this->printf("PASS");
   else if (vert.x==-2 && vert.y==-2)
-    std::cout << "RESIGN";
+    this->printf("RESIGN");
   else
   {
     char xletter='A'+vert.x;
     if (vert.x>=8)
       xletter++;
-    std::cout << xletter << (vert.y+1);
+    this->printf("%c%d",xletter,(vert.y+1));
   }
 }
 
 void Gtp::Output::printScore(float score)
 {
-  if (!outputon)
-    return;
-  
   if (score==0)
-    std::cout << "0";
+    this->printf("0");
   else if (score>0)
-    std::cout << "B+" << score;
+    this->printf("B+%.1f",score);
   else
-    std::cout << "W+" << -score;
+    this->printf("W+%.1f",-score);
 }
 
 void Gtp::Output::printDebugString(std::string str)
 {
-  if (!outputon)
-    return;
-  
-  std::cerr << str;
+  this->printfDebug(str);
 }
 
 void Gtp::Output::printf(std::string format,...)
@@ -395,6 +386,8 @@ void Gtp::Output::printf(std::string format,...)
   std::va_list ap;
   va_start (ap, format);
   vfprintf (stdout, format.c_str(), ap);
+  if (logfile!=NULL)
+    vfprintf (logfile, format.c_str(), ap);
   va_end (ap);
 }
 
@@ -406,24 +399,35 @@ void Gtp::Output::printfDebug(std::string format,...)
   std::va_list ap;
   va_start (ap, format);
   vfprintf (stderr, format.c_str(), ap);
+  if (logfile!=NULL)
+    vfprintf (logfile, format.c_str(), ap);
   va_end (ap);
 }
 
-void Gtp::Output::printDebugVertex(Gtp::Vertex vert)
+void Gtp::Output::printfLog(std::string format,...)
 {
   if (!outputon)
     return;
   
+  std::va_list ap;
+  va_start (ap, format);
+  if (logfile!=NULL)
+    vfprintf (logfile, format.c_str(), ap);
+  va_end (ap);
+}
+
+void Gtp::Output::printDebugVertex(Gtp::Vertex vert)
+{ 
   if (vert.x==-1 && vert.y==-1)
-    std::cerr << "PASS";
+    this->printfDebug("PASS");
   else if (vert.x==-2 && vert.y==-2)
-    std::cerr << "RESIGN";
+    this->printfDebug("RESIGN");
   else
   {
     char xletter='A'+vert.x;
     if (vert.x>=8)
       xletter++;
-    std::cerr << xletter << (vert.y+1);
+    this->printfDebug("%c%d",xletter,(vert.y+1));
   }
 }
 

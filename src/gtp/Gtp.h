@@ -9,6 +9,7 @@
 #include <vector>
 #include <list>
 #include <algorithm>
+#include <fstream>
 
 namespace Gtp
 {
@@ -49,10 +50,12 @@ namespace Gtp
   class Output
   {
     public:
-      Output() { outputon=true; };
+      Output() { outputon=true; logfile=NULL; };
+      ~Output() { if (logfile!=NULL) { fclose(logfile); }};
       
       bool isOutputOn() { return outputon; };
       void setOutputOn(bool outon) { outputon=outon; };
+      void setLogFile(FILE *lf) { logfile=lf; };
       
       void startResponse(Gtp::Command *cmd, bool success = true);
       void endResponse(bool single = false);
@@ -65,9 +68,12 @@ namespace Gtp
       void printDebugString(std::string str);
       void printfDebug(std::string format,...);
       void printDebugVertex(Gtp::Vertex vert);
+      
+      void printfLog(std::string format,...);
     
     private:
       bool outputon;
+      FILE *logfile;
   };
   
   class Engine

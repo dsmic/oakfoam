@@ -4,7 +4,6 @@ TODO
 Now: (before next release)
   replace Go::IncrementalBoard's liberty system
   put valid moves in a list to choose from
-  add a "-l"/"--log" command line arg
   fix time settings
   resign less
   fix score to count large areas enclosed completely
