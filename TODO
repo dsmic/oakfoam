@@ -2,13 +2,13 @@ TODO
 ------------------
 
 Now: (before next release)
-  replace Go::IncrementalBoard's liberty system
   fix time settings
   resign less
   fix score to count large areas enclosed completely
   change board->print() to use the gtpe
 
 Soon: (before next major release)
+  replace Go::IncrementalBoard's liberty system
   move away from playouts per move
   replace FunctionList and ConstantList with std::list<>
   rename/refactor to better name?
