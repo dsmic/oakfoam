@@ -3,7 +3,6 @@ TODO
 
 Now: (before next release)
   replace Go::IncrementalBoard's liberty system
-  put valid moves in a list to choose from
   fix time settings
   resign less
   fix score to count large areas enclosed completely
@@ -18,6 +17,8 @@ Soon: (before next major release)
   add prefix to custom commands?
   fix final_score and implement final_status_list
   implement superko
+  keep record of valid moves in the board
+  copy all board data with a copy()
 
 Later: (at some point)
   add handicap settings

@@ -7,7 +7,6 @@ Engine::Engine(Gtp::Engine *ge)
   std::srand(std::time(0));
   
   boardsize=9;
-  //currentboard=new Go::Board(boardsize);
   currentboard=new Go::IncrementalBoard(boardsize);
   komi=5.5;
   
@@ -426,8 +425,6 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
   }
   
   Util::MoveTree *movetree;
-  //Go::Board *playoutboard;
-  //Go::IncrementalBoard *playoutboard = new Go::IncrementalBoard(boardsize);
   Go::IncrementalBoard *playoutboard;
   Go::Move playoutmove;
   
@@ -440,7 +437,6 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
   Util::MoveTree *nmt=new Util::MoveTree(playoutmove);
   
   playoutboard=currentboard->copy();
-  //playoutboard->import(currentboard);
   playoutboard->makeMove(playoutmove);
   playoutboard->makeMove(Go::Move(Go::otherColor(col),Go::Move::PASS));
   randomPlayout(playoutboard,col);
@@ -456,7 +452,6 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
     for (int i=0;i<playoutspermove;i++)
     {
       playoutboard=currentboard->copy();
-      //playoutboard->import(currentboard);
       playoutboard->makeMove(playoutmove);
       randomPlayout(playoutboard,Go::otherColor(col));
       if (Util::isWinForColor(col,playoutboard->score()-komi))
@@ -489,7 +484,6 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
         for (int i=0;i<playoutspermove;i++)
         {
           playoutboard=currentboard->copy();
-          //playoutboard->import(currentboard);
           playoutboard->makeMove(playoutmove);
           randomPlayout(playoutboard,Go::otherColor(col));
           if (Util::isWinForColor(col,playoutboard->score()-komi))
@@ -504,8 +498,6 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
       }
     }
   }
-  
-  //delete playoutboard;
   
   float bestratio=0,bestmean=0;
   Go::Move bestmove;
@@ -568,7 +560,6 @@ void Engine::setBoardSize(int s)
     return;
   
   delete currentboard;
-  //currentboard = new Go::Board(s);
   currentboard = new Go::IncrementalBoard(s);
 }
 
@@ -576,79 +567,48 @@ void Engine::clearBoard()
 {
   int size=currentboard->getSize();
   delete currentboard;
-  //currentboard = new Go::Board(size);
   currentboard = new Go::IncrementalBoard(size);
 }
 
-/*void Engine::randomValidMove(Go::Board *board, Go::Color col, Go::Move **move)
-{
-  int i,x,y;
-  
-  i=0;
-  do
-  {
-    x=(int)(std::rand()/((double)RAND_MAX+1)*boardsize);
-    y=(int)(std::rand()/((double)RAND_MAX+1)*boardsize);
-    i++;
-    if (i>(boardsize*boardsize*2))
-    {
-      *move=new Go::Move(col,Go::Move::PASS);
-      return;
-    }
-  } while (!board->validMove(Go::Move(col,x,y)) || board->weakEye(col,x,y));
-  
-  *move=new Go::Move(col,x,y);
-}*/
-
 void Engine::randomValidMove(Go::IncrementalBoard *board, Go::Color col, Go::Move **move)
 {
-  int i,x,y;
-  
-  i=0;
-  do
+  if ((col==Go::BLACK?board->getBlackPasses():board->getWhitePasses())>2 || board->getMovesMade()>(boardsize*boardsize*2))
   {
-    x=(int)(std::rand()/((double)RAND_MAX+1)*boardsize);
-    y=(int)(std::rand()/((double)RAND_MAX+1)*boardsize);
-    i++;
-    if (i>(boardsize*boardsize*2))
+    *move=new Go::Move(col,Go::Move::PASS);
+    return;
+  }
+  
+  for (int i=0;i<5;i++)
+  {
+    int x=(int)(std::rand()/((double)RAND_MAX+1)*boardsize);
+    int y=(int)(std::rand()/((double)RAND_MAX+1)*boardsize);
+    if (board->validMove(Go::Move(col,x,y)) && !board->weakEye(col,x,y))
     {
-      *move=new Go::Move(col,Go::Move::PASS);
+      *move=new Go::Move(col,x,y);
       return;
     }
-  } while (!board->validMove(Go::Move(col,x,y)) || board->weakEye(col,x,y));
-  
-  *move=new Go::Move(col,x,y);
-}
-
-/*void Engine::randomPlayout(Go::Board *board, Go::Color col)
-{
-  Go::Color coltomove;
-  Go::Move *move;
-  int passes=board->getPassesPlayed();
-  if (passes>=2)
-    return;
-  
-  coltomove=col;
-  
-  while (!board->scoreable())
-  {
-    bool resign,pass;
-    this->randomValidMove(board,coltomove,&move);
-    board->makeMove(*move);
-    resign=move->isResign();
-    pass=move->isPass();
-    delete move;
-    coltomove=Go::otherColor(coltomove);
-    if (resign)
-      break;
-    if (pass)
-      passes++;
-    else
-      passes=0;
-    if (passes>=2)
-      break;
   }
-}*/
+  
+  std::vector<Go::Move> validmoves;
+  for (int x=0;x<boardsize;x++)
+  {
+    for (int y=0;y<boardsize;y++)
+    {
+      if (board->validMove(Go::Move(col,x,y)) && !board->weakEye(col,x,y))
+      {
+        validmoves.push_back(Go::Move(col,x,y));
+      }
+    }
+  }
+  
+  if (validmoves.size()==0)
+    *move=new Go::Move(col,Go::Move::PASS);
+  else
+  {
+    int i=(int)(std::rand()/((double)RAND_MAX+1)*validmoves.size());
+    *move=new Go::Move(col,validmoves.at(i).getX(),validmoves.at(i).getY());
+  }
+}
 
 void Engine::randomPlayout(Go::IncrementalBoard *board, Go::Color col)
 {

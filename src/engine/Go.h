@@ -173,6 +173,9 @@ namespace Go
       int getPassesPlayed() { return passesplayed; };
       int getMovesMade() { return movesmade; };
       
+      int getBlackPasses() { return blackpasses; };
+      int getWhitePasses() { return whitepasses; };
+      
       bool validMove(Go::Move move);
       void makeMove(Go::Move move);
       
@@ -188,7 +191,7 @@ namespace Go
       int koX, koY;
       std::list<Go::IncrementalBoard::Group*> groups;
       Go::Color nexttomove;
-      int passesplayed;
+      int passesplayed,blackpasses,whitepasses;
       int movesmade;
       
       Go::IncrementalBoard::Vertex *vertexAt(int x, int y);

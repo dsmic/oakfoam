@@ -20,6 +20,7 @@
 #include <cmath>
 #include <string>
 #include <list>
+#include <vector>
 #include "Go.h"
 #include "Util.h"
 #include "../gtp/Gtp.h"
@@ -35,7 +36,6 @@ class Engine
     void makeMove(Go::Move move);
     int getBoardSize() { return currentboard->getSize(); };
     void setBoardSize(int s);
-    //Go::Board *getCurrentBoard() { return currentboard; };
     Go::IncrementalBoard *getCurrentBoard() { return currentboard; };
     void clearBoard();
     float getKomi() { return komi; };
@@ -72,8 +72,6 @@ class Engine
     
     void addGtpCommands();
     
-    //void randomValidMove(Go::Board *board, Go::Color col, Go::Move **move);
-    //void randomPlayout(Go::Board *board, Go::Color col);
     void randomValidMove(Go::IncrementalBoard *board, Go::Color col, Go::Move **move);
     void randomPlayout(Go::IncrementalBoard *board, Go::Color col);
     
