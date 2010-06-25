@@ -73,6 +73,8 @@ class Engine
     
     void randomValidMove(Go::Board *board, Go::Color col, Go::Move **move);
     void randomPlayout(Go::Board *board, Go::Color col);
+    void randomValidMove(Go::IncrementalBoard *board, Go::Color col, Go::Move **move);
+    void randomPlayout(Go::IncrementalBoard *board, Go::Color col);
     
     long getCurrentTime() { return std::clock()/CLOCKS_PER_SEC*1000; };
     long getTimeAllowedThisTurn(Go::Color col);

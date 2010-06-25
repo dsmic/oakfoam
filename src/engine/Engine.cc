@@ -215,8 +215,8 @@ void Engine::gtpFinalScore(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     score=me->currentboard->score()-me->komi;
   else
   {
-    Go::Board *playoutboard;
-    playoutboard=me->currentboard->copy();
+    Go::IncrementalBoard *playoutboard = new Go::IncrementalBoard();
+    playoutboard->import(me->currentboard);
     me->randomPlayout(playoutboard,me->currentboard->nextToMove());
     score=playoutboard->score()-me->komi;
     delete playoutboard;
@@ -587,11 +587,61 @@ void Engine::randomValidMove(Go::Board *board, Go::Color col, Go::Move **move)
   *move=new Go::Move(col,x,y);
 }
 
+void Engine::randomValidMove(Go::IncrementalBoard *board, Go::Color col, Go::Move **move)
+{
+  int i,x,y;
+  
+  i=0;
+  do
+  {
+    x=(int)(std::rand()/((double)RAND_MAX+1)*boardsize);
+    y=(int)(std::rand()/((double)RAND_MAX+1)*boardsize);
+    i++;
+    if (i>(boardsize*boardsize*2))
+    {
+      *move=new Go::Move(col,Go::Move::PASS);
+      return;
+    }
+  } while (!board->validMove(Go::Move(col,x,y)) || board->weakEye(col,x,y));
+  
+  *move=new Go::Move(col,x,y);
+}
+
 void Engine::randomPlayout(Go::Board *board, Go::Color col)
 {
   Go::Color coltomove;
   Go::Move *move;
-  int passes=board->getPassesPlayed(); //not always true
+  int passes=board->getPassesPlayed();
+  if (passes>=2)
+    return;
+  
+  coltomove=col;
+  
+  while (!board->scoreable())
+  {
+    bool resign,pass;
+    this->randomValidMove(board,coltomove,&move);
+    board->makeMove(*move);
+    resign=move->isResign();
+    pass=move->isPass();
+    delete move;
+    coltomove=Go::otherColor(coltomove);
+    if (resign)
+      break;
+    if (pass)
+      passes++;
+    else
+      passes=0;
+    if (passes>=2)
+      break;
+  }
+}
+
+void Engine::randomPlayout(Go::IncrementalBoard *board, Go::Color col)
+{
+  Go::Color coltomove;
+  Go::Move *move;
+  int passes=board->getPassesPlayed();
   if (passes>=2)
     return;
   
