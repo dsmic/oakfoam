@@ -16,6 +16,7 @@ Engine::Engine(Gtp::Engine *ge)
   
   resignratiothreshold=RESIGN_RATIO_THRESHOLD;
   resignmeanthreshold=RESIGN_MEAN_THRESHOLD;
+  resignmovefactorthreshold=RESIGN_MOVE_FACTOR_THRESHOLD;
   
   timebuffer=TIME_BUFFER;
   timepercentageboard=TIME_PERCENTAGE_BOARD;
@@ -285,6 +286,7 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     gtpe->getOutput()->printf("[string] playouts_per_move %d\n",me->playoutspermove);
     gtpe->getOutput()->printf("[string] resign_ratio_threshold %.3f\n",me->resignratiothreshold);
     gtpe->getOutput()->printf("[string] resign_mean_threshold %.1f\n",me->resignmeanthreshold);
+    gtpe->getOutput()->printf("[string] resign_move_factor_threshold %.2f\n",me->resignmovefactorthreshold);
     gtpe->getOutput()->printf("[string] time_buffer %ld\n",me->timebuffer);
     gtpe->getOutput()->printf("[string] time_percentage_board %.2f\n",me->timepercentageboard);
     gtpe->getOutput()->printf("[string] time_move_buffer %d\n",me->timemovebuffer);
@@ -303,6 +305,8 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
       me->resignratiothreshold=cmd->getFloatArg(1);
     else if (param=="resign_mean_threshold")
       me->resignmeanthreshold=cmd->getFloatArg(1);
+    else if (param=="resign_move_factor_threshold")
+      me->resignmovefactorthreshold=cmd->getFloatArg(1);
     else if (param=="time_buffer")
       me->timebuffer=cmd->getIntArg(1);
     else if (param=="time_percentage_board")
@@ -519,7 +523,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
   
   if (bestratio==0)
     *move=new Go::Move(col,Go::Move::RESIGN);
-  else if (bestratio<=resignratiothreshold && std::fabs(bestmean)>resignmeanthreshold)
+  else if (bestratio<=resignratiothreshold && std::fabs(bestmean)>resignmeanthreshold && currentboard->getMovesMade()>(resignmovefactorthreshold*boardsize*boardsize))
     *move=new Go::Move(col,Go::Move::RESIGN);
   else
     *move=new Go::Move(col,bestmove.getX(),bestmove.getY());

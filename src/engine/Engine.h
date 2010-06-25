@@ -4,6 +4,7 @@
 #define PLAYOUTS_PER_MOVE 100
 #define RESIGN_RATIO_THRESHOLD 0.03
 #define RESIGN_MEAN_THRESHOLD 20
+#define RESIGN_MOVE_FACTOR_THRESHOLD 0.5
 #define LIVEGFX_ON false
 
 #define TIME_BUFFER 30000
@@ -65,7 +66,7 @@ class Engine
     bool livegfx;
     long timemain,timeblack,timewhite;
     float playoutspermilli;
-    float resignratiothreshold,resignmeanthreshold;
+    float resignratiothreshold,resignmeanthreshold,resignmovefactorthreshold;
     long timebuffer,timemoveminimum;
     int timemovebuffer;
     float timepercentageboard,timefactor;
