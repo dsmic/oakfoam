@@ -1409,10 +1409,21 @@ int Go::IncrementalBoard::score()
     {
       Go::Color col=scoredata[y*size+x].color;
       if (col==Go::BLACK)
+      {
         s++;
+        //fprintf(stderr,"B");
+      }
       else if (col==Go::WHITE)
+      {
         s--;
+        //fprintf(stderr,"W");
+      }
+      else
+      {
+        //fprintf(stderr,".");
+      }
     }
+    //fprintf(stderr,"\n");
   }
   
   delete[] scoredata;
@@ -1447,13 +1458,13 @@ void Go::IncrementalBoard::spreadScore(Go::IncrementalBoard::ScoreVertex *scored
     return;
   }
   
-  if (scoredata[y*size+x].touched && scoredata[y*size+x].color==Go::EMPTY)
+  if (scoredata[y*size+x].touched && scoredata[y*size+x].color==Go::EMPTY && col==Go::EMPTY)
     return;
   
   if (scoredata[y*size+x].touched && scoredata[y*size+x].color!=col)
     col=Go::EMPTY;
   
-  if (scoredata[y*size+x].touched)
+  if (scoredata[y*size+x].touched && scoredata[y*size+x].color==col)
     return;
   
   scoredata[y*size+x].touched=true;
