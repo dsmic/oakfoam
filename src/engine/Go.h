@@ -194,6 +194,12 @@ namespace Go
       int passesplayed,blackpasses,whitepasses;
       int movesmade;
       
+      struct ScoreVertex
+      {
+        bool touched;
+        Go::Color color;
+      };
+      
       Go::IncrementalBoard::Vertex *vertexAt(int x, int y);
       Go::Color colorAt(int x, int y);
       void setColorAt(int x, int y, Go::Color col);
@@ -211,6 +217,8 @@ namespace Go
       void mergeGroups(Go::IncrementalBoard::Group *first, Go::IncrementalBoard::Group *second);
       
       void setKo(int x, int y);
+      
+      void spreadScore(Go::IncrementalBoard::ScoreVertex *scoredata, int x, int y, Go::Color col);
   };
 };
 

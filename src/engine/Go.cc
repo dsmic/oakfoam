@@ -1378,27 +1378,98 @@ bool Go::IncrementalBoard::scoreable()
 
 int Go::IncrementalBoard::score()
 {
+  Go::IncrementalBoard::ScoreVertex *scoredata;
+  
+  scoredata=new Go::IncrementalBoard::ScoreVertex[size*size];
+  for (int x=0;x<size;x++)
+  {
+    for (int y=0;y<size;y++)
+    {
+      scoredata[y*size+x].touched=false;
+      scoredata[y*size+x].color=Go::EMPTY;
+    }
+  }
+  
+  for (int x=0;x<size;x++)
+  {
+    for (int y=0;y<size;y++)
+    {
+      if (!scoredata[y*size+x].touched && this->colorAt(x,y)!=EMPTY)
+      {
+        this->spreadScore(scoredata,x,y,this->colorAt(x,y));
+      }
+    }
+  }
+  
   int s=0;
   
   for (int x=0;x<size;x++)
   {
     for (int y=0;y<size;y++)
     {
-      Go::Color col=this->colorAt(x,y);
+      Go::Color col=scoredata[y*size+x].color;
       if (col==Go::BLACK)
         s++;
       else if (col==Go::WHITE)
         s--;
-      else
-      {
-        if (this->weakEye(Go::BLACK,x,y))
-          s++;
-        else if (this->weakEye(Go::WHITE,x,y))
-          s--;
-      }
     }
   }
+  
+  delete[] scoredata;
   return s;
+}
+
+void Go::IncrementalBoard::spreadScore(Go::IncrementalBoard::ScoreVertex *scoredata, int x, int y, Go::Color col)
+{
+  bool wastouched=scoredata[y*size+x].touched;
+  
+  if (this->colorAt(x,y)!=Go::EMPTY && col==Go::EMPTY)
+    return;
+  
+  if (this->colorAt(x,y)!=Go::EMPTY)
+  {
+    scoredata[y*size+x].touched=true;
+    scoredata[y*size+x].color=this->colorAt(x,y);
+    if (!wastouched)
+    {
+      if (x>0)
+        this->spreadScore(scoredata,x-1,y,this->colorAt(x,y));
+      
+      if (y>0)
+        this->spreadScore(scoredata,x,y-1,this->colorAt(x,y));
+      
+      if (x<(size-1))
+        this->spreadScore(scoredata,x+1,y,this->colorAt(x,y));
+      
+      if (y<(size-1))
+        this->spreadScore(scoredata,x,y+1,this->colorAt(x,y));
+    }
+    return;
+  }
+  
+  if (scoredata[y*size+x].touched && scoredata[y*size+x].color==Go::EMPTY)
+    return;
+  
+  if (scoredata[y*size+x].touched && scoredata[y*size+x].color!=col)
+    col=Go::EMPTY;
+  
+  if (scoredata[y*size+x].touched)
+    return;
+  
+  scoredata[y*size+x].touched=true;
+  scoredata[y*size+x].color=col;
+  
+  if (x>0)
+    this->spreadScore(scoredata,x-1,y,col);
+  
+  if (y>0)
+    this->spreadScore(scoredata,x,y-1,col);
+  
+  if (x<(size-1))
+    this->spreadScore(scoredata,x+1,y,col);
+  
+  if (y<(size-1))
+    this->spreadScore(scoredata,x,y+1,col);
 }
 
 bool Go::IncrementalBoard::weakEye(Go::Color col, int x, int y)

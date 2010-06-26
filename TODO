@@ -3,7 +3,6 @@ TODO
 
 Now: (before next release)
   fix time settings
-  fix score to count large areas enclosed completely
   change board->print() to use the gtpe
   remove old board and rename new board
 
