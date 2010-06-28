@@ -6,6 +6,7 @@ Now: (before next release)
   fix time settings
   change board->print() to use the gtpe
   remove old board and rename new board
+  investigate slow ppmi in trials
 
 Soon: (before next major release)
   move away from playouts per move
