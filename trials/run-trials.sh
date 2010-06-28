@@ -1,6 +1,6 @@
 #!/bin/bash
 
-BLACK="../oakfoam -c oakfoam.rc"
+BLACK="../oakfoam -c oakfoam.rc -l oakfoam.log"
 #WHITE="gnugo --mode gtp"
 #WHITE="/data/go/software/brown-1.0/brown"
 WHITE="/data/go/software/amigogtp-1.6/amigogtp/amigogtp"
