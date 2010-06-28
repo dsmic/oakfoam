@@ -2,12 +2,14 @@
 #define DEF_OAKFOAM_ENGINE_H
 
 #define PLAYOUTS_PER_MOVE 100
+#define PLAYOUTS_PER_MOVE_MAX 500
+#define PLAYOUTS_PER_MOVE_MIN 10
+#define PLAYOUT_MAX_MOVE_FACTOR 3
+
 #define RESIGN_RATIO_THRESHOLD 0.03
 #define RESIGN_MEAN_THRESHOLD 20
 #define RESIGN_MOVE_FACTOR_THRESHOLD 0.5
 #define LIVEGFX_ON false
-
-#define PLAYOUT_MAX_MOVE_FACTOR 3
 
 #define TIME_BUFFER 30000
 #define TIME_PERCENTAGE_BOARD 0.4
@@ -65,7 +67,7 @@ class Engine
     Go::IncrementalBoard *currentboard;
     float komi;
     int boardsize;
-    int playoutspermove;
+    int playoutspermove,playoutspermoveinit;
     bool livegfx;
     long timemain,timeblack,timewhite;
     float playoutspermilli;

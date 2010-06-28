@@ -12,6 +12,7 @@ Engine::Engine(Gtp::Engine *ge)
   
   playoutspermilli=0;
   playoutspermove=PLAYOUTS_PER_MOVE;
+  playoutspermoveinit=PLAYOUTS_PER_MOVE;
   livegfx=LIVEGFX_ON;
   
   resignratiothreshold=RESIGN_RATIO_THRESHOLD;
@@ -97,6 +98,7 @@ void Engine::gtpClearBoard(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   
   //assume that this will be a new game
   me->playoutspermilli=0;
+  me->playoutspermove=me->playoutspermoveinit;
   me->timeblack=me->timemain;
   me->timewhite=me->timemain;
   
@@ -344,7 +346,10 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     std::string param=cmd->getStringArg(0);
     std::transform(param.begin(),param.end(),param.begin(),::tolower);
     if (param=="playouts_per_move")
+    {
       me->playoutspermove=cmd->getIntArg(1);
+      me->playoutspermoveinit=me->playoutspermove;
+    }
     else if (param=="live_gfx")
       me->livegfx=(cmd->getIntArg(1)==1);
     else if (param=="resign_ratio_threshold")
@@ -470,8 +475,10 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
   if (*timeleft>0 && playoutspermilli>0)
   {
     playoutspermove=playoutspermilli*this->getTimeAllowedThisTurn(col)/(boardsize*boardsize-currentboard->getMovesMade());
-    if (playoutspermove<10)
-      playoutspermove=10;
+    if (playoutspermove<PLAYOUTS_PER_MOVE_MIN)
+      playoutspermove=PLAYOUTS_PER_MOVE_MIN;
+    else if (playoutspermove>PLAYOUTS_PER_MOVE_MAX)
+      playoutspermove=PLAYOUTS_PER_MOVE_MAX;
   }
   
   Util::MoveTree *movetree;

@@ -2,18 +2,16 @@ TODO
 ------------------
 
 Now: (before next release)
+  replace Go::IncrementalBoard's liberty system
   fix time settings
   change board->print() to use the gtpe
   remove old board and rename new board
-  reset ppmi after each game
-  enforce maximum playouts per move
 
 Soon: (before next major release)
-  replace Go::IncrementalBoard's liberty system
   move away from playouts per move
   replace FunctionList and ConstantList with std::list<>
   rename/refactor to better name?
-  move Go:: objects into own files
+  move Go:: objects into own files?
   move main() into Oakfoam.cc
   add prefix to custom commands?
   implement superko
