@@ -5,6 +5,7 @@ Now: (before next release)
   fix time settings
   change board->print() to use the gtpe
   remove old board and rename new board
+  reset ppmi after each game
 
 Soon: (before next major release)
   replace Go::IncrementalBoard's liberty system
