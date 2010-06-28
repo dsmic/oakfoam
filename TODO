@@ -6,6 +6,7 @@ Now: (before next release)
   change board->print() to use the gtpe
   remove old board and rename new board
   reset ppmi after each game
+  enforce maximum playouts per move
 
 Soon: (before next major release)
   replace Go::IncrementalBoard's liberty system
