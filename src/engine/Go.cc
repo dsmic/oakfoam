@@ -1489,16 +1489,16 @@ bool Go::IncrementalBoard::weakEye(Go::Color col, int x, int y)
     return false;
   else
   {
-    if (x>0 && this->colorAt(x-1,y)!=col)
+    if (x>0 && (this->colorAt(x-1,y)!=col || this->libertiesAt(x-1,y)<2))
       return false;
     
-    if (y>0 && this->colorAt(x,y-1)!=col)
+    if (y>0 && (this->colorAt(x,y-1)!=col || this->libertiesAt(x,y-1)<2))
       return false;
     
-    if (x<(size-1) && this->colorAt(x+1,y)!=col)
+    if (x<(size-1) && (this->colorAt(x+1,y)!=col || this->libertiesAt(x+1,y)<2))
       return false;
     
-    if (y<(size-1) && this->colorAt(x,y+1)!=col)
+    if (y<(size-1) && (this->colorAt(x,y+1)!=col || this->libertiesAt(x,y+1)<2))
       return false;
     
     return true;

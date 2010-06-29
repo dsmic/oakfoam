@@ -6,6 +6,7 @@ version 0.0.4: 2010-xx-xx
   * new faster board object
   * added logging
   * fixed scoring
+  * improve eye definition
 
 version 0.0.3: 2010-06-16
   * added new GTP engine with support for GoGui's Analyze Commands
