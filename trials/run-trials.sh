@@ -7,7 +7,7 @@ WHITE="/data/go/software/amigogtp-1.6/amigogtp/amigogtp"
 #WHITE="fuego"
 
 #REFEREE="fuego"
-REFEREE="gnugo --mode gtp --chinese-rules --capture-all-dead"
+REFEREE="gnugo --mode gtp --score aftermath --capture-all-dead --chinese-rules"
 
 GAMES=100
 TIME="5m"
