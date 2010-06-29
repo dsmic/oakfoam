@@ -629,12 +629,6 @@ void Engine::clearBoard()
 
 void Engine::randomValidMove(Go::IncrementalBoard *board, Go::Color col, Go::Move **move)
 {
-  if ((col==Go::BLACK?board->getBlackPasses():board->getWhitePasses())>2 || board->getMovesMade()>(boardsize*boardsize*2))
-  {
-    *move=new Go::Move(col,Go::Move::PASS);
-    return;
-  }
-  
   for (int i=0;i<5;i++)
   {
     int x=(int)(std::rand()/((double)RAND_MAX+1)*boardsize);

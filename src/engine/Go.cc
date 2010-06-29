@@ -639,9 +639,6 @@ Go::IncrementalBoard::IncrementalBoard(int s)
   nexttomove=Go::BLACK;
   passesplayed=0;
   movesmade=0;
-  
-  blackpasses=0;
-  whitepasses=0;
 }
 
 Go::IncrementalBoard::~IncrementalBoard()
@@ -728,9 +725,6 @@ void Go::IncrementalBoard::import(Go::Board *board)
   this->passesplayed=board->passesplayed;
   this->movesmade=board->movesmade;
   
-  this->blackpasses=0;
-  this->whitepasses=0;
-  
   this->refreshGroups();
 }
 
@@ -751,9 +745,6 @@ Go::IncrementalBoard *Go::IncrementalBoard::copy()
   copyboard->nexttomove=this->nexttomove;
   copyboard->passesplayed=this->passesplayed;
   copyboard->movesmade=this->movesmade;
-  
-  copyboard->blackpasses=this->blackpasses;
-  copyboard->whitepasses=this->whitepasses;
   
   copyboard->refreshGroups();
   
@@ -973,10 +964,7 @@ void Go::IncrementalBoard::makeMove(Go::Move move)
   if (move.isPass() || move.isResign())
   {
     if (move.isPass())
-    {
       passesplayed++;
-      (move.getColor()==Go::BLACK?blackpasses:whitepasses)++;
-    }
     this->setKo(-1,-1);
     nexttomove=Go::otherColor(move.getColor());
     movesmade++;
