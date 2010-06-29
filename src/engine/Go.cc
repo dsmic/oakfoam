@@ -698,6 +698,15 @@ inline int Go::IncrementalBoard::libertiesAt(int x, int y)
     return data[y*size+x].group->liberties;
 }
 
+inline int Go::IncrementalBoard::groupSizeAt(int x, int y)
+{
+  //this->checkCoords(x,y);
+  if (data[y*size+x].group==NULL)
+    return 0;
+  else
+    return data[y*size+x].group->stones.size();
+}
+
 inline void Go::IncrementalBoard::setKo(int x, int y)
 {
   koX=x;
@@ -767,8 +776,6 @@ bool Go::IncrementalBoard::validMove(Go::Move move)
   
   if (this->colorAt(move.getX(),move.getY())!=Go::EMPTY)
     return false;
-  else if (koX!=-1 && koY!=-1 && move.getX()==koX && move.getY()==koY)
-    return false;
   else if (directLiberties(move.getX(),move.getY())>0)
     return true;
   else
@@ -776,18 +783,7 @@ bool Go::IncrementalBoard::validMove(Go::Move move)
     int x=move.getX(),y=move.getY();
     Go::Color col=move.getColor();
     Go::Color othercol=Go::otherColor(col);
-    
-    if (x>0 && this->libertiesAt(x-1,y)==1 && this->colorAt(x-1,y)==othercol)
-      return true;
-    
-    if (y>0 && this->libertiesAt(x,y-1)==1 && this->colorAt(x,y-1)==othercol)
-      return true;
-    
-    if (x<(size-1) && this->libertiesAt(x+1,y)==1 && this->colorAt(x+1,y)==othercol)
-      return true;
-    
-    if (y<(size-1) && this->libertiesAt(x,y+1)==1 && this->colorAt(x,y+1)==othercol)
-      return true;
+    int captures=0;
     
     if (x>0 && this->libertiesAt(x-1,y)>1 && this->colorAt(x-1,y)==col)
       return true;
@@ -800,6 +796,28 @@ bool Go::IncrementalBoard::validMove(Go::Move move)
     
     if (y<(size-1) && this->libertiesAt(x,y+1)>1 && this->colorAt(x,y+1)==col)
       return true;
+    
+    if (x>0 && this->libertiesAt(x-1,y)==1 && this->colorAt(x-1,y)==othercol)
+      captures+=this->groupSizeAt(x-1,y);
+    
+    if (y>0 && this->libertiesAt(x,y-1)==1 && this->colorAt(x,y-1)==othercol)
+      captures+=this->groupSizeAt(x,y-1);
+    
+    if (x<(size-1) && this->libertiesAt(x+1,y)==1 && this->colorAt(x+1,y)==othercol)
+      captures+=this->groupSizeAt(x+1,y);
+    
+    if (y<(size-1) && this->libertiesAt(x,y+1)==1 && this->colorAt(x,y+1)==othercol)
+      captures+=this->groupSizeAt(x,y+1);
+    
+    if (captures>2)
+      return true;
+    else if (captures==1)
+    {
+      if (koX!=-1 && koY!=-1 && move.getX()==koX && move.getY()==koY)
+        return false;
+      else
+        return true;
+    }
     
     return false;
   }

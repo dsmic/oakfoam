@@ -206,6 +206,7 @@ namespace Go
       Go::IncrementalBoard::Group *groupAt(int x, int y);
       void setGroupAt(int x, int y, Go::IncrementalBoard::Group *group);
       int libertiesAt(int x, int y);
+      int groupSizeAt(int x, int y);
       
       void checkCoords(int x, int y);
       
