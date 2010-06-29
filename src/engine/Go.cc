@@ -809,7 +809,7 @@ bool Go::IncrementalBoard::validMove(Go::Move move)
     if (y<(size-1) && this->libertiesAt(x,y+1)==1 && this->colorAt(x,y+1)==othercol)
       captures+=this->groupSizeAt(x,y+1);
     
-    if (captures>2)
+    if (captures>1)
       return true;
     else if (captures==1)
     {
