@@ -663,17 +663,12 @@ void Engine::randomValidMove(Go::IncrementalBoard *board, Go::Color col, Go::Mov
 
 void Engine::randomPlayout(Go::IncrementalBoard *board, Go::Color col)
 {
-  Go::Color coltomove;
+  Go::Color coltomove=col;
   Go::Move *move;
   int passes=board->getPassesPlayed();
   int moves=board->getMovesMade();
   
-  if (passes>=2)
-    return;
-  
-  coltomove=col;
-  
-  while (!board->scoreable())
+  while (passes<2)
   {
     bool resign,pass;
     this->randomValidMove(board,coltomove,&move);
@@ -689,8 +684,6 @@ void Engine::randomPlayout(Go::IncrementalBoard *board, Go::Color col)
       passes++;
     else
       passes=0;
-    if (passes>=2)
-      break;
     if (moves>(boardsize*boardsize*PLAYOUT_MAX_MOVE_FACTOR))
       break;
   }
