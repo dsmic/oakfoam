@@ -190,7 +190,6 @@ namespace Go
       
       Go::Color nextToMove() { return nexttomove; };
       
-      bool scoreable();
       int score();
       bool weakEye(Go::Color col, int x, int y);
     

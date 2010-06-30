@@ -1178,33 +1178,6 @@ void Go::IncrementalBoard::mergeGroups(Go::IncrementalBoard::Group *first, Go::I
   delete second;
 }
 
-bool Go::IncrementalBoard::scoreable()
-{
-  Go::Move move;
-  for (int x=0;x<size;x++)
-  {
-    for (int y=0;y<size;y++)
-    {
-      if (this->colorAt(x,y)==EMPTY)
-      {
-        move=Go::Move(Go::BLACK,x,y);
-        if (this->validMove(move))
-        {
-          return false;
-        }
-        
-        move=Go::Move(Go::WHITE,x,y);
-        if (this->validMove(move))
-        {
-          return false;
-        }
-      }
-    }
-  }
-  
-  return true;
-}
-
 int Go::IncrementalBoard::score()
 {
   Go::IncrementalBoard::ScoreVertex *scoredata;
