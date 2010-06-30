@@ -4,6 +4,7 @@
 #include <string>
 #include <cstdio>
 #include <list>
+#include <sstream>
 
 namespace Go
 {
@@ -64,7 +65,7 @@ namespace Go
       bool isPass() {return (x==-1 && y==-1)?true:false;};
       bool isResign() {return (x==-2 && y==-2)?true:false;};
       
-      void print();
+      std::string toString();
     
     private:
       Go::Color color;
@@ -113,7 +114,8 @@ namespace Go
       Go::Board *copy();
       
       Go::Board::Vertex *boardData() { return data; }; //must only be used for read-only access
-      void print();
+      //void print();
+      std::string toString();
       
       int getSize() { return size; };
       int getPassesPlayed() { return passesplayed; };

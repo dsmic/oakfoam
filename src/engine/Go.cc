@@ -1,18 +1,20 @@
 #include "Go.h"
 
-void Go::Move::print()
+std::string Go::Move::toString()
 {
   if (this->isPass())
-    printf("PASS\n");
+    return "PASS\n";
   else if (this->isResign())
-    printf("RESIGN\n");
+    return "RESIGN\n";
   else
   {
+    std::ostringstream ss;
     if (color==Go::BLACK)
-      printf("B");
+      ss<<"B";
     else if (color==Go::WHITE)
-      printf("W");
-    printf("(%d,%d)\n",x,y);
+      ss<<"W";
+    ss<<"("<<x<<","<<y<<")\n";
+    return ss.str();
   }
 }
 
@@ -684,22 +686,26 @@ bool Go::Board::weakEye(Go::Color col, int x, int y)
   }
 }
 
-void Go::Board::print()
+std::string Go::Board::toString()
 {
+  std::ostringstream ss;
+  
   for (int y=size-1;y>=0;y--)
   {
     for (int x=0;x<size;x++)
     {
       Go::Color col=this->colorAt(x,y);
       if (col==Go::BLACK)
-        printf("X ");
+        ss<<"X ";
       else if (col==Go::WHITE)
-        printf("O ");
+        ss<<"O ";
       else
-        printf(". ");
+        ss<<". ";
     }
-    printf("\n");
+    ss<<"\n";
   }
+  
+  return ss.str();
 }
 
 void Go::Board::Group::addStone(Go::Board::Vertex *stone)

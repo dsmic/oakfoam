@@ -206,7 +206,7 @@ void Engine::gtpShowBoard(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printString("\n");
-  me->currentboard->print(); //TODO: redirect to gtpe output
+  gtpe->getOutput()->printString(me->currentboard->toString());
   gtpe->getOutput()->endResponse(true);
 }
 
