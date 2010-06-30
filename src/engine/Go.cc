@@ -193,21 +193,19 @@ bool Go::Board::validMove(Go::Move move)
   }
 }
 
-int Go::Board::directLiberties(int x, int y)
+inline int Go::Board::directLiberties(int x, int y)
 {
-  int lib;
-  this->checkCoords(x,y);
-  
-  lib=0;
+  int lib=0;
+  //this->checkCoords(x,y);
   
   if (x>0 && this->colorAt(x-1,y)==Go::EMPTY)
-    lib++;
+    ++lib;
   if (y>0 && this->colorAt(x,y-1)==Go::EMPTY)
-    lib++;
+    ++lib;
   if (x<(size-1) && this->colorAt(x+1,y)==Go::EMPTY)
-    lib++;
+    ++lib;
   if (y<(size-1) && this->colorAt(x,y+1)==Go::EMPTY)
-    lib++;
+    ++lib;
   
   return lib;
 }
@@ -275,11 +273,7 @@ void Go::Board::addDirectLiberties(int x, int y, Go::Board::Group *group)
 }
 
 void Go::Board::makeMove(Go::Move move)
-{
-  int x,y,poskox,poskoy;
-  Go::Color col,othercol;
-  //bool removedagroup;
-  
+{ 
   if (move.isPass() || move.isResign())
   {
     if (move.isPass())
@@ -294,13 +288,13 @@ void Go::Board::makeMove(Go::Move move)
   if (!this->validMove(move))
     throw Go::Exception("invalid move");
   
-  x=move.getX();
-  y=move.getY();
-  col=move.getColor();
-  othercol=Go::otherColor(col);
-  poskox=-1;
-  poskoy=-1;
-  //removedagroup=false;
+  int x=move.getX();
+  int y=move.getY();
+  Go::Color col=move.getColor();
+  Go::Color othercol=Go::otherColor(col);
+  int poskox=-1;
+  int poskoy=-1;
+  
   passesplayed=0;
   
   std::list<Go::Board::Group*> *friendlygroups = new std::list<Go::Board::Group*>();
@@ -666,7 +660,7 @@ void Go::Board::spreadScore(Go::Board::ScoreVertex *scoredata, int x, int y, Go:
 
 bool Go::Board::weakEye(Go::Color col, int x, int y)
 {
-  if (directLiberties(x,y)>0)
+  if (col==Go::EMPTY)
     return false;
   else
   {
@@ -712,7 +706,7 @@ void Go::Board::Group::addStone(Go::Board::Vertex *stone)
 {
   for(std::list<Go::Board::Vertex*>::iterator iter=stones.begin();iter!=stones.end();++iter) 
   {
-    if ((*iter)->point.x==stone->point.x && (*iter)->point.y==stone->point.y)
+    if ((*iter)==stone)
       return;
   }
   
@@ -723,7 +717,7 @@ void Go::Board::Group::addLiberty(Go::Board::Vertex *liberty)
 {
   for(std::list<Go::Board::Vertex*>::iterator iter=liberties.begin();iter!=liberties.end();++iter) 
   {
-    if ((*iter)->point.x==liberty->point.x && (*iter)->point.y==liberty->point.y)
+    if ((*iter)==liberty)
       return;
   }
   
