@@ -298,6 +298,7 @@ void Go::Board::makeMove(Go::Move move)
   passesplayed=0;
   
   std::list<Go::Board::Group*> *friendlygroups = new std::list<Go::Board::Group*>();
+  std::list<Go::Board::Group*> *enemygroups = new std::list<Go::Board::Group*>();
   
   if (x>0)
   {
@@ -321,7 +322,7 @@ void Go::Board::makeMove(Go::Move move)
         }
       }
       else
-        this->groupAt(pt.x,pt.y)->removeLiberty(this->vertexAt(x,y));
+        enemygroups->push_back(this->groupAt(pt.x,pt.y));
     }
     else if (this->colorAt(pt.x,pt.y)==col)
     {
@@ -361,7 +362,7 @@ void Go::Board::makeMove(Go::Move move)
         }
       }
       else
-        this->groupAt(pt.x,pt.y)->removeLiberty(this->vertexAt(x,y));
+        enemygroups->push_back(this->groupAt(pt.x,pt.y));
     }
     else if (this->colorAt(pt.x,pt.y)==col)
     {
@@ -401,7 +402,7 @@ void Go::Board::makeMove(Go::Move move)
         }
       }
       else
-        this->groupAt(pt.x,pt.y)->removeLiberty(this->vertexAt(x,y));
+        enemygroups->push_back(this->groupAt(pt.x,pt.y));
     }
     else if (this->colorAt(pt.x,pt.y)==col)
     {
@@ -441,7 +442,7 @@ void Go::Board::makeMove(Go::Move move)
         }
       }
       else
-        this->groupAt(pt.x,pt.y)->removeLiberty(this->vertexAt(x,y));
+        enemygroups->push_back(this->groupAt(pt.x,pt.y));
     }
     else if (this->colorAt(pt.x,pt.y)==col)
     {
@@ -495,8 +496,15 @@ void Go::Board::makeMove(Go::Move move)
     groups.push_back(newgroup);
   }
   
+  for(std::list<Go::Board::Group*>::iterator iter=enemygroups->begin();iter!=enemygroups->end();++iter)
+  {
+    (*iter)->removeLiberty(this->vertexAt(x,y));
+  }
+  
   friendlygroups->resize(0);
   delete friendlygroups;
+  enemygroups->resize(0);
+  delete enemygroups;
   
   nexttomove=Go::otherColor(nexttomove);
   movesmade++;

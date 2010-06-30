@@ -1,6 +1,6 @@
 
 version 0.0.5: 2010-xx-xx
-  * todo
+  * fixed bug in new board
 
 version 0.0.4: 2010-07-01
   * fixed memory leak
