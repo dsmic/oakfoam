@@ -71,71 +71,6 @@ namespace Go
       int x,y;
   };
   
-  class Board
-  {
-    public:
-      Board(int s);
-      ~Board();
-      
-      struct Vertex
-      {
-        Go::Color color;
-        int group;
-        int liberties;
-      };
-      
-      Go::Board *copy();
-      Go::Board::Vertex *boardData(); //must only be used for read-only access
-      
-      int getSize();
-      int getPassesPlayed() { return passesplayed; };
-      int getMovesMade() { return movesmade; };
-      
-      bool validMove(Go::Move move);
-      void makeMove(Go::Move move);
-      
-      Go::Color nextToMove() { return nexttomove; };
-      
-      void print();
-      
-      bool scoreable();
-      int score();
-      bool weakEye(Go::Color col, int x, int y);
-      
-      int size;
-      Go::Board::Vertex *data;
-      int koX, koY;
-      int totalgroups;
-      Go::Color nexttomove;
-      int passesplayed;
-      int movesmade;
-      
-    private:
-      
-      Go::Color colorAt(int x, int y);
-      void setColorAt(int x, int y, Go::Color col);
-      
-      int groupAt(int x, int y);
-      void setGroupAt(int x, int y, int group);
-      
-      int libertiesAt(int x, int y);
-      void setLibertiesAt(int x, int y, int liberties);
-      
-      void checkCoords(int x, int y);
-      
-      void updateLiberties();
-      int directLiberties(int x, int y);
-      int directLiberties(int x, int y, bool dirty);
-      int updateGroups();
-      void spreadGroup(int x, int y, int group);
-      int removeGroup(int group);
-      
-      int solidLinksFrom(int x, int y);
-      int solidlyTouches(int x, int y);
-      
-      void setKo(int x, int y);
-  };
-  
   class IncrementalBoard
   {
     public:
@@ -176,7 +111,6 @@ namespace Go
       };
       
       Go::IncrementalBoard *copy();
-      void import(Go::Board *board);
       
       Go::IncrementalBoard::Vertex *boardData() { return data; }; //must only be used for read-only access
       void print();
