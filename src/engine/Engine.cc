@@ -618,13 +618,13 @@ void Engine::setBoardSize(int s)
   
   delete currentboard;
   currentboard = new Go::IncrementalBoard(s);
+  boardsize=s;
 }
 
 void Engine::clearBoard()
 {
-  int size=currentboard->getSize();
   delete currentboard;
-  currentboard = new Go::IncrementalBoard(size);
+  currentboard = new Go::IncrementalBoard(boardsize);
 }
 
 void Engine::randomValidMove(Go::IncrementalBoard *board, Go::Color col, Go::Move **move)
