@@ -1,4 +1,7 @@
 
+version 0.0.5: 2010-xx-xx
+  * todo
+
 version 0.0.4: 2010-07-01
   * fixed memory leak
   * added command line arguments

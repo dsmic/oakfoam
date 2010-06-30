@@ -1,4 +1,4 @@
-AC_INIT([Oakfoam], [0.0.4], [flash.slash@gmail.com], [oakfoam])
+AC_INIT([Oakfoam], [0.0.5], [flash.slash@gmail.com], [oakfoam])
 AM_INIT_AUTOMAKE([-Wall subdir-objects])
 
 AM_CONFIG_HEADER([config.h])
