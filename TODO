@@ -2,7 +2,6 @@ TODO
 ------------------
 
 Now: (before next release)
-  investigate slow ppmi in trials
 
 Soon: (before next major release)
   move away from playouts per move
@@ -15,6 +14,7 @@ Soon: (before next major release)
   implement superko
   keep record of valid moves in the board
   copy all board data with a copy() (groups and liberties)
+  investigate possible slow ppmi in trials after a while
 
 Later: (at some point)
   add handicap settings
