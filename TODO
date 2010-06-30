@@ -6,14 +6,15 @@ Now: (before next release)
 
 Soon: (before next major release)
   move away from playouts per move
+  add AMAF/RAVE
   replace FunctionList and ConstantList with std::list<>
-  rename/refactor to better name?
+  rename/refactor Engine to better name?
   move Go:: objects into own files?
   move main() into Oakfoam.cc
   add prefix to custom commands?
   implement superko
   keep record of valid moves in the board
-  copy all board data with a copy()
+  copy all board data with a copy() (groups and liberties)
 
 Later: (at some point)
   add handicap settings
