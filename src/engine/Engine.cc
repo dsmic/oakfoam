@@ -7,7 +7,7 @@ Engine::Engine(Gtp::Engine *ge)
   std::srand(std::time(0));
   
   boardsize=9;
-  currentboard=new Go::IncrementalBoard(boardsize);
+  currentboard=new Go::Board(boardsize);
   komi=5.5;
   
   playoutspermilli=0;
@@ -473,7 +473,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
   }
   
   Util::MoveTree *movetree;
-  Go::IncrementalBoard *playoutboard;
+  Go::Board *playoutboard;
   Go::Move playoutmove;
   
   movetree=new Util::MoveTree();
@@ -608,17 +608,17 @@ void Engine::setBoardSize(int s)
     return;
   
   delete currentboard;
-  currentboard = new Go::IncrementalBoard(s);
+  currentboard = new Go::Board(s);
   boardsize=s;
 }
 
 void Engine::clearBoard()
 {
   delete currentboard;
-  currentboard = new Go::IncrementalBoard(boardsize);
+  currentboard = new Go::Board(boardsize);
 }
 
-void Engine::randomValidMove(Go::IncrementalBoard *board, Go::Color col, Go::Move **move)
+void Engine::randomValidMove(Go::Board *board, Go::Color col, Go::Move **move)
 {
   for (int i=0;i<5;i++)
   {
@@ -652,7 +652,7 @@ void Engine::randomValidMove(Go::IncrementalBoard *board, Go::Color col, Go::Mov
   }
 }
 
-void Engine::randomPlayout(Go::IncrementalBoard *board, Go::Color col)
+void Engine::randomPlayout(Go::Board *board, Go::Color col)
 {
   Go::Color coltomove=col;
   Go::Move *move;

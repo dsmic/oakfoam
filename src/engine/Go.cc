@@ -16,15 +16,15 @@ void Go::Move::print()
   }
 }
 
-Go::IncrementalBoard::IncrementalBoard(int s)
+Go::Board::Board(int s)
 {
   size=s;
-  data=new Go::IncrementalBoard::Vertex[size*size];
+  data=new Go::Board::Vertex[size*size];
   for (int x=0;x<size;x++)
   {
     for (int y=0;y<size;y++)
     {
-      Go::IncrementalBoard::Point pt={x,y};
+      Go::Board::Point pt={x,y};
       this->vertexAt(x,y)->point=pt;
       this->setColorAt(x,y,Go::EMPTY);
       this->setGroupAt(x,y,NULL);
@@ -36,9 +36,9 @@ Go::IncrementalBoard::IncrementalBoard(int s)
   movesmade=0;
 }
 
-Go::IncrementalBoard::~IncrementalBoard()
+Go::Board::~Board()
 {
-  for(std::list<Go::IncrementalBoard::Group*>::iterator iter=groups.begin();iter!=groups.end();++iter) 
+  for(std::list<Go::Board::Group*>::iterator iter=groups.begin();iter!=groups.end();++iter) 
   {
     delete (*iter);
   }
@@ -46,42 +46,42 @@ Go::IncrementalBoard::~IncrementalBoard()
   delete[] data;
 }
 
-inline void Go::IncrementalBoard::checkCoords(int x, int y)
+inline void Go::Board::checkCoords(int x, int y)
 {
   if (x<0 || y<0 || x>(size-1) || y>(size-1))
     throw Go::Exception("invalid coords");
 }
 
-inline Go::IncrementalBoard::Vertex *Go::IncrementalBoard::vertexAt(int x, int y)
+inline Go::Board::Vertex *Go::Board::vertexAt(int x, int y)
 {
   return &data[y*size+x];
 }
 
-inline Go::Color Go::IncrementalBoard::colorAt(int x, int y)
+inline Go::Color Go::Board::colorAt(int x, int y)
 {
   //this->checkCoords(x,y);
   return data[y*size+x].color;
 }
 
-inline void Go::IncrementalBoard::setColorAt(int x, int y, Go::Color col)
+inline void Go::Board::setColorAt(int x, int y, Go::Color col)
 {
   //this->checkCoords(x,y);
   data[y*size+x].color=col;
 }
 
-inline Go::IncrementalBoard::Group *Go::IncrementalBoard::groupAt(int x, int y)
+inline Go::Board::Group *Go::Board::groupAt(int x, int y)
 {
   //this->checkCoords(x,y);
   return data[y*size+x].group;
 }
 
-inline void Go::IncrementalBoard::setGroupAt(int x, int y, Go::IncrementalBoard::Group *group)
+inline void Go::Board::setGroupAt(int x, int y, Go::Board::Group *group)
 {
   //this->checkCoords(x,y);
   data[y*size+x].group=group;
 }
 
-inline int Go::IncrementalBoard::libertiesAt(int x, int y)
+inline int Go::Board::libertiesAt(int x, int y)
 {
   //this->checkCoords(x,y);
   if (data[y*size+x].group==NULL)
@@ -90,7 +90,7 @@ inline int Go::IncrementalBoard::libertiesAt(int x, int y)
     return data[y*size+x].group->numOfLiberties();
 }
 
-inline int Go::IncrementalBoard::groupSizeAt(int x, int y)
+inline int Go::Board::groupSizeAt(int x, int y)
 {
   //this->checkCoords(x,y);
   if (data[y*size+x].group==NULL)
@@ -99,16 +99,16 @@ inline int Go::IncrementalBoard::groupSizeAt(int x, int y)
     return data[y*size+x].group->numOfStones();
 }
 
-inline void Go::IncrementalBoard::setKo(int x, int y)
+inline void Go::Board::setKo(int x, int y)
 {
   koX=x;
   koY=y;
 }
 
-Go::IncrementalBoard *Go::IncrementalBoard::copy()
+Go::Board *Go::Board::copy()
 {
-  Go::IncrementalBoard *copyboard;
-  copyboard=new Go::IncrementalBoard(size);
+  Go::Board *copyboard;
+  copyboard=new Go::Board(size);
   
   for (int x=0;x<size;x++)
   {
@@ -128,7 +128,7 @@ Go::IncrementalBoard *Go::IncrementalBoard::copy()
   return copyboard;
 }
 
-bool Go::IncrementalBoard::validMove(Go::Move move)
+bool Go::Board::validMove(Go::Move move)
 {
   if (move.isPass() || move.isResign())
     return true;
@@ -191,7 +191,7 @@ bool Go::IncrementalBoard::validMove(Go::Move move)
   }
 }
 
-int Go::IncrementalBoard::directLiberties(int x, int y)
+int Go::Board::directLiberties(int x, int y)
 {
   int lib;
   this->checkCoords(x,y);
@@ -210,7 +210,7 @@ int Go::IncrementalBoard::directLiberties(int x, int y)
   return lib;
 }
 
-void Go::IncrementalBoard::refreshGroups()
+void Go::Board::refreshGroups()
 {
   for (int x=0;x<size;x++)
   {
@@ -220,7 +220,7 @@ void Go::IncrementalBoard::refreshGroups()
     }
   }
   
-  for(std::list<Go::IncrementalBoard::Group*>::iterator iter=groups.begin();iter!=groups.end();++iter) 
+  for(std::list<Go::Board::Group*>::iterator iter=groups.begin();iter!=groups.end();++iter) 
   {
     delete (*iter);
   }
@@ -232,7 +232,7 @@ void Go::IncrementalBoard::refreshGroups()
     {
       if (this->colorAt(x,y)!=Go::EMPTY && this->groupAt(x,y)==NULL)
       {
-        Go::IncrementalBoard::Group *newgroup = new Go::IncrementalBoard::Group();
+        Go::Board::Group *newgroup = new Go::Board::Group();
         
         this->spreadGroup(x,y,this->colorAt(x,y),newgroup);
         groups.push_back(newgroup);
@@ -241,7 +241,7 @@ void Go::IncrementalBoard::refreshGroups()
   }
 }
 
-void Go::IncrementalBoard::spreadGroup(int x, int y, Go::Color col, Go::IncrementalBoard::Group *group)
+void Go::Board::spreadGroup(int x, int y, Go::Color col, Go::Board::Group *group)
 {
   if (this->colorAt(x,y)==col && this->groupAt(x,y)==NULL)
   {
@@ -260,7 +260,7 @@ void Go::IncrementalBoard::spreadGroup(int x, int y, Go::Color col, Go::Incremen
   }
 }
 
-void Go::IncrementalBoard::addDirectLiberties(int x, int y, Go::IncrementalBoard::Group *group)
+void Go::Board::addDirectLiberties(int x, int y, Go::Board::Group *group)
 {
   if (x>0 && this->colorAt(x-1,y)==Go::EMPTY)
     group->addLiberty(this->vertexAt(x-1,y));
@@ -272,7 +272,7 @@ void Go::IncrementalBoard::addDirectLiberties(int x, int y, Go::IncrementalBoard
     group->addLiberty(this->vertexAt(x,y+1));
 }
 
-void Go::IncrementalBoard::makeMove(Go::Move move)
+void Go::Board::makeMove(Go::Move move)
 {
   int x,y,poskox,poskoy;
   Go::Color col,othercol;
@@ -301,11 +301,11 @@ void Go::IncrementalBoard::makeMove(Go::Move move)
   //removedagroup=false;
   passesplayed=0;
   
-  std::list<Go::IncrementalBoard::Group*> *friendlygroups = new std::list<Go::IncrementalBoard::Group*>();
+  std::list<Go::Board::Group*> *friendlygroups = new std::list<Go::Board::Group*>();
   
   if (x>0)
   {
-    Go::IncrementalBoard::Point pt={x-1,y};
+    Go::Board::Point pt={x-1,y};
     if (this->colorAt(pt.x,pt.y)==othercol)
     {
       if (this->libertiesAt(pt.x,pt.y)==1)
@@ -330,7 +330,7 @@ void Go::IncrementalBoard::makeMove(Go::Move move)
     else if (this->colorAt(pt.x,pt.y)==col)
     {
       bool found=false;
-      for(std::list<Go::IncrementalBoard::Group*>::iterator iter=friendlygroups->begin();iter!=friendlygroups->end();++iter)
+      for(std::list<Go::Board::Group*>::iterator iter=friendlygroups->begin();iter!=friendlygroups->end();++iter)
       {
         if ((*iter)==this->groupAt(pt.x,pt.y))
         {
@@ -345,7 +345,7 @@ void Go::IncrementalBoard::makeMove(Go::Move move)
   
   if (y>0)
   {
-    Go::IncrementalBoard::Point pt={x,y-1};
+    Go::Board::Point pt={x,y-1};
     if (this->colorAt(pt.x,pt.y)==othercol)
     {
       if (this->libertiesAt(pt.x,pt.y)==1)
@@ -370,7 +370,7 @@ void Go::IncrementalBoard::makeMove(Go::Move move)
     else if (this->colorAt(pt.x,pt.y)==col)
     {
       bool found=false;
-      for(std::list<Go::IncrementalBoard::Group*>::iterator iter=friendlygroups->begin();iter!=friendlygroups->end();++iter)
+      for(std::list<Go::Board::Group*>::iterator iter=friendlygroups->begin();iter!=friendlygroups->end();++iter)
       {
         if ((*iter)==this->groupAt(pt.x,pt.y))
         {
@@ -385,7 +385,7 @@ void Go::IncrementalBoard::makeMove(Go::Move move)
   
   if (x<(size-1))
   {
-    Go::IncrementalBoard::Point pt={x+1,y};
+    Go::Board::Point pt={x+1,y};
     if (this->colorAt(pt.x,pt.y)==othercol)
     {
       if (this->libertiesAt(pt.x,pt.y)==1)
@@ -410,7 +410,7 @@ void Go::IncrementalBoard::makeMove(Go::Move move)
     else if (this->colorAt(pt.x,pt.y)==col)
     {
       bool found=false;
-      for(std::list<Go::IncrementalBoard::Group*>::iterator iter=friendlygroups->begin();iter!=friendlygroups->end();++iter)
+      for(std::list<Go::Board::Group*>::iterator iter=friendlygroups->begin();iter!=friendlygroups->end();++iter)
       {
         if ((*iter)==this->groupAt(pt.x,pt.y))
         {
@@ -425,7 +425,7 @@ void Go::IncrementalBoard::makeMove(Go::Move move)
   
   if (y<(size-1))
   {
-    Go::IncrementalBoard::Point pt={x,y+1};
+    Go::Board::Point pt={x,y+1};
     if (this->colorAt(pt.x,pt.y)==othercol)
     {
       if (this->libertiesAt(pt.x,pt.y)==1)
@@ -450,7 +450,7 @@ void Go::IncrementalBoard::makeMove(Go::Move move)
     else if (this->colorAt(pt.x,pt.y)==col)
     {
       bool found=false;
-      for(std::list<Go::IncrementalBoard::Group*>::iterator iter=friendlygroups->begin();iter!=friendlygroups->end();++iter)
+      for(std::list<Go::Board::Group*>::iterator iter=friendlygroups->begin();iter!=friendlygroups->end();++iter)
       {
         if ((*iter)==this->groupAt(pt.x,pt.y))
         {
@@ -472,14 +472,14 @@ void Go::IncrementalBoard::makeMove(Go::Move move)
   
   if (friendlygroups->size()>0)
   {
-    Go::IncrementalBoard::Group *firstgroup=friendlygroups->front();
+    Go::Board::Group *firstgroup=friendlygroups->front();
     firstgroup->addStone(this->vertexAt(x,y));
     this->setGroupAt(x,y,firstgroup);
     this->addDirectLiberties(x,y,firstgroup);
     
     if (friendlygroups->size()>1)
     {
-      for(std::list<Go::IncrementalBoard::Group*>::iterator iter=friendlygroups->begin();iter!=friendlygroups->end();++iter)
+      for(std::list<Go::Board::Group*>::iterator iter=friendlygroups->begin();iter!=friendlygroups->end();++iter)
       {
         if ((*iter)==friendlygroups->front())
           continue;
@@ -492,7 +492,7 @@ void Go::IncrementalBoard::makeMove(Go::Move move)
   }
   else
   {
-    Go::IncrementalBoard::Group *newgroup = new Go::IncrementalBoard::Group();
+    Go::Board::Group *newgroup = new Go::Board::Group();
     newgroup->addStone(this->vertexAt(x,y));
     this->setGroupAt(x,y,newgroup);
     this->addDirectLiberties(x,y,newgroup);
@@ -506,15 +506,15 @@ void Go::IncrementalBoard::makeMove(Go::Move move)
   movesmade++;
 }
 
-int Go::IncrementalBoard::removeGroup(Go::IncrementalBoard::Group *group)
+int Go::Board::removeGroup(Go::Board::Group *group)
 {
   int s=group->numOfStones();
   
   groups.remove(group);
   
-  for(std::list<Go::IncrementalBoard::Vertex*>::iterator iter=group->getStones()->begin();iter!=group->getStones()->end();++iter) 
+  for(std::list<Go::Board::Vertex*>::iterator iter=group->getStones()->begin();iter!=group->getStones()->end();++iter) 
   {
-    Go::IncrementalBoard::Vertex *vert=(*iter);
+    Go::Board::Vertex *vert=(*iter);
     
     Go::Color othercol=Go::otherColor(vert->color);
     int x=vert->point.x,y=vert->point.y;
@@ -537,17 +537,17 @@ int Go::IncrementalBoard::removeGroup(Go::IncrementalBoard::Group *group)
   return s;
 }
 
-void Go::IncrementalBoard::mergeGroups(Go::IncrementalBoard::Group *first, Go::IncrementalBoard::Group *second)
+void Go::Board::mergeGroups(Go::Board::Group *first, Go::Board::Group *second)
 {
   groups.remove(second);
   
-  for(std::list<Go::IncrementalBoard::Vertex*>::iterator iter=second->getStones()->begin();iter!=second->getStones()->end();++iter) 
+  for(std::list<Go::Board::Vertex*>::iterator iter=second->getStones()->begin();iter!=second->getStones()->end();++iter) 
   {
     (*iter)->group=first;
     first->addStone((*iter));
   }
   
-  for(std::list<Go::IncrementalBoard::Vertex*>::iterator iter=second->getLiberties()->begin();iter!=second->getLiberties()->end();++iter) 
+  for(std::list<Go::Board::Vertex*>::iterator iter=second->getLiberties()->begin();iter!=second->getLiberties()->end();++iter) 
   {
     first->addLiberty((*iter));
   }
@@ -555,11 +555,11 @@ void Go::IncrementalBoard::mergeGroups(Go::IncrementalBoard::Group *first, Go::I
   delete second;
 }
 
-int Go::IncrementalBoard::score()
+int Go::Board::score()
 {
-  Go::IncrementalBoard::ScoreVertex *scoredata;
+  Go::Board::ScoreVertex *scoredata;
   
-  scoredata=new Go::IncrementalBoard::ScoreVertex[size*size];
+  scoredata=new Go::Board::ScoreVertex[size*size];
   for (int x=0;x<size;x++)
   {
     for (int y=0;y<size;y++)
@@ -609,7 +609,7 @@ int Go::IncrementalBoard::score()
   return s;
 }
 
-void Go::IncrementalBoard::spreadScore(Go::IncrementalBoard::ScoreVertex *scoredata, int x, int y, Go::Color col)
+void Go::Board::spreadScore(Go::Board::ScoreVertex *scoredata, int x, int y, Go::Color col)
 {
   bool wastouched=scoredata[y*size+x].touched;
   
@@ -662,7 +662,7 @@ void Go::IncrementalBoard::spreadScore(Go::IncrementalBoard::ScoreVertex *scored
     this->spreadScore(scoredata,x,y+1,col);
 }
 
-bool Go::IncrementalBoard::weakEye(Go::Color col, int x, int y)
+bool Go::Board::weakEye(Go::Color col, int x, int y)
 {
   if (directLiberties(x,y)>0)
     return false;
@@ -684,7 +684,7 @@ bool Go::IncrementalBoard::weakEye(Go::Color col, int x, int y)
   }
 }
 
-void Go::IncrementalBoard::print()
+void Go::Board::print()
 {
   for (int y=size-1;y>=0;y--)
   {
@@ -702,9 +702,9 @@ void Go::IncrementalBoard::print()
   }
 }
 
-void Go::IncrementalBoard::Group::addStone(Go::IncrementalBoard::Vertex *stone)
+void Go::Board::Group::addStone(Go::Board::Vertex *stone)
 {
-  for(std::list<Go::IncrementalBoard::Vertex*>::iterator iter=stones.begin();iter!=stones.end();++iter) 
+  for(std::list<Go::Board::Vertex*>::iterator iter=stones.begin();iter!=stones.end();++iter) 
   {
     if ((*iter)->point.x==stone->point.x && (*iter)->point.y==stone->point.y)
       return;
@@ -713,9 +713,9 @@ void Go::IncrementalBoard::Group::addStone(Go::IncrementalBoard::Vertex *stone)
   stones.push_back(stone);
 }
 
-void Go::IncrementalBoard::Group::addLiberty(Go::IncrementalBoard::Vertex *liberty)
+void Go::Board::Group::addLiberty(Go::Board::Vertex *liberty)
 {
-  for(std::list<Go::IncrementalBoard::Vertex*>::iterator iter=liberties.begin();iter!=liberties.end();++iter) 
+  for(std::list<Go::Board::Vertex*>::iterator iter=liberties.begin();iter!=liberties.end();++iter) 
   {
     if ((*iter)->point.x==liberty->point.x && (*iter)->point.y==liberty->point.y)
       return;
@@ -724,7 +724,7 @@ void Go::IncrementalBoard::Group::addLiberty(Go::IncrementalBoard::Vertex *liber
   liberties.push_back(liberty);
 }
 
-void Go::IncrementalBoard::Group::removeLiberty(Go::IncrementalBoard::Vertex *liberty)
+void Go::Board::Group::removeLiberty(Go::Board::Vertex *liberty)
 {
   liberties.remove(liberty);
 }

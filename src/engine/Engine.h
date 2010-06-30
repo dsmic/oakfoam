@@ -41,7 +41,7 @@ class Engine
     void makeMove(Go::Move move);
     int getBoardSize() { return currentboard->getSize(); };
     void setBoardSize(int s);
-    Go::IncrementalBoard *getCurrentBoard() { return currentboard; };
+    Go::Board *getCurrentBoard() { return currentboard; };
     void clearBoard();
     float getKomi() { return komi; };
     void setKomi(float k) { komi=k; };
@@ -64,7 +64,7 @@ class Engine
   
   private:
     Gtp::Engine *gtpe;
-    Go::IncrementalBoard *currentboard;
+    Go::Board *currentboard;
     float komi;
     int boardsize;
     int playoutspermove,playoutspermoveinit;
@@ -78,8 +78,8 @@ class Engine
     
     void addGtpCommands();
     
-    void randomValidMove(Go::IncrementalBoard *board, Go::Color col, Go::Move **move);
-    void randomPlayout(Go::IncrementalBoard *board, Go::Color col);
+    void randomValidMove(Go::Board *board, Go::Color col, Go::Move **move);
+    void randomPlayout(Go::Board *board, Go::Color col);
     
     long getCurrentTime() { return std::clock()/CLOCKS_PER_SEC*1000; };
     long getTimeAllowedThisTurn(Go::Color col);

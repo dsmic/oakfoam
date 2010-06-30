@@ -71,11 +71,11 @@ namespace Go
       int x,y;
   };
   
-  class IncrementalBoard
+  class Board
   {
     public:
-      IncrementalBoard(int s);
-      ~IncrementalBoard();
+      Board(int s);
+      ~Board();
       
       class Group;
       
@@ -87,9 +87,9 @@ namespace Go
       
       struct Vertex
       {
-        Go::IncrementalBoard::Point point;
+        Go::Board::Point point;
         Go::Color color;
-        Go::IncrementalBoard::Group *group;
+        Go::Board::Group *group;
       };
       
       class Group
@@ -98,21 +98,21 @@ namespace Go
           int numOfStones() { return stones.size(); };
           int numOfLiberties() { return liberties.size(); };
           
-          std::list<Go::IncrementalBoard::Vertex*> *getStones() { return &stones; };
-          std::list<Go::IncrementalBoard::Vertex*> *getLiberties() { return &liberties; };
+          std::list<Go::Board::Vertex*> *getStones() { return &stones; };
+          std::list<Go::Board::Vertex*> *getLiberties() { return &liberties; };
           
-          void addStone(Go::IncrementalBoard::Vertex *stone);
-          void addLiberty(Go::IncrementalBoard::Vertex *liberty);
-          void removeLiberty(Go::IncrementalBoard::Vertex *liberty);
+          void addStone(Go::Board::Vertex *stone);
+          void addLiberty(Go::Board::Vertex *liberty);
+          void removeLiberty(Go::Board::Vertex *liberty);
         
         private:
-          std::list<Go::IncrementalBoard::Vertex*> stones;
-          std::list<Go::IncrementalBoard::Vertex*> liberties;
+          std::list<Go::Board::Vertex*> stones;
+          std::list<Go::Board::Vertex*> liberties;
       };
       
-      Go::IncrementalBoard *copy();
+      Go::Board *copy();
       
-      Go::IncrementalBoard::Vertex *boardData() { return data; }; //must only be used for read-only access
+      Go::Board::Vertex *boardData() { return data; }; //must only be used for read-only access
       void print();
       
       int getSize() { return size; };
@@ -129,9 +129,9 @@ namespace Go
     
     private:
       int size;
-      Go::IncrementalBoard::Vertex *data;
+      Go::Board::Vertex *data;
       int koX, koY;
-      std::list<Go::IncrementalBoard::Group*> groups;
+      std::list<Go::Board::Group*> groups;
       Go::Color nexttomove;
       int passesplayed;
       int movesmade;
@@ -142,26 +142,26 @@ namespace Go
         Go::Color color;
       };
       
-      Go::IncrementalBoard::Vertex *vertexAt(int x, int y);
+      Go::Board::Vertex *vertexAt(int x, int y);
       Go::Color colorAt(int x, int y);
       void setColorAt(int x, int y, Go::Color col);
-      Go::IncrementalBoard::Group *groupAt(int x, int y);
-      void setGroupAt(int x, int y, Go::IncrementalBoard::Group *group);
+      Go::Board::Group *groupAt(int x, int y);
+      void setGroupAt(int x, int y, Go::Board::Group *group);
       int libertiesAt(int x, int y);
       int groupSizeAt(int x, int y);
       
       void checkCoords(int x, int y);
       
       void refreshGroups();
-      void spreadGroup(int x, int y, Go::Color col, Go::IncrementalBoard::Group *group);
-      void addDirectLiberties(int x, int y, Go::IncrementalBoard::Group *group);
+      void spreadGroup(int x, int y, Go::Color col, Go::Board::Group *group);
+      void addDirectLiberties(int x, int y, Go::Board::Group *group);
       int directLiberties(int x, int y);
-      int removeGroup(Go::IncrementalBoard::Group *group);
-      void mergeGroups(Go::IncrementalBoard::Group *first, Go::IncrementalBoard::Group *second);
+      int removeGroup(Go::Board::Group *group);
+      void mergeGroups(Go::Board::Group *first, Go::Board::Group *second);
       
       void setKo(int x, int y);
       
-      void spreadScore(Go::IncrementalBoard::ScoreVertex *scoredata, int x, int y, Go::Color col);
+      void spreadScore(Go::Board::ScoreVertex *scoredata, int x, int y, Go::Color col);
   };
 };
 
