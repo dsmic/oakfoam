@@ -1,5 +1,5 @@
 
-version 0.0.4: 2010-xx-xx
+version 0.0.4: 2010-07-01
   * fixed memory leak
   * added command line arguments
   * added time settings
