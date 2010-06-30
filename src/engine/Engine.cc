@@ -312,7 +312,7 @@ void Engine::gtpShowLiberties(void *instance, Gtp::Engine* gtpe, Gtp::Command* c
         gtpe->getOutput()->printf("\"\" ");
       else
       {
-        int lib=me->currentboard->boardData()[y*me->boardsize+x].group->liberties;
+        int lib=me->currentboard->boardData()[y*me->boardsize+x].group->numOfLiberties();
         gtpe->getOutput()->printf("\"%d\" ",lib);
       }
     }

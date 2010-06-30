@@ -2,7 +2,6 @@ TODO
 ------------------
 
 Now: (before next release)
-  replace Go::IncrementalBoard's liberty system
   fix time settings
   change board->print() to use the gtpe
   remove old board and rename new board

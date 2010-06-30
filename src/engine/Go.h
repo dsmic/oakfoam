@@ -157,10 +157,22 @@ namespace Go
         Go::IncrementalBoard::Group *group;
       };
       
-      struct Group
+      class Group
       {
-        int liberties;
-        std::list<Go::IncrementalBoard::Vertex*> stones;
+        public:
+          int numOfStones() { return stones.size(); };
+          int numOfLiberties() { return liberties.size(); };
+          
+          std::list<Go::IncrementalBoard::Vertex*> *getStones() { return &stones; };
+          std::list<Go::IncrementalBoard::Vertex*> *getLiberties() { return &liberties; };
+          
+          void addStone(Go::IncrementalBoard::Vertex *stone);
+          void addLiberty(Go::IncrementalBoard::Vertex *liberty);
+          void removeLiberty(Go::IncrementalBoard::Vertex *liberty);
+        
+        private:
+          std::list<Go::IncrementalBoard::Vertex*> stones;
+          std::list<Go::IncrementalBoard::Vertex*> liberties;
       };
       
       Go::IncrementalBoard *copy();
@@ -209,7 +221,7 @@ namespace Go
       
       void refreshGroups();
       void spreadGroup(int x, int y, Go::Color col, Go::IncrementalBoard::Group *group);
-      void addLiberties(int x, int y, std::list<Go::IncrementalBoard::Point> *liberties);
+      void addDirectLiberties(int x, int y, Go::IncrementalBoard::Group *group);
       int directLiberties(int x, int y);
       int removeGroup(Go::IncrementalBoard::Group *group);
       void mergeGroups(Go::IncrementalBoard::Group *first, Go::IncrementalBoard::Group *second);

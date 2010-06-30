@@ -692,7 +692,7 @@ inline int Go::IncrementalBoard::libertiesAt(int x, int y)
   if (data[y*size+x].group==NULL)
     return 0;
   else
-    return data[y*size+x].group->liberties;
+    return data[y*size+x].group->numOfLiberties();
 }
 
 inline int Go::IncrementalBoard::groupSizeAt(int x, int y)
@@ -701,7 +701,7 @@ inline int Go::IncrementalBoard::groupSizeAt(int x, int y)
   if (data[y*size+x].group==NULL)
     return 0;
   else
-    return data[y*size+x].group->stones.size();
+    return data[y*size+x].group->numOfStones();
 }
 
 inline void Go::IncrementalBoard::setKo(int x, int y)
@@ -858,15 +858,6 @@ void Go::IncrementalBoard::refreshGroups()
         Go::IncrementalBoard::Group *newgroup = new Go::IncrementalBoard::Group();
         
         this->spreadGroup(x,y,this->colorAt(x,y),newgroup);
-        
-        std::list<Go::IncrementalBoard::Point> *liberties = new std::list<Go::IncrementalBoard::Point>();
-        for(std::list<Go::IncrementalBoard::Vertex*>::iterator iter=newgroup->stones.begin();iter!=newgroup->stones.end();++iter) 
-        {
-          this->addLiberties((*iter)->point.x,(*iter)->point.y,liberties);
-        }
-        newgroup->liberties=liberties->size();
-        delete liberties;
-        
         groups.push_back(newgroup);
       }
     }
@@ -878,7 +869,8 @@ void Go::IncrementalBoard::spreadGroup(int x, int y, Go::Color col, Go::Incremen
   if (this->colorAt(x,y)==col && this->groupAt(x,y)==NULL)
   {
     this->setGroupAt(x,y,group);
-    group->stones.push_back(this->vertexAt(x,y));
+    group->addStone(this->vertexAt(x,y));
+    this->addDirectLiberties(x,y,group);
     
     if (x>0)
       this->spreadGroup(x-1,y,col,group);
@@ -891,68 +883,16 @@ void Go::IncrementalBoard::spreadGroup(int x, int y, Go::Color col, Go::Incremen
   }
 }
 
-void Go::IncrementalBoard::addLiberties(int x, int y, std::list<Go::IncrementalBoard::Point> *liberties)
+void Go::IncrementalBoard::addDirectLiberties(int x, int y, Go::IncrementalBoard::Group *group)
 {
   if (x>0 && this->colorAt(x-1,y)==Go::EMPTY)
-  {
-    Go::IncrementalBoard::Point pt={x-1,y};
-    bool found=false;
-    for(std::list<Go::IncrementalBoard::Point>::iterator iter=liberties->begin();iter!=liberties->end();++iter) 
-    {
-      if ((*iter).x==pt.x && (*iter).y==pt.y)
-      {
-        found=true;
-        break;
-      }
-    }
-    if (!found)
-      liberties->push_back(pt);
-  }
+    group->addLiberty(this->vertexAt(x-1,y));
   if (y>0 && this->colorAt(x,y-1)==Go::EMPTY)
-  {
-    Go::IncrementalBoard::Point pt={x,y-1};
-    bool found=false;
-    for(std::list<Go::IncrementalBoard::Point>::iterator iter=liberties->begin();iter!=liberties->end();++iter) 
-    {
-      if ((*iter).x==pt.x && (*iter).y==pt.y)
-      {
-        found=true;
-        break;
-      }
-    }
-    if (!found)
-      liberties->push_back(pt);
-  }
+    group->addLiberty(this->vertexAt(x,y-1));
   if (x<(size-1) && this->colorAt(x+1,y)==Go::EMPTY)
-  {
-    Go::IncrementalBoard::Point pt={x+1,y};
-    bool found=false;
-    for(std::list<Go::IncrementalBoard::Point>::iterator iter=liberties->begin();iter!=liberties->end();++iter) 
-    {
-      if ((*iter).x==pt.x && (*iter).y==pt.y)
-      {
-        found=true;
-        break;
-      }
-    }
-    if (!found)
-      liberties->push_back(pt);
-  }
+    group->addLiberty(this->vertexAt(x+1,y));
   if (y<(size-1) && this->colorAt(x,y+1)==Go::EMPTY)
-  {
-    Go::IncrementalBoard::Point pt={x,y+1};
-    bool found=false;
-    for(std::list<Go::IncrementalBoard::Point>::iterator iter=liberties->begin();iter!=liberties->end();++iter) 
-    {
-      if ((*iter).x==pt.x && (*iter).y==pt.y)
-      {
-        found=true;
-        break;
-      }
-    }
-    if (!found)
-      liberties->push_back(pt);
-  }
+    group->addLiberty(this->vertexAt(x,y+1));
 }
 
 void Go::IncrementalBoard::makeMove(Go::Move move)
@@ -985,7 +925,6 @@ void Go::IncrementalBoard::makeMove(Go::Move move)
   passesplayed=0;
   
   std::list<Go::IncrementalBoard::Group*> *friendlygroups = new std::list<Go::IncrementalBoard::Group*>();
-  std::list<Go::IncrementalBoard::Group*> *enemygroups = new std::list<Go::IncrementalBoard::Group*>();
   
   if (x>0)
   {
@@ -1009,19 +948,7 @@ void Go::IncrementalBoard::makeMove(Go::Move move)
         }
       }
       else
-      {
-        bool found=false;
-        for(std::list<Go::IncrementalBoard::Group*>::iterator iter=enemygroups->begin();iter!=enemygroups->end();++iter)
-        {
-          if ((*iter)==this->groupAt(pt.x,pt.y))
-          {
-            found=true;
-            break;
-          }
-        }
-        if (!found)
-          enemygroups->push_back(this->groupAt(pt.x,pt.y));
-      }
+        this->groupAt(pt.x,pt.y)->removeLiberty(this->vertexAt(x,y));
     }
     else if (this->colorAt(pt.x,pt.y)==col)
     {
@@ -1061,19 +988,7 @@ void Go::IncrementalBoard::makeMove(Go::Move move)
         }
       }
       else
-      {
-        bool found=false;
-        for(std::list<Go::IncrementalBoard::Group*>::iterator iter=enemygroups->begin();iter!=enemygroups->end();++iter)
-        {
-          if ((*iter)==this->groupAt(pt.x,pt.y))
-          {
-            found=true;
-            break;
-          }
-        }
-        if (!found)
-          enemygroups->push_back(this->groupAt(pt.x,pt.y));
-      }
+        this->groupAt(pt.x,pt.y)->removeLiberty(this->vertexAt(x,y));
     }
     else if (this->colorAt(pt.x,pt.y)==col)
     {
@@ -1113,19 +1028,7 @@ void Go::IncrementalBoard::makeMove(Go::Move move)
         }
       }
       else
-      {
-        bool found=false;
-        for(std::list<Go::IncrementalBoard::Group*>::iterator iter=enemygroups->begin();iter!=enemygroups->end();++iter)
-        {
-          if ((*iter)==this->groupAt(pt.x,pt.y))
-          {
-            found=true;
-            break;
-          }
-        }
-        if (!found)
-          enemygroups->push_back(this->groupAt(pt.x,pt.y));
-      }
+        this->groupAt(pt.x,pt.y)->removeLiberty(this->vertexAt(x,y));
     }
     else if (this->colorAt(pt.x,pt.y)==col)
     {
@@ -1165,19 +1068,7 @@ void Go::IncrementalBoard::makeMove(Go::Move move)
         }
       }
       else
-      {
-        bool found=false;
-        for(std::list<Go::IncrementalBoard::Group*>::iterator iter=enemygroups->begin();iter!=enemygroups->end();++iter)
-        {
-          if ((*iter)==this->groupAt(pt.x,pt.y))
-          {
-            found=true;
-            break;
-          }
-        }
-        if (!found)
-          enemygroups->push_back(this->groupAt(pt.x,pt.y));
-      }
+        this->groupAt(pt.x,pt.y)->removeLiberty(this->vertexAt(x,y));
     }
     else if (this->colorAt(pt.x,pt.y)==col)
     {
@@ -1205,8 +1096,9 @@ void Go::IncrementalBoard::makeMove(Go::Move move)
   if (friendlygroups->size()>0)
   {
     Go::IncrementalBoard::Group *firstgroup=friendlygroups->front();
-    firstgroup->stones.push_back(this->vertexAt(x,y));
+    firstgroup->addStone(this->vertexAt(x,y));
     this->setGroupAt(x,y,firstgroup);
+    this->addDirectLiberties(x,y,firstgroup);
     
     if (friendlygroups->size()>1)
     {
@@ -1219,32 +1111,19 @@ void Go::IncrementalBoard::makeMove(Go::Move move)
       }
     }
     
-    std::list<Go::IncrementalBoard::Point> *liberties = new std::list<Go::IncrementalBoard::Point>();
-    for(std::list<Go::IncrementalBoard::Vertex*>::iterator iter=firstgroup->stones.begin();iter!=firstgroup->stones.end();++iter) 
-    {
-      addLiberties((*iter)->point.x,(*iter)->point.y,liberties);
-    }
-    firstgroup->liberties=liberties->size();
-    delete liberties;
+    firstgroup->removeLiberty(this->vertexAt(x,y));
   }
   else
   {
     Go::IncrementalBoard::Group *newgroup = new Go::IncrementalBoard::Group();
-    newgroup->stones.push_back(this->vertexAt(x,y));
+    newgroup->addStone(this->vertexAt(x,y));
     this->setGroupAt(x,y,newgroup);
-    newgroup->liberties=this->directLiberties(x,y);
+    this->addDirectLiberties(x,y,newgroup);
     groups.push_back(newgroup);
-  }
-  
-  for(std::list<Go::IncrementalBoard::Group*>::iterator iter=enemygroups->begin();iter!=enemygroups->end();++iter)
-  {
-    (*iter)->liberties--;
   }
   
   friendlygroups->resize(0);
   delete friendlygroups;
-  enemygroups->resize(0);
-  delete enemygroups;
   
   nexttomove=Go::otherColor(nexttomove);
   movesmade++;
@@ -1252,86 +1131,25 @@ void Go::IncrementalBoard::makeMove(Go::Move move)
 
 int Go::IncrementalBoard::removeGroup(Go::IncrementalBoard::Group *group)
 {
-  int s=group->stones.size();
+  int s=group->numOfStones();
   
   groups.remove(group);
   
-  for(std::list<Go::IncrementalBoard::Vertex*>::iterator iter=group->stones.begin();iter!=group->stones.end();++iter) 
+  for(std::list<Go::IncrementalBoard::Vertex*>::iterator iter=group->getStones()->begin();iter!=group->getStones()->end();++iter) 
   {
     Go::IncrementalBoard::Vertex *vert=(*iter);
     
-    std::list<Go::IncrementalBoard::Group*> *enemygroups = new std::list<Go::IncrementalBoard::Group*>();
     Go::Color othercol=Go::otherColor(vert->color);
     int x=vert->point.x,y=vert->point.y;
     
     if (x>0 && this->colorAt(x-1,y)==othercol)
-    {
-      Go::IncrementalBoard::Point pt={x-1,y};
-      bool found=false;
-      for(std::list<Go::IncrementalBoard::Group*>::iterator iter=enemygroups->begin();iter!=enemygroups->end();++iter)
-      {
-        if ((*iter)==this->groupAt(pt.x,pt.y))
-        {
-          found=true;
-          break;
-        }
-      }
-      if (!found)
-        enemygroups->push_back(this->groupAt(pt.x,pt.y));
-    }
+      this->groupAt(x-1,y)->addLiberty(this->vertexAt(x,y));
     if (y>0 && this->colorAt(x,y-1)==othercol)
-    {
-      Go::IncrementalBoard::Point pt={x,y-1};
-      bool found=false;
-      for(std::list<Go::IncrementalBoard::Group*>::iterator iter=enemygroups->begin();iter!=enemygroups->end();++iter)
-      {
-        if ((*iter)==this->groupAt(pt.x,pt.y))
-        {
-          found=true;
-          break;
-        }
-      }
-      if (!found)
-        enemygroups->push_back(this->groupAt(pt.x,pt.y));
-    }
+      this->groupAt(x,y-1)->addLiberty(this->vertexAt(x,y));
     if (x<(size-1) && this->colorAt(x+1,y)==othercol)
-    {
-      Go::IncrementalBoard::Point pt={x+1,y};
-      bool found=false;
-      for(std::list<Go::IncrementalBoard::Group*>::iterator iter=enemygroups->begin();iter!=enemygroups->end();++iter)
-      {
-        if ((*iter)==this->groupAt(pt.x,pt.y))
-        {
-          found=true;
-          break;
-        }
-      }
-      if (!found)
-        enemygroups->push_back(this->groupAt(pt.x,pt.y));
-    }
+      this->groupAt(x+1,y)->addLiberty(this->vertexAt(x,y));
     if (y<(size-1) && this->colorAt(x,y+1)==othercol)
-    {
-      Go::IncrementalBoard::Point pt={x,y+1};
-      bool found=false;
-      for(std::list<Go::IncrementalBoard::Group*>::iterator iter=enemygroups->begin();iter!=enemygroups->end();++iter)
-      {
-        if ((*iter)==this->groupAt(pt.x,pt.y))
-        {
-          found=true;
-          break;
-        }
-      }
-      if (!found)
-        enemygroups->push_back(this->groupAt(pt.x,pt.y));
-    }
-    
-    for(std::list<Go::IncrementalBoard::Group*>::iterator iter=enemygroups->begin();iter!=enemygroups->end();++iter)
-    {
-      (*iter)->liberties++;
-    }
-    
-    enemygroups->resize(0);
-    delete enemygroups;
+      this->groupAt(x,y+1)->addLiberty(this->vertexAt(x,y));
     
     vert->color=Go::EMPTY;
     vert->group=NULL;
@@ -1346,10 +1164,15 @@ void Go::IncrementalBoard::mergeGroups(Go::IncrementalBoard::Group *first, Go::I
 {
   groups.remove(second);
   
-  for(std::list<Go::IncrementalBoard::Vertex*>::iterator iter=second->stones.begin();iter!=second->stones.end();++iter) 
+  for(std::list<Go::IncrementalBoard::Vertex*>::iterator iter=second->getStones()->begin();iter!=second->getStones()->end();++iter) 
   {
     (*iter)->group=first;
-    first->stones.push_back((*iter));
+    first->addStone((*iter));
+  }
+  
+  for(std::list<Go::IncrementalBoard::Vertex*>::iterator iter=second->getLiberties()->begin();iter!=second->getLiberties()->end();++iter) 
+  {
+    first->addLiberty((*iter));
   }
   
   delete second;
@@ -1527,5 +1350,32 @@ void Go::IncrementalBoard::print()
     }
     printf("\n");
   }
+}
+
+void Go::IncrementalBoard::Group::addStone(Go::IncrementalBoard::Vertex *stone)
+{
+  for(std::list<Go::IncrementalBoard::Vertex*>::iterator iter=stones.begin();iter!=stones.end();++iter) 
+  {
+    if ((*iter)->point.x==stone->point.x && (*iter)->point.y==stone->point.y)
+      return;
+  }
+  
+  stones.push_back(stone);
+}
+
+void Go::IncrementalBoard::Group::addLiberty(Go::IncrementalBoard::Vertex *liberty)
+{
+  for(std::list<Go::IncrementalBoard::Vertex*>::iterator iter=liberties.begin();iter!=liberties.end();++iter) 
+  {
+    if ((*iter)->point.x==liberty->point.x && (*iter)->point.y==liberty->point.y)
+      return;
+  }
+  
+  liberties.push_back(liberty);
+}
+
+void Go::IncrementalBoard::Group::removeLiberty(Go::IncrementalBoard::Vertex *liberty)
+{
+  liberties.remove(liberty);
 }
 
