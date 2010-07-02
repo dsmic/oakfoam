@@ -71,7 +71,7 @@ class Engine
     Go::Board *currentboard;
     float komi;
     int boardsize;
-    int playoutspermove,playoutspermoveinit;
+    int playoutspermove,playoutspermoveinit,playoutspermovemax,playoutspermovemin;
     bool livegfx;
     long timemain,timeblack,timewhite;
     float playoutspermilli;
@@ -79,6 +79,8 @@ class Engine
     long timebuffer,timemoveminimum;
     int timemovebuffer;
     float timepercentageboard,timefactor;
+    float ucbc;
+    int ravemoves;
     
     void addGtpCommands();
     

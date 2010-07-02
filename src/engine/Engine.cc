@@ -13,7 +13,12 @@ Engine::Engine(Gtp::Engine *ge)
   playoutspermilli=0;
   playoutspermove=PLAYOUTS_PER_MOVE;
   playoutspermoveinit=PLAYOUTS_PER_MOVE;
+  playoutspermovemax=PLAYOUTS_PER_MOVE_MAX;
+  playoutspermovemin=PLAYOUTS_PER_MOVE_MIN;
   livegfx=LIVEGFX_ON;
+  
+  ucbc=UCB_C;
+  ravemoves=RAVE_MOVES;
   
   resignratiothreshold=RESIGN_RATIO_THRESHOLD;
   resignmeanthreshold=RESIGN_MEAN_THRESHOLD;
@@ -322,6 +327,10 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     gtpe->getOutput()->startResponse(cmd);
     gtpe->getOutput()->printf("[bool] live_gfx %d\n",me->livegfx);
     gtpe->getOutput()->printf("[string] playouts_per_move %d\n",me->playoutspermove);
+    gtpe->getOutput()->printf("[string] playouts_per_move_max %d\n",me->playoutspermovemax);
+    gtpe->getOutput()->printf("[string] playouts_per_move_min %d\n",me->playoutspermovemin);
+    gtpe->getOutput()->printf("[string] ucb_c %.2f\n",me->ucbc);
+    gtpe->getOutput()->printf("[string] rave_moves %d\n",me->ravemoves);
     gtpe->getOutput()->printf("[string] resign_ratio_threshold %.3f\n",me->resignratiothreshold);
     gtpe->getOutput()->printf("[string] resign_mean_threshold %.1f\n",me->resignmeanthreshold);
     gtpe->getOutput()->printf("[string] resign_move_factor_threshold %.2f\n",me->resignmovefactorthreshold);
@@ -341,6 +350,14 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
       me->playoutspermove=cmd->getIntArg(1);
       me->playoutspermoveinit=me->playoutspermove;
     }
+    else if (param=="playouts_per_move_max")
+      me->playoutspermovemax=cmd->getIntArg(1);
+    else if (param=="playouts_per_move_min")
+      me->playoutspermovemin=cmd->getIntArg(1);
+    else if (param=="ucb_c")
+      me->ucbc=cmd->getFloatArg(1);
+    else if (param=="rave_moves")
+      me->ravemoves=cmd->getIntArg(1);
     else if (param=="live_gfx")
       me->livegfx=(cmd->getIntArg(1)==1);
     else if (param=="resign_ratio_threshold")
@@ -518,7 +535,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
     Go::Board *playoutboard=currentboard->copy();
     std::list<Go::Move> *firstlist=new std::list<Go::Move>();
     playoutboard->makeMove(playoutmove);
-    this->randomPlayout(playoutboard,Go::otherColor(col),NULL,(RAVE_MOVES>0?firstlist:NULL));
+    this->randomPlayout(playoutboard,Go::otherColor(col),NULL,(ravemoves>0?firstlist:NULL));
     totalplayouts++;
     
     bool playoutwin=Util::isWinForColor(col,playoutboard->score()-komi);
@@ -719,8 +736,8 @@ Util::MoveTree *Engine::getPlayoutTarget(Util::MoveTree *movetree, int totalplay
       return (*iter);
     else
     {
-      float ratio=(*iter)->getRAVERatio(RAVE_MOVES);
-      float ucbval=ratio + UCB_C*sqrt(log(totalplayouts)/((*iter)->getPlayouts()));
+      float ratio=(*iter)->getRAVERatio(ravemoves);
+      float ucbval=ratio + ucbc*sqrt(log(totalplayouts)/((*iter)->getPlayouts()));
       if (ucbval>bestucbval)
       {
         besttree=(*iter);

@@ -68,7 +68,12 @@ Util::MoveTree *Util::MoveTree::getChild(Go::Move move)
 
 float Util::MoveTree::getRAVERatio(int ravemoves)
 {
-  float alpha=(ravemoves-playouts)/ravemoves;
+  float alpha;
+  if (ravemoves>0)
+    alpha=(ravemoves-playouts)/ravemoves;
+  else
+    alpha=0;
+  
   if (alpha<0)
     alpha=0;
   return raveratio*alpha + ratio*(1-alpha);
