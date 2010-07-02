@@ -117,7 +117,6 @@ namespace Go
       Go::Board *copy();
       
       Go::Board::Vertex *boardData() { return data; }; //must only be used for read-only access
-      //void print();
       std::string toString();
       
       int getSize() { return size; };

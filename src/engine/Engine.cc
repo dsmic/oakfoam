@@ -54,7 +54,6 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("final_status_list",this,&Engine::gtpFinalStatusList);
   
   gtpe->addFunctionCommand("param",this,&Engine::gtpParam);
-  //gtpe->addFunctionCommand("showgroups",this,&Engine::gtpShowGroups);
   gtpe->addFunctionCommand("showliberties",this,&Engine::gtpShowLiberties);
   gtpe->addFunctionCommand("showvalidmoves",this,&Engine::gtpShowValidMoves);
   
@@ -63,7 +62,6 @@ void Engine::addGtpCommands()
   
   gtpe->addAnalyzeCommand("final_score","Final Score","string");
   gtpe->addAnalyzeCommand("showboard","Show Board","string");
-  //gtpe->addAnalyzeCommand("showgroups","Show Groups","sboard");
   gtpe->addAnalyzeCommand("showliberties","Show Liberties","sboard");
   gtpe->addAnalyzeCommand("showvalidmoves","Show Valid Moves","sboard");
   gtpe->addAnalyzeCommand("param","Parameters","param");
@@ -103,7 +101,7 @@ void Engine::gtpClearBoard(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   
   me->clearBoard();
   
-  //assume that this will be a new game
+  //assume that this will be the start of a new game
   me->playoutspermilli=0;
   me->playoutspermove=me->playoutspermoveinit;
   me->timeblack=me->timemain;
@@ -273,28 +271,6 @@ void Engine::gtpFinalStatusList(void *instance, Gtp::Engine* gtpe, Gtp::Command*
     gtpe->getOutput()->endResponse();
   }
 }
-
-/*void Engine::gtpShowGroups(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
-{
-  Engine *me=(Engine*)instance;
-  
-  gtpe->getOutput()->startResponse(cmd);
-  gtpe->getOutput()->printString("\n");
-  for (int y=me->boardsize-1;y>=0;y--)
-  {
-    for (int x=0;x<me->boardsize;x++)
-    {
-      int group=me->currentboard->boardData()[y*me->boardsize+x].group;
-      if (group!=-1)
-        gtpe->getOutput()->printf("\"%d\" ",group);
-      else
-        gtpe->getOutput()->printf("\"\" ");
-    }
-    gtpe->getOutput()->printf("\n");
-  }
-
-  gtpe->getOutput()->endResponse(true);
-}*/
 
 void Engine::gtpShowLiberties(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
@@ -497,10 +473,6 @@ void Engine::gtpTimeLeft(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 
 void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *mean)
 {
-  //*move=new Go::Move(col,Go::Move::PASS);
-  //this->randomValidMove(currentboard,col,move);
-  //this->makeMove(**move);
-  
   long *timeleft=(col==Go::BLACK ? &timeblack : &timewhite);
   long timestart=getCurrentTime();
   int totalplayouts=0;
@@ -591,9 +563,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
   float bestratio=0,bestmean=0;
   Go::Move bestmove;
   
-  std::list<Util::MoveTree*>::iterator iter;
-  
-  for(iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
+  for(std::list<Util::MoveTree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
   {
     if ((*iter)->getPlayouts()>0)
     {
@@ -724,7 +694,7 @@ long Engine::getTimeAllowedThisTurn(Go::Color col)
   int movesleft=estimatedmovespergame-movesmade;
   if (movesleft<0)
     movesleft=0;
-  movesleft+=timemovebuffer; //be able to play ~10 more moves
+  movesleft+=timemovebuffer; //be able to play more moves
   long timepermove=timeleft/movesleft*timefactor; //allow more time in beginning
   if (timepermove<timemoveminimum)
     timepermove=timemoveminimum;

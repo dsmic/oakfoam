@@ -697,21 +697,10 @@ int Go::Board::score()
     {
       Go::Color col=scoredata[y*size+x].color;
       if (col==Go::BLACK)
-      {
         s++;
-        //fprintf(stderr,"B");
-      }
       else if (col==Go::WHITE)
-      {
         s--;
-        //fprintf(stderr,"W");
-      }
-      else
-      {
-        //fprintf(stderr,".");
-      }
     }
-    //fprintf(stderr,"\n");
   }
   
   delete[] scoredata;
