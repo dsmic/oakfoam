@@ -6,6 +6,7 @@ Now: (before next release)
   make playouts move up tree properly
   investigate RAVE slowdown
   tune UCB and RAVE parameters
+  move valid moves into 2 bit boards
 
 Soon: (before next major release)
   replace FunctionList and ConstantList with std::list<>
