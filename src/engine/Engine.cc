@@ -479,14 +479,6 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
   if (livegfx)
     gtpe->getOutput()->printfDebug("gogui-gfx: TEXT [genmove]: starting...\n");
   
-  std::vector<Go::Move> validmoves=this->getValidMoves(currentboard,col);
-  
-  for (int i=0;i<(int)validmoves.size();i++)
-  {
-    Util::MoveTree *nmt=new Util::MoveTree(validmoves.at(i));
-    movetree->addChild(nmt);
-  }
-  
   Go::Board *passboard=currentboard->copy();
   passboard->makeMove(Go::Move(col,Go::Move::PASS));
   passboard->makeMove(Go::Move(Go::otherColor(col),Go::Move::PASS));
@@ -497,6 +489,13 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
     movetree->addChild(nmt);
   }
   delete passboard;
+  
+  std::vector<Go::Move> validmoves=this->getValidMoves(currentboard,col);
+  for (int i=0;i<(int)validmoves.size();i++)
+  {
+    Util::MoveTree *nmt=new Util::MoveTree(validmoves.at(i));
+    movetree->addChild(nmt);
+  }
   
   for (int i=0;i<playoutspermove;i++)
   {
