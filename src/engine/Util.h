@@ -31,6 +31,7 @@ namespace Util
       int getPlayouts() { return playouts; };
       float getRatio() { return ratio; };
       float getMean() { return mean; };
+      Util::MoveTree *getChild(Go::Move move);
       
       void addChild(Util::MoveTree *node) { children->push_back(node); };
       void addWin(float score=0);

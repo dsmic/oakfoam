@@ -465,7 +465,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
   
   if (*timeleft>0 && playoutspermilli>0)
   {
-    playoutspermove=playoutspermilli*this->getTimeAllowedThisTurn(col)/(boardsize*boardsize-currentboard->getMovesMade());
+    playoutspermove=playoutspermilli*this->getTimeAllowedThisTurn(col);
     if (playoutspermove<PLAYOUTS_PER_MOVE_MIN)
       playoutspermove=PLAYOUTS_PER_MOVE_MIN;
     else if (playoutspermove>PLAYOUTS_PER_MOVE_MAX)
@@ -473,78 +473,58 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
   }
   
   Util::MoveTree *movetree;
-  Go::Board *playoutboard;
-  Go::Move playoutmove;
   
   movetree=new Util::MoveTree();
   
   if (livegfx)
     gtpe->getOutput()->printfDebug("gogui-gfx: TEXT [genmove]: starting...\n");
   
-  playoutmove=Go::Move(col,Go::Move::PASS);
-  Util::MoveTree *nmt=new Util::MoveTree(playoutmove);
+  std::vector<Go::Move> validmoves=this->getValidMoves(currentboard,col);
   
-  playoutboard=currentboard->copy();
-  playoutboard->makeMove(playoutmove);
-  playoutboard->makeMove(Go::Move(Go::otherColor(col),Go::Move::PASS));
-  randomPlayout(playoutboard,col);
-  if (Util::isWinForColor(col,playoutboard->score()-komi))
-    nmt->addWin();
-  else
-    nmt->addLose();
-  delete playoutboard;
-  totalplayouts++;
-  
-  if (nmt->getRatio()==1)
+  for (int i=0;i<(int)validmoves.size();i++)
   {
-    for (int i=0;i<playoutspermove;i++)
-    {
-      playoutboard=currentboard->copy();
-      playoutboard->makeMove(playoutmove);
-      randomPlayout(playoutboard,Go::otherColor(col));
-      if (Util::isWinForColor(col,playoutboard->score()-komi))
-        nmt->addWin();
-      else
-        nmt->addLose();
-      delete playoutboard;
-      totalplayouts++;
-    }
+    Util::MoveTree *nmt=new Util::MoveTree(validmoves.at(i));
+    movetree->addChild(nmt);
   }
-  movetree->addChild(nmt);
   
-  for (int x=0;x<boardsize;x++)
+  Go::Board *passboard=currentboard->copy();
+  passboard->makeMove(Go::Move(col,Go::Move::PASS));
+  passboard->makeMove(Go::Move(Go::otherColor(col),Go::Move::PASS));
+  if (Util::isWinForColor(col,passboard->score()-komi))
   {
-    for (int y=0;y<boardsize;y++)
+    Util::MoveTree *nmt=new Util::MoveTree(Go::Move(col,Go::Move::PASS));
+    nmt->addWin(passboard->score()-komi);
+    movetree->addChild(nmt);
+  }
+  delete passboard;
+  
+  for (int i=0;i<playoutspermove;i++)
+  {
+    Util::MoveTree *playouttree = this->getPlayoutTarget(movetree,totalplayouts);
+    if (playouttree==NULL)
+      break;
+    Go::Move playoutmove=playouttree->getMove();
+    
+    if (livegfx)
     {
-      playoutmove=Go::Move(col,x,y);
-      if (currentboard->validMove(playoutmove))
-      {
-        if (livegfx)
-        {
-          gtpe->getOutput()->printfDebug("gogui-gfx: TEXT [genmove]: evaluating move (%d,%d)\n",x,y);
-          gtpe->getOutput()->printfDebug("gogui-gfx: VAR %c ",(col==Go::BLACK?'B':'W'));
-          Gtp::Vertex vert={x,y};
-          gtpe->getOutput()->printDebugVertex(vert);
-          gtpe->getOutput()->printfDebug("\n");
-        }
-        Util::MoveTree *nmt=new Util::MoveTree(playoutmove);
-        
-        for (int i=0;i<playoutspermove;i++)
-        {
-          playoutboard=currentboard->copy();
-          playoutboard->makeMove(playoutmove);
-          randomPlayout(playoutboard,Go::otherColor(col));
-          if (Util::isWinForColor(col,playoutboard->score()-komi))
-            nmt->addWin(playoutboard->score()-komi);
-          else
-            nmt->addLose(playoutboard->score()-komi);
-          delete playoutboard;
-          totalplayouts++;
-        }
-        
-        movetree->addChild(nmt);
-      }
+      gtpe->getOutput()->printfDebug("gogui-gfx: TEXT [genmove]: eval (%d,%d) tp:%d r:%.2f\n",playoutmove.getX(),playoutmove.getY(),totalplayouts,playouttree->getRatio());
+      gtpe->getOutput()->printfDebug("gogui-gfx: VAR %c ",(col==Go::BLACK?'B':'W'));
+      Gtp::Vertex vert={playoutmove.getX(),playoutmove.getY()};
+      gtpe->getOutput()->printDebugVertex(vert);
+      gtpe->getOutput()->printfDebug("\n");
+      for (long zzz=0;zzz<100000;zzz++) //slow down for display
+        gtpe->getOutput()->printfDebug("");
     }
+    
+    Go::Board *playoutboard=currentboard->copy();
+    playoutboard->makeMove(playoutmove);
+    this->randomPlayout(playoutboard,Go::otherColor(col));
+    totalplayouts++;
+    if (Util::isWinForColor(col,playoutboard->score()-komi))
+      playouttree->addWin(playoutboard->score()-komi);
+    else
+      playouttree->addLose(playoutboard->score()-komi);
+    delete playoutboard;
   }
   
   float bestratio=0,bestmean=0;
@@ -631,17 +611,7 @@ void Engine::randomValidMove(Go::Board *board, Go::Color col, Go::Move **move)
     }
   }
   
-  std::vector<Go::Move> validmoves;
-  for (int x=0;x<boardsize;x++)
-  {
-    for (int y=0;y<boardsize;y++)
-    {
-      if (board->validMove(Go::Move(col,x,y)) && !board->weakEye(col,x,y))
-      {
-        validmoves.push_back(Go::Move(col,x,y));
-      }
-    }
-  }
+  std::vector<Go::Move> validmoves=this->getValidMoves(board,col);
   
   if (validmoves.size()==0)
     *move=new Go::Move(col,Go::Move::PASS);
@@ -698,4 +668,46 @@ long Engine::getTimeAllowedThisTurn(Go::Color col)
   return timepermove;
 }
 
+std::vector<Go::Move> Engine::getValidMoves(Go::Board *board, Go::Color col)
+{
+  std::vector<Go::Move> validmoves;
+  
+  //validmoves.push_back(Go::Move(col,Go::Move::PASS));
+  
+  for (int x=0;x<boardsize;x++)
+  {
+    for (int y=0;y<boardsize;y++)
+    {
+      if (board->validMove(Go::Move(col,x,y)) && !board->weakEye(col,x,y))
+      {
+        validmoves.push_back(Go::Move(col,x,y));
+      }
+    }
+  }
+  return validmoves;
+}
+
+Util::MoveTree *Engine::getPlayoutTarget(Util::MoveTree *movetree, int totalplayouts)
+{
+  float bestucbval=0;
+  Util::MoveTree *besttree=NULL;
+  
+  for(std::list<Util::MoveTree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
+  {
+    if ((*iter)->getPlayouts()==0)
+      return (*iter);
+    else
+    {
+      float ratio=(*iter)->getRatio();
+      float ucbval=ratio + UCB_C*sqrt(log(totalplayouts)/((*iter)->getPlayouts()));
+      if (ucbval>bestucbval)
+      {
+        besttree=(*iter);
+        bestucbval=ucbval;
+      }
+    }
+  }
+  
+  return besttree;
+}
 

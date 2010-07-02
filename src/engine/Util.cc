@@ -39,3 +39,13 @@ void Util::MoveTree::addLose(float score)
   mean=(float)totalscore/playouts;
 }
 
+Util::MoveTree *Util::MoveTree::getChild(Go::Move move)
+{
+  for(std::list<Util::MoveTree*>::iterator iter=children->begin();iter!=children->end();++iter) 
+  {
+    if ((*iter)->getMove().getColor()==move.getColor() && (*iter)->getMove().getX()==move.getX() && (*iter)->getMove().getY()==move.getY()) 
+      return (*iter);
+  }
+  return NULL;
+}
+

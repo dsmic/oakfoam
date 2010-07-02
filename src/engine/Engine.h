@@ -1,10 +1,12 @@
 #ifndef DEF_OAKFOAM_ENGINE_H
 #define DEF_OAKFOAM_ENGINE_H
 
-#define PLAYOUTS_PER_MOVE 100
-#define PLAYOUTS_PER_MOVE_MAX 500
-#define PLAYOUTS_PER_MOVE_MIN 10
+#define PLAYOUTS_PER_MOVE 5000
+#define PLAYOUTS_PER_MOVE_MAX 100000
+#define PLAYOUTS_PER_MOVE_MIN 1000
 #define PLAYOUT_MAX_MOVE_FACTOR 3
+
+#define UCB_C 2
 
 #define RESIGN_RATIO_THRESHOLD 0.03
 #define RESIGN_MEAN_THRESHOLD 20
@@ -80,6 +82,8 @@ class Engine
     
     void randomValidMove(Go::Board *board, Go::Color col, Go::Move **move);
     void randomPlayout(Go::Board *board, Go::Color col);
+    std::vector<Go::Move> getValidMoves(Go::Board *board, Go::Color col);
+    Util::MoveTree *getPlayoutTarget(Util::MoveTree *movetree, int totalplayouts);
     
     long getCurrentTime() { return std::clock()/CLOCKS_PER_SEC*1000; };
     long getTimeAllowedThisTurn(Go::Color col);

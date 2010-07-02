@@ -2,10 +2,10 @@ TODO
 ------------------
 
 Now: (before next release)
-  move away from playouts per move
   add AMAF/RAVE
   keep record of valid moves in the board
-  add UCB
+  divide parameters into classes
+  do running average for ppmi
 
 Soon: (before next major release)
   replace FunctionList and ConstantList with std::list<>
@@ -16,6 +16,7 @@ Soon: (before next major release)
   implement superko
   copy all board data with a copy() (groups and liberties)
   investigate possible slow ppmi in trials after a while
+  improve time managment
 
 Later: (at some point)
   add handicap settings
