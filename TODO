@@ -7,6 +7,7 @@ Now: (before next release)
   investigate RAVE slowdown
   tune UCB and RAVE parameters
   move valid moves into 2 bit boards
+  move playout move lists into bit boards
 
 Soon: (before next major release)
   replace FunctionList and ConstantList with std::list<>
