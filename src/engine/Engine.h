@@ -6,7 +6,9 @@
 #define PLAYOUTS_PER_MOVE_MIN 1000
 #define PLAYOUT_MAX_MOVE_FACTOR 3
 
-#define UCB_C 2
+#define UCB_C 0.44
+
+#define RAVE_MOVES 1000
 
 #define RESIGN_RATIO_THRESHOLD 0.03
 #define RESIGN_MEAN_THRESHOLD 20
@@ -81,7 +83,7 @@ class Engine
     void addGtpCommands();
     
     void randomValidMove(Go::Board *board, Go::Color col, Go::Move **move);
-    void randomPlayout(Go::Board *board, Go::Color col);
+    void randomPlayout(Go::Board *board, Go::Color col, std::list<Go::Move> *firstlist, std::list<Go::Move> *secondlist);
     std::vector<Go::Move> getValidMoves(Go::Board *board, Go::Color col);
     Util::MoveTree *getPlayoutTarget(Util::MoveTree *movetree, int totalplayouts);
     

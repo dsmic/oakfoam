@@ -30,19 +30,22 @@ namespace Util
       Go::Move getMove() { return move; };
       int getPlayouts() { return playouts; };
       float getRatio() { return ratio; };
+      float getRAVERatio(int ravemoves);
       float getMean() { return mean; };
       Util::MoveTree *getChild(Go::Move move);
       
       void addChild(Util::MoveTree *node) { children->push_back(node); };
       void addWin(float score=0);
       void addLose(float score=0);
+      void addRAVEWin();
+      void addRAVELose();
       
     private:
       std::list<Util::MoveTree*> *children;
       
       Go::Move move;
-      int playouts;
-      float ratio;
+      int playouts,raveplayouts;
+      float ratio,raveratio;
       float mean;
   };
 };

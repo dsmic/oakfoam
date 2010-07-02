@@ -516,13 +516,33 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
     }
     
     Go::Board *playoutboard=currentboard->copy();
+    std::list<Go::Move> *firstlist=new std::list<Go::Move>();
     playoutboard->makeMove(playoutmove);
-    this->randomPlayout(playoutboard,Go::otherColor(col));
+    this->randomPlayout(playoutboard,Go::otherColor(col),NULL,(RAVE_MOVES>0?firstlist:NULL));
     totalplayouts++;
-    if (Util::isWinForColor(col,playoutboard->score()-komi))
+    
+    bool playoutwin=Util::isWinForColor(col,playoutboard->score()-komi);
+    if (playoutwin)
       playouttree->addWin(playoutboard->score()-komi);
     else
       playouttree->addLose(playoutboard->score()-komi);
+    
+    for (std::list<Go::Move>::iterator iter=firstlist->begin();iter!=firstlist->end();++iter)
+    {
+      if (!(*iter).isPass() && !(*iter).isResign())
+      {
+        Util::MoveTree *subtree=movetree->getChild((*iter));
+        if (subtree!=NULL)
+        {
+          if (playoutwin)
+            subtree->addRAVEWin();
+          else
+            subtree->addRAVELose();
+        }
+      }
+    }
+    
+    delete firstlist;
     delete playoutboard;
   }
   
@@ -621,7 +641,7 @@ void Engine::randomValidMove(Go::Board *board, Go::Color col, Go::Move **move)
   }
 }
 
-void Engine::randomPlayout(Go::Board *board, Go::Color col)
+void Engine::randomPlayout(Go::Board *board, Go::Color col, std::list<Go::Move> *firstlist, std::list<Go::Move> *secondlist)
 {
   Go::Color coltomove=col;
   Go::Move *move;
@@ -633,6 +653,8 @@ void Engine::randomPlayout(Go::Board *board, Go::Color col)
     bool resign,pass;
     this->randomValidMove(board,coltomove,&move);
     board->makeMove(*move);
+    if ((coltomove==col?firstlist:secondlist)!=NULL)
+      (coltomove==col?firstlist:secondlist)->push_back(*move);
     resign=move->isResign();
     pass=move->isPass();
     delete move;
@@ -697,7 +719,7 @@ Util::MoveTree *Engine::getPlayoutTarget(Util::MoveTree *movetree, int totalplay
       return (*iter);
     else
     {
-      float ratio=(*iter)->getRatio();
+      float ratio=(*iter)->getRAVERatio(RAVE_MOVES);
       float ucbval=ratio + UCB_C*sqrt(log(totalplayouts)/((*iter)->getPlayouts()));
       if (ucbval>bestucbval)
       {

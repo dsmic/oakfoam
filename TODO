@@ -2,7 +2,6 @@ TODO
 ------------------
 
 Now: (before next release)
-  add AMAF/RAVE
   keep record of valid moves in the board
   divide parameters into classes
   add more parameters
