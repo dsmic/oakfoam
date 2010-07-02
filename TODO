@@ -5,6 +5,7 @@ Now: (before next release)
   add AMAF/RAVE
   keep record of valid moves in the board
   divide parameters into classes
+  add more parameters
   do running average for ppmi
   make playouts move up tree properly
 
