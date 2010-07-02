@@ -36,6 +36,9 @@ Go::Board::Board(int s)
   nexttomove=Go::BLACK;
   passesplayed=0;
   movesmade=0;
+  
+  this->refreshValidMoves(Go::BLACK);
+  this->refreshValidMoves(Go::WHITE);
 }
 
 Go::Board::~Board()
@@ -130,7 +133,7 @@ Go::Board *Go::Board::copy()
   return copyboard;
 }
 
-bool Go::Board::validMove(Go::Move move)
+bool Go::Board::validMoveCheck(Go::Move move)
 {
   if (move.isPass() || move.isResign())
     return true;
@@ -239,6 +242,9 @@ void Go::Board::refreshGroups()
       }
     }
   }
+  
+  this->refreshValidMoves(Go::BLACK);
+  this->refreshValidMoves(Go::WHITE);
 }
 
 void Go::Board::spreadGroup(int x, int y, Go::Color col, Go::Board::Group *group)
@@ -273,12 +279,21 @@ void Go::Board::addDirectLiberties(int x, int y, Go::Board::Group *group)
 }
 
 void Go::Board::makeMove(Go::Move move)
-{ 
+{
+  if (koX!=-1 && koY!=-1)
+  {
+    int x=koX,y=koY;
+    this->setKo(-1,-1);
+    if (this->validMoveCheck(Go::Move(Go::BLACK,x,y)))
+      this->addValidMove(Go::Move(Go::BLACK,x,y));
+    if (this->validMoveCheck(Go::Move(Go::WHITE,x,y)))
+      this->addValidMove(Go::Move(Go::WHITE,x,y));
+  }
+  
   if (move.isPass() || move.isResign())
   {
     if (move.isPass())
       passesplayed++;
-    this->setKo(-1,-1);
     nexttomove=Go::otherColor(move.getColor());
     movesmade++;
     return;
@@ -286,7 +301,10 @@ void Go::Board::makeMove(Go::Move move)
   
   this->checkCoords(move.getX(),move.getY());
   if (!this->validMove(move))
+  {
+    fprintf(stderr,"invalid move at %d,%d\n",move.getX(),move.getY());
     throw Go::Exception("invalid move");
+  }
   
   int x=move.getX();
   int y=move.getY();
@@ -460,11 +478,6 @@ void Go::Board::makeMove(Go::Move move)
     }
   }
   
-  if (poskox>=0 && poskoy>=0)
-    this->setKo(poskox,poskoy);
-  else
-    this->setKo(-1,-1);
-  
   this->setColorAt(x,y,col);
   
   if (friendlygroups->size()>0)
@@ -499,6 +512,43 @@ void Go::Board::makeMove(Go::Move move)
   for(std::list<Go::Board::Group*>::iterator iter=enemygroups->begin();iter!=enemygroups->end();++iter)
   {
     (*iter)->removeLiberty(this->vertexAt(x,y));
+    if ((*iter)->numOfLiberties()==1)
+    {
+      Go::Board::Vertex *liberty=(*iter)->getLiberties()->front();
+      this->addValidMove(Go::Move(col,liberty->point.x,liberty->point.y));
+      if (this->directLiberties(liberty->point.x,liberty->point.y)==0 && !this->validMoveCheck(Go::Move(othercol,liberty->point.x,liberty->point.y)))
+        this->removeValidMove(Go::Move(othercol,liberty->point.x,liberty->point.y));
+    }
+  }
+  
+  this->removeValidMove(Go::Move(Go::BLACK,x,y));
+  this->removeValidMove(Go::Move(Go::WHITE,x,y));
+  if (this->groupAt(x,y)->numOfLiberties()==1)
+  {
+    Go::Board::Vertex *liberty=this->groupAt(x,y)->getLiberties()->front();
+    if (this->directLiberties(liberty->point.x,liberty->point.y)==0 && !this->validMoveCheck(Go::Move(col,liberty->point.x,liberty->point.y)))
+      this->removeValidMove(Go::Move(col,liberty->point.x,liberty->point.y));
+  }
+  
+  if (x>0 && this->colorAt(x-1,y)==Go::EMPTY)
+  {
+    if (!this->validMoveCheck(Go::Move(othercol,x-1,y)))
+      this->removeValidMove(Go::Move(othercol,x-1,y));
+  }
+  if (y>0 && this->colorAt(x,y-1)==Go::EMPTY)
+  {
+    if (!this->validMoveCheck(Go::Move(othercol,x,y-1)))
+      this->removeValidMove(Go::Move(othercol,x,y-1));
+  }
+  if (x<(size-1) && this->colorAt(x+1,y)==Go::EMPTY)
+  {
+    if (!this->validMoveCheck(Go::Move(othercol,x+1,y)))
+      this->removeValidMove(Go::Move(othercol,x+1,y));
+  }
+  if (y<(size-1) && this->colorAt(x,y+1)==Go::EMPTY)
+  {
+    if (!this->validMoveCheck(Go::Move(othercol,x,y+1)))
+      this->removeValidMove(Go::Move(othercol,x,y+1));
   }
   
   friendlygroups->resize(0);
@@ -508,33 +558,88 @@ void Go::Board::makeMove(Go::Move move)
   
   nexttomove=Go::otherColor(nexttomove);
   movesmade++;
+  
+  if (poskox>=0 && poskoy>=0)
+  {
+    this->setKo(poskox,poskoy);
+    if (!this->validMoveCheck(Go::Move(othercol,koX,koY)))
+      this->removeValidMove(Go::Move(othercol,koX,koY));
+  }
 }
 
 int Go::Board::removeGroup(Go::Board::Group *group)
 {
   int s=group->numOfStones();
+  Go::Color groupcol=group->getStones()->front()->color;
   
   groups.remove(group);
   
-  for(std::list<Go::Board::Vertex*>::iterator iter=group->getStones()->begin();iter!=group->getStones()->end();++iter) 
+  std::list<Go::Board::Point> *possiblesuicides = new std::list<Go::Board::Point>();
+  
+  for(std::list<Go::Board::Vertex*>::iterator iter=group->getStones()->begin();iter!=group->getStones()->end();++iter)
   {
     Go::Board::Vertex *vert=(*iter);
     
-    Go::Color othercol=Go::otherColor(vert->color);
+    Go::Color col=vert->color;
+    Go::Color othercol=Go::otherColor(col);
     int x=vert->point.x,y=vert->point.y;
     
     if (x>0 && this->colorAt(x-1,y)==othercol)
+    {
+      if (this->groupAt(x-1,y)->numOfLiberties()==1)
+      {
+        Go::Board::Vertex *liberty=this->groupAt(x-1,y)->getLiberties()->front();
+        this->addValidMove(Go::Move(othercol,liberty->point.x,liberty->point.y));
+        possiblesuicides->push_back(liberty->point);
+      }
       this->groupAt(x-1,y)->addLiberty(this->vertexAt(x,y));
+    }
     if (y>0 && this->colorAt(x,y-1)==othercol)
+    {
+      if (this->groupAt(x,y-1)->numOfLiberties()==1)
+      {
+        Go::Board::Vertex *liberty=this->groupAt(x,y-1)->getLiberties()->front();
+        this->addValidMove(Go::Move(othercol,liberty->point.x,liberty->point.y));
+        possiblesuicides->push_back(liberty->point);
+      }
       this->groupAt(x,y-1)->addLiberty(this->vertexAt(x,y));
+    }
     if (x<(size-1) && this->colorAt(x+1,y)==othercol)
+    {
+      if (this->groupAt(x+1,y)->numOfLiberties()==1)
+      {
+        Go::Board::Vertex *liberty=this->groupAt(x+1,y)->getLiberties()->front();
+        this->addValidMove(Go::Move(othercol,liberty->point.x,liberty->point.y));
+        possiblesuicides->push_back(liberty->point);
+      }
       this->groupAt(x+1,y)->addLiberty(this->vertexAt(x,y));
+    }
     if (y<(size-1) && this->colorAt(x,y+1)==othercol)
+    {
+      if (this->groupAt(x,y+1)->numOfLiberties()==1)
+      {
+        Go::Board::Vertex *liberty=this->groupAt(x,y+1)->getLiberties()->front();
+        this->addValidMove(Go::Move(othercol,liberty->point.x,liberty->point.y));
+        possiblesuicides->push_back(liberty->point);
+      }
       this->groupAt(x,y+1)->addLiberty(this->vertexAt(x,y));
+    }
+    
+    this->addValidMove(Go::Move(othercol,x,y));
+    this->addValidMove(Go::Move(col,x,y));
     
     vert->color=Go::EMPTY;
     vert->group=NULL;
   }
+  
+  for(std::list<Go::Board::Point>::iterator iter=possiblesuicides->begin();iter!=possiblesuicides->end();++iter)
+  {
+    if (!this->validMoveCheck(Go::Move(groupcol,(*iter).x,(*iter).y))) 
+      this->removeValidMove(Go::Move(groupcol,(*iter).x,(*iter).y));
+  }
+  
+  possiblesuicides->resize(0);
+  delete possiblesuicides;
   
   delete group;
   
@@ -735,5 +840,63 @@ void Go::Board::Group::addLiberty(Go::Board::Vertex *liberty)
 void Go::Board::Group::removeLiberty(Go::Board::Vertex *liberty)
 {
   liberties.remove(liberty);
+}
+
+void Go::Board::refreshValidMoves(Go::Color col)
+{
+  std::list<Go::Move> *validmoves=(col==Go::BLACK?&blackvalidmoves:&whitevalidmoves);
+  
+  validmoves->clear();
+  
+  validmoves->push_back(Go::Move(col,Go::Move::PASS));
+  validmoves->push_back(Go::Move(col,Go::Move::RESIGN));
+  
+  for (int x=0;x<size;x++)
+  {
+    for (int y=0;y<size;y++)
+    {
+      if (this->validMoveCheck(Go::Move(col,x,y)))
+      {
+        validmoves->push_back(Go::Move(col,x,y));
+      }
+    }
+  }
+}
+
+bool Go::Board::validMove(Go::Move move)
+{
+  std::list<Go::Move> *validmoves=(move.getColor()==Go::BLACK?&blackvalidmoves:&whitevalidmoves);
+  
+  for(std::list<Go::Move>::iterator iter=validmoves->begin();iter!=validmoves->end();++iter) 
+  {
+    if ((*iter)==move)
+      return true;
+  }
+  
+  return false;
+}
+
+std::list<Go::Move> *Go::Board::getValidMoves(Go::Color col)
+{
+  return (col==Go::BLACK?&blackvalidmoves:&whitevalidmoves);
+}
+
+void Go::Board::addValidMove(Go::Move move)
+{
+  std::list<Go::Move> *validmoves=(move.getColor()==Go::BLACK?&blackvalidmoves:&whitevalidmoves);
+  
+  for(std::list<Go::Move>::iterator iter=validmoves->begin();iter!=validmoves->end();++iter) 
+  {
+    if ((*iter)==move)
+      return;
+  }
+  
+  validmoves->push_back(move);
+}
+
+void Go::Board::removeValidMove(Go::Move move)
+{
+  std::list<Go::Move> *validmoves=(move.getColor()==Go::BLACK?&blackvalidmoves:&whitevalidmoves);
+  validmoves->remove(move);
 }
 

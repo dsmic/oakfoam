@@ -56,6 +56,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("param",this,&Engine::gtpParam);
   //gtpe->addFunctionCommand("showgroups",this,&Engine::gtpShowGroups);
   gtpe->addFunctionCommand("showliberties",this,&Engine::gtpShowLiberties);
+  gtpe->addFunctionCommand("showvalidmoves",this,&Engine::gtpShowValidMoves);
   
   gtpe->addFunctionCommand("time_settings",this,&Engine::gtpTimeSettings);
   gtpe->addFunctionCommand("time_left",this,&Engine::gtpTimeLeft);
@@ -64,6 +65,7 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("showboard","Show Board","string");
   //gtpe->addAnalyzeCommand("showgroups","Show Groups","sboard");
   gtpe->addAnalyzeCommand("showliberties","Show Liberties","sboard");
+  gtpe->addAnalyzeCommand("showvalidmoves","Show Valid Moves","sboard");
   gtpe->addAnalyzeCommand("param","Parameters","param");
 }
 
@@ -311,6 +313,29 @@ void Engine::gtpShowLiberties(void *instance, Gtp::Engine* gtpe, Gtp::Command* c
         int lib=me->currentboard->boardData()[y*me->boardsize+x].group->numOfLiberties();
         gtpe->getOutput()->printf("\"%d\" ",lib);
       }
+    }
+    gtpe->getOutput()->printf("\n");
+  }
+
+  gtpe->getOutput()->endResponse(true);
+}
+
+void Engine::gtpShowValidMoves(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("\n");
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      gtpe->getOutput()->printf("\"");
+      if (me->currentboard->validMove(Go::Move(Go::BLACK,x,y)))
+        gtpe->getOutput()->printf("B");
+      if (me->currentboard->validMove(Go::Move(Go::WHITE,x,y)))
+        gtpe->getOutput()->printf("W");
+      gtpe->getOutput()->printf("\" ");
     }
     gtpe->getOutput()->printf("\n");
   }
@@ -708,21 +733,18 @@ long Engine::getTimeAllowedThisTurn(Go::Color col)
 
 std::vector<Go::Move> Engine::getValidMoves(Go::Board *board, Go::Color col)
 {
-  std::vector<Go::Move> validmoves;
+  std::vector<Go::Move> validmovesvector;
+  std::list<Go::Move> *validmoveslist;
   
-  //validmoves.push_back(Go::Move(col,Go::Move::PASS));
+  validmoveslist=board->getValidMoves(col);
   
-  for (int x=0;x<boardsize;x++)
+  for (std::list<Go::Move>::iterator iter=validmoveslist->begin();iter!=validmoveslist->end();++iter)
   {
-    for (int y=0;y<boardsize;y++)
-    {
-      if (board->validMove(Go::Move(col,x,y)) && !board->weakEye(col,x,y))
-      {
-        validmoves.push_back(Go::Move(col,x,y));
-      }
-    }
+    if (!(*iter).isPass() && !(*iter).isResign() && !board->weakEye((*iter).getColor(),(*iter).getX(),(*iter).getY()))
+      validmovesvector.push_back((*iter));
   }
-  return validmoves;
+  
+  return validmovesvector;
 }
 
 Util::MoveTree *Engine::getPlayoutTarget(Util::MoveTree *movetree, int totalplayouts)

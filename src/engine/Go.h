@@ -66,6 +66,9 @@ namespace Go
       bool isResign() {return (x==-2 && y==-2)?true:false;};
       
       std::string toString();
+      
+      bool operator==(Go::Move other) { return (color==other.getColor() && x==other.getX() && y==other.getY()); };
+      bool operator!=(Go::Move other) { return !(*this == other); };
     
     private:
       Go::Color color;
@@ -121,6 +124,7 @@ namespace Go
       int getPassesPlayed() { return passesplayed; };
       int getMovesMade() { return movesmade; };
       
+      std::list<Go::Move> *getValidMoves(Go::Color col);
       bool validMove(Go::Move move);
       void makeMove(Go::Move move);
       
@@ -137,6 +141,7 @@ namespace Go
       Go::Color nexttomove;
       int passesplayed;
       int movesmade;
+      std::list<Go::Move> blackvalidmoves,whitevalidmoves;
       
       struct ScoreVertex
       {
@@ -160,6 +165,11 @@ namespace Go
       int directLiberties(int x, int y);
       int removeGroup(Go::Board::Group *group);
       void mergeGroups(Go::Board::Group *first, Go::Board::Group *second);
+      
+      void refreshValidMoves(Go::Color col);
+      bool validMoveCheck(Go::Move move);
+      void addValidMove(Go::Move move);
+      void removeValidMove(Go::Move move);
       
       void setKo(int x, int y);
       
