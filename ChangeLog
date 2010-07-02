@@ -4,6 +4,7 @@ version 0.0.5: 2010-xx-xx
   * change the way playouts are chosen
   * added UCB
   * added RAVE
+  * maintain list of valid moves in board
 
 version 0.0.4: 2010-07-01
   * fixed memory leak
