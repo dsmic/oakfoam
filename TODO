@@ -6,7 +6,6 @@ Now: (before next release)
   make playouts move up tree properly
   investigate RAVE slowdown
   tune UCB and RAVE parameters
-  move valid moves into 2 bit boards
   move playout move lists into bit boards
   make playouts atari-aware
 

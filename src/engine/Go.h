@@ -75,6 +75,23 @@ namespace Go
       int x,y;
   };
   
+  class BitBoard
+  {
+    public:
+      BitBoard(int s);
+      ~BitBoard();
+      
+      bool get(int x, int y) { return data[y*size+x]; };
+      void set(int x, int y, bool val=true) { data[y*size+x]=val; };
+      void clear(int x, int y) { this->set(x,y,false); };
+      void fill(bool val);
+      void clear() { this->fill(false); };
+    
+    private:
+      int size;
+      bool *data;
+  };
+  
   class Board
   {
     public:
@@ -123,7 +140,7 @@ namespace Go
       int getPassesPlayed() { return passesplayed; };
       int getMovesMade() { return movesmade; };
       
-      std::list<Go::Move> *getValidMoves(Go::Color col);
+      Go::BitBoard *getValidMoves(Go::Color col);
       bool validMove(Go::Move move);
       void makeMove(Go::Move move);
       
@@ -140,7 +157,8 @@ namespace Go
       Go::Color nexttomove;
       int passesplayed;
       int movesmade;
-      std::list<Go::Move> blackvalidmoves,whitevalidmoves;
+      //std::list<Go::Move> blackvalidmoves,whitevalidmoves;
+      Go::BitBoard *blackvalidmoves,*whitevalidmoves;
       
       struct ScoreVertex
       {

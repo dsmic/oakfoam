@@ -37,12 +37,17 @@ Go::Board::Board(int s)
   passesplayed=0;
   movesmade=0;
   
+  blackvalidmoves=new Go::BitBoard(size);
+  whitevalidmoves=new Go::BitBoard(size);
+  
   this->refreshValidMoves(Go::BLACK);
   this->refreshValidMoves(Go::WHITE);
 }
 
 Go::Board::~Board()
 {
+  delete blackvalidmoves;
+  delete whitevalidmoves;
   for(std::list<Go::Board::Group*>::iterator iter=groups.begin();iter!=groups.end();++iter) 
   {
     delete (*iter);
@@ -833,12 +838,12 @@ void Go::Board::Group::removeLiberty(Go::Board::Vertex *liberty)
 
 void Go::Board::refreshValidMoves(Go::Color col)
 {
-  std::list<Go::Move> *validmoves=(col==Go::BLACK?&blackvalidmoves:&whitevalidmoves);
+  Go::BitBoard *validmoves=(col==Go::BLACK?blackvalidmoves:whitevalidmoves);
   
   validmoves->clear();
   
-  validmoves->push_back(Go::Move(col,Go::Move::PASS));
-  validmoves->push_back(Go::Move(col,Go::Move::RESIGN));
+  //validmoves->push_back(Go::Move(col,Go::Move::PASS));
+  //validmoves->push_back(Go::Move(col,Go::Move::RESIGN));
   
   for (int x=0;x<size;x++)
   {
@@ -846,7 +851,7 @@ void Go::Board::refreshValidMoves(Go::Color col)
     {
       if (this->validMoveCheck(Go::Move(col,x,y)))
       {
-        validmoves->push_back(Go::Move(col,x,y));
+        validmoves->set(x,y);
       }
     }
   }
@@ -854,38 +859,41 @@ void Go::Board::refreshValidMoves(Go::Color col)
 
 bool Go::Board::validMove(Go::Move move)
 {
-  std::list<Go::Move> *validmoves=(move.getColor()==Go::BLACK?&blackvalidmoves:&whitevalidmoves);
-  
-  for(std::list<Go::Move>::iterator iter=validmoves->begin();iter!=validmoves->end();++iter) 
-  {
-    if ((*iter)==move)
-      return true;
-  }
-  
-  return false;
+  Go::BitBoard *validmoves=(move.getColor()==Go::BLACK?blackvalidmoves:whitevalidmoves);
+  return validmoves->get(move.getX(),move.getY());
 }
 
-std::list<Go::Move> *Go::Board::getValidMoves(Go::Color col)
+Go::BitBoard *Go::Board::getValidMoves(Go::Color col)
 {
-  return (col==Go::BLACK?&blackvalidmoves:&whitevalidmoves);
+  return (col==Go::BLACK?blackvalidmoves:whitevalidmoves);
 }
 
 void Go::Board::addValidMove(Go::Move move)
 {
-  std::list<Go::Move> *validmoves=(move.getColor()==Go::BLACK?&blackvalidmoves:&whitevalidmoves);
-  
-  for(std::list<Go::Move>::iterator iter=validmoves->begin();iter!=validmoves->end();++iter) 
-  {
-    if ((*iter)==move)
-      return;
-  }
-  
-  validmoves->push_back(move);
+  Go::BitBoard *validmoves=(move.getColor()==Go::BLACK?blackvalidmoves:whitevalidmoves);
+  validmoves->set(move.getX(),move.getY());
 }
 
 void Go::Board::removeValidMove(Go::Move move)
 {
-  std::list<Go::Move> *validmoves=(move.getColor()==Go::BLACK?&blackvalidmoves:&whitevalidmoves);
-  validmoves->remove(move);
+  Go::BitBoard *validmoves=(move.getColor()==Go::BLACK?blackvalidmoves:whitevalidmoves);
+  validmoves->clear(move.getX(),move.getY());
+}
+
+Go::BitBoard::BitBoard(int s)
+{
+  size=s;
+  data=new bool[size*size];
+}
+
+Go::BitBoard::~BitBoard()
+{
+  delete[] data;
+}
+
+void Go::BitBoard::fill(bool val)
+{
+  for (int i=0;i<(size*size);i++)
+    data[i]=val;
 }
 

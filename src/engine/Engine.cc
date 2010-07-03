@@ -704,14 +704,16 @@ long Engine::getTimeAllowedThisTurn(Go::Color col)
 std::vector<Go::Move> Engine::getValidMoves(Go::Board *board, Go::Color col)
 {
   std::vector<Go::Move> validmovesvector;
-  std::list<Go::Move> *validmoveslist;
+  Go::BitBoard *validmovesbitboard;
   
-  validmoveslist=board->getValidMoves(col);
-  
-  for (std::list<Go::Move>::iterator iter=validmoveslist->begin();iter!=validmoveslist->end();++iter)
+  validmovesbitboard=board->getValidMoves(col);
+  for (int x=0;x<boardsize;x++)
   {
-    if (!(*iter).isPass() && !(*iter).isResign() && !board->weakEye((*iter).getColor(),(*iter).getX(),(*iter).getY()))
-      validmovesvector.push_back((*iter));
+    for (int y=0;y<boardsize;y++)
+    {
+      if (validmovesbitboard->get(x,y) && !board->weakEye(col,x,y))
+        validmovesvector.push_back(Go::Move(col,x,y));
+    }
   }
   
   return validmovesvector;
