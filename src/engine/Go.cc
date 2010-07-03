@@ -533,6 +533,8 @@ void Go::Board::makeMove(Go::Move move)
     Go::Board::Vertex *liberty=this->groupAt(x,y)->getLiberties()->front();
     if (this->directLiberties(liberty->point.x,liberty->point.y)==0 && !this->validMoveCheck(Go::Move(col,liberty->point.x,liberty->point.y)))
       this->removeValidMove(Go::Move(col,liberty->point.x,liberty->point.y));
+    if (this->validMoveCheck(Go::Move(othercol,liberty->point.x,liberty->point.y)))
+      this->addValidMove(Go::Move(othercol,liberty->point.x,liberty->point.y));
   }
   
   if (x>0 && this->colorAt(x-1,y)==Go::EMPTY)
@@ -860,7 +862,7 @@ void Go::Board::refreshValidMoves(Go::Color col)
 bool Go::Board::validMove(Go::Move move)
 {
   Go::BitBoard *validmoves=(move.getColor()==Go::BLACK?blackvalidmoves:whitevalidmoves);
-  return validmoves->get(move.getX(),move.getY());
+  return move.isPass() || move.isResign() || validmoves->get(move.getX(),move.getY());
 }
 
 Go::BitBoard *Go::Board::getValidMoves(Go::Color col)
