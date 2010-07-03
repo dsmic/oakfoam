@@ -2,8 +2,6 @@ TODO
 ------------------
 
 Now: (before next release)
-  do running average for ppmi
-  tune UCB and RAVE parameters
   add move policy (playout|1-ply|UCT)
 
 Soon: (before next major release)
@@ -17,6 +15,8 @@ Soon: (before next major release)
   investigate possible slow ppmi in trials after a while
   improve time managment
   divide parameters into classes?
+  do running average for ppmi?
+  tune UCB and RAVE parameters
 
 Later: (at some point)
   add handicap settings
