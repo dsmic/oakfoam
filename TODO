@@ -5,8 +5,8 @@ Now: (before next release)
   do running average for ppmi
   make playouts move up tree properly
   tune UCB and RAVE parameters
-  make playouts atari-aware
   increase accuracy of timing
+  add move policy (playout|1-ply|UCT)
 
 Soon: (before next major release)
   replace FunctionList and ConstantList with std::list<>

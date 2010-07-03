@@ -10,12 +10,14 @@ Engine::Engine(Gtp::Engine *ge)
   currentboard=new Go::Board(boardsize);
   komi=5.5;
   
+  livegfx=LIVEGFX_ON;
+  
   playoutspermilli=0;
   playoutspermove=PLAYOUTS_PER_MOVE;
   playoutspermoveinit=PLAYOUTS_PER_MOVE;
   playoutspermovemax=PLAYOUTS_PER_MOVE_MAX;
   playoutspermovemin=PLAYOUTS_PER_MOVE_MIN;
-  livegfx=LIVEGFX_ON;
+  playoutatarichance=PLAYOUT_ATARI_CHANCE;
   
   ucbc=UCB_C;
   ravemoves=RAVE_MOVES;
@@ -330,6 +332,7 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     gtpe->getOutput()->printf("[string] playouts_per_move %d\n",me->playoutspermove);
     gtpe->getOutput()->printf("[string] playouts_per_move_max %d\n",me->playoutspermovemax);
     gtpe->getOutput()->printf("[string] playouts_per_move_min %d\n",me->playoutspermovemin);
+    gtpe->getOutput()->printf("[string] playout_atari_chance %.2f\n",me->playoutatarichance);
     gtpe->getOutput()->printf("[string] ucb_c %.2f\n",me->ucbc);
     gtpe->getOutput()->printf("[string] rave_moves %d\n",me->ravemoves);
     gtpe->getOutput()->printf("[string] resign_ratio_threshold %.3f\n",me->resignratiothreshold);
@@ -355,6 +358,8 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
       me->playoutspermovemax=cmd->getIntArg(1);
     else if (param=="playouts_per_move_min")
       me->playoutspermovemin=cmd->getIntArg(1);
+    else if (param=="playout_atari_chance")
+      me->playoutatarichance=cmd->getFloatArg(1);
     else if (param=="ucb_c")
       me->ucbc=cmd->getFloatArg(1);
     else if (param=="rave_moves")
@@ -634,6 +639,26 @@ void Engine::clearBoard()
 
 void Engine::randomValidMove(Go::Board *board, Go::Color col, Go::Move **move)
 {
+  std::vector<Go::Move> atarimoves;
+  std::list<Go::Board::Group*> *groups=board->getGroups();
+  
+  for(std::list<Go::Board::Group*>::iterator iter=groups->begin();iter!=groups->end();++iter) 
+  {
+    if ((*iter)->numOfLiberties()==1)
+    {
+      Go::Board::Vertex *liberty=(*iter)->getLiberties()->front();
+      if (board->validMove(Go::Move(col,liberty->point.x,liberty->point.y)))
+        atarimoves.push_back(Go::Move(col,liberty->point.x,liberty->point.y));
+    }
+  }
+  
+  if (atarimoves.size()>0 && playoutatarichance>(std::rand()/((double)RAND_MAX+1)))
+  {
+    int i=(int)(std::rand()/((double)RAND_MAX+1)*atarimoves.size());
+    *move=new Go::Move(col,atarimoves.at(i).getX(),atarimoves.at(i).getY());
+    return;
+  }
+  
   for (int i=0;i<5;i++)
   {
     int x=(int)(std::rand()/((double)RAND_MAX+1)*boardsize);

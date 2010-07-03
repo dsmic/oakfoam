@@ -135,6 +135,7 @@ namespace Go
       
       Go::Board::Vertex *boardData() { return data; }; //must only be used for read-only access
       std::string toString();
+      std::list<Go::Board::Group*> *getGroups() { return &groups; };
       
       int getSize() { return size; };
       int getPassesPlayed() { return passesplayed; };

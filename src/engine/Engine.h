@@ -5,6 +5,7 @@
 #define PLAYOUTS_PER_MOVE_MAX 100000
 #define PLAYOUTS_PER_MOVE_MIN 1000
 #define PLAYOUT_MAX_MOVE_FACTOR 3
+#define PLAYOUT_ATARI_CHANCE 0.3
 
 #define UCB_C 0.44
 
@@ -81,6 +82,7 @@ class Engine
     float timepercentageboard,timefactor;
     float ucbc;
     int ravemoves;
+    float playoutatarichance;
     
     void addGtpCommands();
     
