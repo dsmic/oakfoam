@@ -2,6 +2,7 @@ TODO
 ------------------
 
 Now: (before next release)
+  do tree search
 
 Soon: (before next major release)
   replace FunctionList and ConstantList with std::list<>
