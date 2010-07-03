@@ -6,6 +6,7 @@ Now: (before next release)
   make playouts move up tree properly
   tune UCB and RAVE parameters
   make playouts atari-aware
+  increase accuracy of timing
 
 Soon: (before next major release)
   replace FunctionList and ConstantList with std::list<>
