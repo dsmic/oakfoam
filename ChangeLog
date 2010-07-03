@@ -6,6 +6,7 @@ version 0.0.5: 2010-xx-xx
   * added RAVE
   * maintain list of valid moves in board
   * make playouts atari-aware
+  * start using Boost Library for timing
 
 version 0.0.4: 2010-07-01
   * fixed memory leak

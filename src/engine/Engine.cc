@@ -479,7 +479,7 @@ void Engine::gtpTimeLeft(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *mean)
 {
   long *timeleft=(col==Go::BLACK ? &timeblack : &timewhite);
-  long timestart=getCurrentTime();
+  boost::timer timer;
   int totalplayouts=0;
   
   if (*timeleft>0 && playoutspermilli>0)
@@ -606,8 +606,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
   if (livegfx)
     gtpe->getOutput()->printfDebug("gogui-gfx: CLEAR\n");
   
-  long timeend=getCurrentTime();
-  long timeused=timeend-timestart;
+  long timeused=timer.elapsed()*1000;
   if (timeused>0)
     playoutspermilli=(float)totalplayouts/timeused;
   if (*timeleft!=0)
