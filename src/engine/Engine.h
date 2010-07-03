@@ -41,6 +41,12 @@ class Engine
     Engine(Gtp::Engine *ge);
     ~Engine();
     
+    enum MovePolicy
+    {
+      MP_PLAYOUT,
+      MP_ONEPLY
+    };
+    
     void generateMove(Go::Color col, Go::Move **move, float *ratio=NULL, float *mean=NULL);
     bool isMoveAllowed(Go::Move move);
     void makeMove(Go::Move move);
@@ -83,6 +89,7 @@ class Engine
     float ucbc;
     int ravemoves;
     float playoutatarichance;
+    Engine::MovePolicy movepolicy;
     
     void addGtpCommands();
     

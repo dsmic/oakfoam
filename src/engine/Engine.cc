@@ -10,6 +10,8 @@ Engine::Engine(Gtp::Engine *ge)
   currentboard=new Go::Board(boardsize);
   komi=5.5;
   
+  movepolicy=Engine::MP_ONEPLY;
+  
   livegfx=LIVEGFX_ON;
   
   playoutspermilli=0;
@@ -329,6 +331,7 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   {
     gtpe->getOutput()->startResponse(cmd);
     gtpe->getOutput()->printf("[bool] live_gfx %d\n",me->livegfx);
+    gtpe->getOutput()->printf("[list/playout/1-ply] move_policy %s\n",(me->movepolicy==Engine::MP_ONEPLY?"1-ply":"playout"));
     gtpe->getOutput()->printf("[string] playouts_per_move %d\n",me->playoutspermove);
     gtpe->getOutput()->printf("[string] playouts_per_move_max %d\n",me->playoutspermovemax);
     gtpe->getOutput()->printf("[string] playouts_per_move_min %d\n",me->playoutspermovemin);
@@ -382,6 +385,15 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
       me->timefactor=cmd->getFloatArg(1);
     else if (param=="time_move_minimum")
       me->timemoveminimum=cmd->getIntArg(1);
+    else if (param=="move_policy")
+    {
+      std::string val=cmd->getStringArg(1);
+      std::transform(val.begin(),val.end(),val.begin(),::tolower);
+      if (val=="1-ply")
+        me->movepolicy=Engine::MP_ONEPLY;
+      else
+        me->movepolicy=Engine::MP_PLAYOUT;
+    }
     else
     {
       gtpe->getOutput()->startResponse(cmd,false);
@@ -478,139 +490,147 @@ void Engine::gtpTimeLeft(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 
 void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *mean)
 {
-  long *timeleft=(col==Go::BLACK ? &timeblack : &timewhite);
-  boost::timer timer;
-  int totalplayouts=0;
-  
-  if (*timeleft>0 && playoutspermilli>0)
+  if (movepolicy==Engine::MP_ONEPLY)
   {
-    playoutspermove=playoutspermilli*this->getTimeAllowedThisTurn(col);
-    if (playoutspermove<PLAYOUTS_PER_MOVE_MIN)
-      playoutspermove=PLAYOUTS_PER_MOVE_MIN;
-    else if (playoutspermove>PLAYOUTS_PER_MOVE_MAX)
-      playoutspermove=PLAYOUTS_PER_MOVE_MAX;
-  }
-  
-  Util::MoveTree *movetree;
-  
-  movetree=new Util::MoveTree(ravemoves);
-  
-  if (livegfx)
-    gtpe->getOutput()->printfDebug("gogui-gfx: TEXT [genmove]: starting...\n");
-  
-  Go::Board *passboard=currentboard->copy();
-  passboard->makeMove(Go::Move(col,Go::Move::PASS));
-  passboard->makeMove(Go::Move(Go::otherColor(col),Go::Move::PASS));
-  if (Util::isWinForColor(col,passboard->score()-komi))
-  {
-    Util::MoveTree *nmt=new Util::MoveTree(ravemoves,Go::Move(col,Go::Move::PASS));
-    nmt->addWin(passboard->score()-komi);
-    movetree->addChild(nmt);
-  }
-  delete passboard;
-  
-  std::vector<Go::Move> validmoves=this->getValidMoves(currentboard,col);
-  for (int i=0;i<(int)validmoves.size();i++)
-  {
-    Util::MoveTree *nmt=new Util::MoveTree(ravemoves,validmoves.at(i));
-    movetree->addChild(nmt);
-  }
-  
-  for (int i=0;i<playoutspermove;i++)
-  {
-    Util::MoveTree *playouttree = this->getPlayoutTarget(movetree,totalplayouts);
-    if (playouttree==NULL)
-      break;
-    Go::Move playoutmove=playouttree->getMove();
+    long *timeleft=(col==Go::BLACK ? &timeblack : &timewhite);
+    boost::timer timer;
+    int totalplayouts=0;
     
-    if (livegfx)
+    if (*timeleft>0 && playoutspermilli>0)
     {
-      gtpe->getOutput()->printfDebug("gogui-gfx: TEXT [genmove]: eval (%d,%d) tp:%d r:%.2f\n",playoutmove.getX(),playoutmove.getY(),totalplayouts,playouttree->getRatio());
-      gtpe->getOutput()->printfDebug("gogui-gfx: VAR %c ",(col==Go::BLACK?'B':'W'));
-      Gtp::Vertex vert={playoutmove.getX(),playoutmove.getY()};
-      gtpe->getOutput()->printDebugVertex(vert);
-      gtpe->getOutput()->printfDebug("\n");
-      for (long zzz=0;zzz<100000;zzz++) //slow down for display
-        gtpe->getOutput()->printfDebug("");
+      playoutspermove=playoutspermilli*this->getTimeAllowedThisTurn(col);
+      if (playoutspermove<PLAYOUTS_PER_MOVE_MIN)
+        playoutspermove=PLAYOUTS_PER_MOVE_MIN;
+      else if (playoutspermove>PLAYOUTS_PER_MOVE_MAX)
+        playoutspermove=PLAYOUTS_PER_MOVE_MAX;
     }
     
-    Go::Board *playoutboard=currentboard->copy();
-    Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
-    playoutboard->makeMove(playoutmove);
-    this->randomPlayout(playoutboard,Go::otherColor(col),NULL,(ravemoves>0?firstlist:NULL));
-    totalplayouts++;
+    Util::MoveTree *movetree;
     
-    bool playoutwin=Util::isWinForColor(col,playoutboard->score()-komi);
-    if (playoutwin)
-      playouttree->addWin(playoutboard->score()-komi);
-    else
-      playouttree->addLose(playoutboard->score()-komi);
+    movetree=new Util::MoveTree(ravemoves);
     
-    if (ravemoves>0)
+    if (livegfx)
+      gtpe->getOutput()->printfDebug("gogui-gfx: TEXT [genmove]: starting...\n");
+    
+    Go::Board *passboard=currentboard->copy();
+    passboard->makeMove(Go::Move(col,Go::Move::PASS));
+    passboard->makeMove(Go::Move(Go::otherColor(col),Go::Move::PASS));
+    if (Util::isWinForColor(col,passboard->score()-komi))
     {
-      for (int x=0;x<boardsize;x++)
+      Util::MoveTree *nmt=new Util::MoveTree(ravemoves,Go::Move(col,Go::Move::PASS));
+      nmt->addWin(passboard->score()-komi);
+      movetree->addChild(nmt);
+    }
+    delete passboard;
+    
+    std::vector<Go::Move> validmoves=this->getValidMoves(currentboard,col);
+    for (int i=0;i<(int)validmoves.size();i++)
+    {
+      Util::MoveTree *nmt=new Util::MoveTree(ravemoves,validmoves.at(i));
+      movetree->addChild(nmt);
+    }
+    
+    for (int i=0;i<playoutspermove;i++)
+    {
+      Util::MoveTree *playouttree = this->getPlayoutTarget(movetree,totalplayouts);
+      if (playouttree==NULL)
+        break;
+      Go::Move playoutmove=playouttree->getMove();
+      
+      if (livegfx)
       {
-        for (int y=0;y<boardsize;y++)
+        gtpe->getOutput()->printfDebug("gogui-gfx: TEXT [genmove]: eval (%d,%d) tp:%d r:%.2f\n",playoutmove.getX(),playoutmove.getY(),totalplayouts,playouttree->getRatio());
+        gtpe->getOutput()->printfDebug("gogui-gfx: VAR %c ",(col==Go::BLACK?'B':'W'));
+        Gtp::Vertex vert={playoutmove.getX(),playoutmove.getY()};
+        gtpe->getOutput()->printDebugVertex(vert);
+        gtpe->getOutput()->printfDebug("\n");
+        for (long zzz=0;zzz<100000;zzz++) //slow down for display
+          gtpe->getOutput()->printfDebug("");
+      }
+      
+      Go::Board *playoutboard=currentboard->copy();
+      Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
+      playoutboard->makeMove(playoutmove);
+      this->randomPlayout(playoutboard,Go::otherColor(col),NULL,(ravemoves>0?firstlist:NULL));
+      totalplayouts++;
+      
+      bool playoutwin=Util::isWinForColor(col,playoutboard->score()-komi);
+      if (playoutwin)
+        playouttree->addWin(playoutboard->score()-komi);
+      else
+        playouttree->addLose(playoutboard->score()-komi);
+      
+      if (ravemoves>0)
+      {
+        for (int x=0;x<boardsize;x++)
         {
-          if (firstlist->get(x,y))
+          for (int y=0;y<boardsize;y++)
           {
-            Util::MoveTree *subtree=movetree->getChild(Go::Move(col,x,y));
-            if (subtree!=NULL)
+            if (firstlist->get(x,y))
             {
-              if (playoutwin)
-                subtree->addRAVEWin();
-              else
-                subtree->addRAVELose();
+              Util::MoveTree *subtree=movetree->getChild(Go::Move(col,x,y));
+              if (subtree!=NULL)
+              {
+                if (playoutwin)
+                  subtree->addRAVEWin();
+                else
+                  subtree->addRAVELose();
+              }
             }
           }
         }
       }
+      
+      delete firstlist;
+      delete playoutboard;
     }
     
-    delete firstlist;
-    delete playoutboard;
-  }
-  
-  float bestratio=0,bestmean=0;
-  Go::Move bestmove;
-  
-  for(std::list<Util::MoveTree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
-  {
-    if ((*iter)->getPlayouts()>0)
+    float bestratio=0,bestmean=0;
+    Go::Move bestmove;
+    
+    for(std::list<Util::MoveTree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
     {
-      if ((*iter)->getRatio()>bestratio)
+      if ((*iter)->getPlayouts()>0)
       {
-        bestmove=(*iter)->getMove();
-        bestratio=(*iter)->getRatio();
-        bestmean=(*iter)->getMean();
+        if ((*iter)->getRatio()>bestratio)
+        {
+          bestmove=(*iter)->getMove();
+          bestratio=(*iter)->getRatio();
+          bestmean=(*iter)->getMean();
+        }
       }
     }
+    
+    if (bestratio==0)
+      *move=new Go::Move(col,Go::Move::RESIGN);
+    else if (bestratio<=resignratiothreshold && std::fabs(bestmean)>resignmeanthreshold && currentboard->getMovesMade()>(resignmovefactorthreshold*boardsize*boardsize))
+      *move=new Go::Move(col,Go::Move::RESIGN);
+    else
+      *move=new Go::Move(col,bestmove.getX(),bestmove.getY());
+    
+    if (ratio!=NULL)
+      *ratio=bestratio;
+    
+    if (mean!=NULL)
+      *mean=bestmean;
+    
+    this->makeMove(**move);
+    
+    delete movetree;
+    if (livegfx)
+      gtpe->getOutput()->printfDebug("gogui-gfx: CLEAR\n");
+    
+    long timeused=timer.elapsed()*1000;
+    if (timeused>0)
+      playoutspermilli=(float)totalplayouts/timeused;
+    if (*timeleft!=0)
+      *timeleft-=timeused;
   }
-  
-  if (bestratio==0)
-    *move=new Go::Move(col,Go::Move::RESIGN);
-  else if (bestratio<=resignratiothreshold && std::fabs(bestmean)>resignmeanthreshold && currentboard->getMovesMade()>(resignmovefactorthreshold*boardsize*boardsize))
-    *move=new Go::Move(col,Go::Move::RESIGN);
   else
-    *move=new Go::Move(col,bestmove.getX(),bestmove.getY());
-  
-  if (ratio!=NULL)
-    *ratio=bestratio;
-  
-  if (mean!=NULL)
-    *mean=bestmean;
-  
-  this->makeMove(**move);
-  
-  delete movetree;
-  if (livegfx)
-    gtpe->getOutput()->printfDebug("gogui-gfx: CLEAR\n");
-  
-  long timeused=timer.elapsed()*1000;
-  if (timeused>0)
-    playoutspermilli=(float)totalplayouts/timeused;
-  if (*timeleft!=0)
-    *timeleft-=timeused;
+  {
+    this->randomValidMove(currentboard,col,move);
+    this->makeMove(**move);
+  }
 }
 
 bool Engine::isMoveAllowed(Go::Move move)
