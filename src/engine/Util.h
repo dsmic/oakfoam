@@ -23,30 +23,41 @@ namespace Util
   class MoveTree
   {
     public:
-      MoveTree(Go::Move mov = Go::Move(Go::EMPTY,Go::Move::PASS));
+      MoveTree(int rm, Go::Move mov = Go::Move(Go::EMPTY,Go::Move::PASS), Util::MoveTree *p = NULL);
       ~MoveTree();
       
+      static float makeRAVERatio(float ratio, float raveratio, int playouts, int ravemoves);
+      
+      Util::MoveTree *getParent() { return parent; };
       std::list<Util::MoveTree*> *getChildren() { return children; };
       Go::Move getMove() { return move; };
+      bool isRoot() { return (parent==NULL); };
+      bool isLeaf() { return (children->size()==0); };
+      
       int getPlayouts() { return playouts; };
       float getRatio() { return ratio; };
-      float getRAVERatio(int ravemoves);
+      float getRAVERatio();
       float getMean() { return mean; };
       Util::MoveTree *getChild(Go::Move move);
       
-      void addChild(Util::MoveTree *node) { children->push_back(node); };
+      void addChild(Util::MoveTree *node);
       void addWin(float score=0);
       void addLose(float score=0);
       void addRAVEWin();
       void addRAVELose();
       
     private:
+      Util::MoveTree *parent;
       std::list<Util::MoveTree*> *children;
       
       Go::Move move;
       int playouts,raveplayouts;
       float ratio,raveratio;
       float mean;
+      int ravemoves;
+      
+      void updateFromChildPlayout();
+      void passPlayoutUp();
   };
 };
 #endif

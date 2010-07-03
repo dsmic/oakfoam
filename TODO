@@ -3,7 +3,6 @@ TODO
 
 Now: (before next release)
   do running average for ppmi
-  make playouts move up tree properly
   tune UCB and RAVE parameters
   increase accuracy of timing
   add move policy (playout|1-ply|UCT)

@@ -493,7 +493,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
   
   Util::MoveTree *movetree;
   
-  movetree=new Util::MoveTree();
+  movetree=new Util::MoveTree(ravemoves);
   
   if (livegfx)
     gtpe->getOutput()->printfDebug("gogui-gfx: TEXT [genmove]: starting...\n");
@@ -503,7 +503,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
   passboard->makeMove(Go::Move(Go::otherColor(col),Go::Move::PASS));
   if (Util::isWinForColor(col,passboard->score()-komi))
   {
-    Util::MoveTree *nmt=new Util::MoveTree(Go::Move(col,Go::Move::PASS));
+    Util::MoveTree *nmt=new Util::MoveTree(ravemoves,Go::Move(col,Go::Move::PASS));
     nmt->addWin(passboard->score()-komi);
     movetree->addChild(nmt);
   }
@@ -512,7 +512,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
   std::vector<Go::Move> validmoves=this->getValidMoves(currentboard,col);
   for (int i=0;i<(int)validmoves.size();i++)
   {
-    Util::MoveTree *nmt=new Util::MoveTree(validmoves.at(i));
+    Util::MoveTree *nmt=new Util::MoveTree(ravemoves,validmoves.at(i));
     movetree->addChild(nmt);
   }
   
@@ -546,19 +546,22 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
     else
       playouttree->addLose(playoutboard->score()-komi);
     
-    for (int x=0;x<boardsize;x++)
+    if (ravemoves>0)
     {
-      for (int y=0;y<boardsize;y++)
+      for (int x=0;x<boardsize;x++)
       {
-        if (firstlist->get(x,y))
+        for (int y=0;y<boardsize;y++)
         {
-          Util::MoveTree *subtree=movetree->getChild(Go::Move(col,x,y));
-          if (subtree!=NULL)
+          if (firstlist->get(x,y))
           {
-            if (playoutwin)
-              subtree->addRAVEWin();
-            else
-              subtree->addRAVELose();
+            Util::MoveTree *subtree=movetree->getChild(Go::Move(col,x,y));
+            if (subtree!=NULL)
+            {
+              if (playoutwin)
+                subtree->addRAVEWin();
+              else
+                subtree->addRAVELose();
+            }
           }
         }
       }
@@ -758,7 +761,7 @@ Util::MoveTree *Engine::getPlayoutTarget(Util::MoveTree *movetree, int totalplay
       return (*iter);
     else
     {
-      float ratio=(*iter)->getRAVERatio(ravemoves);
+      float ratio=(*iter)->getRAVERatio();
       float ucbval=ratio + ucbc*sqrt(log(totalplayouts)/((*iter)->getPlayouts()));
       if (ucbval>bestucbval)
       {
