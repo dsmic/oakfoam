@@ -26,7 +26,6 @@
 #define BOARDSIZE_MAX 25
 
 #include <cstdlib>
-#include <ctime>
 #include <cmath>
 #include <string>
 #include <list>
