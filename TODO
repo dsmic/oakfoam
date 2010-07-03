@@ -4,9 +4,7 @@ TODO
 Now: (before next release)
   do running average for ppmi
   make playouts move up tree properly
-  investigate RAVE slowdown
   tune UCB and RAVE parameters
-  move playout move lists into bit boards
   make playouts atari-aware
 
 Soon: (before next major release)

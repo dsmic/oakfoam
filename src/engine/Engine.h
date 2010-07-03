@@ -85,7 +85,7 @@ class Engine
     void addGtpCommands();
     
     void randomValidMove(Go::Board *board, Go::Color col, Go::Move **move);
-    void randomPlayout(Go::Board *board, Go::Color col, std::list<Go::Move> *firstlist, std::list<Go::Move> *secondlist);
+    void randomPlayout(Go::Board *board, Go::Color col, Go::BitBoard *firstlist, Go::BitBoard *secondlist);
     std::vector<Go::Move> getValidMoves(Go::Board *board, Go::Color col);
     Util::MoveTree *getPlayoutTarget(Util::MoveTree *movetree, int totalplayouts);
     

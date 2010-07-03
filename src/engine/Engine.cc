@@ -530,7 +530,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
     }
     
     Go::Board *playoutboard=currentboard->copy();
-    std::list<Go::Move> *firstlist=new std::list<Go::Move>();
+    Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
     playoutboard->makeMove(playoutmove);
     this->randomPlayout(playoutboard,Go::otherColor(col),NULL,(ravemoves>0?firstlist:NULL));
     totalplayouts++;
@@ -541,17 +541,20 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
     else
       playouttree->addLose(playoutboard->score()-komi);
     
-    for (std::list<Go::Move>::iterator iter=firstlist->begin();iter!=firstlist->end();++iter)
+    for (int x=0;x<boardsize;x++)
     {
-      if (!(*iter).isPass() && !(*iter).isResign())
+      for (int y=0;y<boardsize;y++)
       {
-        Util::MoveTree *subtree=movetree->getChild((*iter));
-        if (subtree!=NULL)
+        if (firstlist->get(x,y))
         {
-          if (playoutwin)
-            subtree->addRAVEWin();
-          else
-            subtree->addRAVELose();
+          Util::MoveTree *subtree=movetree->getChild(Go::Move(col,x,y));
+          if (subtree!=NULL)
+          {
+            if (playoutwin)
+              subtree->addRAVEWin();
+            else
+              subtree->addRAVELose();
+          }
         }
       }
     }
@@ -653,7 +656,7 @@ void Engine::randomValidMove(Go::Board *board, Go::Color col, Go::Move **move)
   }
 }
 
-void Engine::randomPlayout(Go::Board *board, Go::Color col, std::list<Go::Move> *firstlist, std::list<Go::Move> *secondlist)
+void Engine::randomPlayout(Go::Board *board, Go::Color col, Go::BitBoard *firstlist, Go::BitBoard *secondlist)
 {
   Go::Color coltomove=col;
   Go::Move *move;
@@ -665,8 +668,8 @@ void Engine::randomPlayout(Go::Board *board, Go::Color col, std::list<Go::Move> 
     bool resign,pass;
     this->randomValidMove(board,coltomove,&move);
     board->makeMove(*move);
-    if ((coltomove==col?firstlist:secondlist)!=NULL)
-      (coltomove==col?firstlist:secondlist)->push_back(*move);
+    if ((coltomove==col?firstlist:secondlist)!=NULL && !move->isPass() && !move->isResign())
+      (coltomove==col?firstlist:secondlist)->set(move->getX(),move->getY());
     resign=move->isResign();
     pass=move->isPass();
     delete move;

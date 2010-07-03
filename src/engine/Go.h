@@ -157,7 +157,6 @@ namespace Go
       Go::Color nexttomove;
       int passesplayed;
       int movesmade;
-      //std::list<Go::Move> blackvalidmoves,whitevalidmoves;
       Go::BitBoard *blackvalidmoves,*whitevalidmoves;
       
       struct ScoreVertex
