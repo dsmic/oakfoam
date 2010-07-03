@@ -84,7 +84,6 @@ class Engine
     float ucbc;
     int ravemoves;
     float playoutatarichance;
-    boost::timer processtime;
     
     void addGtpCommands();
     
@@ -93,8 +92,6 @@ class Engine
     std::vector<Go::Move> getValidMoves(Go::Board *board, Go::Color col);
     Util::MoveTree *getPlayoutTarget(Util::MoveTree *movetree, int totalplayouts);
     
-    //long getCurrentTime() { return std::clock()/CLOCKS_PER_SEC*1000; };
-    long getCurrentTime() { return processtime.elapsed()*1000; };
     long getTimeAllowedThisTurn(Go::Color col);
 };
 
