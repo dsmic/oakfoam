@@ -23,6 +23,7 @@ Engine::Engine(Gtp::Engine *ge)
   
   ucbc=UCB_C;
   ravemoves=RAVE_MOVES;
+  uctexpandafter=UCT_EXPAND_AFTER;
   
   resignratiothreshold=RESIGN_RATIO_THRESHOLD;
   resignmovefactorthreshold=RESIGN_MOVE_FACTOR_THRESHOLD;
@@ -330,13 +331,14 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   {
     gtpe->getOutput()->startResponse(cmd);
     gtpe->getOutput()->printf("[bool] live_gfx %d\n",me->livegfx);
-    gtpe->getOutput()->printf("[list/playout/1-ply/uct] move_policy %s\n",(me->movepolicy==Engine::MP_ONEPLY?"1-ply":"playout"));
+    gtpe->getOutput()->printf("[list/playout/1-ply/uct] move_policy %s\n",(me->movepolicy==Engine::MP_UCT?"uct":(me->movepolicy==Engine::MP_ONEPLY?"1-ply":"playout")));
     gtpe->getOutput()->printf("[string] playouts_per_move %d\n",me->playoutspermove);
     gtpe->getOutput()->printf("[string] playouts_per_move_max %d\n",me->playoutspermovemax);
     gtpe->getOutput()->printf("[string] playouts_per_move_min %d\n",me->playoutspermovemin);
     gtpe->getOutput()->printf("[string] playout_atari_chance %.2f\n",me->playoutatarichance);
     gtpe->getOutput()->printf("[string] ucb_c %.2f\n",me->ucbc);
     gtpe->getOutput()->printf("[string] rave_moves %d\n",me->ravemoves);
+    gtpe->getOutput()->printf("[string] uct_expand_after %d\n",me->uctexpandafter);
     gtpe->getOutput()->printf("[string] resign_ratio_threshold %.3f\n",me->resignratiothreshold);
     gtpe->getOutput()->printf("[string] resign_move_factor_threshold %.2f\n",me->resignmovefactorthreshold);
     gtpe->getOutput()->printf("[string] time_buffer %ld\n",me->timebuffer);
@@ -365,6 +367,8 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
       me->ucbc=cmd->getFloatArg(1);
     else if (param=="rave_moves")
       me->ravemoves=cmd->getIntArg(1);
+    else if (param=="uct_expand_after")
+      me->uctexpandafter=cmd->getIntArg(1);
     else if (param=="live_gfx")
       me->livegfx=(cmd->getIntArg(1)==1);
     else if (param=="resign_ratio_threshold")
@@ -839,7 +843,7 @@ Util::MoveTree *Engine::getPlayoutTarget(Util::MoveTree *movetree)
   
   if (movepolicy==Engine::MP_UCT && besttree->isLeaf())
   {
-    if (besttree->getPlayouts()>UCT_EXPAND_AFTER)
+    if (besttree->getPlayouts()>uctexpandafter)
     {
       fprintf(stderr,"expanding node...\n");
       this->expandLeaf(besttree);

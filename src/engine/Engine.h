@@ -93,6 +93,7 @@ class Engine
     int ravemoves;
     float playoutatarichance;
     Engine::MovePolicy movepolicy;
+    int uctexpandafter;
     
     void addGtpCommands();
     
