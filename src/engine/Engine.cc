@@ -600,6 +600,20 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
               gtpe->getOutput()->printfDebug(" %.2f",playoutpercentage*colorfactor);
             }
           }
+          gtpe->getOutput()->printfDebug("\n");
+          gtpe->getOutput()->printfDebug("SQUARE");
+          for(std::list<Util::MoveTree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
+          {
+            if (!(*iter)->getMove().isPass() && !(*iter)->getMove().isResign())
+            {
+              if ((*iter)->getPlayouts()==maxplayouts)
+              {
+                Gtp::Vertex vert={(*iter)->getMove().getX(),(*iter)->getMove().getY()};
+                gtpe->getOutput()->printfDebug(" ");
+                gtpe->getOutput()->printDebugVertex(vert);
+              }
+            }
+          }
           gtpe->getOutput()->printfDebug("\n\n");
         }
         else
