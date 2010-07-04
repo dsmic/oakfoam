@@ -58,7 +58,6 @@ namespace Util
       int ravemoves;
       float ucbc;
       
-      void updateFromChildPlayout(bool win);
       void passPlayoutUp(bool win);
       
       static float makeRAVEValue(float ratio, float raveratio, int playouts, int ravemoves);

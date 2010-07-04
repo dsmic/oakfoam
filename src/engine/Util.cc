@@ -51,7 +51,6 @@ void Util::MoveTree::addRAVEWin()
   ravewins++;
   raveplayouts++;
   raveratio=(float)ravewins/raveplayouts;
-  //this->passPlayoutUp();
 }
 
 void Util::MoveTree::addRAVELose()
@@ -59,7 +58,6 @@ void Util::MoveTree::addRAVELose()
   int ravewins=raveratio*raveplayouts;
   raveplayouts++;
   raveratio=(float)ravewins/raveplayouts;
-  //this->passPlayoutUp();
 }
 
 Util::MoveTree *Util::MoveTree::getChild(Go::Move move)
@@ -85,19 +83,16 @@ float Util::MoveTree::makeRAVEValue(float ratio, float raveratio, int playouts, 
   return raveratio*alpha + ratio*(1-alpha);
 }
 
-void Util::MoveTree::updateFromChildPlayout(bool win)
-{
-  //assume alternating colours going up
-  if (win)
-    this->addLose();
-  else
-    this->addWin();
-}
-
 void Util::MoveTree::passPlayoutUp(bool win)
 {
   if (parent!=NULL)
-    parent->updateFromChildPlayout(win);
+  {
+    //assume alternating colours going up
+    if (win)
+      parent->addLose();
+    else
+      parent->addWin();
+  }
 }
 
 float Util::MoveTree::getVal()
