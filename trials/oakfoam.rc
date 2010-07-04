@@ -1,5 +1,15 @@
 #param live_gfx 1
-param playouts_per_move 10000
+param playouts_per_move 30000
+param playouts_per_move_max 100000
+param playouts_per_move_min 1000
+param playout_atari_chance 0.30
+
+param ucb_c 0.44
+param rave_moves 3000
+param uct_expand_after 20
+
+param resign_ratio_threshold 0.01
+param resign_move_factor_threshold 0.60
 
 param time_buffer 30000
 param time_percentage_board 0.75 #0.4

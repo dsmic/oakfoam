@@ -516,6 +516,9 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
     currentboard->setNextToMove(col);
     this->expandLeaf(movetree);
     
+    Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
+    Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
+    
     for (int i=0;i<playoutspermove;i++)
     {
       Util::MoveTree *playouttree = this->getPlayoutTarget(movetree);
@@ -526,8 +529,11 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
         break;
       
       Go::Board *playoutboard=currentboard->copy();
-      Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
-      Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
+      if (ravemoves>0)
+      {
+        firstlist->clear();
+        secondlist->clear();
+      }
       this->randomPlayout(playoutboard,playoutmoves,col,(ravemoves>0?firstlist:NULL),(ravemoves>0?secondlist:NULL));
       totalplayouts++;
       
@@ -638,9 +644,11 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
           livegfxupdate++;
       }
       
-      delete firstlist;
       delete playoutboard;
     }
+    
+    delete firstlist;
+    delete secondlist;
     
     float bestsims=0;
     Util::MoveTree *besttree=NULL;

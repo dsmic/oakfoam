@@ -9,7 +9,7 @@ Util::MoveTree::MoveTree(float uc, int rm, Go::Move mov, Util::MoveTree *p)
   ratio=0;
   raveplayouts=0;
   raveratio=0;
-  rm=ravemoves;
+  ravemoves=rm;
   ucbc=uc;
 }
 
