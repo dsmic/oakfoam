@@ -8,6 +8,7 @@ Now: (before next release)
   handle terminal nodes in UCT
   make live gfx display variation
   keep significant part of tree
+  add command to output tree
 
 Soon: (before next major release)
   replace FunctionList and ConstantList with std::list<>
