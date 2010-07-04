@@ -6,6 +6,7 @@ Now: (before next release)
   implement the mercy rule?
   make atari-aware playouts dependant on size of group?
   handle terminal nodes in UCT
+  make live gfx display variation
 
 Soon: (before next major release)
   replace FunctionList and ConstantList with std::list<>
