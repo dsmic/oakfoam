@@ -7,7 +7,6 @@ Util::MoveTree::MoveTree(int rm, Go::Move mov, Util::MoveTree *p)
   move=mov;
   playouts=0;
   ratio=0;
-  mean=0;
   raveplayouts=0;
   raveratio=0;
   rm=ravemoves;
@@ -28,26 +27,20 @@ void Util::MoveTree::addChild(Util::MoveTree *node)
   node->parent=this;
 }
 
-void Util::MoveTree::addWin(float score)
+void Util::MoveTree::addWin()
 {
   int wins=ratio*playouts;
-  float totalscore=mean*playouts;
   wins++;
-  totalscore+=score;
   playouts++;
   ratio=(float)wins/playouts;
-  mean=(float)totalscore/playouts;
   this->passPlayoutUp();
 }
 
-void Util::MoveTree::addLose(float score)
+void Util::MoveTree::addLose()
 {
   int wins=ratio*playouts;
-  float totalscore=mean*playouts;
-  totalscore+=score;
   playouts++;
   ratio=(float)wins/playouts;
-  mean=(float)totalscore/playouts;
   this->passPlayoutUp();
 }
 
@@ -101,7 +94,6 @@ void Util::MoveTree::updateFromChildPlayout()
   float currentrr=0;
   ratio=0;
   raveratio=0;
-  mean=0;
   playouts++;
   
   for(std::list<Util::MoveTree*>::iterator iter=children->begin();iter!=children->end();++iter) 
@@ -110,14 +102,12 @@ void Util::MoveTree::updateFromChildPlayout()
     {
       float childratio=(*iter)->ratio;
       float childraveratio=(*iter)->raveratio;
-      float childmean=(*iter)->mean;
       float childrr=Util::MoveTree::makeRAVERatio(1-childratio,1-childraveratio,playouts,ravemoves);
       
       if (childrr>currentrr)
       {
         ratio=1-childratio;
         raveratio=1-childraveratio;
-        mean=childmean;
         currentrr=Util::MoveTree::makeRAVERatio(ratio,raveratio,playouts,ravemoves);
       }
     }

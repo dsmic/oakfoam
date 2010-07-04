@@ -12,7 +12,6 @@
 #define RAVE_MOVES 1000
 
 #define RESIGN_RATIO_THRESHOLD 0.03
-#define RESIGN_MEAN_THRESHOLD 20
 #define RESIGN_MOVE_FACTOR_THRESHOLD 0.5
 #define LIVEGFX_ON false
 
@@ -47,7 +46,7 @@ class Engine
       MP_ONEPLY
     };
     
-    void generateMove(Go::Color col, Go::Move **move, float *ratio=NULL, float *mean=NULL);
+    void generateMove(Go::Color col, Go::Move **move, float *ratio=NULL);
     bool isMoveAllowed(Go::Move move);
     void makeMove(Go::Move move);
     int getBoardSize() { return currentboard->getSize(); };
@@ -82,7 +81,7 @@ class Engine
     bool livegfx;
     long timemain,timeblack,timewhite;
     float playoutspermilli;
-    float resignratiothreshold,resignmeanthreshold,resignmovefactorthreshold;
+    float resignratiothreshold,resignmovefactorthreshold;
     long timebuffer,timemoveminimum;
     int timemovebuffer;
     float timepercentageboard,timefactor;

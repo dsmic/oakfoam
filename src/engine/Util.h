@@ -37,12 +37,11 @@ namespace Util
       int getPlayouts() { return playouts; };
       float getRatio() { return ratio; };
       float getRAVERatio();
-      float getMean() { return mean; };
       Util::MoveTree *getChild(Go::Move move);
       
       void addChild(Util::MoveTree *node);
-      void addWin(float score=0);
-      void addLose(float score=0);
+      void addWin();
+      void addLose();
       void addRAVEWin();
       void addRAVELose();
       
@@ -53,7 +52,6 @@ namespace Util
       Go::Move move;
       int playouts,raveplayouts;
       float ratio,raveratio;
-      float mean;
       int ravemoves;
       
       void updateFromChildPlayout();

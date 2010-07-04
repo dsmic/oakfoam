@@ -25,7 +25,6 @@ Engine::Engine(Gtp::Engine *ge)
   ravemoves=RAVE_MOVES;
   
   resignratiothreshold=RESIGN_RATIO_THRESHOLD;
-  resignmeanthreshold=RESIGN_MEAN_THRESHOLD;
   resignmovefactorthreshold=RESIGN_MOVE_FACTOR_THRESHOLD;
   
   timebuffer=TIME_BUFFER;
@@ -193,16 +192,16 @@ void Engine::gtpGenMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   }
   
   Go::Move *move;
-  float ratio,mean;
-  me->generateMove((gtpcol==Gtp::BLACK ? Go::BLACK : Go::WHITE),&move,&ratio,&mean);
+  float ratio;
+  me->generateMove((gtpcol==Gtp::BLACK ? Go::BLACK : Go::WHITE),&move,&ratio);
   
   Gtp::Vertex vert= {move->getX(),move->getY()};
   delete move;
   
   long timeleft=(gtpcol==Gtp::BLACK ? me->timeblack : me->timewhite);
-  gtpe->getOutput()->printfDebug("[genmove]: r:%.2f m:%+.1f tl:%ld ppmo:%d ppmi:%.3f\n",ratio,mean,timeleft,me->playoutspermove,me->playoutspermilli);
+  gtpe->getOutput()->printfDebug("[genmove]: r:%.2f tl:%ld ppmo:%d ppmi:%.3f\n",ratio,timeleft,me->playoutspermove,me->playoutspermilli);
   if (me->livegfx)
-    gtpe->getOutput()->printfDebug("gogui-gfx: TEXT [genmove]: r:%.2f m:%+.1f tl:%ld ppmo:%d ppmi:%.3f\n",ratio,mean,timeleft,me->playoutspermove,me->playoutspermilli);
+    gtpe->getOutput()->printfDebug("gogui-gfx: TEXT [genmove]: r:%.2f tl:%ld ppmo:%d ppmi:%.3f\n",ratio,timeleft,me->playoutspermove,me->playoutspermilli);
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printVertex(vert);
@@ -339,7 +338,6 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     gtpe->getOutput()->printf("[string] ucb_c %.2f\n",me->ucbc);
     gtpe->getOutput()->printf("[string] rave_moves %d\n",me->ravemoves);
     gtpe->getOutput()->printf("[string] resign_ratio_threshold %.3f\n",me->resignratiothreshold);
-    gtpe->getOutput()->printf("[string] resign_mean_threshold %.1f\n",me->resignmeanthreshold);
     gtpe->getOutput()->printf("[string] resign_move_factor_threshold %.2f\n",me->resignmovefactorthreshold);
     gtpe->getOutput()->printf("[string] time_buffer %ld\n",me->timebuffer);
     gtpe->getOutput()->printf("[string] time_percentage_board %.2f\n",me->timepercentageboard);
@@ -371,8 +369,6 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
       me->livegfx=(cmd->getIntArg(1)==1);
     else if (param=="resign_ratio_threshold")
       me->resignratiothreshold=cmd->getFloatArg(1);
-    else if (param=="resign_mean_threshold")
-      me->resignmeanthreshold=cmd->getFloatArg(1);
     else if (param=="resign_move_factor_threshold")
       me->resignmovefactorthreshold=cmd->getFloatArg(1);
     else if (param=="time_buffer")
@@ -488,7 +484,7 @@ void Engine::gtpTimeLeft(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   gtpe->getOutput()->endResponse();
 }
 
-void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *mean)
+void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
 {
   if (movepolicy==Engine::MP_ONEPLY)
   {
@@ -518,7 +514,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
     if (Util::isWinForColor(col,passboard->score()-komi))
     {
       Util::MoveTree *nmt=new Util::MoveTree(ravemoves,Go::Move(col,Go::Move::PASS));
-      nmt->addWin(passboard->score()-komi);
+      nmt->addWin();
       movetree->addChild(nmt);
     }
     delete passboard;
@@ -556,9 +552,9 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
       
       bool playoutwin=Util::isWinForColor(col,playoutboard->score()-komi);
       if (playoutwin)
-        playouttree->addWin(playoutboard->score()-komi);
+        playouttree->addWin();
       else
-        playouttree->addLose(playoutboard->score()-komi);
+        playouttree->addLose();
       
       if (ravemoves>0)
       {
@@ -585,7 +581,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
       delete playoutboard;
     }
     
-    float bestratio=0,bestmean=0;
+    float bestratio=0;
     Go::Move bestmove;
     
     for(std::list<Util::MoveTree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
@@ -596,23 +592,19 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio, float *m
         {
           bestmove=(*iter)->getMove();
           bestratio=(*iter)->getRatio();
-          bestmean=(*iter)->getMean();
         }
       }
     }
     
     if (bestratio==0)
       *move=new Go::Move(col,Go::Move::RESIGN);
-    else if (bestratio<=resignratiothreshold && std::fabs(bestmean)>resignmeanthreshold && currentboard->getMovesMade()>(resignmovefactorthreshold*boardsize*boardsize))
+    else if (bestratio<=resignratiothreshold && currentboard->getMovesMade()>(resignmovefactorthreshold*boardsize*boardsize))
       *move=new Go::Move(col,Go::Move::RESIGN);
     else
       *move=new Go::Move(col,bestmove.getX(),bestmove.getY());
     
     if (ratio!=NULL)
       *ratio=bestratio;
-    
-    if (mean!=NULL)
-      *mean=bestmean;
     
     this->makeMove(**move);
     
