@@ -32,6 +32,7 @@ namespace Util
       Go::Move getMove() { return move; };
       bool isRoot() { return (parent==NULL); };
       bool isLeaf() { return (children->size()==0); };
+      std::list<Go::Move> getMovesFromRoot();
       
       Util::MoveTree *getChild(Go::Move move);
       int getPlayouts() { return playouts; };

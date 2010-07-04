@@ -94,9 +94,9 @@ class Engine
     void addGtpCommands();
     
     void randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move **move);
-    void randomPlayout(Go::Board *board, Go::Color col, Go::BitBoard *firstlist, Go::BitBoard *secondlist);
+    void randomPlayout(Go::Board *board, std::list<Go::Move> startmoves, Go::Color colfirst, Go::BitBoard *firstlist, Go::BitBoard *secondlist);
     std::vector<Go::Move> getValidMoves(Go::Board *board, Go::Color col);
-    Util::MoveTree *getPlayoutTarget(Util::MoveTree *movetree, int totalplayouts);
+    Util::MoveTree *getPlayoutTarget(Util::MoveTree *movetree);
     
     long getTimeAllowedThisTurn(Go::Color col);
 };

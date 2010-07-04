@@ -529,17 +529,20 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
     
     for (int i=0;i<playoutspermove;i++)
     {
-      Util::MoveTree *playouttree = this->getPlayoutTarget(movetree,totalplayouts);
+      Util::MoveTree *playouttree = this->getPlayoutTarget(movetree);
       if (playouttree==NULL)
         break;
-      Go::Move playoutmove=playouttree->getMove();
+      std::list<Go::Move> playoutmoves=playouttree->getMovesFromRoot();
+      if (playoutmoves.size()==0)
+        break;
+      
       Go::Board *playoutboard=currentboard->copy();
       Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
-      playoutboard->makeMove(playoutmove);
-      this->randomPlayout(playoutboard,Go::otherColor(col),NULL,(ravemoves>0?firstlist:NULL));
+      Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
+      this->randomPlayout(playoutboard,playoutmoves,col,(ravemoves>0?firstlist:NULL),(ravemoves>0?secondlist:NULL));
       totalplayouts++;
       
-      bool playoutwin=Util::isWinForColor(col,playoutboard->score()-komi);
+      bool playoutwin=Util::isWinForColor(playoutmoves.back().getColor(),playoutboard->score()-komi);
       if (playoutwin)
         playouttree->addWin();
       else
@@ -564,6 +567,28 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
             }
           }
         }
+        
+        Util::MoveTree *secondtree=movetree->getChild(playoutmoves.front());
+        if (!secondtree->isLeaf())
+        {
+          for (int x=0;x<boardsize;x++)
+          {
+            for (int y=0;y<boardsize;y++)
+            {
+              if (secondlist->get(x,y))
+              {
+                Util::MoveTree *subtree=secondtree->getChild(Go::Move(Go::otherColor(col),x,y));
+                if (subtree!=NULL)
+                {
+                  if (playoutwin)
+                    subtree->addRAVEWin();
+                  else
+                    subtree->addRAVELose();
+                }
+              }
+            }
+          }
+        }
       }
       
       if (livegfx)
@@ -572,7 +597,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
         {
           livegfxupdate=0;
           gtpe->getOutput()->printfDebug("gogui-gfx:\n");
-          gtpe->getOutput()->printfDebug("TEXT [genmove]: eval (%d,%d) tp:%d r:%.2f\n",playoutmove.getX(),playoutmove.getY(),totalplayouts,playouttree->getRatio());
+          //gtpe->getOutput()->printfDebug("TEXT [genmove]: eval (%d,%d) tp:%d r:%.2f\n",playoutmove.getX(),playoutmove.getY(),totalplayouts,playouttree->getRatio());
+          gtpe->getOutput()->printfDebug("TEXT [genmove]: thinking... playouts:%d\n",totalplayouts);
           
           /*gtpe->getOutput()->printfDebug("VAR %c ",(col==Go::BLACK?'B':'W'));
           Gtp::Vertex vert={playoutmove.getX(),playoutmove.getY()};
@@ -736,32 +762,35 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move **move)
   }
 }
 
-void Engine::randomPlayout(Go::Board *board, Go::Color col, Go::BitBoard *firstlist, Go::BitBoard *secondlist)
+void Engine::randomPlayout(Go::Board *board, std::list<Go::Move> startmoves, Go::Color colfirst, Go::BitBoard *firstlist, Go::BitBoard *secondlist)
 {
-  Go::Color coltomove=col;
-  Go::Move *move;
-  int passes=board->getPassesPlayed();
-  int moves=board->getMovesMade();
+  if (board->getPassesPlayed()>=2)
+    return;
   
-  while (passes<2)
+  for(std::list<Go::Move>::iterator iter=startmoves.begin();iter!=startmoves.end();++iter)
   {
-    bool resign,pass;
+    board->makeMove((*iter));
+    if (((*iter).getColor()==colfirst?firstlist:secondlist)!=NULL && !(*iter).isPass() && !(*iter).isResign())
+      ((*iter).getColor()==colfirst?firstlist:secondlist)->set((*iter).getX(),(*iter).getY());
+    if (board->getPassesPlayed()>=2 || (*iter).isResign())
+      return;
+  }
+  
+  Go::Move *move;
+  Go::Color coltomove=board->nextToMove();
+  while (board->getPassesPlayed()<2)
+  {
+    bool resign;
     this->randomPlayoutMove(board,coltomove,&move);
     board->makeMove(*move);
-    if ((coltomove==col?firstlist:secondlist)!=NULL && !move->isPass() && !move->isResign())
-      (coltomove==col?firstlist:secondlist)->set(move->getX(),move->getY());
+    if ((coltomove==colfirst?firstlist:secondlist)!=NULL && !move->isPass() && !move->isResign())
+      (coltomove==colfirst?firstlist:secondlist)->set(move->getX(),move->getY());
     resign=move->isResign();
-    pass=move->isPass();
     delete move;
     coltomove=Go::otherColor(coltomove);
-    moves++;
     if (resign)
       break;
-    if (pass)
-      passes++;
-    else
-      passes=0;
-    if (moves>(boardsize*boardsize*PLAYOUT_MAX_MOVE_FACTOR))
+    if (board->getMovesMade()>(boardsize*boardsize*PLAYOUT_MAX_MOVE_FACTOR))
       break;
   }
 }
@@ -802,7 +831,7 @@ std::vector<Go::Move> Engine::getValidMoves(Go::Board *board, Go::Color col)
   return validmovesvector;
 }
 
-Util::MoveTree *Engine::getPlayoutTarget(Util::MoveTree *movetree, int totalplayouts)
+Util::MoveTree *Engine::getPlayoutTarget(Util::MoveTree *movetree)
 {
   float besturgency=0;
   Util::MoveTree *besttree=NULL;
@@ -823,6 +852,9 @@ Util::MoveTree *Engine::getPlayoutTarget(Util::MoveTree *movetree, int totalplay
     }
   }
   
-  return besttree;
+  if (besttree->isLeaf())
+    return besttree;
+  else
+    return this->getPlayoutTarget(besttree);
 }
 

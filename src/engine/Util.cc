@@ -92,7 +92,7 @@ void Util::MoveTree::updateFromChildPlayout()
   raveratio=0;
   playouts++;
   
-  for(std::list<Util::MoveTree*>::iterator iter=children->begin();iter!=children->end();++iter) 
+  for(std::list<Util::MoveTree*>::iterator iter=children->begin();iter!=children->end();++iter)
   {
     if ((*iter)->playouts>0 || (*iter)->raveplayouts>0)
     {
@@ -134,5 +134,17 @@ float Util::MoveTree::getUrgency()
   else
     bias=ucbc*sqrt(log(parent->getPlayouts())/(1))*2;
   return this->getVal()+bias;
+}
+
+std::list<Go::Move> Util::MoveTree::getMovesFromRoot()
+{
+  if (this->isRoot())
+    return std::list<Go::Move>();
+  else
+  {
+    std::list<Go::Move> list=parent->getMovesFromRoot();
+    list.push_back(this->getMove());
+    return list;
+  }
 }
 
