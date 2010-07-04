@@ -14,7 +14,7 @@
 #define RESIGN_RATIO_THRESHOLD 0.03
 #define RESIGN_MOVE_FACTOR_THRESHOLD 0.5
 #define LIVEGFX_ON false
-#define LIVEGFX_UPDATE_PLAYOUTS 10
+#define LIVEGFX_UPDATE_PLAYOUTS (100-1)
 
 #define TIME_BUFFER 30000
 #define TIME_PERCENTAGE_BOARD 0.75
@@ -97,6 +97,7 @@ class Engine
     void randomPlayout(Go::Board *board, std::list<Go::Move> startmoves, Go::Color colfirst, Go::BitBoard *firstlist, Go::BitBoard *secondlist);
     std::vector<Go::Move> getValidMoves(Go::Board *board, Go::Color col);
     Util::MoveTree *getPlayoutTarget(Util::MoveTree *movetree);
+    void expandLeaf(Util::MoveTree *movetree);
     
     long getTimeAllowedThisTurn(Go::Color col);
 };

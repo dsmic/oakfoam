@@ -502,30 +502,13 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
         playoutspermove=PLAYOUTS_PER_MOVE_MAX;
     }
     
-    Util::MoveTree *movetree;
-    
-    movetree=new Util::MoveTree(ucbc,ravemoves);
-    
     if (livegfx)
       gtpe->getOutput()->printfDebug("gogui-gfx: TEXT [genmove]: starting...\n");
     
-    Go::Board *passboard=currentboard->copy();
-    passboard->makeMove(Go::Move(col,Go::Move::PASS));
-    passboard->makeMove(Go::Move(Go::otherColor(col),Go::Move::PASS));
-    if (Util::isWinForColor(col,passboard->score()-komi))
-    {
-      Util::MoveTree *nmt=new Util::MoveTree(ucbc,ravemoves,Go::Move(col,Go::Move::PASS));
-      nmt->addWin();
-      movetree->addChild(nmt);
-    }
-    delete passboard;
     
-    std::vector<Go::Move> validmoves=this->getValidMoves(currentboard,col);
-    for (int i=0;i<(int)validmoves.size();i++)
-    {
-      Util::MoveTree *nmt=new Util::MoveTree(ucbc,ravemoves,validmoves.at(i));
-      movetree->addChild(nmt);
-    }
+    Util::MoveTree *movetree=new Util::MoveTree(ucbc,ravemoves);
+    currentboard->setNextToMove(col);
+    this->expandLeaf(movetree);
     
     for (int i=0;i<playoutspermove;i++)
     {
@@ -856,5 +839,42 @@ Util::MoveTree *Engine::getPlayoutTarget(Util::MoveTree *movetree)
     return besttree;
   else
     return this->getPlayoutTarget(besttree);
+}
+
+void Engine::expandLeaf(Util::MoveTree *movetree)
+{
+  if (!movetree->isLeaf())
+    return;
+  
+  std::list<Go::Move> startmoves=movetree->getMovesFromRoot();
+  Go::Board *startboard=currentboard->copy();
+  
+  for(std::list<Go::Move>::iterator iter=startmoves.begin();iter!=startmoves.end();++iter)
+  {
+    startboard->makeMove((*iter));
+    if (startboard->getPassesPlayed()>=2 || (*iter).isResign())
+    {
+      delete startboard;
+      return;
+    }
+  }
+  
+  Go::Color col=startboard->nextToMove();
+  
+  if (Util::isWinForColor(col,startboard->score()-komi))
+  {
+    Util::MoveTree *nmt=new Util::MoveTree(ucbc,ravemoves,Go::Move(col,Go::Move::PASS));
+    nmt->addWin();
+    movetree->addChild(nmt);
+  }
+  
+  std::vector<Go::Move> validmoves=this->getValidMoves(startboard,col);
+  for (int i=0;i<(int)validmoves.size();i++)
+  {
+    Util::MoveTree *nmt=new Util::MoveTree(ucbc,ravemoves,validmoves.at(i));
+    movetree->addChild(nmt);
+  }
+  
+  delete startboard;
 }
 

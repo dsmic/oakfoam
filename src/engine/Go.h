@@ -145,6 +145,7 @@ namespace Go
       bool validMove(Go::Move move);
       void makeMove(Go::Move move);
       
+      void setNextToMove(Go::Color col) { nexttomove=col; };
       Go::Color nextToMove() { return nexttomove; };
       
       int score();
