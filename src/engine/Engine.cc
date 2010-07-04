@@ -13,6 +13,8 @@ Engine::Engine(Gtp::Engine *ge)
   movepolicy=Engine::MP_UCT;
   
   livegfx=LIVEGFX_ON;
+  livegfxupdateplayouts=LIVEGFX_UPDATE_PLAYOUTS;
+  livegfxdelay=LIVEGFX_DELAY;
   
   playoutspermilli=0;
   playoutspermove=PLAYOUTS_PER_MOVE;
@@ -330,7 +332,6 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   if (cmd->numArgs()==0)
   {
     gtpe->getOutput()->startResponse(cmd);
-    gtpe->getOutput()->printf("[bool] live_gfx %d\n",me->livegfx);
     gtpe->getOutput()->printf("[list/playout/1-ply/uct] move_policy %s\n",(me->movepolicy==Engine::MP_UCT?"uct":(me->movepolicy==Engine::MP_ONEPLY?"1-ply":"playout")));
     gtpe->getOutput()->printf("[string] playouts_per_move %d\n",me->playoutspermove);
     gtpe->getOutput()->printf("[string] playouts_per_move_max %d\n",me->playoutspermovemax);
@@ -346,6 +347,9 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     gtpe->getOutput()->printf("[string] time_move_buffer %d\n",me->timemovebuffer);
     gtpe->getOutput()->printf("[string] time_factor %.2f\n",me->timefactor);
     gtpe->getOutput()->printf("[string] time_move_minimum %ld\n",me->timemoveminimum);
+    gtpe->getOutput()->printf("[bool] live_gfx %d\n",me->livegfx);
+    gtpe->getOutput()->printf("[string] live_gfx_update_playouts %d\n",me->livegfxupdateplayouts);
+    gtpe->getOutput()->printf("[string] live_gfx_delay %.3f\n",me->livegfxdelay);
     gtpe->getOutput()->endResponse(true);
   }
   else if (cmd->numArgs()==2)
@@ -371,6 +375,10 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
       me->uctexpandafter=cmd->getIntArg(1);
     else if (param=="live_gfx")
       me->livegfx=(cmd->getIntArg(1)==1);
+    else if (param=="live_gfx_update_playouts")
+      me->livegfxupdateplayouts=cmd->getIntArg(1);
+    else if (param=="live_gfx_delay")
+      me->livegfxdelay=cmd->getFloatArg(1);
     else if (param=="resign_ratio_threshold")
       me->resignratiothreshold=cmd->getFloatArg(1);
     else if (param=="resign_move_factor_threshold")
@@ -502,10 +510,10 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
     if (*timeleft>0 && playoutspermilli>0)
     {
       playoutspermove=playoutspermilli*this->getTimeAllowedThisTurn(col);
-      if (playoutspermove<PLAYOUTS_PER_MOVE_MIN)
-        playoutspermove=PLAYOUTS_PER_MOVE_MIN;
-      else if (playoutspermove>PLAYOUTS_PER_MOVE_MAX)
-        playoutspermove=PLAYOUTS_PER_MOVE_MAX;
+      if (playoutspermove<playoutspermovemin)
+        playoutspermove=playoutspermovemin;
+      else if (playoutspermove>playoutspermovemax)
+        playoutspermove=playoutspermovemax;
     }
     
     if (livegfx)
@@ -588,17 +596,12 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
       
       if (livegfx)
       {
-        if (livegfxupdate>=LIVEGFX_UPDATE_PLAYOUTS)
+        if (livegfxupdate>=livegfxupdateplayouts)
         {
-          livegfxupdate=0;
-          gtpe->getOutput()->printfDebug("gogui-gfx:\n");
-          //gtpe->getOutput()->printfDebug("TEXT [genmove]: eval (%d,%d) tp:%d r:%.2f\n",playoutmove.getX(),playoutmove.getY(),totalplayouts,playouttree->getRatio());
-          gtpe->getOutput()->printfDebug("TEXT [genmove]: thinking... playouts:%d\n",totalplayouts);
+          livegfxupdate=1; //for nice numbers
           
-          /*gtpe->getOutput()->printfDebug("VAR %c ",(col==Go::BLACK?'B':'W'));
-          Gtp::Vertex vert={playoutmove.getX(),playoutmove.getY()};
-          gtpe->getOutput()->printDebugVertex(vert);
-          gtpe->getOutput()->printfDebug("\n");*/
+          gtpe->getOutput()->printfDebug("gogui-gfx:\n");
+          gtpe->getOutput()->printfDebug("TEXT [genmove]: thinking... playouts:%d\n",totalplayouts);
           
           gtpe->getOutput()->printfDebug("INFLUENCE");
           int maxplayouts=0;
@@ -622,23 +625,40 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
             }
           }
           gtpe->getOutput()->printfDebug("\n");
-          gtpe->getOutput()->printfDebug("SQUARE");
-          for(std::list<Util::MoveTree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
+          if (movepolicy==Engine::MP_UCT)
           {
-            if (!(*iter)->getMove().isPass() && !(*iter)->getMove().isResign())
+            gtpe->getOutput()->printfDebug("VAR");
+            std::list<Go::Move> bestmoves=this->getBestMoves(movetree,true)->getMovesFromRoot();
+            for(std::list<Go::Move>::iterator iter=bestmoves.begin();iter!=bestmoves.end();++iter) 
             {
-              if ((*iter)->getPlayouts()==maxplayouts)
+              if (!(*iter).isPass() && !(*iter).isResign())
               {
-                Gtp::Vertex vert={(*iter)->getMove().getX(),(*iter)->getMove().getY()};
-                gtpe->getOutput()->printfDebug(" ");
+                Gtp::Vertex vert={(*iter).getX(),(*iter).getY()};
+                gtpe->getOutput()->printfDebug(" %c ",((*iter).getColor()==Go::BLACK?'B':'W'));
                 gtpe->getOutput()->printDebugVertex(vert);
+              }
+            }
+          }
+          else
+          {
+            gtpe->getOutput()->printfDebug("SQUARE");
+            for(std::list<Util::MoveTree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
+            {
+              if (!(*iter)->getMove().isPass() && !(*iter)->getMove().isResign())
+              {
+                if ((*iter)->getPlayouts()==maxplayouts)
+                {
+                  Gtp::Vertex vert={(*iter)->getMove().getX(),(*iter)->getMove().getY()};
+                  gtpe->getOutput()->printfDebug(" ");
+                  gtpe->getOutput()->printDebugVertex(vert);
+                }
               }
             }
           }
           gtpe->getOutput()->printfDebug("\n\n");
           
           boost::timer delay;
-          while (delay.elapsed()<LIVEGFX_DELAY) {}
+          while (delay.elapsed()<livegfxdelay) {}
         }
         else
           livegfxupdate++;
@@ -650,21 +670,10 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
     delete firstlist;
     delete secondlist;
     
-    float bestsims=0;
-    Util::MoveTree *besttree=NULL;
-    
-    for(std::list<Util::MoveTree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
-    {
-      if ((*iter)->getPlayouts()>bestsims)
-      {
-        besttree=(*iter);
-        bestsims=(*iter)->getPlayouts();
-      }
-    }
-    
+    Util::MoveTree *besttree=this->getBestMoves(movetree,false);
     if (besttree==NULL)
       *move=new Go::Move(col,Go::Move::RESIGN);
-    else if (besttree->getRatio()<=resignratiothreshold && currentboard->getMovesMade()>(resignmovefactorthreshold*boardsize*boardsize))
+    else if (besttree->getRatio()<resignratiothreshold && currentboard->getMovesMade()>(resignmovefactorthreshold*boardsize*boardsize))
       *move=new Go::Move(col,Go::Move::RESIGN);
     else
     {
@@ -676,6 +685,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
     this->makeMove(**move);
     
     delete movetree;
+    
     if (livegfx)
       gtpe->getOutput()->printfDebug("gogui-gfx: CLEAR\n");
     
@@ -902,5 +912,28 @@ void Engine::expandLeaf(Util::MoveTree *movetree)
   }
   
   delete startboard;
+}
+
+Util::MoveTree *Engine::getBestMoves(Util::MoveTree *movetree, bool descend)
+{
+  float bestsims=0;
+  Util::MoveTree *besttree=NULL;
+  
+  for(std::list<Util::MoveTree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
+  {
+    if ((*iter)->getPlayouts()>bestsims)
+    {
+      besttree=(*iter);
+      bestsims=(*iter)->getPlayouts();
+    }
+  }
+  
+  if (besttree==NULL)
+    return NULL;
+  
+  if (besttree->isLeaf() || !descend)
+    return besttree;
+  else
+    return this->getPlayoutTarget(besttree);
 }
 
