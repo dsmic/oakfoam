@@ -5,6 +5,7 @@ Now: (before next release)
   investigate why ratio is so pessimistic at start
   implement the mercy rule?
   make atari-aware playouts dependant on size of group?
+  handle terminal nodes in UCT
 
 Soon: (before next major release)
   replace FunctionList and ConstantList with std::list<>

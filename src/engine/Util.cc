@@ -34,7 +34,7 @@ void Util::MoveTree::addWin()
   wins++;
   playouts++;
   ratio=(float)wins/playouts;
-  this->passPlayoutUp();
+  this->passPlayoutUp(true);
 }
 
 void Util::MoveTree::addLose()
@@ -42,7 +42,7 @@ void Util::MoveTree::addLose()
   int wins=ratio*playouts;
   playouts++;
   ratio=(float)wins/playouts;
-  this->passPlayoutUp();
+  this->passPlayoutUp(false);
 }
 
 void Util::MoveTree::addRAVEWin()
@@ -51,7 +51,7 @@ void Util::MoveTree::addRAVEWin()
   ravewins++;
   raveplayouts++;
   raveratio=(float)ravewins/raveplayouts;
-  this->passPlayoutUp();
+  //this->passPlayoutUp();
 }
 
 void Util::MoveTree::addRAVELose()
@@ -59,7 +59,7 @@ void Util::MoveTree::addRAVELose()
   int ravewins=raveratio*raveplayouts;
   raveplayouts++;
   raveratio=(float)ravewins/raveplayouts;
-  this->passPlayoutUp();
+  //this->passPlayoutUp();
 }
 
 Util::MoveTree *Util::MoveTree::getChild(Go::Move move)
@@ -85,37 +85,19 @@ float Util::MoveTree::makeRAVEValue(float ratio, float raveratio, int playouts, 
   return raveratio*alpha + ratio*(1-alpha);
 }
 
-void Util::MoveTree::updateFromChildPlayout()
-{ 
-  float currentrr=0;
-  ratio=0;
-  raveratio=0;
-  playouts++;
-  
-  for(std::list<Util::MoveTree*>::iterator iter=children->begin();iter!=children->end();++iter)
-  {
-    if ((*iter)->playouts>0 || (*iter)->raveplayouts>0)
-    {
-      float childratio=(*iter)->ratio;
-      float childraveratio=(*iter)->raveratio;
-      float childrr=Util::MoveTree::makeRAVEValue(1-childratio,1-childraveratio,playouts,ravemoves);
-      
-      if (childrr>currentrr)
-      {
-        ratio=1-childratio;
-        raveratio=1-childraveratio;
-        currentrr=Util::MoveTree::makeRAVEValue(ratio,raveratio,playouts,ravemoves);
-      }
-    }
-  }
-  
-  this->passPlayoutUp();
+void Util::MoveTree::updateFromChildPlayout(bool win)
+{
+  //assume alternating colours going up
+  if (win)
+    this->addLose();
+  else
+    this->addWin();
 }
 
-void Util::MoveTree::passPlayoutUp()
+void Util::MoveTree::passPlayoutUp(bool win)
 {
   if (parent!=NULL)
-    parent->updateFromChildPlayout();
+    parent->updateFromChildPlayout(win);
 }
 
 float Util::MoveTree::getVal()

@@ -630,6 +630,9 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
             }
           }
           gtpe->getOutput()->printfDebug("\n\n");
+          
+          boost::timer delay;
+          while (delay.elapsed()<LIVEGFX_DELAY) {}
         }
         else
           livegfxupdate++;
@@ -841,13 +844,13 @@ Util::MoveTree *Engine::getPlayoutTarget(Util::MoveTree *movetree)
     }
   }
   
+  if (besttree==NULL)
+    return NULL;
+  
   if (movepolicy==Engine::MP_UCT && besttree->isLeaf())
   {
     if (besttree->getPlayouts()>uctexpandafter)
-    {
-      fprintf(stderr,"expanding node...\n");
       this->expandLeaf(besttree);
-    }
   }
   
   if (besttree->isLeaf())
