@@ -2,7 +2,6 @@ TODO
 ------------------
 
 Now: (before next release)
-  do tree search
   investigate why ratio is so pessimistic at start
   implement the mercy rule?
   make atari-aware playouts dependant on size of group?

@@ -10,7 +10,7 @@ Engine::Engine(Gtp::Engine *ge)
   currentboard=new Go::Board(boardsize);
   komi=5.5;
   
-  movepolicy=Engine::MP_ONEPLY;
+  movepolicy=Engine::MP_UCT;
   
   livegfx=LIVEGFX_ON;
   
@@ -330,7 +330,7 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   {
     gtpe->getOutput()->startResponse(cmd);
     gtpe->getOutput()->printf("[bool] live_gfx %d\n",me->livegfx);
-    gtpe->getOutput()->printf("[list/playout/1-ply] move_policy %s\n",(me->movepolicy==Engine::MP_ONEPLY?"1-ply":"playout"));
+    gtpe->getOutput()->printf("[list/playout/1-ply/uct] move_policy %s\n",(me->movepolicy==Engine::MP_ONEPLY?"1-ply":"playout"));
     gtpe->getOutput()->printf("[string] playouts_per_move %d\n",me->playoutspermove);
     gtpe->getOutput()->printf("[string] playouts_per_move_max %d\n",me->playoutspermovemax);
     gtpe->getOutput()->printf("[string] playouts_per_move_min %d\n",me->playoutspermovemin);
@@ -385,7 +385,9 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     {
       std::string val=cmd->getStringArg(1);
       std::transform(val.begin(),val.end(),val.begin(),::tolower);
-      if (val=="1-ply")
+      if (val=="uct")
+        me->movepolicy=Engine::MP_UCT;
+      else if (val=="1-ply")
         me->movepolicy=Engine::MP_ONEPLY;
       else
         me->movepolicy=Engine::MP_PLAYOUT;
@@ -486,7 +488,7 @@ void Engine::gtpTimeLeft(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 
 void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
 {
-  if (movepolicy==Engine::MP_ONEPLY)
+  if (movepolicy==Engine::MP_UCT || movepolicy==Engine::MP_ONEPLY)
   {
     long *timeleft=(col==Go::BLACK ? &timeblack : &timewhite);
     boost::timer timer;
@@ -832,6 +834,15 @@ Util::MoveTree *Engine::getPlayoutTarget(Util::MoveTree *movetree)
     {
       besttree=(*iter);
       besturgency=urgency;
+    }
+  }
+  
+  if (movepolicy==Engine::MP_UCT && besttree->isLeaf())
+  {
+    if (besttree->getPlayouts()>UCT_EXPAND_AFTER)
+    {
+      fprintf(stderr,"expanding node...\n");
+      this->expandLeaf(besttree);
     }
   }
   

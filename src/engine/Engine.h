@@ -11,6 +11,8 @@
 
 #define RAVE_MOVES 1000
 
+#define UCT_EXPAND_AFTER 20
+
 #define RESIGN_RATIO_THRESHOLD 0.03
 #define RESIGN_MOVE_FACTOR_THRESHOLD 0.5
 #define LIVEGFX_ON false
@@ -44,7 +46,8 @@ class Engine
     enum MovePolicy
     {
       MP_PLAYOUT,
-      MP_ONEPLY
+      MP_ONEPLY,
+      MP_UCT
     };
     
     void generateMove(Go::Color col, Go::Move **move, float *ratio=NULL);
