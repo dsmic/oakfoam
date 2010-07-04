@@ -491,6 +491,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
     long *timeleft=(col==Go::BLACK ? &timeblack : &timewhite);
     boost::timer timer;
     int totalplayouts=0;
+    int livegfxupdate=0;
     
     if (*timeleft>0 && playoutspermilli>0)
     {
@@ -532,18 +533,6 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
       if (playouttree==NULL)
         break;
       Go::Move playoutmove=playouttree->getMove();
-      
-      if (livegfx)
-      {
-        gtpe->getOutput()->printfDebug("gogui-gfx: TEXT [genmove]: eval (%d,%d) tp:%d r:%.2f\n",playoutmove.getX(),playoutmove.getY(),totalplayouts,playouttree->getRatio());
-        gtpe->getOutput()->printfDebug("gogui-gfx: VAR %c ",(col==Go::BLACK?'B':'W'));
-        Gtp::Vertex vert={playoutmove.getX(),playoutmove.getY()};
-        gtpe->getOutput()->printDebugVertex(vert);
-        gtpe->getOutput()->printfDebug("\n");
-        for (long zzz=0;zzz<100000;zzz++) //slow down for display
-          gtpe->getOutput()->printfDebug("");
-      }
-      
       Go::Board *playoutboard=currentboard->copy();
       Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
       playoutboard->makeMove(playoutmove);
@@ -575,6 +564,46 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
             }
           }
         }
+      }
+      
+      if (livegfx)
+      {
+        if (livegfxupdate>=LIVEGFX_UPDATE_PLAYOUTS)
+        {
+          livegfxupdate=0;
+          gtpe->getOutput()->printfDebug("gogui-gfx:\n");
+          gtpe->getOutput()->printfDebug("TEXT [genmove]: eval (%d,%d) tp:%d r:%.2f\n",playoutmove.getX(),playoutmove.getY(),totalplayouts,playouttree->getRatio());
+          
+          /*gtpe->getOutput()->printfDebug("VAR %c ",(col==Go::BLACK?'B':'W'));
+          Gtp::Vertex vert={playoutmove.getX(),playoutmove.getY()};
+          gtpe->getOutput()->printDebugVertex(vert);
+          gtpe->getOutput()->printfDebug("\n");*/
+          
+          gtpe->getOutput()->printfDebug("INFLUENCE");
+          int maxplayouts=0;
+          for(std::list<Util::MoveTree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
+          {
+            if ((*iter)->getPlayouts()>maxplayouts)
+              maxplayouts=(*iter)->getPlayouts();
+          }
+          float colorfactor=(col==Go::BLACK?1:-1);
+          for(std::list<Util::MoveTree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
+          {
+            if (!(*iter)->getMove().isPass() && !(*iter)->getMove().isResign())
+            {
+              Gtp::Vertex vert={(*iter)->getMove().getX(),(*iter)->getMove().getY()};
+              gtpe->getOutput()->printfDebug(" ");
+              gtpe->getOutput()->printDebugVertex(vert);
+              float playoutpercentage=(float)(*iter)->getPlayouts()/maxplayouts;
+              if (playoutpercentage>1)
+                playoutpercentage=1;
+              gtpe->getOutput()->printfDebug(" %.2f",playoutpercentage*colorfactor);
+            }
+          }
+          gtpe->getOutput()->printfDebug("\n\n");
+        }
+        else
+          livegfxupdate++;
       }
       
       delete firstlist;

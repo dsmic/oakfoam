@@ -5,7 +5,6 @@ Now: (before next release)
   do tree search
   investigate why ratio is so pessimistic at start
   implement the mercy rule?
-  make live gfx display simulation percentages for 1-ply
 
 Soon: (before next major release)
   replace FunctionList and ConstantList with std::list<>
