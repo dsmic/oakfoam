@@ -1,6 +1,6 @@
 #include "Util.h"
 
-Util::MoveTree::MoveTree(int rm, Go::Move mov, Util::MoveTree *p)
+Util::MoveTree::MoveTree(float uc, int rm, Go::Move mov, Util::MoveTree *p)
 {
   parent=p;
   children=new std::list<Util::MoveTree*>();
@@ -10,6 +10,7 @@ Util::MoveTree::MoveTree(int rm, Go::Move mov, Util::MoveTree *p)
   raveplayouts=0;
   raveratio=0;
   rm=ravemoves;
+  ucbc=uc;
 }
 
 Util::MoveTree::~MoveTree()
@@ -71,7 +72,7 @@ Util::MoveTree *Util::MoveTree::getChild(Go::Move move)
   return NULL;
 }
 
-float Util::MoveTree::makeRAVERatio(float ratio, float raveratio, int playouts, int ravemoves)
+float Util::MoveTree::makeRAVEValue(float ratio, float raveratio, int playouts, int ravemoves)
 {
   float alpha;
   if (ravemoves>0)
@@ -82,11 +83,6 @@ float Util::MoveTree::makeRAVERatio(float ratio, float raveratio, int playouts, 
   if (alpha<0)
     alpha=0;
   return raveratio*alpha + ratio*(1-alpha);
-}
-
-float Util::MoveTree::getRAVERatio()
-{
-  return Util::MoveTree::makeRAVERatio(ratio,raveratio,playouts,ravemoves);
 }
 
 void Util::MoveTree::updateFromChildPlayout()
@@ -102,13 +98,13 @@ void Util::MoveTree::updateFromChildPlayout()
     {
       float childratio=(*iter)->ratio;
       float childraveratio=(*iter)->raveratio;
-      float childrr=Util::MoveTree::makeRAVERatio(1-childratio,1-childraveratio,playouts,ravemoves);
+      float childrr=Util::MoveTree::makeRAVEValue(1-childratio,1-childraveratio,playouts,ravemoves);
       
       if (childrr>currentrr)
       {
         ratio=1-childratio;
         raveratio=1-childraveratio;
-        currentrr=Util::MoveTree::makeRAVERatio(ratio,raveratio,playouts,ravemoves);
+        currentrr=Util::MoveTree::makeRAVEValue(ratio,raveratio,playouts,ravemoves);
       }
     }
   }
@@ -120,5 +116,23 @@ void Util::MoveTree::passPlayoutUp()
 {
   if (parent!=NULL)
     parent->updateFromChildPlayout();
+}
+
+float Util::MoveTree::getVal()
+{
+  return Util::MoveTree::makeRAVEValue(ratio,raveratio,playouts,ravemoves);
+}
+
+float Util::MoveTree::getUrgency()
+{
+  float bias;
+  if (playouts==0 && raveplayouts==0)
+    return 10;
+  
+  if (parent!=NULL && playouts!=0)
+    bias=ucbc*sqrt(log(parent->getPlayouts())/(playouts));
+  else
+    bias=ucbc*sqrt(log(parent->getPlayouts())/(1))*2;
+  return this->getVal()+bias;
 }
 

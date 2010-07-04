@@ -503,7 +503,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
     
     Util::MoveTree *movetree;
     
-    movetree=new Util::MoveTree(ravemoves);
+    movetree=new Util::MoveTree(ucbc,ravemoves);
     
     if (livegfx)
       gtpe->getOutput()->printfDebug("gogui-gfx: TEXT [genmove]: starting...\n");
@@ -513,7 +513,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
     passboard->makeMove(Go::Move(Go::otherColor(col),Go::Move::PASS));
     if (Util::isWinForColor(col,passboard->score()-komi))
     {
-      Util::MoveTree *nmt=new Util::MoveTree(ravemoves,Go::Move(col,Go::Move::PASS));
+      Util::MoveTree *nmt=new Util::MoveTree(ucbc,ravemoves,Go::Move(col,Go::Move::PASS));
       nmt->addWin();
       movetree->addChild(nmt);
     }
@@ -522,7 +522,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
     std::vector<Go::Move> validmoves=this->getValidMoves(currentboard,col);
     for (int i=0;i<(int)validmoves.size();i++)
     {
-      Util::MoveTree *nmt=new Util::MoveTree(ravemoves,validmoves.at(i));
+      Util::MoveTree *nmt=new Util::MoveTree(ucbc,ravemoves,validmoves.at(i));
       movetree->addChild(nmt);
     }
     
@@ -581,30 +581,28 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
       delete playoutboard;
     }
     
-    float bestratio=0;
-    Go::Move bestmove;
+    float bestsims=0;
+    Util::MoveTree *besttree=NULL;
     
     for(std::list<Util::MoveTree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
     {
-      if ((*iter)->getPlayouts()>0)
+      if ((*iter)->getPlayouts()>bestsims)
       {
-        if ((*iter)->getRatio()>bestratio)
-        {
-          bestmove=(*iter)->getMove();
-          bestratio=(*iter)->getRatio();
-        }
+        besttree=(*iter);
+        bestsims=(*iter)->getPlayouts();
       }
     }
     
-    if (bestratio==0)
+    if (besttree==NULL)
       *move=new Go::Move(col,Go::Move::RESIGN);
-    else if (bestratio<=resignratiothreshold && currentboard->getMovesMade()>(resignmovefactorthreshold*boardsize*boardsize))
+    else if (besttree->getRatio()<=resignratiothreshold && currentboard->getMovesMade()>(resignmovefactorthreshold*boardsize*boardsize))
       *move=new Go::Move(col,Go::Move::RESIGN);
     else
-      *move=new Go::Move(col,bestmove.getX(),bestmove.getY());
-    
-    if (ratio!=NULL)
-      *ratio=bestratio;
+    {
+      *move=new Go::Move(col,besttree->getMove().getX(),besttree->getMove().getY());
+      if (ratio!=NULL)
+        *ratio=besttree->getRatio();
+    }
     
     this->makeMove(**move);
     
@@ -620,7 +618,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
   }
   else
   {
-    this->randomValidMove(currentboard,col,move);
+    this->randomPlayoutMove(currentboard,col,move);
     this->makeMove(**move);
   }
 }
@@ -651,7 +649,7 @@ void Engine::clearBoard()
   currentboard = new Go::Board(boardsize);
 }
 
-void Engine::randomValidMove(Go::Board *board, Go::Color col, Go::Move **move)
+void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move **move)
 {
   std::vector<Go::Move> atarimoves;
   std::list<Go::Board::Group*> *groups=board->getGroups();
@@ -705,7 +703,7 @@ void Engine::randomPlayout(Go::Board *board, Go::Color col, Go::BitBoard *firstl
   while (passes<2)
   {
     bool resign,pass;
-    this->randomValidMove(board,coltomove,&move);
+    this->randomPlayoutMove(board,coltomove,&move);
     board->makeMove(*move);
     if ((coltomove==col?firstlist:secondlist)!=NULL && !move->isPass() && !move->isResign())
       (coltomove==col?firstlist:secondlist)->set(move->getX(),move->getY());
@@ -763,22 +761,22 @@ std::vector<Go::Move> Engine::getValidMoves(Go::Board *board, Go::Color col)
 
 Util::MoveTree *Engine::getPlayoutTarget(Util::MoveTree *movetree, int totalplayouts)
 {
-  float bestucbval=0;
+  float besturgency=0;
   Util::MoveTree *besttree=NULL;
   
   for(std::list<Util::MoveTree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
   {
-    if ((*iter)->getPlayouts()==0)
-      return (*iter);
+    float urgency;
+    
+    if ((*iter)->getPlayouts()==0 && (*iter)->getRAVEPlayouts()==0)
+      urgency=(*iter)->getUrgency()+(std::rand()/((double)RAND_MAX+1)*10);
     else
+      urgency=(*iter)->getUrgency();
+    
+    if (urgency>besturgency)
     {
-      float ratio=(*iter)->getRAVERatio();
-      float ucbval=ratio + ucbc*sqrt(log(totalplayouts)/((*iter)->getPlayouts()));
-      if (ucbval>bestucbval)
-      {
-        besttree=(*iter);
-        bestucbval=ucbval;
-      }
+      besttree=(*iter);
+      besturgency=urgency;
     }
   }
   

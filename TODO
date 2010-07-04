@@ -4,6 +4,7 @@ TODO
 Now: (before next release)
   do tree search
   investigate why ratio is so pessimistic at start
+  implement the mercy rule?
 
 Soon: (before next major release)
   replace FunctionList and ConstantList with std::list<>
@@ -18,6 +19,7 @@ Soon: (before next major release)
   divide parameters into classes?
   do running average for ppmi?
   tune UCB and RAVE parameters
+  add slight bonus to ratio for pts diff?
 
 Later: (at some point)
   add handicap settings

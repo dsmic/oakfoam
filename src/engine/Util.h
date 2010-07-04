@@ -1,6 +1,7 @@
 #ifndef DEF_OAKFOAM_UTIL_H
 #define DEF_OAKFOAM_UTIL_H
 
+#include <cmath>
 #include <list>
 #include "Go.h"
 
@@ -23,10 +24,8 @@ namespace Util
   class MoveTree
   {
     public:
-      MoveTree(int rm, Go::Move mov = Go::Move(Go::EMPTY,Go::Move::PASS), Util::MoveTree *p = NULL);
+      MoveTree(float uc, int rm, Go::Move mov = Go::Move(Go::EMPTY,Go::Move::PASS), Util::MoveTree *p = NULL);
       ~MoveTree();
-      
-      static float makeRAVERatio(float ratio, float raveratio, int playouts, int ravemoves);
       
       Util::MoveTree *getParent() { return parent; };
       std::list<Util::MoveTree*> *getChildren() { return children; };
@@ -34,10 +33,13 @@ namespace Util
       bool isRoot() { return (parent==NULL); };
       bool isLeaf() { return (children->size()==0); };
       
-      int getPlayouts() { return playouts; };
-      float getRatio() { return ratio; };
-      float getRAVERatio();
       Util::MoveTree *getChild(Go::Move move);
+      int getPlayouts() { return playouts; };
+      int getRAVEPlayouts() { return raveplayouts; };
+      float getRatio() { return ratio; };
+      float getRAVERatio() { return raveratio; };
+      float getVal();
+      float getUrgency();
       
       void addChild(Util::MoveTree *node);
       void addWin();
@@ -53,9 +55,12 @@ namespace Util
       int playouts,raveplayouts;
       float ratio,raveratio;
       int ravemoves;
+      float ucbc;
       
       void updateFromChildPlayout();
       void passPlayoutUp();
+      
+      static float makeRAVEValue(float ratio, float raveratio, int playouts, int ravemoves);
   };
 };
 #endif
