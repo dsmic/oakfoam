@@ -9,6 +9,7 @@ Now: (before next release)
   make live gfx display variation
   keep significant part of tree
   add command to output tree
+  play a move early if it is clearly the right move
 
 Soon: (before next major release)
   replace FunctionList and ConstantList with std::list<>
