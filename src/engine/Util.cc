@@ -97,7 +97,10 @@ void Util::MoveTree::passPlayoutUp(bool win)
 
 float Util::MoveTree::getVal()
 {
-  return Util::MoveTree::makeRAVEValue(ratio,raveratio,playouts,ravemoves);
+  if (raveplayouts>0)
+    return Util::MoveTree::makeRAVEValue(ratio,raveratio,playouts,ravemoves);
+  else
+    return ratio;
 }
 
 float Util::MoveTree::getUrgency()
