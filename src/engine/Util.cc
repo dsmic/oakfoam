@@ -101,10 +101,19 @@ float Util::MoveTree::getUrgency()
   if (playouts==0 && raveplayouts==0)
     return 10;
   
-  if (parent!=NULL && playouts!=0)
-    bias=ucbc*sqrt(log(parent->getPlayouts())/(playouts));
+  if (parent==NULL)
+    bias=0;
   else
-    bias=ucbc*sqrt(log(parent->getPlayouts())/(1))*2;
+  {
+    if (parent->getPlayouts()>0 && playouts>0)
+      bias=ucbc*sqrt(log(parent->getPlayouts())/(playouts));
+    else if (parent->getPlayouts()>0)
+      bias=ucbc*sqrt(log(parent->getPlayouts())/(1))*2;
+    else
+      bias=0;
+  }
+  
+  fprintf(stderr,"urg: %f %f %f %f %f\n",this->getRatio(),this->getRAVERatio(),this->getVal(),bias,this->getVal()+bias);
   return this->getVal()+bias;
 }
 
