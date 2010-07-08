@@ -37,8 +37,8 @@ namespace Util
       Util::MoveTree *getChild(Go::Move move);
       int getPlayouts() { return playouts; };
       int getRAVEPlayouts() { return raveplayouts; };
-      float getRatio() { return ratio; };
-      float getRAVERatio() { return raveratio; };
+      float getRatio() { return (playouts>0?(float)wins/playouts:0); };
+      float getRAVERatio() { return (raveplayouts>0?(float)ravewins/raveplayouts:0); };
       float getVal();
       float getUrgency();
       
@@ -54,7 +54,7 @@ namespace Util
       
       Go::Move move;
       int playouts,raveplayouts;
-      float ratio,raveratio;
+      int wins,ravewins;
       int ravemoves;
       float ucbc;
       

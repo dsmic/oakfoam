@@ -6,9 +6,9 @@ Util::MoveTree::MoveTree(float uc, int rm, Go::Move mov, Util::MoveTree *p)
   children=new std::list<Util::MoveTree*>();
   move=mov;
   playouts=0;
-  ratio=0;
+  wins=0;
   raveplayouts=0;
-  raveratio=0;
+  ravewins=0;
   ravemoves=rm;
   ucbc=uc;
 }
@@ -30,34 +30,26 @@ void Util::MoveTree::addChild(Util::MoveTree *node)
 
 void Util::MoveTree::addWin()
 {
-  int wins=ratio*playouts;
   wins++;
   playouts++;
-  ratio=(float)wins/playouts;
   this->passPlayoutUp(true);
 }
 
 void Util::MoveTree::addLose()
 {
-  int wins=ratio*playouts;
   playouts++;
-  ratio=(float)wins/playouts;
   this->passPlayoutUp(false);
 }
 
 void Util::MoveTree::addRAVEWin()
 {
-  int ravewins=raveratio*raveplayouts;
   ravewins++;
   raveplayouts++;
-  raveratio=(float)ravewins/raveplayouts;
 }
 
 void Util::MoveTree::addRAVELose()
 {
-  int ravewins=raveratio*raveplayouts;
   raveplayouts++;
-  raveratio=(float)ravewins/raveplayouts;
 }
 
 Util::MoveTree *Util::MoveTree::getChild(Go::Move move)
@@ -74,7 +66,7 @@ float Util::MoveTree::makeRAVEValue(float ratio, float raveratio, int playouts, 
 {
   float alpha;
   if (ravemoves>0)
-    alpha=(ravemoves-playouts)/ravemoves;
+    alpha=(float)(ravemoves-playouts)/ravemoves;
   else
     alpha=0;
   
@@ -98,9 +90,9 @@ void Util::MoveTree::passPlayoutUp(bool win)
 float Util::MoveTree::getVal()
 {
   if (raveplayouts>0)
-    return Util::MoveTree::makeRAVEValue(ratio,raveratio,playouts,ravemoves);
+    return Util::MoveTree::makeRAVEValue(this->getRatio(),this->getRAVERatio(),playouts,ravemoves);
   else
-    return ratio;
+    return this->getRatio();
 }
 
 float Util::MoveTree::getUrgency()
