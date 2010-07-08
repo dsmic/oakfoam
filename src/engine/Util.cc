@@ -113,7 +113,7 @@ float Util::MoveTree::getUrgency()
       bias=0;
   }
   
-  fprintf(stderr,"urg: %f %f %f %f %f\n",this->getRatio(),this->getRAVERatio(),this->getVal(),bias,this->getVal()+bias);
+  //fprintf(stderr,"urg: %f %f %f %f %f\n",this->getRatio(),this->getRAVERatio(),this->getVal(),bias,this->getVal()+bias);
   return this->getVal()+bias;
 }
 
