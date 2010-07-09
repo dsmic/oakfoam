@@ -28,6 +28,22 @@ void Util::MoveTree::addChild(Util::MoveTree *node)
   node->parent=this;
 }
 
+float Util::MoveTree::getRatio()
+{
+  if (playouts>0)
+    return (float)wins/playouts;
+  else
+    return 0;
+}
+
+float Util::MoveTree::getRAVERatio()
+{
+  if (raveplayouts>0)
+    return (float)ravewins/raveplayouts;
+  else
+    return 0;
+}
+
 void Util::MoveTree::addWin()
 {
   wins++;
@@ -106,14 +122,13 @@ float Util::MoveTree::getUrgency()
   else
   {
     if (parent->getPlayouts()>0 && playouts>0)
-      bias=ucbc*sqrt(log(parent->getPlayouts())/(playouts));
+      bias=ucbc*sqrt(log((float)parent->getPlayouts())/(playouts));
     else if (parent->getPlayouts()>0)
-      bias=ucbc*sqrt(log(parent->getPlayouts())/(1))*2;
+      bias=ucbc*sqrt(log((float)parent->getPlayouts())/(1))*2;
     else
       bias=0;
   }
   
-  //fprintf(stderr,"urg: %f %f %f %f %f\n",this->getRatio(),this->getRAVERatio(),this->getVal(),bias,this->getVal()+bias);
   return this->getVal()+bias;
 }
 
