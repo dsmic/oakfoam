@@ -584,9 +584,9 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
                 if (subtree!=NULL)
                 {
                   if (playoutwin)
-                    subtree->addRAVEWin();
-                  else
                     subtree->addRAVELose();
+                  else
+                    subtree->addRAVEWin();
                 }
               }
             }
