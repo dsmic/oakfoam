@@ -14,6 +14,7 @@ Now: (before next release)
   try store board at each tree node?
   change resign parameters
   possibly play a move early
+  resolve "connect-and-die" problem with eye definition
 
 Soon: (before next major release)
   replace FunctionList and ConstantList with std::list<>
