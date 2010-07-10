@@ -12,6 +12,8 @@ Now: (before next release)
   add command to output tree
   play a move early if it is clearly the right move
   try store board at each tree node?
+  change resign parameters
+  possibly play a move early
 
 Soon: (before next major release)
   replace FunctionList and ConstantList with std::list<>
