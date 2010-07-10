@@ -3,6 +3,7 @@ version 0.0.6: 2010-xx-xx
   * added UCT
   * improved the live gfx
   * fixed long-standing bug in tree code
+  * fixed serious bug in second level of RAVE
 
 version 0.0.5: 2010-07-04
   * fixed bug in new board
