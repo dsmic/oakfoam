@@ -553,6 +553,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
       
       if (ravemoves>0)
       {
+        bool ravewin=Util::isWinForColor(col,playoutboard->score()-komi);
+        
         for (int x=0;x<boardsize;x++)
         {
           for (int y=0;y<boardsize;y++)
@@ -562,7 +564,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
               Util::MoveTree *subtree=movetree->getChild(Go::Move(col,x,y));
               if (subtree!=NULL)
               {
-                if (playoutwin)
+                if (ravewin)
                   subtree->addRAVEWin();
                 else
                   subtree->addRAVELose();
@@ -583,7 +585,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
                 Util::MoveTree *subtree=secondtree->getChild(Go::Move(Go::otherColor(col),x,y));
                 if (subtree!=NULL)
                 {
-                  if (playoutwin)
+                  if (ravewin)
                     subtree->addRAVELose();
                   else
                     subtree->addRAVEWin();
