@@ -763,7 +763,7 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move **move)
     }
   }
   
-  std::vector<Go::Move> validmoves=this->getValidMoves(board,col);
+  std::vector<Go::Move> validmoves=this->getValidMoves(board,col,false);
   
   if (validmoves.size()==0)
     *move=new Go::Move(col,Go::Move::PASS);
@@ -825,7 +825,7 @@ long Engine::getTimeAllowedThisTurn(Go::Color col)
   return timepermove;
 }
 
-std::vector<Go::Move> Engine::getValidMoves(Go::Board *board, Go::Color col)
+std::vector<Go::Move> Engine::getValidMoves(Go::Board *board, Go::Color col, bool includeweak)
 {
   std::vector<Go::Move> validmovesvector;
   Go::BitBoard *validmovesbitboard;
@@ -835,7 +835,7 @@ std::vector<Go::Move> Engine::getValidMoves(Go::Board *board, Go::Color col)
   {
     for (int y=0;y<boardsize;y++)
     {
-      if (validmovesbitboard->get(x,y) && !board->weakEye(col,x,y))
+      if (validmovesbitboard->get(x,y) && (includeweak || !board->weakEye(col,x,y)))
         validmovesvector.push_back(Go::Move(col,x,y));
     }
   }
@@ -906,7 +906,7 @@ void Engine::expandLeaf(Util::MoveTree *movetree)
     movetree->addChild(nmt);
   }
   
-  std::vector<Go::Move> validmoves=this->getValidMoves(startboard,col);
+  std::vector<Go::Move> validmoves=this->getValidMoves(startboard,col,true);
   for (int i=0;i<(int)validmoves.size();i++)
   {
     Util::MoveTree *nmt=new Util::MoveTree(ucbc,ravemoves,validmoves.at(i));

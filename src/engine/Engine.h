@@ -103,7 +103,7 @@ class Engine
     
     void randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move **move);
     void randomPlayout(Go::Board *board, std::list<Go::Move> startmoves, Go::Color colfirst, Go::BitBoard *firstlist, Go::BitBoard *secondlist);
-    std::vector<Go::Move> getValidMoves(Go::Board *board, Go::Color col);
+    std::vector<Go::Move> getValidMoves(Go::Board *board, Go::Color col, bool includeweak);
     Util::MoveTree *getPlayoutTarget(Util::MoveTree *movetree);
     void expandLeaf(Util::MoveTree *movetree);
     Util::MoveTree *getBestMoves(Util::MoveTree *movetree, bool descend);
