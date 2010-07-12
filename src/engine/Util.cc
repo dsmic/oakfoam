@@ -144,3 +144,16 @@ std::list<Go::Move> Util::MoveTree::getMovesFromRoot()
   }
 }
 
+bool Util::MoveTree::isTerminal()
+{
+  if (!this->isRoot())
+  {
+    if (this->getMove().isPass() && parent->getMove().isPass())
+      return true;
+    else
+      return false;
+  }
+  else
+    return false;
+}
+

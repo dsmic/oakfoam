@@ -24,7 +24,7 @@ namespace Util
   class MoveTree
   {
     public:
-      MoveTree(float uc, int rm, Go::Move mov = Go::Move(Go::EMPTY,Go::Move::PASS), Util::MoveTree *p = NULL);
+      MoveTree(float uc, int rm, Go::Move mov = Go::Move(Go::EMPTY,Go::Move::RESIGN), Util::MoveTree *p = NULL);
       ~MoveTree();
       
       Util::MoveTree *getParent() { return parent; };
@@ -32,6 +32,7 @@ namespace Util
       Go::Move getMove() { return move; };
       bool isRoot() { return (parent==NULL); };
       bool isLeaf() { return (children->size()==0); };
+      bool isTerminal();
       std::list<Go::Move> getMovesFromRoot();
       
       Util::MoveTree *getChild(Go::Move move);
