@@ -34,6 +34,7 @@ namespace Util
       bool isLeaf() { return (children->size()==0); };
       bool isTerminal();
       std::list<Go::Move> getMovesFromRoot();
+      void divorceChild(Util::MoveTree *child);
       
       Util::MoveTree *getChild(Go::Move move);
       int getPlayouts() { return playouts; };

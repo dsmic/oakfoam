@@ -25,7 +25,9 @@ Engine::Engine(Gtp::Engine *ge)
   
   ucbc=UCB_C;
   ravemoves=RAVE_MOVES;
+  
   uctexpandafter=UCT_EXPAND_AFTER;
+  uctkeepsubtree=UCT_KEEP_SUBTREE;
   
   resignratiothreshold=RESIGN_RATIO_THRESHOLD;
   resignmovefactorthreshold=RESIGN_MOVE_FACTOR_THRESHOLD;
@@ -41,10 +43,15 @@ Engine::Engine(Gtp::Engine *ge)
   timewhite=0;
   
   this->addGtpCommands();
+  
+  movetree=NULL;
+  this->clearMoveTree();
 }
 
 Engine::~Engine()
 {
+  if (movetree!=NULL)
+    delete movetree;
   delete currentboard;
 }
 
@@ -340,6 +347,7 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     gtpe->getOutput()->printf("[string] ucb_c %.2f\n",me->ucbc);
     gtpe->getOutput()->printf("[string] rave_moves %d\n",me->ravemoves);
     gtpe->getOutput()->printf("[string] uct_expand_after %d\n",me->uctexpandafter);
+    gtpe->getOutput()->printf("[bool] uct_keep_subtree %d\n",me->uctkeepsubtree);
     gtpe->getOutput()->printf("[string] resign_ratio_threshold %.3f\n",me->resignratiothreshold);
     gtpe->getOutput()->printf("[string] resign_move_factor_threshold %.2f\n",me->resignmovefactorthreshold);
     gtpe->getOutput()->printf("[string] time_buffer %ld\n",me->timebuffer);
@@ -373,6 +381,11 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
       me->ravemoves=cmd->getIntArg(1);
     else if (param=="uct_expand_after")
       me->uctexpandafter=cmd->getIntArg(1);
+    else if (param=="uct_keep_subtree")
+    {
+      me->uctkeepsubtree=(cmd->getIntArg(1)==1);
+      me->clearMoveTree();
+    }
     else if (param=="live_gfx")
       me->livegfx=(cmd->getIntArg(1)==1);
     else if (param=="live_gfx_update_playouts")
@@ -519,10 +532,13 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
     if (livegfx)
       gtpe->getOutput()->printfDebug("gogui-gfx: TEXT [genmove]: starting...\n");
     
-    
-    Util::MoveTree *movetree=new Util::MoveTree(ucbc,ravemoves);
     currentboard->setNextToMove(col);
-    this->expandLeaf(movetree);
+    
+    if (!uctkeepsubtree)
+      this->clearMoveTree();
+    
+    if (movetree->isLeaf())
+      this->expandLeaf(movetree);
     
     Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
     Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
@@ -686,8 +702,6 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
     
     this->makeMove(**move);
     
-    delete movetree;
-    
     if (livegfx)
       gtpe->getOutput()->printfDebug("gogui-gfx: CLEAR\n");
     
@@ -712,6 +726,8 @@ bool Engine::isMoveAllowed(Go::Move move)
 void Engine::makeMove(Go::Move move)
 {
   currentboard->makeMove(move);
+  if (uctkeepsubtree)
+    this->chooseSubTree(move);
 }
 
 void Engine::setBoardSize(int s)
@@ -719,15 +735,15 @@ void Engine::setBoardSize(int s)
   if (s<BOARDSIZE_MIN || s>BOARDSIZE_MAX)
     return;
   
-  delete currentboard;
-  currentboard = new Go::Board(s);
   boardsize=s;
+  this->clearBoard();
 }
 
 void Engine::clearBoard()
 {
   delete currentboard;
   currentboard = new Go::Board(boardsize);
+  this->clearMoveTree();
 }
 
 void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move **move)
@@ -937,5 +953,27 @@ Util::MoveTree *Engine::getBestMoves(Util::MoveTree *movetree, bool descend)
     return besttree;
   else
     return this->getPlayoutTarget(besttree);
+}
+
+void Engine::clearMoveTree()
+{
+  if (movetree!=NULL)
+    delete movetree;
+  
+  movetree=new Util::MoveTree(ucbc,ravemoves);
+}
+
+void Engine::chooseSubTree(Go::Move move)
+{
+  Util::MoveTree *subtree=movetree->getChild(move);
+  
+  if (subtree==NULL)
+    this->clearMoveTree();
+  else
+  {
+    movetree->divorceChild(subtree);
+    delete movetree;
+    movetree=subtree;
+  }
 }
 

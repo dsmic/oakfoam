@@ -157,3 +157,9 @@ bool Util::MoveTree::isTerminal()
     return false;
 }
 
+void Util::MoveTree::divorceChild(Util::MoveTree *child)
+{
+  children->remove(child);
+  child->parent=NULL;
+}
+

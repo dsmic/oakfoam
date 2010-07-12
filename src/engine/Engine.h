@@ -12,6 +12,7 @@
 #define RAVE_MOVES 1000
 
 #define UCT_EXPAND_AFTER 20
+#define UCT_KEEP_SUBTREE true
 
 #define RESIGN_RATIO_THRESHOLD 0.03
 #define RESIGN_MOVE_FACTOR_THRESHOLD 0.5
@@ -98,6 +99,8 @@ class Engine
     int uctexpandafter;
     int livegfxupdateplayouts;
     float livegfxdelay;
+    bool uctkeepsubtree;
+    Util::MoveTree *movetree;
     
     void addGtpCommands();
     
@@ -107,6 +110,8 @@ class Engine
     Util::MoveTree *getPlayoutTarget(Util::MoveTree *movetree);
     void expandLeaf(Util::MoveTree *movetree);
     Util::MoveTree *getBestMoves(Util::MoveTree *movetree, bool descend);
+    void clearMoveTree();
+    void chooseSubTree(Go::Move move);
     
     long getTimeAllowedThisTurn(Go::Color col);
 };
