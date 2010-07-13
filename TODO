@@ -7,7 +7,6 @@ Now: (before next release)
   investigate why ratio is so pessimistic at start
   implement the mercy rule?
   make atari-aware playouts dependant on size of group?
-  handle terminal nodes in UCT
   add command to output tree
   play a move early if it is clearly the right move
   try store board at each tree node?

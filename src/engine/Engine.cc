@@ -883,7 +883,7 @@ Util::MoveTree *Engine::getPlayoutTarget(Util::MoveTree *movetree)
   if (besttree==NULL)
     return NULL;
   
-  if (movepolicy==Engine::MP_UCT && besttree->isLeaf())
+  if (movepolicy==Engine::MP_UCT && besttree->isLeaf() && !besttree->isTerminal())
   {
     if (besttree->getPlayouts()>uctexpandafter)
       this->expandLeaf(besttree);
