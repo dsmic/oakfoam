@@ -12,6 +12,7 @@ Now: (before next release)
   try store board at each tree node?
   change resign parameters
   possibly play a move early
+  place a limit of sorts on depth (expand after more plts)
 
 Soon: (before next major release)
   replace FunctionList and ConstantList with std::list<>
