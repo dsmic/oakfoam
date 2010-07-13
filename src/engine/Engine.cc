@@ -614,9 +614,9 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
       
       if (livegfx)
       {
-        if (livegfxupdate>=livegfxupdateplayouts)
+        if (livegfxupdate>=(livegfxupdateplayouts-1))
         {
-          livegfxupdate=1; //for nice numbers
+          livegfxupdate=0;
           
           gtpe->getOutput()->printfDebug("gogui-gfx:\n");
           gtpe->getOutput()->printfDebug("TEXT [genmove]: thinking... playouts:%d\n",totalplayouts);
