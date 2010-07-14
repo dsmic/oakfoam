@@ -2,17 +2,14 @@ TODO
 ------------------
 
 Now: (before next release)
-  try a "global RAVE"
-  use integers instead of floats
-  investigate why ratio is so pessimistic at start
   implement the mercy rule?
-  make atari-aware playouts dependant on size of group?
-  add command to output tree
-  play a move early if it is clearly the right move
-  try store board at each tree node?
-  change resign parameters
-  possibly play a move early
-  place a limit of sorts on depth (expand after more plts)
+  add command to output tree (to SGF?)
+  play a move early if it is clearly the right move?
+  change resign parameters?
+  possibly play a move early?
+  try UCB-TUNED forumla
+  parameterize UCB_INIT (first-play urgency)
+  use improved RAVE formula
 
 Soon: (before next major release)
   replace FunctionList and ConstantList with std::list<>
@@ -30,6 +27,11 @@ Soon: (before next major release)
   add slight bonus to ratio for pts diff?
   try use thrown away part of tree
   do comaprison of playouts with strength
+  try add simple 16-bit patterns to playouts (must be fast)
+  try a "global RAVE"
+  make atari-aware playouts dependant on size of group?
+  place a limit of sorts on depth? (expand after more plts)
+  replace float with integers
 
 Later: (at some point)
   add handicap settings
