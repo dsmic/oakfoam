@@ -8,7 +8,6 @@ Now: (before next release)
   change resign parameters?
   possibly play a move early?
   try UCB-TUNED forumla
-  parameterize UCB_INIT (first-play urgency)
   use improved RAVE formula
 
 Soon: (before next major release)

@@ -1,6 +1,6 @@
 #include "Util.h"
 
-Util::MoveTree::MoveTree(float uc, int rm, Go::Move mov, Util::MoveTree *p)
+Util::MoveTree::MoveTree(float uc, float ui, int rm, Go::Move mov, Util::MoveTree *p)
 {
   parent=p;
   children=new std::list<Util::MoveTree*>();
@@ -11,6 +11,7 @@ Util::MoveTree::MoveTree(float uc, int rm, Go::Move mov, Util::MoveTree *p)
   ravewins=0;
   ravemoves=rm;
   ucbc=uc;
+  ucbinit=ui;
 }
 
 Util::MoveTree::~MoveTree()
@@ -115,7 +116,7 @@ float Util::MoveTree::getUrgency()
 {
   float bias;
   if (playouts==0 && raveplayouts==0)
-    return 10;
+    return ucbinit;
   
   if (parent==NULL)
     bias=0;
@@ -124,7 +125,7 @@ float Util::MoveTree::getUrgency()
     if (parent->getPlayouts()>0 && playouts>0)
       bias=ucbc*sqrt(log((float)parent->getPlayouts())/(playouts));
     else if (parent->getPlayouts()>0)
-      bias=ucbc*sqrt(log((float)parent->getPlayouts())/(1))*2;
+      bias=ucbc*sqrt(log((float)parent->getPlayouts())/(1));
     else
       bias=0;
   }

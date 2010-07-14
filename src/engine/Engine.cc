@@ -24,6 +24,8 @@ Engine::Engine(Gtp::Engine *ge)
   playoutatarichance=PLAYOUT_ATARI_CHANCE;
   
   ucbc=UCB_C;
+  ucbinit=UCB_INIT;
+  
   ravemoves=RAVE_MOVES;
   
   uctexpandafter=UCT_EXPAND_AFTER;
@@ -345,6 +347,7 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     gtpe->getOutput()->printf("[string] playouts_per_move_min %d\n",me->playoutspermovemin);
     gtpe->getOutput()->printf("[string] playout_atari_chance %.2f\n",me->playoutatarichance);
     gtpe->getOutput()->printf("[string] ucb_c %.2f\n",me->ucbc);
+    gtpe->getOutput()->printf("[string] ucb_init %.2f\n",me->ucbinit);
     gtpe->getOutput()->printf("[string] rave_moves %d\n",me->ravemoves);
     gtpe->getOutput()->printf("[string] uct_expand_after %d\n",me->uctexpandafter);
     gtpe->getOutput()->printf("[bool] uct_keep_subtree %d\n",me->uctkeepsubtree);
@@ -377,6 +380,8 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
       me->playoutatarichance=cmd->getFloatArg(1);
     else if (param=="ucb_c")
       me->ucbc=cmd->getFloatArg(1);
+    else if (param=="ucb_init")
+      me->ucbinit=cmd->getFloatArg(1);
     else if (param=="rave_moves")
       me->ravemoves=cmd->getIntArg(1);
     else if (param=="uct_expand_after")
@@ -917,7 +922,7 @@ void Engine::expandLeaf(Util::MoveTree *movetree)
   
   if (Util::isWinForColor(col,startboard->score()-komi))
   {
-    Util::MoveTree *nmt=new Util::MoveTree(ucbc,ravemoves,Go::Move(col,Go::Move::PASS));
+    Util::MoveTree *nmt=new Util::MoveTree(ucbc,ucbinit,ravemoves,Go::Move(col,Go::Move::PASS));
     nmt->addWin();
     movetree->addChild(nmt);
   }
@@ -925,7 +930,7 @@ void Engine::expandLeaf(Util::MoveTree *movetree)
   std::vector<Go::Move> validmoves=this->getValidMoves(startboard,col,true);
   for (int i=0;i<(int)validmoves.size();i++)
   {
-    Util::MoveTree *nmt=new Util::MoveTree(ucbc,ravemoves,validmoves.at(i));
+    Util::MoveTree *nmt=new Util::MoveTree(ucbc,ucbinit,ravemoves,validmoves.at(i));
     movetree->addChild(nmt);
   }
   
@@ -960,7 +965,7 @@ void Engine::clearMoveTree()
   if (movetree!=NULL)
     delete movetree;
   
-  movetree=new Util::MoveTree(ucbc,ravemoves);
+  movetree=new Util::MoveTree(ucbc,ucbinit,ravemoves);
 }
 
 void Engine::chooseSubTree(Go::Move move)

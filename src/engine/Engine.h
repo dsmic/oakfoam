@@ -8,6 +8,7 @@
 #define PLAYOUT_ATARI_CHANCE 0.3
 
 #define UCB_C 0.44
+#define UCB_INIT 1.2
 
 #define RAVE_MOVES 1000
 
@@ -92,7 +93,7 @@ class Engine
     long timebuffer,timemoveminimum;
     int timemovebuffer;
     float timepercentageboard,timefactor;
-    float ucbc;
+    float ucbc,ucbinit;
     int ravemoves;
     float playoutatarichance;
     Engine::MovePolicy movepolicy;

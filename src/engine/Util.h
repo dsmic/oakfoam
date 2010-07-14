@@ -24,7 +24,7 @@ namespace Util
   class MoveTree
   {
     public:
-      MoveTree(float uc, int rm, Go::Move mov = Go::Move(Go::EMPTY,Go::Move::RESIGN), Util::MoveTree *p = NULL);
+      MoveTree(float uc, float ui, int rm, Go::Move mov = Go::Move(Go::EMPTY,Go::Move::RESIGN), Util::MoveTree *p = NULL);
       ~MoveTree();
       
       Util::MoveTree *getParent() { return parent; };
@@ -58,7 +58,7 @@ namespace Util
       int playouts,raveplayouts;
       int wins,ravewins;
       int ravemoves;
-      float ucbc;
+      float ucbc,ucbinit;
       
       void passPlayoutUp(bool win);
       
