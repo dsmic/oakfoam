@@ -61,8 +61,6 @@ namespace Util
       float ucbc,ucbinit;
       
       void passPlayoutUp(bool win);
-      
-      static float makeRAVEValue(float ratio, float raveratio, int playouts, int ravemoves);
   };
 };
 #endif

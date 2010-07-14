@@ -79,19 +79,6 @@ Util::MoveTree *Util::MoveTree::getChild(Go::Move move)
   return NULL;
 }
 
-float Util::MoveTree::makeRAVEValue(float ratio, float raveratio, int playouts, int ravemoves)
-{
-  float alpha;
-  if (ravemoves>0)
-    alpha=(float)(ravemoves-playouts)/ravemoves;
-  else
-    alpha=0;
-  
-  if (alpha<0)
-    alpha=0;
-  return raveratio*alpha + ratio*(1-alpha);
-}
-
 void Util::MoveTree::passPlayoutUp(bool win)
 {
   if (parent!=NULL)
@@ -106,10 +93,19 @@ void Util::MoveTree::passPlayoutUp(bool win)
 
 float Util::MoveTree::getVal()
 {
-  if (raveplayouts>0)
-    return Util::MoveTree::makeRAVEValue(this->getRatio(),this->getRAVERatio(),playouts,ravemoves);
-  else
+  if (ravemoves==0 || raveplayouts==0)
     return this->getRatio();
+  else if (playouts==0)
+    return this->getRAVERatio();
+  else
+  {
+    //float alpha=(float)(ravemoves-playouts)/ravemoves;
+    //if (alpha<0) alpha=0;
+    
+    float alpha=(float)raveplayouts/(raveplayouts + playouts + (float)(raveplayouts*playouts)/ravemoves);
+    
+    return this->getRAVERatio()*alpha + this->getRatio()*(1-alpha);
+  }
 }
 
 float Util::MoveTree::getUrgency()
