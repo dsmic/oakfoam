@@ -6,22 +6,16 @@ Now: (before next release)
   add command to output tree (to SGF?)
   play a move early if it is clearly the right move?
   change resign parameters?
-  possibly play a move early?
   try UCB-TUNED forumla
 
 Soon: (before next major release)
-  replace FunctionList and ConstantList with std::list<>
-  rename/refactor Engine to better name?
-  move Go:: objects into own files?
-  move main() into Oakfoam.cc
-  add prefix to custom commands?
   implement superko
   copy all board data with a copy() (groups and liberties)
-  investigate possible slow ppmi in trials after a while
+  investigate slow ppmi in trials after a while (possibly CPU overheating)
   improve time managment
   divide parameters into classes?
   do running average for ppmi?
-  tune UCB and RAVE parameters
+  tune parameters
   add slight bonus to ratio for pts diff?
   try use thrown away part of tree
   do comaprison of playouts with strength
@@ -29,11 +23,24 @@ Soon: (before next major release)
   try a "global RAVE"
   make atari-aware playouts dependant on size of group?
   place a limit of sorts on depth? (expand after more plts)
-  replace float with integers
+  replace floats with integers
+  prefer closer moves using CFG to last and next-to-last move
+  try use parent info in children (or grand parent)
+  only try escape if it gains a liberty
+  avoid self-atari in playouts with a group size over x
+  play one of liberties of a group with 2
+  handle terminal nodes properly (don't do playouts from terminal)
 
 Later: (at some point)
   add handicap settings
-  add timestamp to log
-  add an opening book
+  add timestamp to log?
+  add an opening book?
+  replace FunctionList and ConstantList with std::list<>
+  rename/refactor Engine to better name?
+  move Go:: objects into own files?
+  move main() into Oakfoam.cc
+  add prefix to custom commands?
+  do sanity checks on parameters
+  document parameters
 
 
