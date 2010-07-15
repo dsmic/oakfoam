@@ -48,11 +48,13 @@ Go::Board::~Board()
 {
   delete blackvalidmoves;
   delete whitevalidmoves;
+  
   for(std::list<Go::Board::Group*>::iterator iter=groups.begin();iter!=groups.end();++iter) 
   {
     delete (*iter);
   }
   groups.resize(0);
+  
   delete[] data;
 }
 
@@ -240,7 +242,7 @@ void Go::Board::refreshGroups()
     {
       if (this->colorAt(x,y)!=Go::EMPTY && this->groupAt(x,y)==NULL)
       {
-        Go::Board::Group *newgroup = new Go::Board::Group();
+        Go::Board::Group *newgroup = new Go::Board::Group(size);
         
         this->spreadGroup(x,y,this->colorAt(x,y),newgroup);
         groups.push_back(newgroup);
@@ -507,7 +509,7 @@ void Go::Board::makeMove(Go::Move move)
   }
   else
   {
-    Go::Board::Group *newgroup = new Go::Board::Group();
+    Go::Board::Group *newgroup = new Go::Board::Group(size);
     newgroup->addStone(this->vertexAt(x,y));
     this->setGroupAt(x,y,newgroup);
     this->addDirectLiberties(x,y,newgroup);
@@ -519,7 +521,7 @@ void Go::Board::makeMove(Go::Move move)
     (*iter)->removeLiberty(this->vertexAt(x,y));
     if ((*iter)->numOfLiberties()==1)
     {
-      Go::Board::Vertex *liberty=(*iter)->getLiberties()->front();
+      Go::Board::Vertex *liberty=(*iter)->getLibertiesList()->front();
       this->addValidMove(Go::Move(col,liberty->point.x,liberty->point.y));
       if (this->directLiberties(liberty->point.x,liberty->point.y)==0 && !this->validMoveCheck(Go::Move(othercol,liberty->point.x,liberty->point.y)))
         this->removeValidMove(Go::Move(othercol,liberty->point.x,liberty->point.y));
@@ -530,7 +532,7 @@ void Go::Board::makeMove(Go::Move move)
   this->removeValidMove(Go::Move(Go::WHITE,x,y));
   if (this->groupAt(x,y)->numOfLiberties()==1)
   {
-    Go::Board::Vertex *liberty=this->groupAt(x,y)->getLiberties()->front();
+    Go::Board::Vertex *liberty=this->groupAt(x,y)->getLibertiesList()->front();
     if (this->directLiberties(liberty->point.x,liberty->point.y)==0 && !this->validMoveCheck(Go::Move(col,liberty->point.x,liberty->point.y)))
       this->removeValidMove(Go::Move(col,liberty->point.x,liberty->point.y));
     if (this->validMoveCheck(Go::Move(othercol,liberty->point.x,liberty->point.y)))
@@ -577,13 +579,13 @@ void Go::Board::makeMove(Go::Move move)
 int Go::Board::removeGroup(Go::Board::Group *group)
 {
   int s=group->numOfStones();
-  Go::Color groupcol=group->getStones()->front()->color;
+  Go::Color groupcol=group->getStonesList()->front()->color;
   
   groups.remove(group);
   
   std::list<Go::Board::Point> *possiblesuicides = new std::list<Go::Board::Point>();
   
-  for(std::list<Go::Board::Vertex*>::iterator iter=group->getStones()->begin();iter!=group->getStones()->end();++iter)
+  for(std::list<Go::Board::Vertex*>::iterator iter=group->getStonesList()->begin();iter!=group->getStonesList()->end();++iter)
   {
     Go::Board::Vertex *vert=(*iter);
     
@@ -595,7 +597,7 @@ int Go::Board::removeGroup(Go::Board::Group *group)
     {
       if (this->groupAt(x-1,y)->numOfLiberties()==1)
       {
-        Go::Board::Vertex *liberty=this->groupAt(x-1,y)->getLiberties()->front();
+        Go::Board::Vertex *liberty=this->groupAt(x-1,y)->getLibertiesList()->front();
         this->addValidMove(Go::Move(othercol,liberty->point.x,liberty->point.y));
         possiblesuicides->push_back(liberty->point);
       }
@@ -605,7 +607,7 @@ int Go::Board::removeGroup(Go::Board::Group *group)
     {
       if (this->groupAt(x,y-1)->numOfLiberties()==1)
       {
-        Go::Board::Vertex *liberty=this->groupAt(x,y-1)->getLiberties()->front();
+        Go::Board::Vertex *liberty=this->groupAt(x,y-1)->getLibertiesList()->front();
         this->addValidMove(Go::Move(othercol,liberty->point.x,liberty->point.y));
         possiblesuicides->push_back(liberty->point);
       }
@@ -615,7 +617,7 @@ int Go::Board::removeGroup(Go::Board::Group *group)
     {
       if (this->groupAt(x+1,y)->numOfLiberties()==1)
       {
-        Go::Board::Vertex *liberty=this->groupAt(x+1,y)->getLiberties()->front();
+        Go::Board::Vertex *liberty=this->groupAt(x+1,y)->getLibertiesList()->front();
         this->addValidMove(Go::Move(othercol,liberty->point.x,liberty->point.y));
         possiblesuicides->push_back(liberty->point);
       }
@@ -625,7 +627,7 @@ int Go::Board::removeGroup(Go::Board::Group *group)
     {
       if (this->groupAt(x,y+1)->numOfLiberties()==1)
       {
-        Go::Board::Vertex *liberty=this->groupAt(x,y+1)->getLiberties()->front();
+        Go::Board::Vertex *liberty=this->groupAt(x,y+1)->getLibertiesList()->front();
         this->addValidMove(Go::Move(othercol,liberty->point.x,liberty->point.y));
         possiblesuicides->push_back(liberty->point);
       }
@@ -657,13 +659,13 @@ void Go::Board::mergeGroups(Go::Board::Group *first, Go::Board::Group *second)
 {
   groups.remove(second);
   
-  for(std::list<Go::Board::Vertex*>::iterator iter=second->getStones()->begin();iter!=second->getStones()->end();++iter) 
+  for(std::list<Go::Board::Vertex*>::iterator iter=second->getStonesList()->begin();iter!=second->getStonesList()->end();++iter) 
   {
     (*iter)->group=first;
     first->addStone((*iter));
   }
   
-  for(std::list<Go::Board::Vertex*>::iterator iter=second->getLiberties()->begin();iter!=second->getLiberties()->end();++iter) 
+  for(std::list<Go::Board::Vertex*>::iterator iter=second->getLibertiesList()->begin();iter!=second->getLibertiesList()->end();++iter) 
   {
     first->addLiberty((*iter));
   }
@@ -811,41 +813,51 @@ std::string Go::Board::toString()
   return ss.str();
 }
 
+Go::Board::Group::Group(int size)
+{
+  stonesboard=new Go::BitBoard(size);
+  stonesboard->clear();
+  libertiesboard=new Go::BitBoard(size);
+  libertiesboard->clear();
+}
+
+Go::Board::Group::~Group()
+{
+  delete stonesboard;
+  delete libertiesboard;
+}
+
 void Go::Board::Group::addStone(Go::Board::Vertex *stone)
 {
-  for(std::list<Go::Board::Vertex*>::iterator iter=stones.begin();iter!=stones.end();++iter) 
+  if (!stonesboard->get(stone->point.x,stone->point.y))
   {
-    if ((*iter)==stone)
-      return;
+    stonesboard->set(stone->point.x,stone->point.y);
+    stoneslist.push_back(stone);
   }
-  
-  stones.push_back(stone);
 }
 
 void Go::Board::Group::addLiberty(Go::Board::Vertex *liberty)
 {
-  for(std::list<Go::Board::Vertex*>::iterator iter=liberties.begin();iter!=liberties.end();++iter) 
+  if (!libertiesboard->get(liberty->point.x,liberty->point.y))
   {
-    if ((*iter)==liberty)
-      return;
+    libertiesboard->set(liberty->point.x,liberty->point.y);
+    libertieslist.push_back(liberty);
   }
-  
-  liberties.push_back(liberty);
 }
 
 void Go::Board::Group::removeLiberty(Go::Board::Vertex *liberty)
 {
-  liberties.remove(liberty);
+  if (libertiesboard->get(liberty->point.x,liberty->point.y))
+  {
+    libertiesboard->clear(liberty->point.x,liberty->point.y);
+    libertieslist.remove(liberty);
+  }
 }
 
 void Go::Board::refreshValidMoves(Go::Color col)
 {
-  Go::BitBoard *validmoves=(col==Go::BLACK?blackvalidmoves:whitevalidmoves);
-  
-  validmoves->clear();
-  
-  //validmoves->push_back(Go::Move(col,Go::Move::PASS));
-  //validmoves->push_back(Go::Move(col,Go::Move::RESIGN));
+  (col==Go::BLACK?blackvalidmoves:whitevalidmoves)->clear();
+  (col==Go::BLACK?blackvalidmovecount:whitevalidmovecount)=0;
   
   for (int x=0;x<size;x++)
   {
@@ -853,7 +865,7 @@ void Go::Board::refreshValidMoves(Go::Color col)
     {
       if (this->validMoveCheck(Go::Move(col,x,y)))
       {
-        validmoves->set(x,y);
+        this->addValidMove(Go::Move(col,x,y));
       }
     }
   }
@@ -873,13 +885,25 @@ Go::BitBoard *Go::Board::getValidMoves(Go::Color col)
 void Go::Board::addValidMove(Go::Move move)
 {
   Go::BitBoard *validmoves=(move.getColor()==Go::BLACK?blackvalidmoves:whitevalidmoves);
-  validmoves->set(move.getX(),move.getY());
+  int *validmovecount=(move.getColor()==Go::BLACK?&blackvalidmovecount:&whitevalidmovecount);
+  
+  if (!validmoves->get(move.getX(),move.getY()))
+  {
+    validmoves->set(move.getX(),move.getY());
+    (*validmovecount)++;
+  }
 }
 
 void Go::Board::removeValidMove(Go::Move move)
 {
   Go::BitBoard *validmoves=(move.getColor()==Go::BLACK?blackvalidmoves:whitevalidmoves);
-  validmoves->clear(move.getX(),move.getY());
+  int *validmovecount=(move.getColor()==Go::BLACK?&blackvalidmovecount:&whitevalidmovecount);
+  
+  if (validmoves->get(move.getX(),move.getY()))
+  {
+    validmoves->clear(move.getX(),move.getY());
+    (*validmovecount)--;
+  }
 }
 
 Go::BitBoard::BitBoard(int s)
@@ -891,11 +915,5 @@ Go::BitBoard::BitBoard(int s)
 Go::BitBoard::~BitBoard()
 {
   delete[] data;
-}
-
-void Go::BitBoard::fill(bool val)
-{
-  for (int i=0;i<(size*size);i++)
-    data[i]=val;
 }
 

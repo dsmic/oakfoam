@@ -760,7 +760,7 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move **move)
   {
     if ((*iter)->numOfLiberties()==1)
     {
-      Go::Board::Vertex *liberty=(*iter)->getLiberties()->front();
+      Go::Board::Vertex *liberty=(*iter)->getLibertiesList()->front();
       if (board->validMove(Go::Move(col,liberty->point.x,liberty->point.y)))
         atarimoves.push_back(Go::Move(col,liberty->point.x,liberty->point.y));
     }
@@ -773,25 +773,28 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move **move)
     return;
   }
   
-  for (int i=0;i<5;i++)
-  {
-    int x=(int)(std::rand()/((double)RAND_MAX+1)*boardsize);
-    int y=(int)(std::rand()/((double)RAND_MAX+1)*boardsize);
-    if (board->validMove(Go::Move(col,x,y)) && !board->weakEye(col,x,y))
-    {
-      *move=new Go::Move(col,x,y);
-      return;
-    }
-  }
-  
-  std::vector<Go::Move> validmoves=this->getValidMoves(board,col,false);
-  
-  if (validmoves.size()==0)
+  if (board->numOfValidMoves(col)==0)
     *move=new Go::Move(col,Go::Move::PASS);
   else
   {
-    int i=(int)(std::rand()/((double)RAND_MAX+1)*validmoves.size());
-    *move=new Go::Move(col,validmoves.at(i).getX(),validmoves.at(i).getY());
+    int rx=(int)(std::rand()/((double)RAND_MAX+1)*boardsize);
+    int ry=(int)(std::rand()/((double)RAND_MAX+1)*boardsize);
+    Go::BitBoard *validmoves=board->getValidMoves(col);
+    
+    for (int tx=0;tx<boardsize;tx++)
+    {
+      int x=(tx+rx)%boardsize;
+      for (int ty=0;ty<boardsize;ty++)
+      {
+        int y=(ty+ry)%boardsize;
+        if (validmoves->get(x,y) && !board->weakEye(col,x,y))
+        {
+          *move=new Go::Move(col,x,y);
+          return;
+        }
+      }
+    }
+    *move=new Go::Move(col,Go::Move::PASS);
   }
 }
 

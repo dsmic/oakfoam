@@ -81,11 +81,11 @@ namespace Go
       BitBoard(int s);
       ~BitBoard();
       
-      bool get(int x, int y) { return data[y*size+x]; };
-      void set(int x, int y, bool val=true) { data[y*size+x]=val; };
-      void clear(int x, int y) { this->set(x,y,false); };
-      void fill(bool val);
-      void clear() { this->fill(false); };
+      inline bool get(int x, int y) { return data[y*size+x]; };
+      inline void set(int x, int y, bool val=true) { data[y*size+x]=val; };
+      inline void clear(int x, int y) { this->set(x,y,false); };
+      inline void fill(bool val) { for (int i=0;i<(size*size);i++) data[i]=val; };
+      inline void clear() { this->fill(false); };
     
     private:
       int size;
@@ -116,19 +116,24 @@ namespace Go
       class Group
       {
         public:
-          int numOfStones() { return stones.size(); };
-          int numOfLiberties() { return liberties.size(); };
+          Group(int size);
+          ~Group();
           
-          std::list<Go::Board::Vertex*> *getStones() { return &stones; };
-          std::list<Go::Board::Vertex*> *getLiberties() { return &liberties; };
+          int numOfStones() { return stoneslist.size(); };
+          int numOfLiberties() { return libertieslist.size(); };
+          
+          std::list<Go::Board::Vertex*> *getStonesList() { return &stoneslist; };
+          std::list<Go::Board::Vertex*> *getLibertiesList() { return &libertieslist; };
           
           void addStone(Go::Board::Vertex *stone);
           void addLiberty(Go::Board::Vertex *liberty);
           void removeLiberty(Go::Board::Vertex *liberty);
         
         private:
-          std::list<Go::Board::Vertex*> stones;
-          std::list<Go::Board::Vertex*> liberties;
+          std::list<Go::Board::Vertex*> stoneslist;
+          Go::BitBoard *stonesboard;
+          std::list<Go::Board::Vertex*> libertieslist;
+          Go::BitBoard *libertiesboard;
       };
       
       Go::Board *copy();
@@ -141,9 +146,10 @@ namespace Go
       int getPassesPlayed() { return passesplayed; };
       int getMovesMade() { return movesmade; };
       
+      void makeMove(Go::Move move);
+      int numOfValidMoves(Go::Color col) { return (col==Go::BLACK?blackvalidmovecount:whitevalidmovecount); };
       Go::BitBoard *getValidMoves(Go::Color col);
       bool validMove(Go::Move move);
-      void makeMove(Go::Move move);
       
       void setNextToMove(Go::Color col) { nexttomove=col; };
       Go::Color nextToMove() { return nexttomove; };
@@ -159,6 +165,7 @@ namespace Go
       Go::Color nexttomove;
       int passesplayed;
       int movesmade;
+      int blackvalidmovecount,whitevalidmovecount;
       Go::BitBoard *blackvalidmoves,*whitevalidmoves;
       
       struct ScoreVertex
