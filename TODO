@@ -2,15 +2,10 @@ TODO
 ------------------
 
 Now: (before next release)
-  implement the mercy rule?
-  add command to output tree (to SGF?)
-  play a move early if it is clearly the right move?
-  change resign parameters?
-  try UCB-TUNED forumla
-  try adding EDGE vertices?
+  handle terminal nodes properly (don't do playouts from terminal)
 
 Soon: (before next major release)
-  implement superko
+  implement superko in tree
   copy all board data with a copy() (groups and liberties)
   investigate slow ppmi in trials after a while (possibly CPU overheating)
   improve time managment
@@ -19,18 +14,22 @@ Soon: (before next major release)
   tune parameters
   add slight bonus to ratio for pts diff?
   try use thrown away part of tree
-  do comaprison of playouts with strength
+  do comparison of playouts with strength
   try add simple 16-bit patterns to playouts (must be fast)
   try a "global RAVE"
   make atari-aware playouts dependant on size of group?
   place a limit of sorts on depth? (expand after more plts)
-  replace floats with integers
+  replace floats with integers in tree
   prefer closer moves using CFG to last and next-to-last move
   try use parent info in children (or grand parent)
   only try escape if it gains a liberty
   avoid self-atari in playouts with a group size over x
-  play one of liberties of a group with 2
-  handle terminal nodes properly (don't do playouts from terminal)
+  play at one of liberties of a enemy group with 2
+  implement the mercy rule?
+  try adding EDGE vertices?
+  add command to output tree (to SGF?)
+  play a move early if it is clearly the right move?
+  try UCB-TUNED forumla
 
 Later: (at some point)
   add handicap settings
