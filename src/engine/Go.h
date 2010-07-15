@@ -15,7 +15,7 @@ namespace Go
     WHITE
   };
   
-  static Go::Color otherColor(Go::Color col)
+  inline static Go::Color otherColor(Go::Color col)
   {
     if (col==Go::BLACK)
       return Go::WHITE;
@@ -45,10 +45,10 @@ namespace Go
         RESIGN
       };
       
-      Move() {color=Go::EMPTY;x=-2;y=-2;};
+      inline Move() {color=Go::EMPTY;x=-2;y=-2;};
       
-      Move(Go::Color col, int ix, int iy) {color=col;x=ix;y=iy;};
-      Move(Go::Color col, Go::Move::Type type)
+      inline Move(Go::Color col, int ix, int iy) {color=col;x=ix;y=iy;};
+      inline Move(Go::Color col, Go::Move::Type type)
       {
         if (type==NORMAL)
           throw Go::Exception("invalid type");
@@ -58,17 +58,17 @@ namespace Go
         y=i;
       };
       
-      Go::Color getColor() {return color;};
-      int getX() {return x;};
-      int getY() {return y;};
+      inline Go::Color getColor() {return color;};
+      inline int getX() {return x;};
+      inline int getY() {return y;};
       
-      bool isPass() {return (x==-1 && y==-1)?true:false;};
-      bool isResign() {return (x==-2 && y==-2)?true:false;};
+      inline bool isPass() {return (x==-1 && y==-1)?true:false;};
+      inline bool isResign() {return (x==-2 && y==-2)?true:false;};
       
       std::string toString();
       
-      bool operator==(Go::Move other) { return (color==other.getColor() && x==other.getX() && y==other.getY()); };
-      bool operator!=(Go::Move other) { return !(*this == other); };
+      inline bool operator==(Go::Move other) { return (color==other.getColor() && x==other.getX() && y==other.getY()); };
+      inline bool operator!=(Go::Move other) { return !(*this == other); };
     
     private:
       Go::Color color;
@@ -119,11 +119,11 @@ namespace Go
           Group(int size);
           ~Group();
           
-          int numOfStones() { return stoneslist.size(); };
-          int numOfLiberties() { return libertieslist.size(); };
+          inline int numOfStones() { return stoneslist.size(); };
+          inline int numOfLiberties() { return libertieslist.size(); };
           
-          std::list<Go::Board::Vertex*> *getStonesList() { return &stoneslist; };
-          std::list<Go::Board::Vertex*> *getLibertiesList() { return &libertieslist; };
+          inline std::list<Go::Board::Vertex*> *getStonesList() { return &stoneslist; };
+          inline std::list<Go::Board::Vertex*> *getLibertiesList() { return &libertieslist; };
           
           void addStone(Go::Board::Vertex *stone);
           void addLiberty(Go::Board::Vertex *liberty);

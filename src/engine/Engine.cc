@@ -753,24 +753,27 @@ void Engine::clearBoard()
 
 void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move **move)
 {
-  std::vector<Go::Move> atarimoves;
-  std::list<Go::Board::Group*> *groups=board->getGroups();
-  
-  for(std::list<Go::Board::Group*>::iterator iter=groups->begin();iter!=groups->end();++iter) 
+  if (playoutatarichance>0)
   {
-    if ((*iter)->numOfLiberties()==1)
+    std::vector<Go::Move> atarimoves;
+    std::list<Go::Board::Group*> *groups=board->getGroups();
+    
+    for(std::list<Go::Board::Group*>::iterator iter=groups->begin();iter!=groups->end();++iter) 
     {
-      Go::Board::Vertex *liberty=(*iter)->getLibertiesList()->front();
-      if (board->validMove(Go::Move(col,liberty->point.x,liberty->point.y)))
-        atarimoves.push_back(Go::Move(col,liberty->point.x,liberty->point.y));
+      if ((*iter)->numOfLiberties()==1)
+      {
+        Go::Board::Vertex *liberty=(*iter)->getLibertiesList()->front();
+        if (board->validMove(Go::Move(col,liberty->point.x,liberty->point.y)))
+          atarimoves.push_back(Go::Move(col,liberty->point.x,liberty->point.y));
+      }
     }
-  }
-  
-  if (atarimoves.size()>0 && playoutatarichance>(std::rand()/((double)RAND_MAX+1)))
-  {
-    int i=(int)(std::rand()/((double)RAND_MAX+1)*atarimoves.size());
-    *move=new Go::Move(col,atarimoves.at(i).getX(),atarimoves.at(i).getY());
-    return;
+    
+    if (atarimoves.size()>0 && playoutatarichance>(std::rand()/((double)RAND_MAX+1)))
+    {
+      int i=(int)(std::rand()/((double)RAND_MAX+1)*atarimoves.size());
+      *move=new Go::Move(col,atarimoves.at(i).getX(),atarimoves.at(i).getY());
+      return;
+    }
   }
   
   if (board->numOfValidMoves(col)==0)
@@ -850,24 +853,6 @@ long Engine::getTimeAllowedThisTurn(Go::Color col)
   return timepermove;
 }
 
-std::vector<Go::Move> Engine::getValidMoves(Go::Board *board, Go::Color col, bool includeweak)
-{
-  std::vector<Go::Move> validmovesvector;
-  Go::BitBoard *validmovesbitboard;
-  
-  validmovesbitboard=board->getValidMoves(col);
-  for (int x=0;x<boardsize;x++)
-  {
-    for (int y=0;y<boardsize;y++)
-    {
-      if (validmovesbitboard->get(x,y) && (includeweak || !board->weakEye(col,x,y)))
-        validmovesvector.push_back(Go::Move(col,x,y));
-    }
-  }
-  
-  return validmovesvector;
-}
-
 Util::MoveTree *Engine::getPlayoutTarget(Util::MoveTree *movetree)
 {
   float besturgency=0;
@@ -924,18 +909,27 @@ void Engine::expandLeaf(Util::MoveTree *movetree)
   
   Go::Color col=startboard->nextToMove();
   
-  if (Util::isWinForColor(col,startboard->score()-komi))
+  if (startboard->numOfValidMoves(col)==0 || Util::isWinForColor(col,startboard->score()-komi))
   {
     Util::MoveTree *nmt=new Util::MoveTree(ucbc,ucbinit,ravemoves,Go::Move(col,Go::Move::PASS));
     nmt->addWin();
     movetree->addChild(nmt);
   }
   
-  std::vector<Go::Move> validmoves=this->getValidMoves(startboard,col,true);
-  for (int i=0;i<(int)validmoves.size();i++)
+  if (startboard->numOfValidMoves(col)>0)
   {
-    Util::MoveTree *nmt=new Util::MoveTree(ucbc,ucbinit,ravemoves,validmoves.at(i));
-    movetree->addChild(nmt);
+    Go::BitBoard *validmovesbitboard=startboard->getValidMoves(col);
+    for (int x=0;x<boardsize;x++)
+    {
+      for (int y=0;y<boardsize;y++)
+      {
+        if (validmovesbitboard->get(x,y))
+        {
+          Util::MoveTree *nmt=new Util::MoveTree(ucbc,ucbinit,ravemoves,Go::Move(col,x,y));
+          movetree->addChild(nmt);
+        }
+      }
+    }
   }
   
   delete startboard;
