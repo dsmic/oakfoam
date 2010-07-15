@@ -7,7 +7,6 @@ Now: (before next release)
   play a move early if it is clearly the right move?
   change resign parameters?
   try UCB-TUNED forumla
-  handle super-long games
 
 Soon: (before next major release)
   implement superko

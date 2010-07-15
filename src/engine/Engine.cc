@@ -811,6 +811,7 @@ void Engine::randomPlayout(Go::Board *board, std::list<Go::Move> startmoves, Go:
   
   Go::Move *move;
   Go::Color coltomove=board->nextToMove();
+  int movesalready=board->getMovesMade();
   while (board->getPassesPlayed()<2)
   {
     bool resign;
@@ -823,7 +824,7 @@ void Engine::randomPlayout(Go::Board *board, std::list<Go::Move> startmoves, Go:
     coltomove=Go::otherColor(coltomove);
     if (resign)
       break;
-    if (board->getMovesMade()>(boardsize*boardsize*PLAYOUT_MAX_MOVE_FACTOR))
+    if (board->getMovesMade()>(boardsize*boardsize*PLAYOUT_MAX_MOVE_FACTOR+movesalready))
       break;
   }
 }
