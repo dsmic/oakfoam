@@ -114,7 +114,7 @@ float Util::MoveTree::getUrgency()
   if (playouts==0 && raveplayouts==0)
     return ucbinit;
   
-  if (parent==NULL)
+  if (parent==NULL || ucbc==0)
     bias=0;
   else
   {
