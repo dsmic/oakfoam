@@ -2,7 +2,15 @@ TODO
 ------------------
 
 Now: (before next release)
-  
+  write a faster board implementation
+  try adding EDGE vertices?
+  try add simple 16-bit patterns to playouts (must be fast)
+  replace floats with integers in tree
+  only try escape if it gains a liberty
+  make atari-aware playouts dependant on size of group?
+  avoid self-atari in playouts with a group size over x
+  play at one of liberties of a enemy group with 2
+  prefer closer moves using CFG to last and next-to-last move
 
 Soon: (before next major release)
   implement superko in tree
@@ -15,18 +23,10 @@ Soon: (before next major release)
   add slight bonus to ratio for pts diff?
   try use thrown away part of tree
   do comparison of playouts with strength
-  try add simple 16-bit patterns to playouts (must be fast)
   try a "global RAVE"
-  make atari-aware playouts dependant on size of group?
   place a limit of sorts on depth? (expand after more plts)
-  replace floats with integers in tree
-  prefer closer moves using CFG to last and next-to-last move
   try use parent info in children (or grand parent)
-  only try escape if it gains a liberty
-  avoid self-atari in playouts with a group size over x
-  play at one of liberties of a enemy group with 2
   implement the mercy rule?
-  try adding EDGE vertices?
   add command to output tree (to SGF?)
   play a move early if it is clearly the right move?
   try UCB-TUNED forumla
