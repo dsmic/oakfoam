@@ -2,7 +2,7 @@ TODO
 ------------------
 
 Now: (before next release)
-  handle terminal nodes properly (don't do playouts from terminal)
+  
 
 Soon: (before next major release)
   implement superko in tree
@@ -30,6 +30,7 @@ Soon: (before next major release)
   add command to output tree (to SGF?)
   play a move early if it is clearly the right move?
   try UCB-TUNED forumla
+  handle terminal nodes properly (don't do playouts from terminal)
 
 Later: (at some point)
   add handicap settings
