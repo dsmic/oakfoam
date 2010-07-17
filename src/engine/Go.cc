@@ -104,7 +104,7 @@ Go::Board::~Board()
   delete blackvalidmoves;
   delete whitevalidmoves;
   
-  for(std::list<Go::Group*>::iterator iter=groups.begin();iter!=groups.end();++iter) 
+  for(std::list<Go::Group*,Go::allocator_groupptr>::iterator iter=groups.begin();iter!=groups.end();++iter) 
   {
     delete (*iter);
   }
@@ -462,7 +462,7 @@ void Go::Board::refreshGroups()
     this->setGroup(p,NULL);
   }
   
-  for(std::list<Go::Group*>::iterator iter=groups.begin();iter!=groups.end();++iter) 
+  for(std::list<Go::Group*,Go::allocator_groupptr>::iterator iter=groups.begin();iter!=groups.end();++iter) 
   {
     delete (*iter);
   }
@@ -511,9 +511,9 @@ int Go::Board::removeGroup(Go::Group *group)
   
   groups.remove(group);
   
-  std::list<int> *possiblesuicides = new std::list<int>();
+  std::list<int,Go::allocator_int> *possiblesuicides = new std::list<int,Go::allocator_int>();
   
-  for(std::list<int>::iterator iter=group->getStonesList()->begin();iter!=group->getStonesList()->end();++iter)
+  for(std::list<int,Go::allocator_int>::iterator iter=group->getStonesList()->begin();iter!=group->getStonesList()->end();++iter)
   {
     int pos=(*iter);
     
@@ -540,7 +540,7 @@ int Go::Board::removeGroup(Go::Group *group)
     this->setGroup(pos,NULL);
   }
   
-  for(std::list<int>::iterator iter=possiblesuicides->begin();iter!=possiblesuicides->end();++iter)
+  for(std::list<int,Go::allocator_int>::iterator iter=possiblesuicides->begin();iter!=possiblesuicides->end();++iter)
   {
     if (!this->validMoveCheck(Go::Move(groupcol,(*iter)))) 
       this->removeValidMove(Go::Move(groupcol,(*iter)));
@@ -561,13 +561,13 @@ void Go::Board::mergeGroups(Go::Group *first, Go::Group *second)
   
   groups.remove(second);
   
-  for(std::list<int>::iterator iter=second->getStonesList()->begin();iter!=second->getStonesList()->end();++iter) 
+  for(std::list<int,Go::allocator_int>::iterator iter=second->getStonesList()->begin();iter!=second->getStonesList()->end();++iter) 
   {
     this->setGroup((*iter),first);
     first->addStone((*iter));
   }
   
-  for(std::list<int>::iterator iter=second->getLibertiesList()->begin();iter!=second->getLibertiesList()->end();++iter) 
+  for(std::list<int,Go::allocator_int>::iterator iter=second->getLibertiesList()->begin();iter!=second->getLibertiesList()->end();++iter) 
   {
     first->addLiberty((*iter));
   }

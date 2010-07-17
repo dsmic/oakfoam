@@ -107,7 +107,7 @@ class Engine
     
     void addGtpCommands();
     
-    void randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move **move);
+    void randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move **move, int *posarray);
     void randomPlayout(Go::Board *board, std::list<Go::Move> startmoves, Go::Color colfirst, Go::BitBoard *firstlist, Go::BitBoard *secondlist);
     Util::MoveTree *getPlayoutTarget(Util::MoveTree *movetree);
     void expandLeaf(Util::MoveTree *movetree);

@@ -711,7 +711,9 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
   }
   else
   {
-    this->randomPlayoutMove(currentboard,col,move);
+    int *posarray = new int[currentboard->getPositionMax()];
+    this->randomPlayoutMove(currentboard,col,move,posarray);
+    delete[] posarray;
     this->makeMove(**move);
   }
 }
@@ -744,7 +746,7 @@ void Engine::clearBoard()
   this->clearMoveTree();
 }
 
-void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move **move)
+void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move **move, int *posarray)
 {
   if (board->numOfValidMoves(col)==0)
   {
@@ -754,32 +756,27 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move **move)
   
   if (playoutatarichance>0)
   {
-    std::list<Go::Group*> *groups=board->getGroups();
-    std::vector<Go::Move> atarimoves;
-    //int *atarimoves = new int[groups->size()];
-    //int atarimovescount=0;
+    std::list<Go::Group*,Go::allocator_groupptr> *groups=board->getGroups();
+    int *atarimoves=posarray;
+    int atarimovescount=0;
     
-    for(std::list<Go::Group*>::iterator iter=groups->begin();iter!=groups->end();++iter) 
+    for(std::list<Go::Group*,Go::allocator_groupptr>::iterator iter=groups->begin();iter!=groups->end();++iter) 
     {
       if ((*iter)->numOfLiberties()==1)
       {
         int liberty=(*iter)->getLibertiesList()->front();
         if (board->validMove(Go::Move(col,liberty)))
         {
-          atarimoves.push_back(Go::Move(col,liberty));
-          //atarimoves[atarimovescount]=liberty;
-          //atarimovescount++;
+          atarimoves[atarimovescount]=liberty;
+          atarimovescount++;
         }
       }
     }
     
-    if (atarimoves.size()>0 && playoutatarichance>rand.getRandomReal())
-    //if (atarimovescount>0 && playoutatarichance>rand.getRandomReal())
+    if (atarimovescount>0 && playoutatarichance>rand.getRandomReal())
     {
-      int i=(int)(rand.getRandomReal()*atarimoves.size());
-      //int i=(int)(rand.getRandomReal()*atarimovescount);
-      *move=new Go::Move(col,atarimoves.at(i).getPosition());
-      //*move=new Go::Move(col,atarimoves[i]);
+      int i=(int)(rand.getRandomReal()*atarimovescount);
+      *move=new Go::Move(col,atarimoves[i]);
       return;
     }
   }
@@ -795,7 +792,7 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move **move)
   }
   
   Go::BitBoard *validmoves=board->getValidMoves(col);
-  int *possiblemoves = new int[board->numOfValidMoves(col)];
+  int *possiblemoves=posarray;
   int possiblemovescount=0;
   
   for (int p=0;p<board->getPositionMax();p++)
@@ -816,8 +813,6 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move **move)
     int r=(int)(rand.getRandomReal()*possiblemovescount);
     *move=new Go::Move(col,possiblemoves[r]);
   }
-  
-  delete[] possiblemoves;
 }
 
 void Engine::randomPlayout(Go::Board *board, std::list<Go::Move> startmoves, Go::Color colfirst, Go::BitBoard *firstlist, Go::BitBoard *secondlist)
@@ -837,10 +832,11 @@ void Engine::randomPlayout(Go::Board *board, std::list<Go::Move> startmoves, Go:
   Go::Move *move;
   Go::Color coltomove=board->nextToMove();
   int movesalready=board->getMovesMade();
+  int *posarray = new int[board->getPositionMax()];
   while (board->getPassesPlayed()<2)
   {
     bool resign;
-    this->randomPlayoutMove(board,coltomove,&move);
+    this->randomPlayoutMove(board,coltomove,&move,posarray);
     board->makeMove(*move);
     if ((coltomove==colfirst?firstlist:secondlist)!=NULL && !move->isPass() && !move->isResign())
       (coltomove==colfirst?firstlist:secondlist)->set(move->getPosition());
@@ -852,6 +848,7 @@ void Engine::randomPlayout(Go::Board *board, std::list<Go::Move> startmoves, Go:
     if (board->getMovesMade()>(boardsize*boardsize*PLAYOUT_MAX_MOVE_FACTOR+movesalready))
       break;
   }
+  delete[] posarray;
 }
 
 long Engine::getTimeAllowedThisTurn(Go::Color col)

@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <list>
 #include <sstream>
+#include <boost/pool/pool_alloc.hpp>
 
 #define P_N (-size-1)
 #define P_S (size+1)
@@ -12,17 +13,23 @@
 #define P_E (1)
 
 #define foreach_adjacent(__pos, __body) \
-	{ \
-		int __intpos = __pos; \
-		int p; \
-		p = __intpos+P_N; { __body }; \
-		p = __intpos+P_S; { __body }; \
-		p = __intpos+P_E; { __body }; \
-		p = __intpos+P_W; { __body }; \
-	}
+  { \
+    int __intpos = __pos; \
+    int p; \
+    p = __intpos+P_N; { __body }; \
+    p = __intpos+P_S; { __body }; \
+    p = __intpos+P_E; { __body }; \
+    p = __intpos+P_W; { __body }; \
+  }
 
 namespace Go
 {
+  //typedef std::allocator<int> allocator_int;
+  typedef boost::fast_pool_allocator<int> allocator_int;
+  class Group;
+  //typedef std::allocator<Go::Group*> allocator_groupptr;
+  typedef boost::fast_pool_allocator<Go::Group*> allocator_groupptr;
+
   enum Color
   {
     EMPTY,
@@ -138,8 +145,8 @@ namespace Go
       inline int numOfStones() { return stoneslist.size(); };
       inline int numOfLiberties() { return libertieslist.size(); };
       
-      inline std::list<int> *getStonesList() { return &stoneslist; };
-      inline std::list<int> *getLibertiesList() { return &libertieslist; };
+      inline std::list<int,Go::allocator_int> *getStonesList() { return &stoneslist; };
+      inline std::list<int,Go::allocator_int> *getLibertiesList() { return &libertieslist; };
       
       void addStone(int pos);
       void addLiberty(int pos);
@@ -147,9 +154,9 @@ namespace Go
     
     private:
       Go::Color color;
-      std::list<int> stoneslist;
+      std::list<int,Go::allocator_int> stoneslist;
       Go::BitBoard *stonesboard;
-      std::list<int> libertieslist;
+      std::list<int,Go::allocator_int> libertieslist;
       Go::BitBoard *libertiesboard;
   };
   
@@ -162,7 +169,7 @@ namespace Go
       Go::Board *copy();
       std::string toString();
       Go::Vertex *boardData() { return data; }; //read-only
-      std::list<Go::Group*> *getGroups() { return &groups; };
+      std::list<Go::Group*,Go::allocator_groupptr> *getGroups() { return &groups; };
       
       int getSize() { return size; };
       int getMovesMade() { return movesmade; };
@@ -185,7 +192,7 @@ namespace Go
       int sizesq;
       int sizedata;
       Go::Vertex *data;
-      std::list<Go::Group*> groups;
+      std::list<Go::Group*,Go::allocator_groupptr> groups;
       int movesmade,passesplayed;
       Go::Color nexttomove;
       int simpleko;
