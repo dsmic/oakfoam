@@ -213,10 +213,9 @@ void Go::Board::spreadScore(Go::Board::ScoreVertex *scoredata, int pos, Go::Colo
     scoredata[pos].color=this->getColor(pos);
     if (!wastouched)
     {
-      this->spreadScore(scoredata,pos+P_N,this->getColor(pos));
-      this->spreadScore(scoredata,pos+P_S,this->getColor(pos));
-      this->spreadScore(scoredata,pos+P_E,this->getColor(pos));
-      this->spreadScore(scoredata,pos+P_W,this->getColor(pos));
+      foreach_adjacent(pos,{
+        this->spreadScore(scoredata,p,this->getColor(pos));
+      });
     }
     return;
   }
@@ -233,10 +232,9 @@ void Go::Board::spreadScore(Go::Board::ScoreVertex *scoredata, int pos, Go::Colo
   scoredata[pos].touched=true;
   scoredata[pos].color=col;
   
-  this->spreadScore(scoredata,pos+P_N,col);
-  this->spreadScore(scoredata,pos+P_S,col);
-  this->spreadScore(scoredata,pos+P_E,col);
-  this->spreadScore(scoredata,pos+P_W,col);
+  foreach_adjacent(pos,{
+    this->spreadScore(scoredata,p,col);
+  });
 }
 
 bool Go::Board::validMove(Go::Move move)
@@ -261,23 +259,15 @@ bool Go::Board::validMoveCheck(Go::Move move)
     Go::Color othercol=Go::otherColor(col);
     int captures=0;
     
-    if (this->getColor(pos+P_N)==col && this->getLiberties(pos+P_N)>1)
-      return true;
-    if (this->getColor(pos+P_S)==col && this->getLiberties(pos+P_S)>1)
-      return true;
-    if (this->getColor(pos+P_E)==col && this->getLiberties(pos+P_E)>1)
-      return true;
-    if (this->getColor(pos+P_W)==col && this->getLiberties(pos+P_W)>1)
-      return true;
+    foreach_adjacent(pos,{
+      if (this->getColor(p)==col && this->getLiberties(p)>1)
+        return true;
+    });
     
-    if (this->getColor(pos+P_N)==othercol && this->getLiberties(pos+P_N)==1)
-      captures+=this->getGroupSize(pos+P_N);
-    if (this->getColor(pos+P_S)==othercol && this->getLiberties(pos+P_S)==1)
-      captures+=this->getGroupSize(pos+P_S);
-    if (this->getColor(pos+P_E)==othercol && this->getLiberties(pos+P_E)==1)
-      captures+=this->getGroupSize(pos+P_E);
-    if (this->getColor(pos+P_W)==othercol && this->getLiberties(pos+P_W)==1)
-      captures+=this->getGroupSize(pos+P_W);
+    foreach_adjacent(pos,{
+      if (this->getColor(p)==othercol && this->getLiberties(p)==1)
+        captures+=this->getGroupSize(p);
+    });
     
     if (captures>1)
       return true;
@@ -325,135 +315,42 @@ void Go::Board::makeMove(Go::Move move)
   Go::Color col=move.getColor();
   Go::Color othercol=Go::otherColor(col);
   int pos=move.getPosition();
-  int adjpos;
   int posko=-1;
   
   std::list<Go::Group*> *friendlygroups = new std::list<Go::Group*>();
   std::list<Go::Group*> *enemygroups = new std::list<Go::Group*>();
   
-  adjpos=pos+P_N;
-  if (this->getColor(adjpos)==othercol)
-  {
-    if (this->getLiberties(adjpos)==1)
+  foreach_adjacent(pos,{
+    if (this->getColor(p)==othercol)
     {
-      if (removeGroup(this->getGroup(adjpos))==1)
+      if (this->getLiberties(p)==1)
       {
-        if (posko==-1)
-          posko=adjpos;
-        else
-          posko=-2;
+        if (removeGroup(this->getGroup(p))==1)
+        {
+          if (posko==-1)
+            posko=p;
+          else
+            posko=-2;
+        }
       }
+      else
+        enemygroups->push_back(this->getGroup(p));
     }
-    else
-      enemygroups->push_back(this->getGroup(adjpos));
-  }
-  else if (this->getColor(adjpos)==col)
-  {
-    bool found=false;
-    for(std::list<Go::Group*>::iterator iter=friendlygroups->begin();iter!=friendlygroups->end();++iter)
+    else if (this->getColor(p)==col)
     {
-      if ((*iter)==this->getGroup(adjpos))
+      bool found=false;
+      for(std::list<Go::Group*>::iterator iter=friendlygroups->begin();iter!=friendlygroups->end();++iter)
       {
-        found=true;
-        break;
+        if ((*iter)==this->getGroup(p))
+        {
+          found=true;
+          break;
+        }
       }
+      if (!found)
+        friendlygroups->push_back(this->getGroup(p));
     }
-    if (!found)
-      friendlygroups->push_back(this->getGroup(adjpos));
-  }
-  
-  adjpos=pos+P_S;
-  if (this->getColor(adjpos)==othercol)
-  {
-    if (this->getLiberties(adjpos)==1)
-    {
-      if (removeGroup(this->getGroup(adjpos))==1)
-      {
-        if (posko==-1)
-          posko=adjpos;
-        else
-          posko=-2;
-      }
-    }
-    else
-      enemygroups->push_back(this->getGroup(adjpos));
-  }
-  else if (this->getColor(adjpos)==col)
-  {
-    bool found=false;
-    for(std::list<Go::Group*>::iterator iter=friendlygroups->begin();iter!=friendlygroups->end();++iter)
-    {
-      if ((*iter)==this->getGroup(adjpos))
-      {
-        found=true;
-        break;
-      }
-    }
-    if (!found)
-      friendlygroups->push_back(this->getGroup(adjpos));
-  }
-  
-  adjpos=pos+P_E;
-  if (this->getColor(adjpos)==othercol)
-  {
-    if (this->getLiberties(adjpos)==1)
-    {
-      if (removeGroup(this->getGroup(adjpos))==1)
-      {
-        if (posko==-1)
-          posko=adjpos;
-        else
-          posko=-2;
-      }
-    }
-    else
-      enemygroups->push_back(this->getGroup(adjpos));
-  }
-  else if (this->getColor(adjpos)==col)
-  {
-    bool found=false;
-    for(std::list<Go::Group*>::iterator iter=friendlygroups->begin();iter!=friendlygroups->end();++iter)
-    {
-      if ((*iter)==this->getGroup(adjpos))
-      {
-        found=true;
-        break;
-      }
-    }
-    if (!found)
-      friendlygroups->push_back(this->getGroup(adjpos));
-  }
-  
-  adjpos=pos+P_W;
-  if (this->getColor(adjpos)==othercol)
-  {
-    if (this->getLiberties(adjpos)==1)
-    {
-      if (removeGroup(this->getGroup(adjpos))==1)
-      {
-        if (posko==-1)
-          posko=adjpos;
-        else
-          posko=-2;
-      }
-    }
-    else
-      enemygroups->push_back(this->getGroup(adjpos));
-  }
-  else if (this->getColor(adjpos)==col)
-  {
-    bool found=false;
-    for(std::list<Go::Group*>::iterator iter=friendlygroups->begin();iter!=friendlygroups->end();++iter)
-    {
-      if ((*iter)==this->getGroup(adjpos))
-      {
-        found=true;
-        break;
-      }
-    }
-    if (!found)
-      friendlygroups->push_back(this->getGroup(adjpos));
-  }
+  });
   
   this->setColor(move.getPosition(),move.getColor());
   
@@ -500,6 +397,7 @@ void Go::Board::makeMove(Go::Move move)
   
   this->removeValidMove(Go::Move(Go::BLACK,pos));
   this->removeValidMove(Go::Move(Go::WHITE,pos));
+  
   if (this->getGroup(pos)->numOfLiberties()==1)
   {
     int liberty=this->getGroup(pos)->getLibertiesList()->front();
@@ -509,26 +407,13 @@ void Go::Board::makeMove(Go::Move move)
       this->addValidMove(Go::Move(othercol,liberty));
   }
   
-  if (this->getColor(pos+P_N)==Go::EMPTY)
-  {
-    if (!this->validMoveCheck(Go::Move(othercol,pos+P_N)))
-      this->removeValidMove(Go::Move(othercol,pos+P_N));
-  }
-  if (this->getColor(pos+P_S)==Go::EMPTY)
-  {
-    if (!this->validMoveCheck(Go::Move(othercol,pos+P_S)))
-      this->removeValidMove(Go::Move(othercol,pos+P_S));
-  }
-  if (this->getColor(pos+P_E)==Go::EMPTY)
-  {
-    if (!this->validMoveCheck(Go::Move(othercol,pos+P_E)))
-      this->removeValidMove(Go::Move(othercol,pos+P_E));
-  }
-  if (this->getColor(pos+P_W)==Go::EMPTY)
-  {
-    if (!this->validMoveCheck(Go::Move(othercol,pos+P_W)))
-      this->removeValidMove(Go::Move(othercol,pos+P_W));
-  }
+  foreach_adjacent(pos,{
+    if (this->getColor(p)==Go::EMPTY)
+    {
+      if (!this->validMoveCheck(Go::Move(othercol,p)))
+        this->removeValidMove(Go::Move(othercol,p));
+    }
+  });
   
   friendlygroups->resize(0);
   delete friendlygroups;
@@ -594,14 +479,10 @@ int Go::Board::touchingEmpty(int pos)
 {
   int lib=0;
   
-  if (this->getColor(pos+P_N)==Go::EMPTY)
-    lib++;
-  if (this->getColor(pos+P_S)==Go::EMPTY)
-    lib++;
-  if (this->getColor(pos+P_E)==Go::EMPTY)
-    lib++;
-  if (this->getColor(pos+P_W)==Go::EMPTY)
-    lib++;
+  foreach_adjacent(pos,{
+    if (this->getColor(p)==Go::EMPTY)
+      lib++;
+  });
   
   return lib;
 }
@@ -641,23 +522,18 @@ void Go::Board::spreadGroup(int pos, Go::Group *group)
     group->addStone(pos);
     this->addDirectLiberties(pos,group);
     
-    this->spreadGroup(pos+P_N,group);
-    this->spreadGroup(pos+P_S,group);
-    this->spreadGroup(pos+P_E,group);
-    this->spreadGroup(pos+P_W,group);
+    foreach_adjacent(pos,{
+      this->spreadGroup(p,group);
+    });
   }
 }
 
 void Go::Board::addDirectLiberties(int pos, Go::Group *group)
 {
-  if (this->getColor(pos+P_N)==Go::EMPTY)
-    group->addLiberty(pos+P_N);
-  if (this->getColor(pos+P_S)==Go::EMPTY)
-    group->addLiberty(pos+P_S);
-  if (this->getColor(pos+P_E)==Go::EMPTY)
-    group->addLiberty(pos+P_E);
-  if (this->getColor(pos+P_W)==Go::EMPTY)
-    group->addLiberty(pos+P_W);
+  foreach_adjacent(pos,{
+    if (this->getColor(p)==Go::EMPTY)
+      group->addLiberty(p);
+  });
 }
 
 int Go::Board::removeGroup(Go::Group *group)
@@ -676,46 +552,18 @@ int Go::Board::removeGroup(Go::Group *group)
     Go::Color col=this->getColor(pos);
     Go::Color othercol=Go::otherColor(col);
     
-    if (this->getColor(pos+P_N)==othercol)
-    {
-      if (this->getGroup(pos+P_N)->numOfLiberties()==1)
+    foreach_adjacent(pos,{
+      if (this->getColor(p)==othercol)
       {
-        int liberty=this->getGroup(pos+P_N)->getLibertiesList()->front();
-        this->addValidMove(Go::Move(othercol,liberty));
-        possiblesuicides->push_back(liberty);
+        if (this->getGroup(p)->numOfLiberties()==1)
+        {
+          int liberty=this->getGroup(p)->getLibertiesList()->front();
+          this->addValidMove(Go::Move(othercol,liberty));
+          possiblesuicides->push_back(liberty);
+        }
+        this->getGroup(p)->addLiberty(pos);
       }
-      this->getGroup(pos+P_N)->addLiberty(pos);
-    }
-    if (this->getColor(pos+P_S)==othercol)
-    {
-      if (this->getGroup(pos+P_S)->numOfLiberties()==1)
-      {
-        int liberty=this->getGroup(pos+P_S)->getLibertiesList()->front();
-        this->addValidMove(Go::Move(othercol,liberty));
-        possiblesuicides->push_back(liberty);
-      }
-      this->getGroup(pos+P_S)->addLiberty(pos);
-    }
-    if (this->getColor(pos+P_E)==othercol)
-    {
-      if (this->getGroup(pos+P_E)->numOfLiberties()==1)
-      {
-        int liberty=this->getGroup(pos+P_E)->getLibertiesList()->front();
-        this->addValidMove(Go::Move(othercol,liberty));
-        possiblesuicides->push_back(liberty);
-      }
-      this->getGroup(pos+P_E)->addLiberty(pos);
-    }
-    if (this->getColor(pos+P_W)==othercol)
-    {
-      if (this->getGroup(pos+P_W)->numOfLiberties()==1)
-      {
-        int liberty=this->getGroup(pos+P_W)->getLibertiesList()->front();
-        this->addValidMove(Go::Move(othercol,liberty));
-        possiblesuicides->push_back(liberty);
-      }
-      this->getGroup(pos+P_W)->addLiberty(pos);
-    }
+    });
     
     this->addValidMove(Go::Move(othercol,pos));
     this->addValidMove(Go::Move(col,pos));
@@ -762,14 +610,10 @@ bool Go::Board::weakEye(Go::Color col, int pos)
     return false;
   else
   {
-    if (this->getColor(pos+P_N)!=Go::OFFBOARD && (this->getColor(pos+P_N)!=col || this->getLiberties(pos+P_N)<2))
-      return false;
-    if (this->getColor(pos+P_S)!=Go::OFFBOARD && (this->getColor(pos+P_S)!=col || this->getLiberties(pos+P_S)<2))
-      return false;
-    if (this->getColor(pos+P_E)!=Go::OFFBOARD && (this->getColor(pos+P_E)!=col || this->getLiberties(pos+P_E)<2))
-      return false;
-    if (this->getColor(pos+P_W)!=Go::OFFBOARD && (this->getColor(pos+P_W)!=col || this->getLiberties(pos+P_W)<2))
-      return false;
+    foreach_adjacent(pos,{
+      if (this->getColor(p)!=Go::OFFBOARD && (this->getColor(p)!=col || this->getLiberties(p)<2))
+        return false;
+    });
     
     return true;
   }
