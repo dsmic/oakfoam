@@ -6,6 +6,8 @@ Go::BitBoard::BitBoard(int s)
   sizesq=s*s;
   sizedata=1+(s+1)*(s+2);
   data=new bool[sizedata];
+  for (int i=0;i<sizedata;i++)
+    data[i]=false;
 }
 
 Go::BitBoard::~BitBoard()
@@ -35,9 +37,7 @@ Go::Group::Group(Go::Color col, int size)
 {
   color=col;
   stonesboard=new Go::BitBoard(size);
-  stonesboard->clear();
   libertiesboard=new Go::BitBoard(size);
-  libertiesboard->clear();
 }
 
 Go::Group::~Group()
@@ -288,10 +288,8 @@ void Go::Board::makeMove(Go::Move move)
   {
     int kopos=simpleko;
     simpleko=-1;
-    if (this->validMoveCheck(Go::Move(Go::BLACK,kopos)))
-      this->addValidMove(Go::Move(Go::BLACK,kopos));
-    if (this->validMoveCheck(Go::Move(Go::WHITE,kopos)))
-      this->addValidMove(Go::Move(Go::WHITE,kopos));
+    if (this->validMoveCheck(Go::Move(move.getColor(),kopos)))
+      this->addValidMove(Go::Move(move.getColor(),kopos));
   }
   
   if (move.isPass() || move.isResign())
@@ -309,6 +307,8 @@ void Go::Board::makeMove(Go::Move move)
     throw Go::Exception("invalid move");
   }
   
+  movesmade++;
+  nexttomove=Go::otherColor(nexttomove);
   passesplayed=0;
   
   Go::Color col=move.getColor();
@@ -316,90 +316,57 @@ void Go::Board::makeMove(Go::Move move)
   int pos=move.getPosition();
   int posko=-1;
   
-  std::list<Go::Group*> *friendlygroups = new std::list<Go::Group*>();
-  std::list<Go::Group*> *enemygroups = new std::list<Go::Group*>();
-  
-  foreach_adjacent(pos,{
-    if (this->getColor(p)==othercol)
-    {
-      if (this->getLiberties(p)==1)
-      {
-        if (removeGroup(this->getGroup(p))==1)
-        {
-          if (posko==-1)
-            posko=p;
-          else
-            posko=-2;
-        }
-      }
-      else
-        enemygroups->push_back(this->getGroup(p));
-    }
-    else if (this->getColor(p)==col)
-    {
-      bool found=false;
-      for(std::list<Go::Group*>::iterator iter=friendlygroups->begin();iter!=friendlygroups->end();++iter)
-      {
-        if ((*iter)==this->getGroup(p))
-        {
-          found=true;
-          break;
-        }
-      }
-      if (!found)
-        friendlygroups->push_back(this->getGroup(p));
-    }
-  });
-  
   this->setColor(move.getPosition(),move.getColor());
   
-  if (friendlygroups->size()>0)
-  {
-    Go::Group *firstgroup=friendlygroups->front();
-    firstgroup->addStone(pos);
-    this->setGroup(pos,firstgroup);
-    this->addDirectLiberties(pos,firstgroup);
-    
-    if (friendlygroups->size()>1)
-    {
-      for(std::list<Go::Group*>::iterator iter=friendlygroups->begin();iter!=friendlygroups->end();++iter)
-      {
-        if ((*iter)==friendlygroups->front())
-          continue;
-        
-        this->mergeGroups(firstgroup,(*iter));
-      }
-    }
-    
-    firstgroup->removeLiberty(pos);
-  }
-  else
-  {
-    Go::Group *newgroup = new Go::Group(col,size);
-    newgroup->addStone(pos);
-    this->setGroup(pos,newgroup);
-    this->addDirectLiberties(pos,newgroup);
-    groups.push_back(newgroup);
-  }
-  
-  for(std::list<Go::Group*>::iterator iter=enemygroups->begin();iter!=enemygroups->end();++iter)
-  {
-    (*iter)->removeLiberty(pos);
-    if ((*iter)->numOfLiberties()==1)
-    {
-      int liberty=(*iter)->getLibertiesList()->front();
-      this->addValidMove(Go::Move(col,liberty));
-      if (this->touchingEmpty(liberty)==0 && !this->validMoveCheck(Go::Move(othercol,liberty)))
-        this->removeValidMove(Go::Move(othercol,liberty));
-    }
-  }
+  Go::Group *thisgroup = new Go::Group(col,size);
+  thisgroup->addStone(pos);
+  this->setGroup(pos,thisgroup);
+  this->addDirectLiberties(pos,thisgroup);
+  groups.push_back(thisgroup);
   
   this->removeValidMove(Go::Move(Go::BLACK,pos));
   this->removeValidMove(Go::Move(Go::WHITE,pos));
   
-  if (this->getGroup(pos)->numOfLiberties()==1)
+  foreach_adjacent(pos,{
+    if (this->getColor(p)!=Go::EMPTY && this->getColor(p)!=Go::OFFBOARD)
+    {
+      this->getGroup(p)->removeLiberty(pos);
+      if (this->getColor(p)==col)
+      {
+        if (this->getGroup(p)->numOfStones()>thisgroup->numOfStones())
+        {
+          this->mergeGroups(this->getGroup(p),thisgroup);
+          thisgroup=this->getGroup(p);
+        }
+        else
+          this->mergeGroups(thisgroup,this->getGroup(p));
+      }
+      else if (this->getColor(p)==othercol)
+      {
+        if (this->getGroup(p)->numOfLiberties()==0)
+        {
+          if (removeGroup(this->getGroup(p))==1)
+          {
+            if (posko==-1)
+              posko=p;
+            else
+              posko=-2;
+          }
+        }
+        else if (this->getGroup(p)->numOfLiberties()==1)
+        {
+          int liberty=this->getGroup(p)->getLibertiesList()->front();
+          this->addValidMove(Go::Move(col,liberty));
+          if (this->touchingEmpty(liberty)==0 && !this->validMoveCheck(Go::Move(othercol,liberty)))
+            this->removeValidMove(Go::Move(othercol,liberty));
+        }
+      }
+    }
+  });
+  
+  if (thisgroup->numOfLiberties()==1)
   {
-    int liberty=this->getGroup(pos)->getLibertiesList()->front();
+    int liberty=thisgroup->getLibertiesList()->front();
     if (this->touchingEmpty(liberty)==0 && !this->validMoveCheck(Go::Move(col,liberty)))
       this->removeValidMove(Go::Move(col,liberty));
     if (this->validMoveCheck(Go::Move(othercol,liberty)))
@@ -413,14 +380,6 @@ void Go::Board::makeMove(Go::Move move)
         this->removeValidMove(Go::Move(othercol,p));
     }
   });
-  
-  friendlygroups->resize(0);
-  delete friendlygroups;
-  enemygroups->resize(0);
-  delete enemygroups;
-  
-  nexttomove=Go::otherColor(nexttomove);
-  movesmade++;
   
   if (posko>=0)
   {
@@ -597,6 +556,9 @@ int Go::Board::removeGroup(Go::Group *group)
 
 void Go::Board::mergeGroups(Go::Group *first, Go::Group *second)
 {
+  if (first==second)
+    return;
+  
   groups.remove(second);
   
   for(std::list<int>::iterator iter=second->getStonesList()->begin();iter!=second->getStonesList()->end();++iter) 

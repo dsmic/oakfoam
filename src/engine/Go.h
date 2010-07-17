@@ -91,7 +91,7 @@ namespace Go
       
       inline Move() {color=Go::EMPTY;pos=-2;};
       inline Move(Go::Color col, int p) {color=col;pos=p;};
-      inline Move(Go::Color col, int x, int y, int boardsize) {color=col;pos=Go::Position::xy2pos(x,y,boardsize);};
+      inline Move(Go::Color col, int x, int y, int boardsize) {color=col;pos=(x<0?x:Go::Position::xy2pos(x,y,boardsize));};
       inline Move(Go::Color col, Go::Move::Type type)
       {
         if (type==NORMAL)
@@ -102,8 +102,8 @@ namespace Go
       
       inline Go::Color getColor() {return color;};
       inline int getPosition() {return pos;};
-      inline int getX(int boardsize) {return Go::Position::pos2x(pos,boardsize);};
-      inline int getY(int boardsize) {return Go::Position::pos2y(pos,boardsize);};
+      inline int getX(int boardsize) {return (this->isPass()||this->isResign()?pos:Go::Position::pos2x(pos,boardsize));};
+      inline int getY(int boardsize) {return (this->isPass()||this->isResign()?pos:Go::Position::pos2y(pos,boardsize));};
       
       inline bool isPass() {return (pos==-1);};
       inline bool isResign() {return (pos==-2);};

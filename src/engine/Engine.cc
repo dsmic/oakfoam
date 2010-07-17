@@ -206,8 +206,7 @@ void Engine::gtpGenMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   Go::Move *move;
   float ratio;
   me->generateMove((gtpcol==Gtp::BLACK ? Go::BLACK : Go::WHITE),&move,&ratio);
-  
-  Gtp::Vertex vert= {move->getX(me->boardsize),move->getY(me->boardsize)};
+  Gtp::Vertex vert={move->getX(me->boardsize),move->getY(me->boardsize)};
   delete move;
   
   long timeleft=(gtpcol==Gtp::BLACK ? me->timeblack : me->timewhite);
