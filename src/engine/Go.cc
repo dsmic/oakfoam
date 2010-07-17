@@ -328,38 +328,38 @@ void Go::Board::makeMove(Go::Move move)
   this->removeValidMove(Go::Move(Go::WHITE,pos));
   
   foreach_adjacent(pos,{
-    if (this->getColor(p)!=Go::EMPTY && this->getColor(p)!=Go::OFFBOARD)
+    if (this->getColor(p)==col)
     {
       this->getGroup(p)->removeLiberty(pos);
-      if (this->getColor(p)==col)
+      
+      if (this->getGroup(p)->numOfStones()>thisgroup->numOfStones())
       {
-        if (this->getGroup(p)->numOfStones()>thisgroup->numOfStones())
-        {
-          this->mergeGroups(this->getGroup(p),thisgroup);
-          thisgroup=this->getGroup(p);
-        }
-        else
-          this->mergeGroups(thisgroup,this->getGroup(p));
+        this->mergeGroups(this->getGroup(p),thisgroup);
+        thisgroup=this->getGroup(p);
       }
-      else if (this->getColor(p)==othercol)
+      else
+        this->mergeGroups(thisgroup,this->getGroup(p));
+    }
+    else if (this->getColor(p)==othercol)
+    {
+      this->getGroup(p)->removeLiberty(pos);
+      
+      if (this->getGroup(p)->numOfLiberties()==0)
       {
-        if (this->getGroup(p)->numOfLiberties()==0)
+        if (removeGroup(this->getGroup(p))==1)
         {
-          if (removeGroup(this->getGroup(p))==1)
-          {
-            if (posko==-1)
-              posko=p;
-            else
-              posko=-2;
-          }
+          if (posko==-1)
+            posko=p;
+          else
+            posko=-2;
         }
-        else if (this->getGroup(p)->numOfLiberties()==1)
-        {
-          int liberty=this->getGroup(p)->getLibertiesList()->front();
-          this->addValidMove(Go::Move(col,liberty));
-          if (this->touchingEmpty(liberty)==0 && !this->validMoveCheck(Go::Move(othercol,liberty)))
-            this->removeValidMove(Go::Move(othercol,liberty));
-        }
+      }
+      else if (this->getGroup(p)->numOfLiberties()==1)
+      {
+        int liberty=this->getGroup(p)->getLibertiesList()->front();
+        this->addValidMove(Go::Move(col,liberty));
+        if (this->touchingEmpty(liberty)==0 && !this->validMoveCheck(Go::Move(othercol,liberty)))
+          this->removeValidMove(Go::Move(othercol,liberty));
       }
     }
   });
