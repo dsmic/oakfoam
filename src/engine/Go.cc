@@ -33,17 +33,18 @@ std::string Go::Move::toString(int boardsize)
   }
 }
 
-Go::Group::Group(Go::Color col, int size)
+Go::Group::Group(Go::Color col, int size, boost::object_pool<Go::BitBoard> *pb)
 {
+  pool_bitboard=pb;
   color=col;
-  stonesboard=new Go::BitBoard(size);
-  libertiesboard=new Go::BitBoard(size);
+  stonesboard=pool_bitboard->construct(size);
+  libertiesboard=pool_bitboard->construct(size);
 }
 
 Go::Group::~Group()
 {
-  delete stonesboard;
-  delete libertiesboard;
+  pool_bitboard->destroy(stonesboard);
+  pool_bitboard->destroy(libertiesboard);
 }
 
 void Go::Group::addStone(int pos)
@@ -94,15 +95,15 @@ Go::Board::Board(int s)
   passesplayed=0;
   simpleko=-1;
   
-  blackvalidmoves=new Go::BitBoard(size);
-  whitevalidmoves=new Go::BitBoard(size);
+  blackvalidmoves=pool_bitboard.construct(size);
+  whitevalidmoves=pool_bitboard.construct(size);
   this->refreshValidMoves();
 }
 
 Go::Board::~Board()
 {
-  delete blackvalidmoves;
-  delete whitevalidmoves;
+  pool_bitboard.destroy(blackvalidmoves);
+  pool_bitboard.destroy(whitevalidmoves);
   
   for(std::list<Go::Group*,Go::allocator_groupptr>::iterator iter=groups.begin();iter!=groups.end();++iter) 
   {
@@ -318,7 +319,7 @@ void Go::Board::makeMove(Go::Move move)
   
   this->setColor(move.getPosition(),move.getColor());
   
-  Go::Group *thisgroup = new Go::Group(col,size);
+  Go::Group *thisgroup = new Go::Group(col,size,&pool_bitboard);
   thisgroup->addStone(pos);
   this->setGroup(pos,thisgroup);
   this->addDirectLiberties(pos,thisgroup);
@@ -472,7 +473,7 @@ void Go::Board::refreshGroups()
   {
     if (this->getColor(p)!=Go::EMPTY && this->getColor(p)!=Go::OFFBOARD && this->getGroup(p)==NULL)
     {
-      Go::Group *newgroup = new Go::Group(this->getColor(p),size);
+      Go::Group *newgroup = new Go::Group(this->getColor(p),size,&pool_bitboard);
       
       this->spreadGroup(p,newgroup);
       groups.push_back(newgroup);

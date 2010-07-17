@@ -6,6 +6,7 @@
 #include <list>
 #include <sstream>
 #include <boost/pool/pool_alloc.hpp>
+#include <boost/pool/object_pool.hpp>
 
 #define P_N (-size-1)
 #define P_S (size+1)
@@ -137,7 +138,7 @@ namespace Go
   class Group
   {
     public:
-      Group(Go::Color col, int size);
+      Group(Go::Color col, int size, boost::object_pool<Go::BitBoard> *pb);
       ~Group();
       
       Go::Color getColor() {return color;};
@@ -158,6 +159,7 @@ namespace Go
       Go::BitBoard *stonesboard;
       std::list<int,Go::allocator_int> libertieslist;
       Go::BitBoard *libertiesboard;
+      boost::object_pool<Go::BitBoard> *pool_bitboard;
   };
   
   class Board
@@ -199,6 +201,8 @@ namespace Go
       
       int blackvalidmovecount,whitevalidmovecount;
       Go::BitBoard *blackvalidmoves,*whitevalidmoves;
+      
+      boost::object_pool<Go::BitBoard> pool_bitboard;
       
       inline Go::Color getColor(int pos) { return data[pos].color; };
       inline Go::Group *getGroup(int pos) { return data[pos].group; };
