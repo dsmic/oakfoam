@@ -2,7 +2,6 @@ TODO
 ------------------
 
 Now: (before next release)
-  make randomPlayoutMove() uniformly random
   do more accurate profiling
   faster board implementation (at least 10 ppmi)
   try add simple 16-bit patterns to playouts (must be fast)

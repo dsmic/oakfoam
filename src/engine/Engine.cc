@@ -747,6 +747,12 @@ void Engine::clearBoard()
 
 void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move **move)
 {
+  if (board->numOfValidMoves(col)==0)
+  {
+    *move=new Go::Move(col,Go::Move::PASS);
+    return;
+  }
+  
   if (playoutatarichance>0)
   {
     std::vector<Go::Move> atarimoves;
@@ -770,24 +776,40 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move **move)
     }
   }
   
-  if (board->numOfValidMoves(col)==0)
+  for (int i=0;i<10;i++)
+  {
+    int p=(int)(std::rand()/((double)RAND_MAX+1)*board->getPositionMax());
+    if (board->validMove(Go::Move(col,p)) && !board->weakEye(col,p))
+    {
+      *move=new Go::Move(col,p);
+      return;
+    }
+  }
+  
+  Go::BitBoard *validmoves=board->getValidMoves(col);
+  int *possiblemoves = new int[board->numOfValidMoves(col)];
+  int possiblemovescount=0;
+  
+  for (int p=0;p<board->getPositionMax();p++)
+  {
+    if (validmoves->get(p) && !board->weakEye(col,p))
+    {
+      possiblemoves[possiblemovescount]=p;
+      possiblemovescount++;
+    }
+  }
+  
+  if (possiblemovescount==0)
     *move=new Go::Move(col,Go::Move::PASS);
+  else if (possiblemovescount==1)
+    *move=new Go::Move(col,possiblemoves[0]);
   else
   {
-    int rp=(int)(std::rand()/((double)RAND_MAX+1)*board->getPositionMax());
-    Go::BitBoard *validmoves=board->getValidMoves(col);
-    
-    for (int tp=0;tp<board->getPositionMax();tp++)
-    {
-      int p=(tp+rp)%board->getPositionMax();
-      if (validmoves->get(p) && !board->weakEye(col,p))
-      {
-        *move=new Go::Move(col,p);
-        return;
-      }
-    }
-    *move=new Go::Move(col,Go::Move::PASS);
+    int r=(int)(std::rand()/((double)RAND_MAX+1)*possiblemovescount);
+    *move=new Go::Move(col,possiblemoves[r]);
   }
+  
+  delete[] possiblemoves;
 }
 
 void Engine::randomPlayout(Go::Board *board, std::list<Go::Move> startmoves, Go::Color colfirst, Go::BitBoard *firstlist, Go::BitBoard *secondlist)
