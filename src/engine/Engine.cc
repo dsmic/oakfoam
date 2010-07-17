@@ -4,7 +4,7 @@ Engine::Engine(Gtp::Engine *ge)
 {
   gtpe=ge;
   
-  std::srand(std::time(0));
+  rand=Random(std::time(0));
   
   boardsize=9;
   currentboard=new Go::Board(boardsize);
@@ -773,11 +773,11 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move **move)
       }
     }
     
-    if (atarimoves.size()>0 && playoutatarichance>(std::rand()/((double)RAND_MAX+1)))
-    //if (atarimovescount>0 && playoutatarichance>(std::rand()/((double)RAND_MAX+1)))
+    if (atarimoves.size()>0 && playoutatarichance>rand.getRandomReal())
+    //if (atarimovescount>0 && playoutatarichance>rand.getRandomReal())
     {
-      int i=(int)(std::rand()/((double)RAND_MAX+1)*atarimoves.size());
-      //int i=(int)(std::rand()/((double)RAND_MAX+1)*atarimovescount);
+      int i=(int)(rand.getRandomReal()*atarimoves.size());
+      //int i=(int)(rand.getRandomReal()*atarimovescount);
       *move=new Go::Move(col,atarimoves.at(i).getPosition());
       //*move=new Go::Move(col,atarimoves[i]);
       return;
@@ -786,7 +786,7 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move **move)
   
   for (int i=0;i<10;i++)
   {
-    int p=(int)(std::rand()/((double)RAND_MAX+1)*board->getPositionMax());
+    int p=(int)(rand.getRandomReal()*board->getPositionMax());
     if (board->validMove(Go::Move(col,p)) && !board->weakEye(col,p))
     {
       *move=new Go::Move(col,p);
@@ -813,7 +813,7 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move **move)
     *move=new Go::Move(col,possiblemoves[0]);
   else
   {
-    int r=(int)(std::rand()/((double)RAND_MAX+1)*possiblemovescount);
+    int r=(int)(rand.getRandomReal()*possiblemovescount);
     *move=new Go::Move(col,possiblemoves[r]);
   }
   
@@ -882,7 +882,7 @@ Util::MoveTree *Engine::getPlayoutTarget(Util::MoveTree *movetree)
     float urgency;
     
     if ((*iter)->getPlayouts()==0 && (*iter)->getRAVEPlayouts()==0)
-      urgency=(*iter)->getUrgency()+(std::rand()/((double)RAND_MAX+1)*10);
+      urgency=(*iter)->getUrgency()+(rand.getRandomReal()*0.1);
     else
       urgency=(*iter)->getUrgency();
     

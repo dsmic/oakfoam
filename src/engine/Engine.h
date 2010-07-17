@@ -39,6 +39,7 @@
 #include <boost/timer.hpp>
 #include "Go.h"
 #include "Util.h"
+#include "Random.h"
 #include "../gtp/Gtp.h"
 
 class Engine
@@ -102,6 +103,7 @@ class Engine
     float livegfxdelay;
     bool uctkeepsubtree;
     Util::MoveTree *movetree;
+    Random rand;
     
     void addGtpCommands();
     
