@@ -11,5 +11,6 @@ syntax: regexp
 ^stamp-h1$
 ^autom4te.cache/.*$
 ^trials/.*$
+^callgrind\.out\..*$
 
 
