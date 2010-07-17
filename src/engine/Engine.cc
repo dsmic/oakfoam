@@ -754,8 +754,10 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move **move)
   
   if (playoutatarichance>0)
   {
-    std::vector<Go::Move> atarimoves;
     std::list<Go::Group*> *groups=board->getGroups();
+    std::vector<Go::Move> atarimoves;
+    //int *atarimoves = new int[groups->size()];
+    //int atarimovescount=0;
     
     for(std::list<Go::Group*>::iterator iter=groups->begin();iter!=groups->end();++iter) 
     {
@@ -763,14 +765,21 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move **move)
       {
         int liberty=(*iter)->getLibertiesList()->front();
         if (board->validMove(Go::Move(col,liberty)))
+        {
           atarimoves.push_back(Go::Move(col,liberty));
+          //atarimoves[atarimovescount]=liberty;
+          //atarimovescount++;
+        }
       }
     }
     
     if (atarimoves.size()>0 && playoutatarichance>(std::rand()/((double)RAND_MAX+1)))
+    //if (atarimovescount>0 && playoutatarichance>(std::rand()/((double)RAND_MAX+1)))
     {
       int i=(int)(std::rand()/((double)RAND_MAX+1)*atarimoves.size());
+      //int i=(int)(std::rand()/((double)RAND_MAX+1)*atarimovescount);
       *move=new Go::Move(col,atarimoves.at(i).getPosition());
+      //*move=new Go::Move(col,atarimoves[i]);
       return;
     }
   }

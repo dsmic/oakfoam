@@ -2,7 +2,7 @@ TODO
 ------------------
 
 Now: (before next release)
-  do more accurate profiling
+  get faster random function
   faster board implementation (at least 10 ppmi)
   try add simple 16-bit patterns to playouts (must be fast)
   replace floats with integers in tree

@@ -1,20 +1,35 @@
-configure.ac: add -pg switch to flags
-$ ./autogen.sh
-$ ./configure
-$ make clean
-$ make
+gprof:
+  configure.ac: add -pg switch to flags
+  $ ./autogen.sh
+  $ ./configure
+  $ make clean
+  $ make
 
-$ echo -n -e "genmove b\nquit" | ./oakfoam
-$ gprof oakfoam -s
-$ echo -n -e "genmove b\nquit" | ./oakfoam
-$ gprof -s oakfoam gmon.out gmon.sum
-$ echo -n -e "genmove b\nquit" | ./oakfoam
-$ gprof -s oakfoam gmon.out gmon.sum
-...
-$ gprof oakfoam gmon.sum > gprof.txt
+  $ echo -n -e "genmove b\nquit" | ./oakfoam
+  $ gprof oakfoam -s
+  $ echo -n -e "genmove b\nquit" | ./oakfoam
+  $ gprof -s oakfoam gmon.out gmon.sum
+  $ echo -n -e "genmove b\nquit" | ./oakfoam
+  $ gprof -s oakfoam gmon.out gmon.sum
+  ...
+  $ gprof oakfoam gmon.sum > gprof.txt
 
-configure.ac: remove -pg switch from flags
-$ ./autogen.sh
-$ ./configure
-$ make clean
-$ make
+  configure.ac: remove -pg switch from flags
+  $ ./autogen.sh
+  $ ./configure
+  $ make clean
+  $ make
+
+callgrind:
+  setup a profile.gtp:
+    param playouts_per_move 1000
+    param rave_moves 0
+
+    genmove b
+
+    quit
+  
+  $ valgrind --tool=callgrind ./oakfoam -c profile.gtp
+  
+  open the callgrind.out.xxx file with kcachegrind
+  
