@@ -6,23 +6,32 @@
 #include <list>
 #include <sstream>
 
+#define P_N (-size-1)
+#define P_S (size+1)
+#define P_W (-1)
+#define P_E (1)
+
 namespace Go
 {
   enum Color
   {
     EMPTY,
     BLACK,
-    WHITE
+    WHITE,
+    OFFBOARD
   };
   
   inline static Go::Color otherColor(Go::Color col)
   {
-    if (col==Go::BLACK)
-      return Go::WHITE;
-    else if (col==Go::WHITE)
-      return Go::BLACK;
-    else
-      return Go::EMPTY;
+    switch (col)
+    {
+      case Go::BLACK:
+        return Go::WHITE;
+      case Go::WHITE:
+        return Go::BLACK;
+      default:
+        return col;
+    }
   };
   
   class Exception
@@ -35,6 +44,31 @@ namespace Go
       std::string message;
   };
   
+  class Position
+  {
+    public:
+      static inline int xy2pos(int x, int y, int boardsize) { return 1+x+(y+1)*(boardsize+1); };
+      static inline int pos2x(int pos, int boardsize) { return (pos-1)%(boardsize+1); };
+      static inline int pos2y(int pos, int boardsize) { return (pos-1)/(boardsize+1)-1; };
+  };
+  
+  class BitBoard
+  {
+    public:
+      BitBoard(int s);
+      ~BitBoard();
+      
+      inline bool get(int pos) { return data[pos]; };
+      inline void set(int pos, bool val=true) { data[pos]=val; };
+      inline void clear(int pos) { this->set(pos,false); };
+      inline void fill(bool val) { for (int i=0;i<sizedata;i++) data[i]=val; };
+      inline void clear() { this->fill(false); };
+    
+    private:
+      int size,sizesq,sizedata;
+      bool *data;
+  };
+  
   class Move
   {
     public:
@@ -45,51 +79,68 @@ namespace Go
         RESIGN
       };
       
-      inline Move() {color=Go::EMPTY;x=-2;y=-2;};
-      
-      inline Move(Go::Color col, int ix, int iy) {color=col;x=ix;y=iy;};
+      inline Move() {color=Go::EMPTY;pos=-2;};
+      inline Move(Go::Color col, int p) {color=col;pos=p;};
+      inline Move(Go::Color col, int x, int y, int boardsize) {color=col;pos=Go::Position::xy2pos(x,y,boardsize);};
       inline Move(Go::Color col, Go::Move::Type type)
       {
         if (type==NORMAL)
           throw Go::Exception("invalid type");
         color=col;
-        int i=(type==PASS)?-1:-2;
-        x=i;
-        y=i;
+        pos=(type==PASS)?-1:-2;
       };
       
       inline Go::Color getColor() {return color;};
-      inline int getX() {return x;};
-      inline int getY() {return y;};
+      inline int getPosition() {return pos;};
+      inline int getX(int boardsize) {return Go::Position::pos2x(pos,boardsize);};
+      inline int getY(int boardsize) {return Go::Position::pos2y(pos,boardsize);};
       
-      inline bool isPass() {return (x==-1 && y==-1)?true:false;};
-      inline bool isResign() {return (x==-2 && y==-2)?true:false;};
+      inline bool isPass() {return (pos==-1);};
+      inline bool isResign() {return (pos==-2);};
       
-      std::string toString();
+      std::string toString(int boardsize);
       
-      inline bool operator==(Go::Move other) { return (color==other.getColor() && x==other.getX() && y==other.getY()); };
+      inline bool operator==(Go::Move other) { return (color==other.getColor() && pos==other.getPosition()); };
       inline bool operator!=(Go::Move other) { return !(*this == other); };
     
     private:
       Go::Color color;
-      int x,y;
+      int pos;
   };
   
-  class BitBoard
+  class Group;
+  
+  class Vertex
   {
     public:
-      BitBoard(int s);
-      ~BitBoard();
+      Go::Color color;
+      Go::Group *group;
+  };
+  
+  class Group
+  {
+    public:
+      Group(Go::Color col, int size);
+      ~Group();
       
-      inline bool get(int x, int y) { return data[y*size+x]; };
-      inline void set(int x, int y, bool val=true) { data[y*size+x]=val; };
-      inline void clear(int x, int y) { this->set(x,y,false); };
-      inline void fill(bool val) { for (int i=0;i<(size*size);i++) data[i]=val; };
-      inline void clear() { this->fill(false); };
+      Go::Color getColor() {return color;};
+      
+      inline int numOfStones() { return stoneslist.size(); };
+      inline int numOfLiberties() { return libertieslist.size(); };
+      
+      inline std::list<int> *getStonesList() { return &stoneslist; };
+      inline std::list<int> *getLibertiesList() { return &libertieslist; };
+      
+      void addStone(int pos);
+      void addLiberty(int pos);
+      void removeLiberty(int pos);
     
     private:
-      int size;
-      bool *data;
+      Go::Color color;
+      std::list<int> stoneslist;
+      Go::BitBoard *stonesboard;
+      std::list<int> libertieslist;
+      Go::BitBoard *libertiesboard;
   };
   
   class Board
@@ -98,75 +149,60 @@ namespace Go
       Board(int s);
       ~Board();
       
-      class Group;
-      
-      struct Point
-      {
-        int x;
-        int y;
-      };
-      
-      struct Vertex
-      {
-        Go::Board::Point point;
-        Go::Color color;
-        Go::Board::Group *group;
-      };
-      
-      class Group
-      {
-        public:
-          Group(int size);
-          ~Group();
-          
-          inline int numOfStones() { return stoneslist.size(); };
-          inline int numOfLiberties() { return libertieslist.size(); };
-          
-          inline std::list<Go::Board::Vertex*> *getStonesList() { return &stoneslist; };
-          inline std::list<Go::Board::Vertex*> *getLibertiesList() { return &libertieslist; };
-          
-          void addStone(Go::Board::Vertex *stone);
-          void addLiberty(Go::Board::Vertex *liberty);
-          void removeLiberty(Go::Board::Vertex *liberty);
-        
-        private:
-          std::list<Go::Board::Vertex*> stoneslist;
-          Go::BitBoard *stonesboard;
-          std::list<Go::Board::Vertex*> libertieslist;
-          Go::BitBoard *libertiesboard;
-      };
-      
       Go::Board *copy();
-      
-      Go::Board::Vertex *boardData() { return data; }; //must only be used for read-only access
       std::string toString();
-      std::list<Go::Board::Group*> *getGroups() { return &groups; };
+      Go::Vertex *boardData() { return data; }; //read-only
+      std::list<Go::Group*> *getGroups() { return &groups; };
       
       int getSize() { return size; };
-      int getPassesPlayed() { return passesplayed; };
       int getMovesMade() { return movesmade; };
+      int getPassesPlayed() { return passesplayed; };
+      Go::Color nextToMove() { return nexttomove; };
+      void setNextToMove(Go::Color col) { nexttomove=col; };
+      int getPositionMax() { return sizedata; };
       
       void makeMove(Go::Move move);
-      int numOfValidMoves(Go::Color col) { return (col==Go::BLACK?blackvalidmovecount:whitevalidmovecount); };
-      Go::BitBoard *getValidMoves(Go::Color col);
       bool validMove(Go::Move move);
       
-      void setNextToMove(Go::Color col) { nexttomove=col; };
-      Go::Color nextToMove() { return nexttomove; };
+      int numOfValidMoves(Go::Color col) { return (col==Go::BLACK?blackvalidmovecount:whitevalidmovecount); };
+      Go::BitBoard *getValidMoves(Go::Color col) { return (col==Go::BLACK?blackvalidmoves:whitevalidmoves); };
       
       int score();
-      bool weakEye(Go::Color col, int x, int y);
+      bool weakEye(Go::Color col, int pos);
     
     private:
       int size;
-      Go::Board::Vertex *data;
-      int koX, koY;
-      std::list<Go::Board::Group*> groups;
+      int sizesq;
+      int sizedata;
+      Go::Vertex *data;
+      std::list<Go::Group*> groups;
+      int movesmade,passesplayed;
       Go::Color nexttomove;
-      int passesplayed;
-      int movesmade;
+      int simpleko;
+      
       int blackvalidmovecount,whitevalidmovecount;
       Go::BitBoard *blackvalidmoves,*whitevalidmoves;
+      
+      inline Go::Color getColor(int pos) { return data[pos].color; };
+      inline Go::Group *getGroup(int pos) { return data[pos].group; };
+      inline void setColor(int pos, Go::Color col) { data[pos].color=col; };
+      inline void setGroup(int pos, Go::Group *grp) { data[pos].group=grp; };
+      inline int getLiberties(int pos) { if (data[pos].group==NULL) return 0; else return data[pos].group->numOfLiberties(); };
+      inline int getGroupSize(int pos) { if (data[pos].group==NULL) return 0; else return data[pos].group->numOfStones(); };
+      
+      int touchingEmpty(int pos);
+      
+      void refreshGroups();
+      void spreadGroup(int pos, Go::Group *group);
+      void addDirectLiberties(int pos, Go::Group *group);
+      int removeGroup(Go::Group *group);
+      void mergeGroups(Go::Group *first, Go::Group *second);
+      
+      bool validMoveCheck(Go::Move move);
+      void refreshValidMoves();
+      void refreshValidMoves(Go::Color col);
+      void addValidMove(Go::Move move);
+      void removeValidMove(Go::Move move);
       
       struct ScoreVertex
       {
@@ -174,31 +210,7 @@ namespace Go
         Go::Color color;
       };
       
-      Go::Board::Vertex *vertexAt(int x, int y);
-      Go::Color colorAt(int x, int y);
-      void setColorAt(int x, int y, Go::Color col);
-      Go::Board::Group *groupAt(int x, int y);
-      void setGroupAt(int x, int y, Go::Board::Group *group);
-      int libertiesAt(int x, int y);
-      int groupSizeAt(int x, int y);
-      
-      void checkCoords(int x, int y);
-      
-      void refreshGroups();
-      void spreadGroup(int x, int y, Go::Color col, Go::Board::Group *group);
-      void addDirectLiberties(int x, int y, Go::Board::Group *group);
-      int directLiberties(int x, int y);
-      int removeGroup(Go::Board::Group *group);
-      void mergeGroups(Go::Board::Group *first, Go::Board::Group *second);
-      
-      void refreshValidMoves(Go::Color col);
-      bool validMoveCheck(Go::Move move);
-      void addValidMove(Go::Move move);
-      void removeValidMove(Go::Move move);
-      
-      void setKo(int x, int y);
-      
-      void spreadScore(Go::Board::ScoreVertex *scoredata, int x, int y, Go::Color col);
+      void spreadScore(Go::Board::ScoreVertex *scoredata, int pos, Go::Color col);
   };
 };
 

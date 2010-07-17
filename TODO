@@ -2,8 +2,8 @@ TODO
 ------------------
 
 Now: (before next release)
-  write a faster board implementation
-  try adding EDGE vertices?
+  faster board implementation (at least 10 ppmi)
+  write a "foreach macro"
   try add simple 16-bit patterns to playouts (must be fast)
   replace floats with integers in tree
   only try escape if it gains a liberty
