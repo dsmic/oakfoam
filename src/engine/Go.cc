@@ -250,7 +250,7 @@ bool Go::Board::validMoveCheck(Go::Move move)
   
   if (this->getColor(move.getPosition())!=Go::EMPTY)
     return false;
-  else if (touchingEmpty(move.getPosition())>0)
+  else if (touchingAtLeastOneEmpty(move.getPosition()))
     return true;
   else
   {
@@ -262,16 +262,15 @@ bool Go::Board::validMoveCheck(Go::Move move)
     foreach_adjacent(pos,{
       if (this->getColor(p)==col && this->getLiberties(p)>1)
         return true;
-    });
-    
-    foreach_adjacent(pos,{
-      if (this->getColor(p)==othercol && this->getLiberties(p)==1)
+      else if (this->getColor(p)==othercol && this->getLiberties(p)==1)
+      {
         captures+=this->getGroupSize(p);
+        if (captures>1)
+          return true;
+      }
     });
     
-    if (captures>1)
-      return true;
-    else if (captures==1)
+    if (captures==1)
     {
       if (pos==simpleko)
         return false;
@@ -485,6 +484,16 @@ int Go::Board::touchingEmpty(int pos)
   });
   
   return lib;
+}
+
+bool Go::Board::touchingAtLeastOneEmpty(int pos)
+{
+  foreach_adjacent(pos,{
+    if (this->getColor(p)==Go::EMPTY)
+      return true;
+  });
+  
+  return false;
 }
 
 void Go::Board::refreshGroups()

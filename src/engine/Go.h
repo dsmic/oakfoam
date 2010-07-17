@@ -201,6 +201,7 @@ namespace Go
       inline int getGroupSize(int pos) { if (data[pos].group==NULL) return 0; else return data[pos].group->numOfStones(); };
       
       int touchingEmpty(int pos);
+      bool touchingAtLeastOneEmpty(int pos);
       
       void refreshGroups();
       void spreadGroup(int pos, Go::Group *group);
