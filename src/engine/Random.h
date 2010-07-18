@@ -15,6 +15,7 @@ class Random
     Random(long unsigned int s);
     
     long unsigned int getRandomInt();
+    long unsigned int getRandomInt(long unsigned int max);
     float getRandomReal();
   
   private:

@@ -22,6 +22,11 @@ long unsigned int Random::getRandomInt()
   return (seed=lo);
 }
 
+long unsigned int Random::getRandomInt(long unsigned int max)
+{
+  return this->getRandomInt() % max; //XXX: not uniform, but good enough
+}
+
 float Random::getRandomReal()
 {
   return (float)this->getRandomInt() / ((long unsigned int)(1) << 31);

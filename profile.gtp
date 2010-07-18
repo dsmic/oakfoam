@@ -1,4 +1,4 @@
-param playouts_per_move 1000
+param playouts_per_move 100
 param rave_moves 0
 
 genmove b

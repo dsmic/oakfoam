@@ -88,13 +88,14 @@ Go::Board::Board(int s)
 
 Go::Board::~Board()
 {
-  pool_bitboard.destroy(blackvalidmoves);
-  pool_bitboard.destroy(whitevalidmoves);
+  //XXX: memory will get freed when pool is destroyed
+  //pool_bitboard.destroy(blackvalidmoves);
+  //pool_bitboard.destroy(whitevalidmoves);
   
-  for(std::list<Go::Group*,Go::allocator_groupptr>::iterator iter=groups.begin();iter!=groups.end();++iter) 
-  {
-    pool_group.destroy((*iter));
-  }
+  //for(std::list<Go::Group*,Go::allocator_groupptr>::iterator iter=groups.begin();iter!=groups.end();++iter) 
+  //{
+  //  pool_group.destroy((*iter));
+  //}
   groups.resize(0);
   
   delete[] data;
@@ -449,10 +450,11 @@ void Go::Board::refreshGroups()
     this->setGroup(p,NULL);
   }
   
-  for(std::list<Go::Group*,Go::allocator_groupptr>::iterator iter=groups.begin();iter!=groups.end();++iter) 
-  {
-    pool_group.destroy((*iter));
-  }
+  //XXX: memory will get freed when pool is destroyed
+  //for(std::list<Go::Group*,Go::allocator_groupptr>::iterator iter=groups.begin();iter!=groups.end();++iter) 
+  //{
+  //  pool_group.destroy((*iter));
+  //}
   groups.resize(0);
   
   for (int p=0;p<sizedata;p++)
@@ -536,7 +538,8 @@ int Go::Board::removeGroup(Go::Group *group)
   possiblesuicides->resize(0);
   delete possiblesuicides;
   
-  pool_group.destroy(group);
+  //XXX: memory will get freed when pool is destroyed
+  //pool_group.destroy(group);
   
   return s;
 }
@@ -559,7 +562,8 @@ void Go::Board::mergeGroups(Go::Group *first, Go::Group *second)
     first->addLiberty((*iter));
   }
   
-  pool_group.destroy(second);
+  //XXX: memory will get freed when pool is destroyed
+  //pool_group.destroy(second);
 }
 
 bool Go::Board::weakEye(Go::Color col, int pos)

@@ -147,8 +147,9 @@ namespace Go
       };
       ~Group()
       {
-        pool_bitboard.destroy(stonesboard);
-        pool_bitboard.destroy(libertiesboard);
+        //XXX: memory will get freed when pool is destroyed
+        //pool_bitboard.destroy(stonesboard);
+        //pool_bitboard.destroy(libertiesboard);
       };
       
       Go::Color getColor() {return color;};

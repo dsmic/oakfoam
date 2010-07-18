@@ -775,7 +775,7 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move **move,
     
     if (atarimovescount>0 && playoutatarichance>rand.getRandomReal())
     {
-      int i=(int)(rand.getRandomReal()*atarimovescount);
+      int i=rand.getRandomInt(atarimovescount);
       *move=new Go::Move(col,atarimoves[i]);
       return;
     }
@@ -783,7 +783,7 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move **move,
   
   for (int i=0;i<10;i++)
   {
-    int p=(int)(rand.getRandomReal()*board->getPositionMax());
+    int p=rand.getRandomInt(board->getPositionMax());
     if (board->validMove(Go::Move(col,p)) && !board->weakEye(col,p))
     {
       *move=new Go::Move(col,p);
@@ -810,7 +810,7 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move **move,
     *move=new Go::Move(col,possiblemoves[0]);
   else
   {
-    int r=(int)(rand.getRandomReal()*possiblemovescount);
+    int r=rand.getRandomInt(possiblemovescount);
     *move=new Go::Move(col,possiblemoves[r]);
   }
 }
