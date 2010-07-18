@@ -33,20 +33,6 @@ std::string Go::Move::toString(int boardsize)
   }
 }
 
-Go::Group::Group(Go::Color col, int size, boost::object_pool<Go::BitBoard> *pb)
-{
-  pool_bitboard=pb;
-  color=col;
-  stonesboard=pool_bitboard->construct(size);
-  libertiesboard=pool_bitboard->construct(size);
-}
-
-Go::Group::~Group()
-{
-  pool_bitboard->destroy(stonesboard);
-  pool_bitboard->destroy(libertiesboard);
-}
-
 void Go::Group::addStone(int pos)
 {
   if (!stonesboard->get(pos))
@@ -107,7 +93,7 @@ Go::Board::~Board()
   
   for(std::list<Go::Group*,Go::allocator_groupptr>::iterator iter=groups.begin();iter!=groups.end();++iter) 
   {
-    delete (*iter);
+    pool_group.destroy((*iter));
   }
   groups.resize(0);
   
@@ -319,7 +305,7 @@ void Go::Board::makeMove(Go::Move move)
   
   this->setColor(move.getPosition(),move.getColor());
   
-  Go::Group *thisgroup = new Go::Group(col,size,&pool_bitboard);
+  Go::Group *thisgroup=pool_group.construct(col,size,pool_bitboard);
   thisgroup->addStone(pos);
   this->setGroup(pos,thisgroup);
   this->addDirectLiberties(pos,thisgroup);
@@ -465,7 +451,7 @@ void Go::Board::refreshGroups()
   
   for(std::list<Go::Group*,Go::allocator_groupptr>::iterator iter=groups.begin();iter!=groups.end();++iter) 
   {
-    delete (*iter);
+    pool_group.destroy((*iter));
   }
   groups.resize(0);
   
@@ -473,7 +459,7 @@ void Go::Board::refreshGroups()
   {
     if (this->getColor(p)!=Go::EMPTY && this->getColor(p)!=Go::OFFBOARD && this->getGroup(p)==NULL)
     {
-      Go::Group *newgroup = new Go::Group(this->getColor(p),size,&pool_bitboard);
+      Go::Group *newgroup=pool_group.construct(this->getColor(p),size,pool_bitboard);
       
       this->spreadGroup(p,newgroup);
       groups.push_back(newgroup);
@@ -550,7 +536,7 @@ int Go::Board::removeGroup(Go::Group *group)
   possiblesuicides->resize(0);
   delete possiblesuicides;
   
-  delete group;
+  pool_group.destroy(group);
   
   return s;
 }
@@ -573,7 +559,7 @@ void Go::Board::mergeGroups(Go::Group *first, Go::Group *second)
     first->addLiberty((*iter));
   }
   
-  delete second;
+  pool_group.destroy(second);
 }
 
 bool Go::Board::weakEye(Go::Color col, int pos)
