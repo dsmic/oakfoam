@@ -3,6 +3,7 @@ TODO
 
 Now: (before next release)
   faster board implementation?
+  store neighbour counts for each board posistion?
   try add simple 16-bit patterns to playouts (must be fast)
   only try escape if it gains a liberty
   make atari-aware playouts dependant on size of group?
