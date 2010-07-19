@@ -1,3 +1,3 @@
 #! /bin/bash
 
-valgrind --tool=callgrind ./oakfoam -c profile.gtp
+valgrind --tool=callgrind --dump-instr=yes ./oakfoam -c profile.gtp
