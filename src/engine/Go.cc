@@ -391,9 +391,7 @@ void Go::Board::refreshValidMoves(Go::Color col)
   for (int p=0;p<sizedata;p++)
   {
     if (this->validMoveCheck(Go::Move(col,p)))
-    {
       this->addValidMove(Go::Move(col,p));
-    }
   }
 }
 

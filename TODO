@@ -11,6 +11,7 @@ Now: (before next release)
   play at one of liberties of a enemy group with 2
   prefer closer moves using CFG to last and next-to-last move
   handle terminal nodes properly (don't do playouts from terminal)
+  rename Util to something more appropriate
 
 Soon: (before next major release)
   implement superko in tree
