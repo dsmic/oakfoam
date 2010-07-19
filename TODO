@@ -3,13 +3,9 @@ TODO
 
 Now: (before next release)
   faster board implementation?
-  store neighbour counts for each board posistion?
+  look into disjoint union sets
+  store neighbour counts for each board posistion? (num of empty...)
   try add simple 16-bit patterns to playouts (must be fast)
-  only try escape if it gains a liberty
-  make atari-aware playouts dependant on size of group?
-  avoid self-atari in playouts with a group size over x
-  play at one of liberties of a enemy group with 2
-  prefer closer moves using CFG to last and next-to-last move
   handle terminal nodes properly (don't do playouts from terminal)
   rename Util to something more appropriate
 
@@ -32,6 +28,11 @@ Soon: (before next major release)
   play a move early if it is clearly the right move?
   try UCB-TUNED forumla
   replace floats with integers in tree
+  only try escape if it gains a liberty
+  make atari-aware playouts dependant on size of group?
+  avoid self-atari in playouts with a group size over x
+  play at one of liberties of a enemy group with 2
+  prefer closer moves using CFG to last and next-to-last move
 
 Later: (at some point)
   add handicap settings
