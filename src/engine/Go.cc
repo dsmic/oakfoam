@@ -306,11 +306,8 @@ void Go::Board::makeMove(Go::Move move)
   
   this->setColor(move.getPosition(),move.getColor());
   
-  Go::Group *thisgroup=pool_group.construct(col,size,pool_bitboard);
-  thisgroup->addStone(pos);
-  this->setGroup(pos,thisgroup);
-  this->addDirectLiberties(pos,thisgroup);
-  groups.push_back(thisgroup);
+  //lazy group allocation
+  Go::Group *thisgroup=NULL;
   
   this->removeValidMove(Go::Move(Go::BLACK,pos));
   this->removeValidMove(Go::Move(Go::WHITE,pos));
@@ -320,7 +317,14 @@ void Go::Board::makeMove(Go::Move move)
     {
       this->getGroup(p)->removeLiberty(pos);
       
-      if (this->getGroup(p)->numOfStones()>thisgroup->numOfStones())
+      if (thisgroup==NULL)
+      {
+        thisgroup=this->getGroup(p);
+        thisgroup->addStone(pos);
+        this->setGroup(pos,thisgroup);
+        this->addDirectLiberties(pos,thisgroup);
+      }
+      else if (this->getGroup(p)->numOfStones()>thisgroup->numOfStones())
       {
         this->mergeGroups(this->getGroup(p),thisgroup);
         thisgroup=this->getGroup(p);
@@ -351,6 +355,15 @@ void Go::Board::makeMove(Go::Move move)
       }
     }
   });
+  
+  if (thisgroup==NULL)
+  {
+    thisgroup=pool_group.construct(col,size,pool_bitboard);
+    thisgroup->addStone(pos);
+    this->setGroup(pos,thisgroup);
+    this->addDirectLiberties(pos,thisgroup);
+    groups.push_back(thisgroup);
+  }
   
   if (thisgroup->numOfLiberties()==1)
   {
@@ -510,13 +523,16 @@ int Go::Board::removeGroup(Go::Group *group)
     foreach_adjacent(pos,{
       if (this->getColor(p)==othercol)
       {
-        if (this->getGroup(p)->numOfLiberties()==1)
+        if (this->getGroup(p)!=NULL) //lazy group allocation in makeMove()
         {
-          int liberty=this->getGroup(p)->getLibertiesList()->front();
-          this->addValidMove(Go::Move(othercol,liberty));
-          possiblesuicides->push_back(liberty);
+          if (this->getGroup(p)->numOfLiberties()==1)
+          {
+            int liberty=this->getGroup(p)->getLibertiesList()->front();
+            this->addValidMove(Go::Move(othercol,liberty));
+            possiblesuicides->push_back(liberty);
+          }
+          this->getGroup(p)->addLiberty(pos);
         }
-        this->getGroup(p)->addLiberty(pos);
       }
     });
     
