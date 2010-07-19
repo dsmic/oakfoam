@@ -306,7 +306,6 @@ void Go::Board::makeMove(Go::Move move)
   
   this->setColor(move.getPosition(),move.getColor());
   
-  //lazy group allocation
   Go::Group *thisgroup=NULL;
   
   this->removeValidMove(Go::Move(Go::BLACK,pos));
