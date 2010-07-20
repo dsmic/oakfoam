@@ -544,7 +544,6 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
     if (movetree->isLeaf())
       this->expandLeaf(movetree);
     
-    //Go::Board *playoutboard=new Go::Board(boardsize);
     Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
     Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
     
@@ -558,7 +557,6 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
         break;
       
       Go::Board *playoutboard=currentboard->copy();
-      //currentboard->copyOver(playoutboard);
       if (ravemoves>0)
       {
         firstlist->clear();
@@ -685,7 +683,6 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
       delete playoutboard;
     }
     
-    //delete playoutboard;
     delete firstlist;
     delete secondlist;
     
