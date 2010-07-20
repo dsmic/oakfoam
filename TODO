@@ -3,7 +3,6 @@ TODO
 
 Now: (before next release)
   faster board implementation?
-  look into disjoint union sets
   store neighbour counts for each board posistion? (num of empty...)
   try add simple 16-bit patterns to playouts (must be fast)
   handle terminal nodes properly (don't do playouts from terminal)
