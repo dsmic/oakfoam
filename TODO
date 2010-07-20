@@ -2,8 +2,8 @@ TODO
 ------------------
 
 Now: (before next release)
-  faster board implementation?
-  store neighbour counts for each board posistion? (num of empty...)
+  store liberties better or not individually
+  store neighbour counts for each board position? (num of empty...)
   try add simple 16-bit patterns to playouts (must be fast)
   handle terminal nodes properly (don't do playouts from terminal)
 
