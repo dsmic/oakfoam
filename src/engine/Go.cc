@@ -535,9 +535,6 @@ int Go::Board::removeGroup(Go::Group *group)
 
 void Go::Board::spreadRemoveStones(Go::Color col, int pos, std::list<int,Go::allocator_int> *possiblesuicides)
 {
-  if (this->getColor(pos)!=col)
-    return;
-  
   Go::Color othercol=Go::otherColor(col);
   //Go::Group *group=this->getGroupWithoutFind(pos); //see below
   
