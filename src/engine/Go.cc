@@ -209,7 +209,7 @@ void Go::Board::spreadScore(Go::Board::ScoreVertex *scoredata, int pos, Go::Colo
     scoredata[pos].color=this->getColor(pos);
     if (!wastouched)
     {
-      foreach_adjacent(pos,{
+      foreach_adjacent(pos,p,{
         this->spreadScore(scoredata,p,this->getColor(pos));
       });
     }
@@ -228,7 +228,7 @@ void Go::Board::spreadScore(Go::Board::ScoreVertex *scoredata, int pos, Go::Colo
   scoredata[pos].touched=true;
   scoredata[pos].color=col;
   
-  foreach_adjacent(pos,{
+  foreach_adjacent(pos,p,{
     this->spreadScore(scoredata,p,col);
   });
 }
@@ -255,7 +255,7 @@ bool Go::Board::validMoveCheck(Go::Move move)
     Go::Color othercol=Go::otherColor(col);
     int captures=0;
     
-    foreach_adjacent(pos,{
+    foreach_adjacent(pos,p,{
       if (this->getColor(p)==col && this->getLiberties(p)>1)
         return true;
       else if (this->getColor(p)==othercol && this->getLiberties(p)==1)
@@ -319,7 +319,7 @@ void Go::Board::makeMove(Go::Move move)
   this->removeValidMove(Go::Move(Go::BLACK,pos));
   this->removeValidMove(Go::Move(Go::WHITE,pos));
   
-  foreach_adjacent(pos,{
+  foreach_adjacent(pos,p,{
     if (this->getColor(p)==col)
     {
       this->getGroup(p)->removeLiberty(pos);
@@ -381,7 +381,7 @@ void Go::Board::makeMove(Go::Move move)
       this->addValidMove(Go::Move(othercol,liberty));
   }
   
-  foreach_adjacent(pos,{
+  foreach_adjacent(pos,p,{
     if (this->getColor(p)==Go::EMPTY)
     {
       if (!this->validMoveCheck(Go::Move(othercol,p)))
@@ -444,7 +444,7 @@ int Go::Board::touchingEmpty(int pos)
 {
   int lib=0;
   
-  foreach_adjacent(pos,{
+  foreach_adjacent(pos,p,{
     if (this->getColor(p)==Go::EMPTY)
       lib++;
   });
@@ -454,7 +454,7 @@ int Go::Board::touchingEmpty(int pos)
 
 bool Go::Board::touchingAtLeastOneEmpty(int pos)
 {
-  foreach_adjacent(pos,{
+  foreach_adjacent(pos,p,{
     if (this->getColor(p)==Go::EMPTY)
       return true;
   });
@@ -498,7 +498,7 @@ void Go::Board::spreadGroup(int pos, Go::Group *group)
     group->addStone(pos);
     this->addDirectLiberties(pos,group);
     
-    foreach_adjacent(pos,{
+    foreach_adjacent(pos,p,{
       this->spreadGroup(p,group);
     });
   }
@@ -506,7 +506,7 @@ void Go::Board::spreadGroup(int pos, Go::Group *group)
 
 void Go::Board::addDirectLiberties(int pos, Go::Group *group)
 {
-  foreach_adjacent(pos,{
+  foreach_adjacent(pos,p,{
     if (this->getColor(p)==Go::EMPTY)
       group->addLiberty(p);
   });
@@ -528,7 +528,7 @@ int Go::Board::removeGroup(Go::Group *group)
     Go::Color col=this->getColor(pos);
     Go::Color othercol=Go::otherColor(col);
     
-    foreach_adjacent(pos,{
+    foreach_adjacent(pos,p,{
       if (this->getColor(p)==othercol)
       {
         if (this->getGroup(p)!=NULL) //lazy group allocation in makeMove()
@@ -594,7 +594,7 @@ bool Go::Board::weakEye(Go::Color col, int pos)
     return false;
   else
   {
-    foreach_adjacent(pos,{
+    foreach_adjacent(pos,p,{
       if (this->getColor(p)!=Go::OFFBOARD && (this->getColor(p)!=col || this->getLiberties(p)<2))
         return false;
     });

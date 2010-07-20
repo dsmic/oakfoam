@@ -14,14 +14,14 @@
 #define P_W (-1)
 #define P_E (1)
 
-#define foreach_adjacent(__pos, __body) \
+#define foreach_adjacent(__pos, __adjpos, __body) \
   { \
     int __intpos = __pos; \
-    int p; \
-    p = __intpos+P_N; { __body }; \
-    p = __intpos+P_S; { __body }; \
-    p = __intpos+P_E; { __body }; \
-    p = __intpos+P_W; { __body }; \
+    int __adjpos; \
+    __adjpos = __intpos+P_N; { __body }; \
+    __adjpos = __intpos+P_S; { __body }; \
+    __adjpos = __intpos+P_E; { __body }; \
+    __adjpos = __intpos+P_W; { __body }; \
   }
 
 namespace Go
