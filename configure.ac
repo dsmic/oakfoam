@@ -2,7 +2,7 @@ AC_INIT([Oakfoam], [0.0.7-dev], [flash.slash@gmail.com], [oakfoam])
 AM_INIT_AUTOMAKE([-Wall subdir-objects])
 
 AM_CONFIG_HEADER([config.h])
-CXXFLAGS="-O2 -Wall -g -Wno-unused-function"
+CXXFLAGS="-O2 -Wall -g"
 
 AC_PROG_CXX
 AC_PROG_CXX_C_O
