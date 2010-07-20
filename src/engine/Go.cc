@@ -565,9 +565,6 @@ void Go::Board::spreadRemoveStones(Go::Color col, int pos, std::list<int,Go::all
 
 void Go::Board::mergeGroups(Go::Group *first, Go::Group *second)
 {
-  first=first->find();
-  second=second->find();
-  
   if (first==second)
     return;
   
