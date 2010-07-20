@@ -136,15 +136,21 @@ namespace Go
       Go::Group *group;
   };
   
+  class Board;
+  
   class Group
   {
     public:
-      Group(Go::Color col, int size, boost::object_pool<Go::BitBoard> &pb) : pool_bitboard(pb)
-      {
-        color=col;
-        stonesboard=pool_bitboard.construct(size);
+      //Group(Go::Color col, int size, boost::object_pool<Go::BitBoard> &pb) : pool_bitboard(pb)
+      Group(Go::Board *board, int pos, boost::object_pool<Go::BitBoard> &pb);
+      /*{
+        color=board->getColor(pos);
+        position=pos;
+        //stonesboard=pool_bitboard.construct(size);
+        stonescount=0;
+        parent=NULL;
         libertiesboard=pool_bitboard.construct(size);
-      };
+      };*/
       ~Group()
       {
         //XXX: memory will get freed when pool is destroyed
@@ -153,21 +159,39 @@ namespace Go
       };
       
       Go::Color getColor() {return color;};
+      int getPosition() {return position;};
       
-      inline int numOfStones() { return stoneslist.size(); };
-      inline int numOfLiberties() { return libertieslist.size(); };
+      void setParent(Go::Group *p) { parent=p; };
+      void addStones(int num) { stonescount+=num; };
+      Go::Group *find()
+      {
+        if (parent==NULL)
+          return this;
+        else
+          return parent->find();
+      };
+      inline bool isRoot() { return (parent==NULL); };
       
-      inline std::list<int,Go::allocator_int> *getStonesList() { return &stoneslist; };
+      //inline int numOfStones() { return stoneslist.size(); };
+      inline int numOfStones() { return this->find()->stonescount; };
+      inline int numOfLiberties() { return this->find()->libertieslist.size(); };
+      
+      //inline std::list<int,Go::allocator_int> *getStonesList() { return &stoneslist; };
       inline std::list<int,Go::allocator_int> *getLibertiesList() { return &libertieslist; };
       
-      void addStone(int pos);
+      //void addStone(int pos);
       void addLiberty(int pos);
       void removeLiberty(int pos);
     
     private:
       Go::Color color;
-      std::list<int,Go::allocator_int> stoneslist;
-      Go::BitBoard *stonesboard;
+      int position;
+      
+      //std::list<int,Go::allocator_int> stoneslist;
+      //Go::BitBoard *stonesboard;
+      int stonescount;
+      Go::Group *parent;
+      
       std::list<int,Go::allocator_int> libertieslist;
       Go::BitBoard *libertiesboard;
       boost::object_pool<Go::BitBoard> &pool_bitboard;
@@ -191,6 +215,8 @@ namespace Go
       Go::Color nextToMove() { return nexttomove; };
       void setNextToMove(Go::Color col) { nexttomove=col; };
       int getPositionMax() { return sizedata; };
+      
+      inline Go::Color getColor(int pos) { return data[pos].color; };
       
       void makeMove(Go::Move move);
       bool validMove(Go::Move move);
@@ -219,12 +245,13 @@ namespace Go
       boost::object_pool<Go::BitBoard> pool_bitboard;
       boost::object_pool<Go::Group> pool_group;
       
-      inline Go::Color getColor(int pos) { return data[pos].color; };
-      inline Go::Group *getGroup(int pos) { return data[pos].group; };
+      inline Go::Group *getGroup(int pos) { return data[pos].group->find(); };
       inline void setColor(int pos, Go::Color col) { data[pos].color=col; };
       inline void setGroup(int pos, Go::Group *grp) { data[pos].group=grp; };
-      inline int getLiberties(int pos) { if (data[pos].group==NULL) return 0; else return data[pos].group->numOfLiberties(); };
-      inline int getGroupSize(int pos) { if (data[pos].group==NULL) return 0; else return data[pos].group->numOfStones(); };
+      //inline int getLiberties(int pos) { if (data[pos].group==NULL) return 0; else return data[pos].group->numOfLiberties(); };
+      //inline int getGroupSize(int pos) { if (data[pos].group==NULL) return 0; else return data[pos].group->numOfStones(); };
+      inline int getLiberties(int pos) { if (data[pos].group==NULL) return 0; else return data[pos].group->find()->numOfLiberties(); };
+      inline int getGroupSize(int pos) { if (data[pos].group==NULL) return 0; else return data[pos].group->find()->numOfStones(); };
       
       int touchingEmpty(int pos);
       bool touchingAtLeastOneEmpty(int pos);
@@ -233,6 +260,7 @@ namespace Go
       void spreadGroup(int pos, Go::Group *group);
       void addDirectLiberties(int pos, Go::Group *group);
       int removeGroup(Go::Group *group);
+      void spreadRemoveStones(Go::Color col, int pos, std::list<int,Go::allocator_int> *possiblesuicides);
       void mergeGroups(Go::Group *first, Go::Group *second);
       
       bool validMoveCheck(Go::Move move);

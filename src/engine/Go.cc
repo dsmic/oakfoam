@@ -33,14 +33,23 @@ std::string Go::Move::toString(int boardsize)
   }
 }
 
-void Go::Group::addStone(int pos)
+Go::Group::Group(Go::Board *board, int pos, boost::object_pool<Go::BitBoard> &pb) : pool_bitboard(pb)
+{
+  color=board->getColor(pos);
+  position=pos;
+  stonescount=1;
+  parent=NULL;
+  libertiesboard=pool_bitboard.construct(board->getSize());
+}
+
+/*void Go::Group::addStone(int pos)
 {
   if (!stonesboard->get(pos))
   {
     stonesboard->set(pos);
     stoneslist.push_back(pos);
   }
-}
+}*/
 
 void Go::Group::addLiberty(int pos)
 {
@@ -314,7 +323,12 @@ void Go::Board::makeMove(Go::Move move)
   
   this->setColor(move.getPosition(),move.getColor());
   
-  Go::Group *thisgroup=NULL;
+  //Go::Group *thisgroup=NULL;
+  Go::Group *thisgroup=pool_group.construct(this,pos,pool_bitboard);
+  //thisgroup->addStone(pos);
+  this->setGroup(pos,thisgroup);
+  this->addDirectLiberties(pos,thisgroup);
+  groups.push_back(thisgroup);
   
   this->removeValidMove(Go::Move(Go::BLACK,pos));
   this->removeValidMove(Go::Move(Go::WHITE,pos));
@@ -324,7 +338,7 @@ void Go::Board::makeMove(Go::Move move)
     {
       this->getGroup(p)->removeLiberty(pos);
       
-      if (thisgroup==NULL)
+      /*if (thisgroup==NULL)
       {
         thisgroup=this->getGroup(p);
         thisgroup->addStone(pos);
@@ -337,7 +351,8 @@ void Go::Board::makeMove(Go::Move move)
         thisgroup=this->getGroup(p);
       }
       else
-        this->mergeGroups(thisgroup,this->getGroup(p));
+        this->mergeGroups(thisgroup,this->getGroup(p));*/
+      this->mergeGroups(thisgroup,this->getGroup(p));
     }
     else if (this->getColor(p)==othercol)
     {
@@ -363,14 +378,14 @@ void Go::Board::makeMove(Go::Move move)
     }
   });
   
-  if (thisgroup==NULL)
+  /*if (thisgroup==NULL)
   {
     thisgroup=pool_group.construct(col,size,pool_bitboard);
     thisgroup->addStone(pos);
     this->setGroup(pos,thisgroup);
     this->addDirectLiberties(pos,thisgroup);
     groups.push_back(thisgroup);
-  }
+  }*/
   
   if (thisgroup->numOfLiberties()==1)
   {
@@ -480,7 +495,8 @@ void Go::Board::refreshGroups()
   {
     if (this->getColor(p)!=Go::EMPTY && this->getColor(p)!=Go::OFFBOARD && this->getGroup(p)==NULL)
     {
-      Go::Group *newgroup=pool_group.construct(this->getColor(p),size,pool_bitboard);
+      //Go::Group *newgroup=pool_group.construct(this->getColor(p),size,pool_bitboard);
+      Go::Group *newgroup=pool_group.construct(this,p,pool_bitboard);
       
       this->spreadGroup(p,newgroup);
       groups.push_back(newgroup);
@@ -494,9 +510,14 @@ void Go::Board::spreadGroup(int pos, Go::Group *group)
 {
   if (this->getColor(pos)==group->getColor() && this->getGroup(pos)==NULL)
   {
-    this->setGroup(pos,group);
-    group->addStone(pos);
-    this->addDirectLiberties(pos,group);
+    //this->setGroup(pos,group);
+    //group->addStone(pos);
+    Go::Group *thisgroup=pool_group.construct(this,pos,pool_bitboard);
+    this->setGroup(pos,thisgroup);
+    this->addDirectLiberties(pos,thisgroup);
+    groups.push_back(thisgroup);
+    this->mergeGroups(group,thisgroup);
+    //this->addDirectLiberties(pos,group);
     
     foreach_adjacent(pos,p,{
       this->spreadGroup(p,group);
@@ -514,6 +535,8 @@ void Go::Board::addDirectLiberties(int pos, Go::Group *group)
 
 int Go::Board::removeGroup(Go::Group *group)
 {
+  group=group->find();
+  int pos=group->getPosition();
   int s=group->numOfStones();
   Go::Color groupcol=group->getColor();
   
@@ -521,7 +544,7 @@ int Go::Board::removeGroup(Go::Group *group)
   
   std::list<int,Go::allocator_int> *possiblesuicides = new std::list<int,Go::allocator_int>();
   
-  for(std::list<int,Go::allocator_int>::iterator iter=group->getStonesList()->begin();iter!=group->getStonesList()->end();++iter)
+  /*for(std::list<int,Go::allocator_int>::iterator iter=group->getStonesList()->begin();iter!=group->getStonesList()->end();++iter)
   {
     int pos=(*iter);
     
@@ -549,7 +572,9 @@ int Go::Board::removeGroup(Go::Group *group)
     
     this->setColor(pos,Go::EMPTY);
     this->setGroup(pos,NULL);
-  }
+  }*/
+  
+  this->spreadRemoveStones(groupcol,pos,possiblesuicides);
   
   for(std::list<int,Go::allocator_int>::iterator iter=possiblesuicides->begin();iter!=possiblesuicides->end();++iter)
   {
@@ -566,18 +591,55 @@ int Go::Board::removeGroup(Go::Group *group)
   return s;
 }
 
+void Go::Board::spreadRemoveStones(Go::Color col, int pos, std::list<int,Go::allocator_int> *possiblesuicides)
+{
+  if (this->getColor(pos)!=col)
+    return;
+  
+  Go::Color othercol=Go::otherColor(col);
+  
+  this->setColor(pos,Go::EMPTY);
+  this->setGroup(pos,NULL);
+  
+  foreach_adjacent(pos,p,{
+    if (this->getColor(p)==col)
+      this->spreadRemoveStones(col,p,possiblesuicides);
+    else if (this->getColor(p)==othercol)
+    {
+      if (this->getGroup(p)!=NULL) //lazy group allocation in makeMove() TODO: still revelant?
+      {
+        if (this->getGroup(p)->numOfLiberties()==1)
+        {
+          int liberty=this->getGroup(p)->getLibertiesList()->front();
+          this->addValidMove(Go::Move(othercol,liberty));
+          possiblesuicides->push_back(liberty);
+        }
+        this->getGroup(p)->addLiberty(pos);
+      }
+    }
+  });
+  
+  this->addValidMove(Go::Move(othercol,pos));
+  this->addValidMove(Go::Move(col,pos));
+}
+
 void Go::Board::mergeGroups(Go::Group *first, Go::Group *second)
 {
+  first=first->find();
+  second=second->find();
+  
   if (first==second)
     return;
   
   groups.remove(second);
   
-  for(std::list<int,Go::allocator_int>::iterator iter=second->getStonesList()->begin();iter!=second->getStonesList()->end();++iter) 
+  /*for(std::list<int,Go::allocator_int>::iterator iter=second->getStonesList()->begin();iter!=second->getStonesList()->end();++iter) 
   {
     this->setGroup((*iter),first);
     first->addStone((*iter));
-  }
+  }*/
+  second->setParent(first);
+  first->addStones(second->numOfStones());
   
   for(std::list<int,Go::allocator_int>::iterator iter=second->getLibertiesList()->begin();iter!=second->getLibertiesList()->end();++iter) 
   {
