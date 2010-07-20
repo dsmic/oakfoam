@@ -4,6 +4,7 @@ TODO
 Now: (before next release)
   store liberties better or not individually
   store neighbour counts for each board position? (num of empty...)
+  improve playout move selection
   try add simple 16-bit patterns to playouts (must be fast)
   handle terminal nodes properly (don't do playouts from terminal)
 
