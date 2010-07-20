@@ -472,7 +472,7 @@ void Go::Board::refreshGroups()
   
   for (int p=0;p<sizedata;p++)
   {
-    if (this->getColor(p)!=Go::EMPTY && this->getColor(p)!=Go::OFFBOARD && this->getGroup(p)==NULL)
+    if (this->getColor(p)!=Go::EMPTY && this->getColor(p)!=Go::OFFBOARD && this->getGroupWithoutFind(p)==NULL)
     {
       Go::Group *newgroup=pool_group.construct(this,p,pool_bitboard);
       
@@ -486,7 +486,7 @@ void Go::Board::refreshGroups()
 
 void Go::Board::spreadGroup(int pos, Go::Group *group)
 {
-  if (this->getColor(pos)==group->getColor() && this->getGroup(pos)==NULL)
+  if (this->getColor(pos)==group->getColor() && this->getGroupWithoutFind(pos)==NULL)
   {
     Go::Group *thisgroup=pool_group.construct(this,pos,pool_bitboard);
     this->setGroup(pos,thisgroup);
