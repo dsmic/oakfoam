@@ -106,6 +106,16 @@ Go::Board *Go::Board::copy()
   Go::Board *copyboard;
   copyboard=new Go::Board(size);
   
+  this->copyOver(copyboard);
+  
+  return copyboard;
+}
+
+void Go::Board::copyOver(Go::Board *copyboard)
+{
+  if (size!=copyboard->getSize())
+    throw Go::Exception("cannot copy to a different size board");
+  
   for (int p=0;p<sizedata;p++)
   {
     copyboard->data[p]=this->data[p];
@@ -117,8 +127,6 @@ Go::Board *Go::Board::copy()
   copyboard->simpleko=this->simpleko;
   
   copyboard->refreshGroups();
-  
-  return copyboard;
 }
 
 std::string Go::Board::toString()
@@ -397,11 +405,12 @@ void Go::Board::refreshValidMoves()
 
 void Go::Board::refreshValidMoves(Go::Color col)
 {
-  (col==Go::BLACK?blackvalidmoves:whitevalidmoves)->clear();
   (col==Go::BLACK?blackvalidmovecount:whitevalidmovecount)=0;
+  Go::BitBoard *validmoves=(col==Go::BLACK?blackvalidmoves:whitevalidmoves);
   
   for (int p=0;p<sizedata;p++)
   {
+    validmoves->clear(p);
     if (this->validMoveCheck(Go::Move(col,p)))
       this->addValidMove(Go::Move(col,p));
   }
