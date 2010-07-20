@@ -565,7 +565,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
       this->randomPlayout(playoutboard,playoutmoves,col,(ravemoves>0?firstlist:NULL),(ravemoves>0?secondlist:NULL));
       totalplayouts++;
       
-      bool playoutwin=Util::isWinForColor(playoutmoves.back().getColor(),playoutboard->score()-komi);
+      bool playoutwin=Go::Board::isWinForColor(playoutmoves.back().getColor(),playoutboard->score()-komi);
       if (playoutwin)
         playouttree->addWin();
       else
@@ -573,7 +573,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
       
       if (ravemoves>0)
       {
-        bool ravewin=Util::isWinForColor(col,playoutboard->score()-komi);
+        bool ravewin=Go::Board::isWinForColor(col,playoutboard->score()-komi);
         
         for (int p=0;p<playoutboard->getPositionMax();p++)
         {
@@ -925,7 +925,7 @@ void Engine::expandLeaf(Util::MoveTree *movetree)
   
   Go::Color col=startboard->nextToMove();
   
-  if (startboard->numOfValidMoves(col)==0 || Util::isWinForColor(col,startboard->score()-komi))
+  if (startboard->numOfValidMoves(col)==0 || Go::Board::isWinForColor(col,startboard->score()-komi))
   {
     Util::MoveTree *nmt=new Util::MoveTree(ucbc,ucbinit,ravemoves,Go::Move(col,Go::Move::PASS));
     nmt->addWin();

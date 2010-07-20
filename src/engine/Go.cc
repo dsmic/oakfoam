@@ -603,4 +603,18 @@ bool Go::Board::weakEye(Go::Color col, int pos)
   }
 }
 
+bool Go::Board::isWinForColor(Go::Color col, float score)
+{
+  float k=0;
+  
+  if (col==Go::BLACK)
+    k=1;
+  else if (col==Go::WHITE)
+    k=-1;
+  else
+    return false;
+  
+  return ((score*k)>0);
+}
+
 

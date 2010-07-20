@@ -200,6 +200,8 @@ namespace Go
       
       int score();
       bool weakEye(Go::Color col, int pos);
+      
+      static bool isWinForColor(Go::Color col, float score);
     
     private:
       int size;
