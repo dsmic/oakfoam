@@ -1,9 +1,9 @@
-#include "Util.h"
+#include "UCT.h"
 
-Util::MoveTree::MoveTree(float uc, float ui, int rm, Go::Move mov, Util::MoveTree *p)
+UCT::Tree::Tree(float uc, float ui, int rm, Go::Move mov, UCT::Tree *p)
 {
   parent=p;
-  children=new std::list<Util::MoveTree*>();
+  children=new std::list<UCT::Tree*>();
   move=mov;
   playouts=0;
   wins=0;
@@ -14,22 +14,22 @@ Util::MoveTree::MoveTree(float uc, float ui, int rm, Go::Move mov, Util::MoveTre
   ucbinit=ui;
 }
 
-Util::MoveTree::~MoveTree()
+UCT::Tree::~Tree()
 {
-  for(std::list<Util::MoveTree*>::iterator iter=children->begin();iter!=children->end();++iter) 
+  for(std::list<UCT::Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
   {
     delete (*iter);
   }
   delete children;
 }
 
-void Util::MoveTree::addChild(Util::MoveTree *node)
+void UCT::Tree::addChild(UCT::Tree *node)
 {
   children->push_back(node);
   node->parent=this;
 }
 
-float Util::MoveTree::getRatio()
+float UCT::Tree::getRatio()
 {
   if (playouts>0)
     return (float)wins/playouts;
@@ -37,7 +37,7 @@ float Util::MoveTree::getRatio()
     return 0;
 }
 
-float Util::MoveTree::getRAVERatio()
+float UCT::Tree::getRAVERatio()
 {
   if (raveplayouts>0)
     return (float)ravewins/raveplayouts;
@@ -45,33 +45,33 @@ float Util::MoveTree::getRAVERatio()
     return 0;
 }
 
-void Util::MoveTree::addWin()
+void UCT::Tree::addWin()
 {
   wins++;
   playouts++;
   this->passPlayoutUp(true);
 }
 
-void Util::MoveTree::addLose()
+void UCT::Tree::addLose()
 {
   playouts++;
   this->passPlayoutUp(false);
 }
 
-void Util::MoveTree::addRAVEWin()
+void UCT::Tree::addRAVEWin()
 {
   ravewins++;
   raveplayouts++;
 }
 
-void Util::MoveTree::addRAVELose()
+void UCT::Tree::addRAVELose()
 {
   raveplayouts++;
 }
 
-Util::MoveTree *Util::MoveTree::getChild(Go::Move move)
+UCT::Tree *UCT::Tree::getChild(Go::Move move)
 {
-  for(std::list<Util::MoveTree*>::iterator iter=children->begin();iter!=children->end();++iter) 
+  for(std::list<UCT::Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
   {
     if ((*iter)->getMove()==move) 
       return (*iter);
@@ -79,7 +79,7 @@ Util::MoveTree *Util::MoveTree::getChild(Go::Move move)
   return NULL;
 }
 
-void Util::MoveTree::passPlayoutUp(bool win)
+void UCT::Tree::passPlayoutUp(bool win)
 {
   if (parent!=NULL)
   {
@@ -91,7 +91,7 @@ void Util::MoveTree::passPlayoutUp(bool win)
   }
 }
 
-float Util::MoveTree::getVal()
+float UCT::Tree::getVal()
 {
   if (ravemoves==0 || raveplayouts==0)
     return this->getRatio();
@@ -108,7 +108,7 @@ float Util::MoveTree::getVal()
   }
 }
 
-float Util::MoveTree::getUrgency()
+float UCT::Tree::getUrgency()
 {
   float bias;
   if (playouts==0 && raveplayouts==0)
@@ -129,7 +129,7 @@ float Util::MoveTree::getUrgency()
   return this->getVal()+bias;
 }
 
-std::list<Go::Move> Util::MoveTree::getMovesFromRoot()
+std::list<Go::Move> UCT::Tree::getMovesFromRoot()
 {
   if (this->isRoot())
     return std::list<Go::Move>();
@@ -141,7 +141,7 @@ std::list<Go::Move> Util::MoveTree::getMovesFromRoot()
   }
 }
 
-bool Util::MoveTree::isTerminal()
+bool UCT::Tree::isTerminal()
 {
   if (!this->isRoot())
   {
@@ -154,7 +154,7 @@ bool Util::MoveTree::isTerminal()
     return false;
 }
 
-void Util::MoveTree::divorceChild(Util::MoveTree *child)
+void UCT::Tree::divorceChild(UCT::Tree *child)
 {
   children->remove(child);
   child->parent=NULL;

@@ -7,7 +7,6 @@ Now: (before next release)
   store neighbour counts for each board posistion? (num of empty...)
   try add simple 16-bit patterns to playouts (must be fast)
   handle terminal nodes properly (don't do playouts from terminal)
-  rename Util to something more appropriate
 
 Soon: (before next major release)
   implement superko in tree

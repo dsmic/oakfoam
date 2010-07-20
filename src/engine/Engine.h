@@ -38,7 +38,7 @@
 #include <vector>
 #include <boost/timer.hpp>
 #include "Go.h"
-#include "Util.h"
+#include "UCT.h"
 #include "Random.h"
 #include "../gtp/Gtp.h"
 
@@ -102,16 +102,16 @@ class Engine
     int livegfxupdateplayouts;
     float livegfxdelay;
     bool uctkeepsubtree;
-    Util::MoveTree *movetree;
+    UCT::Tree *movetree;
     Random rand;
     
     void addGtpCommands();
     
     void randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move **move, int *posarray);
     void randomPlayout(Go::Board *board, std::list<Go::Move> startmoves, Go::Color colfirst, Go::BitBoard *firstlist, Go::BitBoard *secondlist);
-    Util::MoveTree *getPlayoutTarget(Util::MoveTree *movetree);
-    void expandLeaf(Util::MoveTree *movetree);
-    Util::MoveTree *getBestMoves(Util::MoveTree *movetree, bool descend);
+    UCT::Tree *getPlayoutTarget(UCT::Tree *movetree);
+    void expandLeaf(UCT::Tree *movetree);
+    UCT::Tree *getBestMoves(UCT::Tree *movetree, bool descend);
     void clearMoveTree();
     void chooseSubTree(Go::Move move);
     

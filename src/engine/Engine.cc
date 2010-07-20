@@ -549,7 +549,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
     
     for (int i=0;i<playoutspermove;i++)
     {
-      Util::MoveTree *playouttree = this->getPlayoutTarget(movetree);
+      UCT::Tree *playouttree = this->getPlayoutTarget(movetree);
       if (playouttree==NULL)
         break;
       std::list<Go::Move> playoutmoves=playouttree->getMovesFromRoot();
@@ -579,7 +579,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
         {
           if (firstlist->get(p))
           {
-            Util::MoveTree *subtree=movetree->getChild(Go::Move(col,p));
+            UCT::Tree *subtree=movetree->getChild(Go::Move(col,p));
             if (subtree!=NULL)
             {
               if (ravewin)
@@ -590,14 +590,14 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
           }
         }
         
-        Util::MoveTree *secondtree=movetree->getChild(playoutmoves.front());
+        UCT::Tree *secondtree=movetree->getChild(playoutmoves.front());
         if (!secondtree->isLeaf())
         {
           for (int p=0;p<playoutboard->getPositionMax();p++)
           {
             if (secondlist->get(p))
             {
-              Util::MoveTree *subtree=secondtree->getChild(Go::Move(Go::otherColor(col),p));
+              UCT::Tree *subtree=secondtree->getChild(Go::Move(Go::otherColor(col),p));
               if (subtree!=NULL)
               {
                 if (ravewin)
@@ -621,13 +621,13 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
           
           gtpe->getOutput()->printfDebug("INFLUENCE");
           int maxplayouts=0;
-          for(std::list<Util::MoveTree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
+          for(std::list<UCT::Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
           {
             if ((*iter)->getPlayouts()>maxplayouts)
               maxplayouts=(*iter)->getPlayouts();
           }
           float colorfactor=(col==Go::BLACK?1:-1);
-          for(std::list<Util::MoveTree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
+          for(std::list<UCT::Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
           {
             if (!(*iter)->getMove().isPass() && !(*iter)->getMove().isResign())
             {
@@ -658,7 +658,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
           else
           {
             gtpe->getOutput()->printfDebug("SQUARE");
-            for(std::list<Util::MoveTree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
+            for(std::list<UCT::Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
             {
               if (!(*iter)->getMove().isPass() && !(*iter)->getMove().isResign())
               {
@@ -686,7 +686,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
     delete firstlist;
     delete secondlist;
     
-    Util::MoveTree *besttree=this->getBestMoves(movetree,false);
+    UCT::Tree *besttree=this->getBestMoves(movetree,false);
     if (besttree==NULL)
       *move=new Go::Move(col,Go::Move::RESIGN);
     else if (besttree->getRatio()<resignratiothreshold && currentboard->getMovesMade()>(resignmovefactorthreshold*boardsize*boardsize))
@@ -869,12 +869,12 @@ long Engine::getTimeAllowedThisTurn(Go::Color col)
   return timepermove;
 }
 
-Util::MoveTree *Engine::getPlayoutTarget(Util::MoveTree *movetree)
+UCT::Tree *Engine::getPlayoutTarget(UCT::Tree *movetree)
 {
   float besturgency=0;
-  Util::MoveTree *besttree=NULL;
+  UCT::Tree *besttree=NULL;
   
-  for(std::list<Util::MoveTree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
+  for(std::list<UCT::Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
   {
     float urgency;
     
@@ -905,7 +905,7 @@ Util::MoveTree *Engine::getPlayoutTarget(Util::MoveTree *movetree)
     return this->getPlayoutTarget(besttree);
 }
 
-void Engine::expandLeaf(Util::MoveTree *movetree)
+void Engine::expandLeaf(UCT::Tree *movetree)
 {
   if (!movetree->isLeaf())
     return;
@@ -927,7 +927,7 @@ void Engine::expandLeaf(Util::MoveTree *movetree)
   
   if (startboard->numOfValidMoves(col)==0 || Go::Board::isWinForColor(col,startboard->score()-komi))
   {
-    Util::MoveTree *nmt=new Util::MoveTree(ucbc,ucbinit,ravemoves,Go::Move(col,Go::Move::PASS));
+    UCT::Tree *nmt=new UCT::Tree(ucbc,ucbinit,ravemoves,Go::Move(col,Go::Move::PASS));
     nmt->addWin();
     movetree->addChild(nmt);
   }
@@ -939,7 +939,7 @@ void Engine::expandLeaf(Util::MoveTree *movetree)
     {
       if (validmovesbitboard->get(p))
       {
-        Util::MoveTree *nmt=new Util::MoveTree(ucbc,ucbinit,ravemoves,Go::Move(col,p));
+        UCT::Tree *nmt=new UCT::Tree(ucbc,ucbinit,ravemoves,Go::Move(col,p));
         movetree->addChild(nmt);
       }
     }
@@ -948,12 +948,12 @@ void Engine::expandLeaf(Util::MoveTree *movetree)
   delete startboard;
 }
 
-Util::MoveTree *Engine::getBestMoves(Util::MoveTree *movetree, bool descend)
+UCT::Tree *Engine::getBestMoves(UCT::Tree *movetree, bool descend)
 {
   float bestsims=0;
-  Util::MoveTree *besttree=NULL;
+  UCT::Tree *besttree=NULL;
   
-  for(std::list<Util::MoveTree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
+  for(std::list<UCT::Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
   {
     if ((*iter)->getPlayouts()>bestsims)
     {
@@ -976,12 +976,12 @@ void Engine::clearMoveTree()
   if (movetree!=NULL)
     delete movetree;
   
-  movetree=new Util::MoveTree(ucbc,ucbinit,ravemoves);
+  movetree=new UCT::Tree(ucbc,ucbinit,ravemoves);
 }
 
 void Engine::chooseSubTree(Go::Move move)
 {
-  Util::MoveTree *subtree=movetree->getChild(move);
+  UCT::Tree *subtree=movetree->getChild(move);
   
   if (subtree==NULL)
     this->clearMoveTree();
