@@ -296,12 +296,16 @@ void Engine::gtpShowLiberties(void *instance, Gtp::Engine* gtpe, Gtp::Command* c
   {
     for (int x=0;x<me->boardsize;x++)
     {
-      if (me->currentboard->boardData()[Go::Position::xy2pos(x,y,me->boardsize)].group==NULL)
+      int pos=Go::Position::xy2pos(x,y,me->boardsize);
+      if (me->currentboard->boardData()[pos].group==NULL)
         gtpe->getOutput()->printf("\"\" ");
       else
       {
-        int lib=me->currentboard->boardData()[Go::Position::xy2pos(x,y,me->boardsize)].group->find()->numOfLiberties();
-        gtpe->getOutput()->printf("\"%d\" ",lib);
+        int lib=me->currentboard->boardData()[pos].group->find()->numOfPseudoLiberties();
+        gtpe->getOutput()->printf("\"%d",lib);
+        if (me->currentboard->boardData()[pos].group->find()->inAtari())
+          gtpe->getOutput()->printf("!");
+        gtpe->getOutput()->printf("\" ");
       }
     }
     gtpe->getOutput()->printf("\n");
@@ -762,9 +766,9 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move **move,
     
     for(std::list<Go::Group*,Go::allocator_groupptr>::iterator iter=groups->begin();iter!=groups->end();++iter) 
     {
-      if ((*iter)->numOfLiberties()==1)
+      if ((*iter)->inAtari())
       {
-        int liberty=(*iter)->getLibertiesList()->front();
+        int liberty=(*iter)->getAtariPosition();
         if (board->validMove(Go::Move(col,liberty)))
         {
           atarimoves[atarimovescount]=liberty;
@@ -925,24 +929,36 @@ void Engine::expandLeaf(UCT::Tree *movetree)
   
   Go::Color col=startboard->nextToMove();
   
-  if (startboard->numOfValidMoves(col)==0 || Go::Board::isWinForColor(col,startboard->score()-komi))
+  int newmoves=0;
+  
+  //if (startboard->numOfValidMoves(col)==0 || Go::Board::isWinForColor(col,startboard->score()-komi))
+  if (Go::Board::isWinForColor(col,startboard->score()-komi))
   {
     UCT::Tree *nmt=new UCT::Tree(ucbc,ucbinit,ravemoves,Go::Move(col,Go::Move::PASS));
     nmt->addWin();
     movetree->addChild(nmt);
+    newmoves++;
   }
   
-  if (startboard->numOfValidMoves(col)>0)
+  //if (startboard->numOfValidMoves(col)>0)
   {
-    Go::BitBoard *validmovesbitboard=startboard->getValidMoves(col);
+    //Go::BitBoard *validmovesbitboard=startboard->getValidMoves(col);
     for (int p=0;p<startboard->getPositionMax();p++)
     {
-      if (validmovesbitboard->get(p))
+      //if (validmovesbitboard->get(p))
+      if (startboard->validMove(Go::Move(col,p)))
       {
         UCT::Tree *nmt=new UCT::Tree(ucbc,ucbinit,ravemoves,Go::Move(col,p));
         movetree->addChild(nmt);
+        newmoves++;
       }
     }
+  }
+  
+  if (newmoves==0)
+  {
+    UCT::Tree *nmt=new UCT::Tree(ucbc,ucbinit,ravemoves,Go::Move(col,Go::Move::PASS));
+    movetree->addChild(nmt);
   }
   
   delete startboard;

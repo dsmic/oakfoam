@@ -33,39 +33,25 @@ std::string Go::Move::toString(int boardsize)
   }
 }
 
-Go::Group::Group(Go::Board *board, int pos, boost::object_pool<Go::BitBoard> &pb) : pool_bitboard(pb)
+Go::Group::Group(Go::Board *brd, int pos)
 {
+  board=brd;
   color=board->getColor(pos);
   position=pos;
   stonescount=1;
   parent=NULL;
-  //libertiesboard=pool_bitboard.construct(board->getSize());
-  libertiesboard=NULL;
-  size=board->getSize();
+  pseudoliberties=0;
+  libpossum=0;
+  libpossumsq=0;
 }
 
-void Go::Group::addLiberty(int pos)
+void Go::Group::addTouchingEmpties()
 {
-  if (libertiesboard==NULL)
-    libertiesboard=pool_bitboard.construct(size);
-  
-  if (!libertiesboard->get(pos))
-  {
-    libertiesboard->set(pos);
-    libertieslist.push_back(pos);
-  }
-}
-
-void Go::Group::removeLiberty(int pos)
-{
-  if (libertiesboard==NULL)
-    libertiesboard=pool_bitboard.construct(size);
-  
-  if (libertiesboard->get(pos))
-  {
-    libertiesboard->clear(pos);
-    libertieslist.remove(pos);
-  }
+  int size=board->getSize();
+  foreach_adjacent(position,p,{
+    if (board->getColor(p)==Go::EMPTY)
+      this->addPseudoLiberty(p);
+  });
 }
 
 Go::Board::Board(int s)
@@ -89,21 +75,21 @@ Go::Board::Board(int s)
   passesplayed=0;
   simpleko=-1;
   
-  blackvalidmoves=pool_bitboard.construct(size);
-  whitevalidmoves=pool_bitboard.construct(size);
+  blackvalidmoves=new Go::BitBoard(size);
+  whitevalidmoves=new Go::BitBoard(size);
   this->refreshValidMoves();
 }
 
 Go::Board::~Board()
 {
-  //XXX: memory will get freed when pool is destroyed
-  //pool_bitboard.destroy(blackvalidmoves);
-  //pool_bitboard.destroy(whitevalidmoves);
+  delete blackvalidmoves;
+  delete whitevalidmoves;
   
-  //for(std::list<Go::Group*,Go::allocator_groupptr>::iterator iter=groups.begin();iter!=groups.end();++iter) 
-  //{
-  //  pool_group.destroy((*iter));
-  //}
+  //XXX: memory will get freed when pool is destroyed
+  /*for(std::list<Go::Group*,Go::allocator_groupptr>::iterator iter=groups.begin();iter!=groups.end();++iter) 
+  {
+    pool_group.destroy((*iter));
+  }*/
   groups.resize(0);
   
   delete[] data;
@@ -261,18 +247,32 @@ bool Go::Board::validMoveCheck(Go::Move move)
     int pos=move.getPosition();
     Go::Color col=move.getColor();
     Go::Color othercol=Go::otherColor(col);
+    bool isvalid=false;
     int captures=0;
     
     foreach_adjacent(pos,p,{
-      if (this->getColor(p)==col && this->getLiberties(p)>1)
-        return true;
-      else if (this->getColor(p)==othercol && this->getLiberties(p)==1)
+      if (this->getColor(p)==col || this->getColor(p)==othercol)
+        this->getGroup(p)->removePseudoLiberty(pos);
+    });
+    
+    foreach_adjacent(pos,p,{
+      if (this->getColor(p)==col && this->getPseudoLiberties(p)>0)
+        isvalid=true;
+      else if (this->getColor(p)==othercol && this->getPseudoLiberties(p)==0)
       {
         captures+=this->getGroupSize(p);
         if (captures>1)
-          return true;
+          isvalid=true;
       }
     });
+    
+    foreach_adjacent(pos,p,{
+      if (this->getColor(p)==col || this->getColor(p)==othercol)
+        this->getGroup(p)->addPseudoLiberty(pos);
+    });
+    
+    if (isvalid)
+      return true;
     
     if (captures==1)
     {
@@ -320,11 +320,13 @@ void Go::Board::makeMove(Go::Move move)
   int pos=move.getPosition();
   int posko=-1;
   
-  this->setColor(move.getPosition(),move.getColor());
+  this->setColor(pos,col);
   
-  Go::Group *thisgroup=pool_group.construct(this,pos,pool_bitboard);
+  Go::Group *thisgroup=pool_group.construct(this,pos);
   this->setGroup(pos,thisgroup);
   groups.push_back(thisgroup);
+  
+  thisgroup->addTouchingEmpties();
   
   this->removeValidMove(Go::Move(Go::BLACK,pos));
   this->removeValidMove(Go::Move(Go::WHITE,pos));
@@ -332,9 +334,9 @@ void Go::Board::makeMove(Go::Move move)
   foreach_adjacent(pos,p,{
     if (this->getColor(p)==col)
     {
-      this->getGroup(p)->removeLiberty(pos);
+      this->getGroup(p)->removePseudoLiberty(pos);
       
-      if (!thisgroup->isBitBoardAllocated() ||this->getGroup(p)->numOfStones()>thisgroup->numOfStones())
+      if (this->getGroup(p)->numOfStones()>thisgroup->numOfStones())
         this->mergeGroups(this->getGroup(p),thisgroup);
       else
         this->mergeGroups(thisgroup,this->getGroup(p));
@@ -342,9 +344,9 @@ void Go::Board::makeMove(Go::Move move)
     }
     else if (this->getColor(p)==othercol)
     {
-      this->getGroup(p)->removeLiberty(pos);
+      this->getGroup(p)->removePseudoLiberty(pos);
       
-      if (this->getGroup(p)->numOfLiberties()==0)
+      if (this->getGroup(p)->numOfPseudoLiberties()==0)
       {
         if (removeGroup(this->getGroup(p))==1)
         {
@@ -354,21 +356,22 @@ void Go::Board::makeMove(Go::Move move)
             posko=-2;
         }
       }
-      else if (this->getGroup(p)->numOfLiberties()==1)
+      else if (this->getGroup(p)->numOfPseudoLiberties()<=4)
       {
-        int liberty=this->getGroup(p)->getLibertiesList()->front();
-        this->addValidMove(Go::Move(col,liberty));
-        if (this->touchingEmpty(liberty)==0 && !this->validMoveCheck(Go::Move(othercol,liberty)))
-          this->removeValidMove(Go::Move(othercol,liberty));
+        if (this->getGroup(p)->inAtari())
+        {
+          int liberty=this->getGroup(p)->getAtariPosition();
+          this->addValidMove(Go::Move(col,liberty));
+          if (this->touchingEmpty(liberty)==0 && !this->validMoveCheck(Go::Move(othercol,liberty)))
+            this->removeValidMove(Go::Move(othercol,liberty));
+        }
       }
     }
   });
   
-  this->addDirectLiberties(pos,thisgroup);
-  
-  if (thisgroup->numOfLiberties()==1)
+  if (thisgroup->inAtari())
   {
-    int liberty=thisgroup->getLibertiesList()->front();
+    int liberty=thisgroup->getAtariPosition();
     if (this->touchingEmpty(liberty)==0 && !this->validMoveCheck(Go::Move(col,liberty)))
       this->removeValidMove(Go::Move(col,liberty));
     if (this->validMoveCheck(Go::Move(othercol,liberty)))
@@ -474,7 +477,7 @@ void Go::Board::refreshGroups()
   {
     if (this->getColor(p)!=Go::EMPTY && this->getColor(p)!=Go::OFFBOARD && this->getGroupWithoutFind(p)==NULL)
     {
-      Go::Group *newgroup=pool_group.construct(this,p,pool_bitboard);
+      Go::Group *newgroup=pool_group.construct(this,p);
       
       this->spreadGroup(p,newgroup);
       groups.push_back(newgroup);
@@ -488,24 +491,16 @@ void Go::Board::spreadGroup(int pos, Go::Group *group)
 {
   if (this->getColor(pos)==group->getColor() && this->getGroupWithoutFind(pos)==NULL)
   {
-    Go::Group *thisgroup=pool_group.construct(this,pos,pool_bitboard);
+    Go::Group *thisgroup=pool_group.construct(this,pos);
     this->setGroup(pos,thisgroup);
     groups.push_back(thisgroup);
+    thisgroup->addTouchingEmpties();
     this->mergeGroups(group,thisgroup);
-    this->addDirectLiberties(pos,group);
     
     foreach_adjacent(pos,p,{
       this->spreadGroup(p,group);
     });
   }
-}
-
-void Go::Board::addDirectLiberties(int pos, Go::Group *group)
-{
-  foreach_adjacent(pos,p,{
-    if (this->getColor(p)==Go::EMPTY)
-      group->addLiberty(p);
-  });
 }
 
 int Go::Board::removeGroup(Go::Group *group)
@@ -536,7 +531,7 @@ int Go::Board::removeGroup(Go::Group *group)
 void Go::Board::spreadRemoveStones(Go::Color col, int pos, std::list<int,Go::allocator_int> *possiblesuicides)
 {
   Go::Color othercol=Go::otherColor(col);
-  //Go::Group *group=this->getGroupWithoutFind(pos); //see below
+  //Go::Group *group=this->getGroupWithoutFind(pos); //see destroy() below
   
   this->setColor(pos,Go::EMPTY);
   this->setGroup(pos,NULL);
@@ -546,13 +541,13 @@ void Go::Board::spreadRemoveStones(Go::Color col, int pos, std::list<int,Go::all
       this->spreadRemoveStones(col,p,possiblesuicides);
     else if (this->getColor(p)==othercol)
     {
-      if (this->getGroup(p)->numOfLiberties()==1)
+      if (this->getGroup(p)->inAtari())
       {
-        int liberty=this->getGroup(p)->getLibertiesList()->front();
+        int liberty=this->getGroup(p)->getAtariPosition();
         this->addValidMove(Go::Move(othercol,liberty));
         possiblesuicides->push_back(liberty);
       }
-      this->getGroup(p)->addLiberty(pos);
+      this->getGroup(p)->addPseudoLiberty(pos);
     }
   });
   
@@ -570,24 +565,16 @@ void Go::Board::mergeGroups(Go::Group *first, Go::Group *second)
   
   groups.remove(second);
   first->unionWith(second);
-  
-  for(std::list<int,Go::allocator_int>::iterator iter=second->getLibertiesList()->begin();iter!=second->getLibertiesList()->end();++iter) 
-  {
-    first->addLiberty((*iter));
-  }
-  
-  //XXX: memory will get freed when pool is destroyed
-  //pool_group.destroy(second);
 }
 
 bool Go::Board::weakEye(Go::Color col, int pos)
 {
-  if (col==Go::EMPTY)
+  if (col==Go::EMPTY || col==Go::OFFBOARD || this->getColor(pos)!=Go::EMPTY)
     return false;
   else
   {
     foreach_adjacent(pos,p,{
-      if (this->getColor(p)!=Go::OFFBOARD && (this->getColor(p)!=col || this->getLiberties(p)<2))
+      if (this->getColor(p)!=Go::OFFBOARD && (this->getColor(p)!=col || this->getGroup(p)->inAtari()))
         return false;
     });
     
@@ -608,5 +595,6 @@ bool Go::Board::isWinForColor(Go::Color col, float score)
   
   return ((score*k)>0);
 }
+
 
 
