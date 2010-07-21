@@ -334,21 +334,23 @@ void Go::Board::makeMove(Go::Move move)
   foreach_adjacent(pos,p,{
     if (this->getColor(p)==col)
     {
-      this->getGroup(p)->removePseudoLiberty(pos);
+      Go::Group *othergroup=this->getGroup(p);
+      othergroup->removePseudoLiberty(pos);
       
-      if (this->getGroup(p)->numOfStones()>thisgroup->numOfStones())
-        this->mergeGroups(this->getGroup(p),thisgroup);
+      if (othergroup->numOfStones()>thisgroup->numOfStones())
+        this->mergeGroups(othergroup,thisgroup);
       else
-        this->mergeGroups(thisgroup,this->getGroup(p));
+        this->mergeGroups(thisgroup,othergroup);
       thisgroup=thisgroup->find();
     }
     else if (this->getColor(p)==othercol)
     {
-      this->getGroup(p)->removePseudoLiberty(pos);
+      Go::Group *othergroup=this->getGroup(p);
+      othergroup->removePseudoLiberty(pos);
       
-      if (this->getGroup(p)->numOfPseudoLiberties()==0)
+      if (othergroup->numOfPseudoLiberties()==0)
       {
-        if (removeGroup(this->getGroup(p))==1)
+        if (removeGroup(othergroup)==1)
         {
           if (posko==-1)
             posko=p;
@@ -356,11 +358,11 @@ void Go::Board::makeMove(Go::Move move)
             posko=-2;
         }
       }
-      else if (this->getGroup(p)->numOfPseudoLiberties()<=4)
+      else if (othergroup->numOfPseudoLiberties()<=4)
       {
-        if (this->getGroup(p)->inAtari())
+        if (othergroup->inAtari())
         {
-          int liberty=this->getGroup(p)->getAtariPosition();
+          int liberty=othergroup->getAtariPosition();
           this->addValidMove(Go::Move(col,liberty));
           if (this->touchingEmpty(liberty)==0 && !this->validMoveCheck(Go::Move(othercol,liberty)))
             this->removeValidMove(Go::Move(othercol,liberty));
@@ -541,13 +543,14 @@ void Go::Board::spreadRemoveStones(Go::Color col, int pos, std::list<int,Go::all
       this->spreadRemoveStones(col,p,possiblesuicides);
     else if (this->getColor(p)==othercol)
     {
-      if (this->getGroup(p)->inAtari())
+      Go::Group *othergroup=this->getGroup(p);
+      if (othergroup->inAtari())
       {
-        int liberty=this->getGroup(p)->getAtariPosition();
+        int liberty=othergroup->getAtariPosition();
         this->addValidMove(Go::Move(othercol,liberty));
         possiblesuicides->push_back(liberty);
       }
-      this->getGroup(p)->addPseudoLiberty(pos);
+      othergroup->addPseudoLiberty(pos);
     }
   });
   
