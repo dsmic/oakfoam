@@ -71,6 +71,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("param",this,&Engine::gtpParam);
   gtpe->addFunctionCommand("showliberties",this,&Engine::gtpShowLiberties);
   gtpe->addFunctionCommand("showvalidmoves",this,&Engine::gtpShowValidMoves);
+  gtpe->addFunctionCommand("doboardcopy",this,&Engine::gtpDoBoardCopy);
   
   gtpe->addFunctionCommand("time_settings",this,&Engine::gtpTimeSettings);
   gtpe->addFunctionCommand("time_left",this,&Engine::gtpTimeLeft);
@@ -79,6 +80,7 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("showboard","Show Board","string");
   gtpe->addAnalyzeCommand("showliberties","Show Liberties","sboard");
   gtpe->addAnalyzeCommand("showvalidmoves","Show Valid Moves","sboard");
+  gtpe->addAnalyzeCommand("doboardcopy","Do Board Copy","none");
   gtpe->addAnalyzeCommand("param","Parameters","param");
 }
 
@@ -335,6 +337,19 @@ void Engine::gtpShowValidMoves(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
   }
 
   gtpe->getOutput()->endResponse(true);
+}
+
+void Engine::gtpDoBoardCopy(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  Go::Board *oldboard=me->currentboard;
+  Go::Board *newboard=me->currentboard->copy();
+  delete oldboard;
+  me->currentboard=newboard;
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->endResponse();
 }
 
 void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)

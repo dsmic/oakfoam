@@ -18,9 +18,9 @@ Go::BitBoard::~BitBoard()
 std::string Go::Move::toString(int boardsize)
 {
   if (this->isPass())
-    return "PASS\n";
+    return "PASS";
   else if (this->isResign())
-    return "RESIGN\n";
+    return "RESIGN";
   else
   {
     std::ostringstream ss;
@@ -28,7 +28,7 @@ std::string Go::Move::toString(int boardsize)
       ss<<"B";
     else if (color==Go::WHITE)
       ss<<"W";
-    ss<<"("<<this->getX(boardsize)<<","<<this->getY(boardsize)<<")\n";
+    ss<<"("<<this->getX(boardsize)<<","<<this->getY(boardsize)<<")";
     return ss.str();
   }
 }
@@ -166,7 +166,7 @@ int Go::Board::score()
   
   for (int p=0;p<sizedata;p++)
   {
-    if (!scoredata[p].touched && this->getColor(p)!=EMPTY)
+    if (this->getColor(p)!=OFFBOARD && !scoredata[p].touched && this->getColor(p)!=EMPTY)
     {
       this->spreadScore(scoredata,p,this->getColor(p));
     }
@@ -191,7 +191,7 @@ void Go::Board::spreadScore(Go::Board::ScoreVertex *scoredata, int pos, Go::Colo
 {
   bool wastouched=scoredata[pos].touched;
   
-  if (this->getColor(pos)==Go::OFFBOARD)
+  if (this->getColor(pos)==Go::OFFBOARD || col==Go::OFFBOARD)
     return;
   
   if (this->getColor(pos)!=Go::EMPTY && col==Go::EMPTY)
@@ -328,9 +328,6 @@ void Go::Board::makeMove(Go::Move move)
   
   thisgroup->addTouchingEmpties();
   
-  this->removeValidMove(Go::Move(Go::BLACK,pos));
-  this->removeValidMove(Go::Move(Go::WHITE,pos));
-  
   foreach_adjacent(pos,p,{
     if (this->getColor(p)==col)
     {
@@ -370,6 +367,9 @@ void Go::Board::makeMove(Go::Move move)
       }
     }
   });
+  
+  this->removeValidMove(Go::Move(Go::BLACK,pos));
+  this->removeValidMove(Go::Move(Go::WHITE,pos));
   
   if (thisgroup->inAtari())
   {
@@ -598,6 +598,5 @@ bool Go::Board::isWinForColor(Go::Color col, float score)
   
   return ((score*k)>0);
 }
-
 
 
