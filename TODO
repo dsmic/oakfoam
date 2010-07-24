@@ -2,10 +2,9 @@ TODO
 ------------------
 
 Now: (before next release)
-  store neighbour counts for each board position? (num of empty...)
   improve playout move selection
   try add simple 16-bit patterns to playouts (must be fast)
-  handle terminal nodes properly (don't do playouts from terminal)
+  handle terminal nodes properly (don't do playouts from and make playouts thru high)
 
 Soon: (before next major release)
   implement superko in tree
@@ -31,6 +30,7 @@ Soon: (before next major release)
   avoid self-atari in playouts with a group size over x
   play at one of liberties of a enemy group with 2
   prefer closer moves using CFG to last and next-to-last move
+  store neighbour counts for each board position? (num of empty...)
 
 Later: (at some point)
   add handicap settings
