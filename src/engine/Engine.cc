@@ -731,7 +731,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
   else
   {
     int *posarray = new int[currentboard->getPositionMax()];
-    this->randomPlayoutMove(currentboard,col,move,posarray);
+    *move=new Go::Move(col,Go::Move::PASS);
+    this->randomPlayoutMove(currentboard,col,**move,posarray);
     delete[] posarray;
     this->makeMove(**move);
   }
@@ -765,11 +766,11 @@ void Engine::clearBoard()
   this->clearMoveTree();
 }
 
-void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move **move, int *posarray)
+void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, int *posarray)
 {
   if (board->numOfValidMoves(col)==0)
   {
-    *move=new Go::Move(col,Go::Move::PASS);
+    move=Go::Move(col,Go::Move::PASS);
     return;
   }
   
@@ -795,7 +796,7 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move **move,
     if (atarimovescount>0 && playoutatarichance>rand.getRandomReal())
     {
       int i=rand.getRandomInt(atarimovescount);
-      *move=new Go::Move(col,atarimoves[i]);
+      move=Go::Move(col,atarimoves[i]);
       return;
     }
   }
@@ -805,7 +806,7 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move **move,
     int p=rand.getRandomInt(board->getPositionMax());
     if (board->validMove(Go::Move(col,p)) && !board->weakEye(col,p))
     {
-      *move=new Go::Move(col,p);
+      move=Go::Move(col,p);
       return;
     }
   }
@@ -824,13 +825,13 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move **move,
   }
   
   if (possiblemovescount==0)
-    *move=new Go::Move(col,Go::Move::PASS);
+    move=Go::Move(col,Go::Move::PASS);
   else if (possiblemovescount==1)
-    *move=new Go::Move(col,possiblemoves[0]);
+    move=Go::Move(col,possiblemoves[0]);
   else
   {
     int r=rand.getRandomInt(possiblemovescount);
-    *move=new Go::Move(col,possiblemoves[r]);
+    move=Go::Move(col,possiblemoves[r]);
   }
 }
 
@@ -848,19 +849,18 @@ void Engine::randomPlayout(Go::Board *board, std::list<Go::Move> startmoves, Go:
       return;
   }
   
-  Go::Move *move;
   Go::Color coltomove=board->nextToMove();
+  Go::Move move=Go::Move(coltomove,Go::Move::PASS);
   int movesalready=board->getMovesMade();
   int *posarray = new int[board->getPositionMax()];
   while (board->getPassesPlayed()<2)
   {
     bool resign;
-    this->randomPlayoutMove(board,coltomove,&move,posarray);
-    board->makeMove(*move);
-    if ((coltomove==colfirst?firstlist:secondlist)!=NULL && !move->isPass() && !move->isResign())
-      (coltomove==colfirst?firstlist:secondlist)->set(move->getPosition());
-    resign=move->isResign();
-    delete move;
+    this->randomPlayoutMove(board,coltomove,move,posarray);
+    board->makeMove(move);
+    if ((coltomove==colfirst?firstlist:secondlist)!=NULL && !move.isPass() && !move.isResign())
+      (coltomove==colfirst?firstlist:secondlist)->set(move.getPosition());
+    resign=move.isResign();
     coltomove=Go::otherColor(coltomove);
     if (resign)
       break;
@@ -944,36 +944,24 @@ void Engine::expandLeaf(UCT::Tree *movetree)
   
   Go::Color col=startboard->nextToMove();
   
-  int newmoves=0;
-  
-  //if (startboard->numOfValidMoves(col)==0 || Go::Board::isWinForColor(col,startboard->score()-komi))
-  if (Go::Board::isWinForColor(col,startboard->score()-komi))
+  if (startboard->numOfValidMoves(col)==0 || Go::Board::isWinForColor(col,startboard->score()-komi))
   {
     UCT::Tree *nmt=new UCT::Tree(ucbc,ucbinit,ravemoves,Go::Move(col,Go::Move::PASS));
     nmt->addWin();
     movetree->addChild(nmt);
-    newmoves++;
   }
   
-  //if (startboard->numOfValidMoves(col)>0)
+  if (startboard->numOfValidMoves(col)>0)
   {
-    //Go::BitBoard *validmovesbitboard=startboard->getValidMoves(col);
+    Go::BitBoard *validmovesbitboard=startboard->getValidMoves(col);
     for (int p=0;p<startboard->getPositionMax();p++)
     {
-      //if (validmovesbitboard->get(p))
-      if (startboard->validMove(Go::Move(col,p)))
+      if (validmovesbitboard->get(p))
       {
         UCT::Tree *nmt=new UCT::Tree(ucbc,ucbinit,ravemoves,Go::Move(col,p));
         movetree->addChild(nmt);
-        newmoves++;
       }
     }
-  }
-  
-  if (newmoves==0)
-  {
-    UCT::Tree *nmt=new UCT::Tree(ucbc,ucbinit,ravemoves,Go::Move(col,Go::Move::PASS));
-    movetree->addChild(nmt);
   }
   
   delete startboard;
