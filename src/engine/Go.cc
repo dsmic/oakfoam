@@ -480,8 +480,12 @@ void Go::Board::refreshGroups()
     if (this->getColor(p)!=Go::EMPTY && this->getColor(p)!=Go::OFFBOARD && this->getGroupWithoutFind(p)==NULL)
     {
       Go::Group *newgroup=pool_group.construct(this,p);
-      
-      this->spreadGroup(p,newgroup);
+      this->setGroup(p,newgroup);
+      newgroup->addTouchingEmpties();
+    
+      foreach_adjacent(p,q,{
+        this->spreadGroup(q,newgroup);
+      });
       groups.push_back(newgroup);
     }
   }

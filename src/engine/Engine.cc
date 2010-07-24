@@ -71,6 +71,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("param",this,&Engine::gtpParam);
   gtpe->addFunctionCommand("showliberties",this,&Engine::gtpShowLiberties);
   gtpe->addFunctionCommand("showvalidmoves",this,&Engine::gtpShowValidMoves);
+  gtpe->addFunctionCommand("showgroupsize",this,&Engine::gtpShowGroupSize);
   gtpe->addFunctionCommand("doboardcopy",this,&Engine::gtpDoBoardCopy);
   
   gtpe->addFunctionCommand("time_settings",this,&Engine::gtpTimeSettings);
@@ -80,6 +81,7 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("showboard","Show Board","string");
   gtpe->addAnalyzeCommand("showliberties","Show Liberties","sboard");
   gtpe->addAnalyzeCommand("showvalidmoves","Show Valid Moves","sboard");
+  gtpe->addAnalyzeCommand("showgroupsize","Show Group Size","sboard");
   gtpe->addAnalyzeCommand("doboardcopy","Do Board Copy","none");
   gtpe->addAnalyzeCommand("param","Parameters","param");
 }
@@ -332,6 +334,31 @@ void Engine::gtpShowValidMoves(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
       if (me->currentboard->validMove(Go::Move(Go::WHITE,Go::Position::xy2pos(x,y,me->boardsize))))
         gtpe->getOutput()->printf("W");
       gtpe->getOutput()->printf("\" ");
+    }
+    gtpe->getOutput()->printf("\n");
+  }
+
+  gtpe->getOutput()->endResponse(true);
+}
+
+void Engine::gtpShowGroupSize(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("\n");
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      int pos=Go::Position::xy2pos(x,y,me->boardsize);
+      if (me->currentboard->boardData()[pos].group==NULL)
+        gtpe->getOutput()->printf("\"\" ");
+      else
+      {
+        int stones=me->currentboard->boardData()[pos].group->find()->numOfStones();
+        gtpe->getOutput()->printf("\"%d\" ",stones);
+      }
     }
     gtpe->getOutput()->printf("\n");
   }
