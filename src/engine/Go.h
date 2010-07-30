@@ -28,6 +28,20 @@
     __adjpos = __intpos+P_W; { __body }; \
   }
 
+#define foreach_adjdiag(__pos, __adjpos, __body) \
+  { \
+    int __intpos = __pos; \
+    int __adjpos; \
+    __adjpos = __intpos+P_N; { __body }; \
+    __adjpos = __intpos+P_S; { __body }; \
+    __adjpos = __intpos+P_E; { __body }; \
+    __adjpos = __intpos+P_W; { __body }; \
+    __adjpos = __intpos+P_NE; { __body }; \
+    __adjpos = __intpos+P_SE; { __body }; \
+    __adjpos = __intpos+P_NW; { __body }; \
+    __adjpos = __intpos+P_SW; { __body }; \
+  }
+
 namespace Go
 {
   //typedef std::allocator<int> allocator_int;
@@ -225,6 +239,8 @@ namespace Go
       Go::Color nextToMove() { return nexttomove; };
       void setNextToMove(Go::Color col) { nexttomove=col; };
       int getPositionMax() { return sizedata; };
+      Go::Move getLastMove() { return lastmove; };
+      Go::Move getSecondLastMove() { return secondlastmove; };
       
       inline Go::Color getColor(int pos) { return data[pos].color; };
       inline Go::Group *getGroup(int pos) { return data[pos].group->find(); };
@@ -249,6 +265,7 @@ namespace Go
       int movesmade,passesplayed;
       Go::Color nexttomove;
       int simpleko;
+      Go::Move lastmove,secondlastmove;
       
       int blackvalidmovecount,whitevalidmovecount;
       Go::BitBoard *blackvalidmoves,*whitevalidmoves;

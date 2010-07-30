@@ -75,6 +75,9 @@ Go::Board::Board(int s)
   passesplayed=0;
   simpleko=-1;
   
+  lastmove=Go::Move(Go::BLACK,Go::Move::PASS);
+  secondlastmove=Go::Move(Go::WHITE,Go::Move::PASS);
+  
   blackvalidmoves=new Go::BitBoard(size);
   whitevalidmoves=new Go::BitBoard(size);
   this->refreshValidMoves();
@@ -119,6 +122,9 @@ void Go::Board::copyOver(Go::Board *copyboard)
   copyboard->nexttomove=this->nexttomove;
   copyboard->passesplayed=this->passesplayed;
   copyboard->simpleko=this->simpleko;
+  
+  copyboard->lastmove=this->lastmove;
+  copyboard->secondlastmove=this->secondlastmove;
   
   copyboard->refreshGroups();
 }
@@ -302,6 +308,8 @@ void Go::Board::makeMove(Go::Move move)
       passesplayed++;
     nexttomove=Go::otherColor(move.getColor());
     movesmade++;
+    secondlastmove=lastmove;
+    lastmove=move;
     return;
   }
   
@@ -314,6 +322,8 @@ void Go::Board::makeMove(Go::Move move)
   movesmade++;
   nexttomove=Go::otherColor(nexttomove);
   passesplayed=0;
+  secondlastmove=lastmove;
+  lastmove=move;
   
   Go::Color col=move.getColor();
   Go::Color othercol=Go::otherColor(col);

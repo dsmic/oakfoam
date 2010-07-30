@@ -911,20 +911,46 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
     int *patternmoves=posarray;
     int patternmovescount=0;
     
-    for (int p=0;p<board->getPositionMax();p++)
+    if (!board->getLastMove().isPass() && !board->getLastMove().isResign())
     {
-      if (board->validMove(Go::Move(col,p)))
-      {
-        Pattern::ThreeByThree pattern=Pattern::ThreeByThree(board,p);
-        if (col==Go::WHITE)
-          pattern=pattern.invert();
-        
-        if (patterntable->isPattern(pattern.hash()))
+      int pos=board->getLastMove().getPosition();
+      int size=board->getSize();
+      
+      foreach_adjdiag(pos,p,{
+        if (board->validMove(Go::Move(col,p)))
         {
-          patternmoves[patternmovescount]=p;
-          patternmovescount++;
+          Pattern::ThreeByThree pattern=Pattern::ThreeByThree(board,p);
+          if (col==Go::WHITE)
+            pattern=pattern.invert();
+          
+          if (patterntable->isPattern(pattern.hash()))
+          {
+            patternmoves[patternmovescount]=p;
+            patternmovescount++;
+          }
         }
-      }
+      });
+    }
+    
+    if (!board->getSecondLastMove().isPass() && !board->getSecondLastMove().isResign())
+    {
+      int pos=board->getSecondLastMove().getPosition();
+      int size=board->getSize();
+      
+      foreach_adjdiag(pos,p,{
+        if (board->validMove(Go::Move(col,p)))
+        {
+          Pattern::ThreeByThree pattern=Pattern::ThreeByThree(board,p);
+          if (col==Go::WHITE)
+            pattern=pattern.invert();
+          
+          if (patterntable->isPattern(pattern.hash()))
+          {
+            patternmoves[patternmovescount]=p;
+            patternmovescount++;
+          }
+        }
+      });
     }
     
     if (patternmovescount>0)
