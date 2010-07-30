@@ -68,7 +68,7 @@ namespace Go
       case Go::EMPTY:
         return '.';
       default:
-        return '#';
+        return '-';
     }
   };
   

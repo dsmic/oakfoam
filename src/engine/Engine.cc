@@ -387,9 +387,9 @@ void Engine::gtpShowPatternMatches(void *instance, Gtp::Engine* gtpe, Gtp::Comma
     {
       int pos=Go::Position::xy2pos(x,y,me->boardsize);
       gtpe->getOutput()->printf("\"");
-      if (me->patterntable->isPattern(Pattern::ThreeByThree(me->currentboard,pos).hash()))
+      if (me->currentboard->validMove(Go::Move(Go::BLACK,pos)) && me->patterntable->isPattern(Pattern::ThreeByThree(me->currentboard,pos).hash()))
         gtpe->getOutput()->printf("B");
-      if (me->patterntable->isPattern(Pattern::ThreeByThree(me->currentboard,pos).invert().hash()))
+      if (me->currentboard->validMove(Go::Move(Go::WHITE,pos)) && me->patterntable->isPattern(Pattern::ThreeByThree(me->currentboard,pos).invert().hash()))
         gtpe->getOutput()->printf("W");
       gtpe->getOutput()->printf("\" ");
     }

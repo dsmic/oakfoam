@@ -1,14 +1,65 @@
+#################################################
+# Patterns Data
+#################################################
+# instruction format:
+#   ipcccccccc
+# where:
+#   i:  instruction
+#         +:  add pattern(s)
+#         -:  remove pattern(s)
+#   p:  next to play
+#         B:  black
+#         W:  white
+#         *:  either
+#   c:  the color of the location
+#       in the order NW,N,NE,W,E,SW,S,SE
+#         B:  black
+#         W:  white
+#         E:  empty
+#         -:  offboard (edge)
+#         b:  not black
+#         w:  not white
+#         e:  not empty
+#         ?:  any
+#################################################
 
-# test!
-# . X .
-# . ! .
-# . . .
-EBEEEEEE
+# Patterns from Mogo below
 
-# cut
-# X O ?
-# O ! ?
-# ? ? ?
-#BWAWAAAA
+# Hane
+# matches any
+# B W B   B W E   B W ?   B W W
+# E * E   E * E   B * E   E B E
+# ? ? ?   ? E ?   ? E ?   ? E ?
++*BWBEE???
++*BWEEE?E?
++*BW?BE?E?
++BBWWEE?E?
+
+# Cut 1
+# matches only first
+# B W ?   B W ?   B W ?
+# W * ?   W * W   W * E
+# ? ? ?   ? E ?   ? W ?
++*BW?W????
+-*BW?WW?E?
+-*BW?WE?W?
+
+# Cut 2
+# matches
+# ? B ?
+# W * W
+# w w w
++*?B?WWwww
+
+# Edges
+# matches any
+# B E ?   ? B ?   ? B W   ? B W   ? B W
+# W * ?   b * W   ? B ?   ? W b   W W B
+# - - -   - - -   - - -   - - -   - - -
++*BE?W?---
++*?B?bW---
++B?BW??---
++W?BW?b---
++W?BWWB---
 
 

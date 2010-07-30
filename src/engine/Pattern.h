@@ -37,6 +37,12 @@ namespace Pattern
         colw=board->getColor(pos+P_W); cole=board->getColor(pos+P_E);
         colsw=board->getColor(pos+P_SW); cols=board->getColor(pos+P_S); colse=board->getColor(pos+P_SE);
       };
+      ThreeByThree(Go::Color colors[])
+      {
+        colnw=colors[0]; coln=colors[1]; colne=colors[2];
+        colw=colors[3]; cole=colors[4];
+        colsw=colors[5]; cols=colors[6]; colse=colors[7];
+      };
       ~ThreeByThree() {};
       
       inline bool operator==(Pattern::ThreeByThree other)
@@ -77,8 +83,10 @@ namespace Pattern
       inline void addPattern(int hash) { table[byteNum(hash)]|=(1<<bitNum(hash)); };
       inline void clearPattern(int hash) { table[byteNum(hash)]&=(~(1<<bitNum(hash))); };
       inline bool isPattern(int hash) { return (table[byteNum(hash)]&(1<<bitNum(hash))); };
+      inline void updatePattern(bool add, int hash) { if (add) addPattern(hash); else clearPattern(hash); };
       
-      void addPatternTransformed(Pattern::ThreeByThree pattern, bool addinverted=true);
+      void updatePatternTransformed(bool addpattern, Pattern::ThreeByThree pattern, bool addinverted=true);
+      
       bool loadPatternFile(std::string patternfilename);
     
     private:
@@ -87,17 +95,54 @@ namespace Pattern
       inline int byteNum(int hash) { return (hash/8); };
       inline int bitNum(int hash) { return (hash%8); };
       
-      Go::Color fileCharToColor(char c)
+      enum Color
       {
-        if (c=='b')
-          return Go::BLACK;
+        EMPTY,
+        BLACK,
+        WHITE,
+        OFFBOARD,
+        NOTBLACK,
+        NOTWHITE,
+        NOTEMPTY,
+        ANY
+      };
+      
+      void processFilePattern(std::string pattern);
+      void processPermutations(bool addpatterns, Pattern::ThreeByThreeTable::Color toplay, Pattern::ThreeByThreeTable::Color colors[], int pos=0);
+      
+      Pattern::ThreeByThreeTable::Color fileCharToColor(char c)
+      {
+        if (c=='B')
+          return Pattern::ThreeByThreeTable::BLACK;
+        else if (c=='W')
+          return Pattern::ThreeByThreeTable::WHITE;
+        else if (c=='E')
+          return Pattern::ThreeByThreeTable::EMPTY;
+        else if (c=='-')
+          return Pattern::ThreeByThreeTable::OFFBOARD;
+        else if (c=='b')
+          return Pattern::ThreeByThreeTable::NOTBLACK;
         else if (c=='w')
-          return Go::WHITE;
+          return Pattern::ThreeByThreeTable::NOTWHITE;
         else if (c=='e')
-          return Go::EMPTY;
+          return Pattern::ThreeByThreeTable::NOTEMPTY;
         else
-          return Go::OFFBOARD;
-      }
+          return Pattern::ThreeByThreeTable::ANY;
+      };
+      Go::Color colorToGoColor(Pattern::ThreeByThreeTable::Color col)
+      {
+        switch (col)
+        {
+          case Pattern::ThreeByThreeTable::BLACK:
+            return Go::BLACK;
+          case Pattern::ThreeByThreeTable::WHITE:
+            return Go::WHITE;
+          case Pattern::ThreeByThreeTable::EMPTY:
+            return Go::EMPTY;
+          default:
+            return Go::OFFBOARD;
+        }
+      };
   };
 };
 #endif

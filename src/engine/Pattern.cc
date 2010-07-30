@@ -71,22 +71,22 @@ std::string Pattern::ThreeByThree::toString()
   return ss.str();
 }
 
-void Pattern::ThreeByThreeTable::addPatternTransformed(Pattern::ThreeByThree pattern, bool addinverted)
+void Pattern::ThreeByThreeTable::updatePatternTransformed(bool addpattern, Pattern::ThreeByThree pattern, bool addinverted)
 {
   Pattern::ThreeByThree currentpattern=pattern;
   Pattern::ThreeByThree currentpatterninverted=currentpattern.invert();
   
   for (int i=0;i<4;i++)
   {
-    this->addPattern(currentpattern.hash());
-    this->addPattern(currentpattern.flipHorizontal().hash());
+    this->updatePattern(addpattern,currentpattern.hash());
+    this->updatePattern(addpattern,currentpattern.flipHorizontal().hash());
     
     currentpattern=currentpattern.rotateRight();
     
     if (addinverted)
     {
-      this->addPattern(currentpatterninverted.hash());
-      this->addPattern(currentpatterninverted.flipHorizontal().hash());
+      this->updatePattern(addpattern,currentpatterninverted.hash());
+      this->updatePattern(addpattern,currentpatterninverted.flipHorizontal().hash());
       
       currentpatterninverted=currentpatterninverted.rotateRight();
     }
@@ -115,23 +115,93 @@ bool Pattern::ThreeByThreeTable::loadPatternFile(std::string patternfilename)
     if (filtered.length()==0)
       continue;
     
-    if (filtered.length()!=8) //all patterns are 8 chars long
+    if (filtered.length()!=10) //all patterns are 10 chars long
     {
       fin.close();
       return false;
     }
-      
-    fprintf(stderr,"%s\n",filtered.c_str());
     
-    std::transform(filtered.begin(),filtered.end(),filtered.begin(),::tolower);
-    
-    Pattern::ThreeByThree pattern=Pattern::ThreeByThree(fileCharToColor(filtered.at(0)),fileCharToColor(filtered.at(1)),fileCharToColor(filtered.at(2)),fileCharToColor(filtered.at(3)),fileCharToColor(filtered.at(4)),fileCharToColor(filtered.at(5)),fileCharToColor(filtered.at(6)),fileCharToColor(filtered.at(7)));
-    this->addPatternTransformed(pattern);
+    this->processFilePattern(filtered);
   }
   
   fin.close();
   
   return true;
+}
+
+void Pattern::ThreeByThreeTable::processFilePattern(std::string pattern)
+{
+  bool addpatterns=(pattern.at(0)=='+');
+  Pattern::ThreeByThreeTable::Color toplay;
+  if (pattern.at(1)=='B')
+    toplay=Pattern::ThreeByThreeTable::BLACK;
+  else if (pattern.at(1)=='W')
+    toplay=Pattern::ThreeByThreeTable::WHITE;
+  else
+    toplay=Pattern::ThreeByThreeTable::ANY;
+  
+  Pattern::ThreeByThreeTable::Color colors[8];
+  for (int i=0;i<8;i++)
+  {
+    colors[i]=this->fileCharToColor(pattern.at(i+2));
+  }
+  this->processPermutations(addpatterns,toplay,colors);
+}
+
+void Pattern::ThreeByThreeTable::processPermutations(bool addpatterns, Pattern::ThreeByThreeTable::Color toplay, Pattern::ThreeByThreeTable::Color colors[], int pos)
+{
+  if (pos<8)
+  {
+    Pattern::ThreeByThreeTable::Color savedcol=colors[pos];
+    if (colors[pos]==Pattern::ThreeByThreeTable::BLACK || colors[pos]==Pattern::ThreeByThreeTable::WHITE || colors[pos]==Pattern::ThreeByThreeTable::EMPTY || colors[pos]==Pattern::ThreeByThreeTable::OFFBOARD)
+      this->processPermutations(addpatterns,toplay,colors,pos+1);
+    else if (colors[pos]==Pattern::ThreeByThreeTable::NOTBLACK)
+    {
+      colors[pos]=Pattern::ThreeByThreeTable::WHITE;
+      this->processPermutations(addpatterns,toplay,colors,pos+1);
+      colors[pos]=Pattern::ThreeByThreeTable::EMPTY;
+      this->processPermutations(addpatterns,toplay,colors,pos+1);
+    }
+    else if (colors[pos]==Pattern::ThreeByThreeTable::NOTWHITE)
+    {
+      colors[pos]=Pattern::ThreeByThreeTable::BLACK;
+      this->processPermutations(addpatterns,toplay,colors,pos+1);
+      colors[pos]=Pattern::ThreeByThreeTable::EMPTY;
+      this->processPermutations(addpatterns,toplay,colors,pos+1);
+    }
+    else if (colors[pos]==Pattern::ThreeByThreeTable::NOTEMPTY)
+    {
+      colors[pos]=Pattern::ThreeByThreeTable::BLACK;
+      this->processPermutations(addpatterns,toplay,colors,pos+1);
+      colors[pos]=Pattern::ThreeByThreeTable::WHITE;
+      this->processPermutations(addpatterns,toplay,colors,pos+1);
+    }
+    else if (colors[pos]==Pattern::ThreeByThreeTable::ANY)
+    {
+      colors[pos]=Pattern::ThreeByThreeTable::BLACK;
+      this->processPermutations(addpatterns,toplay,colors,pos+1);
+      colors[pos]=Pattern::ThreeByThreeTable::WHITE;
+      this->processPermutations(addpatterns,toplay,colors,pos+1);
+      colors[pos]=Pattern::ThreeByThreeTable::EMPTY;
+      this->processPermutations(addpatterns,toplay,colors,pos+1);
+    }
+    colors[pos]=savedcol;
+  }
+  else
+  {
+    Go::Color gocols[8];
+    for (int i=0;i<8;i++)
+    {
+      gocols[i]=this->colorToGoColor(colors[i]);
+    }
+    Pattern::ThreeByThree pattern=Pattern::ThreeByThree(gocols);
+    if (toplay==Pattern::ThreeByThreeTable::BLACK)
+      this->updatePatternTransformed(addpatterns,pattern,false);
+    else if (toplay==Pattern::ThreeByThreeTable::WHITE)
+      this->updatePatternTransformed(addpatterns,pattern.invert(),false);
+    else
+      this->updatePatternTransformed(addpatterns,pattern);
+  }
 }
 
 
