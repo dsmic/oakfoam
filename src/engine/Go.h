@@ -57,6 +57,21 @@ namespace Go
     }
   };
   
+  inline static char colorToChar(Go::Color col)
+  {
+    switch (col)
+    {
+      case Go::BLACK:
+        return 'B';
+      case Go::WHITE:
+        return 'W';
+      case Go::EMPTY:
+        return '.';
+      default:
+        return '#';
+    }
+  };
+  
   class Exception
   {
     public:

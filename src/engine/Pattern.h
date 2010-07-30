@@ -8,20 +8,25 @@
     SW  S   SE
 */
 
-#define PATTERN_3x3_TABLE_BYTES (2^16)/8
+#define PATTERN_3x3_TABLE_BYTES (1<<16)/8
 
+#include <cstdlib>
+#include <string>
+#include <sstream>
 #include "Go.h"
 
 namespace Pattern
-{ 
+{
+  class ThreeByThreeTable;
+  
   class ThreeByThree
   {
     public:
       ThreeByThree(Go::Color colnw, Go::Color coln, Go::Color colne, Go::Color colw, Go::Color cole, Go::Color colsw, Go::Color cols, Go::Color colse)
       {
         this->colnw=colnw; this->coln=coln; this->colne=colne;
-        this->colnw=colw; this->colne=cole;
-        this->colnw=colsw; this->coln=cols; this->colne=colse;
+        this->colw=colw; this->cole=cole;
+        this->colsw=colsw; this->cols=cols; this->colse=colse;
       };
       ThreeByThree(Go::Board *board, int pos)
       {
@@ -47,6 +52,8 @@ namespace Pattern
       Pattern::ThreeByThree flipHorizontal();
       
       int hash();
+      
+      std::string toString();
     
     private:
       Go::Color colnw,coln,colne,colw,cole,colsw,cols,colse;
@@ -68,6 +75,9 @@ namespace Pattern
       void addPattern(int hash) { table[byteNum(hash)]|=(1<<bitNum(hash)); };
       void clearPattern(int hash) { table[byteNum(hash)]&=(~(1<<bitNum(hash))); };
       bool isPattern(int hash) { return (table[byteNum(hash)]&(1<<bitNum(hash))); };
+      
+      void addPatternTransformed(Pattern::ThreeByThree pattern, bool addinverted=true);
+      void loadPatternFile(std::string patternfilename);
     
     private:
       unsigned char *table; //assume sizeof(char)==1

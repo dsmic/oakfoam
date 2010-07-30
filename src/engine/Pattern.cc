@@ -62,4 +62,40 @@ int Pattern::ThreeByThree::hash()
   return hash;
 }
 
+std::string Pattern::ThreeByThree::toString()
+{
+  std::ostringstream ss;
+  ss<<Go::colorToChar(colnw)<<Go::colorToChar(coln)<<Go::colorToChar(colne)<<"\n";
+  ss<<Go::colorToChar(colw)<<'X'<<Go::colorToChar(cole)<<"\n";
+  ss<<Go::colorToChar(colsw)<<Go::colorToChar(cols)<<Go::colorToChar(colse)<<"\n";
+  return ss.str();
+}
+
+void Pattern::ThreeByThreeTable::addPatternTransformed(Pattern::ThreeByThree pattern, bool addinverted)
+{
+  Pattern::ThreeByThree currentpattern=pattern;
+  Pattern::ThreeByThree currentpatterninverted=currentpattern.invert();
+  
+  for (int i=0;i<4;i++)
+  {
+    this->addPattern(currentpattern.hash());
+    this->addPattern(currentpattern.flipHorizontal().hash());
+    
+    currentpattern=currentpattern.rotateRight();
+    
+    if (addinverted)
+    {
+      this->addPattern(currentpatterninverted.hash());
+      this->addPattern(currentpatterninverted.flipHorizontal().hash());
+      
+      currentpatterninverted=currentpatterninverted.rotateRight();
+    }
+  }
+}
+
+void Pattern::ThreeByThreeTable::loadPatternFile(std::string patternfilename)
+{
+  //TODO
+}
+
 

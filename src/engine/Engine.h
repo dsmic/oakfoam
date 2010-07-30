@@ -40,6 +40,7 @@
 #include "Go.h"
 #include "UCT.h"
 #include "Random.h"
+#include "Pattern.h"
 #include "../gtp/Gtp.h"
 
 class Engine
@@ -78,6 +79,9 @@ class Engine
     static void gtpShowLiberties(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowValidMoves(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowGroupSize(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpShowPatternMatches(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpLoadPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpClearPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpDoBoardCopy(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     
     static void gtpTimeSettings(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
@@ -106,6 +110,7 @@ class Engine
     bool uctkeepsubtree;
     UCT::Tree *movetree;
     Random rand;
+    Pattern::ThreeByThreeTable *patterntable;
     
     void addGtpCommands();
     

@@ -31,6 +31,8 @@ Engine::Engine(Gtp::Engine *ge)
   uctexpandafter=UCT_EXPAND_AFTER;
   uctkeepsubtree=UCT_KEEP_SUBTREE;
   
+  patterntable=new Pattern::ThreeByThreeTable();
+  
   resignratiothreshold=RESIGN_RATIO_THRESHOLD;
   resignmovefactorthreshold=RESIGN_MOVE_FACTOR_THRESHOLD;
   
@@ -51,7 +53,8 @@ Engine::Engine(Gtp::Engine *ge)
 }
 
 Engine::~Engine()
-{
+{  
+  delete patterntable;
   if (movetree!=NULL)
     delete movetree;
   delete currentboard;
@@ -72,6 +75,9 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("showliberties",this,&Engine::gtpShowLiberties);
   gtpe->addFunctionCommand("showvalidmoves",this,&Engine::gtpShowValidMoves);
   gtpe->addFunctionCommand("showgroupsize",this,&Engine::gtpShowGroupSize);
+  gtpe->addFunctionCommand("showpatternmatches",this,&Engine::gtpShowPatternMatches);
+  gtpe->addFunctionCommand("loadpatterns",this,&Engine::gtpLoadPatterns);
+  gtpe->addFunctionCommand("clearpatterns",this,&Engine::gtpClearPatterns);
   gtpe->addFunctionCommand("doboardcopy",this,&Engine::gtpDoBoardCopy);
   
   gtpe->addFunctionCommand("time_settings",this,&Engine::gtpTimeSettings);
@@ -82,6 +88,9 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("showliberties","Show Liberties","sboard");
   gtpe->addAnalyzeCommand("showvalidmoves","Show Valid Moves","sboard");
   gtpe->addAnalyzeCommand("showgroupsize","Show Group Size","sboard");
+  gtpe->addAnalyzeCommand("showpatternmatches","Show Pattern Matches","sboard");
+  gtpe->addAnalyzeCommand("loadpatterns %r","Load Patterns","none");
+  gtpe->addAnalyzeCommand("clearpatterns","Clear Patterns","none");
   gtpe->addAnalyzeCommand("doboardcopy","Do Board Copy","none");
   gtpe->addAnalyzeCommand("param","Parameters","param");
 }
@@ -364,6 +373,62 @@ void Engine::gtpShowGroupSize(void *instance, Gtp::Engine* gtpe, Gtp::Command* c
   }
 
   gtpe->getOutput()->endResponse(true);
+}
+
+void Engine::gtpShowPatternMatches(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("\n");
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      int pos=Go::Position::xy2pos(x,y,me->boardsize);
+      gtpe->getOutput()->printf("\"");
+      if (me->patterntable->isPattern(Pattern::ThreeByThree(me->currentboard,pos).hash()))
+        gtpe->getOutput()->printf("B");
+      if (me->patterntable->isPattern(Pattern::ThreeByThree(me->currentboard,pos).invert().hash()))
+        gtpe->getOutput()->printf("W");
+      gtpe->getOutput()->printf("\" ");
+    }
+    gtpe->getOutput()->printf("\n");
+  }
+
+  gtpe->getOutput()->endResponse(true);
+}
+
+void Engine::gtpLoadPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("need 1 arg");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  std::string patternfile=cmd->getStringArg(0);
+  
+  me->patterntable->loadPatternFile(patternfile);
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printf("loaded pattern file: %s",patternfile.c_str());
+  gtpe->getOutput()->endResponse();
+}
+
+void Engine::gtpClearPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  delete me->patterntable;
+  me->patterntable=new Pattern::ThreeByThreeTable();
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->endResponse();
 }
 
 void Engine::gtpDoBoardCopy(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
