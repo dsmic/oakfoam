@@ -4,8 +4,7 @@ TODO
 Now: (before next release)
   improve playout move selection
   handle terminal nodes properly (don't do playouts from and make playouts thru high)
-  include prior knowledge in the tree (atari heuristics)
-  analyse initial urgency and how rave contributes
+  include default patterns
 
 Soon: (before next major release)
   implement superko in tree
@@ -32,6 +31,8 @@ Soon: (before next major release)
   play at one of liberties of a enemy group with 2
   prefer closer moves using CFG to last and next-to-last move
   store neighbour counts for each board position? (num of empty...)
+  include prior knowledge in the tree? (atari heuristics)
+  analyse initial urgency and how rave contributes
 
 Later: (at some point)
   add handicap settings
