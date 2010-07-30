@@ -13,6 +13,10 @@
 #define P_S (size+1)
 #define P_W (-1)
 #define P_E (1)
+#define P_NW (P_N+P_W)
+#define P_NE (P_N+P_E)
+#define P_SW (P_S+P_W)
+#define P_SE (P_S+P_E)
 
 #define foreach_adjacent(__pos, __adjpos, __body) \
   { \
