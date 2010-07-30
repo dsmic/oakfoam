@@ -13,6 +13,8 @@
 #include <cstdlib>
 #include <string>
 #include <sstream>
+#include <iostream>
+#include <fstream>
 #include "Go.h"
 
 namespace Pattern
@@ -72,18 +74,30 @@ namespace Pattern
       };
       ~ThreeByThreeTable() { free(table); };
       
-      void addPattern(int hash) { table[byteNum(hash)]|=(1<<bitNum(hash)); };
-      void clearPattern(int hash) { table[byteNum(hash)]&=(~(1<<bitNum(hash))); };
-      bool isPattern(int hash) { return (table[byteNum(hash)]&(1<<bitNum(hash))); };
+      inline void addPattern(int hash) { table[byteNum(hash)]|=(1<<bitNum(hash)); };
+      inline void clearPattern(int hash) { table[byteNum(hash)]&=(~(1<<bitNum(hash))); };
+      inline bool isPattern(int hash) { return (table[byteNum(hash)]&(1<<bitNum(hash))); };
       
       void addPatternTransformed(Pattern::ThreeByThree pattern, bool addinverted=true);
-      void loadPatternFile(std::string patternfilename);
+      bool loadPatternFile(std::string patternfilename);
     
     private:
       unsigned char *table; //assume sizeof(char)==1
       
       inline int byteNum(int hash) { return (hash/8); };
       inline int bitNum(int hash) { return (hash%8); };
+      
+      Go::Color fileCharToColor(char c)
+      {
+        if (c=='b')
+          return Go::BLACK;
+        else if (c=='w')
+          return Go::WHITE;
+        else if (c=='e')
+          return Go::EMPTY;
+        else
+          return Go::OFFBOARD;
+      }
   };
 };
 #endif

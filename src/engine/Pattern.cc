@@ -93,9 +93,45 @@ void Pattern::ThreeByThreeTable::addPatternTransformed(Pattern::ThreeByThree pat
   }
 }
 
-void Pattern::ThreeByThreeTable::loadPatternFile(std::string patternfilename)
+bool Pattern::ThreeByThreeTable::loadPatternFile(std::string patternfilename)
 {
-  //TODO
+  std::ifstream fin(patternfilename.c_str());
+  
+  if (!fin)
+    return false;
+  
+  std::string line;
+  while (std::getline(fin,line))
+  {
+    std::string filtered="";
+    for (int i=0;i<(int)line.length();i++)
+    {
+      if (line.at(i)=='#')
+        break;
+      else if (line.at(i)!=' ' && line.at(i)!='\t')
+        filtered+=line.at(i);
+    }
+    
+    if (filtered.length()==0)
+      continue;
+    
+    if (filtered.length()!=8) //all patterns are 8 chars long
+    {
+      fin.close();
+      return false;
+    }
+      
+    fprintf(stderr,"%s\n",filtered.c_str());
+    
+    std::transform(filtered.begin(),filtered.end(),filtered.begin(),::tolower);
+    
+    Pattern::ThreeByThree pattern=Pattern::ThreeByThree(fileCharToColor(filtered.at(0)),fileCharToColor(filtered.at(1)),fileCharToColor(filtered.at(2)),fileCharToColor(filtered.at(3)),fileCharToColor(filtered.at(4)),fileCharToColor(filtered.at(5)),fileCharToColor(filtered.at(6)),fileCharToColor(filtered.at(7)));
+    this->addPatternTransformed(pattern);
+  }
+  
+  fin.close();
+  
+  return true;
 }
 
 

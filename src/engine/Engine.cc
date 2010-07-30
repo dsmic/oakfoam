@@ -413,11 +413,20 @@ void Engine::gtpLoadPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cm
   
   std::string patternfile=cmd->getStringArg(0);
   
-  me->patterntable->loadPatternFile(patternfile);
+  bool success=me->patterntable->loadPatternFile(patternfile);
   
-  gtpe->getOutput()->startResponse(cmd);
-  gtpe->getOutput()->printf("loaded pattern file: %s",patternfile.c_str());
-  gtpe->getOutput()->endResponse();
+  if (success)
+  {
+    gtpe->getOutput()->startResponse(cmd);
+    gtpe->getOutput()->printf("loaded pattern file: %s",patternfile.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+  else
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("error loading pattern file: %s",patternfile.c_str());
+    gtpe->getOutput()->endResponse();
+  }
 }
 
 void Engine::gtpClearPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
