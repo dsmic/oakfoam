@@ -15,6 +15,8 @@
 #define UCT_EXPAND_AFTER 1
 #define UCT_KEEP_SUBTREE true
 
+#define PATTERNS_ENABLED false
+
 #define RESIGN_RATIO_THRESHOLD 0.03
 #define RESIGN_MOVE_FACTOR_THRESHOLD 0.5
 
@@ -110,6 +112,7 @@ class Engine
     bool uctkeepsubtree;
     UCT::Tree *movetree;
     Random rand;
+    bool patternsenabled;
     Pattern::ThreeByThreeTable *patterntable;
     
     void addGtpCommands();

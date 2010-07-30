@@ -31,6 +31,7 @@ Engine::Engine(Gtp::Engine *ge)
   uctexpandafter=UCT_EXPAND_AFTER;
   uctkeepsubtree=UCT_KEEP_SUBTREE;
   
+  patternsenabled=PATTERNS_ENABLED;
   patterntable=new Pattern::ThreeByThreeTable();
   
   resignratiothreshold=RESIGN_RATIO_THRESHOLD;
@@ -470,6 +471,7 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     gtpe->getOutput()->printf("[string] rave_moves %d\n",me->ravemoves);
     gtpe->getOutput()->printf("[string] uct_expand_after %d\n",me->uctexpandafter);
     gtpe->getOutput()->printf("[bool] uct_keep_subtree %d\n",me->uctkeepsubtree);
+    gtpe->getOutput()->printf("[bool] patterns_enabled %d\n",me->patternsenabled);
     gtpe->getOutput()->printf("[string] resign_ratio_threshold %.3f\n",me->resignratiothreshold);
     gtpe->getOutput()->printf("[string] resign_move_factor_threshold %.2f\n",me->resignmovefactorthreshold);
     gtpe->getOutput()->printf("[string] time_buffer %ld\n",me->timebuffer);
@@ -510,6 +512,8 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
       me->uctkeepsubtree=(cmd->getIntArg(1)==1);
       me->clearMoveTree();
     }
+    else if (param=="patterns_enabled")
+      me->patternsenabled=(cmd->getIntArg(1)==1);
     else if (param=="live_gfx")
       me->livegfx=(cmd->getIntArg(1)==1);
     else if (param=="live_gfx_update_playouts")
@@ -898,6 +902,35 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
     {
       int i=rand.getRandomInt(atarimovescount);
       move=Go::Move(col,atarimoves[i]);
+      return;
+    }
+  }
+  
+  if (patternsenabled)
+  {
+    int *patternmoves=posarray;
+    int patternmovescount=0;
+    
+    for (int p=0;p<board->getPositionMax();p++)
+    {
+      if (board->validMove(Go::Move(col,p)))
+      {
+        Pattern::ThreeByThree pattern=Pattern::ThreeByThree(board,p);
+        if (col==Go::WHITE)
+          pattern=pattern.invert();
+        
+        if (patterntable->isPattern(pattern.hash()))
+        {
+          patternmoves[patternmovescount]=p;
+          patternmovescount++;
+        }
+      }
+    }
+    
+    if (patternmovescount>0)
+    {
+      int i=rand.getRandomInt(patternmovescount);
+      move=Go::Move(col,patternmoves[i]);
       return;
     }
   }

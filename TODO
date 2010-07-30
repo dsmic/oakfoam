@@ -3,7 +3,6 @@ TODO
 
 Now: (before next release)
   improve playout move selection
-  try add simple 16-bit patterns to playouts (must be fast)
   handle terminal nodes properly (don't do playouts from and make playouts thru high)
   include prior knowledge in the tree (atari heuristics)
   analyse initial urgency and how rave contributes
