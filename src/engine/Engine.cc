@@ -33,6 +33,7 @@ Engine::Engine(Gtp::Engine *ge)
   
   patternsenabled=PATTERNS_ENABLED;
   patterntable=new Pattern::ThreeByThreeTable();
+  patterntable->loadPatternDefaults();
   
   resignratiothreshold=RESIGN_RATIO_THRESHOLD;
   resignmovefactorthreshold=RESIGN_MOVE_FACTOR_THRESHOLD;
@@ -414,6 +415,8 @@ void Engine::gtpLoadPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cm
   
   std::string patternfile=cmd->getStringArg(0);
   
+  delete me->patterntable;
+  me->patterntable=new Pattern::ThreeByThreeTable();
   bool success=me->patterntable->loadPatternFile(patternfile);
   
   if (success)

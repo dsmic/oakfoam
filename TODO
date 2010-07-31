@@ -4,7 +4,6 @@ TODO
 Now: (before next release)
   improve playout move selection
   handle terminal nodes properly (don't do playouts from and make playouts thru high)
-  include default patterns
 
 Soon: (before next major release)
   implement superko in tree

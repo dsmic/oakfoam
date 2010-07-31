@@ -10,6 +10,22 @@
 
 #define PATTERN_3x3_TABLE_BYTES (1<<16)/8
 
+#define PATTERN_3x3_DEFAULTS " \
++*BWBEE??? \
++*BWEEE?E? \
++*BW?BE?E? \
++BBWWEE?E? \
++*BW?W???? \
+-*BW?WW?E? \
+-*BW?WE?W? \
++*?B?WWwww \
++*BE?W?--- \
++*?B?bW--- \
++B?BW??_-- \
++W?BW?b--- \
++W?BWWB--- \
+"
+
 #include <cstdlib>
 #include <string>
 #include <sstream>
@@ -88,6 +104,8 @@ namespace Pattern
       void updatePatternTransformed(bool addpattern, Pattern::ThreeByThree pattern, bool addinverted=true);
       
       bool loadPatternFile(std::string patternfilename);
+      bool loadPatternString(std::string patternstring);
+      bool loadPatternDefaults() { return this->loadPatternString(PATTERN_3x3_DEFAULTS); };
     
     private:
       unsigned char *table; //assume sizeof(char)==1

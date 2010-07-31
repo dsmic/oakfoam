@@ -129,6 +129,34 @@ bool Pattern::ThreeByThreeTable::loadPatternFile(std::string patternfilename)
   return true;
 }
 
+bool Pattern::ThreeByThreeTable::loadPatternString(std::string patternstring)
+{
+  std::istringstream iss(patternstring);
+  
+  std::string line;
+  while (iss>>line) //XXX: can fail on some input
+  {
+    std::string filtered="";
+    for (int i=0;i<(int)line.length();i++)
+    {
+      if (line.at(i)=='#')
+        break;
+      else if (line.at(i)!=' ' && line.at(i)!='\t')
+        filtered+=line.at(i);
+    }
+    
+    if (filtered.length()==0)
+      continue;
+    
+    if (filtered.length()!=10) //all patterns are 10 chars long
+      return false;
+    
+    this->processFilePattern(filtered);
+  }
+  
+  return true;
+}
+
 void Pattern::ThreeByThreeTable::processFilePattern(std::string pattern)
 {
   bool addpatterns=(pattern.at(0)=='+');
