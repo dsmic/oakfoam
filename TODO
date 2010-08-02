@@ -5,6 +5,8 @@ Now: (before next release)
   improve playout move selection
   play a move early if it is clearly the right move?
   prefer games that end sooner (don't drag on at end)
+  add atari heuristics to tree
+  add pattern heuristics to tree
 
 Soon: (before next major release)
   implement superko in tree
@@ -29,7 +31,6 @@ Soon: (before next major release)
   play at one of liberties of a enemy group with 2?
   prefer closer moves using CFG to last and next-to-last move
   store neighbour counts for each board position? (num of empty...)
-  include prior knowledge in the tree? (atari heuristics)
   analyse initial urgency and how rave contributes
 
 Later: (at some point)
