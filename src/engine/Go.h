@@ -253,6 +253,7 @@ namespace Go
       
       int score();
       bool weakEye(Go::Color col, int pos);
+      int touchingEmpty(int pos);
       
       static bool isWinForColor(Go::Color col, float score);
     
@@ -278,7 +279,6 @@ namespace Go
       inline int getPseudoLiberties(int pos) { if (data[pos].group==NULL) return 0; else return data[pos].group->find()->numOfPseudoLiberties(); };
       inline int getGroupSize(int pos) { if (data[pos].group==NULL) return 0; else return data[pos].group->find()->numOfStones(); };
       
-      int touchingEmpty(int pos);
       bool touchingAtLeastOneEmpty(int pos);
       
       void refreshGroups();

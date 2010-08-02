@@ -893,7 +893,7 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
       if ((*iter)->inAtari())
       {
         int liberty=(*iter)->getAtariPosition();
-        if (board->validMove(Go::Move(col,liberty)))
+        if (board->validMove(Go::Move(col,liberty)) && ((*iter)->getColor()!=col || board->touchingEmpty(liberty)>1))
         {
           atarimoves[atarimovescount]=liberty;
           atarimovescount++;

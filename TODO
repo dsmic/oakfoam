@@ -3,7 +3,6 @@ TODO
 
 Now: (before next release)
   improve playout move selection
-  only try escape if it gains a liberty
   handle terminal nodes properly (don't do playouts from and make playouts thru high)
   play a move early if it is clearly the right move?
   prefer games that end sooner (don't drag on at end)
