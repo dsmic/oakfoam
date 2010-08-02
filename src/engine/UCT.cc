@@ -114,6 +114,14 @@ float UCT::Tree::getUrgency()
   if (playouts==0 && raveplayouts==0)
     return ucbinit;
   
+  if (this->isTerminal())
+  {
+    if (playouts==0 || this->getVal()>0)
+      return UCT_TERMINAL_URGENCY;
+    else
+      return -UCT_TERMINAL_URGENCY;
+  }
+  
   if (parent==NULL || ucbc==0)
     bias=0;
   else

@@ -1,6 +1,8 @@
 #ifndef DEF_OAKFOAM_UCT_H
 #define DEF_OAKFOAM_UCT_H
 
+#define UCT_TERMINAL_URGENCY 10
+
 #include <cmath>
 #include <list>
 #include "Go.h"
