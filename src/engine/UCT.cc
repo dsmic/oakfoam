@@ -104,7 +104,12 @@ float UCT::Tree::getVal()
     
     float alpha=(float)raveplayouts/(raveplayouts + playouts + (float)(raveplayouts*playouts)/ravemoves);
     
-    return this->getRAVERatio()*alpha + this->getRatio()*(1-alpha);
+    if (alpha==0)
+      return this->getRatio();
+    else if (alpha==1)
+      return this->getRAVERatio();
+    else
+      return this->getRAVERatio()*alpha + this->getRatio()*(1-alpha);
   }
 }
 
