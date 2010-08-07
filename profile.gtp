@@ -1,5 +1,7 @@
+param move_policy uct
 param playouts_per_move 1000
-param rave_moves 0
+param rave_moves 300
+param patterns_enabled 1
 
 genmove b
 
