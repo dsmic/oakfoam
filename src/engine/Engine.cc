@@ -39,9 +39,7 @@ Engine::Engine(Gtp::Engine *ge)
   resignmovefactorthreshold=RESIGN_MOVE_FACTOR_THRESHOLD;
   
   timebuffer=TIME_BUFFER;
-  timepercentageboard=TIME_PERCENTAGE_BOARD;
-  timemovebuffer=TIME_MOVE_BUFFER;
-  timefactor=TIME_FACTOR;
+  timek=TIME_K;
   timemoveminimum=TIME_MOVE_MINIMUM;
   
   timemain=0;
@@ -219,15 +217,9 @@ void Engine::gtpGenMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   }
   
   Go::Move *move;
-  float ratio;
-  me->generateMove((gtpcol==Gtp::BLACK ? Go::BLACK : Go::WHITE),&move,&ratio);
+  me->generateMove((gtpcol==Gtp::BLACK ? Go::BLACK : Go::WHITE),&move);
   Gtp::Vertex vert={move->getX(me->boardsize),move->getY(me->boardsize)};
   delete move;
-  
-  long timeleft=(gtpcol==Gtp::BLACK ? me->timeblack : me->timewhite);
-  gtpe->getOutput()->printfDebug("[genmove]: r:%.2f tl:%ld ppmo:%d ppmi:%.3f\n",ratio,timeleft,me->playoutspermove,me->playoutspermilli);
-  if (me->livegfx)
-    gtpe->getOutput()->printfDebug("gogui-gfx: TEXT [genmove]: r:%.2f tl:%ld ppmo:%d ppmi:%.3f\n",ratio,timeleft,me->playoutspermove,me->playoutspermilli);
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printVertex(vert);
@@ -477,10 +469,8 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     gtpe->getOutput()->printf("[bool] patterns_enabled %d\n",me->patternsenabled);
     gtpe->getOutput()->printf("[string] resign_ratio_threshold %.3f\n",me->resignratiothreshold);
     gtpe->getOutput()->printf("[string] resign_move_factor_threshold %.2f\n",me->resignmovefactorthreshold);
+    gtpe->getOutput()->printf("[string] time_k %.2f\n",me->timek);
     gtpe->getOutput()->printf("[string] time_buffer %ld\n",me->timebuffer);
-    gtpe->getOutput()->printf("[string] time_percentage_board %.2f\n",me->timepercentageboard);
-    gtpe->getOutput()->printf("[string] time_move_buffer %d\n",me->timemovebuffer);
-    gtpe->getOutput()->printf("[string] time_factor %.2f\n",me->timefactor);
     gtpe->getOutput()->printf("[string] time_move_minimum %ld\n",me->timemoveminimum);
     gtpe->getOutput()->printf("[bool] live_gfx %d\n",me->livegfx);
     gtpe->getOutput()->printf("[string] live_gfx_update_playouts %d\n",me->livegfxupdateplayouts);
@@ -527,14 +517,10 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
       me->resignratiothreshold=cmd->getFloatArg(1);
     else if (param=="resign_move_factor_threshold")
       me->resignmovefactorthreshold=cmd->getFloatArg(1);
+    else if (param=="time_k")
+      me->timek=cmd->getFloatArg(1);
     else if (param=="time_buffer")
       me->timebuffer=cmd->getIntArg(1);
-    else if (param=="time_percentage_board")
-      me->timepercentageboard=cmd->getFloatArg(1);
-    else if (param=="time_move_buffer")
-      me->timemovebuffer=cmd->getIntArg(1);
-    else if (param=="time_factor")
-      me->timefactor=cmd->getFloatArg(1);
     else if (param=="time_move_minimum")
       me->timemoveminimum=cmd->getIntArg(1);
     else if (param=="move_policy")
@@ -642,7 +628,7 @@ void Engine::gtpTimeLeft(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   gtpe->getOutput()->endResponse();
 }
 
-void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
+void Engine::generateMove(Go::Color col, Go::Move **move)
 {
   if (movepolicy==Engine::MP_UCT || movepolicy==Engine::MP_ONEPLY)
   {
@@ -650,15 +636,12 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
     boost::timer timer;
     int totalplayouts=0;
     int livegfxupdate=0;
+    long timeforthismove;
     
-    if (*timeleft>0 && playoutspermilli>0)
-    {
-      playoutspermove=playoutspermilli*this->getTimeAllowedThisTurn(col);
-      if (playoutspermove<playoutspermovemin)
-        playoutspermove=playoutspermovemin;
-      else if (playoutspermove>playoutspermovemax)
-        playoutspermove=playoutspermovemax;
-    }
+    if (*timeleft>0)
+      timeforthismove=this->getTimeAllowedThisTurn(col);
+    else
+      timeforthismove=0;
     
     if (livegfx)
       gtpe->getOutput()->printfDebug("gogui-gfx: TEXT [genmove]: starting...\n");
@@ -674,8 +657,13 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
     Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
     Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
     
-    for (int i=0;i<playoutspermove;i++)
+    for (int i=0;i<playoutspermovemax;i++)
     {
+      if (i>=playoutspermove && timeforthismove==0)
+        break;
+      else if (i>=playoutspermovemin && timeforthismove>0 && (timer.elapsed()*1000)>timeforthismove)
+        break;
+      
       UCT::Tree *playouttree = this->getPlayoutTarget(movetree);
       if (playouttree==NULL)
         break;
@@ -814,6 +802,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
     delete secondlist;
     
     UCT::Tree *besttree=this->getBestMoves(movetree,false);
+    float bestratio=0;
     if (besttree==NULL)
       *move=new Go::Move(col,Go::Move::RESIGN);
     else if (besttree->getRatio()<resignratiothreshold && currentboard->getMovesMade()>(resignmovefactorthreshold*boardsize*boardsize))
@@ -821,8 +810,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
     else
     {
       *move=new Go::Move(col,besttree->getMove().getPosition());
-      if (ratio!=NULL)
-        *ratio=besttree->getRatio();
+      bestratio=besttree->getRatio();
     }
     
     this->makeMove(**move);
@@ -834,7 +822,15 @@ void Engine::generateMove(Go::Color col, Go::Move **move, float *ratio)
     if (timeused>0)
       playoutspermilli=(float)totalplayouts/timeused;
     if (*timeleft!=0)
+    {
       *timeleft-=timeused;
+      if (*timeleft<0)
+        *timeleft=1;
+    }
+    
+    gtpe->getOutput()->printfDebug("[genmove]: r:%.2f tl:%ld plts:%d ppms:%.3f\n",bestratio,*timeleft,totalplayouts,playoutspermilli);
+    if (livegfx)
+      gtpe->getOutput()->printfDebug("gogui-gfx: TEXT [genmove]: r:%.2f tl:%ld plts:%d ppms:%.3f\n",bestratio,*timeleft,totalplayouts,playoutspermilli);
   }
   else
   {
@@ -1037,15 +1033,7 @@ long Engine::getTimeAllowedThisTurn(Go::Color col)
 {
   long timeleft=(col==Go::BLACK ? timeblack : timewhite);
   timeleft-=timebuffer;
-  if (timeleft<0)
-    timeleft=1;
-  int estimatedmovespergame=(float)boardsize*boardsize*timepercentageboard; //fill only some of the board
-  int movesmade=currentboard->getMovesMade();
-  int movesleft=estimatedmovespergame-movesmade;
-  if (movesleft<0)
-    movesleft=0;
-  movesleft+=timemovebuffer; //be able to play more moves
-  long timepermove=timeleft/movesleft*timefactor; //allow more time in beginning
+  long timepermove=timeleft/timek; //allow much more time in beginning
   if (timepermove<timemoveminimum)
     timepermove=timemoveminimum;
   return timepermove;

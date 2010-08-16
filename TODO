@@ -5,7 +5,6 @@ Now: (before next release)
   improve playout move selection (quicker)
   play a move early if it is clearly the right move?
   prefer games that end sooner (don't drag on at end)
-  improve time settings
   add atari heuristics to tree
   add pattern heuristics to tree
 
@@ -13,7 +12,6 @@ Soon: (before next major release)
   implement superko in tree
   copy all board data with a copy() (groups and liberties)
   investigate slow ppmi in trials after a while (possibly CPU overheating)
-  improve time managment
   divide parameters into classes?
   do running average for ppmi?
   tune parameters

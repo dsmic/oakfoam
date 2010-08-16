@@ -25,9 +25,7 @@
 #define LIVEGFX_DELAY 0.001
 
 #define TIME_BUFFER 30000
-#define TIME_PERCENTAGE_BOARD 0.75
-#define TIME_MOVE_BUFFER 10
-#define TIME_FACTOR 2.5
+#define TIME_K 7
 #define TIME_MOVE_MINIMUM 100
 
 #define BOARDSIZE_MIN 2
@@ -58,7 +56,7 @@ class Engine
       MP_UCT
     };
     
-    void generateMove(Go::Color col, Go::Move **move, float *ratio=NULL);
+    void generateMove(Go::Color col, Go::Move **move);
     bool isMoveAllowed(Go::Move move);
     void makeMove(Go::Move move);
     int getBoardSize() { return currentboard->getSize(); };
@@ -100,8 +98,7 @@ class Engine
     float playoutspermilli;
     float resignratiothreshold,resignmovefactorthreshold;
     long timebuffer,timemoveminimum;
-    int timemovebuffer;
-    float timepercentageboard,timefactor;
+    float timek;
     float ucbc,ucbinit;
     int ravemoves;
     float playoutatarichance;
