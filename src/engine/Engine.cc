@@ -31,7 +31,7 @@ Engine::Engine(Gtp::Engine *ge)
   uctexpandafter=UCT_EXPAND_AFTER;
   uctkeepsubtree=UCT_KEEP_SUBTREE;
   
-  patternsenabled=PATTERNS_ENABLED;
+  playoutpatternsenabled=PLAYOUT_PATTERNS_ENABLED;
   patterntable=new Pattern::ThreeByThreeTable();
   patterntable->loadPatternDefaults();
   
@@ -466,7 +466,7 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     gtpe->getOutput()->printf("[string] rave_moves %d\n",me->ravemoves);
     gtpe->getOutput()->printf("[string] uct_expand_after %d\n",me->uctexpandafter);
     gtpe->getOutput()->printf("[bool] uct_keep_subtree %d\n",me->uctkeepsubtree);
-    gtpe->getOutput()->printf("[bool] patterns_enabled %d\n",me->patternsenabled);
+    gtpe->getOutput()->printf("[bool] playout_patterns_enabled %d\n",me->playoutpatternsenabled);
     gtpe->getOutput()->printf("[string] resign_ratio_threshold %.3f\n",me->resignratiothreshold);
     gtpe->getOutput()->printf("[string] resign_move_factor_threshold %.2f\n",me->resignmovefactorthreshold);
     gtpe->getOutput()->printf("[string] time_k %.2f\n",me->timek);
@@ -505,8 +505,8 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
       me->uctkeepsubtree=(cmd->getIntArg(1)==1);
       me->clearMoveTree();
     }
-    else if (param=="patterns_enabled")
-      me->patternsenabled=(cmd->getIntArg(1)==1);
+    else if (param=="playout_patterns_enabled")
+      me->playoutpatternsenabled=(cmd->getIntArg(1)==1);
     else if (param=="live_gfx")
       me->livegfx=(cmd->getIntArg(1)==1);
     else if (param=="live_gfx_update_playouts")
@@ -905,7 +905,7 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
     }
   }
   
-  if (patternsenabled)
+  if (playoutpatternsenabled)
   {
     int *patternmoves=posarray;
     int patternmovescount=0;
