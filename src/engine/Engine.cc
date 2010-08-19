@@ -971,7 +971,7 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
   }
   
   Go::BitBoard *validmoves=board->getValidMoves(col);
-  int *possiblemoves=posarray;
+  /*int *possiblemoves=posarray;
   int possiblemovescount=0;
   
   for (int p=0;p<board->getPositionMax();p++)
@@ -991,7 +991,22 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
   {
     int r=rand.getRandomInt(possiblemovescount);
     move=Go::Move(col,possiblemoves[r]);
+  }*/
+  
+  int r=rand.getRandomInt(board->getPositionMax());
+  int d=rand.getRandomInt(1)*2-1;
+  for (int p=0;p<board->getPositionMax();p++)
+  {
+    int rp=(r+p*d);
+    if (rp<0) rp+=board->getPositionMax();
+    if (rp>=board->getPositionMax()) rp-=board->getPositionMax();
+    if (validmoves->get(rp) && !board->weakEye(col,rp))
+    {
+      move=Go::Move(col,rp);
+      return;
+    }
   }
+  move=Go::Move(col,Go::Move::PASS);
 }
 
 void Engine::randomPlayout(Go::Board *board, std::list<Go::Move> startmoves, Go::Color colfirst, Go::BitBoard *firstlist, Go::BitBoard *secondlist)
