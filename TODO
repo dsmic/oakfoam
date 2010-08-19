@@ -9,7 +9,6 @@ Now: (before next release)
   add atari heuristics to tree
   add pattern heuristics to tree
   reduce calls to validMoveCheck
-  speedup pattern matching
 
 Soon: (before next major release)
   implement superko in tree

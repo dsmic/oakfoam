@@ -1,30 +1,21 @@
 #include "Pattern.h"
 
-Pattern::ThreeByThree Pattern::ThreeByThree::invert()
+unsigned int Pattern::ThreeByThree::makeHash(Go::Color colnw, Go::Color coln, Go::Color colne, Go::Color colw, Go::Color cole, Go::Color colsw, Go::Color cols, Go::Color colse)
 {
-  return Pattern::ThreeByThree(
-    Go::otherColor(colnw),Go::otherColor(coln),Go::otherColor(colne),
-    Go::otherColor(colw),Go::otherColor(cole),
-    Go::otherColor(colsw),Go::otherColor(cols),Go::otherColor(colse)
-  );
-}
-
-Pattern::ThreeByThree Pattern::ThreeByThree::rotateRight()
-{
-  return Pattern::ThreeByThree(
-    colsw,colw,colnw,
-    cols,coln,
-    colse,cole,colne
-  );
-}
-
-Pattern::ThreeByThree Pattern::ThreeByThree::flipHorizontal()
-{
-  return Pattern::ThreeByThree(
-    colne,coln,colnw,
-    cole,colw,
-    colse,cols,colsw
-  );
+  unsigned int hash=0;
+  
+  hash|=(Pattern::ThreeByThree::hashColor(colnw) << 14);
+  hash|=(Pattern::ThreeByThree::hashColor(coln) << 12);
+  hash|=(Pattern::ThreeByThree::hashColor(colne) << 10);
+  
+  hash|=(Pattern::ThreeByThree::hashColor(colw) << 8);
+  hash|=(Pattern::ThreeByThree::hashColor(cole) << 6);
+  
+  hash|=(Pattern::ThreeByThree::hashColor(colsw) << 4);
+  hash|=(Pattern::ThreeByThree::hashColor(cols) << 2);
+  hash|=(Pattern::ThreeByThree::hashColor(colse));
+  
+  return hash;
 }
 
 int Pattern::ThreeByThree::hashColor(Go::Color col)
@@ -40,55 +31,56 @@ int Pattern::ThreeByThree::hashColor(Go::Color col)
     case Go::OFFBOARD:
       return 3;
     default:
-      return -1;
+      return 3;
   }
 }
 
-int Pattern::ThreeByThree::hash()
+unsigned int Pattern::ThreeByThree::invert(unsigned int hash)
 {
-  int hash=0;
-  
-  hash|=(this->hashColor(colnw) << 14);
-  hash|=(this->hashColor(coln) << 12);
-  hash|=(this->hashColor(colne) << 10);
-  
-  hash|=(this->hashColor(colw) << 8);
-  hash|=(this->hashColor(cole) << 6);
-  
-  hash|=(this->hashColor(colsw) << 4);
-  hash|=(this->hashColor(cols) << 2);
-  hash|=(this->hashColor(colse));
-  
-  return hash;
+ unsigned int oddbits=  hash&(0x5555);
+ unsigned int evenbits= hash&(0xAAAA);
+ return ((evenbits>>1) | (oddbits<<1));
 }
 
-std::string Pattern::ThreeByThree::toString()
+unsigned int Pattern::ThreeByThree::rotateRight(unsigned int hash)
 {
-  std::ostringstream ss;
-  ss<<Go::colorToChar(colnw)<<Go::colorToChar(coln)<<Go::colorToChar(colne)<<"\n";
-  ss<<Go::colorToChar(colw)<<'X'<<Go::colorToChar(cole)<<"\n";
-  ss<<Go::colorToChar(colsw)<<Go::colorToChar(cols)<<Go::colorToChar(colse)<<"\n";
-  return ss.str();
+  unsigned int right2=  hash&(0xC0C0);
+  unsigned int right3=  hash&(0x3000);
+  unsigned int right5=  hash&(0x0C00);
+  unsigned int left2=   hash&(0x0303);
+  unsigned int left3=   hash&(0x000C);
+  unsigned int left5=   hash&(0x0030);
+  return ((right2>>4) | (right3>>6) | (right5>>10) | (left2<<4) | (left3<<6) | (left5<<10));
 }
 
-void Pattern::ThreeByThreeTable::updatePatternTransformed(bool addpattern, Pattern::ThreeByThree pattern, bool addinverted)
+unsigned int Pattern::ThreeByThree::flipHorizontal(unsigned int hash)
 {
-  Pattern::ThreeByThree currentpattern=pattern;
-  Pattern::ThreeByThree currentpatterninverted=currentpattern.invert();
+  unsigned int same=    hash&(0x300C);
+  unsigned int right1=  hash&(0x0300);
+  unsigned int right2=  hash&(0xC030);
+  unsigned int left1=   hash&(0x00C0);
+  unsigned int left2=   hash&(0x0C03);
+  return (same | (right1>>2) | (right2>>4) | (left1<<2) | (left2<<4));
+}
+
+void Pattern::ThreeByThreeTable::updatePatternTransformed(bool addpattern, unsigned int pattern, bool addinverted)
+{
+  unsigned int currentpattern=pattern;
+  unsigned int currentpatterninverted=Pattern::ThreeByThree::invert(pattern);
   
   for (int i=0;i<4;i++)
   {
-    this->updatePattern(addpattern,currentpattern.hash());
-    this->updatePattern(addpattern,currentpattern.flipHorizontal().hash());
+    this->updatePattern(addpattern,currentpattern);
+    this->updatePattern(addpattern,Pattern::ThreeByThree::flipHorizontal(currentpattern));
     
-    currentpattern=currentpattern.rotateRight();
+    currentpattern=Pattern::ThreeByThree::rotateRight(currentpattern);
     
     if (addinverted)
     {
-      this->updatePattern(addpattern,currentpatterninverted.hash());
-      this->updatePattern(addpattern,currentpatterninverted.flipHorizontal().hash());
+      this->updatePattern(addpattern,currentpatterninverted);
+      this->updatePattern(addpattern,Pattern::ThreeByThree::flipHorizontal(currentpatterninverted));
       
-      currentpatterninverted=currentpatterninverted.rotateRight();
+      currentpatterninverted=Pattern::ThreeByThree::rotateRight(currentpatterninverted);
     }
   }
 }
@@ -222,11 +214,11 @@ void Pattern::ThreeByThreeTable::processPermutations(bool addpatterns, Pattern::
     {
       gocols[i]=this->colorToGoColor(colors[i]);
     }
-    Pattern::ThreeByThree pattern=Pattern::ThreeByThree(gocols);
+    unsigned int pattern=Pattern::ThreeByThree::makeHash(gocols);
     if (toplay==Pattern::ThreeByThreeTable::BLACK)
       this->updatePatternTransformed(addpatterns,pattern,false);
     else if (toplay==Pattern::ThreeByThreeTable::WHITE)
-      this->updatePatternTransformed(addpatterns,pattern.invert(),false);
+      this->updatePatternTransformed(addpatterns,Pattern::ThreeByThree::invert(pattern),false);
     else
       this->updatePatternTransformed(addpatterns,pattern);
   }

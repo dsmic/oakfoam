@@ -40,49 +40,31 @@ namespace Pattern
   class ThreeByThree
   {
     public:
-      ThreeByThree(Go::Color colnw, Go::Color coln, Go::Color colne, Go::Color colw, Go::Color cole, Go::Color colsw, Go::Color cols, Go::Color colse)
+      static unsigned int makeHash(Go::Color colnw, Go::Color coln, Go::Color colne, Go::Color colw, Go::Color cole, Go::Color colsw, Go::Color cols, Go::Color colse);
+      static unsigned int makeHash(Go::Color colors[])
       {
-        this->colnw=colnw; this->coln=coln; this->colne=colne;
-        this->colw=colw; this->cole=cole;
-        this->colsw=colsw; this->cols=cols; this->colse=colse;
-      };
-      ThreeByThree(Go::Board *board, int pos)
-      {
-        int size=board->getSize();
-        colnw=board->getColor(pos+P_NW); coln=board->getColor(pos+P_N); colne=board->getColor(pos+P_NE);
-        colw=board->getColor(pos+P_W); cole=board->getColor(pos+P_E);
-        colsw=board->getColor(pos+P_SW); cols=board->getColor(pos+P_S); colse=board->getColor(pos+P_SE);
-      };
-      ThreeByThree(Go::Color colors[])
-      {
-        colnw=colors[0]; coln=colors[1]; colne=colors[2];
-        colw=colors[3]; cole=colors[4];
-        colsw=colors[5]; cols=colors[6]; colse=colors[7];
-      };
-      ~ThreeByThree() {};
-      
-      inline bool operator==(Pattern::ThreeByThree other)
-      {
-        return (
-          colnw==other.colnw && coln==other.coln && colne==other.colne && 
-          colw==other.colw && cole==other.cole && 
-          colsw==other.colsw && cols==other.cols && colse==other.colse
+        return Pattern::ThreeByThree::makeHash(
+          colors[0], colors[1], colors[2],
+          colors[3], colors[4],
+          colors[5], colors[6], colors[7]
         );
       };
-      inline bool operator!=(Pattern::ThreeByThree other) { return !(*this == other); };
+      static unsigned int makeHash(Go::Board *board, int pos)
+      {
+        int size=board->getSize();
+        return Pattern::ThreeByThree::makeHash(
+          board->getColor(pos+P_NW), board->getColor(pos+P_N), board->getColor(pos+P_NE),
+          board->getColor(pos+P_W), board->getColor(pos+P_E),
+          board->getColor(pos+P_SW), board->getColor(pos+P_S), board->getColor(pos+P_SE)
+        );
+      };
       
-      Pattern::ThreeByThree invert();
-      Pattern::ThreeByThree rotateRight();
-      Pattern::ThreeByThree flipHorizontal();
-      
-      int hash();
-      
-      std::string toString();
+      static unsigned int invert(unsigned int hash);
+      static unsigned int rotateRight(unsigned int hash);
+      static unsigned int flipHorizontal(unsigned int hash);
     
     private:
-      Go::Color colnw,coln,colne,colw,cole,colsw,cols,colse;
-      
-      int hashColor(Go::Color col);
+      static int hashColor(Go::Color col);
   };
   
   class ThreeByThreeTable
@@ -96,12 +78,12 @@ namespace Pattern
       };
       ~ThreeByThreeTable() { free(table); };
       
-      inline void addPattern(int hash) { table[byteNum(hash)]|=(1<<bitNum(hash)); };
-      inline void clearPattern(int hash) { table[byteNum(hash)]&=(~(1<<bitNum(hash))); };
-      inline bool isPattern(int hash) { return (table[byteNum(hash)]&(1<<bitNum(hash))); };
-      inline void updatePattern(bool add, int hash) { if (add) addPattern(hash); else clearPattern(hash); };
+      inline void addPattern(unsigned int hash) { table[byteNum(hash)]|=(1<<bitNum(hash)); };
+      inline void clearPattern(unsigned int hash) { table[byteNum(hash)]&=(~(1<<bitNum(hash))); };
+      inline bool isPattern(unsigned int hash) { return (table[byteNum(hash)]&(1<<bitNum(hash))); };
+      inline void updatePattern(bool add, unsigned int hash) { if (add) addPattern(hash); else clearPattern(hash); };
       
-      void updatePatternTransformed(bool addpattern, Pattern::ThreeByThree pattern, bool addinverted=true);
+      void updatePatternTransformed(bool addpattern, unsigned int pattern, bool addinverted=true);
       
       bool loadPatternFile(std::string patternfilename);
       bool loadPatternString(std::string patternstring);
@@ -110,8 +92,8 @@ namespace Pattern
     private:
       unsigned char *table; //assume sizeof(char)==1
       
-      inline int byteNum(int hash) { return (hash/8); };
-      inline int bitNum(int hash) { return (hash%8); };
+      inline int byteNum(unsigned int hash) { return (hash/8); };
+      inline int bitNum(unsigned int hash) { return (hash%8); };
       
       enum Color
       {

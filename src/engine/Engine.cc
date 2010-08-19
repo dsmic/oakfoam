@@ -381,9 +381,9 @@ void Engine::gtpShowPatternMatches(void *instance, Gtp::Engine* gtpe, Gtp::Comma
     {
       int pos=Go::Position::xy2pos(x,y,me->boardsize);
       gtpe->getOutput()->printf("\"");
-      if (me->currentboard->validMove(Go::Move(Go::BLACK,pos)) && me->patterntable->isPattern(Pattern::ThreeByThree(me->currentboard,pos).hash()))
+      if (me->currentboard->validMove(Go::Move(Go::BLACK,pos)) && me->patterntable->isPattern(Pattern::ThreeByThree::makeHash(me->currentboard,pos)))
         gtpe->getOutput()->printf("B");
-      if (me->currentboard->validMove(Go::Move(Go::WHITE,pos)) && me->patterntable->isPattern(Pattern::ThreeByThree(me->currentboard,pos).invert().hash()))
+      if (me->currentboard->validMove(Go::Move(Go::WHITE,pos)) && me->patterntable->isPattern(Pattern::ThreeByThree::invert(Pattern::ThreeByThree::makeHash(me->currentboard,pos))))
         gtpe->getOutput()->printf("W");
       gtpe->getOutput()->printf("\" ");
     }
@@ -918,11 +918,11 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
       foreach_adjdiag(pos,p,{
         if (board->validMove(Go::Move(col,p)))
         {
-          Pattern::ThreeByThree pattern=Pattern::ThreeByThree(board,p);
+          unsigned int pattern=Pattern::ThreeByThree::makeHash(board,p);
           if (col==Go::WHITE)
-            pattern=pattern.invert();
+            pattern=Pattern::ThreeByThree::invert(pattern);
           
-          if (patterntable->isPattern(pattern.hash()))
+          if (patterntable->isPattern(pattern))
           {
             patternmoves[patternmovescount]=p;
             patternmovescount++;
@@ -939,11 +939,11 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
       foreach_adjdiag(pos,p,{
         if (board->validMove(Go::Move(col,p)))
         {
-          Pattern::ThreeByThree pattern=Pattern::ThreeByThree(board,p);
+          unsigned int pattern=Pattern::ThreeByThree::makeHash(board,p);
           if (col==Go::WHITE)
-            pattern=pattern.invert();
+            pattern=Pattern::ThreeByThree::invert(pattern);
           
-          if (patterntable->isPattern(pattern.hash()))
+          if (patterntable->isPattern(pattern))
           {
             patternmoves[patternmovescount]=p;
             patternmovescount++;
