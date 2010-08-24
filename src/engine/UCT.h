@@ -37,6 +37,8 @@ namespace UCT
       void addLose();
       void addRAVEWin();
       void addRAVELose();
+      void addRAVEWins(int n);
+      void addRAVELoses(int n);
       
     private:
       UCT::Tree *parent;

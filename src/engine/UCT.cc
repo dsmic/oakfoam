@@ -69,6 +69,17 @@ void UCT::Tree::addRAVELose()
   raveplayouts++;
 }
 
+void UCT::Tree::addRAVEWins(int n)
+{
+  ravewins+=n;
+  raveplayouts+=n;
+}
+
+void UCT::Tree::addRAVELoses(int n)
+{
+  raveplayouts+=n;
+}
+
 UCT::Tree *UCT::Tree::getChild(Go::Move move)
 {
   for(std::list<UCT::Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 

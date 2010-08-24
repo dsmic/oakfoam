@@ -30,6 +30,7 @@ Engine::Engine(Gtp::Engine *ge)
   
   uctexpandafter=UCT_EXPAND_AFTER;
   uctkeepsubtree=UCT_KEEP_SUBTREE;
+  uctatarigamma=UCT_ATARI_GAMMA;
   
   playoutpatternsenabled=PLAYOUT_PATTERNS_ENABLED;
   patterntable=new Pattern::ThreeByThreeTable();
@@ -466,6 +467,7 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     gtpe->getOutput()->printf("[string] rave_moves %d\n",me->ravemoves);
     gtpe->getOutput()->printf("[string] uct_expand_after %d\n",me->uctexpandafter);
     gtpe->getOutput()->printf("[bool] uct_keep_subtree %d\n",me->uctkeepsubtree);
+    gtpe->getOutput()->printf("[string] uct_atari_gamma %d\n",me->uctatarigamma);
     gtpe->getOutput()->printf("[bool] playout_patterns_enabled %d\n",me->playoutpatternsenabled);
     gtpe->getOutput()->printf("[string] resign_ratio_threshold %.3f\n",me->resignratiothreshold);
     gtpe->getOutput()->printf("[string] resign_move_factor_threshold %.2f\n",me->resignmovefactorthreshold);
@@ -505,6 +507,8 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
       me->uctkeepsubtree=(cmd->getIntArg(1)==1);
       me->clearMoveTree();
     }
+    else if (param=="uct_atari_gamma")
+      me->uctatarigamma=cmd->getIntArg(1);
     else if (param=="playout_patterns_enabled")
       me->playoutpatternsenabled=(cmd->getIntArg(1)==1);
     else if (param=="live_gfx")
@@ -1126,6 +1130,24 @@ void Engine::expandLeaf(UCT::Tree *movetree)
       {
         UCT::Tree *nmt=new UCT::Tree(ucbc,ucbinit,ravemoves,Go::Move(col,p));
         movetree->addChild(nmt);
+      }
+    }
+    
+    if (uctatarigamma>0)
+    {
+      std::list<Go::Group*,Go::allocator_groupptr> *groups=startboard->getGroups();
+      for(std::list<Go::Group*,Go::allocator_groupptr>::iterator iter=groups->begin();iter!=groups->end();++iter) 
+      {
+        if ((*iter)->inAtari())
+        {
+          int liberty=(*iter)->getAtariPosition();
+          if (startboard->validMove(Go::Move(col,liberty)) && ((*iter)->getColor()!=col || startboard->touchingEmpty(liberty)>1))
+          {
+            UCT::Tree *mt=movetree->getChild(Go::Move(col,liberty));
+            if (mt!=NULL)
+              mt->addRAVEWins(uctatarigamma);
+          }
+        }
       }
     }
   }
