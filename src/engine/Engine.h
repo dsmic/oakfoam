@@ -14,7 +14,8 @@
 
 #define UCT_EXPAND_AFTER 1
 #define UCT_KEEP_SUBTREE true
-#define UCT_ATARI_GAMMA 5
+#define UCT_ATARI_GAMMA 10
+#define UCT_PATTERN_GAMMA 5
 
 #define PLAYOUT_PATTERNS_ENABLED true
 
@@ -112,7 +113,7 @@ class Engine
     Random rand;
     bool playoutpatternsenabled;
     Pattern::ThreeByThreeTable *patterntable;
-    int uctatarigamma;
+    int uctatarigamma,uctpatterngamma;
     
     void addGtpCommands();
     

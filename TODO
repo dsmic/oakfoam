@@ -6,7 +6,6 @@ Now: (before next release)
   play a move early if it is clearly the right move
   think for longer if needed
   prefer games that end sooner (don't drag on at end)
-  add pattern heuristics to tree
 
 Soon: (before next major release)
   implement superko in tree
