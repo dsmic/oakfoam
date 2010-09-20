@@ -188,7 +188,7 @@ float UCT::Tree::variance(int wins, int playouts)
   return wins-(float)(wins*wins)/playouts;
 }
 
-std::string UCT::Tree::toSGFString(int boardsize)
+std::string UCT::Tree::toSGFString(int boardsize, int maxchildren)
 {
   std::ostringstream ss;
   if (!this->isRoot())
@@ -209,6 +209,7 @@ std::string UCT::Tree::toSGFString(int boardsize)
   bool usedchild[children->size()];
   for (unsigned int i=0;i<children->size();i++)
     usedchild[i]=false;
+  int childrendone=0;
   
   while (true)
   {
@@ -228,16 +229,14 @@ std::string UCT::Tree::toSGFString(int boardsize)
     if (bestchild==NULL)
       break;
     
-    ss<<bestchild->toSGFString(boardsize);
+    ss<<bestchild->toSGFString(boardsize,maxchildren);
     usedchild[besti]=true;
     bestchild=NULL;
     besti=0;
+    childrendone++;
+    if (maxchildren!=0 && childrendone>=maxchildren)
+      break;
   }
-  /*for(std::list<UCT::Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
-  {
-    if ((*iter)->getPlayouts()>0)
-      ss<<(*iter)->toSGFString(boardsize);
-  }*/
   if (!this->isRoot())
     ss<<")\n";
   return ss.str();

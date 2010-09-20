@@ -42,7 +42,7 @@ namespace UCT
       void addRAVEWins(int n);
       void addRAVELoses(int n);
       
-      std::string toSGFString(int boardsize);
+      std::string toSGFString(int boardsize, int numchildren);
       
     private:
       UCT::Tree *parent;

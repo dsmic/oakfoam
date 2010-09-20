@@ -30,6 +30,8 @@
 #define TIME_K 7
 #define TIME_MOVE_MINIMUM 100
 
+#define OUTPUTSGF_MAXCHILDREN 10
+
 #define BOARDSIZE_MIN 2
 #define BOARDSIZE_MAX 25
 
@@ -118,6 +120,7 @@ class Engine
     bool playoutpatternsenabled;
     Pattern::ThreeByThreeTable *patterntable;
     int uctatarigamma,uctpatterngamma;
+    int outputsgfmaxchildren;
     
     void addGtpCommands();
     

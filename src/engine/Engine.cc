@@ -40,6 +40,8 @@ Engine::Engine(Gtp::Engine *ge)
   resignratiothreshold=RESIGN_RATIO_THRESHOLD;
   resignmovefactorthreshold=RESIGN_MOVE_FACTOR_THRESHOLD;
   
+  outputsgfmaxchildren=OUTPUTSGF_MAXCHILDREN;
+  
   timebuffer=TIME_BUFFER;
   timek=TIME_K;
   timemoveminimum=TIME_MOVE_MINIMUM;
@@ -532,6 +534,7 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     gtpe->getOutput()->printf("[bool] live_gfx %d\n",me->livegfx);
     gtpe->getOutput()->printf("[string] live_gfx_update_playouts %d\n",me->livegfxupdateplayouts);
     gtpe->getOutput()->printf("[string] live_gfx_delay %.3f\n",me->livegfxdelay);
+    gtpe->getOutput()->printf("[string] output_sgf_max_children %d\n",me->outputsgfmaxchildren);
     gtpe->getOutput()->endResponse(true);
   }
   else if (cmd->numArgs()==2)
@@ -584,6 +587,8 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
       me->timebuffer=cmd->getIntArg(1);
     else if (param=="time_move_minimum")
       me->timemoveminimum=cmd->getIntArg(1);
+    else if (param=="output_sgf_max_children")
+      me->outputsgfmaxchildren=cmd->getIntArg(1);
     else if (param=="move_policy")
     {
       std::string val=cmd->getStringArg(1);
@@ -1279,7 +1284,7 @@ bool Engine::writeSGF(std::string filename, Go::Board *board, UCT::Tree *tree)
   sgffile<<"(;\nFF[4]SZ["<<boardsize<<"]KM["<<komi<<"]\n";
   sgffile<<board->toSGFString()<<"\n";
   if (tree!=NULL)
-    sgffile<<tree->toSGFString(boardsize)<<"\n)";
+    sgffile<<tree->toSGFString(boardsize,outputsgfmaxchildren)<<"\n)";
   sgffile.close();
   
   return true;
