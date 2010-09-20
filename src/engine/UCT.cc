@@ -202,7 +202,8 @@ std::string UCT::Tree::toSGFString(int boardsize)
   }
   for(std::list<UCT::Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
   {
-    ss<<(*iter)->toSGFString(boardsize);
+    if ((*iter)->getPlayouts()>0)
+      ss<<(*iter)->toSGFString(boardsize);
   }
   if (!this->isRoot())
     ss<<")";

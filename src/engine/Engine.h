@@ -90,6 +90,7 @@ class Engine
     static void gtpTimeSettings(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpTimeLeft(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     
+    static void gtpDoNPlayouts(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpOutputSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
   
   private:
@@ -130,6 +131,7 @@ class Engine
     
     long getTimeAllowedThisTurn(Go::Color col);
     
+    void doNPlayouts(int n);
     bool writeSGF(std::string filename, Go::Board *board, UCT::Tree *tree);
 };
 

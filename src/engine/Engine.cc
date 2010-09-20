@@ -85,6 +85,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("time_settings",this,&Engine::gtpTimeSettings);
   gtpe->addFunctionCommand("time_left",this,&Engine::gtpTimeLeft);
   
+  gtpe->addFunctionCommand("donplayouts",this,&Engine::gtpDoNPlayouts);
   gtpe->addFunctionCommand("outputsgf",this,&Engine::gtpOutputSGF);
   
   gtpe->addAnalyzeCommand("final_score","Final Score","string");
@@ -93,11 +94,12 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("showvalidmoves","Show Valid Moves","sboard");
   gtpe->addAnalyzeCommand("showgroupsize","Show Group Size","sboard");
   gtpe->addAnalyzeCommand("showpatternmatches","Show Pattern Matches","sboard");
-  gtpe->addAnalyzeCommand("loadpatterns %r","Load Patterns","none");
+  gtpe->addAnalyzeCommand("loadpatterns %%r","Load Patterns","none");
   gtpe->addAnalyzeCommand("clearpatterns","Clear Patterns","none");
   gtpe->addAnalyzeCommand("doboardcopy","Do Board Copy","none");
   gtpe->addAnalyzeCommand("param","Parameters","param");
-  gtpe->addAnalyzeCommand("outputsgf %w","Output SGF","none");
+  gtpe->addAnalyzeCommand("donplayouts %%s","Do N Playouts","none");
+  gtpe->addAnalyzeCommand("outputsgf %%w","Output SGF","none");
 }
 
 void Engine::gtpBoardSize(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
@@ -481,6 +483,25 @@ void Engine::gtpOutputSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     gtpe->getOutput()->printf("error writing sgf file: %s",sgffile.c_str());
     gtpe->getOutput()->endResponse();
   }
+}
+
+void Engine::gtpDoNPlayouts(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("need 1 arg");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  int n=cmd->getIntArg(0);
+  me->doNPlayouts(n);
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->endResponse();
 }
 
 void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
@@ -1262,5 +1283,163 @@ bool Engine::writeSGF(std::string filename, Go::Board *board, UCT::Tree *tree)
   sgffile.close();
   
   return true;
+}
+
+void Engine::doNPlayouts(int n)
+{
+  if (movepolicy==Engine::MP_UCT || movepolicy==Engine::MP_ONEPLY)
+  {
+    int totalplayouts=0;
+    int livegfxupdate=0;
+    Go::Color col=currentboard->nextToMove();
+    
+    if (!uctkeepsubtree)
+      this->clearMoveTree();
+    
+    if (movetree->isLeaf())
+      this->expandLeaf(movetree);
+    
+    Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
+    Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
+    
+    for (int i=0;i<n;i++)
+    { 
+      UCT::Tree *playouttree = this->getPlayoutTarget(movetree);
+      if (playouttree==NULL)
+        break;
+      std::list<Go::Move> playoutmoves=playouttree->getMovesFromRoot();
+      if (playoutmoves.size()==0)
+        break;
+      
+      Go::Board *playoutboard=currentboard->copy();
+      if (ravemoves>0)
+      {
+        firstlist->clear();
+        secondlist->clear();
+      }
+      this->randomPlayout(playoutboard,playoutmoves,col,(ravemoves>0?firstlist:NULL),(ravemoves>0?secondlist:NULL));
+      totalplayouts++;
+      
+      bool playoutwin=Go::Board::isWinForColor(playoutmoves.back().getColor(),playoutboard->score()-komi);
+      if (playoutwin)
+        playouttree->addWin();
+      else
+        playouttree->addLose();
+      
+      if (ravemoves>0)
+      {
+        bool ravewin=Go::Board::isWinForColor(col,playoutboard->score()-komi);
+        
+        for (int p=0;p<playoutboard->getPositionMax();p++)
+        {
+          if (firstlist->get(p))
+          {
+            UCT::Tree *subtree=movetree->getChild(Go::Move(col,p));
+            if (subtree!=NULL)
+            {
+              if (ravewin)
+                subtree->addRAVEWin();
+              else
+                subtree->addRAVELose();
+            }
+          }
+        }
+        
+        UCT::Tree *secondtree=movetree->getChild(playoutmoves.front());
+        if (!secondtree->isLeaf())
+        {
+          for (int p=0;p<playoutboard->getPositionMax();p++)
+          {
+            if (secondlist->get(p))
+            {
+              UCT::Tree *subtree=secondtree->getChild(Go::Move(Go::otherColor(col),p));
+              if (subtree!=NULL)
+              {
+                if (ravewin)
+                  subtree->addRAVELose();
+                else
+                  subtree->addRAVEWin();
+              }
+            }
+          }
+        }
+      }
+      
+      if (livegfx)
+      {
+        if (livegfxupdate>=(livegfxupdateplayouts-1))
+        {
+          livegfxupdate=0;
+          
+          gtpe->getOutput()->printfDebug("gogui-gfx:\n");
+          gtpe->getOutput()->printfDebug("TEXT [genmove]: thinking... playouts:%d\n",totalplayouts);
+          
+          gtpe->getOutput()->printfDebug("INFLUENCE");
+          int maxplayouts=0;
+          for(std::list<UCT::Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
+          {
+            if ((*iter)->getPlayouts()>maxplayouts)
+              maxplayouts=(*iter)->getPlayouts();
+          }
+          float colorfactor=(col==Go::BLACK?1:-1);
+          for(std::list<UCT::Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
+          {
+            if (!(*iter)->getMove().isPass() && !(*iter)->getMove().isResign())
+            {
+              Gtp::Vertex vert={(*iter)->getMove().getX(boardsize),(*iter)->getMove().getY(boardsize)};
+              gtpe->getOutput()->printfDebug(" ");
+              gtpe->getOutput()->printDebugVertex(vert);
+              float playoutpercentage=(float)(*iter)->getPlayouts()/maxplayouts;
+              if (playoutpercentage>1)
+                playoutpercentage=1;
+              gtpe->getOutput()->printfDebug(" %.2f",playoutpercentage*colorfactor);
+            }
+          }
+          gtpe->getOutput()->printfDebug("\n");
+          if (movepolicy==Engine::MP_UCT)
+          {
+            gtpe->getOutput()->printfDebug("VAR");
+            std::list<Go::Move> bestmoves=this->getBestMoves(movetree,true)->getMovesFromRoot();
+            for(std::list<Go::Move>::iterator iter=bestmoves.begin();iter!=bestmoves.end();++iter) 
+            {
+              if (!(*iter).isPass() && !(*iter).isResign())
+              {
+                Gtp::Vertex vert={(*iter).getX(boardsize),(*iter).getY(boardsize)};
+                gtpe->getOutput()->printfDebug(" %c ",((*iter).getColor()==Go::BLACK?'B':'W'));
+                gtpe->getOutput()->printDebugVertex(vert);
+              }
+            }
+          }
+          else
+          {
+            gtpe->getOutput()->printfDebug("SQUARE");
+            for(std::list<UCT::Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
+            {
+              if (!(*iter)->getMove().isPass() && !(*iter)->getMove().isResign())
+              {
+                if ((*iter)->getPlayouts()==maxplayouts)
+                {
+                  Gtp::Vertex vert={(*iter)->getMove().getX(boardsize),(*iter)->getMove().getY(boardsize)};
+                  gtpe->getOutput()->printfDebug(" ");
+                  gtpe->getOutput()->printDebugVertex(vert);
+                }
+              }
+            }
+          }
+          gtpe->getOutput()->printfDebug("\n\n");
+          
+          boost::timer delay;
+          while (delay.elapsed()<livegfxdelay) {}
+        }
+        else
+          livegfxupdate++;
+      }
+      
+      delete playoutboard;
+    }
+    
+    delete firstlist;
+    delete secondlist;
+  }
 }
 
