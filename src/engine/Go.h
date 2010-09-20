@@ -230,6 +230,7 @@ namespace Go
       Go::Board *copy();
       void copyOver(Go::Board *copyboard);
       std::string toString();
+      std::string toSGFString();
       Go::Vertex *boardData() { return data; }; //read-only
       std::list<Go::Group*,Go::allocator_groupptr> *getGroups() { return &groups; };
       

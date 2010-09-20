@@ -151,6 +151,38 @@ std::string Go::Board::toString()
   return ss.str();
 }
 
+std::string Go::Board::toSGFString()
+{
+  std::ostringstream ss,ssb,ssw;
+  
+  for (int p=0;p<sizedata;p++)
+  {
+    if (this->getColor(p)==Go::BLACK)
+    {
+      ssb<<"[";
+      ssb<<(char)(Go::Position::pos2x(p,size)+'a');
+      ssb<<(char)(size-Go::Position::pos2y(p,size)+'a'-1);
+      ssb<<"]";
+    }
+  }
+  if (ssb.str().length()>0)
+    ss<<"AB"<<ssb.str();
+  for (int p=0;p<sizedata;p++)
+  {
+    if (this->getColor(p)==Go::WHITE)
+    {
+      ssw<<"[";
+      ssw<<(char)(Go::Position::pos2x(p,size)+'a');
+      ssw<<(char)(size-Go::Position::pos2y(p,size)+'a'-1);
+      ssw<<"]";
+    }
+  }
+  if (ssw.str().length()>0)
+    ss<<"AW"<<ssw.str();
+  ss<<"PL["<<Go::colorToChar(this->nextToMove())<<"]";
+  return ss.str();
+}
+
 int Go::Board::score()
 {
   Go::Board::ScoreVertex *scoredata;
@@ -172,7 +204,7 @@ int Go::Board::score()
   
   for (int p=0;p<sizedata;p++)
   {
-    if (this->getColor(p)!=OFFBOARD && !scoredata[p].touched && this->getColor(p)!=EMPTY)
+    if (this->getColor(p)!=Go::OFFBOARD && !scoredata[p].touched && this->getColor(p)!=Go::EMPTY)
     {
       this->spreadScore(scoredata,p,this->getColor(p));
     }

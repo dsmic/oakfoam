@@ -5,6 +5,8 @@
 
 #include <cmath>
 #include <list>
+#include <string>
+#include <sstream>
 #include "Go.h"
 
 namespace UCT
@@ -39,6 +41,8 @@ namespace UCT
       void addRAVELose();
       void addRAVEWins(int n);
       void addRAVELoses(int n);
+      
+      std::string toSGFString(int boardsize);
       
     private:
       UCT::Tree *parent;

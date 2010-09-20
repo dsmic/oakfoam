@@ -183,8 +183,29 @@ void UCT::Tree::divorceChild(UCT::Tree *child)
   child->parent=NULL;
 }
 
-static float UCT::Tree::variance(int wins, int playouts)
+float UCT::Tree::variance(int wins, int playouts)
 {
   return wins-(float)(wins*wins)/playouts;
+}
+
+std::string UCT::Tree::toSGFString(int boardsize)
+{
+  std::ostringstream ss;
+  if (!this->isRoot())
+  {
+    ss<<"(;"<<Go::colorToChar(move.getColor())<<"[";
+    ss<<(char)(move.getX(boardsize)+'a');
+    ss<<(char)(boardsize-move.getY(boardsize)+'a'-1);
+    ss<<"]C[";
+    ss<<"Wins/Playouts: "<<wins<<"/"<<playouts<<"("<<this->getRatio()<<")";
+    ss<<"]";
+  }
+  for(std::list<UCT::Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
+  {
+    ss<<(*iter)->toSGFString(boardsize);
+  }
+  if (!this->isRoot())
+    ss<<")";
+  return ss.str();
 }
 

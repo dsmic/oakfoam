@@ -38,6 +38,7 @@
 #include <string>
 #include <list>
 #include <vector>
+#include <fstream>
 #include <boost/timer.hpp>
 #include "Go.h"
 #include "UCT.h"
@@ -88,6 +89,8 @@ class Engine
     
     static void gtpTimeSettings(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpTimeLeft(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    
+    static void gtpOutputSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
   
   private:
     Gtp::Engine *gtpe;
@@ -126,6 +129,8 @@ class Engine
     void chooseSubTree(Go::Move move);
     
     long getTimeAllowedThisTurn(Go::Color col);
+    
+    bool writeSGF(std::string filename, Go::Board *board, UCT::Tree *tree);
 };
 
 #endif

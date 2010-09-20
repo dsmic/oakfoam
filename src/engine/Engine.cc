@@ -85,6 +85,8 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("time_settings",this,&Engine::gtpTimeSettings);
   gtpe->addFunctionCommand("time_left",this,&Engine::gtpTimeLeft);
   
+  gtpe->addFunctionCommand("outputsgf",this,&Engine::gtpOutputSGF);
+  
   gtpe->addAnalyzeCommand("final_score","Final Score","string");
   gtpe->addAnalyzeCommand("showboard","Show Board","string");
   gtpe->addAnalyzeCommand("showliberties","Show Liberties","sboard");
@@ -95,6 +97,7 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("clearpatterns","Clear Patterns","none");
   gtpe->addAnalyzeCommand("doboardcopy","Do Board Copy","none");
   gtpe->addAnalyzeCommand("param","Parameters","param");
+  gtpe->addAnalyzeCommand("outputsgf %w","Output SGF","none");
 }
 
 void Engine::gtpBoardSize(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
@@ -449,6 +452,35 @@ void Engine::gtpDoBoardCopy(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->endResponse();
+}
+
+void Engine::gtpOutputSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("need 1 arg");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  std::string sgffile=cmd->getStringArg(0);
+  bool success=me->writeSGF(sgffile,me->currentboard,me->movetree);
+  
+  if (success)
+  {
+    gtpe->getOutput()->startResponse(cmd);
+    gtpe->getOutput()->printf("wrote sgf file: %s",sgffile.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+  else
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("error writing sgf file: %s",sgffile.c_str());
+    gtpe->getOutput()->endResponse();
+  }
 }
 
 void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
@@ -1217,5 +1249,18 @@ void Engine::chooseSubTree(Go::Move move)
     delete movetree;
     movetree=subtree;
   }
+}
+
+bool Engine::writeSGF(std::string filename, Go::Board *board, UCT::Tree *tree)
+{
+  std::ofstream sgffile;
+  sgffile.open(filename.c_str());
+  sgffile<<"(;\nFF[4]SZ["<<boardsize<<"]KM["<<komi<<"]\n";
+  sgffile<<board->toSGFString()<<"\n";
+  if (tree!=NULL)
+    sgffile<<tree->toSGFString(boardsize)<<"\n)";
+  sgffile.close();
+  
+  return true;
 }
 
