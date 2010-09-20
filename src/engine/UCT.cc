@@ -183,3 +183,8 @@ void UCT::Tree::divorceChild(UCT::Tree *child)
   child->parent=NULL;
 }
 
+static float UCT::Tree::variance(int wins, int playouts)
+{
+  return wins-(float)(wins*wins)/playouts;
+}
+

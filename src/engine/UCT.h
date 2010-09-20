@@ -51,6 +51,8 @@ namespace UCT
       float ucbc,ucbinit;
       
       void passPlayoutUp(bool win);
+      
+      static float variance(int wins, int playouts);
   };
 };
 #endif
