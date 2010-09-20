@@ -203,11 +203,41 @@ std::string UCT::Tree::toSGFString(int boardsize)
     ss<<"Wins/Playouts: "<<wins<<"/"<<playouts<<"("<<this->getRatio()<<")";
     ss<<"]";
   }
-  for(std::list<UCT::Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
+  
+  UCT::Tree *bestchild=NULL;
+  int besti=0;
+  bool usedchild[children->size()];
+  for (unsigned int i=0;i<children->size();i++)
+    usedchild[i]=false;
+  
+  while (true)
+  {
+    int i=0;
+    for(std::list<UCT::Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
+    {
+      if (usedchild[i]==false && (*iter)->getPlayouts()>0)
+      {
+        if (bestchild==NULL || (*iter)->getPlayouts()>bestchild->getPlayouts())
+        {
+          bestchild=(*iter);
+          besti=i;
+        }
+      }
+      i++;
+    }
+    if (bestchild==NULL)
+      break;
+    
+    ss<<bestchild->toSGFString(boardsize);
+    usedchild[besti]=true;
+    bestchild=NULL;
+    besti=0;
+  }
+  /*for(std::list<UCT::Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
   {
     if ((*iter)->getPlayouts()>0)
       ss<<(*iter)->toSGFString(boardsize);
-  }
+  }*/
   if (!this->isRoot())
     ss<<")\n";
   return ss.str();
