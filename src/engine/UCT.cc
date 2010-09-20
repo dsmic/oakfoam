@@ -194,8 +194,11 @@ std::string UCT::Tree::toSGFString(int boardsize)
   if (!this->isRoot())
   {
     ss<<"(;"<<Go::colorToChar(move.getColor())<<"[";
-    ss<<(char)(move.getX(boardsize)+'a');
-    ss<<(char)(boardsize-move.getY(boardsize)+'a'-1);
+    if (!move.isPass()&&!move.isResign())
+    {
+      ss<<(char)(move.getX(boardsize)+'a');
+      ss<<(char)(boardsize-move.getY(boardsize)+'a'-1);
+    }
     ss<<"]C[";
     ss<<"Wins/Playouts: "<<wins<<"/"<<playouts<<"("<<this->getRatio()<<")";
     ss<<"]";
@@ -206,7 +209,7 @@ std::string UCT::Tree::toSGFString(int boardsize)
       ss<<(*iter)->toSGFString(boardsize);
   }
   if (!this->isRoot())
-    ss<<")";
+    ss<<")\n";
   return ss.str();
 }
 
