@@ -5,6 +5,7 @@ Now: (before next release)
   improve playout move selection (quicker but still uniform or close)
   play a move early if it is clearly the right move
   think for longer if needed
+  merge code from "Do N Playouts"
 
 Soon: (before next major release)
   implement superko in tree
