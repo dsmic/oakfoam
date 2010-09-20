@@ -1022,14 +1022,17 @@ void Engine::randomPlayout(Go::Board *board, std::list<Go::Move> startmoves, Go:
   if (board->getPassesPlayed()>=2)
     return;
   
+  //fprintf(stderr,"[playout]:");
   for(std::list<Go::Move>::iterator iter=startmoves.begin();iter!=startmoves.end();++iter)
   {
     board->makeMove((*iter));
+    //fprintf(stderr," %s",(*iter).toString(boardsize).c_str());
     if (((*iter).getColor()==colfirst?firstlist:secondlist)!=NULL && !(*iter).isPass() && !(*iter).isResign())
       ((*iter).getColor()==colfirst?firstlist:secondlist)->set((*iter).getPosition());
     if (board->getPassesPlayed()>=2 || (*iter).isResign())
       return;
   }
+  //fprintf(stderr,"\n");
   
   Go::Color coltomove=board->nextToMove();
   Go::Move move=Go::Move(coltomove,Go::Move::PASS);
@@ -1072,9 +1075,11 @@ UCT::Tree *Engine::getPlayoutTarget(UCT::Tree *movetree)
     float urgency;
     
     if ((*iter)->getPlayouts()==0 && (*iter)->getRAVEPlayouts()==0)
-      urgency=(*iter)->getUrgency()+(rand.getRandomReal()*0.1);
+      urgency=(*iter)->getUrgency()+(rand.getRandomReal()/1000);
     else
       urgency=(*iter)->getUrgency();
+    
+    //fprintf(stderr,"[urg]:%s %.3f %.2f %.2f\n",(*iter)->getMove().toString(boardsize).c_str(),urgency,(*iter)->getRatio(),(*iter)->getRAVERatio());
     
     if (urgency>besturgency)
     {
@@ -1082,6 +1087,8 @@ UCT::Tree *Engine::getPlayoutTarget(UCT::Tree *movetree)
       besturgency=urgency;
     }
   }
+  
+  //fprintf(stderr,"\n");
   
   if (besttree==NULL)
     return NULL;

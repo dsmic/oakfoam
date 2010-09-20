@@ -111,13 +111,12 @@ float UCT::Tree::getVal()
   else
   {
     //float alpha=(float)(ravemoves-playouts)/ravemoves;
-    //if (alpha<0) alpha=0;
     
     float alpha=(float)raveplayouts/(raveplayouts + playouts + (float)(raveplayouts*playouts)/ravemoves);
     
-    if (alpha==0)
+    if (alpha<=0)
       return this->getRatio();
-    else if (alpha==1)
+    else if (alpha>=1)
       return this->getRAVERatio();
     else
       return this->getRAVERatio()*alpha + this->getRatio()*(1-alpha);
@@ -144,10 +143,10 @@ float UCT::Tree::getUrgency()
   {
     if (parent->getPlayouts()>0 && playouts>0)
       bias=ucbc*sqrt(log((float)parent->getPlayouts())/(playouts));
-    else if (parent->getPlayouts()>0)
+    else if (parent->getPlayouts()>1)
       bias=ucbc*sqrt(log((float)parent->getPlayouts())/(1));
     else
-      bias=0;
+      bias=ucbc/2;
   }
   
   return this->getVal()+bias;
