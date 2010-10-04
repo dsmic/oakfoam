@@ -1,10 +1,15 @@
-----------------------------
+-------------------------------------------------
   Oakfoam
-----------------------------
+-------------------------------------------------
   By Francois van Niekerk
   <flash.slash@gmail.com>
-----------------------------
+-------------------------------------------------
 
 This is my Go AI research project.
 
 Please contact me if you have any questions.
+
+-- License --------------------------------------
+
+Oakfoam is distributed under the BSD License,
+included in the file "COPYING".
