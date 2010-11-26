@@ -50,6 +50,8 @@ Engine::Engine(Gtp::Engine *ge)
   timeblack=0;
   timewhite=0;
   
+  lastexplanation="";
+  
   this->addGtpCommands();
   
   movetree=NULL;
@@ -89,6 +91,8 @@ void Engine::addGtpCommands()
   
   gtpe->addFunctionCommand("donplayouts",this,&Engine::gtpDoNPlayouts);
   gtpe->addFunctionCommand("outputsgf",this,&Engine::gtpOutputSGF);
+  
+  gtpe->addFunctionCommand("explainlastmove",this,&Engine::gtpExplainLastMove);
   
   gtpe->addAnalyzeCommand("final_score","Final Score","string");
   gtpe->addAnalyzeCommand("showboard","Show Board","string");
@@ -506,6 +510,15 @@ void Engine::gtpDoNPlayouts(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd
   gtpe->getOutput()->endResponse();
 }
 
+void Engine::gtpExplainLastMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString(me->lastexplanation);
+  gtpe->getOutput()->endResponse();
+}
+
 void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
@@ -894,6 +907,9 @@ void Engine::generateMove(Go::Color col, Go::Move **move)
         *timeleft=1;
     }
     
+    std::ostringstream ss;
+    ss << "r:"<<bestratio<< " tl:"<<*timeleft<< " plts:"<<totalplayouts<< " ppms:"<<playoutspermilli;
+    lastexplanation=ss.str();
     gtpe->getOutput()->printfDebug("[genmove]: r:%.2f tl:%ld plts:%d ppms:%.3f\n",bestratio,*timeleft,totalplayouts,playoutspermilli);
     if (livegfx)
       gtpe->getOutput()->printfDebug("gogui-gfx: TEXT [genmove]: r:%.2f tl:%ld plts:%d ppms:%.3f\n",bestratio,*timeleft,totalplayouts,playoutspermilli);

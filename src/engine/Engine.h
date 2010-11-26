@@ -94,6 +94,8 @@ class Engine
     
     static void gtpDoNPlayouts(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpOutputSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    
+    static void gtpExplainLastMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
   
   private:
     Gtp::Engine *gtpe;
@@ -121,6 +123,7 @@ class Engine
     Pattern::ThreeByThreeTable *patterntable;
     int uctatarigamma,uctpatterngamma;
     int outputsgfmaxchildren;
+    std::string lastexplanation;
     
     void addGtpCommands();
     
