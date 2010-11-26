@@ -998,7 +998,7 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
       int size=board->getSize();
       
       foreach_adjdiag(pos,p,{
-        if (board->validMove(Go::Move(col,p)))
+        if (board->validMove(Go::Move(col,p)) && !board->weakEye(col,p))
         {
           unsigned int pattern=Pattern::ThreeByThree::makeHash(board,p);
           if (col==Go::WHITE)
@@ -1019,7 +1019,7 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
       int size=board->getSize();
       
       foreach_adjdiag(pos,p,{
-        if (board->validMove(Go::Move(col,p)))
+        if (board->validMove(Go::Move(col,p)) && !board->weakEye(col,p))
         {
           unsigned int pattern=Pattern::ThreeByThree::makeHash(board,p);
           if (col==Go::WHITE)
