@@ -31,6 +31,7 @@ Soon: (before next major release)
   analyse initial urgency and how rave contributes
   reduce calls to validMoveCheck?
   prefer games that end sooner (don't drag on at end)
+  add regression testing
 
 Later: (at some point)
   make sure install works and is described somewhere
