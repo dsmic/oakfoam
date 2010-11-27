@@ -52,6 +52,8 @@ Engine::Engine(Gtp::Engine *ge)
   
   lastexplanation="";
   
+  debugon=DEBUG_ON;
+  
   this->addGtpCommands();
   
   movetree=NULL;
@@ -105,6 +107,7 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("doboardcopy","Do Board Copy","none");
   gtpe->addAnalyzeCommand("param","Parameters","param");
   gtpe->addAnalyzeCommand("donplayouts %%s","Do N Playouts","none");
+  gtpe->addAnalyzeCommand("donplayouts 1","Do 1 Playout","none");
   gtpe->addAnalyzeCommand("outputsgf %%w","Output SGF","none");
 }
 
@@ -548,6 +551,7 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     gtpe->getOutput()->printf("[string] live_gfx_update_playouts %d\n",me->livegfxupdateplayouts);
     gtpe->getOutput()->printf("[string] live_gfx_delay %.3f\n",me->livegfxdelay);
     gtpe->getOutput()->printf("[string] output_sgf_max_children %d\n",me->outputsgfmaxchildren);
+    gtpe->getOutput()->printf("[bool] debug %d\n",me->debugon);
     gtpe->getOutput()->endResponse(true);
   }
   else if (cmd->numArgs()==2)
@@ -602,6 +606,8 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
       me->timemoveminimum=cmd->getIntArg(1);
     else if (param=="output_sgf_max_children")
       me->outputsgfmaxchildren=cmd->getIntArg(1);
+    else if (param=="debug")
+      me->debugon=(cmd->getIntArg(1)==1);
     else if (param=="move_policy")
     {
       std::string val=cmd->getStringArg(1);
@@ -1151,9 +1157,11 @@ UCT::Tree *Engine::getPlayoutTarget(UCT::Tree *movetree)
     if ((*iter)->getPlayouts()==0 && (*iter)->getRAVEPlayouts()==0)
       urgency=(*iter)->getUrgency()+(rand.getRandomReal()/1000);
     else
+    {
       urgency=(*iter)->getUrgency();
-    
-    //fprintf(stderr,"[urg]:%s %.3f %.2f %.2f\n",(*iter)->getMove().toString(boardsize).c_str(),urgency,(*iter)->getRatio(),(*iter)->getRAVERatio());
+      if (debugon)
+        fprintf(stderr,"[urg]:%s %.3f %.2f(%d) %.2f(%d)\n",(*iter)->getMove().toString(boardsize).c_str(),urgency,(*iter)->getRatio(),(*iter)->getPlayouts(),(*iter)->getRAVERatio(),(*iter)->getRAVEPlayouts());
+    }
     
     if (urgency>besturgency)
     {
@@ -1162,7 +1170,8 @@ UCT::Tree *Engine::getPlayoutTarget(UCT::Tree *movetree)
     }
   }
   
-  //fprintf(stderr,"\n");
+  if (debugon)
+    fprintf(stderr,"[best]:%s\n",besttree->getMove().toString(boardsize).c_str());
   
   if (besttree==NULL)
     return NULL;
@@ -1214,13 +1223,14 @@ void Engine::expandLeaf(UCT::Tree *movetree)
       if (validmovesbitboard->get(p))
       {
         UCT::Tree *nmt=new UCT::Tree(ucbc,ucbinit,ravemoves,Go::Move(col,p));
-        if (uctpatterngamma>0)
+        if (uctpatterngamma>0 && !startboard->weakEye(col,p))
         {
           unsigned int pattern=Pattern::ThreeByThree::makeHash(startboard,p);
           if (col==Go::WHITE)
             pattern=Pattern::ThreeByThree::invert(pattern);
           if (patterntable->isPattern(pattern))
             nmt->addRAVEWins(uctpatterngamma);
+            //nmt->addNodeWins(uctpatterngamma);
         }
         movetree->addChild(nmt);
       }
@@ -1239,6 +1249,7 @@ void Engine::expandLeaf(UCT::Tree *movetree)
             UCT::Tree *mt=movetree->getChild(Go::Move(col,liberty));
             if (mt!=NULL)
               mt->addRAVEWins(uctatarigamma);
+              //mt->addNodeWins(uctatarigamma);
           }
         }
       }
@@ -1346,6 +1357,14 @@ void Engine::doNPlayouts(int n)
         playouttree->addWin();
       else
         playouttree->addLose();
+      
+      if (debugon)
+      {
+        if (playoutwin && playoutmoves.back().getColor()==col)
+          fprintf(stderr,"[result]:win\n");
+        else
+          fprintf(stderr,"[result]:lose\n");
+      }
       
       if (ravemoves>0)
       {

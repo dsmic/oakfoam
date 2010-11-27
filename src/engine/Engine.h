@@ -32,6 +32,8 @@
 
 #define OUTPUTSGF_MAXCHILDREN 10
 
+#define DEBUG_ON false
+
 #define BOARDSIZE_MIN 2
 #define BOARDSIZE_MAX 25
 
@@ -124,6 +126,7 @@ class Engine
     int uctatarigamma,uctpatterngamma;
     int outputsgfmaxchildren;
     std::string lastexplanation;
+    bool debugon;
     
     void addGtpCommands();
     

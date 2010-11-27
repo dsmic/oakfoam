@@ -58,6 +58,17 @@ void UCT::Tree::addLose()
   this->passPlayoutUp(false);
 }
 
+void UCT::Tree::addNodeWins(int n)
+{
+  wins+=n;
+  playouts+=n;
+}
+
+void UCT::Tree::addNodeLoses(int n)
+{
+  playouts+=n;
+}
+
 void UCT::Tree::addRAVEWin()
 {
   ravewins++;
@@ -118,8 +129,10 @@ float UCT::Tree::getVal()
       return this->getRatio();
     else if (alpha>=1)
       return this->getRAVERatio();
+      //return this->getRAVERatio() + this->getRatio();
     else
       return this->getRAVERatio()*alpha + this->getRatio()*(1-alpha);
+      //return this->getRAVERatio()*alpha + this->getRatio();
   }
 }
 
@@ -141,7 +154,7 @@ float UCT::Tree::getUrgency()
     bias=0;
   else
   {
-    if (parent->getPlayouts()>0 && playouts>0)
+    if (parent->getPlayouts()>1 && playouts>0)
       bias=ucbc*sqrt(log((float)parent->getPlayouts())/(playouts));
     else if (parent->getPlayouts()>1)
       bias=ucbc*sqrt(log((float)parent->getPlayouts())/(1));
@@ -200,7 +213,8 @@ std::string UCT::Tree::toSGFString(int boardsize, int maxchildren)
       ss<<(char)(boardsize-move.getY(boardsize)+'a'-1);
     }
     ss<<"]C[";
-    ss<<"Wins/Playouts: "<<wins<<"/"<<playouts<<"("<<this->getRatio()<<")";
+    ss<<"Wins/Playouts: "<<wins<<"/"<<playouts<<"("<<this->getRatio()<<")\n";
+    ss<<"RAVE Wins/Playouts: "<<ravewins<<"/"<<raveplayouts<<"("<<this->getRAVERatio()<<")";
     ss<<"]";
   }
   
