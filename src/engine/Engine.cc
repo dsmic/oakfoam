@@ -731,13 +731,14 @@ void Engine::generateMove(Go::Color col, Go::Move **move)
     if (livegfx)
       gtpe->getOutput()->printfDebug("gogui-gfx: TEXT [genmove]: starting...\n");
     
+    Go::Color expectedcol=currentboard->nextToMove();
     currentboard->setNextToMove(col);
     
-    if (!uctkeepsubtree)
+    if (expectedcol!=col)
+    {
+      gtpe->getOutput()->printfDebug("WARNING! Unexpected color. Discarding tree.\n");
       this->clearMoveTree();
-    
-    if (movetree->isLeaf())
-      this->expandLeaf(movetree);
+    }
     
     Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
     Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
@@ -749,66 +750,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move)
       else if (i>=playoutspermovemin && timeforthismove>0 && (timer.elapsed()*1000)>timeforthismove)
         break;
       
-      UCT::Tree *playouttree = this->getPlayoutTarget(movetree);
-      if (playouttree==NULL)
-        break;
-      std::list<Go::Move> playoutmoves=playouttree->getMovesFromRoot();
-      if (playoutmoves.size()==0)
-        break;
-      
-      Go::Board *playoutboard=currentboard->copy();
-      if (ravemoves>0)
-      {
-        firstlist->clear();
-        secondlist->clear();
-      }
-      this->randomPlayout(playoutboard,playoutmoves,col,(ravemoves>0?firstlist:NULL),(ravemoves>0?secondlist:NULL));
+      this->doPlayout(firstlist,secondlist);
       totalplayouts++;
-      
-      bool playoutwin=Go::Board::isWinForColor(playoutmoves.back().getColor(),playoutboard->score()-komi);
-      if (playoutwin)
-        playouttree->addWin();
-      else
-        playouttree->addLose();
-      
-      if (ravemoves>0)
-      {
-        bool ravewin=Go::Board::isWinForColor(col,playoutboard->score()-komi);
-        
-        for (int p=0;p<playoutboard->getPositionMax();p++)
-        {
-          if (firstlist->get(p))
-          {
-            UCT::Tree *subtree=movetree->getChild(Go::Move(col,p));
-            if (subtree!=NULL)
-            {
-              if (ravewin)
-                subtree->addRAVEWin();
-              else
-                subtree->addRAVELose();
-            }
-          }
-        }
-        
-        UCT::Tree *secondtree=movetree->getChild(playoutmoves.front());
-        if (!secondtree->isLeaf())
-        {
-          for (int p=0;p<playoutboard->getPositionMax();p++)
-          {
-            if (secondlist->get(p))
-            {
-              UCT::Tree *subtree=secondtree->getChild(Go::Move(Go::otherColor(col),p));
-              if (subtree!=NULL)
-              {
-                if (ravewin)
-                  subtree->addRAVELose();
-                else
-                  subtree->addRAVEWin();
-              }
-            }
-          }
-        }
-      }
       
       if (livegfx)
       {
@@ -816,62 +759,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move)
         {
           livegfxupdate=0;
           
-          gtpe->getOutput()->printfDebug("gogui-gfx:\n");
-          gtpe->getOutput()->printfDebug("TEXT [genmove]: thinking... playouts:%d\n",totalplayouts);
-          
-          gtpe->getOutput()->printfDebug("INFLUENCE");
-          int maxplayouts=0;
-          for(std::list<UCT::Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
-          {
-            if ((*iter)->getPlayouts()>maxplayouts)
-              maxplayouts=(*iter)->getPlayouts();
-          }
-          float colorfactor=(col==Go::BLACK?1:-1);
-          for(std::list<UCT::Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
-          {
-            if (!(*iter)->getMove().isPass() && !(*iter)->getMove().isResign())
-            {
-              Gtp::Vertex vert={(*iter)->getMove().getX(boardsize),(*iter)->getMove().getY(boardsize)};
-              gtpe->getOutput()->printfDebug(" ");
-              gtpe->getOutput()->printDebugVertex(vert);
-              float playoutpercentage=(float)(*iter)->getPlayouts()/maxplayouts;
-              if (playoutpercentage>1)
-                playoutpercentage=1;
-              gtpe->getOutput()->printfDebug(" %.2f",playoutpercentage*colorfactor);
-            }
-          }
-          gtpe->getOutput()->printfDebug("\n");
-          if (movepolicy==Engine::MP_UCT)
-          {
-            gtpe->getOutput()->printfDebug("VAR");
-            std::list<Go::Move> bestmoves=this->getBestMoves(movetree,true)->getMovesFromRoot();
-            for(std::list<Go::Move>::iterator iter=bestmoves.begin();iter!=bestmoves.end();++iter) 
-            {
-              if (!(*iter).isPass() && !(*iter).isResign())
-              {
-                Gtp::Vertex vert={(*iter).getX(boardsize),(*iter).getY(boardsize)};
-                gtpe->getOutput()->printfDebug(" %c ",((*iter).getColor()==Go::BLACK?'B':'W'));
-                gtpe->getOutput()->printDebugVertex(vert);
-              }
-            }
-          }
-          else
-          {
-            gtpe->getOutput()->printfDebug("SQUARE");
-            for(std::list<UCT::Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
-            {
-              if (!(*iter)->getMove().isPass() && !(*iter)->getMove().isResign())
-              {
-                if ((*iter)->getPlayouts()==maxplayouts)
-                {
-                  Gtp::Vertex vert={(*iter)->getMove().getX(boardsize),(*iter)->getMove().getY(boardsize)};
-                  gtpe->getOutput()->printfDebug(" ");
-                  gtpe->getOutput()->printDebugVertex(vert);
-                }
-              }
-            }
-          }
-          gtpe->getOutput()->printfDebug("\n\n");
+          this->displayPlayoutLiveGfx(totalplayouts);
           
           boost::timer delay;
           while (delay.elapsed()<livegfxdelay) {}
@@ -879,8 +767,6 @@ void Engine::generateMove(Go::Color col, Go::Move **move)
         else
           livegfxupdate++;
       }
-      
-      delete playoutboard;
     }
     
     delete firstlist;
@@ -1321,89 +1207,14 @@ void Engine::doNPlayouts(int n)
 {
   if (movepolicy==Engine::MP_UCT || movepolicy==Engine::MP_ONEPLY)
   {
-    int totalplayouts=0;
     int livegfxupdate=0;
-    Go::Color col=currentboard->nextToMove();
-    
-    if (!uctkeepsubtree)
-      this->clearMoveTree();
-    
-    if (movetree->isLeaf())
-      this->expandLeaf(movetree);
     
     Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
     Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
     
     for (int i=0;i<n;i++)
     { 
-      UCT::Tree *playouttree = this->getPlayoutTarget(movetree);
-      if (playouttree==NULL)
-        break;
-      std::list<Go::Move> playoutmoves=playouttree->getMovesFromRoot();
-      if (playoutmoves.size()==0)
-        break;
-      
-      Go::Board *playoutboard=currentboard->copy();
-      if (ravemoves>0)
-      {
-        firstlist->clear();
-        secondlist->clear();
-      }
-      this->randomPlayout(playoutboard,playoutmoves,col,(ravemoves>0?firstlist:NULL),(ravemoves>0?secondlist:NULL));
-      totalplayouts++;
-      
-      bool playoutwin=Go::Board::isWinForColor(playoutmoves.back().getColor(),playoutboard->score()-komi);
-      if (playoutwin)
-        playouttree->addWin();
-      else
-        playouttree->addLose();
-      
-      if (debugon)
-      {
-        if (playoutwin && playoutmoves.back().getColor()==col)
-          fprintf(stderr,"[result]:win\n");
-        else
-          fprintf(stderr,"[result]:lose\n");
-      }
-      
-      if (ravemoves>0)
-      {
-        bool ravewin=Go::Board::isWinForColor(col,playoutboard->score()-komi);
-        
-        for (int p=0;p<playoutboard->getPositionMax();p++)
-        {
-          if (firstlist->get(p))
-          {
-            UCT::Tree *subtree=movetree->getChild(Go::Move(col,p));
-            if (subtree!=NULL)
-            {
-              if (ravewin)
-                subtree->addRAVEWin();
-              else
-                subtree->addRAVELose();
-            }
-          }
-        }
-        
-        UCT::Tree *secondtree=movetree->getChild(playoutmoves.front());
-        if (!secondtree->isLeaf())
-        {
-          for (int p=0;p<playoutboard->getPositionMax();p++)
-          {
-            if (secondlist->get(p))
-            {
-              UCT::Tree *subtree=secondtree->getChild(Go::Move(Go::otherColor(col),p));
-              if (subtree!=NULL)
-              {
-                if (ravewin)
-                  subtree->addRAVELose();
-                else
-                  subtree->addRAVEWin();
-              }
-            }
-          }
-        }
-      }
+      this->doPlayout(firstlist,secondlist);
       
       if (livegfx)
       {
@@ -1411,62 +1222,7 @@ void Engine::doNPlayouts(int n)
         {
           livegfxupdate=0;
           
-          gtpe->getOutput()->printfDebug("gogui-gfx:\n");
-          gtpe->getOutput()->printfDebug("TEXT [genmove]: thinking... playouts:%d\n",totalplayouts);
-          
-          gtpe->getOutput()->printfDebug("INFLUENCE");
-          int maxplayouts=0;
-          for(std::list<UCT::Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
-          {
-            if ((*iter)->getPlayouts()>maxplayouts)
-              maxplayouts=(*iter)->getPlayouts();
-          }
-          float colorfactor=(col==Go::BLACK?1:-1);
-          for(std::list<UCT::Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
-          {
-            if (!(*iter)->getMove().isPass() && !(*iter)->getMove().isResign())
-            {
-              Gtp::Vertex vert={(*iter)->getMove().getX(boardsize),(*iter)->getMove().getY(boardsize)};
-              gtpe->getOutput()->printfDebug(" ");
-              gtpe->getOutput()->printDebugVertex(vert);
-              float playoutpercentage=(float)(*iter)->getPlayouts()/maxplayouts;
-              if (playoutpercentage>1)
-                playoutpercentage=1;
-              gtpe->getOutput()->printfDebug(" %.2f",playoutpercentage*colorfactor);
-            }
-          }
-          gtpe->getOutput()->printfDebug("\n");
-          if (movepolicy==Engine::MP_UCT)
-          {
-            gtpe->getOutput()->printfDebug("VAR");
-            std::list<Go::Move> bestmoves=this->getBestMoves(movetree,true)->getMovesFromRoot();
-            for(std::list<Go::Move>::iterator iter=bestmoves.begin();iter!=bestmoves.end();++iter) 
-            {
-              if (!(*iter).isPass() && !(*iter).isResign())
-              {
-                Gtp::Vertex vert={(*iter).getX(boardsize),(*iter).getY(boardsize)};
-                gtpe->getOutput()->printfDebug(" %c ",((*iter).getColor()==Go::BLACK?'B':'W'));
-                gtpe->getOutput()->printDebugVertex(vert);
-              }
-            }
-          }
-          else
-          {
-            gtpe->getOutput()->printfDebug("SQUARE");
-            for(std::list<UCT::Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
-            {
-              if (!(*iter)->getMove().isPass() && !(*iter)->getMove().isResign())
-              {
-                if ((*iter)->getPlayouts()==maxplayouts)
-                {
-                  Gtp::Vertex vert={(*iter)->getMove().getX(boardsize),(*iter)->getMove().getY(boardsize)};
-                  gtpe->getOutput()->printfDebug(" ");
-                  gtpe->getOutput()->printDebugVertex(vert);
-                }
-              }
-            }
-          }
-          gtpe->getOutput()->printfDebug("\n\n");
+          this->displayPlayoutLiveGfx(i);
           
           boost::timer delay;
           while (delay.elapsed()<livegfxdelay) {}
@@ -1474,12 +1230,164 @@ void Engine::doNPlayouts(int n)
         else
           livegfxupdate++;
       }
-      
-      delete playoutboard;
     }
     
     delete firstlist;
     delete secondlist;
   }
+}
+
+void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
+{
+  bool givenfirstlist,givensecondlist;
+  Go::Color col=currentboard->nextToMove();
+  
+  if (movetree->isLeaf())
+    this->expandLeaf(movetree);
+  
+  givenfirstlist=(firstlist==NULL);
+  givensecondlist=(secondlist==NULL);
+  
+  UCT::Tree *playouttree = this->getPlayoutTarget(movetree);
+  if (playouttree==NULL)
+    return;
+  std::list<Go::Move> playoutmoves=playouttree->getMovesFromRoot();
+  if (playoutmoves.size()==0)
+    return;
+  
+  if (!givenfirstlist)
+    firstlist=new Go::BitBoard(boardsize);
+  if (!givensecondlist)
+    secondlist=new Go::BitBoard(boardsize);
+  
+  Go::Board *playoutboard=currentboard->copy();
+  if (ravemoves>0)
+  {
+    firstlist->clear();
+    secondlist->clear();
+  }
+  this->randomPlayout(playoutboard,playoutmoves,col,(ravemoves>0?firstlist:NULL),(ravemoves>0?secondlist:NULL));
+  
+  bool playoutwin=Go::Board::isWinForColor(playoutmoves.back().getColor(),playoutboard->score()-komi);
+  if (playoutwin)
+    playouttree->addWin();
+  else
+    playouttree->addLose();
+  
+  if (debugon)
+  {
+    if (playoutwin && playoutmoves.back().getColor()==col)
+      fprintf(stderr,"[result]:win\n");
+    else
+      fprintf(stderr,"[result]:lose\n");
+  }
+  
+  if (ravemoves>0)
+  {
+    bool ravewin=Go::Board::isWinForColor(col,playoutboard->score()-komi);
+    
+    for (int p=0;p<playoutboard->getPositionMax();p++)
+    {
+      if (firstlist->get(p))
+      {
+        UCT::Tree *subtree=movetree->getChild(Go::Move(col,p));
+        if (subtree!=NULL)
+        {
+          if (ravewin)
+            subtree->addRAVEWin();
+          else
+            subtree->addRAVELose();
+        }
+      }
+    }
+    
+    UCT::Tree *secondtree=movetree->getChild(playoutmoves.front());
+    if (!secondtree->isLeaf())
+    {
+      for (int p=0;p<playoutboard->getPositionMax();p++)
+      {
+        if (secondlist->get(p))
+        {
+          UCT::Tree *subtree=secondtree->getChild(Go::Move(Go::otherColor(col),p));
+          if (subtree!=NULL)
+          {
+            if (ravewin)
+              subtree->addRAVELose();
+            else
+              subtree->addRAVEWin();
+          }
+        }
+      }
+    }
+  }
+  
+  delete playoutboard;
+  
+  if (!givenfirstlist)
+    delete firstlist;
+  if (!givensecondlist)
+    delete secondlist;
+}
+
+void Engine::displayPlayoutLiveGfx(int totalplayouts)
+{
+  Go::Color col=currentboard->nextToMove();
+  
+  gtpe->getOutput()->printfDebug("gogui-gfx:\n");
+  gtpe->getOutput()->printfDebug("TEXT [genmove]: thinking... playouts:%d\n",totalplayouts);
+  
+  gtpe->getOutput()->printfDebug("INFLUENCE");
+  int maxplayouts=0;
+  for(std::list<UCT::Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
+  {
+    if ((*iter)->getPlayouts()>maxplayouts)
+      maxplayouts=(*iter)->getPlayouts();
+  }
+  float colorfactor=(col==Go::BLACK?1:-1);
+  for(std::list<UCT::Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
+  {
+    if (!(*iter)->getMove().isPass() && !(*iter)->getMove().isResign())
+    {
+      Gtp::Vertex vert={(*iter)->getMove().getX(boardsize),(*iter)->getMove().getY(boardsize)};
+      gtpe->getOutput()->printfDebug(" ");
+      gtpe->getOutput()->printDebugVertex(vert);
+      float playoutpercentage=(float)(*iter)->getPlayouts()/maxplayouts;
+      if (playoutpercentage>1)
+        playoutpercentage=1;
+      gtpe->getOutput()->printfDebug(" %.2f",playoutpercentage*colorfactor);
+    }
+  }
+  gtpe->getOutput()->printfDebug("\n");
+  if (movepolicy==Engine::MP_UCT)
+  {
+    gtpe->getOutput()->printfDebug("VAR");
+    std::list<Go::Move> bestmoves=this->getBestMoves(movetree,true)->getMovesFromRoot();
+    for(std::list<Go::Move>::iterator iter=bestmoves.begin();iter!=bestmoves.end();++iter) 
+    {
+      if (!(*iter).isPass() && !(*iter).isResign())
+      {
+        Gtp::Vertex vert={(*iter).getX(boardsize),(*iter).getY(boardsize)};
+        gtpe->getOutput()->printfDebug(" %c ",((*iter).getColor()==Go::BLACK?'B':'W'));
+        gtpe->getOutput()->printDebugVertex(vert);
+      }
+    }
+  }
+  else
+  {
+    gtpe->getOutput()->printfDebug("SQUARE");
+    for(std::list<UCT::Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
+    {
+      if (!(*iter)->getMove().isPass() && !(*iter)->getMove().isResign())
+      {
+        if ((*iter)->getPlayouts()==maxplayouts)
+        {
+          Gtp::Vertex vert={(*iter)->getMove().getX(boardsize),(*iter)->getMove().getY(boardsize)};
+          gtpe->getOutput()->printfDebug(" ");
+          gtpe->getOutput()->printDebugVertex(vert);
+        }
+      }
+    }
+  }
+  gtpe->getOutput()->printfDebug("\n\n");
 }
 
