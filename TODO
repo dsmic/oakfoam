@@ -6,6 +6,7 @@ Now: (before next release)
   play a move early if it is clearly the right move
   think for longer if needed
   merge code from "Do N Playouts"
+  use symmetry (esp for opening)
 
 Soon: (before next major release)
   implement superko in tree
@@ -32,6 +33,7 @@ Soon: (before next major release)
   reduce calls to validMoveCheck?
   prefer games that end sooner (don't drag on at end)
   add regression testing
+  add more debug messages and debug levels
 
 Later: (at some point)
   make sure install works and is described somewhere
