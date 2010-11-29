@@ -2,7 +2,6 @@ TODO
 ------------------
 
 Now: (before next release)
-  improve playout move selection (quicker but still uniform or close)
   play a move early if it is clearly the right move
   think for longer if needed
   use symmetry (esp for opening)
@@ -10,9 +9,8 @@ Now: (before next release)
 Soon: (before next major release)
   implement superko in tree
   copy all board data with a copy() (groups and liberties)
-  investigate slow ppmi in trials after a while (possibly CPU overheating)
-  divide parameters into classes?
-  do running average for ppmi?
+  improve playout move selection (quicker but still uniform or close)
+  divide parameters into classes
   tune parameters
   add slight bonus to ratio for pts diff?
   try use thrown away part of tree
@@ -21,11 +19,11 @@ Soon: (before next major release)
   place a limit of sorts on depth? (expand after more plts)
   try use parent info in children (or grand parent)
   implement the mercy rule?
-  try UCB-TUNED forumla
-  replace floats with integers in tree?
+  try UCB1-TUNED formula
   make atari-aware playouts dependant on size of group?
   avoid self-atari in playouts with a group size over x?
   play at one of liberties of a enemy group with 2?
+  only do atari heuristics near newer moves?
   prefer closer moves using CFG to last and next-to-last move
   store neighbour counts for each board position? (num of empty...)
   analyse initial urgency and how rave contributes
