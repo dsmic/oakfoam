@@ -23,7 +23,6 @@ Soon: (before next major release)
   make atari-aware playouts dependant on size of group?
   avoid self-atari in playouts with a group size over x?
   play at one of liberties of a enemy group with 2?
-  only do atari heuristics near newer moves?
   prefer closer moves using CFG to last and next-to-last move
   store neighbour counts for each board position? (num of empty...)
   analyse initial urgency and how rave contributes
@@ -31,6 +30,7 @@ Soon: (before next major release)
   prefer games that end sooner (don't drag on at end)
   add regression testing
   add more debug messages and debug levels
+  move playout code out of engine
 
 Later: (at some point)
   make sure install works and is described somewhere

@@ -21,7 +21,7 @@ Engine::Engine(Gtp::Engine *ge)
   playoutspermoveinit=PLAYOUTS_PER_MOVE;
   playoutspermovemax=PLAYOUTS_PER_MOVE_MAX;
   playoutspermovemin=PLAYOUTS_PER_MOVE_MIN;
-  playoutatarichance=PLAYOUT_ATARI_CHANCE;
+  playoutatarienabled=PLAYOUT_ATARI_ENABLED;
   
   ucbc=UCB_C;
   ucbinit=UCB_INIT;
@@ -533,7 +533,8 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     gtpe->getOutput()->printf("[string] playouts_per_move %d\n",me->playoutspermove);
     gtpe->getOutput()->printf("[string] playouts_per_move_max %d\n",me->playoutspermovemax);
     gtpe->getOutput()->printf("[string] playouts_per_move_min %d\n",me->playoutspermovemin);
-    gtpe->getOutput()->printf("[string] playout_atari_chance %.2f\n",me->playoutatarichance);
+    gtpe->getOutput()->printf("[bool] playout_atari_enabled %d\n",me->playoutatarienabled);
+    gtpe->getOutput()->printf("[bool] playout_patterns_enabled %d\n",me->playoutpatternsenabled);
     gtpe->getOutput()->printf("[string] ucb_c %.2f\n",me->ucbc);
     gtpe->getOutput()->printf("[string] ucb_init %.2f\n",me->ucbinit);
     gtpe->getOutput()->printf("[string] rave_moves %d\n",me->ravemoves);
@@ -541,7 +542,6 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     gtpe->getOutput()->printf("[bool] uct_keep_subtree %d\n",me->uctkeepsubtree);
     gtpe->getOutput()->printf("[string] uct_atari_gamma %d\n",me->uctatarigamma);
     gtpe->getOutput()->printf("[string] uct_pattern_gamma %d\n",me->uctpatterngamma);
-    gtpe->getOutput()->printf("[bool] playout_patterns_enabled %d\n",me->playoutpatternsenabled);
     gtpe->getOutput()->printf("[string] resign_ratio_threshold %.3f\n",me->resignratiothreshold);
     gtpe->getOutput()->printf("[string] resign_move_factor_threshold %.2f\n",me->resignmovefactorthreshold);
     gtpe->getOutput()->printf("[string] time_k %.2f\n",me->timek);
@@ -567,8 +567,8 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
       me->playoutspermovemax=cmd->getIntArg(1);
     else if (param=="playouts_per_move_min")
       me->playoutspermovemin=cmd->getIntArg(1);
-    else if (param=="playout_atari_chance")
-      me->playoutatarichance=cmd->getFloatArg(1);
+    else if (param=="playout_atari_enabled")
+      me->playoutatarienabled=(cmd->getIntArg(1)==1);
     else if (param=="ucb_c")
       me->ucbc=cmd->getFloatArg(1);
     else if (param=="ucb_init")
@@ -826,6 +826,8 @@ void Engine::makeMove(Go::Move move)
   currentboard->makeMove(move);
   if (uctkeepsubtree)
     this->chooseSubTree(move);
+  else
+    delete movetree;
 }
 
 void Engine::setBoardSize(int s)
@@ -852,12 +854,12 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
     return;
   }
   
-  if (playoutatarichance>0)
+  if (playoutatarienabled)
   {
-    std::list<Go::Group*,Go::allocator_groupptr> *groups=board->getGroups();
     int *atarimoves=posarray;
     int atarimovescount=0;
     
+    /*std::list<Go::Group*,Go::allocator_groupptr> *groups=board->getGroups();
     for(std::list<Go::Group*,Go::allocator_groupptr>::iterator iter=groups->begin();iter!=groups->end();++iter) 
     {
       if ((*iter)->inAtari())
@@ -869,9 +871,47 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
           atarimovescount++;
         }
       }
+    }*/
+    if (!board->getLastMove().isPass())
+    {
+      int size=board->getSize();
+      foreach_adjacent(board->getLastMove().getPosition(),p,{
+        if (board->inGroup(p))
+        {
+          Go::Group *group=board->getGroup(p);
+          if (group!=NULL && group->inAtari())
+          {
+            int liberty=group->getAtariPosition();
+            if (board->validMove(Go::Move(col,liberty)) && (group->getColor()!=col || board->touchingEmpty(liberty)>1))
+            {
+              atarimoves[atarimovescount]=liberty;
+              atarimovescount++;
+            }
+          }
+        }
+      });
+    }
+    if (!board->getSecondLastMove().isPass())
+    {
+      int size=board->getSize();
+      foreach_adjacent(board->getSecondLastMove().getPosition(),p,{
+        if (board->inGroup(p))
+        {
+          Go::Group *group=board->getGroup(p);
+          if (group!=NULL && group->inAtari())
+          {
+            int liberty=group->getAtariPosition();
+            if (board->validMove(Go::Move(col,liberty)) && (group->getColor()!=col || board->touchingEmpty(liberty)>1))
+            {
+              atarimoves[atarimovescount]=liberty;
+              atarimovescount++;
+            }
+          }
+        }
+      });
     }
     
-    if (atarimovescount>0 && playoutatarichance>rand.getRandomReal())
+    if (atarimovescount>0)
     {
       int i=rand.getRandomInt(atarimovescount);
       move=Go::Move(col,atarimoves[i]);

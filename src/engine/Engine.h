@@ -5,7 +5,6 @@
 #define PLAYOUTS_PER_MOVE_MAX 100000
 #define PLAYOUTS_PER_MOVE_MIN 1000
 #define PLAYOUT_MAX_MOVE_FACTOR 3
-#define PLAYOUT_ATARI_CHANCE 0.8
 
 #define UCB_C 0.44
 #define UCB_INIT 1.2
@@ -17,6 +16,7 @@
 #define UCT_ATARI_GAMMA 10
 #define UCT_PATTERN_GAMMA 5
 
+#define PLAYOUT_ATARI_ENABLED true
 #define PLAYOUT_PATTERNS_ENABLED true
 
 #define RESIGN_RATIO_THRESHOLD 0.03
@@ -113,7 +113,7 @@ class Engine
     float timek;
     float ucbc,ucbinit;
     int ravemoves;
-    float playoutatarichance;
+    bool playoutatarienabled;
     Engine::MovePolicy movepolicy;
     int uctexpandafter;
     int livegfxupdateplayouts;
