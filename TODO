@@ -19,7 +19,7 @@ Soon: (before next major release)
   place a limit of sorts on depth? (expand after more plts)
   try use parent info in children (or grand parent)
   implement the mercy rule?
-  try UCB1-TUNED formula
+  try UCB1-TUNED formula (p.216(169) in SylvainGellyThesis)
   make atari-aware playouts dependant on size of group?
   avoid self-atari in playouts with a group size over x?
   play at one of liberties of a enemy group with 2?
