@@ -904,7 +904,6 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
                 });
                 if (captureorconnect)
                 {
-                  fprintf(stderr,"captureorconnect\n");
                   atarimoves[atarimovescount]=liberty;
                   atarimovescount++;
                 }
@@ -946,7 +945,6 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
                 });
                 if (captureorconnect)
                 {
-                  fprintf(stderr,"captureorconnect\n");
                   atarimoves[atarimovescount]=liberty;
                   atarimovescount++;
                 }
