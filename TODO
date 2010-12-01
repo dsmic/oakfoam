@@ -31,7 +31,7 @@ Soon: (before next major release)
   progressively add more reward for points diff if winrate very good?
   add regression testing
   add more debug messages and debug levels
-  move playout code out of engine
+  move playout/time/tree code out of engine
 
 Later: (at some point)
   make sure install works and is described somewhere
