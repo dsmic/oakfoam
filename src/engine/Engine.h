@@ -98,6 +98,7 @@ class Engine
     static void gtpOutputSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     
     static void gtpExplainLastMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpBoardStats(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
   
   private:
     Gtp::Engine *gtpe;

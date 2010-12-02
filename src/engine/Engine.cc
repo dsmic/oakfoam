@@ -95,9 +95,11 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("outputsgf",this,&Engine::gtpOutputSGF);
   
   gtpe->addFunctionCommand("explainlastmove",this,&Engine::gtpExplainLastMove);
+  gtpe->addFunctionCommand("boardstats",this,&Engine::gtpBoardStats);
   
   gtpe->addAnalyzeCommand("final_score","Final Score","string");
   gtpe->addAnalyzeCommand("showboard","Show Board","string");
+  gtpe->addAnalyzeCommand("boardstats","Board Stats","string");
   gtpe->addAnalyzeCommand("showliberties","Show Liberties","sboard");
   gtpe->addAnalyzeCommand("showvalidmoves","Show Valid Moves","sboard");
   gtpe->addAnalyzeCommand("showgroupsize","Show Group Size","sboard");
@@ -520,6 +522,17 @@ void Engine::gtpExplainLastMove(void *instance, Gtp::Engine* gtpe, Gtp::Command*
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printString(me->lastexplanation);
   gtpe->getOutput()->endResponse();
+}
+
+void Engine::gtpBoardStats(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printf("board stats:\n");
+  gtpe->getOutput()->printf("moves: %d\n",me->currentboard->getMovesMade());
+  gtpe->getOutput()->printf("symmetry: %s\n",me->currentboard->getSymmetryString().c_str());
+  gtpe->getOutput()->endResponse(true);
 }
 
 void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)

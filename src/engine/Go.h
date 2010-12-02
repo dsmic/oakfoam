@@ -258,6 +258,24 @@ namespace Go
       int touchingEmpty(int pos);
       
       static bool isWinForColor(Go::Color col, float score);
+      
+      enum Symmetry
+      {
+        NONE,
+        VERTICAL,
+        HORIZONTAL,
+        DIAGONAL_DOWN,
+        DIAGONAL_UP,
+        DIAGONAL_BOTH,
+        VERTICAL_HORIZONTAL,
+        FULL
+      };
+      bool hasSymmetryVertical();
+      bool hasSymmetryHorizontal();
+      bool hasSymmetryDiagonalDown();
+      bool hasSymmetryDiagonalUp();
+      Symmetry getSymmetry();
+      std::string getSymmetryString();
     
     private:
       int size;
