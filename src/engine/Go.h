@@ -253,7 +253,7 @@ namespace Go
       int getMovesMade() { return movesmade; };
       int getPassesPlayed() { return passesplayed; };
       Go::Color nextToMove() { return nexttomove; };
-      void setNextToMove(Go::Color col) { nexttomove=col; };
+      void setNextToMove(Go::Color col) { nexttomove=col; }; //clear ko?
       int getPositionMax() { return sizedata; };
       Go::Move getLastMove() { return lastmove; };
       Go::Move getSecondLastMove() { return secondlastmove; };

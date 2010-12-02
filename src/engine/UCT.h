@@ -25,6 +25,8 @@ namespace UCT
       bool isTerminal();
       std::list<Go::Move> getMovesFromRoot();
       void divorceChild(UCT::Tree *child);
+      bool isPrimary() { return (symmetryprimary==NULL); };
+      UCT::Tree *getPrimary() { return symmetryprimary; };
       
       UCT::Tree *getChild(Go::Move move);
       int getPlayouts() { return playouts; };
@@ -52,6 +54,7 @@ namespace UCT
     private:
       UCT::Tree *parent;
       std::list<UCT::Tree*> *children;
+      UCT::Tree *symmetryprimary;
       
       Go::Move move;
       int playouts,raveplayouts,priorplayouts;

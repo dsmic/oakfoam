@@ -14,6 +14,7 @@ UCT::Tree::Tree(float uc, float ui, int rm, Go::Move mov, UCT::Tree *p)
   ravemoves=rm;
   ucbc=uc;
   ucbinit=ui;
+  symmetryprimary=NULL;
 }
 
 UCT::Tree::~Tree()
