@@ -469,6 +469,8 @@ void Engine::gtpDoBoardCopy(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd
   Go::Board *newboard=me->currentboard->copy();
   delete oldboard;
   me->currentboard=newboard;
+  if (!me->uctsymmetryuse)
+    me->currentboard->turnSymmetryOff();
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->endResponse();
@@ -906,6 +908,8 @@ void Engine::clearBoard()
 {
   delete currentboard;
   currentboard = new Go::Board(boardsize);
+  if (!uctsymmetryuse)
+    currentboard->turnSymmetryOff();
   this->clearMoveTree();
 }
 
