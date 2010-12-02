@@ -137,6 +137,7 @@ class Engine
     UCT::Tree *getBestMoves(UCT::Tree *movetree, bool descend);
     void clearMoveTree();
     void chooseSubTree(Go::Move move);
+    bool isAtariCaptureOrConnect(Go::Board *board, int pos, Go::Color col, Go::Group *touchinggroup);
     
     long getTimeAllowedThisTurn(Go::Color col);
     

@@ -9,6 +9,8 @@ UCT::Tree::Tree(float uc, float ui, int rm, Go::Move mov, UCT::Tree *p)
   wins=0;
   raveplayouts=0;
   ravewins=0;
+  priorplayouts=0;
+  priorwins=0;
   ravemoves=rm;
   ucbc=uc;
   ucbinit=ui;
@@ -45,6 +47,22 @@ float UCT::Tree::getRAVERatio()
     return 0;
 }
 
+float UCT::Tree::getPriorRatio()
+{
+  if (priorplayouts>0)
+    return (float)priorwins/priorplayouts;
+  else
+    return 0;
+}
+
+float UCT::Tree::getBasePriorRatio()
+{
+  if (playouts>0 || priorplayouts>0)
+    return (float)(wins+priorwins)/(playouts+priorplayouts);
+  else
+    return 0;
+}
+
 void UCT::Tree::addWin()
 {
   wins++;
@@ -58,15 +76,15 @@ void UCT::Tree::addLose()
   this->passPlayoutUp(false);
 }
 
-void UCT::Tree::addNodeWins(int n)
+void UCT::Tree::addPriorWins(int n)
 {
-  wins+=n;
-  playouts+=n;
+  priorwins+=n;
+  priorplayouts+=n;
 }
 
-void UCT::Tree::addNodeLoses(int n)
+void UCT::Tree::addPriorLoses(int n)
 {
-  playouts+=n;
+  priorplayouts+=n;
 }
 
 void UCT::Tree::addRAVEWin()
@@ -116,7 +134,7 @@ void UCT::Tree::passPlayoutUp(bool win)
 float UCT::Tree::getVal()
 {
   if (ravemoves==0 || raveplayouts==0)
-    return this->getRatio();
+    return this->getBasePriorRatio();
   else if (playouts==0)
     return this->getRAVERatio();
   else
@@ -126,20 +144,19 @@ float UCT::Tree::getVal()
     float alpha=(float)raveplayouts/(raveplayouts + playouts + (float)(raveplayouts*playouts)/ravemoves);
     
     if (alpha<=0)
-      return this->getRatio();
+      return this->getBasePriorRatio();
     else if (alpha>=1)
       return this->getRAVERatio();
-      //return this->getRAVERatio() + this->getRatio();
     else
-      return this->getRAVERatio()*alpha + this->getRatio()*(1-alpha);
-      //return this->getRAVERatio()*alpha + this->getRatio();
+      //return this->getRAVERatio()*alpha + this->getRatio()*(1-alpha);
+      return this->getRAVERatio()*alpha + this->getBasePriorRatio()*(1-alpha);
   }
 }
 
 float UCT::Tree::getUrgency()
 {
   float bias;
-  if (playouts==0 && raveplayouts==0)
+  if (playouts==0 && raveplayouts==0 && priorplayouts==0)
     return ucbinit;
   
   if (this->isTerminal())

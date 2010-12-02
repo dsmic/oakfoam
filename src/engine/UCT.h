@@ -29,16 +29,19 @@ namespace UCT
       UCT::Tree *getChild(Go::Move move);
       int getPlayouts() { return playouts; };
       int getRAVEPlayouts() { return raveplayouts; };
+      int getPriorPlayouts() { return priorplayouts; };
       float getRatio();
       float getRAVERatio();
+      float getPriorRatio();
+      float getBasePriorRatio();
       float getVal();
       float getUrgency();
       
       void addChild(UCT::Tree *node);
       void addWin();
       void addLose();
-      void addNodeWins(int n);
-      void addNodeLoses(int n);
+      void addPriorWins(int n);
+      void addPriorLoses(int n);
       void addRAVEWin();
       void addRAVELose();
       void addRAVEWins(int n);
@@ -51,8 +54,8 @@ namespace UCT
       std::list<UCT::Tree*> *children;
       
       Go::Move move;
-      int playouts,raveplayouts;
-      int wins,ravewins;
+      int playouts,raveplayouts,priorplayouts;
+      int wins,ravewins,priorwins;
       int ravemoves;
       float ucbc,ucbinit;
       

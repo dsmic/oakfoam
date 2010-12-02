@@ -882,32 +882,10 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
           if (group!=NULL && group->inAtari())
           {
             int liberty=group->getAtariPosition();
-            if (board->validMove(Go::Move(col,liberty)))
+            if (board->validMove(Go::Move(col,liberty)) && this->isAtariCaptureOrConnect(board,liberty,col,group))
             {
-              if (group->getColor()!=col || board->touchingEmpty(liberty)>1)
-              {
-                atarimoves[atarimovescount]=liberty;
-                atarimovescount++;
-              }
-              else if (group->getColor()==col)
-              {
-                bool captureorconnect=false;
-                foreach_adjacent(liberty,q,{
-                  if (board->inGroup(q))
-                  {
-                    Go::Group *group2=board->getGroup(q);
-                    if (group2!=NULL && group2->getColor()==col && group!=group2)
-                      captureorconnect=true;
-                    else if (group2!=NULL && group2->getColor()!=col && group2->inAtari())
-                      captureorconnect=true;
-                  }
-                });
-                if (captureorconnect)
-                {
-                  atarimoves[atarimovescount]=liberty;
-                  atarimovescount++;
-                }
-              }
+              atarimoves[atarimovescount]=liberty;
+              atarimovescount++;
             }
           }
         }
@@ -923,32 +901,10 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
           if (group!=NULL && group->inAtari())
           {
             int liberty=group->getAtariPosition();
-            if (board->validMove(Go::Move(col,liberty)))
+            if (board->validMove(Go::Move(col,liberty)) && this->isAtariCaptureOrConnect(board,liberty,col,group))
             {
-              if (group->getColor()!=col || board->touchingEmpty(liberty)>1)
-              {
-                atarimoves[atarimovescount]=liberty;
-                atarimovescount++;
-              }
-              else if (group->getColor()==col)
-              {
-                bool captureorconnect=false;
-                foreach_adjacent(liberty,q,{
-                  if (board->inGroup(q))
-                  {
-                    Go::Group *group2=board->getGroup(q);
-                    if (group2!=NULL && group2->getColor()==col && group!=group2)
-                      captureorconnect=true;
-                    else if (group2!=NULL && group2->getColor()!=col && group2->inAtari())
-                      captureorconnect=true;
-                  }
-                });
-                if (captureorconnect)
-                {
-                  atarimoves[atarimovescount]=liberty;
-                  atarimovescount++;
-                }
-              }
+              atarimoves[atarimovescount]=liberty;
+              atarimovescount++;
             }
           }
         }
@@ -1124,13 +1080,13 @@ UCT::Tree *Engine::getPlayoutTarget(UCT::Tree *movetree)
   {
     float urgency;
     
-    if ((*iter)->getPlayouts()==0 && (*iter)->getRAVEPlayouts()==0)
+    if ((*iter)->getPlayouts()==0 && (*iter)->getRAVEPlayouts()==0 && (*iter)->getPriorPlayouts()==0)
       urgency=(*iter)->getUrgency()+(rand.getRandomReal()/1000);
     else
     {
       urgency=(*iter)->getUrgency();
       if (debugon)
-        fprintf(stderr,"[urg]:%s %.3f %.2f(%d) %.2f(%d)\n",(*iter)->getMove().toString(boardsize).c_str(),urgency,(*iter)->getRatio(),(*iter)->getPlayouts(),(*iter)->getRAVERatio(),(*iter)->getRAVEPlayouts());
+        fprintf(stderr,"[urg]:%s %.3f %.2f(%d) %.2f(%d) %.2f(%d)\n",(*iter)->getMove().toString(boardsize).c_str(),urgency,(*iter)->getRatio(),(*iter)->getPlayouts(),(*iter)->getRAVERatio(),(*iter)->getRAVEPlayouts(),(*iter)->getPriorRatio(),(*iter)->getPriorPlayouts());
     }
     
     if (urgency>besturgency)
@@ -1199,8 +1155,7 @@ void Engine::expandLeaf(UCT::Tree *movetree)
           if (col==Go::WHITE)
             pattern=Pattern::ThreeByThree::invert(pattern);
           if (patterntable->isPattern(pattern))
-            nmt->addRAVEWins(uctpatterngamma);
-            //nmt->addNodeWins(uctpatterngamma);
+            nmt->addPriorWins(uctpatterngamma);
         }
         movetree->addChild(nmt);
       }
@@ -1214,12 +1169,11 @@ void Engine::expandLeaf(UCT::Tree *movetree)
         if ((*iter)->inAtari())
         {
           int liberty=(*iter)->getAtariPosition();
-          if (startboard->validMove(Go::Move(col,liberty)) && ((*iter)->getColor()!=col || startboard->touchingEmpty(liberty)>1))
+          if (startboard->validMove(Go::Move(col,liberty)) && this->isAtariCaptureOrConnect(startboard,liberty,col,(*iter)))
           {
             UCT::Tree *mt=movetree->getChild(Go::Move(col,liberty));
             if (mt!=NULL)
-              mt->addRAVEWins(uctatarigamma);
-              //mt->addNodeWins(uctatarigamma);
+              mt->addPriorWins(uctatarigamma);
           }
         }
       }
@@ -1473,5 +1427,30 @@ void Engine::displayPlayoutLiveGfx(int totalplayouts)
     }
   }
   gtpe->getOutput()->printfDebug("\n\n");
+}
+
+bool Engine::isAtariCaptureOrConnect(Go::Board *board, int pos, Go::Color col, Go::Group *touchinggroup)
+{
+  int size=board->getSize();
+  if (board->validMove(Go::Move(col,pos)))
+  {
+    if (touchinggroup->getColor()!=col || board->touchingEmpty(pos)>1)
+      return true;
+    else if (touchinggroup->getColor()==col)
+    {
+      foreach_adjacent(pos,p,{
+        if (board->inGroup(p))
+        {
+          Go::Group *group=board->getGroup(p);
+          if (group!=NULL && group->getColor()==col && group!=touchinggroup)
+            return true;
+          else if (group!=NULL && group->getColor()!=col && group->inAtari())
+            return true;
+        }
+      });
+    }
+  }
+  
+  return false;
 }
 
