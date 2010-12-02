@@ -102,6 +102,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("explainlastmove",this,&Engine::gtpExplainLastMove);
   gtpe->addFunctionCommand("boardstats",this,&Engine::gtpBoardStats);
   gtpe->addFunctionCommand("showsymmetrytransforms",this,&Engine::gtpShowSymmetryTransforms);
+  gtpe->addFunctionCommand("showtreelivegfx",this,&Engine::gtpShowTreeLiveGfx);
   
   gtpe->addAnalyzeCommand("final_score","Final Score","string");
   gtpe->addAnalyzeCommand("showboard","Show Board","string");
@@ -111,6 +112,7 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("showvalidmoves","Show Valid Moves","sboard");
   gtpe->addAnalyzeCommand("showgroupsize","Show Group Size","sboard");
   gtpe->addAnalyzeCommand("showpatternmatches","Show Pattern Matches","sboard");
+  gtpe->addAnalyzeCommand("showtreelivegfx","Show Tree LiveGfx","none");
   gtpe->addAnalyzeCommand("loadpatterns %%r","Load Patterns","none");
   gtpe->addAnalyzeCommand("clearpatterns","Clear Patterns","none");
   gtpe->addAnalyzeCommand("doboardcopy","Do Board Copy","none");
@@ -586,6 +588,21 @@ void Engine::gtpShowSymmetryTransforms(void *instance, Gtp::Engine* gtpe, Gtp::C
   }
 
   gtpe->getOutput()->endResponse(true);
+}
+
+void Engine::gtpShowTreeLiveGfx(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (me->movepolicy==Engine::MP_UCT || me->movepolicy==Engine::MP_ONEPLY)
+  {
+    me->displayPlayoutLiveGfx();
+    boost::timer delay;
+    while (delay.elapsed()<5) {}
+  }
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->endResponse();
 }
 
 void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
@@ -1351,6 +1368,9 @@ void Engine::doNPlayouts(int n)
     
     delete firstlist;
     delete secondlist;
+    
+    if (livegfx)
+      gtpe->getOutput()->printfDebug("gogui-gfx: CLEAR\n");
   }
 }
 
@@ -1452,10 +1472,11 @@ void Engine::displayPlayoutLiveGfx(int totalplayouts)
   Go::Color col=currentboard->nextToMove();
   
   gtpe->getOutput()->printfDebug("gogui-gfx:\n");
-  gtpe->getOutput()->printfDebug("TEXT [genmove]: thinking... playouts:%d\n",totalplayouts);
+  if (totalplayouts!=-1)
+    gtpe->getOutput()->printfDebug("TEXT [genmove]: thinking... playouts:%d\n",totalplayouts);
   
   gtpe->getOutput()->printfDebug("INFLUENCE");
-  int maxplayouts=0;
+  int maxplayouts=1; //prevent div by zero
   for(std::list<UCT::Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
   {
     if ((*iter)->getPlayouts()>maxplayouts)
@@ -1479,14 +1500,18 @@ void Engine::displayPlayoutLiveGfx(int totalplayouts)
   if (movepolicy==Engine::MP_UCT)
   {
     gtpe->getOutput()->printfDebug("VAR");
-    std::list<Go::Move> bestmoves=this->getBestMoves(movetree,true)->getMovesFromRoot();
-    for(std::list<Go::Move>::iterator iter=bestmoves.begin();iter!=bestmoves.end();++iter) 
+    UCT::Tree *besttree=this->getBestMoves(movetree,true);
+    if (besttree!=NULL)
     {
-      if (!(*iter).isPass() && !(*iter).isResign())
+      std::list<Go::Move> bestmoves=besttree->getMovesFromRoot();
+      for(std::list<Go::Move>::iterator iter=bestmoves.begin();iter!=bestmoves.end();++iter) 
       {
-        Gtp::Vertex vert={(*iter).getX(boardsize),(*iter).getY(boardsize)};
-        gtpe->getOutput()->printfDebug(" %c ",((*iter).getColor()==Go::BLACK?'B':'W'));
-        gtpe->getOutput()->printDebugVertex(vert);
+        if (!(*iter).isPass() && !(*iter).isResign())
+        {
+          Gtp::Vertex vert={(*iter).getX(boardsize),(*iter).getY(boardsize)};
+          gtpe->getOutput()->printfDebug(" %c ",((*iter).getColor()==Go::BLACK?'B':'W'));
+          gtpe->getOutput()->printDebugVertex(vert);
+        }
       }
     }
   }

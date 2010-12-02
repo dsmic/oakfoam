@@ -101,6 +101,7 @@ class Engine
     static void gtpExplainLastMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpBoardStats(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowSymmetryTransforms(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpShowTreeLiveGfx(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
   
   private:
     Gtp::Engine *gtpe;
@@ -147,7 +148,7 @@ class Engine
     void doNPlayouts(int n);
     bool writeSGF(std::string filename, Go::Board *board, UCT::Tree *tree);
     void doPlayout(Go::BitBoard *firstlist=NULL,Go::BitBoard *secondlist=NULL);
-    void displayPlayoutLiveGfx(int totalplayouts);
+    void displayPlayoutLiveGfx(int totalplayouts=-1);
 };
 
 #endif
