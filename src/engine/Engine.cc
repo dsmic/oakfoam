@@ -540,6 +540,16 @@ void Engine::gtpBoardStats(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printf("board stats:\n");
   gtpe->getOutput()->printf("moves: %d\n",me->currentboard->getMovesMade());
+  gtpe->getOutput()->printf("simple ko: ");
+  int simpleko=me->currentboard->getSimpleKo();
+  if (simpleko==-1)
+    gtpe->getOutput()->printf("NONE");
+  else
+  {
+    Gtp::Vertex vert={Go::Position::pos2x(simpleko,me->boardsize),Go::Position::pos2y(simpleko,me->boardsize)};
+    gtpe->getOutput()->printVertex(vert);
+  }
+  gtpe->getOutput()->printf("\n");
   #if SYMMETRY_ONLYDEGRAGE
     gtpe->getOutput()->printf("stored symmetry: %s (degraded)\n",me->currentboard->getSymmetryString(me->currentboard->getSymmetry()).c_str());
   #else

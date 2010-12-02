@@ -345,6 +345,8 @@ void Go::Board::makeMove(Go::Move move)
     movesmade++;
     secondlastmove=lastmove;
     lastmove=move;
+    if (symmetryupdated)
+      updateSymmetry();
     return;
   }
   
@@ -433,7 +435,7 @@ void Go::Board::makeMove(Go::Move move)
     }
   });
   
-  if (posko>=0)
+  if (posko>=0 && thisgroup->inAtari())
   {
     simpleko=posko;
     if (!this->validMoveCheck(Go::Move(othercol,simpleko)))

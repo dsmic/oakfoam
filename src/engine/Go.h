@@ -249,6 +249,7 @@ namespace Go
       std::list<Go::Group*,Go::allocator_groupptr> *getGroups() { return &groups; };
       
       int getSize() { return size; };
+      int getSimpleKo() { return simpleko; };
       int getMovesMade() { return movesmade; };
       int getPassesPlayed() { return passesplayed; };
       Go::Color nextToMove() { return nexttomove; };
