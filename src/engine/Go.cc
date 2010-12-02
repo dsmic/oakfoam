@@ -81,6 +81,9 @@ Go::Board::Board(int s)
   blackvalidmoves=new Go::BitBoard(size);
   whitevalidmoves=new Go::BitBoard(size);
   this->refreshValidMoves();
+  
+  symmetryupdated=true;
+  currentsymmetry=Go::Board::FULL;
 }
 
 Go::Board::~Board()
@@ -436,6 +439,9 @@ void Go::Board::makeMove(Go::Move move)
     if (!this->validMoveCheck(Go::Move(othercol,simpleko)))
       this->removeValidMove(Go::Move(othercol,simpleko));
   }
+  
+  if (symmetryupdated)
+    updateSymmetry();
 }
 
 void Go::Board::refreshValidMoves()
@@ -656,7 +662,7 @@ bool Go::Board::hasSymmetryVertical()
     for (int y=0;y<size;y++)
     {
       int pos1=Go::Position::xy2pos(x,y,size);
-      int pos2=Go::Position::xy2pos(size-x-1,y,size);
+      int pos2=this->symmetryTransform(Go::Board::VERTICAL,pos1);
       if (this->getColor(pos1)!=this->getColor(pos2))
       {
         //fprintf(stderr,"mismatch at %d,%d (%d)\n",x,y,xlimit);
@@ -679,7 +685,7 @@ bool Go::Board::hasSymmetryHorizontal()
     for (int y=0;y<ylimit;y++)
     {
       int pos1=Go::Position::xy2pos(x,y,size);
-      int pos2=Go::Position::xy2pos(x,size-y-1,size);
+      int pos2=this->symmetryTransform(Go::Board::HORIZONTAL,pos1);
       if (this->getColor(pos1)!=this->getColor(pos2))
       {
         //fprintf(stderr,"mismatch at %d,%d (%d)\n",x,y,ylimit);
@@ -702,7 +708,7 @@ bool Go::Board::hasSymmetryDiagonalDown()
     {
       //fprintf(stderr,"pos: %d,%d %d,%d\n",x,y,size-y-1,size-x-1);
       int pos1=Go::Position::xy2pos(x,y,size);
-      int pos2=Go::Position::xy2pos(size-y-1,size-x-1,size);
+      int pos2=this->symmetryTransform(Go::Board::DIAGONAL_DOWN,pos1);
       if (this->getColor(pos1)!=this->getColor(pos2))
       {
         //fprintf(stderr,"mismatch at %d,%d %d,%d\n",x,y,size-y-1,size-x-1);
@@ -725,7 +731,7 @@ bool Go::Board::hasSymmetryDiagonalUp()
     {
       //fprintf(stderr,"pos: %d,%d %d,%d\n",x,y,y,x);
       int pos1=Go::Position::xy2pos(x,y,size);
-      int pos2=Go::Position::xy2pos(y,x,size);
+      int pos2=this->symmetryTransform(Go::Board::DIAGONAL_UP,pos1);
       if (this->getColor(pos1)!=this->getColor(pos2))
       {
         //fprintf(stderr,"mismatch at %d,%d %d,%d\n",x,y,y,x);
@@ -737,7 +743,7 @@ bool Go::Board::hasSymmetryDiagonalUp()
   return true;
 }
 
-Go::Board::Symmetry Go::Board::getSymmetry()
+Go::Board::Symmetry Go::Board::computeSymmetry()
 {
   bool symvert=this->hasSymmetryVertical();
   bool symdiagup=this->hasSymmetryDiagonalUp();
@@ -759,10 +765,8 @@ Go::Board::Symmetry Go::Board::getSymmetry()
     return Go::Board::NONE;
 }
 
-std::string Go::Board::getSymmetryString()
+std::string Go::Board::getSymmetryString(Go::Board::Symmetry sym)
 {
-  Go::Board::Symmetry sym=this->getSymmetry();
-  
   if (sym==Go::Board::FULL)
     return "FULL";
   else if (sym==Go::Board::VERTICAL_HORIZONTAL)
@@ -779,6 +783,77 @@ std::string Go::Board::getSymmetryString()
     return "DIAGONAL_DOWN";
   else
     return "NONE";
+}
+
+void Go::Board::updateSymmetry()
+{
+  #if SYMMETRY_ONLYDEGRAGE
+    if (currentsymmetry==Go::Board::NONE)
+      return;
+    else
+      currentsymmetry=this->computeSymmetry(); //can be optimized
+  #else
+    currentsymmetry=this->computeSymmetry(); //can be optimized (not used)
+  #endif
+}
+
+int Go::Board::symmetryTransform(Go::Board::Symmetry sym, int pos)
+{
+  int x=Go::Position::pos2x(pos,size);
+  int y=Go::Position::pos2y(pos,size);
+  if (sym==Go::Board::VERTICAL)
+    return Go::Position::xy2pos(size-x-1,y,size);
+  else if (sym==Go::Board::HORIZONTAL)
+    return Go::Position::xy2pos(x,size-y-1,size);
+  else if (sym==Go::Board::DIAGONAL_UP)
+    return Go::Position::xy2pos(y,x,size);
+  else if (sym==Go::Board::DIAGONAL_DOWN)
+    return Go::Position::xy2pos(size-y-1,size-x-1,size);
+  else
+    return -1;
+}
+
+int Go::Board::symmetryTransformToPrimary(Go::Board::Symmetry sym, int pos)
+{
+  int x=Go::Position::pos2x(pos,size);
+  int y=Go::Position::pos2y(pos,size);
+  if (sym==Go::Board::VERTICAL)
+  {
+    if (x<=(size-x-1))
+      return pos;
+    else
+      return Go::Position::xy2pos(size-x-1,y,size);
+  }
+  else if (sym==Go::Board::HORIZONTAL)
+  {
+    if (y<=(size-y-1))
+      return pos;
+    else
+      return Go::Position::xy2pos(x,size-y-1,size);
+  }
+  else if (sym==Go::Board::VERTICAL_HORIZONTAL)
+    return this->symmetryTransformToPrimary(Go::Board::VERTICAL,this->symmetryTransformToPrimary(Go::Board::HORIZONTAL,pos));
+  else if (sym==Go::Board::DIAGONAL_UP)
+  {
+    if (x<=y)
+      return pos;
+    else
+      return Go::Position::xy2pos(y,x,size);
+  }
+  else if (sym==Go::Board::DIAGONAL_DOWN)
+  {
+    if ((x+y)<=((size-y-1)+(size-x-1)))
+      return pos;
+    else
+      return Go::Position::xy2pos(size-y-1,size-x-1,size);
+  }
+  else if (sym==Go::Board::DIAGONAL_BOTH)
+    return this->symmetryTransformToPrimary(Go::Board::DIAGONAL_UP,this->symmetryTransformToPrimary(Go::Board::DIAGONAL_DOWN,pos));
+  else if (sym==Go::Board::FULL)
+    //here order matters!
+    return this->symmetryTransformToPrimary(Go::Board::DIAGONAL_UP,this->symmetryTransformToPrimary(Go::Board::VERTICAL,this->symmetryTransformToPrimary(Go::Board::HORIZONTAL,pos)));
+  else
+    return pos;
 }
 
 

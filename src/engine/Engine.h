@@ -13,6 +13,7 @@
 
 #define UCT_EXPAND_AFTER 1
 #define UCT_KEEP_SUBTREE true
+#define UCT_SYMMETRY_USE true
 #define UCT_ATARI_GAMMA 10
 #define UCT_PATTERN_GAMMA 5
 
@@ -99,6 +100,7 @@ class Engine
     
     static void gtpExplainLastMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpBoardStats(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpShowSymmetryTransforms(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
   
   private:
     Gtp::Engine *gtpe;
@@ -119,7 +121,7 @@ class Engine
     int uctexpandafter;
     int livegfxupdateplayouts;
     float livegfxdelay;
-    bool uctkeepsubtree;
+    bool uctkeepsubtree,uctsymmetryuse;
     UCT::Tree *movetree;
     Random rand;
     bool playoutpatternsenabled;

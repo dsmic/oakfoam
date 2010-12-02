@@ -30,6 +30,11 @@ Engine::Engine(Gtp::Engine *ge)
   
   uctexpandafter=UCT_EXPAND_AFTER;
   uctkeepsubtree=UCT_KEEP_SUBTREE;
+  uctsymmetryuse=UCT_SYMMETRY_USE;
+  if (uctsymmetryuse)
+    currentboard->turnSymmetryOn();
+  else
+    currentboard->turnSymmetryOff();
   uctatarigamma=UCT_ATARI_GAMMA;
   uctpatterngamma=UCT_PATTERN_GAMMA;
   
@@ -96,10 +101,12 @@ void Engine::addGtpCommands()
   
   gtpe->addFunctionCommand("explainlastmove",this,&Engine::gtpExplainLastMove);
   gtpe->addFunctionCommand("boardstats",this,&Engine::gtpBoardStats);
+  gtpe->addFunctionCommand("showsymmetrytransforms",this,&Engine::gtpShowSymmetryTransforms);
   
   gtpe->addAnalyzeCommand("final_score","Final Score","string");
   gtpe->addAnalyzeCommand("showboard","Show Board","string");
   gtpe->addAnalyzeCommand("boardstats","Board Stats","string");
+  gtpe->addAnalyzeCommand("showsymmetrytransforms","Show Symmetry Transforms","sboard");
   gtpe->addAnalyzeCommand("showliberties","Show Liberties","sboard");
   gtpe->addAnalyzeCommand("showvalidmoves","Show Valid Moves","sboard");
   gtpe->addAnalyzeCommand("showgroupsize","Show Group Size","sboard");
@@ -531,7 +538,41 @@ void Engine::gtpBoardStats(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printf("board stats:\n");
   gtpe->getOutput()->printf("moves: %d\n",me->currentboard->getMovesMade());
-  gtpe->getOutput()->printf("symmetry: %s\n",me->currentboard->getSymmetryString().c_str());
+  #if SYMMETRY_ONLYDEGRAGE
+    gtpe->getOutput()->printf("stored symmetry: %s (degraded)\n",me->currentboard->getSymmetryString(me->currentboard->getSymmetry()).c_str());
+  #else
+    gtpe->getOutput()->printf("stored symmetry: %s\n",me->currentboard->getSymmetryString(me->currentboard->getSymmetry()).c_str());
+  #endif
+  gtpe->getOutput()->printf("computed symmetry: %s\n",me->currentboard->getSymmetryString(me->currentboard->computeSymmetry()).c_str());
+  gtpe->getOutput()->endResponse(true);
+}
+
+void Engine::gtpShowSymmetryTransforms(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  Go::Board::Symmetry sym=me->currentboard->getSymmetry();
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("\n");
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      int pos=Go::Position::xy2pos(x,y,me->boardsize);
+      int transpos=me->currentboard->symmetryTransformToPrimary(sym,pos);
+      if (transpos==pos)
+        gtpe->getOutput()->printf("\"P\" ");
+      else
+      {
+        Gtp::Vertex vert={Go::Position::pos2x(transpos,me->boardsize),Go::Position::pos2y(transpos,me->boardsize)};
+        gtpe->getOutput()->printf("\"");
+        gtpe->getOutput()->printVertex(vert);
+        gtpe->getOutput()->printf("\" ");
+      }
+    }
+    gtpe->getOutput()->printf("\n");
+  }
+
   gtpe->getOutput()->endResponse(true);
 }
 
@@ -553,6 +594,7 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     gtpe->getOutput()->printf("[string] rave_moves %d\n",me->ravemoves);
     gtpe->getOutput()->printf("[string] uct_expand_after %d\n",me->uctexpandafter);
     gtpe->getOutput()->printf("[bool] uct_keep_subtree %d\n",me->uctkeepsubtree);
+    gtpe->getOutput()->printf("[bool] uct_symmetry_use %d\n",me->uctsymmetryuse);
     gtpe->getOutput()->printf("[string] uct_atari_gamma %d\n",me->uctatarigamma);
     gtpe->getOutput()->printf("[string] uct_pattern_gamma %d\n",me->uctpatterngamma);
     gtpe->getOutput()->printf("[string] resign_ratio_threshold %.3f\n",me->resignratiothreshold);
@@ -594,6 +636,14 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     {
       me->uctkeepsubtree=(cmd->getIntArg(1)==1);
       me->clearMoveTree();
+    }
+    else if (param=="uct_symmetry_use")
+    {
+      me->uctsymmetryuse=(cmd->getIntArg(1)==1);
+      if (me->uctsymmetryuse)
+        me->currentboard->turnSymmetryOn();
+      else
+        me->currentboard->turnSymmetryOff();
     }
     else if (param=="uct_atari_gamma")
       me->uctatarigamma=cmd->getIntArg(1);
@@ -1041,6 +1091,8 @@ void Engine::randomPlayout(Go::Board *board, std::list<Go::Move> startmoves, Go:
   if (board->getPassesPlayed()>=2)
     return;
   
+  board->turnSymmetryOff();
+  
   //fprintf(stderr,"[playout]:");
   for(std::list<Go::Move>::iterator iter=startmoves.begin();iter!=startmoves.end();++iter)
   {
@@ -1312,6 +1364,7 @@ void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
     secondlist=new Go::BitBoard(boardsize);
   
   Go::Board *playoutboard=currentboard->copy();
+  playoutboard->turnSymmetryOff();
   if (ravemoves>0)
   {
     firstlist->clear();

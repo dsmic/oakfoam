@@ -9,6 +9,8 @@
 #include <boost/pool/pool_alloc.hpp>
 #include <boost/pool/object_pool.hpp>
 
+#define SYMMETRY_ONLYDEGRAGE false
+
 #define P_N (-size-1)
 #define P_S (size+1)
 #define P_W (-1)
@@ -224,6 +226,18 @@ namespace Go
   class Board
   {
     public:
+      enum Symmetry
+      {
+        NONE,
+        VERTICAL,
+        HORIZONTAL,
+        DIAGONAL_DOWN,
+        DIAGONAL_UP,
+        DIAGONAL_BOTH,
+        VERTICAL_HORIZONTAL,
+        FULL
+      };
+      
       Board(int s);
       ~Board();
       
@@ -256,26 +270,16 @@ namespace Go
       int score();
       bool weakEye(Go::Color col, int pos);
       int touchingEmpty(int pos);
+      void turnSymmetryOff() { symmetryupdated=false;currentsymmetry=NONE; };
+      void turnSymmetryOn() { symmetryupdated=true;currentsymmetry=this->computeSymmetry(); };
       
       static bool isWinForColor(Go::Color col, float score);
       
-      enum Symmetry
-      {
-        NONE,
-        VERTICAL,
-        HORIZONTAL,
-        DIAGONAL_DOWN,
-        DIAGONAL_UP,
-        DIAGONAL_BOTH,
-        VERTICAL_HORIZONTAL,
-        FULL
-      };
-      bool hasSymmetryVertical();
-      bool hasSymmetryHorizontal();
-      bool hasSymmetryDiagonalDown();
-      bool hasSymmetryDiagonalUp();
-      Symmetry getSymmetry();
-      std::string getSymmetryString();
+      Go::Board::Symmetry computeSymmetry();
+      Go::Board::Symmetry getSymmetry() { return currentsymmetry; };
+      std::string getSymmetryString(Go::Board::Symmetry sym);
+      int symmetryTransform(Go::Board::Symmetry sym, int pos);
+      int symmetryTransformToPrimary(Go::Board::Symmetry sym, int pos);
     
     private:
       int size;
@@ -287,6 +291,8 @@ namespace Go
       Go::Color nexttomove;
       int simpleko;
       Go::Move lastmove,secondlastmove;
+      bool symmetryupdated;
+      Go::Board::Symmetry currentsymmetry;
       
       int blackvalidmovecount,whitevalidmovecount;
       Go::BitBoard *blackvalidmoves,*whitevalidmoves;
@@ -312,6 +318,12 @@ namespace Go
       void refreshValidMoves(Go::Color col);
       void addValidMove(Go::Move move);
       void removeValidMove(Go::Move move);
+      
+      bool hasSymmetryVertical();
+      bool hasSymmetryHorizontal();
+      bool hasSymmetryDiagonalDown();
+      bool hasSymmetryDiagonalUp();
+      void updateSymmetry();
       
       struct ScoreVertex
       {
