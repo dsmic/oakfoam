@@ -664,7 +664,7 @@ bool Go::Board::hasSymmetryVertical()
     for (int y=0;y<size;y++)
     {
       int pos1=Go::Position::xy2pos(x,y,size);
-      int pos2=this->symmetryTransform(Go::Board::VERTICAL,pos1);
+      int pos2=this->doSymmetryTransformPrimitive(Go::Board::VERTICAL,pos1);
       if (this->getColor(pos1)!=this->getColor(pos2))
       {
         //fprintf(stderr,"mismatch at %d,%d (%d)\n",x,y,xlimit);
@@ -687,7 +687,7 @@ bool Go::Board::hasSymmetryHorizontal()
     for (int y=0;y<ylimit;y++)
     {
       int pos1=Go::Position::xy2pos(x,y,size);
-      int pos2=this->symmetryTransform(Go::Board::HORIZONTAL,pos1);
+      int pos2=this->doSymmetryTransformPrimitive(Go::Board::HORIZONTAL,pos1);
       if (this->getColor(pos1)!=this->getColor(pos2))
       {
         //fprintf(stderr,"mismatch at %d,%d (%d)\n",x,y,ylimit);
@@ -710,7 +710,7 @@ bool Go::Board::hasSymmetryDiagonalDown()
     {
       //fprintf(stderr,"pos: %d,%d %d,%d\n",x,y,size-y-1,size-x-1);
       int pos1=Go::Position::xy2pos(x,y,size);
-      int pos2=this->symmetryTransform(Go::Board::DIAGONAL_DOWN,pos1);
+      int pos2=this->doSymmetryTransformPrimitive(Go::Board::DIAGONAL_DOWN,pos1);
       if (this->getColor(pos1)!=this->getColor(pos2))
       {
         //fprintf(stderr,"mismatch at %d,%d %d,%d\n",x,y,size-y-1,size-x-1);
@@ -733,7 +733,7 @@ bool Go::Board::hasSymmetryDiagonalUp()
     {
       //fprintf(stderr,"pos: %d,%d %d,%d\n",x,y,y,x);
       int pos1=Go::Position::xy2pos(x,y,size);
-      int pos2=this->symmetryTransform(Go::Board::DIAGONAL_UP,pos1);
+      int pos2=this->doSymmetryTransformPrimitive(Go::Board::DIAGONAL_UP,pos1);
       if (this->getColor(pos1)!=this->getColor(pos2))
       {
         //fprintf(stderr,"mismatch at %d,%d %d,%d\n",x,y,y,x);
@@ -799,7 +799,7 @@ void Go::Board::updateSymmetry()
   #endif
 }
 
-int Go::Board::symmetryTransform(Go::Board::Symmetry sym, int pos)
+int Go::Board::doSymmetryTransformPrimitive(Go::Board::Symmetry sym, int pos)
 {
   int x=Go::Position::pos2x(pos,size);
   int y=Go::Position::pos2y(pos,size);
@@ -815,47 +815,107 @@ int Go::Board::symmetryTransform(Go::Board::Symmetry sym, int pos)
     return -1;
 }
 
-int Go::Board::symmetryTransformToPrimary(Go::Board::Symmetry sym, int pos)
+int Go::Board::doSymmetryTransformToPrimary(Go::Board::Symmetry sym, int pos)
+{
+  return doSymmetryTransform(getSymmetryTransformToPrimary(sym,pos),pos);
+}
+
+Go::Board::SymmetryTransform Go::Board::getSymmetryTransformToPrimary(Go::Board::Symmetry sym, int pos)
 {
   int x=Go::Position::pos2x(pos,size);
   int y=Go::Position::pos2y(pos,size);
+  Go::Board::SymmetryTransform trans={false,false,false};
+  
   if (sym==Go::Board::VERTICAL)
   {
-    if (x<=(size-x-1))
-      return pos;
-    else
-      return Go::Position::xy2pos(size-x-1,y,size);
+    if (x>(size-x-1))
+      trans.invertX=true;
   }
   else if (sym==Go::Board::HORIZONTAL)
   {
-    if (y<=(size-y-1))
-      return pos;
-    else
-      return Go::Position::xy2pos(x,size-y-1,size);
+    if (y>(size-y-1))
+      trans.invertY=true;
   }
   else if (sym==Go::Board::VERTICAL_HORIZONTAL)
-    return this->symmetryTransformToPrimary(Go::Board::VERTICAL,this->symmetryTransformToPrimary(Go::Board::HORIZONTAL,pos));
+  {
+    if (x>(size-x-1))
+      trans.invertX=true;
+    if (y>(size-y-1))
+      trans.invertY=true;
+  }
   else if (sym==Go::Board::DIAGONAL_UP)
   {
-    if (x<=y)
-      return pos;
-    else
-      return Go::Position::xy2pos(y,x,size);
+    if (x>y)
+      trans.swapXY=true;
   }
   else if (sym==Go::Board::DIAGONAL_DOWN)
   {
-    if ((x+y)<=((size-y-1)+(size-x-1)))
-      return pos;
-    else
-      return Go::Position::xy2pos(size-y-1,size-x-1,size);
+    if ((x+y)>((size-y-1)+(size-x-1)))
+    {
+      trans.invertX=true;
+      trans.invertY=true;
+      trans.swapXY=true;
+    }
   }
   else if (sym==Go::Board::DIAGONAL_BOTH)
-    return this->symmetryTransformToPrimary(Go::Board::DIAGONAL_UP,this->symmetryTransformToPrimary(Go::Board::DIAGONAL_DOWN,pos));
+  {
+    int nx=x;
+    int ny=y;
+    if ((x+y)>((size-y-1)+(size-x-1)))
+    {
+      trans.invertX=true;
+      trans.invertY=true;
+      trans.swapXY=true;
+      nx=(size-y-1);
+      ny=(size-x-1);
+    }
+    
+    if (nx>ny)
+      trans.swapXY=!trans.swapXY;
+  }
   else if (sym==Go::Board::FULL)
-    //here order matters!
-    return this->symmetryTransformToPrimary(Go::Board::DIAGONAL_UP,this->symmetryTransformToPrimary(Go::Board::VERTICAL,this->symmetryTransformToPrimary(Go::Board::HORIZONTAL,pos)));
-  else
-    return pos;
+  {
+    int nx=x;
+    int ny=y;
+    
+    if (x>(size-x-1))
+    {
+      trans.invertX=true;
+      nx=(size-x-1);
+    }
+    
+    if (y>(size-y-1))
+    {
+      trans.invertY=true;
+      ny=(size-y-1);
+    }
+    
+    if (nx>ny)
+      trans.swapXY=true;
+  }
+  
+  return trans;
+}
+
+int Go::Board::doSymmetryTransform(Go::Board::SymmetryTransform trans, int pos)
+{
+  int x=Go::Position::pos2x(pos,size);
+  int y=Go::Position::pos2y(pos,size);
+  
+  if (trans.invertX)
+    x=(size-x-1);
+  
+  if (trans.invertY)
+    y=(size-y-1);
+  
+  if (trans.swapXY)
+  {
+    int t=x;
+    x=y;
+    y=t;
+  }
+  
+  return Go::Position::xy2pos(x,y,size);
 }
 
 

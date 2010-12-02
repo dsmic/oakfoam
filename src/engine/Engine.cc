@@ -571,7 +571,7 @@ void Engine::gtpShowSymmetryTransforms(void *instance, Gtp::Engine* gtpe, Gtp::C
     for (int x=0;x<me->boardsize;x++)
     {
       int pos=Go::Position::xy2pos(x,y,me->boardsize);
-      int transpos=me->currentboard->symmetryTransformToPrimary(sym,pos);
+      int transpos=me->currentboard->doSymmetryTransformToPrimary(sym,pos);
       if (transpos==pos)
         gtpe->getOutput()->printf("\"P\" ");
       else

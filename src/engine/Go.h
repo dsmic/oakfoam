@@ -237,6 +237,12 @@ namespace Go
         VERTICAL_HORIZONTAL,
         FULL
       };
+      struct SymmetryTransform
+      {
+        bool invertX;
+        bool invertY;
+        bool swapXY;
+      };
       
       Board(int s);
       ~Board();
@@ -279,8 +285,10 @@ namespace Go
       Go::Board::Symmetry computeSymmetry();
       Go::Board::Symmetry getSymmetry() { return currentsymmetry; };
       std::string getSymmetryString(Go::Board::Symmetry sym);
-      int symmetryTransform(Go::Board::Symmetry sym, int pos);
-      int symmetryTransformToPrimary(Go::Board::Symmetry sym, int pos);
+      int doSymmetryTransformPrimitive(Go::Board::Symmetry sym, int pos);
+      int doSymmetryTransformToPrimary(Go::Board::Symmetry sym, int pos);
+      Go::Board::SymmetryTransform getSymmetryTransformToPrimary(Go::Board::Symmetry sym, int pos);
+      int doSymmetryTransform(Go::Board::SymmetryTransform trans, int pos);
     
     private:
       int size;
