@@ -1,9 +1,10 @@
 #include "UCT.h"
 
-UCT::Tree::Tree(int bsize, float uc, float ui, int rm, Go::Move mov, UCT::Tree *p)
+UCT::Tree::Tree(Parameters *prms, int bsize, float ui, int rm, Go::Move mov, UCT::Tree *p)
 {
   parent=p;
   children=new std::list<UCT::Tree*>();
+  params=prms;
   boardsize=bsize;
   move=mov;
   playouts=0;
@@ -13,7 +14,6 @@ UCT::Tree::Tree(int bsize, float uc, float ui, int rm, Go::Move mov, UCT::Tree *
   priorplayouts=0;
   priorwins=0;
   ravemoves=rm;
-  ucbc=uc;
   ucbinit=ui;
   symmetryprimary=NULL;
   
@@ -181,16 +181,16 @@ float UCT::Tree::getUrgency()
   
   int plts=playouts+priorplayouts;
   
-  if (parent==NULL || ucbc==0)
+  if (parent==NULL || params->ucb_c==0)
     bias=0;
   else
   {
     if (parent->getPlayouts()>1 && plts>0)
-      bias=ucbc*sqrt(log((float)parent->getPlayouts())/(plts));
+      bias=params->ucb_c*sqrt(log((float)parent->getPlayouts())/(plts));
     else if (parent->getPlayouts()>1)
-      bias=ucbc*sqrt(log((float)parent->getPlayouts())/(1));
+      bias=params->ucb_c*sqrt(log((float)parent->getPlayouts())/(1));
     else
-      bias=ucbc/2;
+      bias=params->ucb_c/2;
   }
   
   return this->getVal()+bias;

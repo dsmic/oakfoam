@@ -8,13 +8,14 @@
 #include <string>
 #include <sstream>
 #include "Go.h"
+#include "Parameters.h"
 
 namespace UCT
 { 
   class Tree
   {
     public:
-      Tree(int bsize, float uc, float ui, int rm, Go::Move mov = Go::Move(Go::EMPTY,Go::Move::RESIGN), UCT::Tree *p = NULL);
+      Tree(Parameters *prms, int bsize, float ui, int rm, Go::Move mov = Go::Move(Go::EMPTY,Go::Move::RESIGN), UCT::Tree *p = NULL);
       ~Tree();
       
       UCT::Tree *getParent() { return parent; };
@@ -65,7 +66,8 @@ namespace UCT
       int playouts,raveplayouts,priorplayouts;
       int wins,ravewins,priorwins;
       int ravemoves;
-      float ucbc,ucbinit;
+      float ucbinit;
+      Parameters *params;
       
       void passPlayoutUp(bool win);
       

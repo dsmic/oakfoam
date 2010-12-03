@@ -10,6 +10,8 @@ Engine::Engine(Gtp::Engine *ge)
   currentboard=new Go::Board(boardsize);
   komi=5.5;
   
+  params=new Parameters();
+  
   movepolicy=Engine::MP_UCT;
   
   livegfx=LIVEGFX_ON;
@@ -23,7 +25,6 @@ Engine::Engine(Gtp::Engine *ge)
   playoutspermovemin=PLAYOUTS_PER_MOVE_MIN;
   playoutatarienabled=PLAYOUT_ATARI_ENABLED;
   
-  ucbc=UCB_C;
   ucbinit=UCB_INIT;
   
   ravemoves=RAVE_MOVES;
@@ -71,6 +72,7 @@ Engine::~Engine()
   if (movetree!=NULL)
     delete movetree;
   delete currentboard;
+  delete params;
 }
 
 void Engine::addGtpCommands()
@@ -632,7 +634,7 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     gtpe->getOutput()->printf("[string] playouts_per_move_min %d\n",me->playoutspermovemin);
     gtpe->getOutput()->printf("[bool] playout_atari_enabled %d\n",me->playoutatarienabled);
     gtpe->getOutput()->printf("[bool] playout_patterns_enabled %d\n",me->playoutpatternsenabled);
-    gtpe->getOutput()->printf("[string] ucb_c %.2f\n",me->ucbc);
+    gtpe->getOutput()->printf("[string] ucb_c %.2f\n",me->params->ucb_c);
     gtpe->getOutput()->printf("[string] ucb_init %.2f\n",me->ucbinit);
     gtpe->getOutput()->printf("[string] rave_moves %d\n",me->ravemoves);
     gtpe->getOutput()->printf("[string] uct_expand_after %d\n",me->uctexpandafter);
@@ -668,7 +670,7 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     else if (param=="playout_atari_enabled")
       me->playoutatarienabled=(cmd->getIntArg(1)==1);
     else if (param=="ucb_c")
-      me->ucbc=cmd->getFloatArg(1);
+      me->params->ucb_c=cmd->getFloatArg(1);
     else if (param=="ucb_init")
       me->ucbinit=cmd->getFloatArg(1);
     else if (param=="rave_moves")
@@ -1141,17 +1143,20 @@ void Engine::randomPlayout(Go::Board *board, std::list<Go::Move> startmoves, Go:
   
   board->turnSymmetryOff();
   
-  fprintf(stderr,"[playout]:");
+  if (debugon)
+    fprintf(stderr,"[playout]:");
   for(std::list<Go::Move>::iterator iter=startmoves.begin();iter!=startmoves.end();++iter)
   {
     board->makeMove((*iter));
-    fprintf(stderr," %s",(*iter).toString(boardsize).c_str());
+    if (debugon)
+      fprintf(stderr," %s",(*iter).toString(boardsize).c_str());
     if (((*iter).getColor()==colfirst?firstlist:secondlist)!=NULL && !(*iter).isPass() && !(*iter).isResign())
       ((*iter).getColor()==colfirst?firstlist:secondlist)->set((*iter).getPosition());
     if (board->getPassesPlayed()>=2 || (*iter).isResign())
       return;
   }
-  fprintf(stderr,"\n");
+  if (debugon)
+    fprintf(stderr,"\n");
   
   Go::Color coltomove=board->nextToMove();
   Go::Move move=Go::Move(coltomove,Go::Move::PASS);
@@ -1252,7 +1257,7 @@ void Engine::expandLeaf(UCT::Tree *movetree)
   
   if (startboard->numOfValidMoves(col)==0 || Go::Board::isWinForColor(col,startboard->score()-komi))
   {
-    UCT::Tree *nmt=new UCT::Tree(boardsize,ucbc,ucbinit,ravemoves,Go::Move(col,Go::Move::PASS));
+    UCT::Tree *nmt=new UCT::Tree(params,boardsize,ucbinit,ravemoves,Go::Move(col,Go::Move::PASS));
     nmt->addWin();
     if (startboard->getPassesPlayed()==0)
       nmt->addPriorLoses(UCT_PASS_DETER);
@@ -1266,7 +1271,7 @@ void Engine::expandLeaf(UCT::Tree *movetree)
     {
       if (validmovesbitboard->get(p))
       {
-        UCT::Tree *nmt=new UCT::Tree(boardsize,ucbc,ucbinit,ravemoves,Go::Move(col,p));
+        UCT::Tree *nmt=new UCT::Tree(params,boardsize,ucbinit,ravemoves,Go::Move(col,p));
         if (uctpatterngamma>0 && !startboard->weakEye(col,p))
         {
           unsigned int pattern=Pattern::ThreeByThree::makeHash(startboard,p);
@@ -1356,7 +1361,7 @@ void Engine::clearMoveTree()
   if (movetree!=NULL)
     delete movetree;
   
-  movetree=new UCT::Tree(boardsize,ucbc,ucbinit,ravemoves);
+  movetree=new UCT::Tree(params,boardsize,ucbinit,ravemoves);
 }
 
 void Engine::chooseSubTree(Go::Move move)

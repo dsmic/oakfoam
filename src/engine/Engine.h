@@ -6,7 +6,6 @@
 #define PLAYOUTS_PER_MOVE_MIN 1000
 #define PLAYOUT_MAX_MOVE_FACTOR 3
 
-#define UCB_C 0.44
 #define UCB_INIT 1.2
 
 #define RAVE_MOVES 3000
@@ -51,6 +50,7 @@
 #include "UCT.h"
 #include "Random.h"
 #include "Pattern.h"
+#include "Parameters.h"
 #include "../gtp/Gtp.h"
 
 class Engine
@@ -118,7 +118,7 @@ class Engine
     float resignratiothreshold,resignmovefactorthreshold;
     long timebuffer,timemoveminimum;
     float timek;
-    float ucbc,ucbinit;
+    float ucbinit;
     int ravemoves;
     bool playoutatarienabled;
     Engine::MovePolicy movepolicy;
@@ -134,6 +134,7 @@ class Engine
     int outputsgfmaxchildren;
     std::string lastexplanation;
     bool debugon;
+    Parameters *params;
     
     void addGtpCommands();
     
