@@ -5,12 +5,12 @@ Now: (before next release)
   play a move early if it is clearly the right move
   think for longer if needed
   cleanup symmetry code
+  organise parameters
 
 Soon: (before next major release)
   implement superko in tree
   copy all board data with a copy() (groups and liberties)
   improve playout move selection (quicker but still uniform or close)
-  divide parameters into classes
   tune parameters
   add slight bonus to ratio for pts diff?
   try use thrown away part of tree
