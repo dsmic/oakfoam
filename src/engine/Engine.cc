@@ -6,54 +6,67 @@ Engine::Engine(Gtp::Engine *ge)
   
   rand=Random(std::time(0));
   
+  params=new Parameters();
+  
   boardsize=9;
   params->board_size=boardsize;
   currentboard=new Go::Board(boardsize);
   komi=5.5;
   
-  params=new Parameters();
+  std::list<std::string> *mpoptions=new std::list<std::string>();
+  mpoptions->push_back("playout");
+  mpoptions->push_back("1-ply");
+  mpoptions->push_back("uct");
+  params->addParameter("move_policy",&(params->move_policy_string),mpoptions,"uct",&Engine::updateParameterWrapper,this);
   
-  movepolicy=Engine::MP_UCT;
+  params->addParameter("playouts_per_move",&(params->playouts_per_move),PLAYOUTS_PER_MOVE);
+  params->playouts_per_move_init=params->playouts_per_move;
+  params->addParameter("playouts_per_move_max",&(params->playouts_per_move_max),PLAYOUTS_PER_MOVE_MAX);
+  params->addParameter("playouts_per_move_min",&(params->playouts_per_move_min),PLAYOUTS_PER_MOVE_MIN);
   
-  livegfx=LIVEGFX_ON;
-  livegfxupdateplayouts=LIVEGFX_UPDATE_PLAYOUTS;
-  livegfxdelay=LIVEGFX_DELAY;
+  params->addParameter("playout_atari_enabled",&(params->playout_atari_enabled),PLAYOUT_ATARI_ENABLED);
+  params->addParameter("playout_patterns_enabled",&(params->playout_patterns_enabled),PLAYOUT_PATTERNS_ENABLED);
   
-  playoutspermilli=0;
-  playoutspermove=PLAYOUTS_PER_MOVE;
-  playoutspermoveinit=PLAYOUTS_PER_MOVE;
-  playoutspermovemax=PLAYOUTS_PER_MOVE_MAX;
-  playoutspermovemin=PLAYOUTS_PER_MOVE_MIN;
-  playoutatarienabled=PLAYOUT_ATARI_ENABLED;
+  params->addParameter("ucb_c",&(params->ucb_c),UCB_C);
+  params->addParameter("uct_init",&(params->ucb_init),UCB_INIT);
   
-  uctexpandafter=UCT_EXPAND_AFTER;
-  uctkeepsubtree=UCT_KEEP_SUBTREE;
-  uctsymmetryuse=UCT_SYMMETRY_USE;
-  if (uctsymmetryuse)
+  params->addParameter("rave_moves",&(params->rave_moves),RAVE_MOVES);
+  
+  params->addParameter("uct_expand_after",&(params->uct_expand_after),UCT_EXPAND_AFTER);
+  params->addParameter("uct_keep_subtree",&(params->uct_keep_subtree),UCT_KEEP_SUBTREE);
+  params->addParameter("uct_symmetry_use",&(params->uct_symmetry_use),UCT_SYMMETRY_USE);
+  if (params->uct_symmetry_use)
     currentboard->turnSymmetryOn();
   else
     currentboard->turnSymmetryOff();
-  uctatarigamma=UCT_ATARI_GAMMA;
-  uctpatterngamma=UCT_PATTERN_GAMMA;
+  params->addParameter("uct_atari_gamma",&(params->uct_expand_after),UCT_ATARI_GAMMA);
+  params->addParameter("uct_pattern_gamma",&(params->uct_expand_after),UCT_PATTERN_GAMMA);
   
-  playoutpatternsenabled=PLAYOUT_PATTERNS_ENABLED;
+  params->addParameter("resign_ratio_threshold",&(params->resign_ratio_threshold),RESIGN_RATIO_THRESHOLD);
+  params->addParameter("resign_move_factor_threshold",&(params->resign_move_factor_threshold),RESIGN_MOVE_FACTOR_THRESHOLD);
+  
+  params->addParameter("time_k",&(params->time_k),TIME_K);
+  params->addParameter("time_buffer",&(params->time_buffer),TIME_BUFFER);
+  params->addParameter("time_move_minimum",&(params->time_move_minimum),TIME_MOVE_MINIMUM);
+  
+  params->addParameter("live_gfx",&(params->livegfx_on),LIVEGFX_ON);
+  params->addParameter("live_gfx_update_playouts",&(params->livegfx_update_playouts),LIVEGFX_UPDATE_PLAYOUTS);
+  params->addParameter("live_gfx_delay",&(params->livegfx_delay),LIVEGFX_DELAY);
+  
+  params->addParameter("outputsgf_maxchildren",&(params->outputsgf_maxchildren),OUTPUTSGF_MAXCHILDREN);
+  
+  params->addParameter("debug",&(params->debug_on),DEBUG_ON);
+  
+  playoutspermilli=0;
+  
   patterntable=new Pattern::ThreeByThreeTable();
   patterntable->loadPatternDefaults();
-  
-  resignratiothreshold=RESIGN_RATIO_THRESHOLD;
-  resignmovefactorthreshold=RESIGN_MOVE_FACTOR_THRESHOLD;
-  
-  timebuffer=TIME_BUFFER;
-  timek=TIME_K;
-  timemoveminimum=TIME_MOVE_MINIMUM;
   
   timemain=0;
   timeblack=0;
   timewhite=0;
   
   lastexplanation="";
-  
-  debugon=DEBUG_ON;
   
   this->addGtpCommands();
   
@@ -68,6 +81,37 @@ Engine::~Engine()
     delete movetree;
   delete currentboard;
   delete params;
+}
+
+void Engine::updateParameter(std::string id)
+{
+  if (id=="move_policy")
+  {
+    if (params->move_policy_string=="uct")
+      params->move_policy=Parameters::MP_UCT;
+    else if (params->move_policy_string=="1-ply")
+      params->move_policy=Parameters::MP_ONEPLY;
+    else
+      params->move_policy=Parameters::MP_PLAYOUT;
+  }
+  else if (id=="playouts_per_move")
+  {
+    params->playouts_per_move_init=params->playouts_per_move;
+  }
+  else if (id=="uct_keep_subtree")
+  {
+    this->clearMoveTree();
+  }
+  else if (id=="uct_symmetry_use")
+  {
+    if (params->uct_symmetry_use)
+      currentboard->turnSymmetryOn();
+    else
+    {
+      currentboard->turnSymmetryOff();
+      this->clearMoveTree();
+    }
+  }
 }
 
 void Engine::addGtpCommands()
@@ -110,7 +154,7 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("showvalidmoves","Show Valid Moves","sboard");
   gtpe->addAnalyzeCommand("showgroupsize","Show Group Size","sboard");
   gtpe->addAnalyzeCommand("showpatternmatches","Show Pattern Matches","sboard");
-  gtpe->addAnalyzeCommand("showtreelivegfx","Show Tree LiveGfx","none");
+  gtpe->addAnalyzeCommand("showtreelivegfx","Show Tree Live Gfx","none");
   gtpe->addAnalyzeCommand("loadpatterns %%r","Load Patterns","none");
   gtpe->addAnalyzeCommand("clearpatterns","Clear Patterns","none");
   gtpe->addAnalyzeCommand("doboardcopy","Do Board Copy","none");
@@ -156,7 +200,7 @@ void Engine::gtpClearBoard(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   
   //assume that this will be the start of a new game
   me->playoutspermilli=0;
-  me->playoutspermove=me->playoutspermoveinit;
+  me->params->playouts_per_move=me->params->playouts_per_move_init;
   me->timeblack=me->timemain;
   me->timewhite=me->timemain;
   
@@ -469,7 +513,7 @@ void Engine::gtpDoBoardCopy(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd
   Go::Board *newboard=me->currentboard->copy();
   delete oldboard;
   me->currentboard=newboard;
-  if (!me->uctsymmetryuse)
+  if (!me->params->uct_symmetry_use)
     me->currentboard->turnSymmetryOff();
   
   gtpe->getOutput()->startResponse(cmd);
@@ -593,7 +637,7 @@ void Engine::gtpShowTreeLiveGfx(void *instance, Gtp::Engine* gtpe, Gtp::Command*
 {
   Engine *me=(Engine*)instance;
   
-  if (me->movepolicy==Engine::MP_UCT || me->movepolicy==Engine::MP_ONEPLY)
+  if (me->params->move_policy==Parameters::MP_UCT || me->params->move_policy==Parameters::MP_ONEPLY)
   {
     me->displayPlayoutLiveGfx();
     boost::timer delay;
@@ -611,7 +655,7 @@ void Engine::gtpDescribeEngine(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printf(PACKAGE_NAME " : " PACKAGE_VERSION "\n");
   gtpe->getOutput()->printf("parameters:\n");
-  gtpe->getOutput()->printf(" playouts_per_move %d\n",me->playoutspermoveinit);
+  gtpe->getOutput()->printf(" playouts_per_move %d\n",me->params->playouts_per_move_init);
   gtpe->getOutput()->printf(" todo\n");
   gtpe->getOutput()->endResponse(true);
 }
@@ -623,117 +667,25 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   if (cmd->numArgs()==0)
   {
     gtpe->getOutput()->startResponse(cmd);
-    gtpe->getOutput()->printf("[list/playout/1-ply/uct] move_policy %s\n",(me->movepolicy==Engine::MP_UCT?"uct":(me->movepolicy==Engine::MP_ONEPLY?"1-ply":"playout")));
-    gtpe->getOutput()->printf("[string] playouts_per_move %d\n",me->playoutspermove);
-    gtpe->getOutput()->printf("[string] playouts_per_move_max %d\n",me->playoutspermovemax);
-    gtpe->getOutput()->printf("[string] playouts_per_move_min %d\n",me->playoutspermovemin);
-    gtpe->getOutput()->printf("[bool] playout_atari_enabled %d\n",me->playoutatarienabled);
-    gtpe->getOutput()->printf("[bool] playout_patterns_enabled %d\n",me->playoutpatternsenabled);
-    gtpe->getOutput()->printf("[string] ucb_c %.2f\n",me->params->ucb_c);
-    gtpe->getOutput()->printf("[string] ucb_init %.2f\n",me->params->ucb_init);
-    gtpe->getOutput()->printf("[string] rave_moves %d\n",me->params->rave_moves);
-    gtpe->getOutput()->printf("[string] uct_expand_after %d\n",me->uctexpandafter);
-    gtpe->getOutput()->printf("[bool] uct_keep_subtree %d\n",me->uctkeepsubtree);
-    gtpe->getOutput()->printf("[bool] uct_symmetry_use %d\n",me->uctsymmetryuse);
-    gtpe->getOutput()->printf("[string] uct_atari_gamma %d\n",me->uctatarigamma);
-    gtpe->getOutput()->printf("[string] uct_pattern_gamma %d\n",me->uctpatterngamma);
-    gtpe->getOutput()->printf("[string] resign_ratio_threshold %.3f\n",me->resignratiothreshold);
-    gtpe->getOutput()->printf("[string] resign_move_factor_threshold %.2f\n",me->resignmovefactorthreshold);
-    gtpe->getOutput()->printf("[string] time_k %.2f\n",me->timek);
-    gtpe->getOutput()->printf("[string] time_buffer %ld\n",me->timebuffer);
-    gtpe->getOutput()->printf("[string] time_move_minimum %ld\n",me->timemoveminimum);
-    gtpe->getOutput()->printf("[bool] live_gfx %d\n",me->livegfx);
-    gtpe->getOutput()->printf("[string] live_gfx_update_playouts %d\n",me->livegfxupdateplayouts);
-    gtpe->getOutput()->printf("[string] live_gfx_delay %.3f\n",me->livegfxdelay);
-    gtpe->getOutput()->printf("[string] output_sgf_max_children %d\n",me->params->outputsgf_maxchildren);
-    gtpe->getOutput()->printf("[bool] debug %d\n",me->debugon);
+    me->params->printParametersForGTP(gtpe);
     gtpe->getOutput()->endResponse(true);
   }
   else if (cmd->numArgs()==2)
   {
     std::string param=cmd->getStringArg(0);
     std::transform(param.begin(),param.end(),param.begin(),::tolower);
-    if (param=="playouts_per_move")
+    
+    if (me->params->setParameter(param,cmd->getStringArg(1)))
     {
-      me->playoutspermove=cmd->getIntArg(1);
-      me->playoutspermoveinit=me->playoutspermove;
-    }
-    else if (param=="playouts_per_move_max")
-      me->playoutspermovemax=cmd->getIntArg(1);
-    else if (param=="playouts_per_move_min")
-      me->playoutspermovemin=cmd->getIntArg(1);
-    else if (param=="playout_atari_enabled")
-      me->playoutatarienabled=(cmd->getIntArg(1)==1);
-    else if (param=="ucb_c")
-      me->params->ucb_c=cmd->getFloatArg(1);
-    else if (param=="ucb_init")
-      me->params->ucb_init=cmd->getFloatArg(1);
-    else if (param=="rave_moves")
-      me->params->rave_moves=cmd->getIntArg(1);
-    else if (param=="uct_expand_after")
-      me->uctexpandafter=cmd->getIntArg(1);
-    else if (param=="uct_keep_subtree")
-    {
-      me->uctkeepsubtree=(cmd->getIntArg(1)==1);
-      me->clearMoveTree();
-    }
-    else if (param=="uct_symmetry_use")
-    {
-      me->uctsymmetryuse=(cmd->getIntArg(1)==1);
-      if (me->uctsymmetryuse)
-        me->currentboard->turnSymmetryOn();
-      else
-      {
-        me->currentboard->turnSymmetryOff();
-        me->clearMoveTree();
-      }
-    }
-    else if (param=="uct_atari_gamma")
-      me->uctatarigamma=cmd->getIntArg(1);
-    else if (param=="uct_pattern_gamma")
-      me->uctpatterngamma=cmd->getIntArg(1);
-    else if (param=="playout_patterns_enabled")
-      me->playoutpatternsenabled=(cmd->getIntArg(1)==1);
-    else if (param=="live_gfx")
-      me->livegfx=(cmd->getIntArg(1)==1);
-    else if (param=="live_gfx_update_playouts")
-      me->livegfxupdateplayouts=cmd->getIntArg(1);
-    else if (param=="live_gfx_delay")
-      me->livegfxdelay=cmd->getFloatArg(1);
-    else if (param=="resign_ratio_threshold")
-      me->resignratiothreshold=cmd->getFloatArg(1);
-    else if (param=="resign_move_factor_threshold")
-      me->resignmovefactorthreshold=cmd->getFloatArg(1);
-    else if (param=="time_k")
-      me->timek=cmd->getFloatArg(1);
-    else if (param=="time_buffer")
-      me->timebuffer=cmd->getIntArg(1);
-    else if (param=="time_move_minimum")
-      me->timemoveminimum=cmd->getIntArg(1);
-    else if (param=="output_sgf_max_children")
-      me->params->outputsgf_maxchildren=cmd->getIntArg(1);
-    else if (param=="debug")
-      me->debugon=(cmd->getIntArg(1)==1);
-    else if (param=="move_policy")
-    {
-      std::string val=cmd->getStringArg(1);
-      std::transform(val.begin(),val.end(),val.begin(),::tolower);
-      if (val=="uct")
-        me->movepolicy=Engine::MP_UCT;
-      else if (val=="1-ply")
-        me->movepolicy=Engine::MP_ONEPLY;
-      else
-        me->movepolicy=Engine::MP_PLAYOUT;
+      gtpe->getOutput()->startResponse(cmd);
+      gtpe->getOutput()->endResponse();
     }
     else
     {
       gtpe->getOutput()->startResponse(cmd,false);
-      gtpe->getOutput()->printf("unknown parameter: %s",param.c_str());
+      gtpe->getOutput()->printf("error setting parameter: %s",param.c_str());
       gtpe->getOutput()->endResponse();
-      return;
     }
-    gtpe->getOutput()->startResponse(cmd);
-    gtpe->getOutput()->endResponse();
   }
   else
   {
@@ -821,7 +773,7 @@ void Engine::gtpTimeLeft(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 
 void Engine::generateMove(Go::Color col, Go::Move **move)
 {
-  if (movepolicy==Engine::MP_UCT || movepolicy==Engine::MP_ONEPLY)
+  if (params->move_policy==Parameters::MP_UCT || params->move_policy==Parameters::MP_ONEPLY)
   {
     long *timeleft=(col==Go::BLACK ? &timeblack : &timewhite);
     boost::timer timer;
@@ -834,7 +786,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move)
     else
       timeforthismove=0;
     
-    if (livegfx)
+    if (params->livegfx_on)
       gtpe->getOutput()->printfDebug("gogui-gfx: TEXT [genmove]: starting...\n");
     
     Go::Color expectedcol=currentboard->nextToMove();
@@ -849,26 +801,26 @@ void Engine::generateMove(Go::Color col, Go::Move **move)
     Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
     Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
     
-    for (int i=0;i<playoutspermovemax;i++)
+    for (int i=0;i<params->playouts_per_move_max;i++)
     {
-      if (i>=playoutspermove && timeforthismove==0)
+      if (i>=params->playouts_per_move && timeforthismove==0)
         break;
-      else if (i>=playoutspermovemin && timeforthismove>0 && (timer.elapsed()*1000)>timeforthismove)
+      else if (i>=params->playouts_per_move_min && timeforthismove>0 && (timer.elapsed()*1000)>timeforthismove)
         break;
       
       this->doPlayout(firstlist,secondlist);
       totalplayouts++;
       
-      if (livegfx)
+      if (params->livegfx_on)
       {
-        if (livegfxupdate>=(livegfxupdateplayouts-1))
+        if (livegfxupdate>=(params->livegfx_update_playouts-1))
         {
           livegfxupdate=0;
           
           this->displayPlayoutLiveGfx(totalplayouts);
           
           boost::timer delay;
-          while (delay.elapsed()<livegfxdelay) {}
+          while (delay.elapsed()<params->livegfx_delay) {}
         }
         else
           livegfxupdate++;
@@ -882,7 +834,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move)
     float bestratio=0;
     if (besttree==NULL)
       *move=new Go::Move(col,Go::Move::RESIGN);
-    else if (besttree->getRatio()<resignratiothreshold && currentboard->getMovesMade()>(resignmovefactorthreshold*boardsize*boardsize))
+    else if (besttree->getRatio()<params->resign_ratio_threshold && currentboard->getMovesMade()>(params->resign_move_factor_threshold*boardsize*boardsize))
       *move=new Go::Move(col,Go::Move::RESIGN);
     else
     {
@@ -892,7 +844,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move)
     
     this->makeMove(**move);
     
-    if (livegfx)
+    if (params->livegfx_on)
       gtpe->getOutput()->printfDebug("gogui-gfx: CLEAR\n");
     
     long timeused=timer.elapsed()*1000;
@@ -909,7 +861,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move)
     ss << "r:"<<bestratio<< " tl:"<<*timeleft<< " plts:"<<totalplayouts<< " ppms:"<<playoutspermilli;
     lastexplanation=ss.str();
     gtpe->getOutput()->printfDebug("[genmove]: r:%.2f tl:%ld plts:%d ppms:%.3f\n",bestratio,*timeleft,totalplayouts,playoutspermilli);
-    if (livegfx)
+    if (params->livegfx_on)
       gtpe->getOutput()->printfDebug("gogui-gfx: TEXT [genmove]: r:%.2f tl:%ld plts:%d ppms:%.3f\n",bestratio,*timeleft,totalplayouts,playoutspermilli);
   }
   else
@@ -930,7 +882,7 @@ bool Engine::isMoveAllowed(Go::Move move)
 void Engine::makeMove(Go::Move move)
 {
   currentboard->makeMove(move);
-  if (uctkeepsubtree)
+  if (params->uct_keep_subtree)
     this->chooseSubTree(move);
   else
     delete movetree;
@@ -950,7 +902,7 @@ void Engine::clearBoard()
 {
   delete currentboard;
   currentboard = new Go::Board(boardsize);
-  if (!uctsymmetryuse)
+  if (!params->uct_symmetry_use)
     currentboard->turnSymmetryOff();
   this->clearMoveTree();
 }
@@ -963,7 +915,7 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
     return;
   }
   
-  if (playoutatarienabled)
+  if (params->playout_atari_enabled)
   {
     int *atarimoves=posarray;
     int atarimovescount=0;
@@ -1028,7 +980,7 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
     }
   }
   
-  if (playoutpatternsenabled)
+  if (params->playout_patterns_enabled)
   {
     int *patternmoves=posarray;
     int patternmovescount=0;
@@ -1139,19 +1091,19 @@ void Engine::randomPlayout(Go::Board *board, std::list<Go::Move> startmoves, Go:
   
   board->turnSymmetryOff();
   
-  if (debugon)
+  if (params->debug_on)
     fprintf(stderr,"[playout]:");
   for(std::list<Go::Move>::iterator iter=startmoves.begin();iter!=startmoves.end();++iter)
   {
     board->makeMove((*iter));
-    if (debugon)
+    if (params->debug_on)
       fprintf(stderr," %s",(*iter).toString(boardsize).c_str());
     if (((*iter).getColor()==colfirst?firstlist:secondlist)!=NULL && !(*iter).isPass() && !(*iter).isResign())
       ((*iter).getColor()==colfirst?firstlist:secondlist)->set((*iter).getPosition());
     if (board->getPassesPlayed()>=2 || (*iter).isResign())
       return;
   }
-  if (debugon)
+  if (params->debug_on)
     fprintf(stderr,"\n");
   
   Go::Color coltomove=board->nextToMove();
@@ -1178,10 +1130,10 @@ void Engine::randomPlayout(Go::Board *board, std::list<Go::Move> startmoves, Go:
 long Engine::getTimeAllowedThisTurn(Go::Color col)
 {
   long timeleft=(col==Go::BLACK ? timeblack : timewhite);
-  timeleft-=timebuffer;
-  long timepermove=timeleft/timek; //allow much more time in beginning
-  if (timepermove<timemoveminimum)
-    timepermove=timemoveminimum;
+  timeleft-=params->time_buffer*1000;
+  long timepermove=timeleft/params->time_k; //allow much more time in beginning
+  if (timepermove<(params->time_move_minimum*1000))
+    timepermove=params->time_move_minimum*1000;
   return timepermove;
 }
 
@@ -1201,7 +1153,7 @@ UCT::Tree *Engine::getPlayoutTarget(UCT::Tree *movetree)
       else
       {
         urgency=(*iter)->getUrgency();
-        if (debugon)
+        if (params->debug_on)
           fprintf(stderr,"[urg]:%s %.3f %.2f(%d) %.2f(%d) %.2f(%d)\n",(*iter)->getMove().toString(boardsize).c_str(),urgency,(*iter)->getRatio(),(*iter)->getPlayouts(),(*iter)->getRAVERatio(),(*iter)->getRAVEPlayouts(),(*iter)->getPriorRatio(),(*iter)->getPriorPlayouts());
       }
       
@@ -1213,15 +1165,15 @@ UCT::Tree *Engine::getPlayoutTarget(UCT::Tree *movetree)
     }
   }
   
-  if (debugon)
+  if (params->debug_on)
     fprintf(stderr,"[best]:%s\n",besttree->getMove().toString(boardsize).c_str());
   
   if (besttree==NULL)
     return NULL;
   
-  if (movepolicy==Engine::MP_UCT && besttree->isLeaf() && !besttree->isTerminal())
+  if (params->move_policy==Parameters::MP_UCT && besttree->isLeaf() && !besttree->isTerminal())
   {
-    if (besttree->getPlayouts()>uctexpandafter)
+    if (besttree->getPlayouts()>params->uct_expand_after)
       this->expandLeaf(besttree);
   }
   
@@ -1268,19 +1220,19 @@ void Engine::expandLeaf(UCT::Tree *movetree)
       if (validmovesbitboard->get(p))
       {
         UCT::Tree *nmt=new UCT::Tree(params,Go::Move(col,p));
-        if (uctpatterngamma>0 && !startboard->weakEye(col,p))
+        if (params->uct_pattern_gamma>0 && !startboard->weakEye(col,p))
         {
           unsigned int pattern=Pattern::ThreeByThree::makeHash(startboard,p);
           if (col==Go::WHITE)
             pattern=Pattern::ThreeByThree::invert(pattern);
           if (patterntable->isPattern(pattern))
-            nmt->addPriorWins(uctpatterngamma);
+            nmt->addPriorWins(params->uct_pattern_gamma);
         }
         movetree->addChild(nmt);
       }
     }
     
-    if (uctatarigamma>0)
+    if (params->uct_atari_gamma>0)
     {
       std::list<Go::Group*,Go::allocator_groupptr> *groups=startboard->getGroups();
       for(std::list<Go::Group*,Go::allocator_groupptr>::iterator iter=groups->begin();iter!=groups->end();++iter) 
@@ -1292,14 +1244,14 @@ void Engine::expandLeaf(UCT::Tree *movetree)
           {
             UCT::Tree *mt=movetree->getChild(Go::Move(col,liberty));
             if (mt!=NULL)
-              mt->addPriorWins(uctatarigamma);
+              mt->addPriorWins(params->uct_atari_gamma);
           }
         }
       }
     }
   }
   
-  if (uctsymmetryuse)
+  if (params->uct_symmetry_use)
   {
     Go::Board::Symmetry sym=startboard->getSymmetry();
     if (sym!=Go::Board::NONE)
@@ -1400,7 +1352,7 @@ bool Engine::writeSGF(std::string filename, Go::Board *board, UCT::Tree *tree)
 
 void Engine::doNPlayouts(int n)
 {
-  if (movepolicy==Engine::MP_UCT || movepolicy==Engine::MP_ONEPLY)
+  if (params->move_policy==Parameters::MP_UCT || params->move_policy==Parameters::MP_ONEPLY)
   {
     int livegfxupdate=0;
     
@@ -1411,16 +1363,16 @@ void Engine::doNPlayouts(int n)
     { 
       this->doPlayout(firstlist,secondlist);
       
-      if (livegfx)
+      if (params->livegfx_on)
       {
-        if (livegfxupdate>=(livegfxupdateplayouts-1))
+        if (livegfxupdate>=(params->livegfx_update_playouts-1))
         {
           livegfxupdate=0;
           
           this->displayPlayoutLiveGfx(i);
           
           boost::timer delay;
-          while (delay.elapsed()<livegfxdelay) {}
+          while (delay.elapsed()<params->livegfx_delay) {}
         }
         else
           livegfxupdate++;
@@ -1430,7 +1382,7 @@ void Engine::doNPlayouts(int n)
     delete firstlist;
     delete secondlist;
     
-    if (livegfx)
+    if (params->livegfx_on)
       gtpe->getOutput()->printfDebug("gogui-gfx: CLEAR\n");
   }
 }
@@ -1473,7 +1425,7 @@ void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
   else
     playouttree->addLose();
   
-  if (debugon)
+  if (params->debug_on)
   {
     if (playoutwin && playoutmoves.back().getColor()==col)
       fprintf(stderr,"[result]:win\n");
@@ -1558,7 +1510,7 @@ void Engine::displayPlayoutLiveGfx(int totalplayouts)
     }
   }
   gtpe->getOutput()->printfDebug("\n");
-  if (movepolicy==Engine::MP_UCT)
+  if (params->move_policy==Parameters::MP_UCT)
   {
     gtpe->getOutput()->printfDebug("VAR");
     UCT::Tree *besttree=this->getBestMoves(movetree,true);

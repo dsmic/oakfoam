@@ -4,7 +4,11 @@
 #define PLAYOUTS_PER_MOVE 10000
 #define PLAYOUTS_PER_MOVE_MAX 100000
 #define PLAYOUTS_PER_MOVE_MIN 1000
-#define PLAYOUT_MAX_MOVE_FACTOR 3
+
+#define UCB_C 0.44
+#define UCB_INIT 1.2
+
+#define RAVE_MOVES 3000
 
 #define UCT_EXPAND_AFTER 1
 #define UCT_KEEP_SUBTREE true
@@ -13,6 +17,7 @@
 #define UCT_PATTERN_GAMMA 10
 #define UCT_PASS_DETER 10
 
+#define PLAYOUT_MAX_MOVE_FACTOR 3
 #define PLAYOUT_ATARI_ENABLED true
 #define PLAYOUT_PATTERNS_ENABLED true
 
@@ -23,9 +28,11 @@
 #define LIVEGFX_UPDATE_PLAYOUTS 300
 #define LIVEGFX_DELAY 0.001
 
-#define TIME_BUFFER 30000
+#define TIME_BUFFER 30.0
 #define TIME_K 7
-#define TIME_MOVE_MINIMUM 100
+#define TIME_MOVE_MINIMUM 0.100
+
+#define OUTPUTSGF_MAXCHILDREN 10
 
 #define DEBUG_ON false
 
@@ -70,6 +77,13 @@ class Engine
     float getKomi() { return komi; };
     void setKomi(float k) { komi=k; };
     
+    static void updateParameterWrapper(void *instance, std::string id)
+    {
+      Engine *me=(Engine*)instance;
+      me->updateParameter(id);
+    };
+    void updateParameter(std::string id);
+    
     static void gtpBoardSize(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpClearBoard(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpKomi(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
@@ -105,26 +119,12 @@ class Engine
     Go::Board *currentboard;
     float komi;
     int boardsize;
-    int playoutspermove,playoutspermoveinit,playoutspermovemax,playoutspermovemin;
-    bool livegfx;
     long timemain,timeblack,timewhite;
     float playoutspermilli;
-    float resignratiothreshold,resignmovefactorthreshold;
-    long timebuffer,timemoveminimum;
-    float timek;
-    bool playoutatarienabled;
-    Engine::MovePolicy movepolicy;
-    int uctexpandafter;
-    int livegfxupdateplayouts;
-    float livegfxdelay;
-    bool uctkeepsubtree,uctsymmetryuse;
     UCT::Tree *movetree;
     Random rand;
-    bool playoutpatternsenabled;
     Pattern::ThreeByThreeTable *patterntable;
-    int uctatarigamma,uctpatterngamma;
     std::string lastexplanation;
-    bool debugon;
     Parameters *params;
     
     void addGtpCommands();
