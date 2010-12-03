@@ -1128,17 +1128,17 @@ void Engine::randomPlayout(Go::Board *board, std::list<Go::Move> startmoves, Go:
   
   board->turnSymmetryOff();
   
-  //fprintf(stderr,"[playout]:");
+  fprintf(stderr,"[playout]:");
   for(std::list<Go::Move>::iterator iter=startmoves.begin();iter!=startmoves.end();++iter)
   {
     board->makeMove((*iter));
-    //fprintf(stderr," %s",(*iter).toString(boardsize).c_str());
+    fprintf(stderr," %s",(*iter).toString(boardsize).c_str());
     if (((*iter).getColor()==colfirst?firstlist:secondlist)!=NULL && !(*iter).isPass() && !(*iter).isResign())
       ((*iter).getColor()==colfirst?firstlist:secondlist)->set((*iter).getPosition());
     if (board->getPassesPlayed()>=2 || (*iter).isResign())
       return;
   }
-  //fprintf(stderr,"\n");
+  fprintf(stderr,"\n");
   
   Go::Color coltomove=board->nextToMove();
   Go::Move move=Go::Move(coltomove,Go::Move::PASS);
@@ -1241,6 +1241,8 @@ void Engine::expandLeaf(UCT::Tree *movetree)
   {
     UCT::Tree *nmt=new UCT::Tree(boardsize,ucbc,ucbinit,ravemoves,Go::Move(col,Go::Move::PASS));
     nmt->addWin();
+    if (startboard->getPassesPlayed()==0)
+      nmt->addPriorLoses(UCT_PASS_DETER);
     movetree->addChild(nmt);
   }
   
