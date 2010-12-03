@@ -6,10 +6,6 @@
 #define PLAYOUTS_PER_MOVE_MIN 1000
 #define PLAYOUT_MAX_MOVE_FACTOR 3
 
-#define UCB_INIT 1.2
-
-#define RAVE_MOVES 3000
-
 #define UCT_EXPAND_AFTER 1
 #define UCT_KEEP_SUBTREE true
 #define UCT_SYMMETRY_USE true
@@ -30,8 +26,6 @@
 #define TIME_BUFFER 30000
 #define TIME_K 7
 #define TIME_MOVE_MINIMUM 100
-
-#define OUTPUTSGF_MAXCHILDREN 10
 
 #define DEBUG_ON false
 
@@ -118,8 +112,6 @@ class Engine
     float resignratiothreshold,resignmovefactorthreshold;
     long timebuffer,timemoveminimum;
     float timek;
-    float ucbinit;
-    int ravemoves;
     bool playoutatarienabled;
     Engine::MovePolicy movepolicy;
     int uctexpandafter;
@@ -131,7 +123,6 @@ class Engine
     bool playoutpatternsenabled;
     Pattern::ThreeByThreeTable *patterntable;
     int uctatarigamma,uctpatterngamma;
-    int outputsgfmaxchildren;
     std::string lastexplanation;
     bool debugon;
     Parameters *params;

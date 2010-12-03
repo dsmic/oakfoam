@@ -15,7 +15,7 @@ namespace UCT
   class Tree
   {
     public:
-      Tree(Parameters *prms, int bsize, float ui, int rm, Go::Move mov = Go::Move(Go::EMPTY,Go::Move::RESIGN), UCT::Tree *p = NULL);
+      Tree(Parameters *prms, Go::Move mov = Go::Move(Go::EMPTY,Go::Move::RESIGN), UCT::Tree *p = NULL);
       ~Tree();
       
       UCT::Tree *getParent() { return parent; };
@@ -53,7 +53,7 @@ namespace UCT
       void addRAVEWins(int n);
       void addRAVELoses(int n);
       
-      std::string toSGFString(int boardsize, int numchildren);
+      std::string toSGFString();
       
     private:
       UCT::Tree *parent;
@@ -61,12 +61,9 @@ namespace UCT
       UCT::Tree *symmetryprimary;
       Go::Board::SymmetryTransform symmetrytransprimaryhere;
       
-      int boardsize;
       Go::Move move;
       int playouts,raveplayouts,priorplayouts;
       int wins,ravewins,priorwins;
-      int ravemoves;
-      float ucbinit;
       Parameters *params;
       
       void passPlayoutUp(bool win);

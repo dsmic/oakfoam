@@ -1,11 +1,10 @@
 #include "UCT.h"
 
-UCT::Tree::Tree(Parameters *prms, int bsize, float ui, int rm, Go::Move mov, UCT::Tree *p)
+UCT::Tree::Tree(Parameters *prms, Go::Move mov, UCT::Tree *p)
 {
   parent=p;
   children=new std::list<UCT::Tree*>();
   params=prms;
-  boardsize=bsize;
   move=mov;
   playouts=0;
   wins=0;
@@ -13,8 +12,6 @@ UCT::Tree::Tree(Parameters *prms, int bsize, float ui, int rm, Go::Move mov, UCT
   ravewins=0;
   priorplayouts=0;
   priorwins=0;
-  ravemoves=rm;
-  ucbinit=ui;
   symmetryprimary=NULL;
   
   if (parent!=NULL)
@@ -145,15 +142,15 @@ void UCT::Tree::passPlayoutUp(bool win)
 
 float UCT::Tree::getVal()
 {
-  if (ravemoves==0 || raveplayouts==0)
+  if (params->rave_moves==0 || raveplayouts==0)
     return this->getBasePriorRatio();
   else if (playouts==0)
     return this->getRAVERatio();
   else
   {
-    //float alpha=(float)(ravemoves-playouts)/ravemoves;
+    //float alpha=(float)(ravemoves-playouts)/params->rave_moves;
     
-    float alpha=(float)raveplayouts/(raveplayouts + playouts + (float)(raveplayouts*playouts)/ravemoves);
+    float alpha=(float)raveplayouts/(raveplayouts + playouts + (float)(raveplayouts*playouts)/params->rave_moves);
     
     if (alpha<=0)
       return this->getBasePriorRatio();
@@ -169,7 +166,7 @@ float UCT::Tree::getUrgency()
 {
   float bias;
   if (playouts==0 && raveplayouts==0 && priorplayouts==0)
-    return ucbinit;
+    return params->ucb_init;
   
   if (this->isTerminal())
   {
@@ -232,7 +229,7 @@ float UCT::Tree::variance(int wins, int playouts)
   return wins-(float)(wins*wins)/playouts;
 }
 
-std::string UCT::Tree::toSGFString(int boardsize, int maxchildren)
+std::string UCT::Tree::toSGFString()
 {
   std::ostringstream ss;
   if (!this->isRoot())
@@ -240,8 +237,8 @@ std::string UCT::Tree::toSGFString(int boardsize, int maxchildren)
     ss<<"(;"<<Go::colorToChar(move.getColor())<<"[";
     if (!move.isPass()&&!move.isResign())
     {
-      ss<<(char)(move.getX(boardsize)+'a');
-      ss<<(char)(boardsize-move.getY(boardsize)+'a'-1);
+      ss<<(char)(move.getX(params->board_size)+'a');
+      ss<<(char)(params->board_size-move.getY(params->board_size)+'a'-1);
     }
     ss<<"]C[";
     ss<<"Wins/Playouts: "<<wins<<"/"<<playouts<<"("<<this->getRatio()<<")\n";
@@ -274,12 +271,12 @@ std::string UCT::Tree::toSGFString(int boardsize, int maxchildren)
     if (bestchild==NULL)
       break;
     
-    ss<<bestchild->toSGFString(boardsize,maxchildren);
+    ss<<bestchild->toSGFString();
     usedchild[besti]=true;
     bestchild=NULL;
     besti=0;
     childrendone++;
-    if (maxchildren!=0 && childrendone>=maxchildren)
+    if (params->outputsgf_maxchildren!=0 && childrendone>=params->outputsgf_maxchildren)
       break;
   }
   if (!this->isRoot())
@@ -290,7 +287,7 @@ std::string UCT::Tree::toSGFString(int boardsize, int maxchildren)
 void UCT::Tree::performSymmetryTransform(Go::Board::SymmetryTransform trans)
 {
   if (!move.isPass() && !move.isResign())
-    move.setPosition(Go::Board::doSymmetryTransformStaticReverse(trans,boardsize,move.getPosition()));
+    move.setPosition(Go::Board::doSymmetryTransformStaticReverse(trans,params->board_size,move.getPosition()));
   
   for(std::list<UCT::Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
   {

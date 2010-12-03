@@ -7,6 +7,7 @@ Engine::Engine(Gtp::Engine *ge)
   rand=Random(std::time(0));
   
   boardsize=9;
+  params->board_size=boardsize;
   currentboard=new Go::Board(boardsize);
   komi=5.5;
   
@@ -25,10 +26,6 @@ Engine::Engine(Gtp::Engine *ge)
   playoutspermovemin=PLAYOUTS_PER_MOVE_MIN;
   playoutatarienabled=PLAYOUT_ATARI_ENABLED;
   
-  ucbinit=UCB_INIT;
-  
-  ravemoves=RAVE_MOVES;
-  
   uctexpandafter=UCT_EXPAND_AFTER;
   uctkeepsubtree=UCT_KEEP_SUBTREE;
   uctsymmetryuse=UCT_SYMMETRY_USE;
@@ -45,8 +42,6 @@ Engine::Engine(Gtp::Engine *ge)
   
   resignratiothreshold=RESIGN_RATIO_THRESHOLD;
   resignmovefactorthreshold=RESIGN_MOVE_FACTOR_THRESHOLD;
-  
-  outputsgfmaxchildren=OUTPUTSGF_MAXCHILDREN;
   
   timebuffer=TIME_BUFFER;
   timek=TIME_K;
@@ -635,8 +630,8 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     gtpe->getOutput()->printf("[bool] playout_atari_enabled %d\n",me->playoutatarienabled);
     gtpe->getOutput()->printf("[bool] playout_patterns_enabled %d\n",me->playoutpatternsenabled);
     gtpe->getOutput()->printf("[string] ucb_c %.2f\n",me->params->ucb_c);
-    gtpe->getOutput()->printf("[string] ucb_init %.2f\n",me->ucbinit);
-    gtpe->getOutput()->printf("[string] rave_moves %d\n",me->ravemoves);
+    gtpe->getOutput()->printf("[string] ucb_init %.2f\n",me->params->ucb_init);
+    gtpe->getOutput()->printf("[string] rave_moves %d\n",me->params->rave_moves);
     gtpe->getOutput()->printf("[string] uct_expand_after %d\n",me->uctexpandafter);
     gtpe->getOutput()->printf("[bool] uct_keep_subtree %d\n",me->uctkeepsubtree);
     gtpe->getOutput()->printf("[bool] uct_symmetry_use %d\n",me->uctsymmetryuse);
@@ -650,7 +645,7 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     gtpe->getOutput()->printf("[bool] live_gfx %d\n",me->livegfx);
     gtpe->getOutput()->printf("[string] live_gfx_update_playouts %d\n",me->livegfxupdateplayouts);
     gtpe->getOutput()->printf("[string] live_gfx_delay %.3f\n",me->livegfxdelay);
-    gtpe->getOutput()->printf("[string] output_sgf_max_children %d\n",me->outputsgfmaxchildren);
+    gtpe->getOutput()->printf("[string] output_sgf_max_children %d\n",me->params->outputsgf_maxchildren);
     gtpe->getOutput()->printf("[bool] debug %d\n",me->debugon);
     gtpe->getOutput()->endResponse(true);
   }
@@ -672,9 +667,9 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     else if (param=="ucb_c")
       me->params->ucb_c=cmd->getFloatArg(1);
     else if (param=="ucb_init")
-      me->ucbinit=cmd->getFloatArg(1);
+      me->params->ucb_init=cmd->getFloatArg(1);
     else if (param=="rave_moves")
-      me->ravemoves=cmd->getIntArg(1);
+      me->params->rave_moves=cmd->getIntArg(1);
     else if (param=="uct_expand_after")
       me->uctexpandafter=cmd->getIntArg(1);
     else if (param=="uct_keep_subtree")
@@ -716,7 +711,7 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     else if (param=="time_move_minimum")
       me->timemoveminimum=cmd->getIntArg(1);
     else if (param=="output_sgf_max_children")
-      me->outputsgfmaxchildren=cmd->getIntArg(1);
+      me->params->outputsgf_maxchildren=cmd->getIntArg(1);
     else if (param=="debug")
       me->debugon=(cmd->getIntArg(1)==1);
     else if (param=="move_policy")
@@ -947,6 +942,7 @@ void Engine::setBoardSize(int s)
     return;
   
   boardsize=s;
+  params->board_size=boardsize;
   this->clearBoard();
 }
 
@@ -1257,7 +1253,7 @@ void Engine::expandLeaf(UCT::Tree *movetree)
   
   if (startboard->numOfValidMoves(col)==0 || Go::Board::isWinForColor(col,startboard->score()-komi))
   {
-    UCT::Tree *nmt=new UCT::Tree(params,boardsize,ucbinit,ravemoves,Go::Move(col,Go::Move::PASS));
+    UCT::Tree *nmt=new UCT::Tree(params,Go::Move(col,Go::Move::PASS));
     nmt->addWin();
     if (startboard->getPassesPlayed()==0)
       nmt->addPriorLoses(UCT_PASS_DETER);
@@ -1271,7 +1267,7 @@ void Engine::expandLeaf(UCT::Tree *movetree)
     {
       if (validmovesbitboard->get(p))
       {
-        UCT::Tree *nmt=new UCT::Tree(params,boardsize,ucbinit,ravemoves,Go::Move(col,p));
+        UCT::Tree *nmt=new UCT::Tree(params,Go::Move(col,p));
         if (uctpatterngamma>0 && !startboard->weakEye(col,p))
         {
           unsigned int pattern=Pattern::ThreeByThree::makeHash(startboard,p);
@@ -1361,7 +1357,7 @@ void Engine::clearMoveTree()
   if (movetree!=NULL)
     delete movetree;
   
-  movetree=new UCT::Tree(params,boardsize,ucbinit,ravemoves);
+  movetree=new UCT::Tree(params);
 }
 
 void Engine::chooseSubTree(Go::Move move)
@@ -1396,7 +1392,7 @@ bool Engine::writeSGF(std::string filename, Go::Board *board, UCT::Tree *tree)
   sgffile<<"(;\nFF[4]SZ["<<boardsize<<"]KM["<<komi<<"]\n";
   sgffile<<board->toSGFString()<<"\n";
   if (tree!=NULL)
-    sgffile<<tree->toSGFString(boardsize,outputsgfmaxchildren)<<"\n)";
+    sgffile<<tree->toSGFString()<<"\n)";
   sgffile.close();
   
   return true;
@@ -1464,12 +1460,12 @@ void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
   
   Go::Board *playoutboard=currentboard->copy();
   playoutboard->turnSymmetryOff();
-  if (ravemoves>0)
+  if (params->rave_moves>0)
   {
     firstlist->clear();
     secondlist->clear();
   }
-  this->randomPlayout(playoutboard,playoutmoves,col,(ravemoves>0?firstlist:NULL),(ravemoves>0?secondlist:NULL));
+  this->randomPlayout(playoutboard,playoutmoves,col,(params->rave_moves>0?firstlist:NULL),(params->rave_moves>0?secondlist:NULL));
   
   bool playoutwin=Go::Board::isWinForColor(playoutmoves.back().getColor(),playoutboard->score()-komi);
   if (playoutwin)
@@ -1485,7 +1481,7 @@ void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
       fprintf(stderr,"[result]:lose\n");
   }
   
-  if (ravemoves>0)
+  if (params->rave_moves>0)
   {
     bool ravewin=Go::Board::isWinForColor(col,playoutboard->score()-komi);
     
