@@ -46,6 +46,7 @@
 #include <vector>
 #include <fstream>
 #include <boost/timer.hpp>
+#include <config.h>
 #include "Go.h"
 #include "UCT.h"
 #include "Random.h"
@@ -103,6 +104,7 @@ class Engine
     static void gtpBoardStats(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowSymmetryTransforms(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowTreeLiveGfx(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpDescribeEngine(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
   
   private:
     Gtp::Engine *gtpe;

@@ -103,6 +103,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("boardstats",this,&Engine::gtpBoardStats);
   gtpe->addFunctionCommand("showsymmetrytransforms",this,&Engine::gtpShowSymmetryTransforms);
   gtpe->addFunctionCommand("showtreelivegfx",this,&Engine::gtpShowTreeLiveGfx);
+  gtpe->addFunctionCommand("describeengine",this,&Engine::gtpDescribeEngine);
   
   gtpe->addAnalyzeCommand("final_score","Final Score","string");
   gtpe->addAnalyzeCommand("showboard","Show Board","string");
@@ -604,6 +605,18 @@ void Engine::gtpShowTreeLiveGfx(void *instance, Gtp::Engine* gtpe, Gtp::Command*
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->endResponse();
+}
+
+void Engine::gtpDescribeEngine(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printf(PACKAGE_NAME " : " PACKAGE_VERSION "\n");
+  gtpe->getOutput()->printf("parameters:\n");
+  gtpe->getOutput()->printf(" playouts_per_move %d\n",me->playoutspermoveinit);
+  gtpe->getOutput()->printf(" todo\n");
+  gtpe->getOutput()->endResponse(true);
 }
 
 void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
