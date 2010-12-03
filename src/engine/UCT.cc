@@ -179,12 +179,14 @@ float UCT::Tree::getUrgency()
       return -UCT_TERMINAL_URGENCY;
   }
   
+  int plts=playouts+priorplayouts;
+  
   if (parent==NULL || ucbc==0)
     bias=0;
   else
   {
-    if (parent->getPlayouts()>1 && playouts>0)
-      bias=ucbc*sqrt(log((float)parent->getPlayouts())/(playouts));
+    if (parent->getPlayouts()>1 && plts>0)
+      bias=ucbc*sqrt(log((float)parent->getPlayouts())/(plts));
     else if (parent->getPlayouts()>1)
       bias=ucbc*sqrt(log((float)parent->getPlayouts())/(1));
     else
