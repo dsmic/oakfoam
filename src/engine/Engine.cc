@@ -842,7 +842,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move)
     
     float time_used=timer.elapsed();
     if (time_used>0)
-      playouts_per_milli=(float)totalplayouts/time_used;
+      playouts_per_milli=(float)totalplayouts/(time_used*1000);
     else
       playouts_per_milli=-1;
     if (*time_left!=0)
@@ -1090,19 +1090,19 @@ void Engine::randomPlayout(Go::Board *board, std::list<Go::Move> startmoves, Go:
   board->turnSymmetryOff();
   
   if (params->debug_on)
-    fprintf(stderr,"[playout]:");
+    gtpe->getOutput()->printfDebug("[playout]:");
   for(std::list<Go::Move>::iterator iter=startmoves.begin();iter!=startmoves.end();++iter)
   {
     board->makeMove((*iter));
     if (params->debug_on)
-      fprintf(stderr," %s",(*iter).toString(boardsize).c_str());
+      gtpe->getOutput()->printfDebug(" %s",(*iter).toString(boardsize).c_str());
     if (((*iter).getColor()==colfirst?firstlist:secondlist)!=NULL && !(*iter).isPass() && !(*iter).isResign())
       ((*iter).getColor()==colfirst?firstlist:secondlist)->set((*iter).getPosition());
     if (board->getPassesPlayed()>=2 || (*iter).isResign())
       return;
   }
   if (params->debug_on)
-    fprintf(stderr,"\n");
+    gtpe->getOutput()->printfDebug("\n");
   
   Go::Color coltomove=board->nextToMove();
   Go::Move move=Go::Move(coltomove,Go::Move::PASS);
@@ -1152,7 +1152,7 @@ UCT::Tree *Engine::getPlayoutTarget(UCT::Tree *movetree)
       {
         urgency=(*iter)->getUrgency();
         if (params->debug_on)
-          fprintf(stderr,"[urg]:%s %.3f %.2f(%d) %.2f(%d) %.2f(%d)\n",(*iter)->getMove().toString(boardsize).c_str(),urgency,(*iter)->getRatio(),(*iter)->getPlayouts(),(*iter)->getRAVERatio(),(*iter)->getRAVEPlayouts(),(*iter)->getPriorRatio(),(*iter)->getPriorPlayouts());
+          gtpe->getOutput()->printfDebug("[urg]:%s %.3f %.2f(%d) %.2f(%d) %.2f(%d)\n",(*iter)->getMove().toString(boardsize).c_str(),urgency,(*iter)->getRatio(),(*iter)->getPlayouts(),(*iter)->getRAVERatio(),(*iter)->getRAVEPlayouts(),(*iter)->getPriorRatio(),(*iter)->getPriorPlayouts());
       }
       
       if (urgency>besturgency)
@@ -1164,7 +1164,7 @@ UCT::Tree *Engine::getPlayoutTarget(UCT::Tree *movetree)
   }
   
   if (params->debug_on)
-    fprintf(stderr,"[best]:%s\n",besttree->getMove().toString(boardsize).c_str());
+    gtpe->getOutput()->printfDebug("[best]:%s\n",besttree->getMove().toString(boardsize).c_str());
   
   if (besttree==NULL)
     return NULL;
@@ -1426,9 +1426,9 @@ void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
   if (params->debug_on)
   {
     if (playoutwin && playoutmoves.back().getColor()==col)
-      fprintf(stderr,"[result]:win\n");
+      gtpe->getOutput()->printfDebug("[result]:win\n");
     else
-      fprintf(stderr,"[result]:lose\n");
+      gtpe->getOutput()->printfDebug("[result]:lose\n");
   }
   
   if (params->rave_moves>0)
