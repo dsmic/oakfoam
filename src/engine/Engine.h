@@ -119,8 +119,7 @@ class Engine
     Go::Board *currentboard;
     float komi;
     int boardsize;
-    long timemain,timeblack,timewhite;
-    float playoutspermilli;
+    float time_main,time_black,time_white;
     UCT::Tree *movetree;
     Random rand;
     Pattern::ThreeByThreeTable *patterntable;
@@ -138,7 +137,7 @@ class Engine
     void chooseSubTree(Go::Move move);
     bool isAtariCaptureOrConnect(Go::Board *board, int pos, Go::Color col, Go::Group *touchinggroup);
     
-    long getTimeAllowedThisTurn(Go::Color col);
+    float getTimeAllowedThisTurn(Go::Color col);
     
     void doNPlayouts(int n);
     bool writeSGF(std::string filename, Go::Board *board, UCT::Tree *tree);

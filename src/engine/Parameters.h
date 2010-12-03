@@ -27,7 +27,6 @@ class Parameters
     int playouts_per_move;
     int playouts_per_move_min;
     int playouts_per_move_max;
-    int playouts_per_move_init;
     
     bool playout_atari_enabled;
     bool playout_patterns_enabled;

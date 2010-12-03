@@ -20,7 +20,6 @@ Engine::Engine(Gtp::Engine *ge)
   params->addParameter("move_policy",&(params->move_policy_string),mpoptions,"uct",&Engine::updateParameterWrapper,this);
   
   params->addParameter("playouts_per_move",&(params->playouts_per_move),PLAYOUTS_PER_MOVE);
-  params->playouts_per_move_init=params->playouts_per_move;
   params->addParameter("playouts_per_move_max",&(params->playouts_per_move_max),PLAYOUTS_PER_MOVE_MAX);
   params->addParameter("playouts_per_move_min",&(params->playouts_per_move_min),PLAYOUTS_PER_MOVE_MIN);
   
@@ -57,14 +56,12 @@ Engine::Engine(Gtp::Engine *ge)
   
   params->addParameter("debug",&(params->debug_on),DEBUG_ON);
   
-  playoutspermilli=0;
-  
   patterntable=new Pattern::ThreeByThreeTable();
   patterntable->loadPatternDefaults();
   
-  timemain=0;
-  timeblack=0;
-  timewhite=0;
+  time_main=0;
+  time_black=0;
+  time_white=0;
   
   lastexplanation="";
   
@@ -93,10 +90,6 @@ void Engine::updateParameter(std::string id)
       params->move_policy=Parameters::MP_ONEPLY;
     else
       params->move_policy=Parameters::MP_PLAYOUT;
-  }
-  else if (id=="playouts_per_move")
-  {
-    params->playouts_per_move_init=params->playouts_per_move;
   }
   else if (id=="uct_keep_subtree")
   {
@@ -199,10 +192,8 @@ void Engine::gtpClearBoard(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   me->clearBoard();
   
   //assume that this will be the start of a new game
-  me->playoutspermilli=0;
-  me->params->playouts_per_move=me->params->playouts_per_move_init;
-  me->timeblack=me->timemain;
-  me->timewhite=me->timemain;
+  me->time_black=me->time_main;
+  me->time_white=me->time_main;
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->endResponse();
@@ -655,7 +646,7 @@ void Engine::gtpDescribeEngine(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printf(PACKAGE_NAME " : " PACKAGE_VERSION "\n");
   gtpe->getOutput()->printf("parameters:\n");
-  gtpe->getOutput()->printf(" playouts_per_move %d\n",me->params->playouts_per_move_init);
+  gtpe->getOutput()->printf(" playouts_per_move %d\n",me->params->playouts_per_move);
   gtpe->getOutput()->printf(" todo\n");
   gtpe->getOutput()->endResponse(true);
 }
@@ -709,9 +700,9 @@ void Engine::gtpTimeSettings(void *instance, Gtp::Engine* gtpe, Gtp::Command* cm
   
   if ((cmd->getIntArg(1)!=0 && cmd->getIntArg(2)==0) || (cmd->getIntArg(0)==0 && cmd->getIntArg(1)==0 && cmd->getIntArg(2)==0))
   {
-    me->timemain=0;
-    me->timeblack=0;
-    me->timewhite=0;
+    me->time_main=0;
+    me->time_black=0;
+    me->time_white=0;
     gtpe->getOutput()->startResponse(cmd);
     gtpe->getOutput()->endResponse();
     return;
@@ -725,9 +716,9 @@ void Engine::gtpTimeSettings(void *instance, Gtp::Engine* gtpe, Gtp::Command* cm
     return;
   }
   
-  me->timemain=cmd->getIntArg(0)*1000;
-  me->timeblack=me->timemain;
-  me->timewhite=me->timemain;
+  me->time_main=cmd->getIntArg(0);
+  me->time_black=me->time_main;
+  me->time_white=me->time_main;
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->endResponse();
@@ -762,10 +753,10 @@ void Engine::gtpTimeLeft(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     return;
   }
   
-  int time=cmd->getIntArg(1)*1000;
-  long *timevar=(gtpcol==Gtp::BLACK ? &me->timeblack : &me->timewhite);
-  gtpe->getOutput()->printfDebug("[time_left]: diff:%ld\n",time-*timevar);
-  *timevar=time;
+  int time=cmd->getIntArg(1);
+  float *time_var=(gtpcol==Gtp::BLACK ? &me->time_black : &me->time_white);
+  gtpe->getOutput()->printfDebug("[time_left]: diff:%.3f\n",time-*time_var);
+  *time_var=time;
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->endResponse();
@@ -775,16 +766,17 @@ void Engine::generateMove(Go::Color col, Go::Move **move)
 {
   if (params->move_policy==Parameters::MP_UCT || params->move_policy==Parameters::MP_ONEPLY)
   {
-    long *timeleft=(col==Go::BLACK ? &timeblack : &timewhite);
+    float *time_left=(col==Go::BLACK ? &time_black : &time_white);
     boost::timer timer;
     int totalplayouts=0;
     int livegfxupdate=0;
-    long timeforthismove;
+    float time_allocated;
+    float playouts_per_milli;
     
-    if (*timeleft>0)
-      timeforthismove=this->getTimeAllowedThisTurn(col);
+    if (*time_left>0)
+      time_allocated=this->getTimeAllowedThisTurn(col);
     else
-      timeforthismove=0;
+      time_allocated=0;
     
     if (params->livegfx_on)
       gtpe->getOutput()->printfDebug("gogui-gfx: TEXT [genmove]: starting...\n");
@@ -803,9 +795,9 @@ void Engine::generateMove(Go::Color col, Go::Move **move)
     
     for (int i=0;i<params->playouts_per_move_max;i++)
     {
-      if (i>=params->playouts_per_move && timeforthismove==0)
+      if (i>=params->playouts_per_move && time_allocated==0)
         break;
-      else if (i>=params->playouts_per_move_min && timeforthismove>0 && (timer.elapsed()*1000)>timeforthismove)
+      else if (i>=params->playouts_per_move_min && time_allocated>0 && timer.elapsed()>time_allocated)
         break;
       
       this->doPlayout(firstlist,secondlist);
@@ -847,22 +839,27 @@ void Engine::generateMove(Go::Color col, Go::Move **move)
     if (params->livegfx_on)
       gtpe->getOutput()->printfDebug("gogui-gfx: CLEAR\n");
     
-    long timeused=timer.elapsed()*1000;
-    if (timeused>0)
-      playoutspermilli=(float)totalplayouts/timeused;
-    if (*timeleft!=0)
+    float time_used=timer.elapsed();
+    if (time_used>0)
+      playouts_per_milli=(float)totalplayouts/time_used;
+    else
+      playouts_per_milli=-1;
+    if (*time_left!=0)
     {
-      *timeleft-=timeused;
-      if (*timeleft<0)
-        *timeleft=1;
+      *time_left-=time_used;
+      if (*time_left<=0)
+        *time_left=1;
     }
     
     std::ostringstream ss;
-    ss << "r:"<<bestratio<< " tl:"<<*timeleft<< " plts:"<<totalplayouts<< " ppms:"<<playoutspermilli;
+    ss << "r:"<<bestratio;
+    if (*time_left>0)
+      ss << " tl:"<<*time_left<< " plts:"<<totalplayouts;
+    ss << " ppms:"<<playouts_per_milli;
     lastexplanation=ss.str();
-    gtpe->getOutput()->printfDebug("[genmove]: r:%.2f tl:%ld plts:%d ppms:%.3f\n",bestratio,*timeleft,totalplayouts,playoutspermilli);
+    gtpe->getOutput()->printfDebug("[genmove]: %s\n",lastexplanation.c_str());
     if (params->livegfx_on)
-      gtpe->getOutput()->printfDebug("gogui-gfx: TEXT [genmove]: r:%.2f tl:%ld plts:%d ppms:%.3f\n",bestratio,*timeleft,totalplayouts,playoutspermilli);
+      gtpe->getOutput()->printfDebug("gogui-gfx: TEXT [genmove]: %s\n",lastexplanation.c_str());
   }
   else
   {
@@ -1127,14 +1124,14 @@ void Engine::randomPlayout(Go::Board *board, std::list<Go::Move> startmoves, Go:
   delete[] posarray;
 }
 
-long Engine::getTimeAllowedThisTurn(Go::Color col)
+float Engine::getTimeAllowedThisTurn(Go::Color col)
 {
-  long timeleft=(col==Go::BLACK ? timeblack : timewhite);
-  timeleft-=params->time_buffer*1000;
-  long timepermove=timeleft/params->time_k; //allow much more time in beginning
-  if (timepermove<(params->time_move_minimum*1000))
-    timepermove=params->time_move_minimum*1000;
-  return timepermove;
+  float time_left=(col==Go::BLACK ? time_black : time_white);
+  time_left-=params->time_buffer;
+  float time_per_move=time_left/params->time_k; //allow much more time in beginning
+  if (time_per_move<params->time_move_minimum)
+    time_per_move=params->time_move_minimum;
+  return time_per_move;
 }
 
 UCT::Tree *Engine::getPlayoutTarget(UCT::Tree *movetree)
