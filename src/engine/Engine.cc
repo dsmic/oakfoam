@@ -18,6 +18,7 @@ Engine::Engine(Gtp::Engine *ge)
   mpoptions->push_back("1-ply");
   mpoptions->push_back("uct");
   params->addParameter("move_policy",&(params->move_policy_string),mpoptions,"uct",&Engine::updateParameterWrapper,this);
+  params->move_policy=Parameters::MP_UCT;
   
   params->addParameter("playouts_per_move",&(params->playouts_per_move),PLAYOUTS_PER_MOVE);
   params->addParameter("playouts_per_move_max",&(params->playouts_per_move_max),PLAYOUTS_PER_MOVE_MAX);
@@ -38,8 +39,8 @@ Engine::Engine(Gtp::Engine *ge)
     currentboard->turnSymmetryOn();
   else
     currentboard->turnSymmetryOff();
-  params->addParameter("uct_atari_gamma",&(params->uct_expand_after),UCT_ATARI_GAMMA);
-  params->addParameter("uct_pattern_gamma",&(params->uct_expand_after),UCT_PATTERN_GAMMA);
+  params->addParameter("uct_atari_gamma",&(params->uct_atari_gamma),UCT_ATARI_GAMMA);
+  params->addParameter("uct_pattern_gamma",&(params->uct_pattern_gamma),UCT_PATTERN_GAMMA);
   
   params->addParameter("resign_ratio_threshold",&(params->resign_ratio_threshold),RESIGN_RATIO_THRESHOLD);
   params->addParameter("resign_move_factor_threshold",&(params->resign_move_factor_threshold),RESIGN_MOVE_FACTOR_THRESHOLD);
