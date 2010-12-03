@@ -31,6 +31,7 @@ Soon: (before next major release)
   add regression testing
   add more debug messages and debug levels
   move playout/time/tree code out of engine
+  divide parameters into categories?
 
 Later: (at some point)
   make sure install works and is described somewhere
