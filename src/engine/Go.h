@@ -148,6 +148,7 @@ namespace Go
       inline int getPosition() {return pos;};
       inline int getX(int boardsize) {return (this->isPass()||this->isResign()?pos:Go::Position::pos2x(pos,boardsize));};
       inline int getY(int boardsize) {return (this->isPass()||this->isResign()?pos:Go::Position::pos2y(pos,boardsize));};
+      void setPosition(int p) {pos=p;};
       
       inline bool isPass() {return (pos==-1);};
       inline bool isResign() {return (pos==-2);};
@@ -288,7 +289,10 @@ namespace Go
       int doSymmetryTransformPrimitive(Go::Board::Symmetry sym, int pos);
       int doSymmetryTransformToPrimary(Go::Board::Symmetry sym, int pos);
       Go::Board::SymmetryTransform getSymmetryTransformToPrimary(Go::Board::Symmetry sym, int pos);
-      int doSymmetryTransform(Go::Board::SymmetryTransform trans, int pos);
+      Go::Board::SymmetryTransform getSymmetryTransformFromPrimary(Go::Board::Symmetry sym, int pos);
+      int doSymmetryTransform(Go::Board::SymmetryTransform trans, int pos, bool reverse=false);
+      static int doSymmetryTransformStatic(Go::Board::SymmetryTransform trans, int size, int pos);
+      static int doSymmetryTransformStaticReverse(Go::Board::SymmetryTransform trans, int size, int pos);
     
     private:
       int size;

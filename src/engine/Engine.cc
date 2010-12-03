@@ -542,6 +542,7 @@ void Engine::gtpBoardStats(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printf("board stats:\n");
   gtpe->getOutput()->printf("moves: %d\n",me->currentboard->getMovesMade());
+  gtpe->getOutput()->printf("next to move: %c\n",(me->currentboard->nextToMove()==Go::BLACK?'B':'W'));
   gtpe->getOutput()->printf("simple ko: ");
   int simpleko=me->currentboard->getSimpleKo();
   if (simpleko==-1)
@@ -672,7 +673,10 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
       if (me->uctsymmetryuse)
         me->currentboard->turnSymmetryOn();
       else
+      {
         me->currentboard->turnSymmetryOff();
+        me->clearMoveTree();
+      }
     }
     else if (param=="uct_atari_gamma")
       me->uctatarigamma=cmd->getIntArg(1);
@@ -1174,21 +1178,24 @@ UCT::Tree *Engine::getPlayoutTarget(UCT::Tree *movetree)
   
   for(std::list<UCT::Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
   {
-    float urgency;
-    
-    if ((*iter)->getPlayouts()==0 && (*iter)->getRAVEPlayouts()==0 && (*iter)->getPriorPlayouts()==0)
-      urgency=(*iter)->getUrgency()+(rand.getRandomReal()/1000);
-    else
+    if ((*iter)->isPrimary())
     {
-      urgency=(*iter)->getUrgency();
-      if (debugon)
-        fprintf(stderr,"[urg]:%s %.3f %.2f(%d) %.2f(%d) %.2f(%d)\n",(*iter)->getMove().toString(boardsize).c_str(),urgency,(*iter)->getRatio(),(*iter)->getPlayouts(),(*iter)->getRAVERatio(),(*iter)->getRAVEPlayouts(),(*iter)->getPriorRatio(),(*iter)->getPriorPlayouts());
-    }
-    
-    if (urgency>besturgency)
-    {
-      besttree=(*iter);
-      besturgency=urgency;
+      float urgency;
+      
+      if ((*iter)->getPlayouts()==0 && (*iter)->getRAVEPlayouts()==0 && (*iter)->getPriorPlayouts()==0)
+        urgency=(*iter)->getUrgency()+(rand.getRandomReal()/1000);
+      else
+      {
+        urgency=(*iter)->getUrgency();
+        if (debugon)
+          fprintf(stderr,"[urg]:%s %.3f %.2f(%d) %.2f(%d) %.2f(%d)\n",(*iter)->getMove().toString(boardsize).c_str(),urgency,(*iter)->getRatio(),(*iter)->getPlayouts(),(*iter)->getRAVERatio(),(*iter)->getRAVEPlayouts(),(*iter)->getPriorRatio(),(*iter)->getPriorPlayouts());
+      }
+      
+      if (urgency>besturgency)
+      {
+        besttree=(*iter);
+        besturgency=urgency;
+      }
     }
   }
   
@@ -1232,7 +1239,7 @@ void Engine::expandLeaf(UCT::Tree *movetree)
   
   if (startboard->numOfValidMoves(col)==0 || Go::Board::isWinForColor(col,startboard->score()-komi))
   {
-    UCT::Tree *nmt=new UCT::Tree(ucbc,ucbinit,ravemoves,Go::Move(col,Go::Move::PASS));
+    UCT::Tree *nmt=new UCT::Tree(boardsize,ucbc,ucbinit,ravemoves,Go::Move(col,Go::Move::PASS));
     nmt->addWin();
     movetree->addChild(nmt);
   }
@@ -1244,7 +1251,7 @@ void Engine::expandLeaf(UCT::Tree *movetree)
     {
       if (validmovesbitboard->get(p))
       {
-        UCT::Tree *nmt=new UCT::Tree(ucbc,ucbinit,ravemoves,Go::Move(col,p));
+        UCT::Tree *nmt=new UCT::Tree(boardsize,ucbc,ucbinit,ravemoves,Go::Move(col,p));
         if (uctpatterngamma>0 && !startboard->weakEye(col,p))
         {
           unsigned int pattern=Pattern::ThreeByThree::makeHash(startboard,p);
@@ -1276,6 +1283,33 @@ void Engine::expandLeaf(UCT::Tree *movetree)
     }
   }
   
+  if (uctsymmetryuse)
+  {
+    Go::Board::Symmetry sym=startboard->getSymmetry();
+    if (sym!=Go::Board::NONE)
+    {
+      for(std::list<UCT::Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
+      {
+        int pos=(*iter)->getMove().getPosition();
+        Go::Board::SymmetryTransform transTo=startboard->getSymmetryTransformToPrimary(sym,pos);
+        Go::Board::SymmetryTransform transFrom=startboard->getSymmetryTransformFromPrimary(sym,pos);
+        int primarypos=startboard->doSymmetryTransform(transTo,pos);
+        if (pos!=primarypos)
+        {
+          UCT::Tree *pmt=movetree->getChild(Go::Move(col,primarypos));
+          if (pmt!=NULL)
+          {
+            if (!pmt->isPrimary())
+              gtpe->getOutput()->printfDebug("WARNING! bad primary\n");
+            (*iter)->setPrimary(pmt,transFrom);
+          }
+          else
+            gtpe->getOutput()->printfDebug("WARNING! missing primary\n");
+        }
+      }
+    }
+  }
+  
   delete startboard;
 }
 
@@ -1299,7 +1333,7 @@ UCT::Tree *Engine::getBestMoves(UCT::Tree *movetree, bool descend)
   if (besttree->isLeaf() || !descend)
     return besttree;
   else
-    return this->getPlayoutTarget(besttree);
+    return this->getBestMoves(besttree,descend);
 }
 
 void Engine::clearMoveTree()
@@ -1307,7 +1341,7 @@ void Engine::clearMoveTree()
   if (movetree!=NULL)
     delete movetree;
   
-  movetree=new UCT::Tree(ucbc,ucbinit,ravemoves);
+  movetree=new UCT::Tree(boardsize,ucbc,ucbinit,ravemoves);
 }
 
 void Engine::chooseSubTree(Go::Move move)
@@ -1315,13 +1349,24 @@ void Engine::chooseSubTree(Go::Move move)
   UCT::Tree *subtree=movetree->getChild(move);
   
   if (subtree==NULL)
-    this->clearMoveTree();
-  else
   {
-    movetree->divorceChild(subtree);
-    delete movetree;
-    movetree=subtree;
+    //gtpe->getOutput()->printfDebug("no such subtree...\n");
+    this->clearMoveTree();
+    return;
   }
+  
+  if (!subtree->isPrimary())
+  {
+    //gtpe->getOutput()->printfDebug("doing transformation...\n");
+    subtree->performSymmetryTransformParentPrimary();
+    subtree=movetree->getChild(move);
+    if (subtree==NULL || !subtree->isPrimary())
+      gtpe->getOutput()->printfDebug("WARNING! symmetry transformation failed!\n");
+  }
+  
+  movetree->divorceChild(subtree);
+  delete movetree;
+  movetree=subtree;
 }
 
 bool Engine::writeSGF(std::string filename, Go::Board *board, UCT::Tree *tree)
@@ -1511,6 +1556,10 @@ void Engine::displayPlayoutLiveGfx(int totalplayouts)
           Gtp::Vertex vert={(*iter).getX(boardsize),(*iter).getY(boardsize)};
           gtpe->getOutput()->printfDebug(" %c ",((*iter).getColor()==Go::BLACK?'B':'W'));
           gtpe->getOutput()->printDebugVertex(vert);
+        }
+        else if ((*iter).isPass())
+        {
+          gtpe->getOutput()->printfDebug(" %c PASS",((*iter).getColor()==Go::BLACK?'B':'W'));
         }
       }
     }

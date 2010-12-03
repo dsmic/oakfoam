@@ -130,6 +130,9 @@ void Go::Board::copyOver(Go::Board *copyboard)
   copyboard->secondlastmove=this->secondlastmove;
   
   copyboard->refreshGroups();
+  
+  if (copyboard->symmetryupdated)
+      copyboard->updateSymmetry();
 }
 
 std::string Go::Board::toString()
@@ -329,6 +332,11 @@ bool Go::Board::validMoveCheck(Go::Move move)
 
 void Go::Board::makeMove(Go::Move move)
 {
+  if (nexttomove!=move.getColor())
+  {
+    fprintf(stderr,"WARNING! unexpected move color\n");
+  }
+  
   if (simpleko!=-1)
   {
     int kopos=simpleko;
@@ -897,7 +905,97 @@ Go::Board::SymmetryTransform Go::Board::getSymmetryTransformToPrimary(Go::Board:
   return trans;
 }
 
-int Go::Board::doSymmetryTransform(Go::Board::SymmetryTransform trans, int pos)
+Go::Board::SymmetryTransform Go::Board::getSymmetryTransformFromPrimary(Go::Board::Symmetry sym, int pos)
+{
+  int x=Go::Position::pos2x(pos,size);
+  int y=Go::Position::pos2y(pos,size);
+  Go::Board::SymmetryTransform trans={false,false,false};
+  
+  if (sym==Go::Board::VERTICAL)
+  {
+    if (x>(size-x-1))
+      trans.invertX=true;
+  }
+  else if (sym==Go::Board::HORIZONTAL)
+  {
+    if (y>(size-y-1))
+      trans.invertY=true;
+  }
+  else if (sym==Go::Board::VERTICAL_HORIZONTAL)
+  {
+    if (x>(size-x-1))
+      trans.invertX=true;
+    if (y>(size-y-1))
+      trans.invertY=true;
+  }
+  else if (sym==Go::Board::DIAGONAL_UP)
+  {
+    if (x>y)
+      trans.swapXY=true;
+  }
+  else if (sym==Go::Board::DIAGONAL_DOWN)
+  {
+    if ((x+y)>((size-y-1)+(size-x-1)))
+    {
+      trans.invertX=true;
+      trans.invertY=true;
+      trans.swapXY=true;
+    }
+  }
+  else if (sym==Go::Board::DIAGONAL_BOTH)
+  {
+    int nx=x;
+    int ny=y;
+    if ((x+y)>((size-y-1)+(size-x-1)))
+    {
+      trans.invertX=true;
+      trans.invertY=true;
+      trans.swapXY=true;
+      nx=(size-y-1);
+      ny=(size-x-1);
+    }
+    
+    if (nx>ny)
+      trans.swapXY=!trans.swapXY;
+  }
+  else if (sym==Go::Board::FULL)
+  {
+    int nx=x;
+    int ny=y;
+    
+    if (nx>(size-nx-1))
+    {
+      trans.invertX=true;
+      nx=(size-nx-1);
+    }
+    
+    if (ny>(size-ny-1))
+    {
+      trans.invertY=true;
+      ny=(size-ny-1);
+    }
+    
+    if (nx>ny)
+    {
+      trans.swapXY=true;
+      int t=nx;
+      nx=ny;
+      ny=t;
+    }
+  }
+  
+  return trans;
+}
+
+int Go::Board::doSymmetryTransform(Go::Board::SymmetryTransform trans, int pos, bool reverse)
+{
+  if (reverse)
+    return Go::Board::doSymmetryTransformStaticReverse(trans,size,pos);
+  else
+    return Go::Board::doSymmetryTransformStatic(trans,size,pos);
+}
+
+int Go::Board::doSymmetryTransformStatic(Go::Board::SymmetryTransform trans, int size, int pos)
 {
   int x=Go::Position::pos2x(pos,size);
   int y=Go::Position::pos2y(pos,size);
@@ -917,5 +1015,27 @@ int Go::Board::doSymmetryTransform(Go::Board::SymmetryTransform trans, int pos)
   
   return Go::Position::xy2pos(x,y,size);
 }
+
+int Go::Board::doSymmetryTransformStaticReverse(Go::Board::SymmetryTransform trans, int size, int pos)
+{
+  int x=Go::Position::pos2x(pos,size);
+  int y=Go::Position::pos2y(pos,size);
+  
+  if (trans.swapXY)
+  {
+    int t=x;
+    x=y;
+    y=t;
+  }
+  
+  if (trans.invertX)
+    x=(size-x-1);
+  
+  if (trans.invertY)
+    y=(size-y-1);
+  
+  return Go::Position::xy2pos(x,y,size);
+}
+
 
 

@@ -1,9 +1,10 @@
 #include "UCT.h"
 
-UCT::Tree::Tree(float uc, float ui, int rm, Go::Move mov, UCT::Tree *p)
+UCT::Tree::Tree(int bsize, float uc, float ui, int rm, Go::Move mov, UCT::Tree *p)
 {
   parent=p;
   children=new std::list<UCT::Tree*>();
+  boardsize=bsize;
   move=mov;
   playouts=0;
   wins=0;
@@ -15,6 +16,16 @@ UCT::Tree::Tree(float uc, float ui, int rm, Go::Move mov, UCT::Tree *p)
   ucbc=uc;
   ucbinit=ui;
   symmetryprimary=NULL;
+  
+  if (parent!=NULL)
+  {
+    Go::Move pmove=parent->getMove();
+    if (!pmove.isPass() && !pmove.isResign())
+    {
+      if (pmove.getColor()==move.getColor())
+        fprintf(stderr,"WARNING! unexpected parent color\n");
+    }
+  }
 }
 
 UCT::Tree::~Tree()
@@ -272,5 +283,16 @@ std::string UCT::Tree::toSGFString(int boardsize, int maxchildren)
   if (!this->isRoot())
     ss<<")\n";
   return ss.str();
+}
+
+void UCT::Tree::performSymmetryTransform(Go::Board::SymmetryTransform trans)
+{
+  if (!move.isPass() && !move.isResign())
+    move.setPosition(Go::Board::doSymmetryTransformStaticReverse(trans,boardsize,move.getPosition()));
+  
+  for(std::list<UCT::Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
+  {
+    (*iter)->performSymmetryTransform(trans);
+  }
 }
 
