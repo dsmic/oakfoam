@@ -647,8 +647,7 @@ void Engine::gtpDescribeEngine(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printf(PACKAGE_NAME " : " PACKAGE_VERSION "\n");
   gtpe->getOutput()->printf("parameters:\n");
-  gtpe->getOutput()->printf(" playouts_per_move %d\n",me->params->playouts_per_move);
-  gtpe->getOutput()->printf(" todo\n");
+  me->params->printParametersForDescription(gtpe);
   gtpe->getOutput()->endResponse(true);
 }
 

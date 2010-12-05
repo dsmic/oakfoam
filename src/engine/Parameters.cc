@@ -236,3 +236,64 @@ void Parameters::printParameterListForGTP(Gtp::Engine *gtpe, Parameters::Paramet
   gtpe->getOutput()->printf("] %s %s\n",param->id.c_str(),val.c_str());
 }
 
+void Parameters::printParametersForDescription(Gtp::Engine *gtpe)
+{
+  for(std::list<Parameters::Parameter *>::iterator iter=paramlist.begin();iter!=paramlist.end();++iter)
+  {
+    this->printParameterForDescription(gtpe,(*iter));
+  }
+}
+
+void Parameters::printParameterForDescription(Gtp::Engine *gtpe, Parameters::Parameter *param)
+{
+  switch (param->type)
+  {
+    case INTEGER:
+      this->printParameterIntegerForDescription(gtpe,param);
+      break;
+    case FLOAT:
+      this->printParameterFloatForDescription(gtpe,param);
+      break;
+    case BOOLEAN:
+      this->printParameterBooleanForDescription(gtpe,param);
+      break;
+    case STRING:
+      this->printParameterStringForDescription(gtpe,param);
+      break;
+    case LIST:
+      this->printParameterListForDescription(gtpe,param);
+      break;
+  }
+}
+
+void Parameters::printParameterIntegerForDescription(Gtp::Engine *gtpe, Parameters::Parameter *param)
+{
+  int val=(*(int*)(param->ptr));
+  gtpe->getOutput()->printf("  %s %d\n",param->id.c_str(),val);
+}
+
+void Parameters::printParameterFloatForDescription(Gtp::Engine *gtpe, Parameters::Parameter *param)
+{
+  float val=(*(float*)(param->ptr));
+  gtpe->getOutput()->printf("  %s %.3f\n",param->id.c_str(),val);
+}
+
+void Parameters::printParameterBooleanForDescription(Gtp::Engine *gtpe, Parameters::Parameter *param)
+{
+  bool val=(*(bool*)(param->ptr));
+  gtpe->getOutput()->printf("  %s %d\n",param->id.c_str(),val);
+}
+
+void Parameters::printParameterStringForDescription(Gtp::Engine *gtpe, Parameters::Parameter *param)
+{
+  std::string val=(*(std::string*)(param->ptr));
+  gtpe->getOutput()->printf("  %s %s\n",param->id.c_str(),val.c_str());
+}
+
+void Parameters::printParameterListForDescription(Gtp::Engine *gtpe, Parameters::Parameter *param)
+{
+  std::string val=(*(std::string*)(param->ptr));
+  gtpe->getOutput()->printf("  %s %s\n",param->id.c_str(),val.c_str());
+}
+
+

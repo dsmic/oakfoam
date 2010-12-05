@@ -67,6 +67,7 @@ class Parameters
     
     bool setParameter(std::string id, std::string val);
     void printParametersForGTP(Gtp::Engine *gtpe);
+    void printParametersForDescription(Gtp::Engine *gtpe);
     
   private:
     enum ParameterType
@@ -103,12 +104,12 @@ class Parameters
     void printParameterStringForGTP(Gtp::Engine *gtpe, Parameters::Parameter *param);
     void printParameterListForGTP(Gtp::Engine *gtpe, Parameters::Parameter *param);
     
-    static void builtinUpdateFunctionWrapper(void *instance, std::string id)
-    {
-      Parameters *me=(Parameters*)instance;
-      me->builtinUpdateFunction(id);
-    };
-    void builtinUpdateFunction(std::string id);
+    void printParameterForDescription(Gtp::Engine *gtpe, Parameters::Parameter *param);
+    void printParameterIntegerForDescription(Gtp::Engine *gtpe, Parameters::Parameter *param);
+    void printParameterFloatForDescription(Gtp::Engine *gtpe, Parameters::Parameter *param);
+    void printParameterBooleanForDescription(Gtp::Engine *gtpe, Parameters::Parameter *param);
+    void printParameterStringForDescription(Gtp::Engine *gtpe, Parameters::Parameter *param);
+    void printParameterListForDescription(Gtp::Engine *gtpe, Parameters::Parameter *param);
 };
 
 #endif
