@@ -428,12 +428,12 @@ void Gtp::Output::printfLog(std::string format,...)
 void Gtp::Output::printDebugVertex(Gtp::Vertex vert)
 { 
   if (vert.x==-1 && vert.y==-1)
-    this->printfDebug("PASS");
+    this->printfDebug("pass");
   else if (vert.x==-2 && vert.y==-2)
-    this->printfDebug("RESIGN");
+    this->printfDebug("resign");
   else
   {
-    char xletter='A'+vert.x;
+    char xletter='a'+vert.x;
     if (vert.x>=8)
       xletter++;
     this->printfDebug("%c%d",xletter,(vert.y+1));
