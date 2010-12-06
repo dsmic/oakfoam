@@ -7,7 +7,6 @@ Now: (before next release)
 
 Soon: (before next major release)
   implement superko in tree
-  copy all board data with a copy() (groups and liberties)
   improve playout move selection (quicker but still uniform or close)
   tune parameters
   add slight bonus to ratio for pts diff?
@@ -44,5 +43,7 @@ Later: (at some point)
   add prefix to custom commands?
   do sanity checks on parameters
   document parameters
+  use rotational symmetry?
+  copy all board data with a copy() (groups and liberties)
 
 
