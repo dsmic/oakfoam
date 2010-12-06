@@ -351,12 +351,12 @@ Gtp::Vertex Gtp::Command::getVertexArg(int i)
 void Gtp::Output::printVertex(Gtp::Vertex vert)
 {
   if (vert.x==-1 && vert.y==-1)
-    this->printf("PASS");
+    this->printf("pass");
   else if (vert.x==-2 && vert.y==-2)
-    this->printf("RESIGN");
+    this->printf("resign");
   else
   {
-    char xletter='A'+vert.x;
+    char xletter='a'+vert.x;
     if (vert.x>=8)
       xletter++;
     this->printf("%c%d",xletter,(vert.y+1));
