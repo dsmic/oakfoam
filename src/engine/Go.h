@@ -286,10 +286,8 @@ namespace Go
       Go::Board::Symmetry computeSymmetry();
       Go::Board::Symmetry getSymmetry() { return currentsymmetry; };
       std::string getSymmetryString(Go::Board::Symmetry sym);
-      int doSymmetryTransformPrimitive(Go::Board::Symmetry sym, int pos);
       int doSymmetryTransformToPrimary(Go::Board::Symmetry sym, int pos);
       Go::Board::SymmetryTransform getSymmetryTransformToPrimary(Go::Board::Symmetry sym, int pos);
-      Go::Board::SymmetryTransform getSymmetryTransformFromPrimary(Go::Board::Symmetry sym, int pos);
       int doSymmetryTransform(Go::Board::SymmetryTransform trans, int pos, bool reverse=false);
       static int doSymmetryTransformStatic(Go::Board::SymmetryTransform trans, int size, int pos);
       static int doSymmetryTransformStaticReverse(Go::Board::SymmetryTransform trans, int size, int pos);
@@ -337,6 +335,7 @@ namespace Go
       bool hasSymmetryDiagonalDown();
       bool hasSymmetryDiagonalUp();
       void updateSymmetry();
+      int doSymmetryTransformPrimitive(Go::Board::Symmetry sym, int pos);
       
       struct ScoreVertex
       {

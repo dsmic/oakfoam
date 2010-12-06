@@ -1256,9 +1256,8 @@ void Engine::expandLeaf(UCT::Tree *movetree)
       for(std::list<UCT::Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
       {
         int pos=(*iter)->getMove().getPosition();
-        Go::Board::SymmetryTransform transTo=startboard->getSymmetryTransformToPrimary(sym,pos);
-        Go::Board::SymmetryTransform transFrom=startboard->getSymmetryTransformFromPrimary(sym,pos);
-        int primarypos=startboard->doSymmetryTransform(transTo,pos);
+        Go::Board::SymmetryTransform trans=startboard->getSymmetryTransformToPrimary(sym,pos);
+        int primarypos=startboard->doSymmetryTransform(trans,pos);
         if (pos!=primarypos)
         {
           UCT::Tree *pmt=movetree->getChild(Go::Move(col,primarypos));
@@ -1266,7 +1265,7 @@ void Engine::expandLeaf(UCT::Tree *movetree)
           {
             if (!pmt->isPrimary())
               gtpe->getOutput()->printfDebug("WARNING! bad primary\n");
-            (*iter)->setPrimary(pmt,transFrom);
+            (*iter)->setPrimary(pmt,trans);
           }
           else
             gtpe->getOutput()->printfDebug("WARNING! missing primary\n");

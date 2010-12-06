@@ -4,7 +4,6 @@ TODO
 Now: (before next release)
   play a move early if it is clearly the right move
   think for longer if needed
-  cleanup symmetry code
 
 Soon: (before next major release)
   implement superko in tree
