@@ -45,6 +45,7 @@
 #include <list>
 #include <vector>
 #include <fstream>
+#include <iomanip>
 #include <boost/timer.hpp>
 #include <config.h>
 #include "Go.h"

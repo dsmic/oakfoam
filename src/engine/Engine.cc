@@ -852,10 +852,11 @@ void Engine::generateMove(Go::Color col, Go::Move **move)
     }
     
     std::ostringstream ss;
-    ss << "r:"<<bestratio;
+    ss << std::fixed;
+    ss << "r:"<<std::setprecision(2)<<bestratio;
     if (*time_left>0)
-      ss << " tl:"<<*time_left<< " plts:"<<totalplayouts;
-    ss << " ppms:"<<playouts_per_milli;
+      ss << " tl:"<<std::setprecision(3)<<*time_left<< " plts:"<<totalplayouts;
+    ss << " ppms:"<<std::setprecision(2)<<playouts_per_milli;
     lastexplanation=ss.str();
     gtpe->getOutput()->printfDebug("[genmove]: %s\n",lastexplanation.c_str());
     if (params->livegfx_on)
