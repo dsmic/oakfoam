@@ -28,7 +28,7 @@ Engine::Engine(Gtp::Engine *ge)
   params->addParameter("playout_patterns_enabled",&(params->playout_patterns_enabled),PLAYOUT_PATTERNS_ENABLED);
   
   params->addParameter("ucb_c",&(params->ucb_c),UCB_C);
-  params->addParameter("uct_init",&(params->ucb_init),UCB_INIT);
+  params->addParameter("ucb_init",&(params->ucb_init),UCB_INIT);
   
   params->addParameter("rave_moves",&(params->rave_moves),RAVE_MOVES);
   
