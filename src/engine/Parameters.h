@@ -39,8 +39,8 @@ class Parameters
     int uct_expand_after;
     bool uct_keep_subtree;
     bool uct_symmetry_use;
-    int uct_atari_gamma;
-    int uct_pattern_gamma;
+    int uct_atari_prior;
+    int uct_pattern_prior;
     
     float surewin_threshold;
     bool surewin_expected;

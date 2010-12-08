@@ -39,8 +39,8 @@ Engine::Engine(Gtp::Engine *ge)
     currentboard->turnSymmetryOn();
   else
     currentboard->turnSymmetryOff();
-  params->addParameter("uct_atari_gamma",&(params->uct_atari_gamma),UCT_ATARI_GAMMA);
-  params->addParameter("uct_pattern_gamma",&(params->uct_pattern_gamma),UCT_PATTERN_GAMMA);
+  params->addParameter("uct_atari_prior",&(params->uct_atari_prior),UCT_ATARI_PRIOR);
+  params->addParameter("uct_pattern_prior",&(params->uct_pattern_prior),UCT_PATTERN_PRIOR);
   
   params->addParameter("surewin_threshold",&(params->surewin_threshold),SUREWIN_THRESHOLD);
   params->surewin_expected=false;
@@ -1226,19 +1226,19 @@ void Engine::expandLeaf(UCT::Tree *movetree)
       if (validmovesbitboard->get(p))
       {
         UCT::Tree *nmt=new UCT::Tree(params,Go::Move(col,p));
-        if (params->uct_pattern_gamma>0 && !startboard->weakEye(col,p))
+        if (params->uct_pattern_prior>0 && !startboard->weakEye(col,p))
         {
           unsigned int pattern=Pattern::ThreeByThree::makeHash(startboard,p);
           if (col==Go::WHITE)
             pattern=Pattern::ThreeByThree::invert(pattern);
           if (patterntable->isPattern(pattern))
-            nmt->addPriorWins(params->uct_pattern_gamma);
+            nmt->addPriorWins(params->uct_pattern_prior);
         }
         movetree->addChild(nmt);
       }
     }
     
-    if (params->uct_atari_gamma>0)
+    if (params->uct_atari_prior>0)
     {
       std::list<Go::Group*,Go::allocator_groupptr> *groups=startboard->getGroups();
       for(std::list<Go::Group*,Go::allocator_groupptr>::iterator iter=groups->begin();iter!=groups->end();++iter) 
@@ -1250,7 +1250,7 @@ void Engine::expandLeaf(UCT::Tree *movetree)
           {
             UCT::Tree *mt=movetree->getChild(Go::Move(col,liberty));
             if (mt!=NULL)
-              mt->addPriorWins(params->uct_atari_gamma);
+              mt->addPriorWins(params->uct_atari_prior);
           }
         }
       }

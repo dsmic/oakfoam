@@ -2,9 +2,8 @@ TODO
 ------------------
 
 Now: (before next release)
-  play a move early if it is clearly the right move
   think for longer if needed
-  change badly named gammas to priors
+  divide parameters into categories
 
 Soon: (before next major release)
   implement superko in tree
@@ -30,7 +29,7 @@ Soon: (before next major release)
   add regression testing
   add more debug messages and debug levels
   move playout/time/tree code out of engine
-  divide parameters into categories?
+  reduce thinking time if surewin?
 
 Later: (at some point)
   make sure install works and is described somewhere
