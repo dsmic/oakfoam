@@ -42,6 +42,9 @@ Engine::Engine(Gtp::Engine *ge)
   params->addParameter("uct_atari_gamma",&(params->uct_atari_gamma),UCT_ATARI_GAMMA);
   params->addParameter("uct_pattern_gamma",&(params->uct_pattern_gamma),UCT_PATTERN_GAMMA);
   
+  params->addParameter("surewin_threshold",&(params->surewin_threshold),SUREWIN_THRESHOLD);
+  params->surewin_expected=false;
+  
   params->addParameter("resign_ratio_threshold",&(params->resign_ratio_threshold),RESIGN_RATIO_THRESHOLD);
   params->addParameter("resign_move_factor_threshold",&(params->resign_move_factor_threshold),RESIGN_MOVE_FACTOR_THRESHOLD);
   
@@ -857,7 +860,11 @@ void Engine::generateMove(Go::Color col, Go::Move **move)
     if (*time_left>0)
       ss << " tl:"<<std::setprecision(3)<<*time_left<< " plts:"<<totalplayouts;
     ss << " ppms:"<<std::setprecision(2)<<playouts_per_milli;
+    params->surewin_expected=(bestratio>=params->surewin_threshold);
+    if (params->surewin_expected)
+      ss << " surewin!";
     lastexplanation=ss.str();
+    
     gtpe->getOutput()->printfDebug("[genmove]: %s\n",lastexplanation.c_str());
     if (params->livegfx_on)
       gtpe->getOutput()->printfDebug("gogui-gfx: TEXT [genmove]: %s\n",lastexplanation.c_str());
@@ -903,6 +910,7 @@ void Engine::clearBoard()
   if (!params->uct_symmetry_use)
     currentboard->turnSymmetryOff();
   this->clearMoveTree();
+  params->surewin_expected=false;
 }
 
 void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, int *posarray)
@@ -1205,7 +1213,7 @@ void Engine::expandLeaf(UCT::Tree *movetree)
   {
     UCT::Tree *nmt=new UCT::Tree(params,Go::Move(col,Go::Move::PASS));
     nmt->addWin();
-    if (startboard->getPassesPlayed()==0)
+    if (startboard->getPassesPlayed()==0 && !(params->surewin_expected && col==currentboard->nextToMove()))
       nmt->addPriorLoses(UCT_PASS_DETER);
     movetree->addChild(nmt);
   }

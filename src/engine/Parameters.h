@@ -42,6 +42,9 @@ class Parameters
     int uct_atari_gamma;
     int uct_pattern_gamma;
     
+    float surewin_threshold;
+    bool surewin_expected;
+    
     float resign_ratio_threshold;
     float resign_move_factor_threshold;
     
