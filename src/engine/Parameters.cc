@@ -14,9 +14,10 @@ Parameters::~Parameters()
   }
 }
 
-void Parameters::addParameter(std::string id, int *ptr, int def, Parameters::UpdateFunction func, void *instance)
+void Parameters::addParameter(std::string category, std::string id, int *ptr, int def, Parameters::UpdateFunction func, void *instance)
 {
   Parameters::Parameter *param=new Parameters::Parameter();
+  param->category=category;
   param->id=id;
   param->ptr=ptr;
   param->type=Parameters::INTEGER;
@@ -26,9 +27,10 @@ void Parameters::addParameter(std::string id, int *ptr, int def, Parameters::Upd
   (*ptr)=def;
 }
 
-void Parameters::addParameter(std::string id, float *ptr, float def, Parameters::UpdateFunction func, void *instance)
+void Parameters::addParameter(std::string category, std::string id, float *ptr, float def, Parameters::UpdateFunction func, void *instance)
 {
   Parameters::Parameter *param=new Parameters::Parameter();
+  param->category=category;
   param->id=id;
   param->ptr=ptr;
   param->type=Parameters::FLOAT;
@@ -38,9 +40,10 @@ void Parameters::addParameter(std::string id, float *ptr, float def, Parameters:
   (*ptr)=def;
 }
 
-void Parameters::addParameter(std::string id, bool *ptr, bool def, Parameters::UpdateFunction func, void *instance)
+void Parameters::addParameter(std::string category, std::string id, bool *ptr, bool def, Parameters::UpdateFunction func, void *instance)
 {
   Parameters::Parameter *param=new Parameters::Parameter();
+  param->category=category;
   param->id=id;
   param->ptr=ptr;
   param->type=Parameters::BOOLEAN;
@@ -50,9 +53,10 @@ void Parameters::addParameter(std::string id, bool *ptr, bool def, Parameters::U
   (*ptr)=def;
 }
 
-void Parameters::addParameter(std::string id, std::string *ptr, std::string def, Parameters::UpdateFunction func, void *instance)
+void Parameters::addParameter(std::string category, std::string id, std::string *ptr, std::string def, Parameters::UpdateFunction func, void *instance)
 {
   Parameters::Parameter *param=new Parameters::Parameter();
+  param->category=category;
   param->id=id;
   param->ptr=ptr;
   param->type=Parameters::STRING;
@@ -62,9 +66,10 @@ void Parameters::addParameter(std::string id, std::string *ptr, std::string def,
   (*ptr)=def;
 }
 
-void Parameters::addParameter(std::string id, std::string *ptr, std::list<std::string> *options, std::string def, Parameters::UpdateFunction func, void *instance)
+void Parameters::addParameter(std::string category, std::string id, std::string *ptr, std::list<std::string> *options, std::string def, Parameters::UpdateFunction func, void *instance)
 {
   Parameters::Parameter *param=new Parameters::Parameter();
+  param->category=category;
   param->id=id;
   param->ptr=ptr;
   param->type=Parameters::LIST;
@@ -171,11 +176,12 @@ bool Parameters::setParameterList(Parameters::Parameter *param, std::string val)
   return false;
 }
 
-void Parameters::printParametersForGTP(Gtp::Engine *gtpe)
+void Parameters::printParametersForGTP(Gtp::Engine *gtpe, std::string category)
 {
   for(std::list<Parameters::Parameter *>::iterator iter=paramlist.begin();iter!=paramlist.end();++iter)
   {
-    this->printParameterForGTP(gtpe,(*iter));
+    if (category=="" || (*iter)->category==category)
+      this->printParameterForGTP(gtpe,(*iter));
   }
 }
 

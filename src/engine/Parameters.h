@@ -62,14 +62,14 @@ class Parameters
     
     typedef void (*UpdateFunction)(void *instance, std::string id);
     
-    void addParameter(std::string id, int *ptr, int def, Parameters::UpdateFunction func=NULL, void *instance=NULL);
-    void addParameter(std::string id, float *ptr, float def, Parameters::UpdateFunction func=NULL, void *instance=NULL);
-    void addParameter(std::string id, bool *ptr, bool def, Parameters::UpdateFunction func=NULL, void *instance=NULL);
-    void addParameter(std::string id, std::string *ptr, std::string def, Parameters::UpdateFunction func=NULL, void *instance=NULL);
-    void addParameter(std::string id, std::string *ptr, std::list<std::string> *options, std::string def, Parameters::UpdateFunction func=NULL, void *instance=NULL);
+    void addParameter(std::string category, std::string id, int *ptr, int def, Parameters::UpdateFunction func=NULL, void *instance=NULL);
+    void addParameter(std::string category, std::string id, float *ptr, float def, Parameters::UpdateFunction func=NULL, void *instance=NULL);
+    void addParameter(std::string category, std::string id, bool *ptr, bool def, Parameters::UpdateFunction func=NULL, void *instance=NULL);
+    void addParameter(std::string category, std::string id, std::string *ptr, std::string def, Parameters::UpdateFunction func=NULL, void *instance=NULL);
+    void addParameter(std::string category, std::string id, std::string *ptr, std::list<std::string> *options, std::string def, Parameters::UpdateFunction func=NULL, void *instance=NULL);
     
     bool setParameter(std::string id, std::string val);
-    void printParametersForGTP(Gtp::Engine *gtpe);
+    void printParametersForGTP(Gtp::Engine *gtpe, std::string category="");
     void printParametersForDescription(Gtp::Engine *gtpe);
     
   private:
@@ -84,6 +84,7 @@ class Parameters
     
     struct Parameter
     {
+      std::string category;
       std::string id;
       void *ptr;
       Parameters::ParameterType type;

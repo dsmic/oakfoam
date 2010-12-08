@@ -17,48 +17,48 @@ Engine::Engine(Gtp::Engine *ge)
   mpoptions->push_back("playout");
   mpoptions->push_back("1-ply");
   mpoptions->push_back("uct");
-  params->addParameter("move_policy",&(params->move_policy_string),mpoptions,"uct",&Engine::updateParameterWrapper,this);
+  params->addParameter("mcts","move_policy",&(params->move_policy_string),mpoptions,"uct",&Engine::updateParameterWrapper,this);
   params->move_policy=Parameters::MP_UCT;
   
-  params->addParameter("playouts_per_move",&(params->playouts_per_move),PLAYOUTS_PER_MOVE);
-  params->addParameter("playouts_per_move_max",&(params->playouts_per_move_max),PLAYOUTS_PER_MOVE_MAX);
-  params->addParameter("playouts_per_move_min",&(params->playouts_per_move_min),PLAYOUTS_PER_MOVE_MIN);
+  params->addParameter("mcts","playouts_per_move",&(params->playouts_per_move),PLAYOUTS_PER_MOVE);
+  params->addParameter("mcts","playouts_per_move_max",&(params->playouts_per_move_max),PLAYOUTS_PER_MOVE_MAX);
+  params->addParameter("mcts","playouts_per_move_min",&(params->playouts_per_move_min),PLAYOUTS_PER_MOVE_MIN);
   
-  params->addParameter("playout_atari_enabled",&(params->playout_atari_enabled),PLAYOUT_ATARI_ENABLED);
-  params->addParameter("playout_patterns_enabled",&(params->playout_patterns_enabled),PLAYOUT_PATTERNS_ENABLED);
+  params->addParameter("mcts","playout_atari_enabled",&(params->playout_atari_enabled),PLAYOUT_ATARI_ENABLED);
+  params->addParameter("mcts","playout_patterns_enabled",&(params->playout_patterns_enabled),PLAYOUT_PATTERNS_ENABLED);
   
-  params->addParameter("ucb_c",&(params->ucb_c),UCB_C);
-  params->addParameter("ucb_init",&(params->ucb_init),UCB_INIT);
+  params->addParameter("mcts","ucb_c",&(params->ucb_c),UCB_C);
+  params->addParameter("mcts","ucb_init",&(params->ucb_init),UCB_INIT);
   
-  params->addParameter("rave_moves",&(params->rave_moves),RAVE_MOVES);
+  params->addParameter("mcts","rave_moves",&(params->rave_moves),RAVE_MOVES);
   
-  params->addParameter("uct_expand_after",&(params->uct_expand_after),UCT_EXPAND_AFTER);
-  params->addParameter("uct_keep_subtree",&(params->uct_keep_subtree),UCT_KEEP_SUBTREE);
-  params->addParameter("uct_symmetry_use",&(params->uct_symmetry_use),UCT_SYMMETRY_USE);
+  params->addParameter("mcts","uct_expand_after",&(params->uct_expand_after),UCT_EXPAND_AFTER);
+  params->addParameter("mcts","uct_keep_subtree",&(params->uct_keep_subtree),UCT_KEEP_SUBTREE);
+  params->addParameter("mcts","uct_symmetry_use",&(params->uct_symmetry_use),UCT_SYMMETRY_USE);
   if (params->uct_symmetry_use)
     currentboard->turnSymmetryOn();
   else
     currentboard->turnSymmetryOff();
-  params->addParameter("uct_atari_prior",&(params->uct_atari_prior),UCT_ATARI_PRIOR);
-  params->addParameter("uct_pattern_prior",&(params->uct_pattern_prior),UCT_PATTERN_PRIOR);
+  params->addParameter("mcts","uct_atari_prior",&(params->uct_atari_prior),UCT_ATARI_PRIOR);
+  params->addParameter("mcts","uct_pattern_prior",&(params->uct_pattern_prior),UCT_PATTERN_PRIOR);
   
-  params->addParameter("surewin_threshold",&(params->surewin_threshold),SUREWIN_THRESHOLD);
+  params->addParameter("mcts","surewin_threshold",&(params->surewin_threshold),SUREWIN_THRESHOLD);
   params->surewin_expected=false;
   
-  params->addParameter("resign_ratio_threshold",&(params->resign_ratio_threshold),RESIGN_RATIO_THRESHOLD);
-  params->addParameter("resign_move_factor_threshold",&(params->resign_move_factor_threshold),RESIGN_MOVE_FACTOR_THRESHOLD);
+  params->addParameter("mcts","resign_ratio_threshold",&(params->resign_ratio_threshold),RESIGN_RATIO_THRESHOLD);
+  params->addParameter("mcts","resign_move_factor_threshold",&(params->resign_move_factor_threshold),RESIGN_MOVE_FACTOR_THRESHOLD);
   
-  params->addParameter("time_k",&(params->time_k),TIME_K);
-  params->addParameter("time_buffer",&(params->time_buffer),TIME_BUFFER);
-  params->addParameter("time_move_minimum",&(params->time_move_minimum),TIME_MOVE_MINIMUM);
+  params->addParameter("time","time_k",&(params->time_k),TIME_K);
+  params->addParameter("time","time_buffer",&(params->time_buffer),TIME_BUFFER);
+  params->addParameter("time","time_move_minimum",&(params->time_move_minimum),TIME_MOVE_MINIMUM);
   
-  params->addParameter("live_gfx",&(params->livegfx_on),LIVEGFX_ON);
-  params->addParameter("live_gfx_update_playouts",&(params->livegfx_update_playouts),LIVEGFX_UPDATE_PLAYOUTS);
-  params->addParameter("live_gfx_delay",&(params->livegfx_delay),LIVEGFX_DELAY);
+  params->addParameter("other","live_gfx",&(params->livegfx_on),LIVEGFX_ON);
+  params->addParameter("other","live_gfx_update_playouts",&(params->livegfx_update_playouts),LIVEGFX_UPDATE_PLAYOUTS);
+  params->addParameter("other","live_gfx_delay",&(params->livegfx_delay),LIVEGFX_DELAY);
   
-  params->addParameter("outputsgf_maxchildren",&(params->outputsgf_maxchildren),OUTPUTSGF_MAXCHILDREN);
+  params->addParameter("other","outputsgf_maxchildren",&(params->outputsgf_maxchildren),OUTPUTSGF_MAXCHILDREN);
   
-  params->addParameter("debug",&(params->debug_on),DEBUG_ON);
+  params->addParameter("other","debug",&(params->debug_on),DEBUG_ON);
   
   patterntable=new Pattern::ThreeByThreeTable();
   patterntable->loadPatternDefaults();
@@ -155,7 +155,9 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("loadpatterns %%r","Load Patterns","none");
   gtpe->addAnalyzeCommand("clearpatterns","Clear Patterns","none");
   gtpe->addAnalyzeCommand("doboardcopy","Do Board Copy","none");
-  gtpe->addAnalyzeCommand("param","Parameters","param");
+  gtpe->addAnalyzeCommand("param mcts","Parameters (MCTS)","param");
+  gtpe->addAnalyzeCommand("param time","Parameters (Time)","param");
+  gtpe->addAnalyzeCommand("param other","Parameters (Other)","param");
   gtpe->addAnalyzeCommand("donplayouts %%s","Do N Playouts","none");
   gtpe->addAnalyzeCommand("donplayouts 1","Do 1 Playout","none");
   gtpe->addAnalyzeCommand("outputsgf %%w","Output SGF","none");
@@ -664,6 +666,14 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     me->params->printParametersForGTP(gtpe);
     gtpe->getOutput()->endResponse(true);
   }
+  else if (cmd->numArgs()==1)
+  {
+    std::string category=cmd->getStringArg(0);
+    
+    gtpe->getOutput()->startResponse(cmd);
+    me->params->printParametersForGTP(gtpe,category);
+    gtpe->getOutput()->endResponse(true);
+  }
   else if (cmd->numArgs()==2)
   {
     std::string param=cmd->getStringArg(0);
@@ -681,10 +691,28 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
       gtpe->getOutput()->endResponse();
     }
   }
+  else if (cmd->numArgs()==3)
+  {
+    std::string category=cmd->getStringArg(0); //check this parameter in category?
+    std::string param=cmd->getStringArg(1);
+    std::transform(param.begin(),param.end(),param.begin(),::tolower);
+    
+    if (me->params->setParameter(param,cmd->getStringArg(2)))
+    {
+      gtpe->getOutput()->startResponse(cmd);
+      gtpe->getOutput()->endResponse();
+    }
+    else
+    {
+      gtpe->getOutput()->startResponse(cmd,false);
+      gtpe->getOutput()->printf("error setting parameter: %s",param.c_str());
+      gtpe->getOutput()->endResponse();
+    }
+  }
   else
   {
     gtpe->getOutput()->startResponse(cmd,false);
-    gtpe->getOutput()->printf("need 0 or 2 args");
+    gtpe->getOutput()->printf("need 0 to 3 args");
     gtpe->getOutput()->endResponse();
   }
 }
