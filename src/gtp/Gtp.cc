@@ -386,6 +386,9 @@ void Gtp::Output::printf(std::string format,...)
   std::va_list ap;
   va_start (ap, format);
   vfprintf (stdout, format.c_str(), ap);
+  va_end (ap);
+  
+  va_start (ap, format);
   if (logfile!=NULL)
     vfprintf (logfile, format.c_str(), ap);
   va_end (ap);
@@ -402,6 +405,9 @@ void Gtp::Output::printfDebug(std::string format,...)
   std::va_list ap;
   va_start (ap, format);
   vfprintf (stderr, format.c_str(), ap);
+  va_end (ap);
+  
+  va_start (ap, format);
   if (logfile!=NULL)
     vfprintf (logfile, format.c_str(), ap);
   va_end (ap);

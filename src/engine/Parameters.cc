@@ -238,7 +238,7 @@ void Parameters::printParameterListForGTP(Gtp::Engine *gtpe, Parameters::Paramet
   for(std::list<std::string>::iterator iter=param->options->begin();iter!=param->options->end();++iter)
   {
     gtpe->getOutput()->printf("/%s",(*iter).c_str());
-  }  
+  }
   gtpe->getOutput()->printf("] %s %s\n",param->id.c_str(),val.c_str());
 }
 
