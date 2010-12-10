@@ -1,7 +1,8 @@
 #ifndef DEF_OAKFOAM_UCT_H
 #define DEF_OAKFOAM_UCT_H
 
-#define UCT_TERMINAL_URGENCY 10
+#define UCT_TERMINAL_URGENCY 100
+// must be greater than 1+max(bias)
 
 #include <cmath>
 #include <list>
@@ -24,6 +25,9 @@ namespace UCT
       bool isRoot() { return (parent==NULL); };
       bool isLeaf() { return (children->size()==0); };
       bool isTerminal();
+      bool isTerminalWin() { return (this->isTerminalResult() && wins>0); };
+      bool isTerminalLose() { return (this->isTerminalResult() && wins<=0); };
+      bool isTerminalResult() { return hasTerminalWinrate; };
       std::list<Go::Move> getMovesFromRoot();
       void divorceChild(UCT::Tree *child);
       bool isPrimary() { return (symmetryprimary==NULL); };
@@ -44,8 +48,8 @@ namespace UCT
       float getUrgency();
       
       void addChild(UCT::Tree *node);
-      void addWin();
-      void addLose();
+      void addWin(UCT::Tree *source=NULL);
+      void addLose(UCT::Tree *source=NULL);
       void addPriorWins(int n);
       void addPriorLoses(int n);
       void addRAVEWin();
@@ -65,8 +69,9 @@ namespace UCT
       int playouts,raveplayouts,priorplayouts;
       int wins,ravewins,priorwins;
       Parameters *params;
+      bool hasTerminalWinrate;
       
-      void passPlayoutUp(bool win);
+      void passPlayoutUp(bool win, UCT::Tree *source);
       
       static float variance(int wins, int playouts);
   };

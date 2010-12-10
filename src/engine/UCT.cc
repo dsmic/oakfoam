@@ -13,6 +13,7 @@ UCT::Tree::Tree(Parameters *prms, Go::Move mov, UCT::Tree *p)
   priorplayouts=0;
   priorwins=0;
   symmetryprimary=NULL;
+  hasTerminalWinrate=false;
   
   if (parent!=NULL)
   {
@@ -44,6 +45,8 @@ float UCT::Tree::getRatio()
 {
   if (playouts>0)
     return (float)wins/playouts;
+  else if (playouts==-1)
+    return wins;
   else
     return 0;
 }
@@ -72,17 +75,17 @@ float UCT::Tree::getBasePriorRatio()
     return 0;
 }
 
-void UCT::Tree::addWin()
+void UCT::Tree::addWin(UCT::Tree *source)
 {
   wins++;
   playouts++;
-  this->passPlayoutUp(true);
+  this->passPlayoutUp(true,source);
 }
 
-void UCT::Tree::addLose()
+void UCT::Tree::addLose(UCT::Tree *source)
 {
   playouts++;
-  this->passPlayoutUp(false);
+  this->passPlayoutUp(false,source);
 }
 
 void UCT::Tree::addPriorWins(int n)
@@ -128,20 +131,57 @@ UCT::Tree *UCT::Tree::getChild(Go::Move move)
   return NULL;
 }
 
-void UCT::Tree::passPlayoutUp(bool win)
+void UCT::Tree::passPlayoutUp(bool win, UCT::Tree *source)
 {
+  if (this->isTerminal() && !this->isTerminalResult() && win)
+  {
+    wins=1;
+    playouts=-1;
+    hasTerminalWinrate=true;
+  }
+  
+  if (source!=NULL && source->isTerminalResult() && win)
+  {
+    wins=1;
+    playouts=-1;
+    hasTerminalWinrate=true;
+    //fprintf(stderr,"New Terminal Result %d!\n",win);
+  }
+  
   if (parent!=NULL)
   {
     //assume alternating colours going up
     if (win)
-      parent->addLose();
+      parent->addLose(this);
     else
-      parent->addWin();
+      parent->addWin(this);
+  }
+  
+  if (this->isTerminal() && !this->isTerminalResult() && !win)
+  {
+    wins=0;
+    playouts=-1;
+    hasTerminalWinrate=true;
+  }
+  
+  if (source!=NULL && source->isTerminalResult() && !win)
+  {
+    wins=0;
+    playouts=-1;
+    hasTerminalWinrate=true;
+    //fprintf(stderr,"New Terminal Result %d!\n",win);
   }
 }
 
 float UCT::Tree::getVal()
 {
+  if (this->isTerminal())
+  {
+    if (playouts==-1)
+      return wins;
+    else
+      return 1;
+  }
   if (params->rave_moves==0 || raveplayouts==0)
     return this->getBasePriorRatio();
   else if (playouts==0)
@@ -165,6 +205,11 @@ float UCT::Tree::getVal()
 float UCT::Tree::getUrgency()
 {
   float bias;
+  if (this->isTerminalWin())
+    return UCT_TERMINAL_URGENCY;
+  else if (this->isTerminalLose())
+    return -UCT_TERMINAL_URGENCY;
+  
   if (playouts==0 && raveplayouts==0 && priorplayouts==0)
     return params->ucb_init;
   
@@ -207,7 +252,9 @@ std::list<Go::Move> UCT::Tree::getMovesFromRoot()
 
 bool UCT::Tree::isTerminal()
 {
-  if (!this->isRoot())
+  if (hasTerminalWinrate)
+    return true;
+  else if (!this->isRoot())
   {
     if (this->getMove().isPass() && parent->getMove().isPass())
       return true;
@@ -240,9 +287,18 @@ std::string UCT::Tree::toSGFString()
       ss<<(char)(move.getX(params->board_size)+'a');
       ss<<(char)(params->board_size-move.getY(params->board_size)+'a'-1);
     }
+    else if (move.isPass())
+      ss<<"pass";
     ss<<"]C[";
-    ss<<"Wins/Playouts: "<<wins<<"/"<<playouts<<"("<<this->getRatio()<<")\n";
-    ss<<"RAVE Wins/Playouts: "<<ravewins<<"/"<<raveplayouts<<"("<<this->getRAVERatio()<<")";
+    if (this->isTerminalWin())
+      ss<<"Terminal Win";
+    else if (this->isTerminalLose())
+        ss<<"Terminal Lose";
+    else
+    {
+      ss<<"Wins/Playouts: "<<wins<<"/"<<playouts<<"("<<this->getRatio()<<")\n";
+      ss<<"RAVE Wins/Playouts: "<<ravewins<<"/"<<raveplayouts<<"("<<this->getRAVERatio()<<")";
+    }
     ss<<"]";
   }
   
@@ -258,12 +314,14 @@ std::string UCT::Tree::toSGFString()
     int i=0;
     for(std::list<UCT::Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
     {
-      if (usedchild[i]==false && (*iter)->getPlayouts()>0)
+      if (usedchild[i]==false && ((*iter)->getPlayouts()>0 || (*iter)->isTerminal()))
       {
-        if (bestchild==NULL || (*iter)->getPlayouts()>bestchild->getPlayouts())
+        if (bestchild==NULL || (*iter)->getPlayouts()>bestchild->getPlayouts() || (*iter)->isTerminalWin())
         {
           bestchild=(*iter);
           besti=i;
+          if ((*iter)->isTerminalWin())
+            break;
         }
       }
       i++;

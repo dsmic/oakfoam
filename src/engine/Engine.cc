@@ -582,6 +582,7 @@ void Engine::gtpBoardStats(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   gtpe->getOutput()->printf("board stats:\n");
   gtpe->getOutput()->printf("moves: %d\n",me->currentboard->getMovesMade());
   gtpe->getOutput()->printf("next to move: %c\n",(me->currentboard->nextToMove()==Go::BLACK?'B':'W'));
+  gtpe->getOutput()->printf("passes: %d\n",me->currentboard->getPassesPlayed());
   gtpe->getOutput()->printf("simple ko: ");
   int simpleko=me->currentboard->getSimpleKo();
   if (simpleko==-1)
@@ -830,6 +831,11 @@ void Engine::generateMove(Go::Color col, Go::Move **move)
         break;
       else if (i>=params->playouts_per_move_min && time_allocated>0 && timer.elapsed()>time_allocated)
         break;
+      else if (movetree->isTerminalResult())
+      {
+        gtpe->getOutput()->printfDebug("SOLVED: found 100%% sure result after %d plts!\n",totalplayouts);
+        break;
+      }
       
       this->doPlayout(firstlist,secondlist);
       totalplayouts++;
@@ -886,7 +892,9 @@ void Engine::generateMove(Go::Color col, Go::Move **move)
     ss << std::fixed;
     ss << "r:"<<std::setprecision(2)<<bestratio;
     if (*time_left>0)
-      ss << " tl:"<<std::setprecision(3)<<*time_left<< " plts:"<<totalplayouts;
+      ss << " tl:"<<std::setprecision(3)<<*time_left;
+    if (*time_left>0 || movetree->isTerminalResult())
+      ss << " plts:"<<totalplayouts;
     ss << " ppms:"<<std::setprecision(2)<<playouts_per_milli;
     params->surewin_expected=(bestratio>=params->surewin_threshold);
     if (params->surewin_expected)
@@ -1135,7 +1143,11 @@ void Engine::randomPlayout(Go::Board *board, std::list<Go::Move> startmoves, Go:
     if (((*iter).getColor()==colfirst?firstlist:secondlist)!=NULL && !(*iter).isPass() && !(*iter).isResign())
       ((*iter).getColor()==colfirst?firstlist:secondlist)->set((*iter).getPosition());
     if (board->getPassesPlayed()>=2 || (*iter).isResign())
+    {
+      if (params->debug_on)
+        gtpe->getOutput()->printfDebug("\n");
       return;
+    }
   }
   if (params->debug_on)
     gtpe->getOutput()->printfDebug("\n");
@@ -1190,8 +1202,8 @@ UCT::Tree *Engine::getPlayoutTarget(UCT::Tree *movetree)
         if (params->debug_on)
           gtpe->getOutput()->printfDebug("[urg]:%s %.3f %.2f(%d) %.2f(%d) %.2f(%d)\n",(*iter)->getMove().toString(boardsize).c_str(),urgency,(*iter)->getRatio(),(*iter)->getPlayouts(),(*iter)->getRAVERatio(),(*iter)->getRAVEPlayouts(),(*iter)->getPriorRatio(),(*iter)->getPriorPlayouts());
       }
-      
-      if (urgency>besturgency)
+          
+      if (urgency>besturgency || besttree==NULL)
       {
         besttree=(*iter);
         besturgency=urgency;
@@ -1200,7 +1212,12 @@ UCT::Tree *Engine::getPlayoutTarget(UCT::Tree *movetree)
   }
   
   if (params->debug_on)
-    gtpe->getOutput()->printfDebug("[best]:%s\n",besttree->getMove().toString(boardsize).c_str());
+  {
+    if (besttree!=NULL)
+      gtpe->getOutput()->printfDebug("[best]:%s\n",besttree->getMove().toString(boardsize).c_str());
+    else
+      gtpe->getOutput()->printfDebug("WARNING! No best move found\n");
+  }
   
   if (besttree==NULL)
     return NULL;
@@ -1221,6 +1238,8 @@ void Engine::expandLeaf(UCT::Tree *movetree)
 {
   if (!movetree->isLeaf())
     return;
+  else if (movetree->isTerminal())
+    fprintf(stderr,"WARNING! Trying to expand a terminal node!\n");
   
   std::list<Go::Move> startmoves=movetree->getMovesFromRoot();
   Go::Board *startboard=currentboard->copy();
@@ -1231,20 +1250,20 @@ void Engine::expandLeaf(UCT::Tree *movetree)
     if (startboard->getPassesPlayed()>=2 || (*iter).isResign())
     {
       delete startboard;
+      fprintf(stderr,"WARNING! Trying to expand a terminal node?\n");
       return;
     }
   }
   
   Go::Color col=startboard->nextToMove();
   
-  if (startboard->numOfValidMoves(col)==0 || Go::Board::isWinForColor(col,startboard->score()-komi))
-  {
-    UCT::Tree *nmt=new UCT::Tree(params,Go::Move(col,Go::Move::PASS));
+  bool winnow=Go::Board::isWinForColor(col,startboard->score()-komi);
+  UCT::Tree *nmt=new UCT::Tree(params,Go::Move(col,Go::Move::PASS));
+  if (winnow)
     nmt->addWin();
-    if (startboard->getPassesPlayed()==0 && !(params->surewin_expected && col==currentboard->nextToMove()))
-      nmt->addPriorLoses(UCT_PASS_DETER);
-    movetree->addChild(nmt);
-  }
+  if (startboard->getPassesPlayed()==0 && !(params->surewin_expected && col==currentboard->nextToMove()))
+    nmt->addPriorLoses(UCT_PASS_DETER);
+  movetree->addChild(nmt);
   
   if (startboard->numOfValidMoves(col)>0)
   {
@@ -1321,10 +1340,12 @@ UCT::Tree *Engine::getBestMoves(UCT::Tree *movetree, bool descend)
   
   for(std::list<UCT::Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
   {
-    if ((*iter)->getPlayouts()>bestsims)
+    if ((*iter)->getPlayouts()>bestsims || (*iter)->isTerminalWin() || besttree==NULL)
     {
       besttree=(*iter);
       bestsims=(*iter)->getPlayouts();
+      if (besttree->isTerminalWin())
+       break;
     }
   }
   
@@ -1393,7 +1414,13 @@ void Engine::doNPlayouts(int n)
     Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
     
     for (int i=0;i<n;i++)
-    { 
+    {
+      if (movetree->isTerminalResult())
+      {
+        gtpe->getOutput()->printfDebug("SOLVED! found 100%% sure result after %d plts!\n",i);
+        break;
+      }
+      
       this->doPlayout(firstlist,secondlist);
       
       if (params->livegfx_on)
@@ -1433,10 +1460,18 @@ void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
   
   UCT::Tree *playouttree = this->getPlayoutTarget(movetree);
   if (playouttree==NULL)
+  {
+    if (params->debug_on)
+      gtpe->getOutput()->printfDebug("WARNING! No playout target found.\n");
     return;
+  }
   std::list<Go::Move> playoutmoves=playouttree->getMovesFromRoot();
   if (playoutmoves.size()==0)
+  {
+    if (params->debug_on)
+      gtpe->getOutput()->printfDebug("WARNING! Bad playout target found.\n");
     return;
+  }
   
   if (!givenfirstlist)
     firstlist=new Go::BitBoard(boardsize);
