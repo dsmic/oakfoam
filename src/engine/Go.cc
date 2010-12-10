@@ -18,7 +18,12 @@ Go::BitBoard::~BitBoard()
 std::string Go::Move::toString(int boardsize)
 {
   if (this->isPass())
-    return "PASS";
+  {
+    if (color==Go::BLACK)
+      return "B:PASS";
+    else
+      return "W:PASS";
+  }
   else if (this->isResign())
     return "RESIGN";
   else
