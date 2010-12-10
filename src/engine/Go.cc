@@ -28,7 +28,11 @@ std::string Go::Move::toString(int boardsize)
       ss<<"B";
     else if (color==Go::WHITE)
       ss<<"W";
-    ss<<"("<<this->getX(boardsize)<<","<<this->getY(boardsize)<<")";
+    char xletter='A'+this->getX(boardsize);
+    if (this->getX(boardsize)>=8)
+      xletter++;
+    //ss<<"("<<xletter<<","<<(this->getY(boardsize)+1)<<")";
+    ss<<":"<<xletter<<(this->getY(boardsize)+1);
     return ss.str();
   }
 }
