@@ -1,8 +1,15 @@
 
-version 0.0.7: 2010-xx-xx
+version 0.0.8: 20xx-xx-xx
+  * todo
+
+version 0.0.7: 2010-12-10
   * improved playout speed
   * improved memory management
   * added BSD license
+  * handle terminal nodes properly
+  * rewrite parameter system
+  * change all time commands to use seconds
+  * use symmetry of the board
 
 version 0.0.6: 2010-07-16
   * added UCT

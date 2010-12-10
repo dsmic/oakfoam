@@ -2,6 +2,13 @@ TODO
 ------------------
 
 Now: (before next release)
+  try UCB1-TUNED formula (p.216(169) in SylvainGellyThesis)
+  analyse initial urgency and how rave contributes, esp in lower tree
+  add regression testing
+  add more debug messages and debug levels
+  move playout/time/tree code out of engine
+  reduce thinking time if surewin?
+  update surewin during genmove
   think for longer if needed
 
 Soon: (before next major release)
@@ -15,20 +22,14 @@ Soon: (before next major release)
   place a limit of sorts on depth? (expand after more plts)
   try use parent info in children (or grand parent)
   implement the mercy rule?
-  try UCB1-TUNED formula (p.216(169) in SylvainGellyThesis)
   make atari-aware playouts dependant on size of group?
   avoid self-atari in playouts with a group size over x?
   play at one of liberties of a enemy group with 2?
   prefer closer moves using CFG to last and next-to-last move
   store neighbour counts for each board position? (num of empty...)
-  analyse initial urgency and how rave contributes
   reduce calls to validMoveCheck?
   prefer games that end sooner? (don't drag on at end)
   progressively add more reward for points diff if winrate very good?
-  add regression testing
-  add more debug messages and debug levels
-  move playout/time/tree code out of engine
-  reduce thinking time if surewin?
 
 Later: (at some point)
   make sure install works and is described somewhere
