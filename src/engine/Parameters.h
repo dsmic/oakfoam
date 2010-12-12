@@ -35,6 +35,7 @@ class Parameters
     float ucb_init;
     
     int rave_moves;
+    int rave_init_wins;
     
     int uct_expand_after;
     bool uct_keep_subtree;

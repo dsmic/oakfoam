@@ -31,6 +31,7 @@ Engine::Engine(Gtp::Engine *ge)
   params->addParameter("mcts","ucb_init",&(params->ucb_init),UCB_INIT);
   
   params->addParameter("mcts","rave_moves",&(params->rave_moves),RAVE_MOVES);
+  params->addParameter("mcts","rave_init_wins",&(params->rave_init_wins),RAVE_INIT_WINS);
   
   params->addParameter("mcts","uct_expand_after",&(params->uct_expand_after),UCT_EXPAND_AFTER);
   params->addParameter("mcts","uct_keep_subtree",&(params->uct_keep_subtree),UCT_KEEP_SUBTREE);
@@ -1263,6 +1264,7 @@ void Engine::expandLeaf(UCT::Tree *movetree)
     nmt->addWin();
   if (startboard->getPassesPlayed()==0 && !(params->surewin_expected && col==currentboard->nextToMove()))
     nmt->addPriorLoses(UCT_PASS_DETER);
+  nmt->addRAVEWins(params->rave_init_wins);
   movetree->addChild(nmt);
   
   if (startboard->numOfValidMoves(col)>0)
@@ -1281,6 +1283,7 @@ void Engine::expandLeaf(UCT::Tree *movetree)
           if (patterntable->isPattern(pattern))
             nmt->addPriorWins(params->uct_pattern_prior);
         }
+        nmt->addRAVEWins(params->rave_init_wins);
         movetree->addChild(nmt);
       }
     }
