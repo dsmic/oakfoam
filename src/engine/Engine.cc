@@ -1625,25 +1625,36 @@ void Engine::displayPlayoutLiveGfx(int totalplayouts)
 bool Engine::isAtariCaptureOrConnect(Go::Board *board, int pos, Go::Color col, Go::Group *touchinggroup)
 {
   int size=board->getSize();
+  if (params->debug_on)
+  {
+    int postchgrp=touchinggroup->getPosition();
+    gtpe->getOutput()->printfDebug("[ataricheck]: start for %s %c %s\n",Go::Position::pos2string(pos,board->getSize()).c_str(),(col==Go::BLACK?'B':'W'),Go::Position::pos2string(postchgrp,board->getSize()).c_str());
+  }
   if (board->validMove(Go::Move(col,pos)))
   {
     if (touchinggroup->getColor()!=col || board->touchingEmpty(pos)>1)
-      return true;
+      return true; //capture or definitely add a liberty
     else if (touchinggroup->getColor()==col)
     {
       foreach_adjacent(pos,p,{
         if (board->inGroup(p))
         {
           Go::Group *group=board->getGroup(p);
-          if (group!=NULL && group->getColor()==col && group!=touchinggroup)
-            return true;
+          if (params->debug_on && group!=NULL)
+          {
+            int posgrp=group->getPosition();
+            gtpe->getOutput()->printfDebug("[ataricheck]: touching group %c %s %d\n",(group->getColor()==Go::BLACK?'B':'W'),Go::Position::pos2string(posgrp,board->getSize()).c_str(),group->inAtari());
+          }
+          if (group!=NULL && group->getColor()==col && group!=touchinggroup && !group->inAtari())
+            return true; //connect to a group with another liberty at least
           else if (group!=NULL && group->getColor()!=col && group->inAtari())
-            return true;
+            return true; //capture a group
         }
       });
     }
   }
-  
+  if (params->debug_on)
+    gtpe->getOutput()->printfDebug("[ataricheck]: failed\n");
   return false;
 }
 

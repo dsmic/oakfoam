@@ -15,6 +15,25 @@ Go::BitBoard::~BitBoard()
   delete[] data;
 }
 
+std::string Go::Position::pos2string(int pos, int boardsize)
+{
+  if (pos==-1)
+    return "PASS";
+  else if (pos==-2)
+    return "RESIGN";
+  else
+  {
+    std::ostringstream ss;
+    int x=Go::Position::pos2x(pos,boardsize);
+    int y=Go::Position::pos2y(pos,boardsize);
+    char xletter='A'+x;
+    if (x>=8)
+      xletter++;
+    ss<<xletter<<(y+1);
+    return ss.str();
+  }
+}
+
 std::string Go::Move::toString(int boardsize)
 {
   if (this->isPass())

@@ -104,6 +104,7 @@ namespace Go
       static inline int xy2pos(int x, int y, int boardsize) { return 1+x+(y+1)*(boardsize+1); };
       static inline int pos2x(int pos, int boardsize) { return (pos-1)%(boardsize+1); };
       static inline int pos2y(int pos, int boardsize) { return (pos-1)/(boardsize+1)-1; };
+      static std::string pos2string(int pos, int boardsize);
   };
   
   class BitBoard
