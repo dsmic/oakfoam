@@ -5,7 +5,7 @@
 #define PLAYOUTS_PER_MOVE_MAX 100000
 #define PLAYOUTS_PER_MOVE_MIN 1000
 
-#define UCB_C 0.44
+#define UCB_C 0.02
 #define UCB_INIT 1.1
 
 #define RAVE_MOVES 3000
