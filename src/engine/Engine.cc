@@ -652,7 +652,7 @@ void Engine::gtpDescribeEngine(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
   Engine *me=(Engine*)instance;
   
   gtpe->getOutput()->startResponse(cmd);
-  gtpe->getOutput()->printf(PACKAGE_NAME " : " PACKAGE_VERSION "\n");
+  gtpe->getOutput()->printf(PACKAGE_NAME " : " PACKAGE_VERSION " (" __TIMESTAMP__ ")\n");
   gtpe->getOutput()->printf("parameters:\n");
   me->params->printParametersForDescription(gtpe);
   gtpe->getOutput()->endResponse(true);
