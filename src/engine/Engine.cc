@@ -786,7 +786,7 @@ void Engine::gtpTimeLeft(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     return;
   }
   
-  int time=cmd->getIntArg(1);
+  float time=(float)cmd->getIntArg(1);
   float *time_var=(gtpcol==Gtp::BLACK ? &me->time_black : &me->time_white);
   gtpe->getOutput()->printfDebug("[time_left]: diff:%.3f\n",time-*time_var);
   *time_var=time;
@@ -1181,6 +1181,8 @@ float Engine::getTimeAllowedThisTurn(Go::Color col)
   float time_per_move=time_left/params->time_k; //allow much more time in beginning
   if (time_per_move<params->time_move_minimum)
     time_per_move=params->time_move_minimum;
+  
+  gtpe->getOutput()->printfDebug("[time_allowed]: %.3f\n",time_per_move);
   return time_per_move;
 }
 
