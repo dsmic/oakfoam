@@ -16,7 +16,7 @@ oakfoam-profiled:
 	./oakfoam -c profile.gtp
 	@make clean all clean-profiled CXXFLAGS="$(CXXFLAGS) -fprofile-use -march=native"
 
-.PHONY: oakfoam-profiled
+.PHONY: clean-profiled
 clean-profiled:
 	rm -f src/*.gcda src/gtp/*.gcda src/engine/*.gcda
 
