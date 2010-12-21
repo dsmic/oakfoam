@@ -119,6 +119,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("komi",this,&Engine::gtpKomi);
   gtpe->addFunctionCommand("play",this,&Engine::gtpPlay);
   gtpe->addFunctionCommand("genmove",this,&Engine::gtpGenMove);
+  gtpe->addFunctionCommand("reg_genmove",this,&Engine::gtpRegGenMove);
   gtpe->addFunctionCommand("showboard",this,&Engine::gtpShowBoard);
   gtpe->addFunctionCommand("final_score",this,&Engine::gtpFinalScore);
   gtpe->addFunctionCommand("final_status_list",this,&Engine::gtpFinalStatusList);
@@ -284,7 +285,39 @@ void Engine::gtpGenMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   }
   
   Go::Move *move;
-  me->generateMove((gtpcol==Gtp::BLACK ? Go::BLACK : Go::WHITE),&move);
+  me->generateMove((gtpcol==Gtp::BLACK ? Go::BLACK : Go::WHITE),&move,true);
+  Gtp::Vertex vert={move->getX(me->boardsize),move->getY(me->boardsize)};
+  delete move;
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printVertex(vert);
+  gtpe->getOutput()->endResponse();
+}
+
+void Engine::gtpRegGenMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("color is required");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  Gtp::Color gtpcol = cmd->getColorArg(0);
+  
+  if (gtpcol==Gtp::INVALID)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("invalid color");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  Go::Move *move;
+  me->generateMove((gtpcol==Gtp::BLACK ? Go::BLACK : Go::WHITE),&move,false);
   Gtp::Vertex vert={move->getX(me->boardsize),move->getY(me->boardsize)};
   delete move;
   
@@ -581,6 +614,7 @@ void Engine::gtpBoardStats(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printf("board stats:\n");
+  gtpe->getOutput()->printf("komi: %.1f\n",me->komi);
   gtpe->getOutput()->printf("moves: %d\n",me->currentboard->getMovesMade());
   gtpe->getOutput()->printf("next to move: %c\n",(me->currentboard->nextToMove()==Go::BLACK?'B':'W'));
   gtpe->getOutput()->printf("passes: %d\n",me->currentboard->getPassesPlayed());
@@ -795,7 +829,7 @@ void Engine::gtpTimeLeft(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   gtpe->getOutput()->endResponse();
 }
 
-void Engine::generateMove(Go::Color col, Go::Move **move)
+void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
 {
   if (params->move_policy==Parameters::MP_UCT || params->move_policy==Parameters::MP_ONEPLY)
   {
@@ -872,7 +906,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move)
       bestratio=besttree->getRatio();
     }
     
-    this->makeMove(**move);
+    if (playmove)
+      this->makeMove(**move);
     
     if (params->livegfx_on)
       gtpe->getOutput()->printfDebug("gogui-gfx: CLEAR\n");

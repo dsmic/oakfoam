@@ -4,7 +4,6 @@ TODO
 Now: (before next release)
   try UCB1-TUNED formula (p.216(169) in SylvainGellyThesis)
   analyse initial urgency and how rave contributes, esp in lower tree
-  add regression testing
   add more debug messages and debug levels
   move playout/time/tree code out of engine
   reduce thinking time if surewin?
@@ -33,6 +32,7 @@ Soon: (before next major release)
   progressively add more reward for points diff if winrate very good?
   add hg tracked cgos,kgs?,gomill? scripts
   make SL page
+  more regression testing
 
 Later: (at some point)
   make sure install works and is described somewhere

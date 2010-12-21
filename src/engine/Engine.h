@@ -71,7 +71,7 @@ class Engine
       MP_UCT
     };
     
-    void generateMove(Go::Color col, Go::Move **move);
+    void generateMove(Go::Color col, Go::Move **move, bool playmove);
     bool isMoveAllowed(Go::Move move);
     void makeMove(Go::Move move);
     int getBoardSize() { return currentboard->getSize(); };
@@ -93,6 +93,7 @@ class Engine
     static void gtpKomi(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpPlay(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpGenMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpRegGenMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowBoard(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpFinalScore(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpFinalStatusList(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
