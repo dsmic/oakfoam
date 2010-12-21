@@ -13,5 +13,6 @@ syntax: regexp
 ^trials/.*$
 ^gomill/.*$
 ^callgrind\.out\..*$
+^regression/results_.*$
 
 
