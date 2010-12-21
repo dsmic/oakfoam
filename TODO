@@ -2,14 +2,14 @@ TODO
 ------------------
 
 Now: (before next release)
+  implement ELO features/patterns
   try UCB1-TUNED formula (p.216(169) in SylvainGellyThesis)
-  analyse initial urgency and how rave contributes, esp in lower tree
   add more debug messages and debug levels
   move playout/time/tree code out of engine
-  reduce thinking time if surewin?
   update surewin during genmove
+  reduce thinking time if surewin?
   think for longer if needed
-  fix rare symmetry bug
+  find and fix rare symmetry bug
 
 Soon: (before next major release)
   implement superko in tree
@@ -33,6 +33,7 @@ Soon: (before next major release)
   add hg tracked cgos,kgs?,gomill? scripts
   make SL page
   more regression testing
+  analyse initial urgency and how rave contributes, esp in lower tree
 
 Later: (at some point)
   make sure install works and is described somewhere
