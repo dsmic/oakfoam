@@ -983,5 +983,51 @@ int Go::Board::doSymmetryTransformStaticReverse(Go::Board::SymmetryTransform tra
   return Go::Position::xy2pos(x,y,size);
 }
 
+Go::Board::SymmetryTransform Go::Board::getSymmetryTransformBetweenPositions(int size, int pos1, int pos2)
+{
+  int x1=Go::Position::pos2x(pos1,size);
+  int y1=Go::Position::pos2y(pos1,size);
+  int x2=Go::Position::pos2x(pos2,size);
+  int y2=Go::Position::pos2y(pos2,size);
+  Go::Board::SymmetryTransform trans={false,false,false};
+  
+  //int ix1=(size-x1-1);
+  int ix2=(size-x2-1);
+  int iy1=(size-y1-1);
+  int iy2=(size-y2-1);
+  
+  if (x1==x2 && y1==y2)
+    return trans;
+  else if (x1==x2 && y1==iy2)
+    trans.invertY=true;
+  else if (y1==y2 && x1==ix2)
+    trans.invertX=true;
+  else if (x1==y2 && x2==y1)
+    trans.swapXY=true;
+  else if (x1==iy2 && x2==iy1)
+  {
+    trans.invertX=true;
+    trans.invertY=true;
+    trans.swapXY=true;
+  }
+  else if (x1==ix2 && y1==iy2)
+  {
+    trans.invertX=true;
+    trans.invertY=true;
+  }
+  else if (x1==y2 && x2==iy1)
+  {
+    trans.invertY=true;
+    trans.swapXY=true;
+  }
+  else if (x1==iy2 && x2==y1)
+  {
+    trans.invertX=true;
+    trans.swapXY=true;
+  }
+  
+  return trans;
+}
+
 
 

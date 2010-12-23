@@ -32,8 +32,8 @@ namespace UCT
       void divorceChild(UCT::Tree *child);
       bool isPrimary() { return (symmetryprimary==NULL); };
       UCT::Tree *getPrimary() { return symmetryprimary; };
-      void setPrimary(UCT::Tree *p, Go::Board::SymmetryTransform trans) { symmetryprimary=p; symmetrytransprimaryhere=trans; };
-      void performSymmetryTransformParentPrimary() { if (!this->isRoot()) parent->performSymmetryTransform(symmetrytransprimaryhere); };
+      void setPrimary(UCT::Tree *p) { symmetryprimary=p; };
+      void performSymmetryTransformParentPrimary();
       void performSymmetryTransform(Go::Board::SymmetryTransform trans);
       
       UCT::Tree *getChild(Go::Move move);
@@ -63,7 +63,6 @@ namespace UCT
       UCT::Tree *parent;
       std::list<UCT::Tree*> *children;
       UCT::Tree *symmetryprimary;
-      Go::Board::SymmetryTransform symmetrytransprimaryhere;
       
       Go::Move move;
       int playouts,raveplayouts,priorplayouts;

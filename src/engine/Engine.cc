@@ -1361,7 +1361,7 @@ void Engine::expandLeaf(UCT::Tree *movetree)
           {
             if (!pmt->isPrimary())
               gtpe->getOutput()->printfDebug("WARNING! bad primary\n");
-            (*iter)->setPrimary(pmt,trans);
+            (*iter)->setPrimary(pmt);
           }
           else
             gtpe->getOutput()->printfDebug("WARNING! missing primary\n");
@@ -1423,7 +1423,14 @@ void Engine::chooseSubTree(Go::Move move)
     subtree->performSymmetryTransformParentPrimary();
     subtree=movetree->getChild(move);
     if (subtree==NULL || !subtree->isPrimary())
-      gtpe->getOutput()->printfDebug("WARNING! symmetry transformation failed!\n");
+      gtpe->getOutput()->printfDebug("WARNING! symmetry transformation failed! (null:%d)\n",(subtree==NULL));
+  }
+  
+  if (subtree==NULL) // only true if a symmetry transform failed
+  {
+    gtpe->getOutput()->printfDebug("WARNING! clearing tree...\n");
+    this->clearMoveTree();
+    return;
   }
   
   movetree->divorceChild(subtree);

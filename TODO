@@ -9,7 +9,7 @@ Now: (before next release)
   update surewin during genmove
   reduce thinking time if surewin?
   think for longer if needed
-  find and fix rare symmetry bug
+  add initial random seed to settings
 
 Soon: (before next major release)
   implement superko in tree

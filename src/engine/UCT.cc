@@ -353,3 +353,13 @@ void UCT::Tree::performSymmetryTransform(Go::Board::SymmetryTransform trans)
   }
 }
 
+void UCT::Tree::performSymmetryTransformParentPrimary()
+{
+  if (!this->isRoot() && !this->isPrimary())
+  {
+    Go::Board::SymmetryTransform trans=Go::Board::getSymmetryTransformBetweenPositions(params->board_size,move.getPosition(),symmetryprimary->getMove().getPosition());
+    //fprintf(stderr,"transform: ix:%d iy:%d sxy:%d\n",trans.invertX,trans.invertY,trans.swapXY);
+    parent->performSymmetryTransform(trans);
+  }
+}
+
