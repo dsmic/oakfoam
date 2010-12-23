@@ -13,6 +13,8 @@ class Parameters
     Parameters();
     ~Parameters();
     
+    unsigned long rand_seed;
+    
     int board_size;
     
     enum MovePolicy
@@ -68,6 +70,7 @@ class Parameters
     void addParameter(std::string category, std::string id, bool *ptr, bool def, Parameters::UpdateFunction func=NULL, void *instance=NULL);
     void addParameter(std::string category, std::string id, std::string *ptr, std::string def, Parameters::UpdateFunction func=NULL, void *instance=NULL);
     void addParameter(std::string category, std::string id, std::string *ptr, std::list<std::string> *options, std::string def, Parameters::UpdateFunction func=NULL, void *instance=NULL);
+    void addParameter(std::string category, std::string id, unsigned long *ptr, unsigned long def, Parameters::UpdateFunction func=NULL, void *instance=NULL);
     
     bool setParameter(std::string id, std::string val);
     void printParametersForGTP(Gtp::Engine *gtpe, std::string category="");
@@ -80,7 +83,8 @@ class Parameters
       FLOAT,
       BOOLEAN,
       STRING,
-      LIST
+      LIST,
+      UNSIGNED_LONG
     };
     
     struct Parameter
@@ -101,6 +105,7 @@ class Parameters
     bool setParameterBoolean(Parameters::Parameter *param, std::string val);
     bool setParameterString(Parameters::Parameter *param, std::string val);
     bool setParameterList(Parameters::Parameter *param, std::string val);
+    bool setParameterUnsignedLong(Parameters::Parameter *param, std::string val);
     
     void printParameterForGTP(Gtp::Engine *gtpe, Parameters::Parameter *param);
     void printParameterIntegerForGTP(Gtp::Engine *gtpe, Parameters::Parameter *param);
@@ -108,6 +113,7 @@ class Parameters
     void printParameterBooleanForGTP(Gtp::Engine *gtpe, Parameters::Parameter *param);
     void printParameterStringForGTP(Gtp::Engine *gtpe, Parameters::Parameter *param);
     void printParameterListForGTP(Gtp::Engine *gtpe, Parameters::Parameter *param);
+    void printParameterUnsignedLongForGTP(Gtp::Engine *gtpe, Parameters::Parameter *param);
     
     void printParameterForDescription(Gtp::Engine *gtpe, Parameters::Parameter *param);
     void printParameterIntegerForDescription(Gtp::Engine *gtpe, Parameters::Parameter *param);
@@ -115,6 +121,7 @@ class Parameters
     void printParameterBooleanForDescription(Gtp::Engine *gtpe, Parameters::Parameter *param);
     void printParameterStringForDescription(Gtp::Engine *gtpe, Parameters::Parameter *param);
     void printParameterListForDescription(Gtp::Engine *gtpe, Parameters::Parameter *param);
+    void printParameterUnsignedLongForDescription(Gtp::Engine *gtpe, Parameters::Parameter *param);
 };
 
 #endif

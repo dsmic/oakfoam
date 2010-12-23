@@ -4,7 +4,8 @@ Engine::Engine(Gtp::Engine *ge)
 {
   gtpe=ge;
   
-  rand=Random(std::time(0));
+  unsigned long seed=std::time(0);
+  rand=Random(seed);
   
   params=new Parameters();
   
@@ -12,6 +13,8 @@ Engine::Engine(Gtp::Engine *ge)
   params->board_size=boardsize;
   currentboard=new Go::Board(boardsize);
   komi=5.5;
+  
+  params->addParameter("other","rand_seed",&(params->rand_seed),seed,&Engine::updateParameterWrapper,this);
   
   std::list<std::string> *mpoptions=new std::list<std::string>();
   mpoptions->push_back("playout");
@@ -34,8 +37,8 @@ Engine::Engine(Gtp::Engine *ge)
   params->addParameter("mcts","rave_init_wins",&(params->rave_init_wins),RAVE_INIT_WINS);
   
   params->addParameter("mcts","uct_expand_after",&(params->uct_expand_after),UCT_EXPAND_AFTER);
-  params->addParameter("mcts","uct_keep_subtree",&(params->uct_keep_subtree),UCT_KEEP_SUBTREE);
-  params->addParameter("mcts","uct_symmetry_use",&(params->uct_symmetry_use),UCT_SYMMETRY_USE);
+  params->addParameter("mcts","uct_keep_subtree",&(params->uct_keep_subtree),UCT_KEEP_SUBTREE,&Engine::updateParameterWrapper,this);
+  params->addParameter("mcts","uct_symmetry_use",&(params->uct_symmetry_use),UCT_SYMMETRY_USE,&Engine::updateParameterWrapper,this);
   if (params->uct_symmetry_use)
     currentboard->turnSymmetryOn();
   else
@@ -109,6 +112,12 @@ void Engine::updateParameter(std::string id)
       currentboard->turnSymmetryOff();
       this->clearMoveTree();
     }
+  }
+  else if (id=="rand_seed")
+  {
+    if (params->rand_seed==0)
+      params->rand_seed=std::time(0);
+    rand=Random(params->rand_seed);
   }
 }
 

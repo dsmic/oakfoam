@@ -80,6 +80,19 @@ void Parameters::addParameter(std::string category, std::string id, std::string 
   (*ptr)=def;
 }
 
+void Parameters::addParameter(std::string category, std::string id, unsigned long *ptr, unsigned long def, Parameters::UpdateFunction func, void *instance)
+{
+  Parameters::Parameter *param=new Parameters::Parameter();
+  param->category=category;
+  param->id=id;
+  param->ptr=ptr;
+  param->type=Parameters::UNSIGNED_LONG;
+  param->func=func;
+  param->instance=instance;
+  paramlist.push_back(param);
+  (*ptr)=def;
+}
+
 bool Parameters::setParameter(std::string id, std::string val)
 {
   for(std::list<Parameters::Parameter *>::iterator iter=paramlist.begin();iter!=paramlist.end();++iter)
@@ -103,6 +116,9 @@ bool Parameters::setParameter(std::string id, std::string val)
           break;
         case LIST:
           ret=this->setParameterList((*iter),val);
+          break;
+        case UNSIGNED_LONG:
+          ret=this->setParameterUnsignedLong((*iter),val);
           break;
       }
       if (ret && (*iter)->func!=NULL)
@@ -176,6 +192,20 @@ bool Parameters::setParameterList(Parameters::Parameter *param, std::string val)
   return false;
 }
 
+bool Parameters::setParameterUnsignedLong(Parameters::Parameter *param, std::string val)
+{
+  std::istringstream iss(val);
+  unsigned long v;
+  
+  if (iss >> v)
+  {
+    (*(unsigned long*)(param->ptr))=v;
+    return true;
+  }
+  else
+    return false;
+}
+
 void Parameters::printParametersForGTP(Gtp::Engine *gtpe, std::string category)
 {
   for(std::list<Parameters::Parameter *>::iterator iter=paramlist.begin();iter!=paramlist.end();++iter)
@@ -203,6 +233,9 @@ void Parameters::printParameterForGTP(Gtp::Engine *gtpe, Parameters::Parameter *
       break;
     case LIST:
       this->printParameterListForGTP(gtpe,param);
+      break;
+    case UNSIGNED_LONG:
+      this->printParameterUnsignedLongForGTP(gtpe,param);
       break;
   }
 }
@@ -242,6 +275,12 @@ void Parameters::printParameterListForGTP(Gtp::Engine *gtpe, Parameters::Paramet
   gtpe->getOutput()->printf("] %s %s\n",param->id.c_str(),val.c_str());
 }
 
+void Parameters::printParameterUnsignedLongForGTP(Gtp::Engine *gtpe, Parameters::Parameter *param)
+{
+  unsigned long val=(*(unsigned long*)(param->ptr));
+  gtpe->getOutput()->printf("[string] %s %lu\n",param->id.c_str(),val);
+}
+
 void Parameters::printParametersForDescription(Gtp::Engine *gtpe)
 {
   for(std::list<Parameters::Parameter *>::iterator iter=paramlist.begin();iter!=paramlist.end();++iter)
@@ -268,6 +307,9 @@ void Parameters::printParameterForDescription(Gtp::Engine *gtpe, Parameters::Par
       break;
     case LIST:
       this->printParameterListForDescription(gtpe,param);
+      break;
+    case UNSIGNED_LONG:
+      this->printParameterUnsignedLongForDescription(gtpe,param);
       break;
   }
 }
@@ -300,6 +342,12 @@ void Parameters::printParameterListForDescription(Gtp::Engine *gtpe, Parameters:
 {
   std::string val=(*(std::string*)(param->ptr));
   gtpe->getOutput()->printf("  %s %s\n",param->id.c_str(),val.c_str());
+}
+
+void Parameters::printParameterUnsignedLongForDescription(Gtp::Engine *gtpe, Parameters::Parameter *param)
+{
+  unsigned long val=(*(unsigned long*)(param->ptr));
+  gtpe->getOutput()->printf("  %s %lu\n",param->id.c_str(),val);
 }
 
 
