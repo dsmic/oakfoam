@@ -69,6 +69,7 @@ int Features::matchFeatureClass(Features::FeatureClass featclass, Go::Board *boa
       
       bool foundgroupwith2libsorless=false;
       bool foundconnection=false;
+      Go::Group *grp2libs=NULL;
       foreach_adjacent(pos,p,{
         if (board->inGroup(p))
         {
@@ -76,8 +77,11 @@ int Features::matchFeatureClass(Features::FeatureClass featclass, Go::Board *boa
           if (col==group->getColor() && group->isOneOfTwoLiberties(pos))
           {
             if (!foundgroupwith2libsorless)
+            {
               foundgroupwith2libsorless=true;
-            else
+              grp2libs=group;
+            }
+            else if (group!=grp2libs)
               foundconnection=true;
           }
           else if (col==group->getColor() && !group->inAtari())
