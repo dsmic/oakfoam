@@ -687,7 +687,10 @@ void Engine::gtpFeatureMatchesAt(void *instance, Gtp::Engine* gtpe, Gtp::Command
   gtpe->getOutput()->printf("EXTENSION:  %d\n",me->features->matchFeatureClass(Features::EXTENSION,board,move));
   gtpe->getOutput()->printf("SELFATARI:  %d\n",me->features->matchFeatureClass(Features::SELFATARI,board,move));
   gtpe->getOutput()->printf("ATARI:      %d\n",me->features->matchFeatureClass(Features::ATARI,board,move));
-  gtpe->getOutput()->printf("Gamma: %.2f/%.2f\n",me->features->getMoveGamma(board,move),me->features->getBoardGamma(board,col));
+  gtpe->getOutput()->printf("BORDERDIST: %d\n",me->features->matchFeatureClass(Features::BORDERDIST,board,move));
+  float gamma=me->features->getMoveGamma(board,move);
+  float total=me->features->getBoardGamma(board,col);
+  gtpe->getOutput()->printf("Gamma: %.2f/%.2f (%.2f)\n",gamma,total,gamma/total);
   gtpe->getOutput()->endResponse(true);
 }
 
@@ -712,8 +715,8 @@ void Engine::gtpFeatureProbDistribution(void *instance, Gtp::Engine* gtpe, Gtp::
       else
       {
         float prob=gamma/totalgamma;
-        float point1=0.35;
-        float point2=0.70;
+        float point1=0.15;
+        float point2=0.65;
         float r,g,b;
         // scale from blue-green-red-reddest?
         if (prob>=point2)

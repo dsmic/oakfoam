@@ -104,6 +104,29 @@ int Features::matchFeatureClass(Features::FeatureClass featclass, Go::Board *boa
       });
       return 0;
     }
+    case Features::BORDERDIST:
+    {
+      int size=board->getSize();
+      int pos=move.getPosition();
+      
+      int x=Go::Position::pos2x(pos,size);
+      int y=Go::Position::pos2y(pos,size);
+      int ix=(size-x-1);
+      int iy=(size-y-1);
+      
+      int dist=x;
+      if (y<dist)
+        dist=y;
+      if (ix<dist)
+        dist=ix;
+      if (iy<dist)
+        dist=iy;
+      
+      if (dist<=3)
+        return (dist+1);
+      else
+        return 0;
+    }
     default:
       return 0;
   }
@@ -155,6 +178,19 @@ float Features::getFeatureGamma(Features::FeatureClass featclass, int level)
       else
         return 1.0;
     }
+    case Features::BORDERDIST:
+    {
+      if (level==1)
+        return 0.89;
+      else if (level==2)
+        return 1.49;
+      else if (level==3)
+        return 1.75;
+      else if (level==4)
+        return 1.28;
+      else
+        return 1.0;
+    }
     default:
       return 1.0;
   }
@@ -172,6 +208,7 @@ float Features::getMoveGamma(Go::Board *board, Go::Move move)
   g*=this->getFeatureGamma(Features::EXTENSION,this->matchFeatureClass(Features::EXTENSION,board,move));
   g*=this->getFeatureGamma(Features::SELFATARI,this->matchFeatureClass(Features::SELFATARI,board,move));
   g*=this->getFeatureGamma(Features::ATARI,this->matchFeatureClass(Features::ATARI,board,move));
+  g*=this->getFeatureGamma(Features::BORDERDIST,this->matchFeatureClass(Features::BORDERDIST,board,move));
   
   return g;
 }

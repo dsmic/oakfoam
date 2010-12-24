@@ -12,7 +12,8 @@ class Features
       CAPTURE,
       EXTENSION,
       SELFATARI,
-      ATARI
+      ATARI,
+      BORDERDIST
     };
     
     int matchFeatureClass(Features::FeatureClass featclass, Go::Board *board, Go::Move move);
