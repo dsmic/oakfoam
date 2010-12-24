@@ -169,7 +169,7 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("showpatternmatches","Show Pattern Matches","sboard");
   gtpe->addAnalyzeCommand("featurematchesat %%p","Feature Matches At","string");
   gtpe->addAnalyzeCommand("featureprobdistribution","Feature Probability Distribution","cboard");
-  gtpe->addAnalyzeCommand("showtreelivegfx","Show Tree Live Gfx","none");
+  gtpe->addAnalyzeCommand("showtreelivegfx","Show Tree Live Gfx","gfx");
   gtpe->addAnalyzeCommand("loadpatterns %%r","Load Patterns","none");
   gtpe->addAnalyzeCommand("clearpatterns","Clear Patterns","none");
   gtpe->addAnalyzeCommand("doboardcopy","Do Board Copy","none");
@@ -781,14 +781,9 @@ void Engine::gtpShowTreeLiveGfx(void *instance, Gtp::Engine* gtpe, Gtp::Command*
 {
   Engine *me=(Engine*)instance;
   
-  if (me->params->move_policy==Parameters::MP_UCT || me->params->move_policy==Parameters::MP_ONEPLY)
-  {
-    me->displayPlayoutLiveGfx();
-    boost::timer delay;
-    while (delay.elapsed()<5) {}
-  }
-  
   gtpe->getOutput()->startResponse(cmd);
+  if (me->params->move_policy==Parameters::MP_UCT || me->params->move_policy==Parameters::MP_ONEPLY)
+    me->displayPlayoutLiveGfx(-1,false);
   gtpe->getOutput()->endResponse();
 }
 
@@ -1706,15 +1701,19 @@ void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
     delete secondlist;
 }
 
-void Engine::displayPlayoutLiveGfx(int totalplayouts)
+void Engine::displayPlayoutLiveGfx(int totalplayouts, bool livegfx)
 {
   Go::Color col=currentboard->nextToMove();
   
-  gtpe->getOutput()->printfDebug("gogui-gfx:\n");
+  if (livegfx)
+    gtpe->getOutput()->printfDebug("gogui-gfx:\n");
   if (totalplayouts!=-1)
     gtpe->getOutput()->printfDebug("TEXT [genmove]: thinking... playouts:%d\n",totalplayouts);
   
-  gtpe->getOutput()->printfDebug("INFLUENCE");
+  if (livegfx)
+    gtpe->getOutput()->printfDebug("INFLUENCE");
+  else
+    gtpe->getOutput()->printf("INFLUENCE");
   int maxplayouts=1; //prevent div by zero
   for(std::list<UCT::Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
   {
@@ -1727,18 +1726,34 @@ void Engine::displayPlayoutLiveGfx(int totalplayouts)
     if (!(*iter)->getMove().isPass() && !(*iter)->getMove().isResign())
     {
       Gtp::Vertex vert={(*iter)->getMove().getX(boardsize),(*iter)->getMove().getY(boardsize)};
-      gtpe->getOutput()->printfDebug(" ");
-      gtpe->getOutput()->printDebugVertex(vert);
       float playoutpercentage=(float)(*iter)->getPlayouts()/maxplayouts;
       if (playoutpercentage>1)
         playoutpercentage=1;
-      gtpe->getOutput()->printfDebug(" %.2f",playoutpercentage*colorfactor);
+      
+      if (livegfx)
+      {
+        gtpe->getOutput()->printfDebug(" ");
+        gtpe->getOutput()->printDebugVertex(vert);
+        gtpe->getOutput()->printfDebug(" %.2f",playoutpercentage*colorfactor);
+      }
+      else
+      {
+        gtpe->getOutput()->printf(" ");
+        gtpe->getOutput()->printVertex(vert);
+        gtpe->getOutput()->printf(" %.2f",playoutpercentage*colorfactor);
+      }
     }
   }
-  gtpe->getOutput()->printfDebug("\n");
+  if (livegfx)
+    gtpe->getOutput()->printfDebug("\n");
+  else
+    gtpe->getOutput()->printf("\n");
   if (params->move_policy==Parameters::MP_UCT)
   {
-    gtpe->getOutput()->printfDebug("VAR");
+    if (livegfx)
+      gtpe->getOutput()->printfDebug("VAR");
+    else
+      gtpe->getOutput()->printf("VAR");
     UCT::Tree *besttree=this->getBestMoves(movetree,true);
     if (besttree!=NULL)
     {
@@ -1748,19 +1763,33 @@ void Engine::displayPlayoutLiveGfx(int totalplayouts)
         if (!(*iter).isPass() && !(*iter).isResign())
         {
           Gtp::Vertex vert={(*iter).getX(boardsize),(*iter).getY(boardsize)};
-          gtpe->getOutput()->printfDebug(" %c ",((*iter).getColor()==Go::BLACK?'B':'W'));
-          gtpe->getOutput()->printDebugVertex(vert);
+          if (livegfx)
+          {
+            gtpe->getOutput()->printfDebug(" %c ",((*iter).getColor()==Go::BLACK?'B':'W'));
+            gtpe->getOutput()->printDebugVertex(vert);
+          }
+          else
+          {
+            gtpe->getOutput()->printf(" %c ",((*iter).getColor()==Go::BLACK?'B':'W'));
+            gtpe->getOutput()->printVertex(vert);
+          }
         }
         else if ((*iter).isPass())
         {
-          gtpe->getOutput()->printfDebug(" %c PASS",((*iter).getColor()==Go::BLACK?'B':'W'));
+          if (livegfx)
+            gtpe->getOutput()->printfDebug(" %c PASS",((*iter).getColor()==Go::BLACK?'B':'W'));
+          else
+            gtpe->getOutput()->printf(" %c PASS",((*iter).getColor()==Go::BLACK?'B':'W'));
         }
       }
     }
   }
   else
   {
-    gtpe->getOutput()->printfDebug("SQUARE");
+    if (livegfx)
+      gtpe->getOutput()->printfDebug("SQUARE");
+    else
+      gtpe->getOutput()->printf("SQUARE");
     for(std::list<UCT::Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
     {
       if (!(*iter)->getMove().isPass() && !(*iter)->getMove().isResign())
@@ -1768,13 +1797,22 @@ void Engine::displayPlayoutLiveGfx(int totalplayouts)
         if ((*iter)->getPlayouts()==maxplayouts)
         {
           Gtp::Vertex vert={(*iter)->getMove().getX(boardsize),(*iter)->getMove().getY(boardsize)};
-          gtpe->getOutput()->printfDebug(" ");
-          gtpe->getOutput()->printDebugVertex(vert);
+          if (livegfx)
+          {
+            gtpe->getOutput()->printfDebug(" ");
+            gtpe->getOutput()->printDebugVertex(vert);
+          }
+          else
+          {
+            gtpe->getOutput()->printf(" ");
+            gtpe->getOutput()->printVertex(vert);
+          }
         }
       }
     }
   }
-  gtpe->getOutput()->printfDebug("\n\n");
+  if (livegfx)
+    gtpe->getOutput()->printfDebug("\n\n");
 }
 
 bool Engine::isAtariCaptureOrConnect(Go::Board *board, int pos, Go::Color col, Go::Group *touchinggroup)
