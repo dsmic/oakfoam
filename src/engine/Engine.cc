@@ -710,19 +710,26 @@ void Engine::gtpFeatureProbDistribution(void *instance, Gtp::Engine* gtpe, Gtp::
       else
       {
         float prob=gamma/totalgamma;
-        float midpoint=0.5;
+        float point1=0.35;
+        float point2=0.70;
         float r,g,b;
-        // scale from blue-green-red
-        if (prob>=midpoint)
+        // scale from blue-green-red-reddest?
+        if (prob>=point2)
         {
           b=0;
-          r=prob/(1-midpoint);
+          r=1;
+          g=0;
+        }
+        else if (prob>=point1)
+        {
+          b=0;
+          r=(prob-point1)/(point2-point1);
           g=1-r;
         }
         else
         {
           r=0;
-          g=prob/midpoint;
+          g=prob/point1;
           b=1-g;
         }
         if (r<0)
