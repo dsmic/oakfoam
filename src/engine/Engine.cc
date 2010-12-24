@@ -67,6 +67,8 @@ Engine::Engine(Gtp::Engine *ge)
   patterntable=new Pattern::ThreeByThreeTable();
   patterntable->loadPatternDefaults();
   
+  features=new Features();
+  
   time_main=0;
   time_black=0;
   time_white=0;
@@ -80,7 +82,8 @@ Engine::Engine(Gtp::Engine *ge)
 }
 
 Engine::~Engine()
-{  
+{
+  delete features;
   delete patterntable;
   if (movetree!=NULL)
     delete movetree;
@@ -141,6 +144,8 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("loadpatterns",this,&Engine::gtpLoadPatterns);
   gtpe->addFunctionCommand("clearpatterns",this,&Engine::gtpClearPatterns);
   gtpe->addFunctionCommand("doboardcopy",this,&Engine::gtpDoBoardCopy);
+  gtpe->addFunctionCommand("featurematchesat",this,&Engine::gtpFeatureMatchesAt);
+  gtpe->addFunctionCommand("featureprobdistribution",this,&Engine::gtpFeatureProbDistribution);
   
   gtpe->addFunctionCommand("time_settings",this,&Engine::gtpTimeSettings);
   gtpe->addFunctionCommand("time_left",this,&Engine::gtpTimeLeft);
@@ -162,6 +167,8 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("showvalidmoves","Show Valid Moves","sboard");
   gtpe->addAnalyzeCommand("showgroupsize","Show Group Size","sboard");
   gtpe->addAnalyzeCommand("showpatternmatches","Show Pattern Matches","sboard");
+  gtpe->addAnalyzeCommand("featurematchesat %%p","Feature Matches At","string");
+  gtpe->addAnalyzeCommand("featureprobdistribution","Feature Probability Distribution","cboard");
   gtpe->addAnalyzeCommand("showtreelivegfx","Show Tree Live Gfx","none");
   gtpe->addAnalyzeCommand("loadpatterns %%r","Load Patterns","none");
   gtpe->addAnalyzeCommand("clearpatterns","Clear Patterns","none");
@@ -643,6 +650,94 @@ void Engine::gtpBoardStats(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     gtpe->getOutput()->printf("stored symmetry: %s\n",me->currentboard->getSymmetryString(me->currentboard->getSymmetry()).c_str());
   #endif
   gtpe->getOutput()->printf("computed symmetry: %s\n",me->currentboard->getSymmetryString(me->currentboard->computeSymmetry()).c_str());
+  gtpe->getOutput()->endResponse(true);
+}
+
+void Engine::gtpFeatureMatchesAt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("vertex is required");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  Gtp::Vertex vert = cmd->getVertexArg(0);
+  
+  if (vert.x==-3 && vert.y==-3)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("invalid vertex");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  Go::Board *board=me->currentboard;
+  Go::Color col=board->nextToMove();
+  int pos=Go::Position::xy2pos(vert.x,vert.y,me->boardsize);
+  Go::Move move=Go::Move(col,pos);
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printf("feature matches for %s:\n",Go::Position::pos2string(pos,board->getSize()).c_str());
+  gtpe->getOutput()->printf("PASS: %d\n",me->features->matchFeatureClass(Features::PASS,board,move));
+  gtpe->getOutput()->printf("CAPTURE: %d\n",me->features->matchFeatureClass(Features::CAPTURE,board,move));
+  gtpe->getOutput()->printf("EXTENSION: %d\n",me->features->matchFeatureClass(Features::EXTENSION,board,move));
+  gtpe->getOutput()->printf("gamma: %.2f\n",me->features->getMoveGamma(board,move));
+  gtpe->getOutput()->endResponse(true);
+}
+
+void Engine::gtpFeatureProbDistribution(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  Go::Board *board=me->currentboard;
+  Go::Color col=board->nextToMove();
+  float totalgamma=me->features->getBoardGamma(board,col);
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("\n");
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      Go::Move move=Go::Move(col,Go::Position::xy2pos(x,y,me->boardsize)); 
+      float gamma=me->features->getMoveGamma(board,move);
+      if (gamma<=0)
+        gtpe->getOutput()->printf("\"\" ");
+      else
+      {
+        float prob=gamma/totalgamma;
+        float midpoint=0.5;
+        float r,g,b;
+        // scale from blue-green-red
+        if (prob>=midpoint)
+        {
+          b=0;
+          r=prob/(1-midpoint);
+          g=1-r;
+        }
+        else
+        {
+          r=0;
+          g=prob/midpoint;
+          b=1-g;
+        }
+        if (r<0)
+          r=0;
+        if (g<0)
+          g=0;
+        if (b<0)
+          b=0;
+        gtpe->getOutput()->printf("#%02x%02x%02x ",(int)(r*255),(int)(g*255),(int)(b*255));
+        //gtpe->getOutput()->printf("#%06x ",(int)(prob*(1<<24)));
+      }
+    }
+    gtpe->getOutput()->printf("\n");
+  }
+
   gtpe->getOutput()->endResponse(true);
 }
 

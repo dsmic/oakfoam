@@ -59,7 +59,7 @@ am_oakfoam_OBJECTS = src/Oakfoam.$(OBJEXT) src/main.$(OBJEXT) \
 	src/engine/Go.$(OBJEXT) src/engine/Engine.$(OBJEXT) \
 	src/engine/UCT.$(OBJEXT) src/engine/Random.$(OBJEXT) \
 	src/engine/Pattern.$(OBJEXT) src/engine/Parameters.$(OBJEXT) \
-	src/gtp/Gtp.$(OBJEXT)
+	src/engine/Features.$(OBJEXT) src/gtp/Gtp.$(OBJEXT)
 oakfoam_OBJECTS = $(am_oakfoam_OBJECTS)
 oakfoam_LDADD = $(LDADD)
 SCRIPTS = $(dist_noinst_SCRIPTS)
@@ -192,6 +192,7 @@ oakfoam_SOURCES = src/Oakfoam.h src/Oakfoam.cc src/main.cc \
                       src/engine/Random.h src/engine/Random.cc \
                       src/engine/Pattern.h src/engine/Pattern.cc \
                       src/engine/Parameters.h src/engine/Parameters.cc \
+                      src/engine/Features.h src/engine/Features.cc \
                       src/gtp/Gtp.h src/gtp/Gtp.cc
 
 dist_noinst_SCRIPTS = autogen.sh
@@ -315,6 +316,8 @@ src/engine/Pattern.$(OBJEXT): src/engine/$(am__dirstamp) \
 	src/engine/$(DEPDIR)/$(am__dirstamp)
 src/engine/Parameters.$(OBJEXT): src/engine/$(am__dirstamp) \
 	src/engine/$(DEPDIR)/$(am__dirstamp)
+src/engine/Features.$(OBJEXT): src/engine/$(am__dirstamp) \
+	src/engine/$(DEPDIR)/$(am__dirstamp)
 src/gtp/$(am__dirstamp):
 	@$(MKDIR_P) src/gtp
 	@: > src/gtp/$(am__dirstamp)
@@ -331,6 +334,7 @@ mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 	-rm -f src/Oakfoam.$(OBJEXT)
 	-rm -f src/engine/Engine.$(OBJEXT)
+	-rm -f src/engine/Features.$(OBJEXT)
 	-rm -f src/engine/Go.$(OBJEXT)
 	-rm -f src/engine/Parameters.$(OBJEXT)
 	-rm -f src/engine/Pattern.$(OBJEXT)
@@ -345,6 +349,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/Oakfoam.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/main.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/engine/$(DEPDIR)/Engine.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/engine/$(DEPDIR)/Features.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/engine/$(DEPDIR)/Go.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/engine/$(DEPDIR)/Parameters.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/engine/$(DEPDIR)/Pattern.Po@am__quote@

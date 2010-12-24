@@ -56,6 +56,7 @@
 #include "Random.h"
 #include "Pattern.h"
 #include "Parameters.h"
+#include "Features.h"
 #include "../gtp/Gtp.h"
 
 class Engine
@@ -106,6 +107,8 @@ class Engine
     static void gtpLoadPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpClearPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpDoBoardCopy(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpFeatureMatchesAt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpFeatureProbDistribution(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     
     static void gtpTimeSettings(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpTimeLeft(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
@@ -130,6 +133,7 @@ class Engine
     Pattern::ThreeByThreeTable *patterntable;
     std::string lastexplanation;
     Parameters *params;
+    Features *features;
     
     void addGtpCommands();
     
