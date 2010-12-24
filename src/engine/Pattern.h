@@ -62,6 +62,8 @@ namespace Pattern
       static unsigned int invert(unsigned int hash);
       static unsigned int rotateRight(unsigned int hash);
       static unsigned int flipHorizontal(unsigned int hash);
+      
+      static unsigned int smallestEquivalent(unsigned int hash);
     
     private:
       static int hashColor(Go::Color col);

@@ -2,6 +2,7 @@
 #define DEF_OAKFOAM_FEATURES_H
 
 #include "Go.h"
+#include "Pattern.h"
 
 class Features
 {
@@ -13,11 +14,12 @@ class Features
       EXTENSION,
       SELFATARI,
       ATARI,
-      BORDERDIST
+      BORDERDIST,
+      PATTERN3X3
     };
     
-    int matchFeatureClass(Features::FeatureClass featclass, Go::Board *board, Go::Move move);
-    float getFeatureGamma(Features::FeatureClass featclass, int level);
+    unsigned int matchFeatureClass(Features::FeatureClass featclass, Go::Board *board, Go::Move move);
+    float getFeatureGamma(Features::FeatureClass featclass, unsigned int level);
     float getMoveGamma(Go::Board *board, Go::Move move);
     float getBoardGamma(Go::Board *board, Go::Color col);
   

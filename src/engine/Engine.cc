@@ -682,12 +682,13 @@ void Engine::gtpFeatureMatchesAt(void *instance, Gtp::Engine* gtpe, Gtp::Command
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printf("Feature Matches for %s:\n",Go::Position::pos2string(pos,board->getSize()).c_str());
-  gtpe->getOutput()->printf("PASS:       %d\n",me->features->matchFeatureClass(Features::PASS,board,move));
-  gtpe->getOutput()->printf("CAPTURE:    %d\n",me->features->matchFeatureClass(Features::CAPTURE,board,move));
-  gtpe->getOutput()->printf("EXTENSION:  %d\n",me->features->matchFeatureClass(Features::EXTENSION,board,move));
-  gtpe->getOutput()->printf("SELFATARI:  %d\n",me->features->matchFeatureClass(Features::SELFATARI,board,move));
-  gtpe->getOutput()->printf("ATARI:      %d\n",me->features->matchFeatureClass(Features::ATARI,board,move));
-  gtpe->getOutput()->printf("BORDERDIST: %d\n",me->features->matchFeatureClass(Features::BORDERDIST,board,move));
+  gtpe->getOutput()->printf("PASS:       %u\n",me->features->matchFeatureClass(Features::PASS,board,move));
+  gtpe->getOutput()->printf("CAPTURE:    %u\n",me->features->matchFeatureClass(Features::CAPTURE,board,move));
+  gtpe->getOutput()->printf("EXTENSION:  %u\n",me->features->matchFeatureClass(Features::EXTENSION,board,move));
+  gtpe->getOutput()->printf("SELFATARI:  %u\n",me->features->matchFeatureClass(Features::SELFATARI,board,move));
+  gtpe->getOutput()->printf("ATARI:      %u\n",me->features->matchFeatureClass(Features::ATARI,board,move));
+  gtpe->getOutput()->printf("BORDERDIST: %u\n",me->features->matchFeatureClass(Features::BORDERDIST,board,move));
+  gtpe->getOutput()->printf("PATTERN3X3: %u\n",me->features->matchFeatureClass(Features::PATTERN3X3,board,move));
   float gamma=me->features->getMoveGamma(board,move);
   float total=me->features->getBoardGamma(board,col);
   gtpe->getOutput()->printf("Gamma: %.2f/%.2f (%.2f)\n",gamma,total,gamma/total);

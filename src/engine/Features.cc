@@ -1,6 +1,6 @@
 #include "Features.h"
 
-int Features::matchFeatureClass(Features::FeatureClass featclass, Go::Board *board, Go::Move move)
+unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::Board *board, Go::Move move)
 {
   if ((featclass!=Features::PASS && move.isPass()) || move.isResign())
     return 0;
@@ -131,14 +131,26 @@ int Features::matchFeatureClass(Features::FeatureClass featclass, Go::Board *boa
       else
         return 0;
     }
+    case Features::PATTERN3X3:
+    {
+      Go::Color col=move.getColor();
+      int pos=move.getPosition();
+      
+      unsigned int hash=Pattern::ThreeByThree::makeHash(board,pos);
+      if (col==Go::WHITE)
+        hash=Pattern::ThreeByThree::invert(hash);
+      hash=Pattern::ThreeByThree::smallestEquivalent(hash);
+      
+      return hash;
+    }
     default:
       return 0;
   }
 }
 
-float Features::getFeatureGamma(Features::FeatureClass featclass, int level)
+float Features::getFeatureGamma(Features::FeatureClass featclass, unsigned int level)
 {
-  if (level==0)
+  if (level==0 && featclass!=Features::PATTERN3X3)
     return 1.0;
   
   // values hard-coded for initial testing
@@ -195,6 +207,13 @@ float Features::getFeatureGamma(Features::FeatureClass featclass, int level)
       else
         return 1.0;
     }
+    case Features::PATTERN3X3:
+    {
+      if (level==0)
+        return 2.0;
+      else
+        return 1.0;
+    }
     default:
       return 1.0;
   }
@@ -213,6 +232,7 @@ float Features::getMoveGamma(Go::Board *board, Go::Move move)
   g*=this->getFeatureGamma(Features::SELFATARI,this->matchFeatureClass(Features::SELFATARI,board,move));
   g*=this->getFeatureGamma(Features::ATARI,this->matchFeatureClass(Features::ATARI,board,move));
   g*=this->getFeatureGamma(Features::BORDERDIST,this->matchFeatureClass(Features::BORDERDIST,board,move));
+  g*=this->getFeatureGamma(Features::PATTERN3X3,this->matchFeatureClass(Features::PATTERN3X3,board,move));
   
   return g;
 }

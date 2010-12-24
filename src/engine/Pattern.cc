@@ -63,6 +63,25 @@ unsigned int Pattern::ThreeByThree::flipHorizontal(unsigned int hash)
   return (same | (right1>>2) | (right2>>4) | (left1<<2) | (left2<<4));
 }
 
+unsigned int Pattern::ThreeByThree::smallestEquivalent(unsigned int hash)
+{
+  unsigned int currenthash=hash;
+  unsigned int smallesthash=hash;
+  
+  for (int i=0;i<4;i++)
+  {
+    if (currenthash<smallesthash)
+      smallesthash=currenthash;
+    unsigned int flippedcurrent=Pattern::ThreeByThree::flipHorizontal(currenthash);
+    if (flippedcurrent<smallesthash)
+      smallesthash=flippedcurrent;
+    
+    currenthash=Pattern::ThreeByThree::rotateRight(currenthash);
+  }
+  
+  return smallesthash;
+}
+
 void Pattern::ThreeByThreeTable::updatePatternTransformed(bool addpattern, unsigned int pattern, bool addinverted)
 {
   unsigned int currentpattern=pattern;
