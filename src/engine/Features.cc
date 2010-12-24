@@ -58,6 +58,37 @@ int Features::matchFeatureClass(Features::FeatureClass featclass, Go::Board *boa
       else
         return 0;
     }
+    case Features::SELFATARI:
+    {
+      int size=board->getSize();
+      Go::Color col=move.getColor();
+      int pos=move.getPosition();
+      
+      if (board->touchingEmpty(pos)>1)
+        return 0;
+      
+      bool foundgroupwith2libsorless=false;
+      bool foundconnection=false;
+      foreach_adjacent(pos,p,{
+        if (board->inGroup(p))
+        {
+          Go::Group *group=board->getGroup(p);
+          if (col==group->getColor() && group->isOneOfTwoLiberties(pos))
+          {
+            if (!foundgroupwith2libsorless)
+              foundgroupwith2libsorless=true;
+            else
+              foundconnection=true;
+          }
+          else if (col==group->getColor() && !group->inAtari())
+            foundconnection=true;
+        }
+      });
+      if (!foundconnection)
+        return 1;
+      else
+        return 0;
+    }
     case Features::ATARI:
     {
       int size=board->getSize();
@@ -68,7 +99,7 @@ int Features::matchFeatureClass(Features::FeatureClass featclass, Go::Board *boa
         {
           Go::Group *group=board->getGroup(p);
           if (col!=group->getColor() && group->isOneOfTwoLiberties(pos))
-            return true;
+            return 1;
         }
       });
       return 0;
@@ -117,6 +148,13 @@ float Features::getFeatureGamma(Features::FeatureClass featclass, int level)
       else
         return 1.0;
     }
+    case Features::SELFATARI:
+    {
+      if (level==1)
+        return 0.06;
+      else
+        return 1.0;
+    }
     default:
       return 1.0;
   }
@@ -132,6 +170,7 @@ float Features::getMoveGamma(Go::Board *board, Go::Move move)
   g*=this->getFeatureGamma(Features::PASS,this->matchFeatureClass(Features::PASS,board,move));
   g*=this->getFeatureGamma(Features::CAPTURE,this->matchFeatureClass(Features::CAPTURE,board,move));
   g*=this->getFeatureGamma(Features::EXTENSION,this->matchFeatureClass(Features::EXTENSION,board,move));
+  g*=this->getFeatureGamma(Features::SELFATARI,this->matchFeatureClass(Features::SELFATARI,board,move));
   g*=this->getFeatureGamma(Features::ATARI,this->matchFeatureClass(Features::ATARI,board,move));
   
   return g;

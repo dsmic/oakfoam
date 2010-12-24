@@ -685,6 +685,7 @@ void Engine::gtpFeatureMatchesAt(void *instance, Gtp::Engine* gtpe, Gtp::Command
   gtpe->getOutput()->printf("PASS:       %d\n",me->features->matchFeatureClass(Features::PASS,board,move));
   gtpe->getOutput()->printf("CAPTURE:    %d\n",me->features->matchFeatureClass(Features::CAPTURE,board,move));
   gtpe->getOutput()->printf("EXTENSION:  %d\n",me->features->matchFeatureClass(Features::EXTENSION,board,move));
+  gtpe->getOutput()->printf("SELFATARI:  %d\n",me->features->matchFeatureClass(Features::SELFATARI,board,move));
   gtpe->getOutput()->printf("ATARI:      %d\n",me->features->matchFeatureClass(Features::ATARI,board,move));
   gtpe->getOutput()->printf("Gamma: %.2f/%.2f\n",me->features->getMoveGamma(board,move),me->features->getBoardGamma(board,col));
   gtpe->getOutput()->endResponse(true);

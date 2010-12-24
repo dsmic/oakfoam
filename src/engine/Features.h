@@ -11,7 +11,7 @@ class Features
       PASS,
       CAPTURE,
       EXTENSION,
-      //SELFATARI,
+      SELFATARI,
       ATARI
     };
     
