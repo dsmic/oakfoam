@@ -82,6 +82,28 @@ void Go::Group::addTouchingEmpties()
   });
 }
 
+bool Go::Group::isOneOfTwoLiberties(int pos)
+{
+  if (pseudoliberties>8 || this->inAtari())
+    return false;
+  
+  int ps=pseudoliberties;
+  int lps=libpossum;
+  int lpsq=libpossumsq;
+  int size=board->getSize();
+  
+  foreach_adjacent(pos,p,{
+    if (board->inGroup(p) && board->getGroup(p)==this)
+    {
+      ps--;
+      lps-=pos;
+      lpsq-=pos*pos;
+    }
+  });
+  
+  return (ps>0 && (ps*lpsq)==(lps*lps));
+}
+
 Go::Board::Board(int s)
 {
   size=s;

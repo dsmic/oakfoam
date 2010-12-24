@@ -211,6 +211,7 @@ namespace Go
       inline bool inAtari() { return (pseudoliberties>0 && (pseudoliberties*libpossumsq)==(libpossum*libpossum)); };
       inline int getAtariPosition() { if (this->inAtari()) return libpossum/pseudoliberties; else return -1; };
       void addTouchingEmpties();
+      bool isOneOfTwoLiberties(int pos);
     
     private:
       Go::Color color;

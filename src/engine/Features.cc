@@ -58,6 +58,21 @@ int Features::matchFeatureClass(Features::FeatureClass featclass, Go::Board *boa
       else
         return 0;
     }
+    case Features::ATARI:
+    {
+      int size=board->getSize();
+      Go::Color col=move.getColor();
+      int pos=move.getPosition();
+      foreach_adjacent(pos,p,{
+        if (board->inGroup(p))
+        {
+          Go::Group *group=board->getGroup(p);
+          if (col!=group->getColor() && group->isOneOfTwoLiberties(pos))
+            return true;
+        }
+      });
+      return 0;
+    }
     default:
       return 0;
   }
@@ -95,6 +110,13 @@ float Features::getFeatureGamma(Features::FeatureClass featclass, int level)
       else
         return 1.0;
     }
+    case Features::ATARI:
+    {
+      if (level==1)
+        return 2.3;
+      else
+        return 1.0;
+    }
     default:
       return 1.0;
   }
@@ -110,6 +132,7 @@ float Features::getMoveGamma(Go::Board *board, Go::Move move)
   g*=this->getFeatureGamma(Features::PASS,this->matchFeatureClass(Features::PASS,board,move));
   g*=this->getFeatureGamma(Features::CAPTURE,this->matchFeatureClass(Features::CAPTURE,board,move));
   g*=this->getFeatureGamma(Features::EXTENSION,this->matchFeatureClass(Features::EXTENSION,board,move));
+  g*=this->getFeatureGamma(Features::ATARI,this->matchFeatureClass(Features::ATARI,board,move));
   
   return g;
 }
