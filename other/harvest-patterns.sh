@@ -24,14 +24,14 @@ fi
 
 GAME=$1
 
-echo -e "loadsgf $GAME" | gogui-adapter "$OAKFOAMLOG" > /dev/null
+echo -e "loadsgf \"$GAME\"" | gogui-adapter "$OAKFOAMLOG" > /dev/null
 MOVES=`cat $TEMPOUTPUT | grep "^play " | wc -l`
 rm -f $TEMPOUTPUT
 
 CMDS=""
 for i in `seq $MOVES`
 do
-  CMDS="${CMDS}\nloadsgf $GAME $i\nlistallpatterns"
+  CMDS="${CMDS}\nloadsgf \"$GAME\" $i\nlistallpatterns"
 done
 
 echo -e $CMDS | $PROGRAM | grep "^= 0x" | sed "s/= //;s/ /\\n/g" | grep "^0x" >> $TEMPOUTPUT
