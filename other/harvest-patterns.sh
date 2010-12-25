@@ -28,16 +28,16 @@ echo -e "loadsgf $GAME" | gogui-adapter "$OAKFOAMLOG" > /dev/null
 MOVES=`cat $TEMPOUTPUT | grep "^play " | wc -l`
 rm -f $TEMPOUTPUT
 
+CMDS=""
 for i in `seq $MOVES`
 do
-  echo -n -e "  \r" >&2
-  echo -n "harvesting from: '$1' at move: $i/$MOVES..." >&2
-  
-  echo -e "loadsgf $GAME $i\nlistallpatterns" | $PROGRAM | grep "^= 0x" | sed "s/= //;s/ /\\n/g" | grep "^0x" >> $TEMPOUTPUT
+  CMDS="${CMDS}\nloadsgf $GAME $i\nlistallpatterns"
 done
-echo >&2
 
-cat $TEMPOUTPUT | sort | uniq -c | sort -rn
+echo -e $CMDS | $PROGRAM | grep "^= 0x" | sed "s/= //;s/ /\\n/g" | grep "^0x" >> $TEMPOUTPUT
+
+cat $TEMPOUTPUT
+#cat $TEMPOUTPUT | sort | uniq -c | sort -rn
 
 rm -f $TEMPOUTPUT
 
