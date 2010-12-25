@@ -146,6 +146,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("doboardcopy",this,&Engine::gtpDoBoardCopy);
   gtpe->addFunctionCommand("featurematchesat",this,&Engine::gtpFeatureMatchesAt);
   gtpe->addFunctionCommand("featureprobdistribution",this,&Engine::gtpFeatureProbDistribution);
+  gtpe->addFunctionCommand("listallpatterns",this,&Engine::gtpListAllPatterns);
   
   gtpe->addFunctionCommand("time_settings",this,&Engine::gtpTimeSettings);
   gtpe->addFunctionCommand("time_left",this,&Engine::gtpTimeLeft);
@@ -688,7 +689,7 @@ void Engine::gtpFeatureMatchesAt(void *instance, Gtp::Engine* gtpe, Gtp::Command
   gtpe->getOutput()->printf("SELFATARI:  %u\n",me->features->matchFeatureClass(Features::SELFATARI,board,move));
   gtpe->getOutput()->printf("ATARI:      %u\n",me->features->matchFeatureClass(Features::ATARI,board,move));
   gtpe->getOutput()->printf("BORDERDIST: %u\n",me->features->matchFeatureClass(Features::BORDERDIST,board,move));
-  gtpe->getOutput()->printf("PATTERN3X3: %u\n",me->features->matchFeatureClass(Features::PATTERN3X3,board,move));
+  gtpe->getOutput()->printf("PATTERN3X3: 0x%04x\n",me->features->matchFeatureClass(Features::PATTERN3X3,board,move));
   float gamma=me->features->getMoveGamma(board,move);
   float total=me->features->getBoardGamma(board,col);
   gtpe->getOutput()->printf("Gamma: %.2f/%.2f (%.2f)\n",gamma,total,gamma/total);
@@ -752,6 +753,29 @@ void Engine::gtpFeatureProbDistribution(void *instance, Gtp::Engine* gtpe, Gtp::
   }
 
   gtpe->getOutput()->endResponse(true);
+}
+
+void Engine::gtpListAllPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  Go::Board *board=me->currentboard;
+  Go::Color col=board->nextToMove();
+  
+  gtpe->getOutput()->startResponse(cmd);
+  for (int p=0;p<board->getPositionMax();p++)
+  {
+    if (me->currentboard->validMove(Go::Move(col,p)))
+    {
+      unsigned int hash=Pattern::ThreeByThree::makeHash(me->currentboard,p);
+      if (col==Go::WHITE)
+        hash=Pattern::ThreeByThree::invert(hash);
+      hash=Pattern::ThreeByThree::smallestEquivalent(hash);
+      gtpe->getOutput()->printf("0x%04x ",hash);
+    }
+  }
+
+  gtpe->getOutput()->endResponse();
 }
 
 void Engine::gtpShowSymmetryTransforms(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
