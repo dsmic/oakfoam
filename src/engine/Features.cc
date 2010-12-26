@@ -1,5 +1,27 @@
 #include "Features.h"
 
+Features::Features()
+{
+  patterngammas=new Pattern::ThreeByThreeGammas();
+  for (int i=0;i<PASS_LEVELS;i++)
+    gammas_pass[i]=1.0;
+  for (int i=0;i<CAPTURE_LEVELS;i++)
+    gammas_capture[i]=1.0;
+  for (int i=0;i<EXTENSION_LEVELS;i++)
+    gammas_extension[i]=1.0;
+  for (int i=0;i<SELFATARI_LEVELS;i++)
+    gammas_selfatari[i]=1.0;
+  for (int i=0;i<ATARI_LEVELS;i++)
+    gammas_atari[i]=1.0;
+  for (int i=0;i<BORDERDIST_LEVELS;i++)
+    gammas_borderdist[i]=1.0;
+}
+
+Features::~Features()
+{
+  delete patterngammas;
+}
+
 unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::Board *board, Go::Move move)
 {
   if ((featclass!=Features::PASS && move.isPass()) || move.isResign())
@@ -155,7 +177,7 @@ float Features::getFeatureGamma(Features::FeatureClass featclass, unsigned int l
   
   // values hard-coded for initial testing
   
-  switch (featclass)
+  /*switch (featclass)
   {
     case Features::PASS:
     {
@@ -216,6 +238,28 @@ float Features::getFeatureGamma(Features::FeatureClass featclass, unsigned int l
     }
     default:
       return 1.0;
+  }*/
+  
+  if (featclass==Features::PATTERN3X3)
+  {
+    if (patterngammas->hasGamma(level))
+      return patterngammas->getGamma(level);
+    else
+      return 1.0;
+  }
+  else
+  {
+    float *gammas=this->getStandardGamma(featclass);
+    if (gammas!=NULL)
+    {
+      float gamma=gammas[level-1];
+      if (gamma>0)
+        return gamma;
+      else
+        return 1.0;
+    }
+    else
+      return 1.0;
   }
 }
 
@@ -252,5 +296,156 @@ float Features::getBoardGamma(Go::Board *board, Go::Color col)
   total+=this->getMoveGamma(board,passmove);
   
   return total;
+}
+
+std::string Features::getFeatureClassName(Features::FeatureClass featclass)
+{
+  switch (featclass)
+  {
+    case Features::PASS:
+      return "pass";
+    case Features::CAPTURE:
+      return "capture";
+    case Features::EXTENSION:
+      return "extension";
+    case Features::ATARI:
+      return "atari";
+    case Features::SELFATARI:
+      return "selfatari";
+    case Features::BORDERDIST:
+      return "borderdist";
+    case Features::PATTERN3X3:
+      return "pattern3x3";
+    default:
+      return "";
+  }
+}
+
+Features::FeatureClass Features::getFeatureClassFromName(std::string name)
+{
+  if (name=="pass")
+    return Features::PASS;
+  else if (name=="capture")
+    return Features::CAPTURE;
+  else if (name=="extension")
+    return Features::EXTENSION;
+  else if (name=="atari")
+    return Features::ATARI;
+  else if (name=="selfatari")
+    return Features::SELFATARI;
+  else if (name=="borderdist")
+    return Features::BORDERDIST;
+  else if (name=="pattern3x3")
+    return Features::PATTERN3X3;
+  else
+    return Features::INVALID;
+}
+
+bool Features::loadGammaFile(std::string filename)
+{
+  std::ifstream fin(filename.c_str());
+  
+  if (!fin)
+    return false;
+  
+  std::string line;
+  while (std::getline(fin,line))
+  {
+    if (!this->loadGammaLine(line))
+      return false;
+  }
+  
+  fin.close();
+  
+  return true;
+}
+
+bool Features::loadGammaLine(std::string line)
+{
+  std::string id,classname,levelstring,gammastring;
+  Features::FeatureClass featclass;
+  unsigned int level;
+  float gamma;
+  
+  std::transform(line.begin(),line.end(),line.begin(),::tolower);
+  
+  std::istringstream issline(line);
+  if (!getline(issline,id,' '))
+    return false;
+  if (!getline(issline,gammastring,' '))
+    return false;
+  
+  std::istringstream issid(id);
+  if (!getline(issid,classname,':'))
+    return false;
+  if (!getline(issid,levelstring,':'))
+    return false;
+  
+  if (levelstring.at(0)=='0' && levelstring.at(1)=='x')
+  {
+    level=0;
+    std::string hex="0123456789abcdef";
+    for (unsigned int i=2;i<levelstring.length();i++)
+    {
+      level=level*16+(unsigned int)hex.find(levelstring.at(i),0);
+    }
+  }
+  else
+  {
+    std::istringstream isslevel(levelstring);
+    if (!(isslevel >> level))
+      return false;
+  }
+  
+  std::istringstream issgamma(gammastring);
+  if (!(issgamma >> gamma))
+    return false;
+  
+  featclass=this->getFeatureClassFromName(classname);
+  if (featclass==Features::INVALID)
+    return false;
+  
+  return this->setFeatureGamma(featclass,level,gamma);
+}
+
+float *Features::getStandardGamma(Features::FeatureClass featclass)
+{
+  switch (featclass)
+  {
+    case Features::PASS:
+      return gammas_pass;
+    case Features::CAPTURE:
+      return gammas_capture;
+    case Features::EXTENSION:
+      return gammas_extension;
+    case Features::ATARI:
+      return gammas_atari;
+    case Features::SELFATARI:
+      return gammas_selfatari;
+    case Features::BORDERDIST:
+      return gammas_borderdist;
+    default:
+      return NULL;
+  }
+}
+
+bool Features::setFeatureGamma(Features::FeatureClass featclass, unsigned int level, float gamma)
+{
+  if (featclass==Features::PATTERN3X3)
+  {
+    patterngammas->setGamma(level,gamma);
+    return true;
+  }
+  else
+  {
+    float *gammas=this->getStandardGamma(featclass);
+    if (gammas!=NULL)
+    {
+      gammas[level-1]=gamma;
+      return true;
+    }
+    else
+      return false;
+  }
 }
 

@@ -147,6 +147,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("featurematchesat",this,&Engine::gtpFeatureMatchesAt);
   gtpe->addFunctionCommand("featureprobdistribution",this,&Engine::gtpFeatureProbDistribution);
   gtpe->addFunctionCommand("listallpatterns",this,&Engine::gtpListAllPatterns);
+  gtpe->addFunctionCommand("loadfeaturegammas",this,&Engine::gtpLoadFeatureGammas);
   
   gtpe->addFunctionCommand("time_settings",this,&Engine::gtpTimeSettings);
   gtpe->addFunctionCommand("time_left",this,&Engine::gtpTimeLeft);
@@ -170,6 +171,7 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("showpatternmatches","Show Pattern Matches","sboard");
   gtpe->addAnalyzeCommand("featurematchesat %%p","Feature Matches At","string");
   gtpe->addAnalyzeCommand("featureprobdistribution","Feature Probability Distribution","cboard");
+  gtpe->addAnalyzeCommand("loadfeaturegammas %%r","Load Feature Gammas","none");
   gtpe->addAnalyzeCommand("showtreelivegfx","Show Tree Live Gfx","gfx");
   gtpe->addAnalyzeCommand("loadpatterns %%r","Load Patterns","none");
   gtpe->addAnalyzeCommand("clearpatterns","Clear Patterns","none");
@@ -776,6 +778,38 @@ void Engine::gtpListAllPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command*
   }
 
   gtpe->getOutput()->endResponse();
+}
+
+void Engine::gtpLoadFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("need 1 arg");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  std::string filename=cmd->getStringArg(0);
+  
+  delete me->features;
+  me->features=new Features();
+  bool success=me->features->loadGammaFile(filename);
+  
+  if (success)
+  {
+    gtpe->getOutput()->startResponse(cmd);
+    gtpe->getOutput()->printf("loaded features gamma file: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+  else
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("error loading features gamma file: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
 }
 
 void Engine::gtpShowSymmetryTransforms(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)

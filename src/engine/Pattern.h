@@ -9,6 +9,7 @@
 */
 
 #define PATTERN_3x3_TABLE_BYTES (1<<16)/8
+#define PATTERN_3x3_GAMMAS (1<<16)
 
 #define PATTERN_3x3_DEFAULTS " \
 +*BWBEE??? \
@@ -145,6 +146,25 @@ namespace Pattern
             return Go::OFFBOARD;
         }
       };
+  };
+  
+  class ThreeByThreeGammas
+  {
+    public:
+      ThreeByThreeGammas()
+      {
+        gammas=(float *)malloc(sizeof(float)*PATTERN_3x3_GAMMAS);
+        for (int i=0;i<PATTERN_3x3_GAMMAS;i++)
+          gammas[i]=-1;
+      };
+      ~ThreeByThreeGammas() { free(gammas); };
+      
+      float getGamma(unsigned int hash) { return gammas[hash]; };
+      void setGamma(unsigned int hash, float g) { gammas[hash]=g; };
+      bool hasGamma(unsigned int hash) { return (gammas[hash]!=-1); };
+    
+    private:
+      float *gammas;
   };
 };
 #endif
