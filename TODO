@@ -2,7 +2,10 @@ TODO
 ------------------
 
 Now: (before next release)
-  implement ELO features/patterns
+  cleanup features scripts
+  add ordered list of moves based on features and check for accuracy
+  use features in playouts
+  use features for progressive widening
   try UCB1-TUNED formula (p.216(169) in SylvainGellyThesis)
   add more debug messages and debug levels
   move playout/time/tree code out of engine
