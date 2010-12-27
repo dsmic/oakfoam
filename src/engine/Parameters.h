@@ -63,6 +63,8 @@ class Parameters
     
     bool debug_on;
     
+    bool features_output_competitions;
+    
     typedef void (*UpdateFunction)(void *instance, std::string id);
     
     void addParameter(std::string category, std::string id, int *ptr, int def, Parameters::UpdateFunction func=NULL, void *instance=NULL);

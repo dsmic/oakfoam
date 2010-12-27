@@ -13,6 +13,7 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
+#include <iomanip>
 #include "Go.h"
 #include "Pattern.h"
 
@@ -41,6 +42,8 @@ class Features
     std::string getFeatureClassName(Features::FeatureClass featclass);
     Features::FeatureClass getFeatureClassFromName(std::string name);
     bool setFeatureGamma(Features::FeatureClass featclass, unsigned int level, float gamma);
+    
+    std::string getMatchingFeaturesString(Go::Board *board, Go::Move move);
     
     bool loadGammaLine(std::string line);
     bool loadGammaFile(std::string filename);

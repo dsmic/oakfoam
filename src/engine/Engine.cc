@@ -64,6 +64,8 @@ Engine::Engine(Gtp::Engine *ge)
   
   params->addParameter("other","debug",&(params->debug_on),DEBUG_ON);
   
+  params->addParameter("other","features_output_competitions",&(params->features_output_competitions),false);
+  
   patterntable=new Pattern::ThreeByThreeTable();
   patterntable->loadPatternDefaults();
   
@@ -1128,6 +1130,43 @@ bool Engine::isMoveAllowed(Go::Move move)
 
 void Engine::makeMove(Go::Move move)
 {
+  if (params->features_output_competitions)
+  {
+    gtpe->getOutput()->printfDebug("[features]:# competition (%d,%s)\n",(currentboard->getMovesMade()+1),Go::Position::pos2string(move.getPosition(),boardsize).c_str());
+    Go::Color col=move.getColor();
+    for (int p=0;p<currentboard->getPositionMax();p++)
+    {
+      Go::Move m=Go::Move(col,p);
+      if (currentboard->validMove(m) || m==move)
+      {
+        std::string featurestring=features->getMatchingFeaturesString(currentboard,m);
+        if (featurestring.length()>0)
+        {
+          gtpe->getOutput()->printfDebug("[features]:%s",Go::Position::pos2string(p,boardsize).c_str());
+          if (m==move)
+            gtpe->getOutput()->printfDebug("*");
+          else
+            gtpe->getOutput()->printfDebug(":");
+          gtpe->getOutput()->printfDebug("%s",featurestring.c_str());
+          gtpe->getOutput()->printfDebug("\n");
+        }
+      }
+    }
+    {
+      Go::Move m=Go::Move(col,Go::Move::PASS);
+      if (currentboard->validMove(m) || m==move)
+      {
+        gtpe->getOutput()->printfDebug("[features]:PASS");
+        if (m==move)
+          gtpe->getOutput()->printfDebug("*");
+        else
+          gtpe->getOutput()->printfDebug(":");
+        gtpe->getOutput()->printfDebug("%s",features->getMatchingFeaturesString(currentboard,m).c_str());
+        gtpe->getOutput()->printfDebug("\n");
+      }
+    }
+  }
+  
   currentboard->makeMove(move);
   if (params->uct_keep_subtree)
     this->chooseSubTree(move);

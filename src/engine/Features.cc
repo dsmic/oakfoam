@@ -449,3 +449,39 @@ bool Features::setFeatureGamma(Features::FeatureClass featclass, unsigned int le
   }
 }
 
+std::string Features::getMatchingFeaturesString(Go::Board *board, Go::Move move)
+{
+  std::ostringstream ss;
+  unsigned int level;
+  
+  level=this->matchFeatureClass(Features::PASS,board,move);
+  if (level>0)
+    ss<<" pass:"<<level;
+  
+  level=this->matchFeatureClass(Features::CAPTURE,board,move);
+  if (level>0)
+    ss<<" capture:"<<level;
+  
+  level=this->matchFeatureClass(Features::EXTENSION,board,move);
+  if (level>0)
+    ss<<" extension:"<<level;
+  
+  level=this->matchFeatureClass(Features::SELFATARI,board,move);
+  if (level>0)
+    ss<<" selfatari:"<<level;
+  
+  level=this->matchFeatureClass(Features::ATARI,board,move);
+  if (level>0)
+    ss<<" atari:"<<level;
+  
+  level=this->matchFeatureClass(Features::BORDERDIST,board,move);
+  if (level>0)
+    ss<<" borderdist:"<<level;
+  
+  level=this->matchFeatureClass(Features::PATTERN3X3,board,move);
+  if (patterngammas->hasGamma(level) && !move.isPass() && !move.isResign())
+    ss<<" pattern3x3:0x"<<std::hex<<std::setw(4)<<std::setfill('0')<<level;
+  
+  return ss.str();
+}
+
