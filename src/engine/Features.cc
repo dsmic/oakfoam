@@ -15,6 +15,10 @@ Features::Features()
     gammas_atari[i]=1.0;
   for (int i=0;i<BORDERDIST_LEVELS;i++)
     gammas_borderdist[i]=1.0;
+  for (int i=0;i<LASTDIST_LEVELS;i++)
+    gammas_lastdist[i]=1.0;
+  for (int i=0;i<SECONDLASTDIST_LEVELS;i++)
+    gammas_secondlastdist[i]=1.0;
 }
 
 Features::~Features()
@@ -125,7 +129,12 @@ unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::B
         {
           Go::Group *group=board->getGroup(p);
           if (col!=group->getColor() && group->isOneOfTwoLiberties(pos))
-            return 1;
+          {
+            if (board->isCurrentSimpleKo())
+              return 2;
+            else
+              return 1;
+          }
         }
       });
       return 0;
@@ -148,8 +157,50 @@ unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::B
       if (iy<dist)
         dist=iy;
       
-      if (dist<=3)
+      if (dist<BORDERDIST_LEVELS)
         return (dist+1);
+      else
+        return 0;
+    }
+    case Features::LASTDIST:
+    {
+      if (board->getLastMove().isPass() || board->getLastMove().isResign())
+        return 0;
+      
+      int size=board->getSize();
+      int pos1=move.getPosition();
+      int pos2=board->getLastMove().getPosition();
+      
+      int x1=Go::Position::pos2x(pos1,size);
+      int y1=Go::Position::pos2y(pos1,size);
+      int x2=Go::Position::pos2x(pos2,size);
+      int y2=Go::Position::pos2y(pos2,size);
+      
+      int dist=abs(x1-x2)+abs(y1-y2);
+      
+      if (dist<=LASTDIST_LEVELS)
+        return dist;
+      else
+        return 0;
+    }
+    case Features::SECONDLASTDIST:
+    {
+      if (board->getSecondLastMove().isPass() || board->getSecondLastMove().isResign())
+        return 0;
+      
+      int size=board->getSize();
+      int pos1=move.getPosition();
+      int pos2=board->getSecondLastMove().getPosition();
+      
+      int x1=Go::Position::pos2x(pos1,size);
+      int y1=Go::Position::pos2y(pos1,size);
+      int x2=Go::Position::pos2x(pos2,size);
+      int y2=Go::Position::pos2y(pos2,size);
+      
+      int dist=abs(x1-x2)+abs(y1-y2);
+      
+      if (dist<=SECONDLASTDIST_LEVELS)
+        return dist;
       else
         return 0;
     }
@@ -174,71 +225,6 @@ float Features::getFeatureGamma(Features::FeatureClass featclass, unsigned int l
 {
   if (level==0 && featclass!=Features::PATTERN3X3)
     return 1.0;
-  
-  // values hard-coded for initial testing
-  
-  /*switch (featclass)
-  {
-    case Features::PASS:
-    {
-      if (level==1)
-        return 0.17;
-      else if (level==2)
-        return 24.37;
-      else
-        return 1.0;
-    }
-    case Features::CAPTURE:
-    {
-      if (level==1)
-        return 30.68;
-      else
-        return 1.0;
-    }
-    case Features::EXTENSION:
-    {
-      if (level==1)
-        return 11.37;
-      else
-        return 1.0;
-    }
-    case Features::ATARI:
-    {
-      if (level==1)
-        return 2.3;
-      else
-        return 1.0;
-    }
-    case Features::SELFATARI:
-    {
-      if (level==1)
-        return 0.06;
-      else
-        return 1.0;
-    }
-    case Features::BORDERDIST:
-    {
-      if (level==1)
-        return 0.89;
-      else if (level==2)
-        return 1.49;
-      else if (level==3)
-        return 1.75;
-      else if (level==4)
-        return 1.28;
-      else
-        return 1.0;
-    }
-    case Features::PATTERN3X3:
-    {
-      if (level==0)
-        return 2.0;
-      else
-        return 1.0;
-    }
-    default:
-      return 1.0;
-  }*/
   
   if (featclass==Features::PATTERN3X3)
   {
@@ -276,6 +262,8 @@ float Features::getMoveGamma(Go::Board *board, Go::Move move)
   g*=this->getFeatureGamma(Features::SELFATARI,this->matchFeatureClass(Features::SELFATARI,board,move));
   g*=this->getFeatureGamma(Features::ATARI,this->matchFeatureClass(Features::ATARI,board,move));
   g*=this->getFeatureGamma(Features::BORDERDIST,this->matchFeatureClass(Features::BORDERDIST,board,move));
+  g*=this->getFeatureGamma(Features::LASTDIST,this->matchFeatureClass(Features::LASTDIST,board,move));
+  g*=this->getFeatureGamma(Features::SECONDLASTDIST,this->matchFeatureClass(Features::SECONDLASTDIST,board,move));
   g*=this->getFeatureGamma(Features::PATTERN3X3,this->matchFeatureClass(Features::PATTERN3X3,board,move));
   
   return g;
@@ -314,6 +302,10 @@ std::string Features::getFeatureClassName(Features::FeatureClass featclass)
       return "selfatari";
     case Features::BORDERDIST:
       return "borderdist";
+    case Features::LASTDIST:
+      return "lastdist";
+    case Features::SECONDLASTDIST:
+      return "secondlastdist";
     case Features::PATTERN3X3:
       return "pattern3x3";
     default:
@@ -335,6 +327,10 @@ Features::FeatureClass Features::getFeatureClassFromName(std::string name)
     return Features::SELFATARI;
   else if (name=="borderdist")
     return Features::BORDERDIST;
+  else if (name=="lastdist")
+    return Features::LASTDIST;
+  else if (name=="secondlastdist")
+    return Features::SECONDLASTDIST;
   else if (name=="pattern3x3")
     return Features::PATTERN3X3;
   else
@@ -424,6 +420,10 @@ float *Features::getStandardGamma(Features::FeatureClass featclass)
       return gammas_selfatari;
     case Features::BORDERDIST:
       return gammas_borderdist;
+    case Features::LASTDIST:
+      return gammas_lastdist;
+    case Features::SECONDLASTDIST:
+      return gammas_secondlastdist;
     default:
       return NULL;
   }
@@ -478,6 +478,14 @@ std::string Features::getMatchingFeaturesString(Go::Board *board, Go::Move move)
   if (level>0)
     ss<<" borderdist:"<<level;
   
+  level=this->matchFeatureClass(Features::LASTDIST,board,move);
+  if (level>0)
+    ss<<" lastdist:"<<level;
+  
+  level=this->matchFeatureClass(Features::SECONDLASTDIST,board,move);
+  if (level>0)
+    ss<<" secondlastdist:"<<level;
+  
   level=this->matchFeatureClass(Features::PATTERN3X3,board,move);
   if (patterngammas->hasGamma(level) && !move.isPass() && !move.isResign())
     ss<<" pattern3x3:0x"<<std::hex<<std::setw(4)<<std::setfill('0')<<level;
@@ -507,6 +515,12 @@ std::string Features::getFeatureIdList()
   
   for (unsigned int level=1;level<=BORDERDIST_LEVELS;level++)
     ss<<(id++)<<" borderdist:"<<level<<"\n";
+  
+  for (unsigned int level=1;level<=LASTDIST_LEVELS;level++)
+    ss<<(id++)<<" lastdist:"<<level<<"\n";
+  
+  for (unsigned int level=1;level<=SECONDLASTDIST_LEVELS;level++)
+    ss<<(id++)<<" secondlastdist:"<<level<<"\n";
   
   for (unsigned int level=0;level<PATTERN_3x3_GAMMAS;level++)
   {

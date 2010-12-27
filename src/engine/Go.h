@@ -259,6 +259,7 @@ namespace Go
       
       int getSize() { return size; };
       int getSimpleKo() { return simpleko; };
+      bool isCurrentSimpleKo() { return (simpleko!=-1); };
       int getMovesMade() { return movesmade; };
       int getPassesPlayed() { return passesplayed; };
       Go::Color nextToMove() { return nexttomove; };

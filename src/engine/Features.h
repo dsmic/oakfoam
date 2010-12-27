@@ -5,8 +5,10 @@
 #define CAPTURE_LEVELS 1
 #define EXTENSION_LEVELS 1
 #define SELFATARI_LEVELS 1
-#define ATARI_LEVELS 1
+#define ATARI_LEVELS 2
 #define BORDERDIST_LEVELS 4
+#define LASTDIST_LEVELS 10
+#define SECONDLASTDIST_LEVELS 10
 
 #include <string>
 #include <sstream>
@@ -28,6 +30,8 @@ class Features
       SELFATARI,
       ATARI,
       BORDERDIST,
+      LASTDIST,
+      SECONDLASTDIST,
       PATTERN3X3,
       INVALID
     };
@@ -59,6 +63,8 @@ class Features
     float gammas_selfatari[SELFATARI_LEVELS];
     float gammas_atari[ATARI_LEVELS];
     float gammas_borderdist[BORDERDIST_LEVELS];
+    float gammas_lastdist[LASTDIST_LEVELS];
+    float gammas_secondlastdist[SECONDLASTDIST_LEVELS];
     
     float *getStandardGamma(Features::FeatureClass featclass);
   
