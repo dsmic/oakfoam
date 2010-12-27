@@ -44,6 +44,7 @@ class Features
     bool setFeatureGamma(Features::FeatureClass featclass, unsigned int level, float gamma);
     
     std::string getMatchingFeaturesString(Go::Board *board, Go::Move move);
+    std::string getFeatureIdList();
     
     bool loadGammaLine(std::string line);
     bool loadGammaFile(std::string filename);

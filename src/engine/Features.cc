@@ -485,3 +485,35 @@ std::string Features::getMatchingFeaturesString(Go::Board *board, Go::Move move)
   return ss.str();
 }
 
+std::string Features::getFeatureIdList()
+{
+  std::ostringstream ss;
+  unsigned int id=0;
+  
+  for (unsigned int level=1;level<=PASS_LEVELS;level++)
+    ss<<(id++)<<" pass:"<<level<<"\n";
+  
+  for (unsigned int level=1;level<=CAPTURE_LEVELS;level++)
+    ss<<(id++)<<" capture:"<<level<<"\n";
+  
+  for (unsigned int level=1;level<=EXTENSION_LEVELS;level++)
+    ss<<(id++)<<" extension:"<<level<<"\n";
+  
+  for (unsigned int level=1;level<=SELFATARI_LEVELS;level++)
+    ss<<(id++)<<" selfatari:"<<level<<"\n";
+  
+  for (unsigned int level=1;level<=ATARI_LEVELS;level++)
+    ss<<(id++)<<" atari:"<<level<<"\n";
+  
+  for (unsigned int level=1;level<=BORDERDIST_LEVELS;level++)
+    ss<<(id++)<<" borderdist:"<<level<<"\n";
+  
+  for (unsigned int level=0;level<PATTERN_3x3_GAMMAS;level++)
+  {
+    if (patterngammas->hasGamma(level))
+      ss<<std::dec<<(id++)<<" pattern3x3:0x"<<std::hex<<std::setw(4)<<std::setfill('0')<<level<<"\n";
+  }
+  
+  return ss.str();
+}
+

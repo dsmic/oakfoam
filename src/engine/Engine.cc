@@ -65,6 +65,7 @@ Engine::Engine(Gtp::Engine *ge)
   params->addParameter("other","debug",&(params->debug_on),DEBUG_ON);
   
   params->addParameter("other","features_output_competitions",&(params->features_output_competitions),false);
+  params->addParameter("other","features_output_competitions_winnerfirst",&(params->features_output_competitions_winnerfirst),false);
   
   patterntable=new Pattern::ThreeByThreeTable();
   patterntable->loadPatternDefaults();
@@ -150,6 +151,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("featureprobdistribution",this,&Engine::gtpFeatureProbDistribution);
   gtpe->addFunctionCommand("listallpatterns",this,&Engine::gtpListAllPatterns);
   gtpe->addFunctionCommand("loadfeaturegammas",this,&Engine::gtpLoadFeatureGammas);
+  gtpe->addFunctionCommand("listfeatureids",this,&Engine::gtpListFeatureIds);
   
   gtpe->addFunctionCommand("time_settings",this,&Engine::gtpTimeSettings);
   gtpe->addFunctionCommand("time_left",this,&Engine::gtpTimeLeft);
@@ -814,6 +816,15 @@ void Engine::gtpLoadFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Comman
   }
 }
 
+void Engine::gtpListFeatureIds(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printf("\n%s",me->features->getFeatureIdList().c_str());
+  gtpe->getOutput()->endResponse(true);
+}
+
 void Engine::gtpShowSymmetryTransforms(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
@@ -1132,37 +1143,57 @@ void Engine::makeMove(Go::Move move)
 {
   if (params->features_output_competitions)
   {
-    gtpe->getOutput()->printfDebug("[features]:# competition (%d,%s)\n",(currentboard->getMovesMade()+1),Go::Position::pos2string(move.getPosition(),boardsize).c_str());
-    Go::Color col=move.getColor();
-    for (int p=0;p<currentboard->getPositionMax();p++)
+    bool isawinner=true;
+    if (params->features_output_competitions_winnerfirst)
     {
-      Go::Move m=Go::Move(col,p);
-      if (currentboard->validMove(m) || m==move)
+      int p=move.getPosition();
+      std::string featurestring=features->getMatchingFeaturesString(currentboard,move);
+      if (featurestring.length()>0)
       {
-        std::string featurestring=features->getMatchingFeaturesString(currentboard,m);
-        if (featurestring.length()>0)
+        gtpe->getOutput()->printfDebug("[features]:# competition (%d,%s)\n",(currentboard->getMovesMade()+1),Go::Position::pos2string(move.getPosition(),boardsize).c_str());
+        gtpe->getOutput()->printfDebug("[features]:%s*",Go::Position::pos2string(p,boardsize).c_str());
+        gtpe->getOutput()->printfDebug("%s",featurestring.c_str());
+        gtpe->getOutput()->printfDebug("\n");
+      }
+      else
+        isawinner=false; 
+    }
+    else
+      gtpe->getOutput()->printfDebug("[features]:# competition (%d,%s)\n",(currentboard->getMovesMade()+1),Go::Position::pos2string(move.getPosition(),boardsize).c_str());
+    
+    if (isawinner)
+    {
+      Go::Color col=move.getColor();
+      for (int p=0;p<currentboard->getPositionMax();p++)
+      {
+        Go::Move m=Go::Move(col,p);
+        if (currentboard->validMove(m) || m==move)
         {
-          gtpe->getOutput()->printfDebug("[features]:%s",Go::Position::pos2string(p,boardsize).c_str());
+          std::string featurestring=features->getMatchingFeaturesString(currentboard,m);
+          if (featurestring.length()>0)
+          {
+            gtpe->getOutput()->printfDebug("[features]:%s",Go::Position::pos2string(p,boardsize).c_str());
+            if (m==move)
+              gtpe->getOutput()->printfDebug("*");
+            else
+              gtpe->getOutput()->printfDebug(":");
+            gtpe->getOutput()->printfDebug("%s",featurestring.c_str());
+            gtpe->getOutput()->printfDebug("\n");
+          }
+        }
+      }
+      {
+        Go::Move m=Go::Move(col,Go::Move::PASS);
+        if (currentboard->validMove(m) || m==move)
+        {
+          gtpe->getOutput()->printfDebug("[features]:PASS");
           if (m==move)
             gtpe->getOutput()->printfDebug("*");
           else
             gtpe->getOutput()->printfDebug(":");
-          gtpe->getOutput()->printfDebug("%s",featurestring.c_str());
+          gtpe->getOutput()->printfDebug("%s",features->getMatchingFeaturesString(currentboard,m).c_str());
           gtpe->getOutput()->printfDebug("\n");
         }
-      }
-    }
-    {
-      Go::Move m=Go::Move(col,Go::Move::PASS);
-      if (currentboard->validMove(m) || m==move)
-      {
-        gtpe->getOutput()->printfDebug("[features]:PASS");
-        if (m==move)
-          gtpe->getOutput()->printfDebug("*");
-        else
-          gtpe->getOutput()->printfDebug(":");
-        gtpe->getOutput()->printfDebug("%s",features->getMatchingFeaturesString(currentboard,m).c_str());
-        gtpe->getOutput()->printfDebug("\n");
       }
     }
   }

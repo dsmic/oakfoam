@@ -64,6 +64,7 @@ class Parameters
     bool debug_on;
     
     bool features_output_competitions;
+    bool features_output_competitions_winnerfirst;
     
     typedef void (*UpdateFunction)(void *instance, std::string id);
     
