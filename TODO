@@ -36,6 +36,7 @@ Soon: (before next major release)
   update surewin during genmove
   reduce thinking time if surewin?
   think for longer if needed
+  add "time_ignore" setting
 
 Later: (at some point)
   make sure install works and is described somewhere
