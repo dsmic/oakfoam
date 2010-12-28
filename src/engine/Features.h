@@ -47,7 +47,7 @@ class Features
     Features::FeatureClass getFeatureClassFromName(std::string name);
     bool setFeatureGamma(Features::FeatureClass featclass, unsigned int level, float gamma);
     
-    std::string getMatchingFeaturesString(Go::Board *board, Go::Move move);
+    std::string getMatchingFeaturesString(Go::Board *board, Go::Move move, bool pretty=true);
     std::string getFeatureIdList();
     
     bool loadGammaLine(std::string line);
@@ -57,6 +57,7 @@ class Features
   
   private:
     Pattern::ThreeByThreeGammas *patterngammas;
+    Pattern::ThreeByThreeGammas *patternids;
     float gammas_pass[PASS_LEVELS];
     float gammas_capture[CAPTURE_LEVELS];
     float gammas_extension[EXTENSION_LEVELS];
@@ -67,6 +68,7 @@ class Features
     float gammas_secondlastdist[SECONDLASTDIST_LEVELS];
     
     float *getStandardGamma(Features::FeatureClass featclass);
+    void updatePatternIds();
   
 };
 

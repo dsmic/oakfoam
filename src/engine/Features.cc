@@ -3,6 +3,7 @@
 Features::Features()
 {
   patterngammas=new Pattern::ThreeByThreeGammas();
+  patternids=new Pattern::ThreeByThreeGammas();
   for (int i=0;i<PASS_LEVELS;i++)
     gammas_pass[i]=1.0;
   for (int i=0;i<CAPTURE_LEVELS;i++)
@@ -24,6 +25,7 @@ Features::Features()
 Features::~Features()
 {
   delete patterngammas;
+  delete patternids;
 }
 
 unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::Board *board, Go::Move move)
@@ -434,6 +436,7 @@ bool Features::setFeatureGamma(Features::FeatureClass featclass, unsigned int le
   if (featclass==Features::PATTERN3X3)
   {
     patterngammas->setGamma(level,gamma);
+    this->updatePatternIds();
     return true;
   }
   else
@@ -449,46 +452,91 @@ bool Features::setFeatureGamma(Features::FeatureClass featclass, unsigned int le
   }
 }
 
-std::string Features::getMatchingFeaturesString(Go::Board *board, Go::Move move)
+std::string Features::getMatchingFeaturesString(Go::Board *board, Go::Move move, bool pretty)
 {
   std::ostringstream ss;
   unsigned int level;
   
   level=this->matchFeatureClass(Features::PASS,board,move);
   if (level>0)
-    ss<<" pass:"<<level;
+  {
+    if (pretty)
+      ss<<" pass:"<<level;
+    else
+      ss<<" "<<(level-1);
+  }
   
   level=this->matchFeatureClass(Features::CAPTURE,board,move);
   if (level>0)
-    ss<<" capture:"<<level;
+  {
+    if (pretty)
+      ss<<" capture:"<<level;
+    else
+      ss<<" "<<(PASS_LEVELS+level-1);
+  }
   
   level=this->matchFeatureClass(Features::EXTENSION,board,move);
   if (level>0)
-    ss<<" extension:"<<level;
+  {
+    if (pretty)
+      ss<<" extension:"<<level;
+    else
+      ss<<" "<<(PASS_LEVELS+CAPTURE_LEVELS+level-1);
+  }
   
   level=this->matchFeatureClass(Features::SELFATARI,board,move);
   if (level>0)
-    ss<<" selfatari:"<<level;
+  {
+    if (pretty)
+      ss<<" selfatari:"<<level;
+    else
+      ss<<" "<<(PASS_LEVELS+CAPTURE_LEVELS+EXTENSION_LEVELS+level-1);
+  }
   
   level=this->matchFeatureClass(Features::ATARI,board,move);
   if (level>0)
-    ss<<" atari:"<<level;
+  {
+    if (pretty)
+      ss<<" atari:"<<level;
+    else
+      ss<<" "<<(PASS_LEVELS+CAPTURE_LEVELS+EXTENSION_LEVELS+SELFATARI_LEVELS+level-1);
+  }
   
   level=this->matchFeatureClass(Features::BORDERDIST,board,move);
   if (level>0)
-    ss<<" borderdist:"<<level;
+  {
+    if (pretty)
+      ss<<" borderdist:"<<level;
+    else
+      ss<<" "<<(PASS_LEVELS+CAPTURE_LEVELS+EXTENSION_LEVELS+SELFATARI_LEVELS+ATARI_LEVELS+level-1);
+  }
   
   level=this->matchFeatureClass(Features::LASTDIST,board,move);
   if (level>0)
-    ss<<" lastdist:"<<level;
+  {
+    if (pretty)
+      ss<<" lastdist:"<<level;
+    else
+      ss<<" "<<(PASS_LEVELS+CAPTURE_LEVELS+EXTENSION_LEVELS+SELFATARI_LEVELS+ATARI_LEVELS+BORDERDIST_LEVELS+level-1);
+  }
   
   level=this->matchFeatureClass(Features::SECONDLASTDIST,board,move);
   if (level>0)
-    ss<<" secondlastdist:"<<level;
+  {
+    if (pretty)
+      ss<<" secondlastdist:"<<level;
+    else
+      ss<<" "<<(PASS_LEVELS+CAPTURE_LEVELS+EXTENSION_LEVELS+SELFATARI_LEVELS+ATARI_LEVELS+BORDERDIST_LEVELS+LASTDIST_LEVELS+level-1);
+  }
   
   level=this->matchFeatureClass(Features::PATTERN3X3,board,move);
   if (patterngammas->hasGamma(level) && !move.isPass() && !move.isResign())
-    ss<<" pattern3x3:0x"<<std::hex<<std::setw(4)<<std::setfill('0')<<level;
+  {
+    if (pretty)
+      ss<<" pattern3x3:0x"<<std::hex<<std::setw(4)<<std::setfill('0')<<level;
+    else
+      ss<<" "<<(int)patternids->getGamma(level);
+  }
   
   return ss.str();
 }
@@ -525,9 +573,25 @@ std::string Features::getFeatureIdList()
   for (unsigned int level=0;level<PATTERN_3x3_GAMMAS;level++)
   {
     if (patterngammas->hasGamma(level))
-      ss<<std::dec<<(id++)<<" pattern3x3:0x"<<std::hex<<std::setw(4)<<std::setfill('0')<<level<<"\n";
+    {
+      if (id==patternids->getGamma(level))
+        ss<<std::dec<<(id++)<<" pattern3x3:0x"<<std::hex<<std::setw(4)<<std::setfill('0')<<level<<"\n";
+      else
+        fprintf(stderr,"WARNING! pattern id mismatch");
+    }
   }
   
   return ss.str();
+}
+
+void Features::updatePatternIds()
+{
+  unsigned int id=PASS_LEVELS+CAPTURE_LEVELS+EXTENSION_LEVELS+SELFATARI_LEVELS+ATARI_LEVELS+BORDERDIST_LEVELS+LASTDIST_LEVELS+SECONDLASTDIST_LEVELS;
+  
+  for (unsigned int level=0;level<PATTERN_3x3_GAMMAS;level++)
+  {
+    if (patterngammas->hasGamma(level))
+      patternids->setGamma(level,id++);
+  }
 }
 

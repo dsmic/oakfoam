@@ -65,7 +65,7 @@ Engine::Engine(Gtp::Engine *ge)
   params->addParameter("other","debug",&(params->debug_on),DEBUG_ON);
   
   params->addParameter("other","features_output_competitions",&(params->features_output_competitions),false);
-  params->addParameter("other","features_output_competitions_winnerfirst",&(params->features_output_competitions_winnerfirst),false);
+  params->addParameter("other","features_output_competitions_mmstyle",&(params->features_output_competitions_mmstyle),false);
   
   patterntable=new Pattern::ThreeByThreeTable();
   patterntable->loadPatternDefaults();
@@ -1146,10 +1146,10 @@ void Engine::makeMove(Go::Move move)
   if (params->features_output_competitions)
   {
     bool isawinner=true;
-    if (params->features_output_competitions_winnerfirst)
+    if (params->features_output_competitions_mmstyle)
     {
       int p=move.getPosition();
-      std::string featurestring=features->getMatchingFeaturesString(currentboard,move);
+      std::string featurestring=features->getMatchingFeaturesString(currentboard,move,!params->features_output_competitions_mmstyle);
       if (featurestring.length()>0)
       {
         gtpe->getOutput()->printfDebug("[features]:# competition (%d,%s)\n",(currentboard->getMovesMade()+1),Go::Position::pos2string(move.getPosition(),boardsize).c_str());
@@ -1171,7 +1171,7 @@ void Engine::makeMove(Go::Move move)
         Go::Move m=Go::Move(col,p);
         if (currentboard->validMove(m) || m==move)
         {
-          std::string featurestring=features->getMatchingFeaturesString(currentboard,m);
+          std::string featurestring=features->getMatchingFeaturesString(currentboard,m,!params->features_output_competitions_mmstyle);
           if (featurestring.length()>0)
           {
             gtpe->getOutput()->printfDebug("[features]:%s",Go::Position::pos2string(p,boardsize).c_str());
@@ -1193,7 +1193,7 @@ void Engine::makeMove(Go::Move move)
             gtpe->getOutput()->printfDebug("*");
           else
             gtpe->getOutput()->printfDebug(":");
-          gtpe->getOutput()->printfDebug("%s",features->getMatchingFeaturesString(currentboard,m).c_str());
+          gtpe->getOutput()->printfDebug("%s",features->getMatchingFeaturesString(currentboard,m,!params->features_output_competitions_mmstyle).c_str());
           gtpe->getOutput()->printfDebug("\n");
         }
       }
