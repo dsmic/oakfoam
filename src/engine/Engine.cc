@@ -66,6 +66,7 @@ Engine::Engine(Gtp::Engine *ge)
   
   params->addParameter("other","features_output_competitions",&(params->features_output_competitions),false);
   params->addParameter("other","features_output_competitions_mmstyle",&(params->features_output_competitions_mmstyle),false);
+  params->addParameter("other","features_ordered_comparison",&(params->features_ordered_comparison),false);
   
   patterntable=new Pattern::ThreeByThreeTable();
   patterntable->loadPatternDefaults();
@@ -1198,6 +1199,81 @@ void Engine::makeMove(Go::Move move)
         }
       }
     }
+  }
+  
+  if (params->features_ordered_comparison)
+  {
+    bool usedpos[currentboard->getPositionMax()+1];
+    for (int i=0;i<=currentboard->getPositionMax();i++)
+      usedpos[i]=false;
+    int posused=0;
+    float bestgamma=-1;
+    int bestpos=0;
+    Go::Color col=move.getColor();
+    int matchedat=0;
+  
+    gtpe->getOutput()->printfDebug("[feature_comparison]:# comparison (%d,%s)\n",(currentboard->getMovesMade()+1),Go::Position::pos2string(move.getPosition(),boardsize).c_str());
+    
+    gtpe->getOutput()->printfDebug("[feature_comparison]:");
+    while (true)
+    {
+      for (int p=0;p<currentboard->getPositionMax();p++)
+      {
+        if (!usedpos[p])
+        {
+          Go::Move m=Go::Move(col,p);
+          if (currentboard->validMove(m) || m==move)
+          {
+            float gamma=features->getMoveGamma(currentboard,m);;
+            if (gamma>bestgamma)
+            {
+              bestgamma=gamma;
+              bestpos=p;
+            }
+          }
+        }
+      }
+      
+      {
+        int p=currentboard->getPositionMax();
+        if (!usedpos[p])
+        {
+          Go::Move m=Go::Move(col,Go::Move::PASS);
+          if (currentboard->validMove(m) || m==move)
+          {
+            float gamma=features->getMoveGamma(currentboard,m);;
+            if (gamma>bestgamma)
+            {
+              bestgamma=gamma;
+              bestpos=p;
+            }
+          }
+        }
+      }
+      
+      if (bestgamma!=-1)
+      {
+        Go::Move m;
+        if (bestpos==currentboard->getPositionMax())
+          m=Go::Move(col,Go::Move::PASS);
+        else
+          m=Go::Move(col,bestpos);
+        posused++;
+        usedpos[bestpos]=true;
+        gtpe->getOutput()->printfDebug(" %s",Go::Position::pos2string(m.getPosition(),boardsize).c_str());
+        if (m==move)
+        {
+          gtpe->getOutput()->printfDebug("*");
+          matchedat=posused;
+        }
+      }
+      else
+        break;
+      
+      bestgamma=-1;
+    }
+    gtpe->getOutput()->printfDebug("\n");
+    gtpe->getOutput()->printfDebug("[feature_comparison]:matched at: %d\n",matchedat);
   }
   
   currentboard->makeMove(move);

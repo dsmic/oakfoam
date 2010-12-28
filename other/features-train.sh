@@ -8,8 +8,7 @@ OAKFOAMLOG="../oakfoam --log $TEMPLOG"
 PROGRAM="gogui-adapter \"$OAKFOAMLOG\""
 MM="./mm"
 
-#INITIALPATTERNGAMMAS="shusaku.gamma" # shouldn't be hard-coded
-INITIALPATTERNGAMMAS=$1 # shouldn't be hard-coded
+INITIALPATTERNGAMMAS=$1
 
 if ! test -x ../oakfoam; then
   echo "File ../oakfoam not found" >&2
@@ -21,7 +20,7 @@ if ! test -x ./mm; then
   exit 1
 fi
 
-echo -e "loadfeaturegammas ${INITIALPATTERNGAMMAS}\nlistfeatureids" | $OAKFOAM | grep -e "^[0-9]* [a-zA-Z0-9]*:[0-9a-fA-FxX]*" > $TEMPIDS
+echo -e "loadfeaturegammas $INITIALPATTERNGAMMAS\nlistfeatureids" | $OAKFOAM | grep -e "^[0-9]* [a-zA-Z0-9]*:[0-9a-fA-FxX]*" > $TEMPIDS
 FEATUREIDCOUNT=`cat $TEMPIDS | wc -l`
 
 MMFEATURES=`cat $TEMPIDS | sed "s/[0-9]* \([a-zA-Z0-9]*\):.*/\1/" | uniq -c | sed "s/^ *//"`

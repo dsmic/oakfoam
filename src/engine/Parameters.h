@@ -65,6 +65,7 @@ class Parameters
     
     bool features_output_competitions;
     bool features_output_competitions_mmstyle;
+    bool features_ordered_comparison;
     
     typedef void (*UpdateFunction)(void *instance, std::string id);
     
