@@ -8,7 +8,8 @@ OAKFOAMLOG="../oakfoam --log $TEMPLOG"
 PROGRAM="gogui-adapter \"$OAKFOAMLOG\""
 MM="./mm"
 
-INITIALPATTERNGAMMAS="shusaku.gamma" # shouldn't be hard-coded
+#INITIALPATTERNGAMMAS="shusaku.gamma" # shouldn't be hard-coded
+INITIALPATTERNGAMMAS=$1 # shouldn't be hard-coded
 
 if ! test -x ../oakfoam; then
   echo "File ../oakfoam not found" >&2
