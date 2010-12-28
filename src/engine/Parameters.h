@@ -32,6 +32,7 @@ class Parameters
     
     bool playout_atari_enabled;
     bool playout_patterns_enabled;
+    bool playout_features_enabled;
     
     float ucb_c;
     float ucb_init;

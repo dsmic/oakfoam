@@ -3,19 +3,16 @@ TODO
 
 Now: (before next release)
   cleanup features scripts
-  use features in playouts
+  speedup features in playouts
   use features for progressive widening
-  try UCB1-TUNED formula (p.216(169) in SylvainGellyThesis)
-  add more debug messages and debug levels
+  add default features
   move playout/time/tree code out of engine
-  update surewin during genmove
-  reduce thinking time if surewin?
-  think for longer if needed
 
 Soon: (before next major release)
   implement superko in tree
   improve playout move selection (quicker but still uniform or close)
   tune parameters
+  try UCB1-TUNED formula (p.216(169) in SylvainGellyThesis)
   add slight bonus to ratio for pts diff?
   try use thrown away part of tree
   do comparison of playouts with strength
@@ -31,10 +28,14 @@ Soon: (before next major release)
   reduce calls to validMoveCheck?
   prefer games that end sooner? (don't drag on at end)
   progressively add more reward for points diff if winrate very good?
+  add more debug messages and debug levels
   add hg tracked cgos,kgs?,gomill? scripts
   make SL page
   more regression testing
   analyse initial urgency and how rave contributes, esp in lower tree
+  update surewin during genmove
+  reduce thinking time if surewin?
+  think for longer if needed
 
 Later: (at some point)
   make sure install works and is described somewhere

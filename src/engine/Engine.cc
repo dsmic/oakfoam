@@ -29,6 +29,7 @@ Engine::Engine(Gtp::Engine *ge)
   
   params->addParameter("mcts","playout_atari_enabled",&(params->playout_atari_enabled),PLAYOUT_ATARI_ENABLED);
   params->addParameter("mcts","playout_patterns_enabled",&(params->playout_patterns_enabled),PLAYOUT_PATTERNS_ENABLED);
+  params->addParameter("mcts","playout_features_enabled",&(params->playout_features_enabled),PLAYOUT_FEATURES_ENABLED);
   
   params->addParameter("mcts","ucb_c",&(params->ucb_c),UCB_C);
   params->addParameter("mcts","ucb_init",&(params->ucb_init),UCB_INIT);
@@ -1307,6 +1308,31 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
 {
   if (board->numOfValidMoves(col)==0)
   {
+    move=Go::Move(col,Go::Move::PASS);
+    return;
+  }
+  
+  if (params->playout_features_enabled)
+  {
+    float totalgamma=features->getBoardGamma(board,col);
+    float randomgamma=totalgamma*rand.getRandomReal();
+    
+    for (int p=0;p<board->getPositionMax();p++)
+    {
+      Go::Move m=Go::Move(col,p);
+      if (board->validMove(m))
+      {
+        float gamma=features->getMoveGamma(board,m);
+        if (randomgamma<=gamma)
+        {
+          move=m;
+          return;
+        }
+        else
+          randomgamma-=gamma;
+      }
+    }
+    
     move=Go::Move(col,Go::Move::PASS);
     return;
   }
