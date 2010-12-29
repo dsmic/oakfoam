@@ -43,6 +43,7 @@ class Features
     float getFeatureGamma(Features::FeatureClass featclass, unsigned int level);
     float getMoveGamma(Go::Board *board, Go::Move move);
     float getBoardGamma(Go::Board *board, Go::Color col);
+    float getBoardGammas(Go::Board *board, Go::Color col, Go::ObjectBoard<float> *gammas);
     std::string getFeatureClassName(Features::FeatureClass featclass);
     Features::FeatureClass getFeatureClassFromName(std::string name);
     bool setFeatureGamma(Features::FeatureClass featclass, unsigned int level, float gamma);

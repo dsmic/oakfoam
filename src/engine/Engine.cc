@@ -1314,7 +1314,8 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
   
   if (params->playout_features_enabled)
   {
-    float totalgamma=features->getBoardGamma(board,col);
+    Go::ObjectBoard<float> *gammas=new Go::ObjectBoard<float>(boardsize);
+    float totalgamma=features->getBoardGammas(board,col,gammas);
     float randomgamma=totalgamma*rand.getRandomReal();
     
     for (int p=0;p<board->getPositionMax();p++)
@@ -1322,10 +1323,11 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
       Go::Move m=Go::Move(col,p);
       if (board->validMove(m))
       {
-        float gamma=features->getMoveGamma(board,m);
+        float gamma=gammas->get(p);
         if (randomgamma<=gamma)
         {
           move=m;
+          delete gammas;
           return;
         }
         else
@@ -1334,6 +1336,7 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
     }
     
     move=Go::Move(col,Go::Move::PASS);
+    delete gammas;
     return;
   }
   

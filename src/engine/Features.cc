@@ -288,6 +288,31 @@ float Features::getBoardGamma(Go::Board *board, Go::Color col)
   return total;
 }
 
+float Features::getBoardGammas(Go::Board *board, Go::Color col, Go::ObjectBoard<float> *gammas)
+{
+  float total=0;
+  
+  for (int p=0;p<board->getPositionMax();p++)
+  {
+    Go::Move move=Go::Move(col,p);
+    if (board->validMove(move))
+    {
+      float gamma=this->getMoveGamma(board,move);;
+      gammas->set(p,gamma);
+      total+=gamma;
+    }
+  }
+  
+  {
+    Go::Move move=Go::Move(col,Go::Move::PASS);
+    float gamma=this->getMoveGamma(board,move);;
+    gammas->set(0,gamma);
+    total+=gamma;
+  }
+  
+  return total;
+}
+
 std::string Features::getFeatureClassName(Features::FeatureClass featclass)
 {
   switch (featclass)

@@ -124,6 +124,31 @@ namespace Go
       bool *data;
   };
   
+  template<typename T>
+  class ObjectBoard
+  {
+    public:
+      ObjectBoard(int s)
+      {
+        size=s;
+        sizesq=s*s;
+        sizedata=1+(s+1)*(s+2);
+        data=new T[sizedata];
+      };
+      ~ObjectBoard()
+      {
+        delete[] data;
+      };
+      
+      inline T get(int pos) { return data[pos]; };
+      inline void set(int pos, T val) { data[pos]=val; };
+      inline void fill(T val) { for (int i=0;i<sizedata;i++) data[i]=val; };
+    
+    private:
+      int size,sizesq,sizedata;
+      T *data;
+  };
+  
   class Move
   {
     public:
