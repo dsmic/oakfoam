@@ -28,12 +28,12 @@ Features::~Features()
   delete patternids;
 }
 
-unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::Board *board, Go::Move move)
+unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::Board *board, Go::Move move, bool checkforvalidmove)
 {
   if ((featclass!=Features::PASS && move.isPass()) || move.isResign())
     return 0;
   
-  if (!board->validMove(move))
+  if (checkforvalidmove && !board->validMove(move))
     return 0;
   
   switch (featclass)
@@ -251,22 +251,22 @@ float Features::getFeatureGamma(Features::FeatureClass featclass, unsigned int l
   }
 }
 
-float Features::getMoveGamma(Go::Board *board, Go::Move move)
+float Features::getMoveGamma(Go::Board *board, Go::Move move, bool checkforvalidmove)
 {
   float g=1.0;
   
-  if (!board->validMove(move))
+  if (checkforvalidmove && !board->validMove(move))
     return 0;
   
-  g*=this->getFeatureGamma(Features::PASS,this->matchFeatureClass(Features::PASS,board,move));
-  g*=this->getFeatureGamma(Features::CAPTURE,this->matchFeatureClass(Features::CAPTURE,board,move));
-  g*=this->getFeatureGamma(Features::EXTENSION,this->matchFeatureClass(Features::EXTENSION,board,move));
-  g*=this->getFeatureGamma(Features::SELFATARI,this->matchFeatureClass(Features::SELFATARI,board,move));
-  g*=this->getFeatureGamma(Features::ATARI,this->matchFeatureClass(Features::ATARI,board,move));
-  g*=this->getFeatureGamma(Features::BORDERDIST,this->matchFeatureClass(Features::BORDERDIST,board,move));
-  g*=this->getFeatureGamma(Features::LASTDIST,this->matchFeatureClass(Features::LASTDIST,board,move));
-  g*=this->getFeatureGamma(Features::SECONDLASTDIST,this->matchFeatureClass(Features::SECONDLASTDIST,board,move));
-  g*=this->getFeatureGamma(Features::PATTERN3X3,this->matchFeatureClass(Features::PATTERN3X3,board,move));
+  g*=this->getFeatureGamma(Features::PASS,this->matchFeatureClass(Features::PASS,board,move,false));
+  g*=this->getFeatureGamma(Features::CAPTURE,this->matchFeatureClass(Features::CAPTURE,board,move,false));
+  g*=this->getFeatureGamma(Features::EXTENSION,this->matchFeatureClass(Features::EXTENSION,board,move,false));
+  g*=this->getFeatureGamma(Features::SELFATARI,this->matchFeatureClass(Features::SELFATARI,board,move,false));
+  g*=this->getFeatureGamma(Features::ATARI,this->matchFeatureClass(Features::ATARI,board,move,false));
+  g*=this->getFeatureGamma(Features::BORDERDIST,this->matchFeatureClass(Features::BORDERDIST,board,move,false));
+  g*=this->getFeatureGamma(Features::LASTDIST,this->matchFeatureClass(Features::LASTDIST,board,move,false));
+  g*=this->getFeatureGamma(Features::SECONDLASTDIST,this->matchFeatureClass(Features::SECONDLASTDIST,board,move,false));
+  g*=this->getFeatureGamma(Features::PATTERN3X3,this->matchFeatureClass(Features::PATTERN3X3,board,move,false));
   
   return g;
 }
@@ -279,11 +279,11 @@ float Features::getBoardGamma(Go::Board *board, Go::Color col)
   {
     Go::Move move=Go::Move(col,p);
     if (board->validMove(move))
-      total+=this->getMoveGamma(board,move);
+      total+=this->getMoveGamma(board,move,false);
   }
   
   Go::Move passmove=Go::Move(col,Go::Move::PASS);
-  total+=this->getMoveGamma(board,passmove);
+  total+=this->getMoveGamma(board,passmove,false);
   
   return total;
 }
@@ -297,7 +297,7 @@ float Features::getBoardGammas(Go::Board *board, Go::Color col, Go::ObjectBoard<
     Go::Move move=Go::Move(col,p);
     if (board->validMove(move))
     {
-      float gamma=this->getMoveGamma(board,move);;
+      float gamma=this->getMoveGamma(board,move,false);;
       gammas->set(p,gamma);
       total+=gamma;
     }
@@ -305,7 +305,7 @@ float Features::getBoardGammas(Go::Board *board, Go::Color col, Go::ObjectBoard<
   
   {
     Go::Move move=Go::Move(col,Go::Move::PASS);
-    float gamma=this->getMoveGamma(board,move);;
+    float gamma=this->getMoveGamma(board,move,false);;
     gammas->set(0,gamma);
     total+=gamma;
   }
@@ -618,5 +618,26 @@ void Features::updatePatternIds()
     if (patterngammas->hasGamma(level))
       patternids->setGamma(level,id++);
   }
+}
+
+void FeatureGoBoard::updateGammas()
+{
+  int size=board->getSize();
+  Go::Color col=board->nextToMove();
+  for (int p=0;p<board->getPositionMax();p++)
+  {
+    if (board->getLastChanges()->get(p))
+    {
+      foreach_adjdiag(p,q,{
+        Go::Move move=Go::Move(col,q);
+        float oldgamma=gammas->get(q);
+        float gamma=features->getMoveGamma(board,move);
+        gammas->set(q,gamma);
+        totalgamma+=gamma-oldgamma;
+      });
+    }
+  }
+  
+  board->getLastChanges()->clear();
 }
 

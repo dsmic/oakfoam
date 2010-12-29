@@ -309,6 +309,9 @@ namespace Go
       void turnSymmetryOff() { symmetryupdated=false;currentsymmetry=NONE; };
       void turnSymmetryOn() { symmetryupdated=true;currentsymmetry=this->computeSymmetry(); };
       
+      void setMarkChanges(bool mc) { markchanges=mc; };
+      Go::BitBoard *getLastChanges() { return lastchanges; };
+      
       static bool isWinForColor(Go::Color col, float score);
       
       Go::Board::Symmetry computeSymmetry();
@@ -333,14 +336,14 @@ namespace Go
       Go::Move lastmove,secondlastmove;
       bool symmetryupdated;
       Go::Board::Symmetry currentsymmetry;
-      
       int blackvalidmovecount,whitevalidmovecount;
       Go::BitBoard *blackvalidmoves,*whitevalidmoves;
-      
       boost::object_pool<Go::Group> pool_group;
+      bool markchanges;
+      Go::BitBoard *lastchanges;
       
       inline Go::Group *getGroupWithoutFind(int pos) { return data[pos].group; };
-      inline void setColor(int pos, Go::Color col) { data[pos].color=col; };
+      inline void setColor(int pos, Go::Color col) { data[pos].color=col; if (markchanges) { lastchanges->set(pos); } };
       inline void setGroup(int pos, Go::Group *grp) { data[pos].group=grp; };
       inline int getPseudoLiberties(int pos) { if (data[pos].group==NULL) return 0; else return data[pos].group->find()->numOfPseudoLiberties(); };
       inline int getGroupSize(int pos) { if (data[pos].group==NULL) return 0; else return data[pos].group->find()->numOfStones(); };

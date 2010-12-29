@@ -39,9 +39,9 @@ class Features
     Features();
     ~Features();
     
-    unsigned int matchFeatureClass(Features::FeatureClass featclass, Go::Board *board, Go::Move move);
+    unsigned int matchFeatureClass(Features::FeatureClass featclass, Go::Board *board, Go::Move move, bool checkforvalidmove=true);
     float getFeatureGamma(Features::FeatureClass featclass, unsigned int level);
-    float getMoveGamma(Go::Board *board, Go::Move move);
+    float getMoveGamma(Go::Board *board, Go::Move move, bool checkforvalidmove=true);
     float getBoardGamma(Go::Board *board, Go::Color col);
     float getBoardGammas(Go::Board *board, Go::Color col, Go::ObjectBoard<float> *gammas);
     std::string getFeatureClassName(Features::FeatureClass featclass);
@@ -54,7 +54,6 @@ class Features
     bool loadGammaLine(std::string line);
     bool loadGammaFile(std::string filename);
     //bool loadGammaDefaults(); //todo
-    
   
   private:
     Pattern::ThreeByThreeGammas *patterngammas;
@@ -71,6 +70,36 @@ class Features
     float *getStandardGamma(Features::FeatureClass featclass);
     void updatePatternIds();
   
+};
+
+class FeatureGoBoard
+{
+  public:
+    FeatureGoBoard(int s, Features *f)
+    {
+      board=new Go::Board(s);
+      totalgamma=0;
+      gammas=new Go::ObjectBoard<float>(s);
+      board->setMarkChanges(true);
+      features=f;
+    };
+    ~FeatureGoBoard()
+    {
+      delete gammas;
+      delete board;
+    };
+    
+    Go::Board *getBoard() { return board; };
+    float getTotalGamma() { return totalgamma; };
+    float getGamma(int pos) { return gammas->get(pos); };
+    
+    void updateGammas();
+  
+  private:
+    Go::Board *board;
+    float totalgamma;
+    Go::ObjectBoard<float> *gammas;
+    Features *features;
 };
 
 #endif

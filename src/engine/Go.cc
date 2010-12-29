@@ -111,6 +111,9 @@ Go::Board::Board(int s)
   sizedata=1+(s+1)*(s+2);
   data=new Go::Vertex[sizedata];
   
+  markchanges=false;
+  lastchanges=NULL;
+  
   for (int p=0;p<sizedata;p++)
   {
     if (p<=(size) || p>=(sizedata-size-1) || (p%(size+1))==0)
@@ -140,6 +143,9 @@ Go::Board::~Board()
 {
   delete blackvalidmoves;
   delete whitevalidmoves;
+  
+  if (lastchanges!=NULL)
+    delete lastchanges;
   
   //XXX: memory will get freed when pool is destroyed
   /*for(std::list<Go::Group*,Go::allocator_groupptr>::iterator iter=groups.begin();iter!=groups.end();++iter) 
