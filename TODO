@@ -2,11 +2,11 @@ TODO
 ------------------
 
 Now: (before next release)
-  cleanup features scripts
-  speedup features in playouts
-  use features for progressive widening
-  add default features
   move playout/time/tree code out of engine
+  add default features
+  speedup features in playouts
+  cleanup features scripts
+  use features for progressive widening
 
 Soon: (before next major release)
   implement superko in tree
@@ -37,6 +37,7 @@ Soon: (before next major release)
   reduce thinking time if surewin?
   think for longer if needed
   add "time_ignore" setting
+  keep track of board hashes incrementally
 
 Later: (at some point)
   make sure install works and is described somewhere
@@ -52,6 +53,6 @@ Later: (at some point)
   document parameters
   use rotational symmetry?
   copy all board data with a copy() (groups and liberties)
-  keep track of board hashes incrementally
+  handle jigo correctly
 
 
