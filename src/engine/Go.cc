@@ -2,6 +2,7 @@
 
 #include <cstdio>
 #include <sstream>
+#include "Features.h"
 
 Go::BitBoard::BitBoard(int s)
 {
@@ -140,6 +141,10 @@ Go::Board::Board(int s)
   
   symmetryupdated=true;
   currentsymmetry=Go::Board::FULL;
+  
+  features=NULL;
+  totalgamma=0;
+  gammas=new Go::ObjectBoard<float>(s);
 }
 
 Go::Board::~Board()
@@ -149,6 +154,8 @@ Go::Board::~Board()
   
   if (lastchanges!=NULL)
     delete lastchanges;
+  
+  delete gammas;
   
   //XXX: memory will get freed when pool is destroyed
   /*for(std::list<Go::Group*,Go::allocator_groupptr>::iterator iter=groups.begin();iter!=groups.end();++iter) 
@@ -191,7 +198,8 @@ void Go::Board::copyOver(Go::Board *copyboard)
   copyboard->refreshGroups();
   
   if (copyboard->symmetryupdated)
-      copyboard->updateSymmetry();
+    copyboard->updateSymmetry();
+  copyboard->updateFeatureGammas();
 }
 
 std::string Go::Board::toString()
@@ -413,7 +421,8 @@ void Go::Board::makeMove(Go::Move move)
     secondlastmove=lastmove;
     lastmove=move;
     if (symmetryupdated)
-      updateSymmetry();
+      this->updateSymmetry();
+    this->updateFeatureGammas();
     return;
   }
   
@@ -510,7 +519,8 @@ void Go::Board::makeMove(Go::Move move)
   }
   
   if (symmetryupdated)
-    updateSymmetry();
+    this->updateSymmetry();
+  this->updateFeatureGammas();
 }
 
 void Go::Board::refreshValidMoves()
@@ -1058,6 +1068,36 @@ Go::Board::SymmetryTransform Go::Board::getSymmetryTransformBetweenPositions(int
   }
   
   return trans;
+}
+
+void Go::Board::updateFeatureGammas()
+{
+  if (markchanges && features!=NULL)
+  {
+    for (int p=0;p<sizedata;p++)
+    {
+      if (lastchanges->get(p))
+      {
+        this->updateFeatureGamma(p);
+        //assume only the 3x3 neighbourhood is relevant
+        foreach_adjdiag(p,q,{
+          if (!lastchanges->get(q))
+            this->updateFeatureGamma(q);
+        });
+      }
+    }
+    
+    lastchanges->clear();
+  }
+}
+
+void Go::Board::updateFeatureGamma(int pos)
+{
+  Go::Move move=Go::Move(nexttomove,pos);
+  float oldgamma=gammas->get(pos);
+  float gamma=features->getMoveGamma(this,move);
+  gammas->set(pos,gamma);
+  totalgamma+=(gamma-oldgamma);
 }
 
 

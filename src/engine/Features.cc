@@ -627,24 +627,3 @@ void Features::updatePatternIds()
   }
 }
 
-void FeatureGoBoard::updateGammas()
-{
-  int size=board->getSize();
-  Go::Color col=board->nextToMove();
-  for (int p=0;p<board->getPositionMax();p++)
-  {
-    if (board->getLastChanges()->get(p))
-    {
-      foreach_adjdiag(p,q,{
-        Go::Move move=Go::Move(col,q);
-        float oldgamma=gammas->get(q);
-        float gamma=features->getMoveGamma(board,move);
-        gammas->set(q,gamma);
-        totalgamma+=gamma-oldgamma;
-      });
-    }
-  }
-  
-  board->getLastChanges()->clear();
-}
-

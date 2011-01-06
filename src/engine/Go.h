@@ -6,6 +6,8 @@
 #include <boost/pool/pool.hpp>
 #include <boost/pool/pool_alloc.hpp>
 #include <boost/pool/object_pool.hpp>
+//from "Features.h":
+class Features;
 
 #define SYMMETRY_ONLYDEGRAGE false
 
@@ -307,8 +309,9 @@ namespace Go
       void turnSymmetryOff() { symmetryupdated=false;currentsymmetry=NONE; };
       void turnSymmetryOn() { symmetryupdated=true;currentsymmetry=this->computeSymmetry(); };
       
-      void setMarkChanges(bool mc) { markchanges=mc; };
-      Go::BitBoard *getLastChanges() { return lastchanges; };
+      void setFeatures(Features *feat) { features=feat; markchanges=true; this->updateFeatureGammas(); };
+      float getFeatureTotalGamma() { return totalgamma; };
+      float getFeatureGamma(int pos) { return gammas->get(pos); };
       
       static bool isWinForColor(Go::Color col, float score);
       
@@ -339,6 +342,9 @@ namespace Go
       boost::object_pool<Go::Group> pool_group;
       bool markchanges;
       Go::BitBoard *lastchanges;
+      Features *features;
+      float totalgamma;
+      Go::ObjectBoard<float> *gammas;
       
       inline Go::Group *getGroupWithoutFind(int pos) { return data[pos].group; };
       inline void setColor(int pos, Go::Color col) { data[pos].color=col; if (markchanges) { lastchanges->set(pos); } };
@@ -374,6 +380,9 @@ namespace Go
       };
       
       void spreadScore(Go::Board::ScoreVertex *scoredata, int pos, Go::Color col);
+      
+      void updateFeatureGammas();
+      void updateFeatureGamma(int pos);
   };
 };
 
