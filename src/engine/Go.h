@@ -296,6 +296,7 @@ namespace Go
       inline Go::Color getColor(int pos) { return data[pos].color; };
       inline Go::Group *getGroup(int pos) { return data[pos].group->find(); };
       inline bool inGroup(int pos) { return (data[pos].group!=NULL); };
+      inline bool onBoard(int pos) { return (data[pos].color!=Go::OFFBOARD); };
       
       void makeMove(Go::Move move);
       bool validMove(Go::Move move);

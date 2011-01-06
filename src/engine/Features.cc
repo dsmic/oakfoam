@@ -85,7 +85,7 @@ unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::B
           else if (col==group->getColor())
             foundextension=true;
         }
-        else if (board->touchingEmpty(p)>1)
+        else if (board->onBoard(p) && board->touchingEmpty(p)>1)
           foundextension=true;
       });
       if (foundgroupinatari && foundextension)

@@ -1322,29 +1322,33 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
   
   if (params->playout_features_enabled)
   {
-    Go::ObjectBoard<float> *gammas=new Go::ObjectBoard<float>(boardsize);
-    float totalgamma=features->getBoardGammas(board,col,gammas);
+    //Go::ObjectBoard<float> *gammas=new Go::ObjectBoard<float>(boardsize);
+    //float totalgamma=features->getBoardGammas(board,col,gammas);
+    float totalgamma=board->getFeatureTotalGamma();
     float randomgamma=totalgamma*rand.getRandomReal();
+    bool foundmove=false;
     
     for (int p=0;p<board->getPositionMax();p++)
     {
       Go::Move m=Go::Move(col,p);
       if (board->validMove(m))
       {
-        float gamma=gammas->get(p);
+        //float gamma=gammas->get(p);
+        float gamma=board->getFeatureGamma(p);
         if (randomgamma<=gamma)
         {
           move=m;
-          delete gammas;
-          return;
+          foundmove=true;
+          break;
         }
         else
           randomgamma-=gamma;
       }
     }
     
-    move=Go::Move(col,Go::Move::PASS);
-    delete gammas;
+    if (!foundmove)
+      move=Go::Move(col,Go::Move::PASS);
+    //delete gammas;
     return;
   }
   
@@ -1882,6 +1886,8 @@ void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
   
   Go::Board *playoutboard=currentboard->copy();
   playoutboard->turnSymmetryOff();
+  if (params->playout_features_enabled)
+    playoutboard->setFeatures(features);
   if (params->rave_moves>0)
   {
     firstlist->clear();

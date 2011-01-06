@@ -116,7 +116,7 @@ Go::Board::Board(int s)
   data=new Go::Vertex[sizedata];
   
   markchanges=false;
-  lastchanges=NULL;
+  lastchanges=new Go::BitBoard(size);
   
   for (int p=0;p<sizedata;p++)
   {
@@ -145,6 +145,7 @@ Go::Board::Board(int s)
   features=NULL;
   totalgamma=0;
   gammas=new Go::ObjectBoard<float>(s);
+  gammas->fill(0);
 }
 
 Go::Board::~Board()
@@ -152,8 +153,7 @@ Go::Board::~Board()
   delete blackvalidmoves;
   delete whitevalidmoves;
   
-  if (lastchanges!=NULL)
-    delete lastchanges;
+  delete lastchanges;
   
   delete gammas;
   
@@ -410,6 +410,7 @@ void Go::Board::makeMove(Go::Move move)
     simpleko=-1;
     if (this->validMoveCheck(Go::Move(move.getColor(),kopos)))
       this->addValidMove(Go::Move(move.getColor(),kopos));
+    lastchanges->set(kopos);
   }
   
   if (move.isPass() || move.isResign())
@@ -1080,9 +1081,14 @@ void Go::Board::updateFeatureGammas()
       {
         this->updateFeatureGamma(p);
         //assume only the 3x3 neighbourhood is relevant
+        //LASTDIST and SECONDLASTDIST currently do not comply with this
         foreach_adjdiag(p,q,{
           if (!lastchanges->get(q))
-            this->updateFeatureGamma(q);
+          {
+            if (q<p) //already considered in loop
+              this->updateFeatureGamma(q);
+            lastchanges->set(p);
+          }
         });
       }
     }
