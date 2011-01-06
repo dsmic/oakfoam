@@ -321,8 +321,8 @@ namespace Go
       void turnSymmetryOn() { symmetryupdated=true;currentsymmetry=this->computeSymmetry(); };
       
       void setFeatures(Features *feat) { features=feat; markchanges=true; this->refreshFeatureGammas(); };
-      float getFeatureTotalGamma() { return totalgamma; };
-      float getFeatureGamma(int pos) { return gammas->get(pos); };
+      float getFeatureTotalGamma() { return (nexttomove==Go::BLACK?blacktotalgamma:whitetotalgamma); };
+      float getFeatureGamma(int pos) { return (nexttomove==Go::BLACK?blackgammas:whitegammas)->get(pos); };
       
       static bool isWinForColor(Go::Color col, float score);
       
@@ -354,8 +354,10 @@ namespace Go
       bool markchanges;
       Go::BitBoard *lastchanges;
       Features *features;
-      float totalgamma;
-      Go::ObjectBoard<float> *gammas;
+      float blacktotalgamma;
+      float whitetotalgamma;
+      Go::ObjectBoard<float> *blackgammas;
+      Go::ObjectBoard<float> *whitegammas;
       
       inline Go::Group *getGroupWithoutFind(int pos) { return data[pos].group; };
       inline void setColor(int pos, Go::Color col) { data[pos].color=col; if (markchanges) { lastchanges->set(pos); } };
@@ -395,6 +397,7 @@ namespace Go
       void refreshFeatureGammas();
       void updateFeatureGammas();
       void updateFeatureGamma(int pos);
+      void updateFeatureGamma(Go::Color col, int pos);
   };
 };
 

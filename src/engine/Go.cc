@@ -143,9 +143,12 @@ Go::Board::Board(int s)
   currentsymmetry=Go::Board::FULL;
   
   features=NULL;
-  totalgamma=0;
-  gammas=new Go::ObjectBoard<float>(s);
-  gammas->fill(0);
+  blacktotalgamma=0;
+  whitetotalgamma=0;
+  blackgammas=new Go::ObjectBoard<float>(s);
+  whitegammas=new Go::ObjectBoard<float>(s);
+  blackgammas->fill(0);
+  whitegammas->fill(0);
 }
 
 Go::Board::~Board()
@@ -155,7 +158,8 @@ Go::Board::~Board()
   
   delete lastchanges;
   
-  delete gammas;
+  delete blackgammas;
+  delete whitegammas;
   
   //XXX: memory will get freed when pool is destroyed
   /*for(std::list<Go::Group*,Go::allocator_groupptr>::iterator iter=groups.begin();iter!=groups.end();++iter) 
@@ -1095,7 +1099,8 @@ void Go::Board::updateFeatureGammas()
       {
         changes3x3->set(p);
         foreach_adjdiag(p,q,{
-          changes3x3->set(q);
+          if (this->onBoard(q))
+            changes3x3->set(q);
         });
       }
     }
@@ -1115,8 +1120,10 @@ void Go::Board::updateFeatureGammas()
 
 void Go::Board::refreshFeatureGammas()
 {
-  totalgamma=0;
-  gammas->fill(0);
+  blacktotalgamma=0;
+  whitetotalgamma=0;
+  blackgammas->fill(0);
+  whitegammas->fill(0);
   lastchanges->clear();
   
   for (int p=0;p<sizedata;p++)
@@ -1127,17 +1134,22 @@ void Go::Board::refreshFeatureGammas()
 
 void Go::Board::updateFeatureGamma(int pos)
 {
-  Go::Move move=Go::Move(nexttomove,pos);
-  float oldgamma=gammas->get(pos);
+  this->updateFeatureGamma(Go::BLACK,pos);
+  this->updateFeatureGamma(Go::WHITE,pos);
+}
+
+void Go::Board::updateFeatureGamma(Go::Color col, int pos)
+{
+  float oldgamma=(col==Go::BLACK?blackgammas:whitegammas)->get(pos);
   float gamma;
   if (pos==0) //pass
-    gamma=features->getMoveGamma(this,Go::Move(nexttomove,Go::Move::PASS));
+    gamma=features->getMoveGamma(this,Go::Move(col,Go::Move::PASS));
   else if (!this->weakEye(nexttomove,pos))
-    gamma=features->getMoveGamma(this,move);
+    gamma=features->getMoveGamma(this,Go::Move(col,pos));
   else
     gamma=0;
-  gammas->set(pos,gamma);
-  totalgamma+=(gamma-oldgamma);
+  (col==Go::BLACK?blackgammas:whitegammas)->set(pos,gamma);
+  (col==Go::BLACK?blacktotalgamma:whitetotalgamma)+=(gamma-oldgamma);
 }
 
 
