@@ -82,6 +82,7 @@ Engine::Engine(Gtp::Engine *ge)
   patterntable->loadPatternDefaults();
   
   features=new Features(params);
+  features->loadGammaDefaults();
   
   time_main=0;
   time_black=0;

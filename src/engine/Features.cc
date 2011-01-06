@@ -400,6 +400,20 @@ bool Features::loadGammaFile(std::string filename)
   return true;
 }
 
+bool Features::loadGammaString(std::string lines)
+{
+  std::istringstream iss(lines);
+  
+  std::string line;
+  while (getline(iss,line,'\n'))
+  {
+    if (!this->loadGammaLine(line))
+      return false;
+  }
+  
+  return true;
+}
+
 bool Features::loadGammaLine(std::string line)
 {
   std::string id,classname,levelstring,gammastring;
