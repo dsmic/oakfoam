@@ -13,6 +13,8 @@
 #include <string>
 
 #include "Go.h"
+//from "Parameters.h":
+class Parameters;
 //from "Pattern.h":
 namespace Pattern
 {
@@ -36,7 +38,7 @@ class Features
       INVALID
     };
     
-    Features();
+    Features(Parameters *prms);
     ~Features();
     
     unsigned int matchFeatureClass(Features::FeatureClass featclass, Go::Board *board, Go::Move move, bool checkforvalidmove=true);
@@ -56,6 +58,7 @@ class Features
     //bool loadGammaDefaults(); //todo
   
   private:
+    Parameters *params;
     Pattern::ThreeByThreeGammas *patterngammas;
     Pattern::ThreeByThreeGammas *patternids;
     float gammas_pass[PASS_LEVELS];

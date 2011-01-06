@@ -410,7 +410,8 @@ void Go::Board::makeMove(Go::Move move)
     simpleko=-1;
     if (this->validMoveCheck(Go::Move(move.getColor(),kopos)))
       this->addValidMove(Go::Move(move.getColor(),kopos));
-    lastchanges->set(kopos);
+    if (markchanges)
+      lastchanges->set(kopos);
   }
   
   if (move.isPass() || move.isResign())
@@ -419,6 +420,10 @@ void Go::Board::makeMove(Go::Move move)
       passesplayed++;
     nexttomove=Go::otherColor(move.getColor());
     movesmade++;
+    if (markchanges && !secondlastmove.isPass() && !secondlastmove.isResign())
+      lastchanges->set(secondlastmove.getPosition());
+    if (markchanges && !lastmove.isPass() && !lastmove.isResign())
+      lastchanges->set(lastmove.getPosition());
     secondlastmove=lastmove;
     lastmove=move;
     if (symmetryupdated)
@@ -436,6 +441,10 @@ void Go::Board::makeMove(Go::Move move)
   movesmade++;
   nexttomove=Go::otherColor(nexttomove);
   passesplayed=0;
+  if (markchanges && !secondlastmove.isPass() && !secondlastmove.isResign())
+    lastchanges->set(secondlastmove.getPosition());
+  if (markchanges && !lastmove.isPass() && !lastmove.isResign())
+    lastchanges->set(lastmove.getPosition());
   secondlastmove=lastmove;
   lastmove=move;
   

@@ -62,6 +62,7 @@ class Parameters
     
     bool debug_on;
     
+    bool features_only_small;
     bool features_output_competitions;
     bool features_output_competitions_mmstyle;
     bool features_ordered_comparison;

@@ -73,6 +73,7 @@ Engine::Engine(Gtp::Engine *ge)
   
   params->addParameter("other","debug",&(params->debug_on),DEBUG_ON);
   
+  params->addParameter("other","features_only_small",&(params->features_only_small),false);
   params->addParameter("other","features_output_competitions",&(params->features_output_competitions),false);
   params->addParameter("other","features_output_competitions_mmstyle",&(params->features_output_competitions_mmstyle),false);
   params->addParameter("other","features_ordered_comparison",&(params->features_ordered_comparison),false);
@@ -80,7 +81,7 @@ Engine::Engine(Gtp::Engine *ge)
   patterntable=new Pattern::ThreeByThreeTable();
   patterntable->loadPatternDefaults();
   
-  features=new Features();
+  features=new Features(params);
   
   time_main=0;
   time_black=0;
@@ -811,7 +812,7 @@ void Engine::gtpLoadFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Comman
   std::string filename=cmd->getStringArg(0);
   
   delete me->features;
-  me->features=new Features();
+  me->features=new Features(me->params);
   bool success=me->features->loadGammaFile(filename);
   
   if (success)

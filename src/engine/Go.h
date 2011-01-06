@@ -88,6 +88,16 @@ namespace Go
     }
   };
   
+  inline static int circDist(int x1, int y1, int x2, int y2)
+  {
+    int dx=abs(x1-x2);
+    int dy=abs(y1-y2);
+    if (dx>dy)
+      return dx+dy+dx;
+    else
+      return dx+dy+dy;
+  };
+  
   class Exception
   {
     public:

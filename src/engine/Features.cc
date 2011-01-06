@@ -5,10 +5,12 @@
 #include <fstream>
 #include <algorithm>
 #include <iomanip>
+#include "Parameters.h"
 #include "Pattern.h"
 
-Features::Features()
+Features::Features(Parameters *prms)
 {
+  params=prms;
   patterngammas=new Pattern::ThreeByThreeGammas();
   patternids=new Pattern::ThreeByThreeGammas();
   for (int i=0;i<PASS_LEVELS;i++)
@@ -185,9 +187,13 @@ unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::B
       int x2=Go::Position::pos2x(pos2,size);
       int y2=Go::Position::pos2y(pos2,size);
       
-      int dist=abs(x1-x2)+abs(y1-y2);
+      int dist=Go::circDist(x1,y1,x2,y2);
       
-      if (dist<=LASTDIST_LEVELS)
+      int maxdist=LASTDIST_LEVELS;
+      if (params->features_only_small)
+        maxdist=3;
+      
+      if (dist<=maxdist)
         return dist;
       else
         return 0;
@@ -206,9 +212,13 @@ unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::B
       int x2=Go::Position::pos2x(pos2,size);
       int y2=Go::Position::pos2y(pos2,size);
       
-      int dist=abs(x1-x2)+abs(y1-y2);
+      int dist=Go::circDist(x1,y1,x2,y2);
       
-      if (dist<=SECONDLASTDIST_LEVELS)
+      int maxdist=SECONDLASTDIST_LEVELS;
+      if (params->features_only_small)
+        maxdist=3;
+      
+      if (dist<=maxdist)
         return dist;
       else
         return 0;
