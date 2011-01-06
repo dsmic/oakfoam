@@ -3,6 +3,7 @@ syntax: glob
 *.o
 */.dirstamp
 *.Po
+*.tmp
 
 syntax: regexp
 ^oakfoam$
