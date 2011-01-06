@@ -2,6 +2,7 @@ TODO
 ------------------
 
 Now: (before next release)
+  option to only enable "small features" for playouts (for incremental features)
   move playout/time/tree code out of engine
   add default features
   speedup features in playouts
