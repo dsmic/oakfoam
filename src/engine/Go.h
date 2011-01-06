@@ -310,7 +310,7 @@ namespace Go
       void turnSymmetryOff() { symmetryupdated=false;currentsymmetry=NONE; };
       void turnSymmetryOn() { symmetryupdated=true;currentsymmetry=this->computeSymmetry(); };
       
-      void setFeatures(Features *feat) { features=feat; markchanges=true; this->updateFeatureGammas(); };
+      void setFeatures(Features *feat) { features=feat; markchanges=true; this->refreshFeatureGammas(); };
       float getFeatureTotalGamma() { return totalgamma; };
       float getFeatureGamma(int pos) { return gammas->get(pos); };
       
@@ -382,6 +382,7 @@ namespace Go
       
       void spreadScore(Go::Board::ScoreVertex *scoredata, int pos, Go::Color col);
       
+      void refreshFeatureGammas();
       void updateFeatureGammas();
       void updateFeatureGamma(int pos);
   };

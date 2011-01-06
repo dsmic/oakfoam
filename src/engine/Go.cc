@@ -1097,6 +1097,18 @@ void Go::Board::updateFeatureGammas()
   }
 }
 
+void Go::Board::refreshFeatureGammas()
+{
+  totalgamma=0;
+  gammas->fill(0);
+  lastchanges->clear();
+  
+  for (int p=0;p<sizedata;p++)
+  {
+    this->updateFeatureGamma(p);
+  }
+}
+
 void Go::Board::updateFeatureGamma(int pos)
 {
   Go::Move move=Go::Move(nexttomove,pos);
