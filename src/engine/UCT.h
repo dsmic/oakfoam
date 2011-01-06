@@ -7,7 +7,8 @@
 #include <list>
 #include <string>
 #include "Go.h"
-#include "Parameters.h"
+//from "Parameters.h":
+class Parameters;
 
 namespace UCT
 { 

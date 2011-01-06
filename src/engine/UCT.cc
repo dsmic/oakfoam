@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <sstream>
+#include "Parameters.h"
 
 UCT::Tree::Tree(Parameters *prms, Go::Move mov, UCT::Tree *p)
 {

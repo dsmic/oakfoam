@@ -5,6 +5,7 @@
 #include <fstream>
 #include <algorithm>
 #include <iomanip>
+#include "Pattern.h"
 
 Features::Features()
 {

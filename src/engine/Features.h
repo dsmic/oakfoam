@@ -13,7 +13,11 @@
 #include <string>
 
 #include "Go.h"
-#include "Pattern.h"
+//from "Pattern.h":
+namespace Pattern
+{
+  class ThreeByThreeGammas;
+};
 
 class Features
 {
