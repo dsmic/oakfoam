@@ -1335,7 +1335,7 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
       {
         //float gamma=gammas->get(p);
         float gamma=board->getFeatureGamma(p);
-        if (randomgamma<=gamma)
+        if (randomgamma<gamma)
         {
           move=m;
           foundmove=true;
