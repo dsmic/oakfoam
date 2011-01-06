@@ -8,7 +8,17 @@ OAKFOAMLOG="../../oakfoam --log $TEMPLOG"
 PROGRAM="gogui-adapter \"$OAKFOAMLOG\""
 MM="mm/mm"
 
+if (( $# != 2 )); then
+  echo "Exactly 2 parameters required" >&2
+  exit 1
+fi
+
 INITIALPATTERNGAMMAS=$1
+if [ "$2" = "small" ]; then
+  SMALLONLY="param features_only_small 1\n"
+else
+  SMALLONLY=""
+fi
 
 if ! test -x ../../oakfoam; then
   echo "File ../oakfoam not found" >&2
@@ -38,7 +48,7 @@ cat | while read GAME
 do
   let "i=$i+1"
   echo -e "[`date +%F_%T`] $i \t: '$GAME'" >&2
-  echo -e "loadfeaturegammas ${INITIALPATTERNGAMMAS}\nparam features_output_competitions 1\nparam features_output_competitions_mmstyle 1\nloadsgf \"$GAME\"" | gogui-adapter "$OAKFOAMLOG" > /dev/null
+  echo -e "loadfeaturegammas ${INITIALPATTERNGAMMAS}\nparam features_output_competitions 1\nparam features_output_competitions_mmstyle 1\n${SMALLONLY}loadsgf \"$GAME\"" | gogui-adapter "$OAKFOAMLOG" > /dev/null
   MMDATA=`cat $TEMPLOG | grep "^\[features\]:" | sed "s/\[features\]://" | sed "s/^#.*/#/;s/[a-zA-Z0-9]*[*:] //"`
   echo "$MMDATA" >> $TEMPMM
   rm -f $TEMPLOG
