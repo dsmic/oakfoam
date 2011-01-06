@@ -2,6 +2,7 @@ TODO
 ------------------
 
 Now: (before next release)
+  expand incremental features to both colors, correctly
   move playout/time/tree code out of engine
   add default features
   speedup features in playouts

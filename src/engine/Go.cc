@@ -1084,23 +1084,30 @@ void Go::Board::updateFeatureGammas()
 {
   if (markchanges && features!=NULL)
   {
+    //expand to 3x3 neighbourhood first
+    //assume only the 3x3 neighbourhood is relevant
+    //see: params->features_only_small
+    Go::BitBoard *changes3x3=new Go::BitBoard(size);
+    changes3x3->clear();
     for (int p=0;p<sizedata;p++)
     {
       if (lastchanges->get(p))
       {
-        this->updateFeatureGamma(p);
-        //assume only the 3x3 neighbourhood is relevant
-        //LASTDIST and SECONDLASTDIST currently do not comply with this
+        changes3x3->set(p);
         foreach_adjdiag(p,q,{
-          if (!lastchanges->get(q))
-          {
-            if (q<p) //already considered in loop
-              this->updateFeatureGamma(q);
-            lastchanges->set(p);
-          }
+          changes3x3->set(q);
         });
       }
     }
+    
+    for (int p=0;p<sizedata;p++)
+    {
+      if (changes3x3->get(p))
+        this->updateFeatureGamma(p);
+    }
+    delete changes3x3;
+    
+    this->updateFeatureGamma(0); //pass
     
     lastchanges->clear();
   }
@@ -1123,7 +1130,9 @@ void Go::Board::updateFeatureGamma(int pos)
   Go::Move move=Go::Move(nexttomove,pos);
   float oldgamma=gammas->get(pos);
   float gamma;
-  if (!this->weakEye(nexttomove,pos))
+  if (pos==0) //pass
+    gamma=features->getMoveGamma(this,Go::Move(nexttomove,Go::Move::PASS));
+  else if (!this->weakEye(nexttomove,pos))
     gamma=features->getMoveGamma(this,move);
   else
     gamma=0;
