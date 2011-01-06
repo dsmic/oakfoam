@@ -43,15 +43,8 @@
 #define BOARDSIZE_MIN 2
 #define BOARDSIZE_MAX 25
 
-#include <cstdlib>
-#include <cmath>
 #include <string>
 #include <list>
-#include <vector>
-#include <fstream>
-#include <iomanip>
-#include <boost/timer.hpp>
-#include <config.h>
 #include "Go.h"
 #include "UCT.h"
 #include "Random.h"

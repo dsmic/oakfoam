@@ -1,5 +1,11 @@
 #include "Features.h"
 
+#include <sstream>
+#include <iostream>
+#include <fstream>
+#include <algorithm>
+#include <iomanip>
+
 Features::Features()
 {
   patterngammas=new Pattern::ThreeByThreeGammas();

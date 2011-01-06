@@ -1,5 +1,13 @@
 #include "Engine.h"
 
+#include <cstdlib>
+#include <cmath>
+#include <vector>
+#include <fstream>
+#include <iomanip>
+#include <boost/timer.hpp>
+#include <config.h>
+
 Engine::Engine(Gtp::Engine *ge)
 {
   gtpe=ge;

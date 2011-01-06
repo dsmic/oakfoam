@@ -2,9 +2,7 @@
 #define DEF_OAKFOAM_GO_H
 
 #include <string>
-#include <cstdio>
 #include <list>
-#include <sstream>
 #include <boost/pool/pool.hpp>
 #include <boost/pool/pool_alloc.hpp>
 #include <boost/pool/object_pool.hpp>

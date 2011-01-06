@@ -11,11 +11,7 @@
 #define SECONDLASTDIST_LEVELS 10
 
 #include <string>
-#include <sstream>
-#include <iostream>
-#include <fstream>
-#include <algorithm>
-#include <iomanip>
+
 #include "Go.h"
 #include "Pattern.h"
 

@@ -27,11 +27,7 @@
 +W?BWWB--- \
 "
 
-#include <cstdlib>
 #include <string>
-#include <sstream>
-#include <iostream>
-#include <fstream>
 #include "Go.h"
 
 namespace Pattern

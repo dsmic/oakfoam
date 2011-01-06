@@ -1,5 +1,10 @@
 #include "Pattern.h"
 
+#include <cstdlib>
+#include <sstream>
+#include <iostream>
+#include <fstream>
+
 unsigned int Pattern::ThreeByThree::makeHash(Go::Color colnw, Go::Color coln, Go::Color colne, Go::Color colw, Go::Color cole, Go::Color colsw, Go::Color cols, Go::Color colse)
 {
   unsigned int hash=0;

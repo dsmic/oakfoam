@@ -4,10 +4,8 @@
 #define UCT_TERMINAL_URGENCY 100
 // must be greater than 1+max(bias)
 
-#include <cmath>
 #include <list>
 #include <string>
-#include <sstream>
 #include "Go.h"
 #include "Parameters.h"
 

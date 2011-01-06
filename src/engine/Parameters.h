@@ -3,8 +3,6 @@
 
 #include <string>
 #include <list>
-#include <sstream>
-#include <algorithm>
 #include "../gtp/Gtp.h"
 
 class Parameters

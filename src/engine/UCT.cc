@@ -1,5 +1,8 @@
 #include "UCT.h"
 
+#include <cmath>
+#include <sstream>
+
 UCT::Tree::Tree(Parameters *prms, Go::Move mov, UCT::Tree *p)
 {
   parent=p;

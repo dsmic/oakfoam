@@ -1,5 +1,8 @@
 #include "Parameters.h"
 
+#include <sstream>
+#include <algorithm>
+
 Parameters::Parameters()
 {
 }

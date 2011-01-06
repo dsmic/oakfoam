@@ -1,5 +1,8 @@
 #include "Go.h"
 
+#include <cstdio>
+#include <sstream>
+
 Go::BitBoard::BitBoard(int s)
 {
   size=s;
