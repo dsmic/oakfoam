@@ -1,0 +1,42 @@
+--------------------------------------
+- Scripts for Features
+--------------------------------------
+
+requirements:
+  GoGui (http://gogui.sourceforge.net)
+  MM tool by Remi Coulom (see mm-fetch.sh)
+  
+example usage:
+  1. Harvest patterns from a collection of games:
+    $ ls sgfs/*.sgf | ./harvest-collection.sh > patt.dat
+  2. Decide how many patterns to keep and prepare them: (eg keeps 123 patterns)
+    $ cat patt.dat | head -n 123 | ./train-prepare.sh > initial.gamma
+  3. Train gammas:
+    $ ls sgfs/*.sgf | ./train-gammas.sh initial.gamma > trained.gamma
+  4. Compare the gammas:
+    $ ls sgfs/*.sgf | shuf -n 100 | ./test-compare.sh trained.gamma > comparison.dat
+
+scripts:
+  harvest-patterns.sh
+    - harvest all the patterns from 1 game
+    eg: $ ./harvest-patterns.sh game.sgf > patt.dat
+  harvest-combine.sh
+    - combine 2 compressed lists of patterns
+    eg: $ ./harvest-combine.sh patt1.dat patt2.dat > patt3.dat
+  harvest-collection.sh
+    - harvest and combine the patterns from a number of games
+    eg: $ ls sgfs/*.sgf | ./harvest-collection.sh > patt.dat
+  train-prepare.sh
+    - make a preliminary list of gammas to aid training
+    eg: $ cat patt.dat | head -n 123 | ./train-prepare.sh > initial.gamma
+  train-gammas.sh
+    - train the gammas using the MM tool
+    eg: $ ls sgfs/*.sgf | ./train-gammas.sh initial.gamma > trained.gamma
+  test-compare.sh
+    - test where the moved played is in an ordered list according to the gammas
+    eg: $ ls sgfs/*.sgf | shuf -n 100 | ./test-compare.sh trained.gamma > comparison.dat
+  mm-fetch.sh
+    - download and make the MM tool
+    eg: $ ./mm-fetch.sh
+
+

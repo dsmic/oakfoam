@@ -6,7 +6,6 @@ Now: (before next release)
   move playout/time/tree code out of engine
   add default features
   speedup features in playouts
-  cleanup features scripts
   use features for progressive widening
 
 Soon: (before next major release)
