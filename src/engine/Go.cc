@@ -1113,7 +1113,11 @@ void Go::Board::updateFeatureGamma(int pos)
 {
   Go::Move move=Go::Move(nexttomove,pos);
   float oldgamma=gammas->get(pos);
-  float gamma=features->getMoveGamma(this,move);
+  float gamma;
+  if (!this->weakEye(nexttomove,pos))
+    gamma=features->getMoveGamma(this,move);
+  else
+    gamma=0;
   gammas->set(pos,gamma);
   totalgamma+=(gamma-oldgamma);
 }
