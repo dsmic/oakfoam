@@ -320,7 +320,7 @@ namespace Go
       void turnSymmetryOff() { symmetryupdated=false;currentsymmetry=NONE; };
       void turnSymmetryOn() { symmetryupdated=true;currentsymmetry=this->computeSymmetry(); };
       
-      void setFeatures(Features *feat) { features=feat; markchanges=true; this->refreshFeatureGammas(); };
+      void setFeatures(Features *feat, bool inc) { features=feat; incfeatures=inc; markchanges=true; this->refreshFeatureGammas(); };
       float getFeatureTotalGamma() { return (nexttomove==Go::BLACK?blacktotalgamma:whitetotalgamma); };
       float getFeatureGamma(int pos) { return (nexttomove==Go::BLACK?blackgammas:whitegammas)->get(pos); };
       
@@ -354,6 +354,7 @@ namespace Go
       bool markchanges;
       Go::BitBoard *lastchanges;
       Features *features;
+      bool incfeatures;
       float blacktotalgamma;
       float whitetotalgamma;
       Go::ObjectBoard<float> *blackgammas;

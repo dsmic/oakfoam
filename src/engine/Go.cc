@@ -1088,33 +1088,47 @@ void Go::Board::updateFeatureGammas()
 {
   if (markchanges && features!=NULL)
   {
-    //expand to 3x3 neighbourhood first
-    //assume only the 3x3 neighbourhood is relevant
-    //see: params->features_only_small
-    Go::BitBoard *changes3x3=new Go::BitBoard(size);
-    changes3x3->clear();
-    for (int p=0;p<sizedata;p++)
+    if (incfeatures)
     {
-      if (lastchanges->get(p))
+      //expand to 3x3 neighbourhood first
+      //assume only the 3x3 neighbourhood is relevant
+      //see: params->features_only_small
+      Go::BitBoard *changes3x3=new Go::BitBoard(size);
+      changes3x3->clear();
+      for (int p=0;p<sizedata;p++)
       {
-        changes3x3->set(p);
-        foreach_adjdiag(p,q,{
-          if (this->onBoard(q))
-            changes3x3->set(q);
-        });
+        if (lastchanges->get(p))
+        {
+          changes3x3->set(p);
+          foreach_adjdiag(p,q,{
+            if (this->onBoard(q))
+              changes3x3->set(q);
+          });
+        }
+      }
+      
+      for (int p=0;p<sizedata;p++)
+      {
+        if (changes3x3->get(p))
+          this->updateFeatureGamma(p);
+      }
+      delete changes3x3;
+      
+      this->updateFeatureGamma(0); //pass
+      
+      lastchanges->clear();
+    }
+    else
+    {
+      (nexttomove==Go::BLACK?blacktotalgamma:whitetotalgamma)=0;
+      (nexttomove==Go::BLACK?blackgammas:whitegammas)->fill(0);
+      lastchanges->clear();
+      
+      for (int p=0;p<sizedata;p++)
+      {
+        this->updateFeatureGamma(nexttomove,p);
       }
     }
-    
-    for (int p=0;p<sizedata;p++)
-    {
-      if (changes3x3->get(p))
-        this->updateFeatureGamma(p);
-    }
-    delete changes3x3;
-    
-    this->updateFeatureGamma(0); //pass
-    
-    lastchanges->clear();
   }
 }
 

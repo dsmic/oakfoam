@@ -38,6 +38,7 @@ Engine::Engine(Gtp::Engine *ge)
   params->addParameter("mcts","playout_atari_enabled",&(params->playout_atari_enabled),PLAYOUT_ATARI_ENABLED);
   params->addParameter("mcts","playout_patterns_enabled",&(params->playout_patterns_enabled),PLAYOUT_PATTERNS_ENABLED);
   params->addParameter("mcts","playout_features_enabled",&(params->playout_features_enabled),PLAYOUT_FEATURES_ENABLED);
+  params->addParameter("mcts","playout_features_incremental",&(params->playout_features_incremental),PLAYOUT_FEATURES_INCREMENTAL);
   
   params->addParameter("mcts","ucb_c",&(params->ucb_c),UCB_C);
   params->addParameter("mcts","ucb_init",&(params->ucb_init),UCB_INIT);
@@ -1145,7 +1146,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     Go::Board *playoutboard=currentboard->copy();
     playoutboard->turnSymmetryOff();
     if (params->playout_features_enabled)
-      playoutboard->setFeatures(features);
+      playoutboard->setFeatures(features,params->playout_features_incremental);
     this->randomPlayoutMove(playoutboard,col,**move,posarray);
     delete playoutboard;
     delete[] posarray;
@@ -1894,7 +1895,7 @@ void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
   Go::Board *playoutboard=currentboard->copy();
   playoutboard->turnSymmetryOff();
   if (params->playout_features_enabled)
-    playoutboard->setFeatures(features);
+    playoutboard->setFeatures(features,params->playout_features_incremental);
   if (params->rave_moves>0)
   {
     firstlist->clear();
