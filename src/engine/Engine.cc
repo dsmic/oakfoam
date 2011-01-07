@@ -1142,7 +1142,12 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
   {
     int *posarray = new int[currentboard->getPositionMax()];
     *move=new Go::Move(col,Go::Move::PASS);
-    this->randomPlayoutMove(currentboard,col,**move,posarray);
+    Go::Board *playoutboard=currentboard->copy();
+    playoutboard->turnSymmetryOff();
+    if (params->playout_features_enabled)
+      playoutboard->setFeatures(features);
+    this->randomPlayoutMove(playoutboard,col,**move,posarray);
+    delete playoutboard;
     delete[] posarray;
     this->makeMove(**move);
   }
