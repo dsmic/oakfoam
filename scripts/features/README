@@ -22,7 +22,7 @@ scripts:
     eg: $ ./harvest-patterns.sh game.sgf > patt.dat
   harvest-combine.sh
     - combine 2 compressed lists of patterns
-    eg: $ ./harvest-combine.sh patt1.dat patt2.dat > patt3.dat
+    eg: $ cat patt1.dat patt2.dat | ./harvest-combine.sh > patt3.dat
   harvest-collection.sh
     - harvest and combine the patterns from a number of games
     eg: $ ls sgfs/*.sgf | ./harvest-collection.sh > patt.dat
