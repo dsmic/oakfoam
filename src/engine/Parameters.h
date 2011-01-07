@@ -44,6 +44,9 @@ class Parameters
     bool uct_symmetry_use;
     int uct_atari_prior;
     int uct_pattern_prior;
+    bool uct_progressive_widening_enabled;
+    float uct_progressive_widening_a;
+    float uct_progressive_widening_b;
     
     float surewin_threshold;
     bool surewin_expected;

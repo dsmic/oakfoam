@@ -35,6 +35,14 @@ namespace UCT
       void performSymmetryTransformParentPrimary();
       void performSymmetryTransform(Go::Board::SymmetryTransform trans);
       
+      bool isPruned() { return pruned; };
+      void setPruned(bool p) { pruned=p; };
+      void pruneChildren();
+      void setPruneFactor(float p) { prunefactor=p; };
+      void unPruneNextChild();
+      int unPruneNextChildAt() { return unprunenextchildat; };
+      void checkForUnPruning();
+      
       UCT::Tree *getChild(Go::Move move);
       int getPlayouts() { return playouts; };
       int getRAVEPlayouts() { return raveplayouts; };
@@ -68,6 +76,10 @@ namespace UCT
       int wins,ravewins,priorwins;
       Parameters *params;
       bool hasTerminalWinrate;
+      bool pruned;
+      unsigned int prunedchildren;
+      float prunefactor;
+      int unprunenextchildat;
       
       void passPlayoutUp(bool win, UCT::Tree *source);
       

@@ -18,6 +18,10 @@ UCT::Tree::Tree(Parameters *prms, Go::Move mov, UCT::Tree *p)
   priorwins=0;
   symmetryprimary=NULL;
   hasTerminalWinrate=false;
+  pruned=false;
+  prunedchildren=0;
+  prunefactor=0;
+  unprunenextchildat=0;
   
   if (parent!=NULL)
   {
@@ -84,12 +88,14 @@ void UCT::Tree::addWin(UCT::Tree *source)
   wins++;
   playouts++;
   this->passPlayoutUp(true,source);
+  this->checkForUnPruning();
 }
 
 void UCT::Tree::addLose(UCT::Tree *source)
 {
   playouts++;
   this->passPlayoutUp(false,source);
+  this->checkForUnPruning();
 }
 
 void UCT::Tree::addPriorWins(int n)
@@ -366,4 +372,50 @@ void UCT::Tree::performSymmetryTransformParentPrimary()
     parent->performSymmetryTransform(trans);
   }
 }
+
+void UCT::Tree::pruneChildren()
+{
+  for(std::list<UCT::Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
+  {
+    (*iter)->setPruned(true);
+  }
+  prunedchildren=children->size();
+}
+
+void UCT::Tree::unPruneNextChild()
+{
+  if (prunedchildren>0)
+  {
+    UCT::Tree *bestchild=NULL;
+    float bestfactor=0;
+    
+    for(std::list<UCT::Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
+    {
+      if ((*iter)->isPruned() && (*iter)->isPrimary())
+      {
+        if ((*iter)->prunefactor>bestfactor || bestchild==NULL)
+        {
+          bestfactor=(*iter)->prunefactor;
+          bestchild=(*iter);
+        }
+      }
+    }
+    
+    if (bestchild!=NULL)
+    {
+      //fprintf(stderr,"[unpruning]: (%d) %s\n",unprunenextchildat,bestchild->getMove().toString(params->board_size).c_str());
+      bestchild->setPruned(false);
+      int unpruned=children->size()-prunedchildren;
+      unprunenextchildat=unprunenextchildat+params->uct_progressive_widening_a*pow(params->uct_progressive_widening_b,unpruned); //t(n+1)=t(n)+a*b^n
+      prunedchildren--;
+    }
+  }
+}
+
+void UCT::Tree::checkForUnPruning()
+{
+  if (playouts>=unprunenextchildat)
+    this->unPruneNextChild();
+}
+
 

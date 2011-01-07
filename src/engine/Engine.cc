@@ -55,6 +55,9 @@ Engine::Engine(Gtp::Engine *ge)
     currentboard->turnSymmetryOff();
   params->addParameter("mcts","uct_atari_prior",&(params->uct_atari_prior),UCT_ATARI_PRIOR);
   params->addParameter("mcts","uct_pattern_prior",&(params->uct_pattern_prior),UCT_PATTERN_PRIOR);
+  params->addParameter("mcts","uct_progressive_widening_enabled",&(params->uct_progressive_widening_enabled),UCT_PROGRESSIVE_WIDENING_ENABLED);
+  params->addParameter("mcts","uct_progressive_widening_a",&(params->uct_progressive_widening_a),UCT_PROGRESSIVE_WIDENING_A);
+  params->addParameter("mcts","uct_progressive_widening_b",&(params->uct_progressive_widening_b),UCT_PROGRESSIVE_WIDENING_B);
   
   params->addParameter("mcts","surewin_threshold",&(params->surewin_threshold),SUREWIN_THRESHOLD);
   params->surewin_expected=false;
@@ -1595,7 +1598,7 @@ UCT::Tree *Engine::getPlayoutTarget(UCT::Tree *movetree)
   
   for(std::list<UCT::Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
   {
-    if ((*iter)->isPrimary())
+    if ((*iter)->isPrimary() && !(*iter)->isPruned())
     {
       float urgency;
       
@@ -1735,6 +1738,18 @@ void Engine::expandLeaf(UCT::Tree *movetree)
         }
       }
     }
+  }
+  
+  if (params->uct_progressive_widening_enabled)
+  {
+    for(std::list<UCT::Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
+    {
+      float factor=features->getMoveGamma(startboard,(*iter)->getMove());
+      (*iter)->setPruneFactor(factor);
+    }
+    
+    movetree->pruneChildren();
+    movetree->checkForUnPruning(); //unprune first child
   }
   
   delete startboard;

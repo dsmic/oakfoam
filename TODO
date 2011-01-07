@@ -4,7 +4,6 @@ TODO
 Now: (before next release)
   move playout/time/tree code out of engine
   speedup features in playouts
-  use features for progressive widening
 
 Soon: (before next major release)
   implement superko in tree
