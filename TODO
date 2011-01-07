@@ -36,6 +36,7 @@ Soon: (before next major release)
   think for longer if needed
   add "time_ignore" setting
   keep track of board hashes incrementally
+  rename UCT::Tree to just Tree
 
 Later: (at some point)
   make sure install works and is described somewhere
