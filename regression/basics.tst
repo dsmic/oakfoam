@@ -25,4 +25,13 @@ loadsgf sgf/basics/02.sgf
 30 reg_genmove b
 #? [b1]
 
+# progressive widening doesn't cause a bad pass or resign
+komi 7.5 # komi not sent by gogui-adapter!
+loadsgf sgf/basics/03.sgf 42
+param uct_progressive_widening_enabled 1
+donplayouts 1000
+play b pass
+40 reg_genmove w
+#? [!pass|resign]
+
 #----------------------------------------------
