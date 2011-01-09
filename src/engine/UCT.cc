@@ -145,17 +145,27 @@ void UCT::Tree::passPlayoutUp(bool win, UCT::Tree *source)
 {
   if (this->isTerminal() && !this->isTerminalResult() && win)
   {
-    wins=1;
-    playouts=-1;
-    hasTerminalWinrate=true;
+    if (prunedchildren==0)
+    {
+      wins=1;
+      playouts=-1;
+      hasTerminalWinrate=true;
+    }
+    else
+      this->unPruneNow();
   }
   
   if (source!=NULL && source->isTerminalResult() && win)
   {
-    wins=1;
-    playouts=-1;
-    hasTerminalWinrate=true;
-    //fprintf(stderr,"New Terminal Result %d!\n",win);
+    if (prunedchildren==0)
+    {
+      wins=1;
+      playouts=-1;
+      hasTerminalWinrate=true;
+      //fprintf(stderr,"New Terminal Result %d!\n",win);
+    }
+    else
+      this->unPruneNow();
   }
   
   if (parent!=NULL)
@@ -377,7 +387,8 @@ void UCT::Tree::pruneChildren()
 {
   for(std::list<UCT::Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
   {
-    (*iter)->setPruned(true);
+    if ((*iter)->isPrimary())
+      (*iter)->setPruned(true);
   }
   prunedchildren=children->size();
 }
@@ -416,6 +427,12 @@ void UCT::Tree::checkForUnPruning()
 {
   if (playouts>=unprunenextchildat)
     this->unPruneNextChild();
+}
+
+void UCT::Tree::unPruneNow()
+{
+  unprunenextchildat=playouts;
+  this->unPruneNextChild();
 }
 
 

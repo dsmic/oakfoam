@@ -42,6 +42,7 @@ namespace UCT
       void unPruneNextChild();
       int unPruneNextChildAt() { return unprunenextchildat; };
       void checkForUnPruning();
+      void unPruneNow();
       
       UCT::Tree *getChild(Go::Move move);
       int getPlayouts() { return playouts; };
