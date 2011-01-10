@@ -311,14 +311,18 @@ std::string UCT::Tree::toSGFString()
       ss<<"pass";
     ss<<"]C[";
     if (this->isTerminalWin())
-      ss<<"Terminal Win";
+      ss<<"Terminal Win\n";
     else if (this->isTerminalLose())
-        ss<<"Terminal Lose";
+      ss<<"Terminal Lose\n";
     else
     {
       ss<<"Wins/Playouts: "<<wins<<"/"<<playouts<<"("<<this->getRatio()<<")\n";
-      ss<<"RAVE Wins/Playouts: "<<ravewins<<"/"<<raveplayouts<<"("<<this->getRAVERatio()<<")";
+      ss<<"RAVE Wins/Playouts: "<<ravewins<<"/"<<raveplayouts<<"("<<this->getRAVERatio()<<")\n";
     }
+    if (!this->isLeaf())
+      ss<<"Pruned: "<<prunedchildren<<"/"<<children->size()<<"("<<(children->size()-prunedchildren)<<")\n";
+    else
+      ss<<"Leaf node\n";
     ss<<"]";
   }
   
@@ -385,12 +389,15 @@ void UCT::Tree::performSymmetryTransformParentPrimary()
 
 void UCT::Tree::pruneChildren()
 {
+  prunedchildren=0;
   for(std::list<UCT::Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
   {
     if ((*iter)->isPrimary())
+    {
       (*iter)->setPruned(true);
+      prunedchildren++;
+    }
   }
-  prunedchildren=children->size();
 }
 
 void UCT::Tree::unPruneNextChild()
