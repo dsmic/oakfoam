@@ -4,6 +4,7 @@ TODO
 Now: (before next release)
   move playout/time/tree code out of engine
   speedup features in playouts
+  turn on Prog. Widening by default
 
 Soon: (before next major release)
   implement superko in tree
@@ -36,6 +37,7 @@ Soon: (before next major release)
   add "time_ignore" setting
   keep track of board hashes incrementally
   rename UCT::Tree to just Tree
+  implement Drake's Last-Good-Reply-with-Forgetting policy
 
 Later: (at some point)
   make sure install works and is described somewhere
