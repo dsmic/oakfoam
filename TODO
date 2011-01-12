@@ -1,10 +1,9 @@
 TODO
 ------------------
 
-Now: (before next release)
+Now: (current focus)
   move playout/time/tree code out of engine
   speedup features in playouts
-  turn on Prog. Widening by default
   ignore overtime and warn, don't fail
   add CFG as a feature
 
