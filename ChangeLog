@@ -1,6 +1,10 @@
 
 version 0.0.8: 20xx-xx-xx
-  * todo
+  * change some default parameters
+  * added regression framework
+  * added ELO features and associated scripts
+  * include some missing files for building in the repo
+  * added progressive widening
 
 version 0.0.7: 2010-12-10
   * improved playout speed
