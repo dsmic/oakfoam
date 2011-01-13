@@ -1,5 +1,5 @@
 
-version 0.0.8: 20xx-xx-xx
+version 0.0.8: 2011-01-13
   * change some default parameters
   * added regression framework
   * added ELO features and associated scripts
