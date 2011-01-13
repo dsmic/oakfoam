@@ -9,29 +9,18 @@ Now: (current focus)
 
 Soon: (before next major release)
   implement superko in tree
-  improve playout move selection (quicker but still uniform or close)
   tune parameters
   try UCB1-TUNED formula (p.216(169) in SylvainGellyThesis)
-  add slight bonus to ratio for pts diff?
-  try use thrown away part of tree
-  do comparison of playouts with strength
   try a "global RAVE"
-  place a limit of sorts on depth? (expand after more plts)
   try use parent info in children (or grand parent)
   implement the mercy rule?
   make atari-aware playouts dependant on size of group?
-  avoid self-atari in playouts with a group size over x?
-  play at one of liberties of a enemy group with 2?
-  prefer closer moves using CFG to last and next-to-last move
-  store neighbour counts for each board position? (num of empty...)
-  reduce calls to validMoveCheck?
+  make self-atari feature dependant on group size
   prefer games that end sooner? (don't drag on at end)
   progressively add more reward for points diff if winrate very good?
-  add more debug messages and debug levels
   add hg tracked cgos,kgs?,gomill? scripts
   make SL page
-  more regression testing
-  analyse initial urgency and how rave contributes, esp in lower tree
+  analyse how rave contributes in lower tree
   update surewin during genmove
   reduce thinking time if surewin?
   think for longer if needed
@@ -39,6 +28,8 @@ Soon: (before next major release)
   keep track of board hashes incrementally
   rename UCT::Tree to just Tree
   implement Drake's Last-Good-Reply-with-Forgetting policy
+  progressive widening can depend on winrate
+  progressive widening occurs related to "factor" (features)
 
 Later: (at some point)
   make sure install works and is described somewhere
@@ -55,5 +46,7 @@ Later: (at some point)
   use rotational symmetry?
   copy all board data with a copy() (groups and liberties)
   handle jigo correctly
-
+  extensive comparison of playouts with strength
+  add more debug messages and debug levels
+  more regression testing
 
