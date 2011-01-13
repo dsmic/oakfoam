@@ -6,6 +6,7 @@ Now: (current focus)
   speedup features in playouts
   ignore overtime and warn, don't fail
   add CFG as a feature
+  make sure play can continue after 2 passes
 
 Soon: (before next major release)
   implement superko in tree
