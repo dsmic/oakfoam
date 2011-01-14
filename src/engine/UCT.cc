@@ -53,7 +53,7 @@ float UCT::Tree::getRatio()
 {
   if (playouts>0)
     return (float)wins/playouts;
-  else if (playouts==-1)
+  else if (hasTerminalWinrate)
     return wins;
   else
     return 0;
@@ -143,29 +143,18 @@ UCT::Tree *UCT::Tree::getChild(Go::Move move)
 
 void UCT::Tree::passPlayoutUp(bool win, UCT::Tree *source)
 {
-  if (this->isTerminal() && !this->isTerminalResult() && win)
-  {
-    if (prunedchildren==0)
-    {
-      wins=1;
-      playouts=-1;
-      hasTerminalWinrate=true;
-    }
-    else
-      this->unPruneNow();
-  }
+  bool passterminal=(this->isTerminal() && !this->isTerminalResult()) || (source!=NULL && source->isTerminalResult());
   
-  if (source!=NULL && source->isTerminalResult() && win)
+  if (win && passterminal)
   {
-    if (prunedchildren==0)
-    {
+    //if (prunedchildren==0)
+    //{
       wins=1;
       playouts=-1;
       hasTerminalWinrate=true;
-      //fprintf(stderr,"New Terminal Result %d!\n",win);
-    }
-    else
-      this->unPruneNow();
+    //}
+    //else
+    //  this->unPruneNow();
   }
   
   if (parent!=NULL)
@@ -177,19 +166,18 @@ void UCT::Tree::passPlayoutUp(bool win, UCT::Tree *source)
       parent->addWin(this);
   }
   
-  if (this->isTerminal() && !this->isTerminalResult() && !win)
+  if (passterminal)
   {
-    wins=0;
-    playouts=-1;
-    hasTerminalWinrate=true;
-  }
-  
-  if (source!=NULL && source->isTerminalResult() && !win)
-  {
-    wins=0;
+    if (win)
+      wins=1;
+    else
+      wins=0;
     playouts=-1;
     hasTerminalWinrate=true;
     //fprintf(stderr,"New Terminal Result %d!\n",win);
+    
+    if (!win && !this->isRoot() && parent->prunedchildren>0)
+      parent->unPruneNow();
   }
 }
 
@@ -321,8 +309,17 @@ std::string UCT::Tree::toSGFString()
     }
     if (!this->isLeaf())
       ss<<"Pruned: "<<prunedchildren<<"/"<<children->size()<<"("<<(children->size()-prunedchildren)<<")\n";
+    else if (this->isTerminal())
+      ss<<"Terminal Node\n";
     else
-      ss<<"Leaf node\n";
+      ss<<"Leaf Node\n";
+    ss<<"]";
+  }
+  else
+  {
+    ss<<"C[";
+    ss<<"Last Move: "<<move.toString(params->board_size)<<"\n";
+    ss<<"Children: "<<children->size()<<"\n";
     ss<<"]";
   }
   

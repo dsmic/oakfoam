@@ -181,8 +181,8 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("showtreelivegfx",this,&Engine::gtpShowTreeLiveGfx);
   gtpe->addFunctionCommand("describeengine",this,&Engine::gtpDescribeEngine);
   
-  gtpe->addAnalyzeCommand("final_score","Final Score","string");
-  gtpe->addAnalyzeCommand("showboard","Show Board","string");
+  //gtpe->addAnalyzeCommand("final_score","Final Score","string");
+  //gtpe->addAnalyzeCommand("showboard","Show Board","string");
   gtpe->addAnalyzeCommand("boardstats","Board Stats","string");
   gtpe->addAnalyzeCommand("showsymmetrytransforms","Show Symmetry Transforms","sboard");
   gtpe->addAnalyzeCommand("showliberties","Show Liberties","sboard");
@@ -193,14 +193,15 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("featureprobdistribution","Feature Probability Distribution","cboard");
   gtpe->addAnalyzeCommand("loadfeaturegammas %%r","Load Feature Gammas","none");
   gtpe->addAnalyzeCommand("showtreelivegfx","Show Tree Live Gfx","gfx");
-  gtpe->addAnalyzeCommand("loadpatterns %%r","Load Patterns","none");
-  gtpe->addAnalyzeCommand("clearpatterns","Clear Patterns","none");
-  gtpe->addAnalyzeCommand("doboardcopy","Do Board Copy","none");
+  //gtpe->addAnalyzeCommand("loadpatterns %%r","Load Patterns","none");
+  //gtpe->addAnalyzeCommand("clearpatterns","Clear Patterns","none");
+  //gtpe->addAnalyzeCommand("doboardcopy","Do Board Copy","none");
   gtpe->addAnalyzeCommand("param mcts","Parameters (MCTS)","param");
   gtpe->addAnalyzeCommand("param time","Parameters (Time)","param");
   gtpe->addAnalyzeCommand("param other","Parameters (Other)","param");
   gtpe->addAnalyzeCommand("donplayouts %%s","Do N Playouts","none");
   gtpe->addAnalyzeCommand("donplayouts 1","Do 1 Playout","none");
+  gtpe->addAnalyzeCommand("donplayouts 1000","Do 1000 Playouts","none");
   gtpe->addAnalyzeCommand("outputsgf %%w","Output SGF","none");
 }
 
@@ -1098,8 +1099,11 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     UCT::Tree *besttree=this->getBestMoves(movetree,false);
     float bestratio=0;
     if (besttree==NULL)
+    {
+      fprintf(stderr,"WARNING! No move found!\n");
       *move=new Go::Move(col,Go::Move::RESIGN);
-    else if (besttree->getRatio()<params->resign_ratio_threshold && currentboard->getMovesMade()>(params->resign_move_factor_threshold*boardsize*boardsize))
+    }
+    else if (!besttree->isTerminalWin() && besttree->getRatio()<params->resign_ratio_threshold && currentboard->getMovesMade()>(params->resign_move_factor_threshold*boardsize*boardsize))
       *move=new Go::Move(col,Go::Move::RESIGN);
     else
     {
@@ -1652,23 +1656,26 @@ void Engine::expandLeaf(UCT::Tree *movetree)
   std::list<Go::Move> startmoves=movetree->getMovesFromRoot();
   Go::Board *startboard=currentboard->copy();
   
+  //gtpe->getOutput()->printfDebug("[moves]:"); //!!!
   for(std::list<Go::Move>::iterator iter=startmoves.begin();iter!=startmoves.end();++iter)
   {
+    //gtpe->getOutput()->printfDebug(" %s",(*iter).toString(boardsize).c_str()); //!!!
     startboard->makeMove((*iter));
     if (startboard->getPassesPlayed()>=2 || (*iter).isResign())
     {
       delete startboard;
-      fprintf(stderr,"WARNING! Trying to expand a terminal node?\n");
+      fprintf(stderr,"WARNING! Trying to expand a terminal node? (passes:%d)\n",startboard->getPassesPlayed());
       return;
     }
   }
+  //gtpe->getOutput()->printfDebug("\n"); //!!!
   
   Go::Color col=startboard->nextToMove();
   
   bool winnow=Go::Board::isWinForColor(col,startboard->score()-komi);
   UCT::Tree *nmt=new UCT::Tree(params,Go::Move(col,Go::Move::PASS));
   if (winnow)
-    nmt->addWin();
+    nmt->addPriorWins(1);
   if (startboard->getPassesPlayed()==0 && !(params->surewin_expected && col==currentboard->nextToMove()))
     nmt->addPriorLoses(UCT_PASS_DETER);
   nmt->addRAVEWins(params->rave_init_wins);
@@ -1767,7 +1774,7 @@ UCT::Tree *Engine::getBestMoves(UCT::Tree *movetree, bool descend)
       besttree=(*iter);
       bestsims=(*iter)->getPlayouts();
       if (besttree->isTerminalWin())
-       break;
+        break;
     }
   }
   
@@ -1785,7 +1792,10 @@ void Engine::clearMoveTree()
   if (movetree!=NULL)
     delete movetree;
   
-  movetree=new UCT::Tree(params);
+  if (currentboard->getMovesMade()>0)
+    movetree=new UCT::Tree(params,currentboard->getLastMove());
+  else
+    movetree=new UCT::Tree(params);
 }
 
 void Engine::chooseSubTree(Go::Move move)
