@@ -145,16 +145,16 @@ void UCT::Tree::passPlayoutUp(bool win, UCT::Tree *source)
 {
   bool passterminal=(this->isTerminal() && !this->isTerminalResult()) || (source!=NULL && source->isTerminalResult());
   
-  if (win && passterminal)
+  if (passterminal && win)
   {
-    //if (prunedchildren==0)
-    //{
+    if (prunedchildren==0)
+    {
       wins=1;
       playouts=-1;
       hasTerminalWinrate=true;
-    //}
-    //else
-    //  this->unPruneNow();
+    }
+    else
+      this->unPruneNow();
   }
   
   if (parent!=NULL)
@@ -166,7 +166,7 @@ void UCT::Tree::passPlayoutUp(bool win, UCT::Tree *source)
       parent->addWin(this);
   }
   
-  if (passterminal)
+  if (passterminal && (!win || prunedchildren==0))
   {
     if (win)
       wins=1;
