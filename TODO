@@ -4,7 +4,6 @@ TODO
 Now: (current focus)
   move playout/time/tree code out of engine
   add "time_ignore" setting
-  ignore overtime and warn, don't fail
   make sure play can continue after 2 passes
   add CFG as a feature
   implement Drake's Last-Good-Reply-with-Forgetting policy

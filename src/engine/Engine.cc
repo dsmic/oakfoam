@@ -967,30 +967,61 @@ void Engine::gtpTimeSettings(void *instance, Gtp::Engine* gtpe, Gtp::Command* cm
     return;
   }
   
-  if ((cmd->getIntArg(1)!=0 && cmd->getIntArg(2)==0) || (cmd->getIntArg(0)==0 && cmd->getIntArg(1)==0 && cmd->getIntArg(2)==0))
+  if ((cmd->getIntArg(1)!=0 && cmd->getIntArg(2)==0) || (cmd->getIntArg(0)==0 && cmd->getIntArg(1)==0 && cmd->getIntArg(2)==0)) // no time
   {
     me->time_main=0;
+    me->time_overtime_period=0;
+    me->time_overtime_stones=0;
+    
     me->time_black=0;
     me->time_white=0;
+    me->time_black_stones=0;
+    me->time_white_stones=0;
+    
     gtpe->getOutput()->startResponse(cmd);
     gtpe->getOutput()->endResponse();
-    return;
   }
-  
-  if (cmd->getIntArg(1)!=0)
+  else if (cmd->getIntArg(1)!=0) // canadian overtime
   {
-    gtpe->getOutput()->startResponse(cmd,false);
-    gtpe->getOutput()->printString("only absolute time supported");
+    //gtpe->getOutput()->startResponse(cmd,false);
+    //gtpe->getOutput()->printString("only absolute time supported");
+    //gtpe->getOutput()->endResponse();
+    me->time_main=cmd->getIntArg(0);
+    me->time_overtime_period=cmd->getIntArg(1);
+    me->time_overtime_stones=cmd->getIntArg(2);
+    
+    if (me->time_main>0)
+    {
+      me->time_black=me->time_main;
+      me->time_white=me->time_main;
+      me->time_black_stones=0;
+      me->time_white_stones=0;
+    }
+    else
+    {
+      me->time_black=me->time_overtime_period;
+      me->time_white=me->time_overtime_period;
+      me->time_black_stones=me->time_overtime_stones;
+      me->time_white_stones=me->time_overtime_stones;
+    }
+    
+    gtpe->getOutput()->startResponse(cmd);
     gtpe->getOutput()->endResponse();
-    return;
   }
-  
-  me->time_main=cmd->getIntArg(0);
-  me->time_black=me->time_main;
-  me->time_white=me->time_main;
-  
-  gtpe->getOutput()->startResponse(cmd);
-  gtpe->getOutput()->endResponse();
+  else  // absolute time
+  {
+    me->time_main=cmd->getIntArg(0);
+    me->time_overtime_period=0;
+    me->time_overtime_stones=0;
+    
+    me->time_black=me->time_main;
+    me->time_white=me->time_main;
+    me->time_black_stones=0;
+    me->time_white_stones=0;
+    
+    gtpe->getOutput()->startResponse(cmd);
+    gtpe->getOutput()->endResponse();
+  }
 }
 
 void Engine::gtpTimeLeft(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
@@ -1005,13 +1036,13 @@ void Engine::gtpTimeLeft(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     return;
   }
   
-  if (cmd->getIntArg(2)!=0)
+  /*if (cmd->getIntArg(2)!=0)
   {
     gtpe->getOutput()->startResponse(cmd,false);
     gtpe->getOutput()->printString("only absolute time supported");
     gtpe->getOutput()->endResponse();
     return;
-  }
+  }*/
   
   Gtp::Color gtpcol = cmd->getColorArg(0);
   if (gtpcol==Gtp::INVALID)
@@ -1023,9 +1054,16 @@ void Engine::gtpTimeLeft(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   }
   
   float time=(float)cmd->getIntArg(1);
+  int stones=cmd->getIntArg(2);
+  
   float *time_var=(gtpcol==Gtp::BLACK ? &me->time_black : &me->time_white);
-  gtpe->getOutput()->printfDebug("[time_left]: diff:%.3f\n",time-*time_var);
+  int *stones_var=(gtpcol==Gtp::BLACK ? &me->time_black_stones : &me->time_white_stones);
+  if (stones==0)
+    gtpe->getOutput()->printfDebug("[time_left]: diff:%.3f\n",time-*time_var);
+  else
+    gtpe->getOutput()->printfDebug("[time_left]: diff:%.3f s:%d\n",time-*time_var,stones);
   *time_var=time;
+  *stones_var=stones;
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->endResponse();
@@ -1036,6 +1074,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
   if (params->move_policy==Parameters::MP_UCT || params->move_policy==Parameters::MP_ONEPLY)
   {
     float *time_left=(col==Go::BLACK ? &time_black : &time_white);
+    int *time_stones=(col==Go::BLACK ? &time_black_stones : &time_white_stones);
     boost::timer timer;
     int totalplayouts=0;
     int livegfxupdate=0;
@@ -1126,14 +1165,37 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     {
       *time_left-=time_used;
       if (*time_left<=0)
-        *time_left=1;
+      {
+        if (time_overtime_period==0 || time_overtime_stones==0) // absolute time
+          *time_left=1;
+        else if (*time_stones>0) // run out of overtime!
+          *time_left=1;
+        else // main time over
+        {
+          *time_left=time_overtime_period;
+          *time_stones=time_overtime_stones;
+        }
+      }
+      else if (*time_stones>0)
+      {
+        (*time_stones)--;
+        if (*time_stones<=0)
+        {
+          *time_left=time_overtime_period;
+          *time_stones=time_overtime_stones;
+        }
+      }
     }
     
     std::ostringstream ss;
     ss << std::fixed;
     ss << "r:"<<std::setprecision(2)<<bestratio;
     if (*time_left>0)
+    {
       ss << " tl:"<<std::setprecision(3)<<*time_left;
+      if (*time_stones>0)
+        ss << " s:"<<*time_stones;
+    }
     if (*time_left>0 || movetree->isTerminalResult())
       ss << " plts:"<<totalplayouts;
     ss << " ppms:"<<std::setprecision(2)<<playouts_per_milli;

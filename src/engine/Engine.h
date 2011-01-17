@@ -129,6 +129,8 @@ class Engine
     float komi;
     int boardsize;
     float time_main,time_black,time_white;
+    float time_overtime_period,time_overtime_stones;
+    int time_black_stones,time_white_stones;
     UCT::Tree *movetree;
     Random rand;
     Pattern::ThreeByThreeTable *patterntable;
