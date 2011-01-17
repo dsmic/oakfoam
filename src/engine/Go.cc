@@ -442,8 +442,11 @@ void Go::Board::makeMove(Go::Move move)
     throw Go::Exception("invalid move");
   }
   
+  Go::Color col=move.getColor();
+  Go::Color othercol=Go::otherColor(col);
+  
   movesmade++;
-  nexttomove=Go::otherColor(nexttomove);
+  nexttomove=othercol;
   passesplayed=0;
   if (markchanges && !secondlastmove.isPass() && !secondlastmove.isResign())
     lastchanges->set(secondlastmove.getPosition());
@@ -452,8 +455,6 @@ void Go::Board::makeMove(Go::Move move)
   secondlastmove=lastmove;
   lastmove=move;
   
-  Go::Color col=move.getColor();
-  Go::Color othercol=Go::otherColor(col);
   int pos=move.getPosition();
   int posko=-1;
   
@@ -1186,20 +1187,25 @@ bool Go::Board::isExtension(Go::Move move)
   Go::Color col=move.getColor();
   int pos=move.getPosition();
   bool foundgroupinatari=false;
-  bool foundextension=false;
+  int foundconnectingliberties=0;
   foreach_adjacent(pos,p,{
     if (this->inGroup(p))
     {
       Go::Group *group=this->getGroup(p);
-      if (group->inAtari() && col==group->getColor())
-        foundgroupinatari=true;
-      else if (col==group->getColor())
-        foundextension=true;
+      if (col==group->getColor())
+      {
+        if (group->inAtari())
+          foundgroupinatari=true;
+        else if (group->isOneOfTwoLiberties(pos))
+          foundconnectingliberties++;
+        else
+          foundconnectingliberties=2;
+      }
     }
-    else if (this->onBoard(p) && this->touchingEmpty(p)>1)
-      foundextension=true;
+    else if (this->onBoard(p))
+      foundconnectingliberties++;
   });
-  if (foundgroupinatari && foundextension)
+  if (foundgroupinatari && foundconnectingliberties>=2)
     return true;
   else
     return false;

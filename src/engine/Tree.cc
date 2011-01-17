@@ -47,6 +47,9 @@ Tree::~Tree()
 
 void Tree::addChild(Tree *node)
 {
+  if (move.getColor()==node->move.getColor() && (children->size()==0 || children->back()->move.getColor()!=node->move.getColor()))
+    fprintf(stderr,"WARNING! Expecting alternating colors in tree\n");
+  
   children->push_back(node);
   node->parent=this;
 }

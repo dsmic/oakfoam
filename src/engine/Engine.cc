@@ -706,7 +706,7 @@ void Engine::gtpFeatureMatchesAt(void *instance, Gtp::Engine* gtpe, Gtp::Command
   Go::Move move=Go::Move(col,pos);
   
   gtpe->getOutput()->startResponse(cmd);
-  gtpe->getOutput()->printf("Feature Matches for %s:\n",Go::Position::pos2string(pos,board->getSize()).c_str());
+  gtpe->getOutput()->printf("Feature Matches for %s:\n",move.toString(board->getSize()).c_str());
   gtpe->getOutput()->printf("PASS:            %u\n",me->features->matchFeatureClass(Features::PASS,board,move));
   gtpe->getOutput()->printf("CAPTURE:         %u\n",me->features->matchFeatureClass(Features::CAPTURE,board,move));
   gtpe->getOutput()->printf("EXTENSION:       %u\n",me->features->matchFeatureClass(Features::EXTENSION,board,move));
