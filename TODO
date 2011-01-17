@@ -50,4 +50,5 @@ Later: (at some point)
   extensive comparison of playouts with strength
   add more debug messages and debug levels
   more regression testing
+  add loadsgf command
 
