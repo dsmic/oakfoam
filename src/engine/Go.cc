@@ -1205,3 +1205,81 @@ bool Go::Board::isExtension(Go::Move move)
     return false;
 }
 
+bool Go::Board::isSelfAtari(Go::Move move)
+{
+  Go::Color col=move.getColor();
+  int pos=move.getPosition();
+  
+  if (this->touchingEmpty(pos)>1)
+    return false;
+  
+  bool foundgroupwith2libsorless=false;
+  bool foundconnection=false;
+  Go::Group *grp2libs=NULL;
+  foreach_adjacent(pos,p,{
+    if (this->inGroup(p))
+    {
+      Go::Group *group=this->getGroup(p);
+      if (col==group->getColor() && group->isOneOfTwoLiberties(pos))
+      {
+        if (!foundgroupwith2libsorless)
+        {
+          foundgroupwith2libsorless=true;
+          grp2libs=group;
+        }
+        else if (group!=grp2libs)
+          foundconnection=true;
+      }
+      else if (col==group->getColor() && !group->inAtari())
+        foundconnection=true;
+    }
+  });
+  if (!foundconnection)
+    return true;
+  else
+    return false;
+}
+
+bool Go::Board::isAtari(Go::Move move)
+{
+  Go::Color col=move.getColor();
+  int pos=move.getPosition();
+  foreach_adjacent(pos,p,{
+    if (this->inGroup(p))
+    {
+      Go::Group *group=this->getGroup(p);
+      if (col!=group->getColor() && group->isOneOfTwoLiberties(pos))
+        return true;
+    }
+  });
+  return false;
+}
+
+int Go::Board::getDistanceToBorder(int pos)
+{
+  int x=Go::Position::pos2x(pos,size);
+  int y=Go::Position::pos2y(pos,size);
+  int ix=(size-x-1);
+  int iy=(size-y-1);
+  
+  int dist=x;
+  if (y<dist)
+    dist=y;
+  if (ix<dist)
+    dist=ix;
+  if (iy<dist)
+    dist=iy;
+  
+  return dist;
+}
+
+int Go::Board::getCircularDistance(int pos1, int pos2)
+{
+  int x1=Go::Position::pos2x(pos1,size);
+  int y1=Go::Position::pos2y(pos1,size);
+  int x2=Go::Position::pos2x(pos2,size);
+  int y2=Go::Position::pos2y(pos2,size);
+  
+  return Go::circDist(x1,y1,x2,y2);
+}
+

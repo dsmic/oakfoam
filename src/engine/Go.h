@@ -339,6 +339,10 @@ namespace Go
       
       bool isCapture(Go::Move move);
       bool isExtension(Go::Move move);
+      bool isSelfAtari(Go::Move move);
+      bool isAtari(Go::Move move);
+      int getDistanceToBorder(int pos);
+      int getCircularDistance(int pos1, int pos2);
     
     private:
       int size;

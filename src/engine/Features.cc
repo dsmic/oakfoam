@@ -72,76 +72,26 @@ unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::B
     }
     case Features::SELFATARI:
     {
-      int size=board->getSize();
-      Go::Color col=move.getColor();
-      int pos=move.getPosition();
-      
-      if (board->touchingEmpty(pos)>1)
-        return 0;
-      
-      bool foundgroupwith2libsorless=false;
-      bool foundconnection=false;
-      Go::Group *grp2libs=NULL;
-      foreach_adjacent(pos,p,{
-        if (board->inGroup(p))
-        {
-          Go::Group *group=board->getGroup(p);
-          if (col==group->getColor() && group->isOneOfTwoLiberties(pos))
-          {
-            if (!foundgroupwith2libsorless)
-            {
-              foundgroupwith2libsorless=true;
-              grp2libs=group;
-            }
-            else if (group!=grp2libs)
-              foundconnection=true;
-          }
-          else if (col==group->getColor() && !group->inAtari())
-            foundconnection=true;
-        }
-      });
-      if (!foundconnection)
+      if (board->isSelfAtari(move))
         return 1;
       else
         return 0;
     }
     case Features::ATARI:
     {
-      int size=board->getSize();
-      Go::Color col=move.getColor();
-      int pos=move.getPosition();
-      foreach_adjacent(pos,p,{
-        if (board->inGroup(p))
-        {
-          Go::Group *group=board->getGroup(p);
-          if (col!=group->getColor() && group->isOneOfTwoLiberties(pos))
-          {
-            if (board->isCurrentSimpleKo())
-              return 2;
-            else
-              return 1;
-          }
-        }
-      });
-      return 0;
+      if (board->isAtari(move))
+      {
+        if (board->isCurrentSimpleKo())
+          return 2;
+        else
+          return 1;
+      }
+      else
+        return 0;
     }
     case Features::BORDERDIST:
     {
-      int size=board->getSize();
-      int pos=move.getPosition();
-      
-      int x=Go::Position::pos2x(pos,size);
-      int y=Go::Position::pos2y(pos,size);
-      int ix=(size-x-1);
-      int iy=(size-y-1);
-      
-      int dist=x;
-      if (y<dist)
-        dist=y;
-      if (ix<dist)
-        dist=ix;
-      if (iy<dist)
-        dist=iy;
+      int dist=board->getDistanceToBorder(move.getPosition());
       
       if (dist<BORDERDIST_LEVELS)
         return (dist+1);
@@ -153,16 +103,7 @@ unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::B
       if (board->getLastMove().isPass() || board->getLastMove().isResign())
         return 0;
       
-      int size=board->getSize();
-      int pos1=move.getPosition();
-      int pos2=board->getLastMove().getPosition();
-      
-      int x1=Go::Position::pos2x(pos1,size);
-      int y1=Go::Position::pos2y(pos1,size);
-      int x2=Go::Position::pos2x(pos2,size);
-      int y2=Go::Position::pos2y(pos2,size);
-      
-      int dist=Go::circDist(x1,y1,x2,y2);
+      int dist=board->getCircularDistance(move.getPosition(),board->getLastMove().getPosition());
       
       int maxdist=LASTDIST_LEVELS;
       if (params->features_only_small)
@@ -178,16 +119,7 @@ unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::B
       if (board->getSecondLastMove().isPass() || board->getSecondLastMove().isResign())
         return 0;
       
-      int size=board->getSize();
-      int pos1=move.getPosition();
-      int pos2=board->getSecondLastMove().getPosition();
-      
-      int x1=Go::Position::pos2x(pos1,size);
-      int y1=Go::Position::pos2y(pos1,size);
-      int x2=Go::Position::pos2x(pos2,size);
-      int y2=Go::Position::pos2y(pos2,size);
-      
-      int dist=Go::circDist(x1,y1,x2,y2);
+      int dist=board->getCircularDistance(move.getPosition(),board->getSecondLastMove().getPosition());
       
       int maxdist=SECONDLASTDIST_LEVELS;
       if (params->features_only_small)
