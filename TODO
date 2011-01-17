@@ -7,6 +7,7 @@ Now: (current focus)
   implement Drake's Last-Good-Reply-with-Forgetting policy
   progressive widening can depend on winrate
   progressive widening occurs related to "factor" (features)
+  analyse how rave works in lower tree
 
 Soon: (before next major release)
   implement superko in tree
@@ -21,7 +22,6 @@ Soon: (before next major release)
   progressively add more reward for points diff if winrate very good?
   add hg tracked cgos,kgs?,gomill? scripts
   make SL page
-  analyse how rave contributes in lower tree
   update surewin during genmove
   reduce thinking time if surewin?
   think for longer if needed
