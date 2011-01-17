@@ -65,6 +65,8 @@ namespace UCT
       void addRAVEWins(int n);
       void addRAVELoses(int n);
       
+      void allowContinuedPlay();
+      
       std::string toSGFString();
       
     private:
@@ -77,6 +79,7 @@ namespace UCT
       int wins,ravewins,priorwins;
       Parameters *params;
       bool hasTerminalWinrate;
+      bool terminaloverride;
       bool pruned;
       unsigned int prunedchildren;
       float prunefactor;

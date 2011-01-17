@@ -3,7 +3,6 @@ TODO
 
 Now: (current focus)
   move playout/tree code out of engine
-  make sure play can continue after 2 passes
   add CFG as a feature
   implement Drake's Last-Good-Reply-with-Forgetting policy
   progressive widening can depend on winrate

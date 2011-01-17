@@ -18,6 +18,7 @@ UCT::Tree::Tree(Parameters *prms, Go::Move mov, UCT::Tree *p)
   priorwins=0;
   symmetryprimary=NULL;
   hasTerminalWinrate=false;
+  terminaloverride=false;
   pruned=false;
   prunedchildren=0;
   prunefactor=0;
@@ -260,7 +261,9 @@ std::list<Go::Move> UCT::Tree::getMovesFromRoot()
 
 bool UCT::Tree::isTerminal()
 {
-  if (hasTerminalWinrate)
+  if (terminaloverride)
+    return false;
+  else if (hasTerminalWinrate)
     return true;
   else if (!this->isRoot())
   {
@@ -437,6 +440,16 @@ void UCT::Tree::unPruneNow()
 {
   unprunenextchildat=playouts;
   this->unPruneNextChild();
+}
+
+void UCT::Tree::allowContinuedPlay()
+{
+  terminaloverride=true;
+  if (hasTerminalWinrate)
+  {
+    hasTerminalWinrate=false;
+    playouts=1;
+  }
 }
 
 

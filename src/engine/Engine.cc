@@ -1056,6 +1056,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
       this->clearMoveTree();
     }
     
+    this->allowContinuedPlay();
+    
     Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
     Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
     
@@ -1834,6 +1836,8 @@ void Engine::doNPlayouts(int n)
   {
     int livegfxupdate=0;
     
+    this->allowContinuedPlay();
+    
     Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
     Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
     
@@ -1877,7 +1881,10 @@ void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
   Go::Color col=currentboard->nextToMove();
   
   if (movetree->isLeaf())
+  {
+    this->allowContinuedPlay();
     this->expandLeaf(movetree);
+  }
   
   givenfirstlist=(firstlist==NULL);
   givensecondlist=(secondlist==NULL);
@@ -2122,5 +2129,15 @@ bool Engine::isAtariCaptureOrConnect(Go::Board *board, int pos, Go::Color col, G
   if (params->debug_on)
     gtpe->getOutput()->printfDebug("[ataricheck]: failed\n");
   return false;
+}
+
+void Engine::allowContinuedPlay()
+{
+  if (currentboard->getPassesPlayed()>=2)
+  {
+    currentboard->resetPassesPlayed();
+    movetree->allowContinuedPlay();
+    gtpe->getOutput()->printfDebug("WARNING! continuing play from a terminal position\n");
+  }
 }
 

@@ -297,6 +297,7 @@ namespace Go
       bool isCurrentSimpleKo() { return (simpleko!=-1); };
       int getMovesMade() { return movesmade; };
       int getPassesPlayed() { return passesplayed; };
+      void resetPassesPlayed() { passesplayed=0; };
       Go::Color nextToMove() { return nexttomove; };
       void setNextToMove(Go::Color col) { nexttomove=col; }; //clear ko?
       int getPositionMax() { return sizedata; };
