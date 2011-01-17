@@ -7,7 +7,7 @@ Now: (current focus)
   implement Drake's Last-Good-Reply-with-Forgetting policy
   progressive widening can depend on winrate
   progressive widening occurs related to "factor" (features)
-  analyse how rave works in lower tree
+  fix rave (currently only work in first 2 ply)
 
 Soon: (before next major release)
   implement superko in tree
