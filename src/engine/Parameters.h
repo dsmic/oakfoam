@@ -57,6 +57,7 @@ class Parameters
     float time_k;
     float time_buffer;
     float time_move_minimum;
+    bool time_ignore;
     
     bool livegfx_on;
     int livegfx_update_playouts;

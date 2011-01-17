@@ -68,6 +68,7 @@ Engine::Engine(Gtp::Engine *ge)
   params->addParameter("time","time_k",&(params->time_k),TIME_K);
   params->addParameter("time","time_buffer",&(params->time_buffer),TIME_BUFFER);
   params->addParameter("time","time_move_minimum",&(params->time_move_minimum),TIME_MOVE_MINIMUM);
+  params->addParameter("time","time_ignore",&(params->time_ignore),false);
   
   params->addParameter("other","live_gfx",&(params->livegfx_on),LIVEGFX_ON);
   params->addParameter("other","live_gfx_update_playouts",&(params->livegfx_update_playouts),LIVEGFX_UPDATE_PLAYOUTS);
@@ -1029,8 +1030,16 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     
     if (!time->isNoTiming())
     {
-      time_allocated=time->getAllocatedTimeForNextTurn(col);
-      gtpe->getOutput()->printfDebug("[time_allowed]: %.3f\n",time_allocated);
+      if (params->time_ignore)
+      {
+        time_allocated=0;
+        gtpe->getOutput()->printfDebug("[time_allowed]: ignoring time settings!\n");
+      }
+      else
+      {
+        time_allocated=time->getAllocatedTimeForNextTurn(col);
+        gtpe->getOutput()->printfDebug("[time_allowed]: %.3f\n",time_allocated);
+      }
     }
     else
       time_allocated=0;
