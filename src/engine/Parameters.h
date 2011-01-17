@@ -3,6 +3,8 @@
 
 #include <string>
 #include <list>
+//from "Engine.h":
+class Engine;
 #include "../gtp/Gtp.h"
 
 class Parameters
@@ -13,6 +15,7 @@ class Parameters
     
     unsigned long rand_seed;
     
+    Engine *engine;
     int board_size;
     
     enum MovePolicy

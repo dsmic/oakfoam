@@ -1166,5 +1166,42 @@ void Go::Board::updateFeatureGamma(Go::Color col, int pos)
   (col==Go::BLACK?blacktotalgamma:whitetotalgamma)+=(gamma-oldgamma);
 }
 
+bool Go::Board::isCapture(Go::Move move)
+{
+  Go::Color col=move.getColor();
+  int pos=move.getPosition();
+  foreach_adjacent(pos,p,{
+    if (this->inGroup(p))
+    {
+      Go::Group *group=this->getGroup(p);
+      if (group->inAtari() && col!=group->getColor())
+        return true;
+    }
+  });
+  return false;
+}
 
+bool Go::Board::isExtension(Go::Move move)
+{
+  Go::Color col=move.getColor();
+  int pos=move.getPosition();
+  bool foundgroupinatari=false;
+  bool foundextension=false;
+  foreach_adjacent(pos,p,{
+    if (this->inGroup(p))
+    {
+      Go::Group *group=this->getGroup(p);
+      if (group->inAtari() && col==group->getColor())
+        foundgroupinatari=true;
+      else if (col==group->getColor())
+        foundextension=true;
+    }
+    else if (this->onBoard(p) && this->touchingEmpty(p)>1)
+      foundextension=true;
+  });
+  if (foundgroupinatari && foundextension)
+    return true;
+  else
+    return false;
+}
 

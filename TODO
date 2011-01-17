@@ -2,7 +2,7 @@ TODO
 ------------------
 
 Now: (current focus)
-  move playout/tree code out of engine
+  move playout code out of engine
   add CFG as a feature
   implement Drake's Last-Good-Reply-with-Forgetting policy
   progressive widening can depend on winrate

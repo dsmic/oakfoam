@@ -336,6 +336,9 @@ namespace Go
       static int doSymmetryTransformStatic(Go::Board::SymmetryTransform trans, int size, int pos);
       static int doSymmetryTransformStaticReverse(Go::Board::SymmetryTransform trans, int size, int pos);
       static Go::Board::SymmetryTransform getSymmetryTransformBetweenPositions(int size, int pos1, int pos2);
+      
+      bool isCapture(Go::Move move);
+      bool isExtension(Go::Move move);
     
     private:
       int size;

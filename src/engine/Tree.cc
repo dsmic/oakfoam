@@ -3,6 +3,7 @@
 #include <cmath>
 #include <sstream>
 #include "Parameters.h"
+#include "Engine.h"
 
 Tree::Tree(Parameters *prms, Go::Move mov, Tree *p)
 {
@@ -452,4 +453,196 @@ void Tree::allowContinuedPlay()
   }
 }
 
+Tree *Tree::getRobustChild(bool descend)
+{
+  float bestsims=0;
+  Tree *besttree=NULL;
+  
+  for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
+  {
+    if ((*iter)->getPlayouts()>bestsims || (*iter)->isTerminalWin() || besttree==NULL)
+    {
+      besttree=(*iter);
+      bestsims=(*iter)->getPlayouts();
+      if (besttree->isTerminalWin())
+        break;
+    }
+  }
+  
+  if (besttree==NULL)
+    return NULL;
+  
+  if (besttree->isLeaf() || !descend)
+    return besttree;
+  else
+    return besttree->getRobustChild(descend);
+}
+
+Tree *Tree::getUrgentChild()
+{
+  float besturgency=0;
+  Tree *besttree=NULL;
+  
+  for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
+  {
+    if ((*iter)->isPrimary() && !(*iter)->isPruned())
+    {
+      float urgency;
+      
+      if ((*iter)->getPlayouts()==0 && (*iter)->getRAVEPlayouts()==0 && (*iter)->getPriorPlayouts()==0)
+        urgency=(*iter)->getUrgency()+(params->engine->getRandom().getRandomReal()/1000);
+      else
+      {
+        urgency=(*iter)->getUrgency();
+        if (params->debug_on)
+          fprintf(stderr,"[urg]:%s %.3f %.2f(%d) %.2f(%d) %.2f(%d)\n",(*iter)->getMove().toString(params->board_size).c_str(),urgency,(*iter)->getRatio(),(*iter)->getPlayouts(),(*iter)->getRAVERatio(),(*iter)->getRAVEPlayouts(),(*iter)->getPriorRatio(),(*iter)->getPriorPlayouts());
+      }
+          
+      if (urgency>besturgency || besttree==NULL)
+      {
+        besttree=(*iter);
+        besturgency=urgency;
+      }
+    }
+  }
+  
+  if (params->debug_on)
+  {
+    if (besttree!=NULL)
+      fprintf(stderr,"[best]:%s\n",besttree->getMove().toString(params->board_size).c_str());
+    else
+      fprintf(stderr,"WARNING! No urgent move found\n");
+  }
+  
+  if (besttree==NULL)
+    return NULL;
+  
+  if (params->move_policy==Parameters::MP_UCT && besttree->isLeaf() && !besttree->isTerminal())
+  {
+    if (besttree->getPlayouts()>params->uct_expand_after)
+      besttree->expandLeaf();
+  }
+  
+  if (besttree->isLeaf())
+    return besttree;
+  else
+    return besttree->getUrgentChild();
+}
+
+void Tree::expandLeaf()
+{
+  if (!this->isLeaf())
+    return;
+  else if (this->isTerminal())
+    fprintf(stderr,"WARNING! Trying to expand a terminal node!\n");
+  
+  std::list<Go::Move> startmoves=this->getMovesFromRoot();
+  Go::Board *startboard=params->engine->getCurrentBoard()->copy();
+  
+  //gtpe->getOutput()->printfDebug("[moves]:"); //!!!
+  for(std::list<Go::Move>::iterator iter=startmoves.begin();iter!=startmoves.end();++iter)
+  {
+    //gtpe->getOutput()->printfDebug(" %s",(*iter).toString(boardsize).c_str()); //!!!
+    startboard->makeMove((*iter));
+    if (startboard->getPassesPlayed()>=2 || (*iter).isResign())
+    {
+      delete startboard;
+      fprintf(stderr,"WARNING! Trying to expand a terminal node? (passes:%d)\n",startboard->getPassesPlayed());
+      return;
+    }
+  }
+  //gtpe->getOutput()->printfDebug("\n"); //!!!
+  
+  Go::Color col=startboard->nextToMove();
+  
+  bool winnow=Go::Board::isWinForColor(col,startboard->score()-params->engine->getKomi());
+  Tree *nmt=new Tree(params,Go::Move(col,Go::Move::PASS));
+  if (winnow)
+    nmt->addPriorWins(1);
+  if (startboard->getPassesPlayed()==0 && !(params->surewin_expected && col==params->engine->getCurrentBoard()->nextToMove()))
+    nmt->addPriorLoses(UCT_PASS_DETER);
+  nmt->addRAVEWins(params->rave_init_wins);
+  this->addChild(nmt);
+  
+  if (startboard->numOfValidMoves(col)>0)
+  {
+    Go::BitBoard *validmovesbitboard=startboard->getValidMoves(col);
+    for (int p=0;p<startboard->getPositionMax();p++)
+    {
+      if (validmovesbitboard->get(p))
+      {
+        Tree *nmt=new Tree(params,Go::Move(col,p));
+        if (params->uct_pattern_prior>0 && !startboard->weakEye(col,p))
+        {
+          unsigned int pattern=Pattern::ThreeByThree::makeHash(startboard,p);
+          if (col==Go::WHITE)
+            pattern=Pattern::ThreeByThree::invert(pattern);
+          if (params->engine->getPatternTable()->isPattern(pattern))
+            nmt->addPriorWins(params->uct_pattern_prior);
+        }
+        nmt->addRAVEWins(params->rave_init_wins);
+        this->addChild(nmt);
+      }
+    }
+    
+    if (params->uct_atari_prior>0)
+    {
+      std::list<Go::Group*,Go::allocator_groupptr> *groups=startboard->getGroups();
+      for(std::list<Go::Group*,Go::allocator_groupptr>::iterator iter=groups->begin();iter!=groups->end();++iter) 
+      {
+        if ((*iter)->inAtari())
+        {
+          int liberty=(*iter)->getAtariPosition();
+          bool iscaptureorconnect=startboard->isCapture(Go::Move(col,liberty)) || startboard->isExtension(Go::Move(col,liberty));
+          if (startboard->validMove(Go::Move(col,liberty)) && iscaptureorconnect)
+          {
+            Tree *mt=this->getChild(Go::Move(col,liberty));
+            if (mt!=NULL)
+              mt->addPriorWins(params->uct_atari_prior);
+          }
+        }
+      }
+    }
+  }
+  
+  if (params->uct_symmetry_use)
+  {
+    Go::Board::Symmetry sym=startboard->getSymmetry();
+    if (sym!=Go::Board::NONE)
+    {
+      for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
+      {
+        int pos=(*iter)->getMove().getPosition();
+        Go::Board::SymmetryTransform trans=startboard->getSymmetryTransformToPrimary(sym,pos);
+        int primarypos=startboard->doSymmetryTransform(trans,pos);
+        if (pos!=primarypos)
+        {
+          Tree *pmt=this->getChild(Go::Move(col,primarypos));
+          if (pmt!=NULL)
+          {
+            if (!pmt->isPrimary())
+              fprintf(stderr,"WARNING! bad primary\n");
+            (*iter)->setPrimary(pmt);
+          }
+          else
+            fprintf(stderr,"WARNING! missing primary\n");
+        }
+      }
+    }
+  }
+  
+  if (params->uct_progressive_widening_enabled)
+  {
+    for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
+    {
+      float factor=params->engine->getFeatures()->getMoveGamma(startboard,(*iter)->getMove());
+      (*iter)->setPruneFactor(factor);
+    }
+    
+    this->pruneChildren();
+    this->checkForUnPruning(); //unprune first child
+  }
+  
+  delete startboard;
+}
 

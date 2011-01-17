@@ -80,6 +80,9 @@ class Engine
     void clearBoard();
     float getKomi() { return komi; };
     void setKomi(float k) { komi=k; };
+    Pattern::ThreeByThreeTable *getPatternTable() { return patterntable; };
+    Features *getFeatures() { return features; };
+    Random getRandom() { return rand; };
     
     static void updateParameterWrapper(void *instance, std::string id)
     {
@@ -141,12 +144,8 @@ class Engine
     
     void randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, int *posarray);
     void randomPlayout(Go::Board *board, std::list<Go::Move> startmoves, Go::Color colfirst, Go::BitBoard *firstlist, Go::BitBoard *secondlist);
-    Tree *getPlayoutTarget(Tree *movetree);
-    void expandLeaf(Tree *movetree);
-    Tree *getBestMoves(Tree *movetree, bool descend);
     void clearMoveTree();
     void chooseSubTree(Go::Move move);
-    bool isAtariCaptureOrConnect(Go::Board *board, int pos, Go::Color col, Go::Group *touchinggroup);
     
     void doNPlayouts(int n);
     bool writeSGF(std::string filename, Go::Board *board, Tree *tree);

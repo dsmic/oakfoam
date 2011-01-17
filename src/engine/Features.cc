@@ -58,39 +58,14 @@ unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::B
     }
     case Features::CAPTURE:
     {
-      int size=board->getSize();
-      Go::Color col=move.getColor();
-      int pos=move.getPosition();
-      foreach_adjacent(pos,p,{
-        if (board->inGroup(p))
-        {
-          Go::Group *group=board->getGroup(p);
-          if (group->inAtari() && col!=group->getColor())
-            return 1;
-        }
-      });
-      return 0;
+      if (board->isCapture(move))
+        return 1;
+      else
+        return 0;
     }
     case Features::EXTENSION:
     {
-      int size=board->getSize();
-      Go::Color col=move.getColor();
-      int pos=move.getPosition();
-      bool foundgroupinatari=false;
-      bool foundextension=false;
-      foreach_adjacent(pos,p,{
-        if (board->inGroup(p))
-        {
-          Go::Group *group=board->getGroup(p);
-          if (group->inAtari() && col==group->getColor())
-            foundgroupinatari=true;
-          else if (col==group->getColor())
-            foundextension=true;
-        }
-        else if (board->onBoard(p) && board->touchingEmpty(p)>1)
-          foundextension=true;
-      });
-      if (foundgroupinatari && foundextension)
+      if (board->isExtension(move))
         return 1;
       else
         return 0;

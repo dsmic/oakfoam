@@ -17,6 +17,8 @@ Engine::Engine(Gtp::Engine *ge)
   
   params=new Parameters();
   
+  params->engine=this;
+  
   boardsize=9;
   params->board_size=boardsize;
   currentboard=new Go::Board(boardsize);
@@ -1095,7 +1097,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     delete firstlist;
     delete secondlist;
     
-    Tree *besttree=this->getBestMoves(movetree,false);
+    Tree *besttree=movetree->getRobustChild();
     float bestratio=0;
     if (besttree==NULL)
     {
@@ -1394,7 +1396,8 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
           if (group!=NULL && group->inAtari())
           {
             int liberty=group->getAtariPosition();
-            if (board->validMove(Go::Move(col,liberty)) && this->isAtariCaptureOrConnect(board,liberty,col,group))
+            bool iscaptureorconnect=board->isCapture(Go::Move(col,liberty)) || board->isExtension(Go::Move(col,liberty));
+            if (board->validMove(Go::Move(col,liberty)) && iscaptureorconnect)
             {
               atarimoves[atarimovescount]=liberty;
               atarimovescount++;
@@ -1413,7 +1416,8 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
           if (group!=NULL && group->inAtari())
           {
             int liberty=group->getAtariPosition();
-            if (board->validMove(Go::Move(col,liberty)) && this->isAtariCaptureOrConnect(board,liberty,col,group))
+            bool iscaptureorconnect=board->isCapture(Go::Move(col,liberty)) || board->isExtension(Go::Move(col,liberty));
+            if (board->validMove(Go::Move(col,liberty)) && iscaptureorconnect)
             {
               atarimoves[atarimovescount]=liberty;
               atarimovescount++;
@@ -1582,198 +1586,6 @@ void Engine::randomPlayout(Go::Board *board, std::list<Go::Move> startmoves, Go:
   delete[] posarray;
 }
 
-Tree *Engine::getPlayoutTarget(Tree *movetree)
-{
-  float besturgency=0;
-  Tree *besttree=NULL;
-  
-  for(std::list<Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
-  {
-    if ((*iter)->isPrimary() && !(*iter)->isPruned())
-    {
-      float urgency;
-      
-      if ((*iter)->getPlayouts()==0 && (*iter)->getRAVEPlayouts()==0 && (*iter)->getPriorPlayouts()==0)
-        urgency=(*iter)->getUrgency()+(rand.getRandomReal()/1000);
-      else
-      {
-        urgency=(*iter)->getUrgency();
-        if (params->debug_on)
-          gtpe->getOutput()->printfDebug("[urg]:%s %.3f %.2f(%d) %.2f(%d) %.2f(%d)\n",(*iter)->getMove().toString(boardsize).c_str(),urgency,(*iter)->getRatio(),(*iter)->getPlayouts(),(*iter)->getRAVERatio(),(*iter)->getRAVEPlayouts(),(*iter)->getPriorRatio(),(*iter)->getPriorPlayouts());
-      }
-          
-      if (urgency>besturgency || besttree==NULL)
-      {
-        besttree=(*iter);
-        besturgency=urgency;
-      }
-    }
-  }
-  
-  if (params->debug_on)
-  {
-    if (besttree!=NULL)
-      gtpe->getOutput()->printfDebug("[best]:%s\n",besttree->getMove().toString(boardsize).c_str());
-    else
-      gtpe->getOutput()->printfDebug("WARNING! No best move found\n");
-  }
-  
-  if (besttree==NULL)
-    return NULL;
-  
-  if (params->move_policy==Parameters::MP_UCT && besttree->isLeaf() && !besttree->isTerminal())
-  {
-    if (besttree->getPlayouts()>params->uct_expand_after)
-      this->expandLeaf(besttree);
-  }
-  
-  if (besttree->isLeaf())
-    return besttree;
-  else
-    return this->getPlayoutTarget(besttree);
-}
-
-void Engine::expandLeaf(Tree *movetree)
-{
-  if (!movetree->isLeaf())
-    return;
-  else if (movetree->isTerminal())
-    fprintf(stderr,"WARNING! Trying to expand a terminal node!\n");
-  
-  std::list<Go::Move> startmoves=movetree->getMovesFromRoot();
-  Go::Board *startboard=currentboard->copy();
-  
-  //gtpe->getOutput()->printfDebug("[moves]:"); //!!!
-  for(std::list<Go::Move>::iterator iter=startmoves.begin();iter!=startmoves.end();++iter)
-  {
-    //gtpe->getOutput()->printfDebug(" %s",(*iter).toString(boardsize).c_str()); //!!!
-    startboard->makeMove((*iter));
-    if (startboard->getPassesPlayed()>=2 || (*iter).isResign())
-    {
-      delete startboard;
-      fprintf(stderr,"WARNING! Trying to expand a terminal node? (passes:%d)\n",startboard->getPassesPlayed());
-      return;
-    }
-  }
-  //gtpe->getOutput()->printfDebug("\n"); //!!!
-  
-  Go::Color col=startboard->nextToMove();
-  
-  bool winnow=Go::Board::isWinForColor(col,startboard->score()-komi);
-  Tree *nmt=new Tree(params,Go::Move(col,Go::Move::PASS));
-  if (winnow)
-    nmt->addPriorWins(1);
-  if (startboard->getPassesPlayed()==0 && !(params->surewin_expected && col==currentboard->nextToMove()))
-    nmt->addPriorLoses(UCT_PASS_DETER);
-  nmt->addRAVEWins(params->rave_init_wins);
-  movetree->addChild(nmt);
-  
-  if (startboard->numOfValidMoves(col)>0)
-  {
-    Go::BitBoard *validmovesbitboard=startboard->getValidMoves(col);
-    for (int p=0;p<startboard->getPositionMax();p++)
-    {
-      if (validmovesbitboard->get(p))
-      {
-        Tree *nmt=new Tree(params,Go::Move(col,p));
-        if (params->uct_pattern_prior>0 && !startboard->weakEye(col,p))
-        {
-          unsigned int pattern=Pattern::ThreeByThree::makeHash(startboard,p);
-          if (col==Go::WHITE)
-            pattern=Pattern::ThreeByThree::invert(pattern);
-          if (patterntable->isPattern(pattern))
-            nmt->addPriorWins(params->uct_pattern_prior);
-        }
-        nmt->addRAVEWins(params->rave_init_wins);
-        movetree->addChild(nmt);
-      }
-    }
-    
-    if (params->uct_atari_prior>0)
-    {
-      std::list<Go::Group*,Go::allocator_groupptr> *groups=startboard->getGroups();
-      for(std::list<Go::Group*,Go::allocator_groupptr>::iterator iter=groups->begin();iter!=groups->end();++iter) 
-      {
-        if ((*iter)->inAtari())
-        {
-          int liberty=(*iter)->getAtariPosition();
-          if (startboard->validMove(Go::Move(col,liberty)) && this->isAtariCaptureOrConnect(startboard,liberty,col,(*iter)))
-          {
-            Tree *mt=movetree->getChild(Go::Move(col,liberty));
-            if (mt!=NULL)
-              mt->addPriorWins(params->uct_atari_prior);
-          }
-        }
-      }
-    }
-  }
-  
-  if (params->uct_symmetry_use)
-  {
-    Go::Board::Symmetry sym=startboard->getSymmetry();
-    if (sym!=Go::Board::NONE)
-    {
-      for(std::list<Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
-      {
-        int pos=(*iter)->getMove().getPosition();
-        Go::Board::SymmetryTransform trans=startboard->getSymmetryTransformToPrimary(sym,pos);
-        int primarypos=startboard->doSymmetryTransform(trans,pos);
-        if (pos!=primarypos)
-        {
-          Tree *pmt=movetree->getChild(Go::Move(col,primarypos));
-          if (pmt!=NULL)
-          {
-            if (!pmt->isPrimary())
-              gtpe->getOutput()->printfDebug("WARNING! bad primary\n");
-            (*iter)->setPrimary(pmt);
-          }
-          else
-            gtpe->getOutput()->printfDebug("WARNING! missing primary\n");
-        }
-      }
-    }
-  }
-  
-  if (params->uct_progressive_widening_enabled)
-  {
-    for(std::list<Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
-    {
-      float factor=features->getMoveGamma(startboard,(*iter)->getMove());
-      (*iter)->setPruneFactor(factor);
-    }
-    
-    movetree->pruneChildren();
-    movetree->checkForUnPruning(); //unprune first child
-  }
-  
-  delete startboard;
-}
-
-Tree *Engine::getBestMoves(Tree *movetree, bool descend)
-{
-  float bestsims=0;
-  Tree *besttree=NULL;
-  
-  for(std::list<Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
-  {
-    if ((*iter)->getPlayouts()>bestsims || (*iter)->isTerminalWin() || besttree==NULL)
-    {
-      besttree=(*iter);
-      bestsims=(*iter)->getPlayouts();
-      if (besttree->isTerminalWin())
-        break;
-    }
-  }
-  
-  if (besttree==NULL)
-    return NULL;
-  
-  if (besttree->isLeaf() || !descend)
-    return besttree;
-  else
-    return this->getBestMoves(besttree,descend);
-}
-
 void Engine::clearMoveTree()
 {
   if (movetree!=NULL)
@@ -1883,13 +1695,13 @@ void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
   if (movetree->isLeaf())
   {
     this->allowContinuedPlay();
-    this->expandLeaf(movetree);
+    movetree->expandLeaf();
   }
   
   givenfirstlist=(firstlist==NULL);
   givensecondlist=(secondlist==NULL);
   
-  Tree *playouttree = this->getPlayoutTarget(movetree);
+  Tree *playouttree = movetree->getUrgentChild();
   if (playouttree==NULL)
   {
     if (params->debug_on)
@@ -2034,7 +1846,7 @@ void Engine::displayPlayoutLiveGfx(int totalplayouts, bool livegfx)
       gtpe->getOutput()->printfDebug("VAR");
     else
       gtpe->getOutput()->printf("VAR");
-    Tree *besttree=this->getBestMoves(movetree,true);
+    Tree *besttree=movetree->getRobustChild(true);
     if (besttree!=NULL)
     {
       std::list<Go::Move> bestmoves=besttree->getMovesFromRoot();
@@ -2093,42 +1905,6 @@ void Engine::displayPlayoutLiveGfx(int totalplayouts, bool livegfx)
   }
   if (livegfx)
     gtpe->getOutput()->printfDebug("\n\n");
-}
-
-bool Engine::isAtariCaptureOrConnect(Go::Board *board, int pos, Go::Color col, Go::Group *touchinggroup)
-{
-  int size=board->getSize();
-  if (params->debug_on)
-  {
-    int postchgrp=touchinggroup->getPosition();
-    gtpe->getOutput()->printfDebug("[ataricheck]: start for %s %c %s\n",Go::Position::pos2string(pos,board->getSize()).c_str(),(col==Go::BLACK?'B':'W'),Go::Position::pos2string(postchgrp,board->getSize()).c_str());
-  }
-  if (board->validMove(Go::Move(col,pos)))
-  {
-    if (touchinggroup->getColor()!=col || board->touchingEmpty(pos)>1)
-      return true; //capture or definitely add a liberty
-    else if (touchinggroup->getColor()==col)
-    {
-      foreach_adjacent(pos,p,{
-        if (board->inGroup(p))
-        {
-          Go::Group *group=board->getGroup(p);
-          if (params->debug_on && group!=NULL)
-          {
-            int posgrp=group->getPosition();
-            gtpe->getOutput()->printfDebug("[ataricheck]: touching group %c %s %d\n",(group->getColor()==Go::BLACK?'B':'W'),Go::Position::pos2string(posgrp,board->getSize()).c_str(),group->inAtari());
-          }
-          if (group!=NULL && group->getColor()==col && group!=touchinggroup && !group->inAtari())
-            return true; //connect to a group with another liberty at least
-          else if (group!=NULL && group->getColor()!=col && group->inAtari())
-            return true; //capture a group
-        }
-      });
-    }
-  }
-  if (params->debug_on)
-    gtpe->getOutput()->printfDebug("[ataricheck]: failed\n");
-  return false;
 }
 
 void Engine::allowContinuedPlay()

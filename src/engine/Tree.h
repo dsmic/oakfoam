@@ -63,6 +63,10 @@ class Tree
     void addRAVEWins(int n);
     void addRAVELoses(int n);
     
+    void expandLeaf();
+    Tree *getRobustChild(bool descend=false);
+    Tree *getUrgentChild();
+    
     void allowContinuedPlay();
     
     std::string toSGFString();
