@@ -50,7 +50,7 @@
 #include <string>
 #include <list>
 #include "Go.h"
-#include "UCT.h"
+#include "Tree.h"
 #include "Random.h"
 #include "Pattern.h"
 #include "Parameters.h"
@@ -130,7 +130,7 @@ class Engine
     float komi;
     int boardsize;
     Time *time;
-    UCT::Tree *movetree;
+    Tree *movetree;
     Random rand;
     Pattern::ThreeByThreeTable *patterntable;
     std::string lastexplanation;
@@ -141,15 +141,15 @@ class Engine
     
     void randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, int *posarray);
     void randomPlayout(Go::Board *board, std::list<Go::Move> startmoves, Go::Color colfirst, Go::BitBoard *firstlist, Go::BitBoard *secondlist);
-    UCT::Tree *getPlayoutTarget(UCT::Tree *movetree);
-    void expandLeaf(UCT::Tree *movetree);
-    UCT::Tree *getBestMoves(UCT::Tree *movetree, bool descend);
+    Tree *getPlayoutTarget(Tree *movetree);
+    void expandLeaf(Tree *movetree);
+    Tree *getBestMoves(Tree *movetree, bool descend);
     void clearMoveTree();
     void chooseSubTree(Go::Move move);
     bool isAtariCaptureOrConnect(Go::Board *board, int pos, Go::Color col, Go::Group *touchinggroup);
     
     void doNPlayouts(int n);
-    bool writeSGF(std::string filename, Go::Board *board, UCT::Tree *tree);
+    bool writeSGF(std::string filename, Go::Board *board, Tree *tree);
     void doPlayout(Go::BitBoard *firstlist=NULL,Go::BitBoard *secondlist=NULL);
     void displayPlayoutLiveGfx(int totalplayouts=-1, bool livegfx=true);
     

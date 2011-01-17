@@ -57,7 +57,7 @@ PROGRAMS = $(bin_PROGRAMS)
 am__dirstamp = $(am__leading_dot)dirstamp
 am_oakfoam_OBJECTS = src/Oakfoam.$(OBJEXT) src/main.$(OBJEXT) \
 	src/engine/Go.$(OBJEXT) src/engine/Engine.$(OBJEXT) \
-	src/engine/UCT.$(OBJEXT) src/engine/Random.$(OBJEXT) \
+	src/engine/Tree.$(OBJEXT) src/engine/Random.$(OBJEXT) \
 	src/engine/Pattern.$(OBJEXT) src/engine/Parameters.$(OBJEXT) \
 	src/engine/Features.$(OBJEXT) src/engine/Time.$(OBJEXT) \
 	src/gtp/Gtp.$(OBJEXT)
@@ -189,7 +189,7 @@ top_srcdir = @top_srcdir@
 oakfoam_SOURCES = src/Oakfoam.h src/Oakfoam.cc src/main.cc \
                       src/engine/Go.h src/engine/Go.cc \
                       src/engine/Engine.h src/engine/Engine.cc \
-                      src/engine/UCT.h src/engine/UCT.cc \
+                      src/engine/Tree.h src/engine/Tree.cc \
                       src/engine/Random.h src/engine/Random.cc \
                       src/engine/Pattern.h src/engine/Pattern.cc \
                       src/engine/Parameters.h src/engine/Parameters.cc \
@@ -310,7 +310,7 @@ src/engine/Go.$(OBJEXT): src/engine/$(am__dirstamp) \
 	src/engine/$(DEPDIR)/$(am__dirstamp)
 src/engine/Engine.$(OBJEXT): src/engine/$(am__dirstamp) \
 	src/engine/$(DEPDIR)/$(am__dirstamp)
-src/engine/UCT.$(OBJEXT): src/engine/$(am__dirstamp) \
+src/engine/Tree.$(OBJEXT): src/engine/$(am__dirstamp) \
 	src/engine/$(DEPDIR)/$(am__dirstamp)
 src/engine/Random.$(OBJEXT): src/engine/$(am__dirstamp) \
 	src/engine/$(DEPDIR)/$(am__dirstamp)
@@ -344,7 +344,7 @@ mostlyclean-compile:
 	-rm -f src/engine/Pattern.$(OBJEXT)
 	-rm -f src/engine/Random.$(OBJEXT)
 	-rm -f src/engine/Time.$(OBJEXT)
-	-rm -f src/engine/UCT.$(OBJEXT)
+	-rm -f src/engine/Tree.$(OBJEXT)
 	-rm -f src/gtp/Gtp.$(OBJEXT)
 	-rm -f src/main.$(OBJEXT)
 
@@ -360,7 +360,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/engine/$(DEPDIR)/Pattern.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/engine/$(DEPDIR)/Random.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/engine/$(DEPDIR)/Time.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/engine/$(DEPDIR)/UCT.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/engine/$(DEPDIR)/Tree.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/gtp/$(DEPDIR)/Gtp.Po@am__quote@
 
 .cc.o:

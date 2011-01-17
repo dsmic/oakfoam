@@ -26,7 +26,6 @@ Soon: (before next major release)
   reduce thinking time if surewin?
   think for longer if needed
   keep track of board hashes incrementally
-  rename UCT::Tree to just Tree
   speedup features in playouts
 
 Later: (at some point)

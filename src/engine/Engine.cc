@@ -1095,7 +1095,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     delete firstlist;
     delete secondlist;
     
-    UCT::Tree *besttree=this->getBestMoves(movetree,false);
+    Tree *besttree=this->getBestMoves(movetree,false);
     float bestratio=0;
     if (besttree==NULL)
     {
@@ -1582,12 +1582,12 @@ void Engine::randomPlayout(Go::Board *board, std::list<Go::Move> startmoves, Go:
   delete[] posarray;
 }
 
-UCT::Tree *Engine::getPlayoutTarget(UCT::Tree *movetree)
+Tree *Engine::getPlayoutTarget(Tree *movetree)
 {
   float besturgency=0;
-  UCT::Tree *besttree=NULL;
+  Tree *besttree=NULL;
   
-  for(std::list<UCT::Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
+  for(std::list<Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
   {
     if ((*iter)->isPrimary() && !(*iter)->isPruned())
     {
@@ -1633,7 +1633,7 @@ UCT::Tree *Engine::getPlayoutTarget(UCT::Tree *movetree)
     return this->getPlayoutTarget(besttree);
 }
 
-void Engine::expandLeaf(UCT::Tree *movetree)
+void Engine::expandLeaf(Tree *movetree)
 {
   if (!movetree->isLeaf())
     return;
@@ -1660,7 +1660,7 @@ void Engine::expandLeaf(UCT::Tree *movetree)
   Go::Color col=startboard->nextToMove();
   
   bool winnow=Go::Board::isWinForColor(col,startboard->score()-komi);
-  UCT::Tree *nmt=new UCT::Tree(params,Go::Move(col,Go::Move::PASS));
+  Tree *nmt=new Tree(params,Go::Move(col,Go::Move::PASS));
   if (winnow)
     nmt->addPriorWins(1);
   if (startboard->getPassesPlayed()==0 && !(params->surewin_expected && col==currentboard->nextToMove()))
@@ -1675,7 +1675,7 @@ void Engine::expandLeaf(UCT::Tree *movetree)
     {
       if (validmovesbitboard->get(p))
       {
-        UCT::Tree *nmt=new UCT::Tree(params,Go::Move(col,p));
+        Tree *nmt=new Tree(params,Go::Move(col,p));
         if (params->uct_pattern_prior>0 && !startboard->weakEye(col,p))
         {
           unsigned int pattern=Pattern::ThreeByThree::makeHash(startboard,p);
@@ -1699,7 +1699,7 @@ void Engine::expandLeaf(UCT::Tree *movetree)
           int liberty=(*iter)->getAtariPosition();
           if (startboard->validMove(Go::Move(col,liberty)) && this->isAtariCaptureOrConnect(startboard,liberty,col,(*iter)))
           {
-            UCT::Tree *mt=movetree->getChild(Go::Move(col,liberty));
+            Tree *mt=movetree->getChild(Go::Move(col,liberty));
             if (mt!=NULL)
               mt->addPriorWins(params->uct_atari_prior);
           }
@@ -1713,14 +1713,14 @@ void Engine::expandLeaf(UCT::Tree *movetree)
     Go::Board::Symmetry sym=startboard->getSymmetry();
     if (sym!=Go::Board::NONE)
     {
-      for(std::list<UCT::Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
+      for(std::list<Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
       {
         int pos=(*iter)->getMove().getPosition();
         Go::Board::SymmetryTransform trans=startboard->getSymmetryTransformToPrimary(sym,pos);
         int primarypos=startboard->doSymmetryTransform(trans,pos);
         if (pos!=primarypos)
         {
-          UCT::Tree *pmt=movetree->getChild(Go::Move(col,primarypos));
+          Tree *pmt=movetree->getChild(Go::Move(col,primarypos));
           if (pmt!=NULL)
           {
             if (!pmt->isPrimary())
@@ -1736,7 +1736,7 @@ void Engine::expandLeaf(UCT::Tree *movetree)
   
   if (params->uct_progressive_widening_enabled)
   {
-    for(std::list<UCT::Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
+    for(std::list<Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
     {
       float factor=features->getMoveGamma(startboard,(*iter)->getMove());
       (*iter)->setPruneFactor(factor);
@@ -1749,12 +1749,12 @@ void Engine::expandLeaf(UCT::Tree *movetree)
   delete startboard;
 }
 
-UCT::Tree *Engine::getBestMoves(UCT::Tree *movetree, bool descend)
+Tree *Engine::getBestMoves(Tree *movetree, bool descend)
 {
   float bestsims=0;
-  UCT::Tree *besttree=NULL;
+  Tree *besttree=NULL;
   
-  for(std::list<UCT::Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
+  for(std::list<Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
   {
     if ((*iter)->getPlayouts()>bestsims || (*iter)->isTerminalWin() || besttree==NULL)
     {
@@ -1780,14 +1780,14 @@ void Engine::clearMoveTree()
     delete movetree;
   
   if (currentboard->getMovesMade()>0)
-    movetree=new UCT::Tree(params,currentboard->getLastMove());
+    movetree=new Tree(params,currentboard->getLastMove());
   else
-    movetree=new UCT::Tree(params);
+    movetree=new Tree(params);
 }
 
 void Engine::chooseSubTree(Go::Move move)
 {
-  UCT::Tree *subtree=movetree->getChild(move);
+  Tree *subtree=movetree->getChild(move);
   
   if (subtree==NULL)
   {
@@ -1817,7 +1817,7 @@ void Engine::chooseSubTree(Go::Move move)
   movetree=subtree;
 }
 
-bool Engine::writeSGF(std::string filename, Go::Board *board, UCT::Tree *tree)
+bool Engine::writeSGF(std::string filename, Go::Board *board, Tree *tree)
 {
   std::ofstream sgffile;
   sgffile.open(filename.c_str());
@@ -1889,7 +1889,7 @@ void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
   givenfirstlist=(firstlist==NULL);
   givensecondlist=(secondlist==NULL);
   
-  UCT::Tree *playouttree = this->getPlayoutTarget(movetree);
+  Tree *playouttree = this->getPlayoutTarget(movetree);
   if (playouttree==NULL)
   {
     if (params->debug_on)
@@ -1942,7 +1942,7 @@ void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
     {
       if (firstlist->get(p))
       {
-        UCT::Tree *subtree=movetree->getChild(Go::Move(col,p));
+        Tree *subtree=movetree->getChild(Go::Move(col,p));
         if (subtree!=NULL)
         {
           if (ravewin)
@@ -1953,14 +1953,14 @@ void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
       }
     }
     
-    UCT::Tree *secondtree=movetree->getChild(playoutmoves.front());
+    Tree *secondtree=movetree->getChild(playoutmoves.front());
     if (!secondtree->isLeaf())
     {
       for (int p=0;p<playoutboard->getPositionMax();p++)
       {
         if (secondlist->get(p))
         {
-          UCT::Tree *subtree=secondtree->getChild(Go::Move(Go::otherColor(col),p));
+          Tree *subtree=secondtree->getChild(Go::Move(Go::otherColor(col),p));
           if (subtree!=NULL)
           {
             if (ravewin)
@@ -1995,13 +1995,13 @@ void Engine::displayPlayoutLiveGfx(int totalplayouts, bool livegfx)
   else
     gtpe->getOutput()->printf("INFLUENCE");
   int maxplayouts=1; //prevent div by zero
-  for(std::list<UCT::Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
+  for(std::list<Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
   {
     if ((*iter)->getPlayouts()>maxplayouts)
       maxplayouts=(*iter)->getPlayouts();
   }
   float colorfactor=(col==Go::BLACK?1:-1);
-  for(std::list<UCT::Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
+  for(std::list<Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
   {
     if (!(*iter)->getMove().isPass() && !(*iter)->getMove().isResign())
     {
@@ -2034,7 +2034,7 @@ void Engine::displayPlayoutLiveGfx(int totalplayouts, bool livegfx)
       gtpe->getOutput()->printfDebug("VAR");
     else
       gtpe->getOutput()->printf("VAR");
-    UCT::Tree *besttree=this->getBestMoves(movetree,true);
+    Tree *besttree=this->getBestMoves(movetree,true);
     if (besttree!=NULL)
     {
       std::list<Go::Move> bestmoves=besttree->getMovesFromRoot();
@@ -2070,7 +2070,7 @@ void Engine::displayPlayoutLiveGfx(int totalplayouts, bool livegfx)
       gtpe->getOutput()->printfDebug("SQUARE");
     else
       gtpe->getOutput()->printf("SQUARE");
-    for(std::list<UCT::Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
+    for(std::list<Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
     {
       if (!(*iter)->getMove().isPass() && !(*iter)->getMove().isResign())
       {

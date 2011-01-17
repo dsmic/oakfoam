@@ -1,13 +1,13 @@
-#include "UCT.h"
+#include "Tree.h"
 
 #include <cmath>
 #include <sstream>
 #include "Parameters.h"
 
-UCT::Tree::Tree(Parameters *prms, Go::Move mov, UCT::Tree *p)
+Tree::Tree(Parameters *prms, Go::Move mov, Tree *p)
 {
   parent=p;
-  children=new std::list<UCT::Tree*>();
+  children=new std::list<Tree*>();
   params=prms;
   move=mov;
   playouts=0;
@@ -35,22 +35,22 @@ UCT::Tree::Tree(Parameters *prms, Go::Move mov, UCT::Tree *p)
   }
 }
 
-UCT::Tree::~Tree()
+Tree::~Tree()
 {
-  for(std::list<UCT::Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
+  for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
   {
     delete (*iter);
   }
   delete children;
 }
 
-void UCT::Tree::addChild(UCT::Tree *node)
+void Tree::addChild(Tree *node)
 {
   children->push_back(node);
   node->parent=this;
 }
 
-float UCT::Tree::getRatio()
+float Tree::getRatio()
 {
   if (playouts>0)
     return (float)wins/playouts;
@@ -60,7 +60,7 @@ float UCT::Tree::getRatio()
     return 0;
 }
 
-float UCT::Tree::getRAVERatio()
+float Tree::getRAVERatio()
 {
   if (raveplayouts>0)
     return (float)ravewins/raveplayouts;
@@ -68,7 +68,7 @@ float UCT::Tree::getRAVERatio()
     return 0;
 }
 
-float UCT::Tree::getPriorRatio()
+float Tree::getPriorRatio()
 {
   if (priorplayouts>0)
     return (float)priorwins/priorplayouts;
@@ -76,7 +76,7 @@ float UCT::Tree::getPriorRatio()
     return 0;
 }
 
-float UCT::Tree::getBasePriorRatio()
+float Tree::getBasePriorRatio()
 {
   if (playouts>0 || priorplayouts>0)
     return (float)(wins+priorwins)/(playouts+priorplayouts);
@@ -84,7 +84,7 @@ float UCT::Tree::getBasePriorRatio()
     return 0;
 }
 
-void UCT::Tree::addWin(UCT::Tree *source)
+void Tree::addWin(Tree *source)
 {
   wins++;
   playouts++;
@@ -92,49 +92,49 @@ void UCT::Tree::addWin(UCT::Tree *source)
   this->checkForUnPruning();
 }
 
-void UCT::Tree::addLose(UCT::Tree *source)
+void Tree::addLose(Tree *source)
 {
   playouts++;
   this->passPlayoutUp(false,source);
   this->checkForUnPruning();
 }
 
-void UCT::Tree::addPriorWins(int n)
+void Tree::addPriorWins(int n)
 {
   priorwins+=n;
   priorplayouts+=n;
 }
 
-void UCT::Tree::addPriorLoses(int n)
+void Tree::addPriorLoses(int n)
 {
   priorplayouts+=n;
 }
 
-void UCT::Tree::addRAVEWin()
+void Tree::addRAVEWin()
 {
   ravewins++;
   raveplayouts++;
 }
 
-void UCT::Tree::addRAVELose()
+void Tree::addRAVELose()
 {
   raveplayouts++;
 }
 
-void UCT::Tree::addRAVEWins(int n)
+void Tree::addRAVEWins(int n)
 {
   ravewins+=n;
   raveplayouts+=n;
 }
 
-void UCT::Tree::addRAVELoses(int n)
+void Tree::addRAVELoses(int n)
 {
   raveplayouts+=n;
 }
 
-UCT::Tree *UCT::Tree::getChild(Go::Move move)
+Tree *Tree::getChild(Go::Move move)
 {
-  for(std::list<UCT::Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
+  for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
   {
     if ((*iter)->getMove()==move) 
       return (*iter);
@@ -142,7 +142,7 @@ UCT::Tree *UCT::Tree::getChild(Go::Move move)
   return NULL;
 }
 
-void UCT::Tree::passPlayoutUp(bool win, UCT::Tree *source)
+void Tree::passPlayoutUp(bool win, Tree *source)
 {
   bool passterminal=(this->isTerminal() && !this->isTerminalResult()) || (source!=NULL && source->isTerminalResult());
   
@@ -182,7 +182,7 @@ void UCT::Tree::passPlayoutUp(bool win, UCT::Tree *source)
   }
 }
 
-float UCT::Tree::getVal()
+float Tree::getVal()
 {
   if (this->isTerminal())
   {
@@ -211,13 +211,13 @@ float UCT::Tree::getVal()
   }
 }
 
-float UCT::Tree::getUrgency()
+float Tree::getUrgency()
 {
   float bias;
   if (this->isTerminalWin())
-    return UCT_TERMINAL_URGENCY;
+    return TREE_TERMINAL_URGENCY;
   else if (this->isTerminalLose())
-    return -UCT_TERMINAL_URGENCY;
+    return -TREE_TERMINAL_URGENCY;
   
   if (playouts==0 && raveplayouts==0 && priorplayouts==0)
     return params->ucb_init;
@@ -225,9 +225,9 @@ float UCT::Tree::getUrgency()
   if (this->isTerminal())
   {
     if (playouts==0 || this->getVal()>0)
-      return UCT_TERMINAL_URGENCY;
+      return TREE_TERMINAL_URGENCY;
     else
-      return -UCT_TERMINAL_URGENCY;
+      return -TREE_TERMINAL_URGENCY;
   }
   
   int plts=playouts+priorplayouts;
@@ -247,7 +247,7 @@ float UCT::Tree::getUrgency()
   return this->getVal()+bias;
 }
 
-std::list<Go::Move> UCT::Tree::getMovesFromRoot()
+std::list<Go::Move> Tree::getMovesFromRoot()
 {
   if (this->isRoot())
     return std::list<Go::Move>();
@@ -259,7 +259,7 @@ std::list<Go::Move> UCT::Tree::getMovesFromRoot()
   }
 }
 
-bool UCT::Tree::isTerminal()
+bool Tree::isTerminal()
 {
   if (terminaloverride)
     return false;
@@ -276,18 +276,18 @@ bool UCT::Tree::isTerminal()
     return false;
 }
 
-void UCT::Tree::divorceChild(UCT::Tree *child)
+void Tree::divorceChild(Tree *child)
 {
   children->remove(child);
   child->parent=NULL;
 }
 
-float UCT::Tree::variance(int wins, int playouts)
+float Tree::variance(int wins, int playouts)
 {
   return wins-(float)(wins*wins)/playouts;
 }
 
-std::string UCT::Tree::toSGFString()
+std::string Tree::toSGFString()
 {
   std::ostringstream ss;
   if (!this->isRoot())
@@ -326,7 +326,7 @@ std::string UCT::Tree::toSGFString()
     ss<<"]";
   }
   
-  UCT::Tree *bestchild=NULL;
+  Tree *bestchild=NULL;
   int besti=0;
   bool usedchild[children->size()];
   for (unsigned int i=0;i<children->size();i++)
@@ -336,7 +336,7 @@ std::string UCT::Tree::toSGFString()
   while (true)
   {
     int i=0;
-    for(std::list<UCT::Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
+    for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
     {
       if (usedchild[i]==false && ((*iter)->getPlayouts()>0 || (*iter)->isTerminal()))
       {
@@ -366,18 +366,18 @@ std::string UCT::Tree::toSGFString()
   return ss.str();
 }
 
-void UCT::Tree::performSymmetryTransform(Go::Board::SymmetryTransform trans)
+void Tree::performSymmetryTransform(Go::Board::SymmetryTransform trans)
 {
   if (!move.isPass() && !move.isResign())
     move.setPosition(Go::Board::doSymmetryTransformStaticReverse(trans,params->board_size,move.getPosition()));
   
-  for(std::list<UCT::Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
+  for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
   {
     (*iter)->performSymmetryTransform(trans);
   }
 }
 
-void UCT::Tree::performSymmetryTransformParentPrimary()
+void Tree::performSymmetryTransformParentPrimary()
 {
   if (!this->isRoot() && !this->isPrimary())
   {
@@ -387,10 +387,10 @@ void UCT::Tree::performSymmetryTransformParentPrimary()
   }
 }
 
-void UCT::Tree::pruneChildren()
+void Tree::pruneChildren()
 {
   prunedchildren=0;
-  for(std::list<UCT::Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
+  for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
   {
     if ((*iter)->isPrimary())
     {
@@ -400,14 +400,14 @@ void UCT::Tree::pruneChildren()
   }
 }
 
-void UCT::Tree::unPruneNextChild()
+void Tree::unPruneNextChild()
 {
   if (prunedchildren>0)
   {
-    UCT::Tree *bestchild=NULL;
+    Tree *bestchild=NULL;
     float bestfactor=0;
     
-    for(std::list<UCT::Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
+    for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
     {
       if ((*iter)->isPruned() && (*iter)->isPrimary())
       {
@@ -430,19 +430,19 @@ void UCT::Tree::unPruneNextChild()
   }
 }
 
-void UCT::Tree::checkForUnPruning()
+void Tree::checkForUnPruning()
 {
   if (playouts>=unprunenextchildat)
     this->unPruneNextChild();
 }
 
-void UCT::Tree::unPruneNow()
+void Tree::unPruneNow()
 {
   unprunenextchildat=playouts;
   this->unPruneNextChild();
 }
 
-void UCT::Tree::allowContinuedPlay()
+void Tree::allowContinuedPlay()
 {
   terminaloverride=true;
   if (hasTerminalWinrate)
