@@ -2,7 +2,7 @@ TODO
 ------------------
 
 Now: (current focus)
-  move playout/time/tree code out of engine
+  move playout/tree code out of engine
   add "time_ignore" setting
   make sure play can continue after 2 passes
   add CFG as a feature

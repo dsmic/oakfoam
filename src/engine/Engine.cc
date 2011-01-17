@@ -88,9 +88,7 @@ Engine::Engine(Gtp::Engine *ge)
   features=new Features(params);
   features->loadGammaDefaults();
   
-  time_main=0;
-  time_black=0;
-  time_white=0;
+  time=new Time(params,0);
   
   lastexplanation="";
   
@@ -108,6 +106,7 @@ Engine::~Engine()
     delete movetree;
   delete currentboard;
   delete params;
+  delete time;
 }
 
 void Engine::updateParameter(std::string id)
@@ -240,8 +239,7 @@ void Engine::gtpClearBoard(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   me->clearBoard();
   
   //assume that this will be the start of a new game
-  me->time_black=me->time_main;
-  me->time_white=me->time_main;
+  me->time->resetAll();
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->endResponse();
@@ -967,82 +965,31 @@ void Engine::gtpTimeSettings(void *instance, Gtp::Engine* gtpe, Gtp::Command* cm
     return;
   }
   
-  if ((cmd->getIntArg(1)!=0 && cmd->getIntArg(2)==0) || (cmd->getIntArg(0)==0 && cmd->getIntArg(1)==0 && cmd->getIntArg(2)==0)) // no time
-  {
-    me->time_main=0;
-    me->time_overtime_period=0;
-    me->time_overtime_stones=0;
-    
-    me->time_black=0;
-    me->time_white=0;
-    me->time_black_stones=0;
-    me->time_white_stones=0;
-    
-    gtpe->getOutput()->startResponse(cmd);
-    gtpe->getOutput()->endResponse();
-  }
-  else if (cmd->getIntArg(1)!=0) // canadian overtime
-  {
-    //gtpe->getOutput()->startResponse(cmd,false);
-    //gtpe->getOutput()->printString("only absolute time supported");
-    //gtpe->getOutput()->endResponse();
-    me->time_main=cmd->getIntArg(0);
-    me->time_overtime_period=cmd->getIntArg(1);
-    me->time_overtime_stones=cmd->getIntArg(2);
-    
-    if (me->time_main>0)
-    {
-      me->time_black=me->time_main;
-      me->time_white=me->time_main;
-      me->time_black_stones=0;
-      me->time_white_stones=0;
-    }
-    else
-    {
-      me->time_black=me->time_overtime_period;
-      me->time_white=me->time_overtime_period;
-      me->time_black_stones=me->time_overtime_stones;
-      me->time_white_stones=me->time_overtime_stones;
-    }
-    
-    gtpe->getOutput()->startResponse(cmd);
-    gtpe->getOutput()->endResponse();
-  }
-  else  // absolute time
-  {
-    me->time_main=cmd->getIntArg(0);
-    me->time_overtime_period=0;
-    me->time_overtime_stones=0;
-    
-    me->time_black=me->time_main;
-    me->time_white=me->time_main;
-    me->time_black_stones=0;
-    me->time_white_stones=0;
-    
-    gtpe->getOutput()->startResponse(cmd);
-    gtpe->getOutput()->endResponse();
-  }
+  delete me->time;
+  me->time=new Time(me->params,cmd->getIntArg(0),cmd->getIntArg(1),cmd->getIntArg(2));
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->endResponse();
 }
 
 void Engine::gtpTimeLeft(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
   
-  if (cmd->numArgs()!=3)
+  if (me->time->isNoTiming())
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("no time settings defined");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  else if (cmd->numArgs()!=3)
   {
     gtpe->getOutput()->startResponse(cmd,false);
     gtpe->getOutput()->printString("invalid arguments");
     gtpe->getOutput()->endResponse();
     return;
   }
-  
-  /*if (cmd->getIntArg(2)!=0)
-  {
-    gtpe->getOutput()->startResponse(cmd,false);
-    gtpe->getOutput()->printString("only absolute time supported");
-    gtpe->getOutput()->endResponse();
-    return;
-  }*/
   
   Gtp::Color gtpcol = cmd->getColorArg(0);
   if (gtpcol==Gtp::INVALID)
@@ -1052,18 +999,19 @@ void Engine::gtpTimeLeft(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     gtpe->getOutput()->endResponse();
     return;
   }
+  Go::Color col=(gtpcol==Gtp::BLACK ? Go::BLACK : Go::WHITE);
   
-  float time=(float)cmd->getIntArg(1);
-  int stones=cmd->getIntArg(2);
+  float oldtime=me->time->timeLeft(col);
+  //int oldstones=me->time->stonesLeft(col);
+  float newtime=(float)cmd->getIntArg(1);
+  int newstones=cmd->getIntArg(2);
   
-  float *time_var=(gtpcol==Gtp::BLACK ? &me->time_black : &me->time_white);
-  int *stones_var=(gtpcol==Gtp::BLACK ? &me->time_black_stones : &me->time_white_stones);
-  if (stones==0)
-    gtpe->getOutput()->printfDebug("[time_left]: diff:%.3f\n",time-*time_var);
+  if (newstones==0)
+    gtpe->getOutput()->printfDebug("[time_left]: diff:%.3f\n",newtime-oldtime);
   else
-    gtpe->getOutput()->printfDebug("[time_left]: diff:%.3f s:%d\n",time-*time_var,stones);
-  *time_var=time;
-  *stones_var=stones;
+    gtpe->getOutput()->printfDebug("[time_left]: diff:%.3f s:%d\n",newtime-oldtime,newstones);
+  
+  me->time->updateTimeLeft(col,newtime,newstones);
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->endResponse();
@@ -1073,16 +1021,17 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
 {
   if (params->move_policy==Parameters::MP_UCT || params->move_policy==Parameters::MP_ONEPLY)
   {
-    float *time_left=(col==Go::BLACK ? &time_black : &time_white);
-    int *time_stones=(col==Go::BLACK ? &time_black_stones : &time_white_stones);
     boost::timer timer;
     int totalplayouts=0;
     int livegfxupdate=0;
     float time_allocated;
     float playouts_per_milli;
     
-    if (*time_left>0)
-      time_allocated=this->getTimeAllowedThisTurn(col);
+    if (!time->isNoTiming())
+    {
+      time_allocated=time->getAllocatedTimeForNextTurn(col);
+      gtpe->getOutput()->printfDebug("[time_allowed]: %.3f\n",time_allocated);
+    }
     else
       time_allocated=0;
     
@@ -1161,42 +1110,19 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
       playouts_per_milli=(float)totalplayouts/(time_used*1000);
     else
       playouts_per_milli=-1;
-    if (*time_left!=0)
-    {
-      *time_left-=time_used;
-      if (*time_left<=0)
-      {
-        if (time_overtime_period==0 || time_overtime_stones==0) // absolute time
-          *time_left=1;
-        else if (*time_stones>0) // run out of overtime!
-          *time_left=1;
-        else // main time over
-        {
-          *time_left=time_overtime_period;
-          *time_stones=time_overtime_stones;
-        }
-      }
-      else if (*time_stones>0)
-      {
-        (*time_stones)--;
-        if (*time_stones<=0)
-        {
-          *time_left=time_overtime_period;
-          *time_stones=time_overtime_stones;
-        }
-      }
-    }
+    if (!time->isNoTiming())
+      time->useTime(col,time_used);
     
     std::ostringstream ss;
     ss << std::fixed;
     ss << "r:"<<std::setprecision(2)<<bestratio;
-    if (*time_left>0)
+    if (!time->isNoTiming())
     {
-      ss << " tl:"<<std::setprecision(3)<<*time_left;
-      if (*time_stones>0)
-        ss << " s:"<<*time_stones;
+      ss << " tl:"<<std::setprecision(3)<<time->timeLeft(col);
+      if (time->stonesLeft(col)>0)
+        ss << " s:"<<time->stonesLeft(col);
     }
-    if (*time_left>0 || movetree->isTerminalResult())
+    if (!time->isNoTiming() || movetree->isTerminalResult())
       ss << " plts:"<<totalplayouts;
     ss << " ppms:"<<std::setprecision(2)<<playouts_per_milli;
     params->surewin_expected=(bestratio>=params->surewin_threshold);
@@ -1643,18 +1569,6 @@ void Engine::randomPlayout(Go::Board *board, std::list<Go::Move> startmoves, Go:
       break;
   }
   delete[] posarray;
-}
-
-float Engine::getTimeAllowedThisTurn(Go::Color col)
-{
-  float time_left=(col==Go::BLACK ? time_black : time_white);
-  time_left-=params->time_buffer;
-  float time_per_move=time_left/params->time_k; //allow much more time in beginning
-  if (time_per_move<params->time_move_minimum)
-    time_per_move=params->time_move_minimum;
-  
-  gtpe->getOutput()->printfDebug("[time_allowed]: %.3f\n",time_per_move);
-  return time_per_move;
 }
 
 UCT::Tree *Engine::getPlayoutTarget(UCT::Tree *movetree)

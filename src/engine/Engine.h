@@ -55,6 +55,7 @@
 #include "Pattern.h"
 #include "Parameters.h"
 #include "Features.h"
+#include "Time.h"
 #include "../gtp/Gtp.h"
 
 class Engine
@@ -128,9 +129,7 @@ class Engine
     Go::Board *currentboard;
     float komi;
     int boardsize;
-    float time_main,time_black,time_white;
-    float time_overtime_period,time_overtime_stones;
-    int time_black_stones,time_white_stones;
+    Time *time;
     UCT::Tree *movetree;
     Random rand;
     Pattern::ThreeByThreeTable *patterntable;
@@ -148,8 +147,6 @@ class Engine
     void clearMoveTree();
     void chooseSubTree(Go::Move move);
     bool isAtariCaptureOrConnect(Go::Board *board, int pos, Go::Color col, Go::Group *touchinggroup);
-    
-    float getTimeAllowedThisTurn(Go::Color col);
     
     void doNPlayouts(int n);
     bool writeSGF(std::string filename, Go::Board *board, UCT::Tree *tree);

@@ -7,6 +7,7 @@ oakfoam_SOURCES     = src/Oakfoam.h src/Oakfoam.cc src/main.cc \
                       src/engine/Pattern.h src/engine/Pattern.cc \
                       src/engine/Parameters.h src/engine/Parameters.cc \
                       src/engine/Features.h src/engine/Features.cc \
+                      src/engine/Time.h src/engine/Time.cc \
                       src/gtp/Gtp.h src/gtp/Gtp.cc
                       
 dist_noinst_SCRIPTS = autogen.sh
