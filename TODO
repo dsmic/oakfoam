@@ -8,6 +8,7 @@ Now: (current focus)
   progressive widening can depend on winrate
   progressive widening occurs related to "factor" (features)
   fix rave (currently only work in first 2 ply)
+  change uct_* params to tree_*
 
 Soon: (before next major release)
   implement superko in tree
