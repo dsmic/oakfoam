@@ -9,6 +9,7 @@ Now: (current focus)
   progressive widening occurs related to "factor" (features)
   fix rave (currently only work in first 2 ply)
   change uct_* params to tree_*
+  setting to filter boardsize, time_settings, etc. for kgs
 
 Soon: (before next major release)
   implement superko in tree
