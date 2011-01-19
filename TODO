@@ -4,12 +4,14 @@ TODO
 Now: (current focus)
   move playout code out of engine
   add CFG as a feature
-  implement Drake's Last-Good-Reply-with-Forgetting policy
+  implement Drake's Last-Good-Reply-with-Forgetting policy (LGRF-2)
+  LGRF-1/2 with a variable queue
   progressive widening can depend on winrate
   progressive widening occurs related to "factor" (features)
-  fix rave (currently only work in first 2 ply)
+  fix rave (currently only works in first 2 ply)
   change uct_* params to tree_*
   setting to filter boardsize, time_settings, etc. for kgs
+  make sure scoring at end of kgs game works (opponent can't "cheat")
 
 Soon: (before next major release)
   implement superko in tree
