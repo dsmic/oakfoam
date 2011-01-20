@@ -428,7 +428,13 @@ void Tree::unPruneNextChild()
       //fprintf(stderr,"[unpruning]: (%d) %s\n",unprunenextchildat,bestchild->getMove().toString(params->board_size).c_str());
       bestchild->setPruned(false);
       int unpruned=children->size()-prunedchildren;
-      unprunenextchildat=unprunenextchildat+(int)(params->uct_progressive_widening_a*pow(params->uct_progressive_widening_b,unpruned)); //t(n+1)=t(n)+a*b^n
+      float abtothen=params->uct_progressive_widening_a*pow(params->uct_progressive_widening_b,unpruned);
+      float scale;
+      if (playouts>0)
+        scale=(1-params->uct_progressive_widening_c*this->getRatio());
+      else
+        scale=1;
+      unprunenextchildat+=(int)(abtothen*scale); //t(n+1)=t(n)+a*b^n
       prunedchildren--;
     }
   }

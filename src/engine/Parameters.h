@@ -50,6 +50,7 @@ class Parameters
     bool uct_progressive_widening_enabled;
     float uct_progressive_widening_a;
     float uct_progressive_widening_b;
+    float uct_progressive_widening_c;
     
     float surewin_threshold;
     bool surewin_expected;

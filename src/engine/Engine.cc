@@ -60,6 +60,7 @@ Engine::Engine(Gtp::Engine *ge)
   params->addParameter("mcts","uct_progressive_widening_enabled",&(params->uct_progressive_widening_enabled),UCT_PROGRESSIVE_WIDENING_ENABLED);
   params->addParameter("mcts","uct_progressive_widening_a",&(params->uct_progressive_widening_a),UCT_PROGRESSIVE_WIDENING_A);
   params->addParameter("mcts","uct_progressive_widening_b",&(params->uct_progressive_widening_b),UCT_PROGRESSIVE_WIDENING_B);
+  params->addParameter("mcts","uct_progressive_widening_c",&(params->uct_progressive_widening_c),UCT_PROGRESSIVE_WIDENING_C);
   
   params->addParameter("mcts","surewin_threshold",&(params->surewin_threshold),SUREWIN_THRESHOLD);
   params->surewin_expected=false;

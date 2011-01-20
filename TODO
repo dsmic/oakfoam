@@ -6,7 +6,7 @@ Now: (current focus)
   add CFG as a feature
   implement Drake's Last-Good-Reply-with-Forgetting policy (LGRF-2)
   LGRF-1/2 with a variable queue
-  progressive widening can depend on winrate
+  tune how much progressive widening can depend on winrate
   progressive widening occurs related to "factor" (features)
   fix rave (currently only works in first 2 ply)
   change uct_* params to tree_*
