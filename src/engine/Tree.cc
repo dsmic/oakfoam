@@ -442,13 +442,18 @@ void Tree::unPruneNextChild()
 
 void Tree::checkForUnPruning()
 {
-  if (playouts>=unprunenextchildat)
+  if (params->uct_progressive_widening_count_wins && wins>=unprunenextchildat)
+    this->unPruneNextChild();
+  else if (!params->uct_progressive_widening_count_wins && playouts>=unprunenextchildat)
     this->unPruneNextChild();
 }
 
 void Tree::unPruneNow()
 {
-  unprunenextchildat=playouts;
+  if (params->uct_progressive_widening_count_wins)
+    unprunenextchildat=wins;
+  else
+    unprunenextchildat=playouts;
   this->unPruneNextChild();
 }
 
