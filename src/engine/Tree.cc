@@ -24,6 +24,8 @@ Tree::Tree(Parameters *prms, Go::Move mov, Tree *p)
   prunedchildren=0;
   prunefactor=0;
   unprunenextchildat=0;
+  lastunprune=0;
+  unprunebase=0;
   
   if (parent!=NULL)
   {
@@ -410,16 +412,22 @@ void Tree::unPruneNextChild()
   {
     Tree *bestchild=NULL;
     float bestfactor=0;
+    int unpruned=0;
     
     for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
     {
-      if ((*iter)->isPruned() && (*iter)->isPrimary())
+      if ((*iter)->isPrimary())
       {
-        if ((*iter)->prunefactor>bestfactor || bestchild==NULL)
+        if ((*iter)->isPruned())
         {
-          bestfactor=(*iter)->prunefactor;
-          bestchild=(*iter);
+          if ((*iter)->prunefactor>bestfactor || bestchild==NULL)
+          {
+            bestfactor=(*iter)->prunefactor;
+            bestchild=(*iter);
+          }
         }
+        else
+          unpruned++;
       }
     }
     
@@ -427,33 +435,42 @@ void Tree::unPruneNextChild()
     {
       //fprintf(stderr,"[unpruning]: (%d) %s\n",unprunenextchildat,bestchild->getMove().toString(params->board_size).c_str());
       bestchild->setPruned(false);
-      int unpruned=children->size()-prunedchildren;
-      float abtothen=params->uct_progressive_widening_a*pow(params->uct_progressive_widening_b,unpruned);
-      float scale;
-      if (playouts>0)
-        scale=(1-params->uct_progressive_widening_c*this->getRatio());
-      else
-        scale=1;
-      unprunenextchildat+=(int)(abtothen*scale); //t(n+1)=t(n)+a*b^n
+      unprunebase=params->uct_progressive_widening_a*pow(params->uct_progressive_widening_b,unpruned);
+      lastunprune=this->unPruneMetric();
+      this->updateUnPruneAt();
       prunedchildren--;
     }
   }
 }
 
+int Tree::unPruneMetric()
+{
+  if (params->uct_progressive_widening_count_wins)
+    return wins;
+  else
+    return playouts;
+}
+
+void Tree::updateUnPruneAt()
+{
+  float scale;
+  if (playouts>0)
+    scale=(1-params->uct_progressive_widening_c*this->getRatio());
+  else
+    scale=1;
+  unprunenextchildat=lastunprune+(int)(unprunebase*scale); //t(n+1)=t(n)+(a*b^n)*(1-c*p)
+}
+
 void Tree::checkForUnPruning()
 {
-  if (params->uct_progressive_widening_count_wins && wins>=unprunenextchildat)
-    this->unPruneNextChild();
-  else if (!params->uct_progressive_widening_count_wins && playouts>=unprunenextchildat)
+  this->updateUnPruneAt();
+  if (this->unPruneMetric()>=unprunenextchildat)
     this->unPruneNextChild();
 }
 
 void Tree::unPruneNow()
 {
-  if (params->uct_progressive_widening_count_wins)
-    unprunenextchildat=wins;
-  else
-    unprunenextchildat=playouts;
+  unprunenextchildat=this->unPruneMetric();
   this->unPruneNextChild();
 }
 

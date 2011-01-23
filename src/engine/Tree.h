@@ -83,11 +83,14 @@ class Tree
     bool pruned;
     unsigned int prunedchildren;
     float prunefactor;
-    int unprunenextchildat;
+    int lastunprune,unprunenextchildat;
+    float unprunebase;
     
     void passPlayoutUp(bool win, Tree *source);
     
     void unPruneNextChild();
+    int unPruneMetric();
+    void updateUnPruneAt();
     
     static float variance(int wins, int playouts);
 };
