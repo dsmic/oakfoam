@@ -343,6 +343,7 @@ namespace Go
       bool isAtari(Go::Move move);
       int getDistanceToBorder(int pos);
       int getCircularDistance(int pos1, int pos2);
+      Go::ObjectBoard<int> *getCFGFrom(int pos, int max=0);
     
     private:
       int size;

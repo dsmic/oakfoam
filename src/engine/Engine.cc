@@ -172,6 +172,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("listallpatterns",this,&Engine::gtpListAllPatterns);
   gtpe->addFunctionCommand("loadfeaturegammas",this,&Engine::gtpLoadFeatureGammas);
   gtpe->addFunctionCommand("listfeatureids",this,&Engine::gtpListFeatureIds);
+  gtpe->addFunctionCommand("showcfgfrom",this,&Engine::gtpShowCFGFrom);
   
   gtpe->addFunctionCommand("time_settings",this,&Engine::gtpTimeSettings);
   gtpe->addFunctionCommand("time_left",this,&Engine::gtpTimeLeft);
@@ -189,9 +190,10 @@ void Engine::addGtpCommands()
   //gtpe->addAnalyzeCommand("showboard","Show Board","string");
   gtpe->addAnalyzeCommand("boardstats","Board Stats","string");
   gtpe->addAnalyzeCommand("showsymmetrytransforms","Show Symmetry Transforms","sboard");
-  gtpe->addAnalyzeCommand("showliberties","Show Liberties","sboard");
-  gtpe->addAnalyzeCommand("showvalidmoves","Show Valid Moves","sboard");
-  gtpe->addAnalyzeCommand("showgroupsize","Show Group Size","sboard");
+  //gtpe->addAnalyzeCommand("showliberties","Show Liberties","sboard");
+  //gtpe->addAnalyzeCommand("showvalidmoves","Show Valid Moves","sboard");
+  //gtpe->addAnalyzeCommand("showgroupsize","Show Group Size","sboard");
+  gtpe->addAnalyzeCommand("showcfgfrom %%p","Show CFG From","sboard");
   gtpe->addAnalyzeCommand("showpatternmatches","Show Pattern Matches","sboard");
   gtpe->addAnalyzeCommand("featurematchesat %%p","Feature Matches At","string");
   gtpe->addAnalyzeCommand("featureprobdistribution","Feature Probability Distribution","cboard");
@@ -845,6 +847,52 @@ void Engine::gtpListFeatureIds(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printf("\n%s",me->features->getFeatureIdList().c_str());
   gtpe->getOutput()->endResponse(true);
+}
+
+void Engine::gtpShowCFGFrom(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("vertex is required");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  Gtp::Vertex vert = cmd->getVertexArg(0);
+  
+  if (vert.x==-3 && vert.y==-3)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("invalid vertex");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  int pos=Go::Position::xy2pos(vert.x,vert.y,me->boardsize);
+  Go::ObjectBoard<int> *cfgdist=me->currentboard->getCFGFrom(pos);
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("\n");
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      int p=Go::Position::xy2pos(x,y,me->boardsize);
+      int dist=cfgdist->get(p);
+      if (dist!=-1)
+        gtpe->getOutput()->printf("\"%d\" ",dist);
+      else
+        gtpe->getOutput()->printf("\"\" ");
+    }
+    gtpe->getOutput()->printf("\n");
+  }
+
+  gtpe->getOutput()->endResponse(true);
+  
+  delete cfgdist;
 }
 
 void Engine::gtpShowSymmetryTransforms(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)

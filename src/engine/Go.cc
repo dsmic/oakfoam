@@ -1289,3 +1289,37 @@ int Go::Board::getCircularDistance(int pos1, int pos2)
   return Go::circDist(x1,y1,x2,y2);
 }
 
+Go::ObjectBoard<int> *Go::Board::getCFGFrom(int pos, int max)
+{
+  Go::ObjectBoard<int> *cfgdist=new Go::ObjectBoard<int>(size);
+  std::list<int> posqueue, distqueue;
+  cfgdist->fill(-1);
+  
+  posqueue.push_back(pos);
+  distqueue.push_back(0);
+  while (!posqueue.empty())
+  {
+    int p=posqueue.front();posqueue.pop_front();
+    int d=distqueue.front();distqueue.pop_front();
+    
+    if ((max==0 || d<=max) && (cfgdist->get(p)==-1 || cfgdist->get(p)>d))
+    {
+      Go::Color col=this->getColor(p);
+      cfgdist->set(p,d);
+      
+      foreach_adjacent(p,q,{
+        if (this->onBoard(q))
+        {
+          posqueue.push_back(q);
+          if (col!=Go::EMPTY && col==this->getColor(q))
+            distqueue.push_back(d);
+          else
+            distqueue.push_back(d+1);
+        }
+      });
+    }
+  }
+  
+  return cfgdist;
+}
+
