@@ -3,7 +3,6 @@ TODO
 
 Now: (current focus)
   move playout code out of engine
-  add CFG as a feature
   implement Drake's Last-Good-Reply-with-Forgetting policy (LGRF-2)
   LGRF-1/2 with a variable queue
   tune how much progressive widening can depend on winrate

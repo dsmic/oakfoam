@@ -9,6 +9,8 @@
 #define BORDERDIST_LEVELS 4
 #define LASTDIST_LEVELS 10
 #define SECONDLASTDIST_LEVELS 10
+#define CFGLASTDIST_LEVELS 10
+#define CFGSECONDLASTDIST_LEVELS 10
 
 #include <string>
 
@@ -633,6 +635,8 @@ class Features
       BORDERDIST,
       LASTDIST,
       SECONDLASTDIST,
+      CFGLASTDIST,
+      CFGSECONDLASTDIST,
       PATTERN3X3,
       INVALID
     };
@@ -656,6 +660,9 @@ class Features
     bool loadGammaFile(std::string filename);
     bool loadGammaString(std::string lines);
     void loadGammaDefaults() { this->loadGammaString(FEATURES_DEFAULT); };
+    
+    void setupCFGDist(Go::Board *board);
+    void clearCFGDist();
   
   private:
     Parameters *params;
@@ -669,6 +676,11 @@ class Features
     float gammas_borderdist[BORDERDIST_LEVELS];
     float gammas_lastdist[LASTDIST_LEVELS];
     float gammas_secondlastdist[SECONDLASTDIST_LEVELS];
+    float gammas_cfglastdist[CFGLASTDIST_LEVELS];
+    float gammas_cfgsecondlastdist[CFGSECONDLASTDIST_LEVELS];
+    
+    Go::ObjectBoard<int> *cfglastdist;
+    Go::ObjectBoard<int> *cfgsecondlastdist;
     
     float *getStandardGamma(Features::FeatureClass featclass);
     void updatePatternIds();

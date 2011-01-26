@@ -664,11 +664,15 @@ void Tree::expandLeaf()
   
   if (params->uct_progressive_widening_enabled)
   {
+    params->engine->getFeatures()->setupCFGDist(startboard);
+    
     for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
     {
       float factor=params->engine->getFeatures()->getMoveGamma(startboard,(*iter)->getMove());
       (*iter)->setPruneFactor(factor);
     }
+    
+    params->engine->getFeatures()->clearCFGDist();
     
     this->pruneChildren();
     this->checkForUnPruning(); //unprune first child

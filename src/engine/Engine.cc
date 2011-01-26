@@ -709,21 +709,27 @@ void Engine::gtpFeatureMatchesAt(void *instance, Gtp::Engine* gtpe, Gtp::Command
   int pos=Go::Position::xy2pos(vert.x,vert.y,me->boardsize);
   Go::Move move=Go::Move(col,pos);
   
+  me->features->setupCFGDist(board);
+  
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printf("Feature Matches for %s:\n",move.toString(board->getSize()).c_str());
-  gtpe->getOutput()->printf("PASS:            %u\n",me->features->matchFeatureClass(Features::PASS,board,move));
-  gtpe->getOutput()->printf("CAPTURE:         %u\n",me->features->matchFeatureClass(Features::CAPTURE,board,move));
-  gtpe->getOutput()->printf("EXTENSION:       %u\n",me->features->matchFeatureClass(Features::EXTENSION,board,move));
-  gtpe->getOutput()->printf("SELFATARI:       %u\n",me->features->matchFeatureClass(Features::SELFATARI,board,move));
-  gtpe->getOutput()->printf("ATARI:           %u\n",me->features->matchFeatureClass(Features::ATARI,board,move));
-  gtpe->getOutput()->printf("BORDERDIST:      %u\n",me->features->matchFeatureClass(Features::BORDERDIST,board,move));
-  gtpe->getOutput()->printf("LASTDIST:        %u\n",me->features->matchFeatureClass(Features::LASTDIST,board,move));
-  gtpe->getOutput()->printf("SECONDLASTDIST:  %u\n",me->features->matchFeatureClass(Features::SECONDLASTDIST,board,move));
-  gtpe->getOutput()->printf("PATTERN3X3:      0x%04x\n",me->features->matchFeatureClass(Features::PATTERN3X3,board,move));
+  gtpe->getOutput()->printf("PASS:              %u\n",me->features->matchFeatureClass(Features::PASS,board,move));
+  gtpe->getOutput()->printf("CAPTURE:           %u\n",me->features->matchFeatureClass(Features::CAPTURE,board,move));
+  gtpe->getOutput()->printf("EXTENSION:         %u\n",me->features->matchFeatureClass(Features::EXTENSION,board,move));
+  gtpe->getOutput()->printf("SELFATARI:         %u\n",me->features->matchFeatureClass(Features::SELFATARI,board,move));
+  gtpe->getOutput()->printf("ATARI:             %u\n",me->features->matchFeatureClass(Features::ATARI,board,move));
+  gtpe->getOutput()->printf("BORDERDIST:        %u\n",me->features->matchFeatureClass(Features::BORDERDIST,board,move));
+  gtpe->getOutput()->printf("LASTDIST:          %u\n",me->features->matchFeatureClass(Features::LASTDIST,board,move));
+  gtpe->getOutput()->printf("SECONDLASTDIST:    %u\n",me->features->matchFeatureClass(Features::SECONDLASTDIST,board,move));
+  gtpe->getOutput()->printf("CFGLASTDIST:       %u\n",me->features->matchFeatureClass(Features::CFGLASTDIST,board,move));
+  gtpe->getOutput()->printf("CFGSECONDLASTDIST: %u\n",me->features->matchFeatureClass(Features::CFGSECONDLASTDIST,board,move));
+  gtpe->getOutput()->printf("PATTERN3X3:        0x%04x\n",me->features->matchFeatureClass(Features::PATTERN3X3,board,move));
   float gamma=me->features->getMoveGamma(board,move);
   float total=me->features->getBoardGamma(board,col);
   gtpe->getOutput()->printf("Gamma: %.2f/%.2f (%.2f)\n",gamma,total,gamma/total);
   gtpe->getOutput()->endResponse(true);
+  
+  me->features->clearCFGDist();
 }
 
 void Engine::gtpFeatureProbDistribution(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
@@ -1222,6 +1228,8 @@ void Engine::makeMove(Go::Move move)
   if (params->features_output_competitions)
   {
     bool isawinner=true;
+    features->setupCFGDist(currentboard);
+    
     if (params->features_output_competitions_mmstyle)
     {
       int p=move.getPosition();
@@ -1274,6 +1282,8 @@ void Engine::makeMove(Go::Move move)
         }
       }
     }
+    
+    features->clearCFGDist();
   }
   
   if (params->features_ordered_comparison)
