@@ -10,6 +10,7 @@ Now: (current focus)
   change uct_* params to tree_*
   setting to filter boardsize, time_settings, etc. for kgs
   make sure scoring at end of kgs game works (opponent can't "cheat")
+  make describeengine build time update at every build
 
 Soon: (before next major release)
   implement superko in tree
