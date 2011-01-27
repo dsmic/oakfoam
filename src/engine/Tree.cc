@@ -681,3 +681,44 @@ void Tree::expandLeaf()
   delete startboard;
 }
 
+void Tree::updateRAVE(Go::Color wincol,Go::BitBoard *blacklist,Go::BitBoard *whitelist)
+{
+  if (params->rave_moves<=0)
+    return;
+  
+  //fprintf(stderr,"[update rave] %s (%c)\n",move.toString(params->board_size).c_str(),Go::colorToChar(wincol));
+  
+  if (!this->isRoot())
+  {
+    parent->updateRAVE(wincol,blacklist,whitelist);
+    
+    int pos=this->getMove().getPosition();
+    if (this->getMove().getColor()==Go::BLACK)
+      blacklist->clear(pos);
+    else
+      whitelist->clear(pos);
+  }
+  
+  if (!this->isLeaf())
+  {
+    for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
+    {
+      if ((*iter)->isPrimary())
+      {
+        Go::Color col=(*iter)->getMove().getColor();
+        int pos=(*iter)->getMove().getPosition();
+        
+        bool movemade=(col==Go::BLACK?blacklist:whitelist)->get(pos);
+        
+        if (movemade)
+        {
+          if (col==wincol)
+            (*iter)->addRAVEWin();
+          else
+            (*iter)->addRAVELose();
+        }
+      }
+    }
+  }
+}
+

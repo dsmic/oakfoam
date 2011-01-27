@@ -1791,8 +1791,9 @@ void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
     secondlist->clear();
   }
   this->randomPlayout(playoutboard,playoutmoves,col,(params->rave_moves>0?firstlist:NULL),(params->rave_moves>0?secondlist:NULL));
+  float finalscore=playoutboard->score()-komi;
   
-  bool playoutwin=Go::Board::isWinForColor(playoutmoves.back().getColor(),playoutboard->score()-komi);
+  bool playoutwin=Go::Board::isWinForColor(playoutmoves.back().getColor(),finalscore);
   if (playoutwin)
     playouttree->addWin();
   else
@@ -1808,41 +1809,13 @@ void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
   
   if (params->rave_moves>0)
   {
-    bool ravewin=Go::Board::isWinForColor(col,playoutboard->score()-komi);
+    bool blackwin=Go::Board::isWinForColor(Go::BLACK,finalscore);
+    Go::Color wincol=(blackwin?Go::BLACK:Go::WHITE);
     
-    for (int p=0;p<playoutboard->getPositionMax();p++)
-    {
-      if (firstlist->get(p))
-      {
-        Tree *subtree=movetree->getChild(Go::Move(col,p));
-        if (subtree!=NULL)
-        {
-          if (ravewin)
-            subtree->addRAVEWin();
-          else
-            subtree->addRAVELose();
-        }
-      }
-    }
-    
-    Tree *secondtree=movetree->getChild(playoutmoves.front());
-    if (!secondtree->isLeaf())
-    {
-      for (int p=0;p<playoutboard->getPositionMax();p++)
-      {
-        if (secondlist->get(p))
-        {
-          Tree *subtree=secondtree->getChild(Go::Move(Go::otherColor(col),p));
-          if (subtree!=NULL)
-          {
-            if (ravewin)
-              subtree->addRAVELose();
-            else
-              subtree->addRAVEWin();
-          }
-        }
-      }
-    }
+    if (col==Go::BLACK)
+      playouttree->updateRAVE(wincol,firstlist,secondlist);
+    else
+      playouttree->updateRAVE(wincol,secondlist,firstlist);
   }
   
   delete playoutboard;

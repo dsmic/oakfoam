@@ -7,7 +7,6 @@ Now: (current focus)
   LGRF-1/2 with a variable queue
   tune how much progressive widening can depend on winrate
   progressive widening occurs related to "factor" (features)
-  fix rave (currently only works in first 2 ply)
   change uct_* params to tree_*
   setting to filter boardsize, time_settings, etc. for kgs
   make sure scoring at end of kgs game works (opponent can't "cheat")
