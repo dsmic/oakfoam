@@ -327,7 +327,8 @@ std::string Tree::toSGFString()
   else
   {
     ss<<"C[";
-    ss<<"Last Move: "<<move.toString(params->board_size)<<"\n";
+    if (!move.isResign())
+      ss<<"Last Move: "<<move.toString(params->board_size)<<"\n";
     ss<<"Children: "<<children->size()<<"\n";
     ss<<"]";
   }
