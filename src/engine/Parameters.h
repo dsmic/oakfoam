@@ -35,6 +35,11 @@ class Parameters
     bool playout_patterns_enabled;
     bool playout_features_enabled;
     bool playout_features_incremental;
+    bool playout_lastatari_enabled;
+    bool playout_nakade_enabled;
+    bool playout_fillboard_enabled;
+    int playout_fillboard_n;
+    bool playout_anycapture_enabled;
     
     float ucb_c;
     float ucb_init;

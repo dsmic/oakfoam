@@ -593,6 +593,18 @@ int Go::Board::touchingEmpty(int pos)
   return lib;
 }
 
+int Go::Board::surroundingEmpty(int pos)
+{
+  int lib=0;
+  
+  foreach_adjdiag(pos,p,{
+    if (this->getColor(p)==Go::EMPTY)
+      lib++;
+  });
+  
+  return lib;
+}
+
 bool Go::Board::touchingAtLeastOneEmpty(int pos)
 {
   foreach_adjacent(pos,p,{

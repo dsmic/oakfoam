@@ -318,6 +318,7 @@ namespace Go
       int score();
       bool weakEye(Go::Color col, int pos);
       int touchingEmpty(int pos);
+      int surroundingEmpty(int pos);
       void turnSymmetryOff() { symmetryupdated=false;currentsymmetry=NONE; };
       void turnSymmetryOn() { symmetryupdated=true;currentsymmetry=this->computeSymmetry(); };
       
