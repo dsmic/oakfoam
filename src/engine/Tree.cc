@@ -704,19 +704,27 @@ void Tree::updateRAVE(Go::Color wincol,Go::BitBoard *blacklist,Go::BitBoard *whi
   {
     for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
     {
-      if ((*iter)->isPrimary())
+      Go::Color col=(*iter)->getMove().getColor();
+      int pos=(*iter)->getMove().getPosition();
+      
+      bool movemade=(col==Go::BLACK?blacklist:whitelist)->get(pos);
+      
+      if (movemade)
       {
-        Go::Color col=(*iter)->getMove().getColor();
-        int pos=(*iter)->getMove().getPosition();
-        
-        bool movemade=(col==Go::BLACK?blacklist:whitelist)->get(pos);
-        
-        if (movemade)
+        if ((*iter)->isPrimary())
         {
           if (col==wincol)
             (*iter)->addRAVEWin();
           else
             (*iter)->addRAVELose();
+        }
+        else
+        {
+          Tree *primary=(*iter)->getPrimary();
+          if (col==wincol)
+            primary->addRAVEWin();
+          else
+            primary->addRAVELose();
         }
       }
     }
