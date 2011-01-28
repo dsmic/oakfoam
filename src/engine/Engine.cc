@@ -183,6 +183,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("explainlastmove",this,&Engine::gtpExplainLastMove);
   gtpe->addFunctionCommand("boardstats",this,&Engine::gtpBoardStats);
   gtpe->addFunctionCommand("showsymmetrytransforms",this,&Engine::gtpShowSymmetryTransforms);
+  gtpe->addFunctionCommand("shownakadecenters",this,&Engine::gtpShowNakadeCenters);
   gtpe->addFunctionCommand("showtreelivegfx",this,&Engine::gtpShowTreeLiveGfx);
   gtpe->addFunctionCommand("describeengine",this,&Engine::gtpDescribeEngine);
   
@@ -195,6 +196,7 @@ void Engine::addGtpCommands()
   //gtpe->addAnalyzeCommand("showgroupsize","Show Group Size","sboard");
   gtpe->addAnalyzeCommand("showcfgfrom %%p","Show CFG From","sboard");
   gtpe->addAnalyzeCommand("showpatternmatches","Show Pattern Matches","sboard");
+  gtpe->addAnalyzeCommand("shownakadecenters","Show Nakade Centers","sboard");
   gtpe->addAnalyzeCommand("featurematchesat %%p","Feature Matches At","string");
   gtpe->addAnalyzeCommand("featureprobdistribution","Feature Probability Distribution","cboard");
   gtpe->addAnalyzeCommand("loadfeaturegammas %%r","Load Feature Gammas","none");
@@ -919,6 +921,34 @@ void Engine::gtpShowSymmetryTransforms(void *instance, Gtp::Engine* gtpe, Gtp::C
       else
       {
         Gtp::Vertex vert={Go::Position::pos2x(transpos,me->boardsize),Go::Position::pos2y(transpos,me->boardsize)};
+        gtpe->getOutput()->printf("\"");
+        gtpe->getOutput()->printVertex(vert);
+        gtpe->getOutput()->printf("\" ");
+      }
+    }
+    gtpe->getOutput()->printf("\n");
+  }
+
+  gtpe->getOutput()->endResponse(true);
+}
+
+void Engine::gtpShowNakadeCenters(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("\n");
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      int pos=Go::Position::xy2pos(x,y,me->boardsize);
+      int centerpos=me->currentboard->getThreeEmptyChainCenterFrom(pos);
+      if (centerpos==-1)
+        gtpe->getOutput()->printf("\"\" ");
+      else
+      {
+        Gtp::Vertex vert={Go::Position::pos2x(centerpos,me->boardsize),Go::Position::pos2y(centerpos,me->boardsize)};
         gtpe->getOutput()->printf("\"");
         gtpe->getOutput()->printVertex(vert);
         gtpe->getOutput()->printf("\" ");

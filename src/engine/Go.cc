@@ -1323,3 +1323,46 @@ Go::ObjectBoard<int> *Go::Board::getCFGFrom(int pos, int max)
   return cfgdist;
 }
 
+int Go::Board::getThreeEmptyChainCenterFrom(int pos)
+{
+  if (this->getColor(pos)!=Go::EMPTY)
+    return -1;
+  
+  int empnei=this->touchingEmpty(pos);
+  
+  if (empnei==2) // possibly at center
+  {
+    foreach_adjacent(pos,p,{
+      if (this->getColor(p)==Go::EMPTY && this->touchingEmpty(p)!=1)
+        return -1;
+    });
+    return pos;
+  }
+  else if (empnei==1) // possibly at end
+  {
+    foreach_adjacent(pos,p,{
+      if (this->getColor(p)==Go::EMPTY)
+      {
+        int empnei2=this->touchingEmpty(p);
+        if (empnei2==2)
+        {
+          foreach_adjacent(p,q,{
+            if (q!=pos && this->getColor(q)==Go::EMPTY)
+            {
+              if (this->touchingEmpty(q)==1)
+                return p;
+              else
+                return -1;
+            }
+          });
+        }
+        else
+          return -1;
+      }
+    });
+    return -1;
+  }
+  else
+    return -1;
+}
+
