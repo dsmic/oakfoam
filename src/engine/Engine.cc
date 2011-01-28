@@ -1603,33 +1603,6 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
     }
   }
   
-  if (params->playout_anycapture_enabled)
-  {
-    int *possiblemoves=posarray;
-    int possiblemovescount=0;
-    
-    std::list<Go::Group*,Go::allocator_groupptr> *groups=board->getGroups();
-    for(std::list<Go::Group*,Go::allocator_groupptr>::iterator iter=groups->begin();iter!=groups->end();++iter) 
-    {
-      if ((*iter)->getColor()!=col && (*iter)->inAtari())
-      {
-        int liberty=(*iter)->getAtariPosition();
-        if (board->validMove(Go::Move(col,liberty)))
-        {
-          possiblemoves[possiblemovescount]=liberty;
-          possiblemovescount++;
-        }
-      }
-    }
-    
-    if (possiblemovescount>0)
-    {
-      int i=rand.getRandomInt(possiblemovescount);
-      move=Go::Move(col,possiblemoves[i]);
-      return;
-    }
-  }
-  
   if (params->playout_patterns_enabled)
   {
     int *patternmoves=posarray;
@@ -1681,6 +1654,33 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
     {
       int i=rand.getRandomInt(patternmovescount);
       move=Go::Move(col,patternmoves[i]);
+      return;
+    }
+  }
+  
+  if (params->playout_anycapture_enabled)
+  {
+    int *possiblemoves=posarray;
+    int possiblemovescount=0;
+    
+    std::list<Go::Group*,Go::allocator_groupptr> *groups=board->getGroups();
+    for(std::list<Go::Group*,Go::allocator_groupptr>::iterator iter=groups->begin();iter!=groups->end();++iter) 
+    {
+      if ((*iter)->getColor()!=col && (*iter)->inAtari())
+      {
+        int liberty=(*iter)->getAtariPosition();
+        if (board->validMove(Go::Move(col,liberty)))
+        {
+          possiblemoves[possiblemovescount]=liberty;
+          possiblemovescount++;
+        }
+      }
+    }
+    
+    if (possiblemovescount>0)
+    {
+      int i=rand.getRandomInt(possiblemovescount);
+      move=Go::Move(col,possiblemoves[i]);
       return;
     }
   }

@@ -11,6 +11,8 @@ Now: (current focus)
   setting to filter boardsize, time_settings, etc. for kgs
   make sure scoring at end of kgs game works (opponent can't "cheat")
   make describeengine build time update at every build
+  fillboard not on 1st/2nd line
+  patterns only near last move?
 
 Soon: (before next major release)
   implement superko in tree
