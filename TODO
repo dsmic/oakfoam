@@ -4,15 +4,13 @@ TODO
 Now: (current focus)
   move playout code out of engine
   implement Drake's Last-Good-Reply-with-Forgetting policy (LGRF-2)
-  LGRF-1/2 with a variable queue
   tune how much progressive widening can depend on winrate
-  progressive widening occurs related to "factor" (features)
   change uct_* params to tree_*
-  setting to filter boardsize, time_settings, etc. for kgs
   make sure scoring at end of kgs game works (opponent can't "cheat")
   make describeengine build time update at every build
   fillboard not on 1st/2nd line
   patterns only near last move?
+  tune fillboard's N
 
 Soon: (before next major release)
   implement superko in tree
@@ -32,6 +30,10 @@ Soon: (before next major release)
   think for longer if needed
   keep track of board hashes incrementally
   speedup features in playouts
+  try LGRF-1/2 with a variable queue
+  progressive widening occurs related to "factor" (features)
+  setting to filter boardsize, time_settings, etc. for kgs
+  setting to use a total number of playouts per game for time testing
 
 Later: (at some point)
   make sure install works and is described somewhere
