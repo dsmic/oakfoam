@@ -160,6 +160,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("play",this,&Engine::gtpPlay);
   gtpe->addFunctionCommand("genmove",this,&Engine::gtpGenMove);
   gtpe->addFunctionCommand("reg_genmove",this,&Engine::gtpRegGenMove);
+  gtpe->addFunctionCommand("kgs-genmove_cleanup",this,&Engine::gtpGenMove);
   gtpe->addFunctionCommand("showboard",this,&Engine::gtpShowBoard);
   gtpe->addFunctionCommand("final_score",this,&Engine::gtpFinalScore);
   gtpe->addFunctionCommand("final_status_list",this,&Engine::gtpFinalStatusList);
