@@ -67,6 +67,8 @@ Engine::Engine(Gtp::Engine *ge)
   params->addParameter("mcts","uct_progressive_widening_b",&(params->uct_progressive_widening_b),UCT_PROGRESSIVE_WIDENING_B);
   params->addParameter("mcts","uct_progressive_widening_c",&(params->uct_progressive_widening_c),UCT_PROGRESSIVE_WIDENING_C);
   params->addParameter("mcts","uct_progressive_widening_count_wins",&(params->uct_progressive_widening_count_wins),UCT_PROGRESSIVE_WIDENING_COUNT_WINS);
+  params->addParameter("mcts","uct_points_bonus",&(params->uct_points_bonus),UCT_POINTS_BONUS);
+  params->addParameter("mcts","uct_length_bonus",&(params->uct_length_bonus),UCT_LENGTH_BONUS);
   
   params->addParameter("mcts","surewin_threshold",&(params->surewin_threshold),SUREWIN_THRESHOLD);
   params->surewin_expected=false;
@@ -1929,11 +1931,21 @@ void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
   this->randomPlayout(playoutboard,playoutmoves,col,(params->rave_moves>0?firstlist:NULL),(params->rave_moves>0?secondlist:NULL));
   float finalscore=playoutboard->score()-komi;
   
-  bool playoutwin=Go::Board::isWinForColor(playoutmoves.back().getColor(),finalscore);
+  Go::Color playoutcol=playoutmoves.back().getColor();
+  bool playoutwin=Go::Board::isWinForColor(playoutcol,finalscore);
   if (playoutwin)
     playouttree->addWin();
   else
     playouttree->addLose();
+  if (params->uct_points_bonus!=0)
+  {
+    if (playoutcol==Go::BLACK)
+      playouttree->addPartialResult(finalscore*params->uct_points_bonus,0);
+    else
+      playouttree->addPartialResult(-finalscore*params->uct_points_bonus,0);
+  }
+  if (params->uct_length_bonus!=0)
+    playouttree->addPartialResult(playoutboard->getMovesMade()*params->uct_length_bonus,0);
   
   if (params->debug_on)
   {

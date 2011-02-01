@@ -138,6 +138,12 @@ void Tree::addRAVELoses(int n)
   raveplayouts+=n;
 }
 
+void Tree::addPartialResult(float win, float playout)
+{
+  wins+=win;
+  playouts+=playout;
+}
+
 Tree *Tree::getChild(Go::Move move)
 {
   for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
@@ -527,7 +533,7 @@ Tree *Tree::getUrgentChild()
       {
         urgency=(*iter)->getUrgency();
         if (params->debug_on)
-          fprintf(stderr,"[urg]:%s %.3f %.2f(%d) %.2f(%d) %.2f(%d)\n",(*iter)->getMove().toString(params->board_size).c_str(),urgency,(*iter)->getRatio(),(*iter)->getPlayouts(),(*iter)->getRAVERatio(),(*iter)->getRAVEPlayouts(),(*iter)->getPriorRatio(),(*iter)->getPriorPlayouts());
+          fprintf(stderr,"[urg]:%s %.3f %.2f(%f) %.2f(%f) %.2f(%f)\n",(*iter)->getMove().toString(params->board_size).c_str(),urgency,(*iter)->getRatio(),(*iter)->getPlayouts(),(*iter)->getRAVERatio(),(*iter)->getRAVEPlayouts(),(*iter)->getPriorRatio(),(*iter)->getPriorPlayouts());
       }
           
       if (urgency>besturgency || besttree==NULL)

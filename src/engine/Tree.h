@@ -41,9 +41,9 @@ class Tree
     void unPruneNow();
     
     Tree *getChild(Go::Move move);
-    int getPlayouts() { return playouts; };
-    int getRAVEPlayouts() { return raveplayouts; };
-    int getPriorPlayouts() { return priorplayouts; };
+    float getPlayouts() { return playouts; };
+    float getRAVEPlayouts() { return raveplayouts; };
+    float getPriorPlayouts() { return priorplayouts; };
     float getRatio();
     float getRAVERatio();
     float getPriorRatio();
@@ -60,6 +60,7 @@ class Tree
     void addRAVELose();
     void addRAVEWins(int n);
     void addRAVELoses(int n);
+    void addPartialResult(float win, float playout);
     
     void expandLeaf();
     Tree *getRobustChild(bool descend=false);
@@ -76,8 +77,8 @@ class Tree
     Tree *symmetryprimary;
     
     Go::Move move;
-    int playouts,raveplayouts,priorplayouts;
-    int wins,ravewins,priorwins;
+    float playouts,raveplayouts,priorplayouts;
+    float wins,ravewins,priorwins;
     Parameters *params;
     bool hasTerminalWinrate;
     bool terminaloverride;
