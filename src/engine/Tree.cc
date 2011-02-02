@@ -142,6 +142,8 @@ void Tree::addPartialResult(float win, float playout)
 {
   wins+=win;
   playouts+=playout;
+  if (!this->isRoot())
+    parent->addPartialResult(1-win,playout);
 }
 
 Tree *Tree::getChild(Go::Move move)
