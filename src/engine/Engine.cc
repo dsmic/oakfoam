@@ -1941,13 +1941,23 @@ void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
   {
     if (params->uct_points_bonus!=0)
     {
-      if (playoutcol==Go::BLACK)
-        playouttree->addPartialResult(finalscore*params->uct_points_bonus,0);
+      float scorediff=(playoutcol==Go::BLACK?1:-1)*finalscore;
+      //float bonus=params->uct_points_bonus*scorediff;
+      float bonus;
+      if (scorediff>0)
+        bonus=params->uct_points_bonus*log(scorediff+1);
       else
-        playouttree->addPartialResult(-finalscore*params->uct_points_bonus,0);
+        bonus=-params->uct_points_bonus*log(-scorediff+1);
+      playouttree->addPartialResult(bonus,0);
+      //fprintf(stderr,"[points_bonus]: %+6.1f %+f\n",scorediff,bonus);
     }
     if (params->uct_length_bonus!=0)
-      playouttree->addPartialResult(playoutboard->getMovesMade()*params->uct_length_bonus,0);
+    {
+      int moves=playoutboard->getMovesMade();
+      float bonus=(playoutwin?1:-1)*params->uct_length_bonus*log(moves);
+      playouttree->addPartialResult(bonus,0);
+      //fprintf(stderr,"[length_bonus]: %6d %+f\n",moves,bonus);
+    }
   }
   
   if (params->debug_on)

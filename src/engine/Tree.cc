@@ -138,12 +138,17 @@ void Tree::addRAVELoses(int n)
   raveplayouts+=n;
 }
 
-void Tree::addPartialResult(float win, float playout)
+void Tree::addPartialResult(float win, float playout, bool invertwin)
 {
   wins+=win;
   playouts+=playout;
   if (!this->isRoot())
-    parent->addPartialResult(1-win,playout);
+  {
+    if (invertwin)
+      parent->addPartialResult(-win,playout);
+    else
+      parent->addPartialResult(1-win,playout);
+  }
 }
 
 Tree *Tree::getChild(Go::Move move)

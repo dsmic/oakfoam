@@ -60,7 +60,7 @@ class Tree
     void addRAVELose();
     void addRAVEWins(int n);
     void addRAVELoses(int n);
-    void addPartialResult(float win, float playout);
+    void addPartialResult(float win, float playout, bool invertwin=true);
     
     void expandLeaf();
     Tree *getRobustChild(bool descend=false);
