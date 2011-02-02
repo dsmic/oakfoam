@@ -242,7 +242,7 @@ float Tree::getUrgency()
       return -TREE_TERMINAL_URGENCY;
   }
   
-  int plts=playouts+priorplayouts;
+  float plts=playouts+priorplayouts;
   
   if (parent==NULL || params->ucb_c==0)
     bias=0;
@@ -450,7 +450,7 @@ void Tree::unPruneNextChild()
   }
 }
 
-int Tree::unPruneMetric()
+float Tree::unPruneMetric()
 {
   if (params->uct_progressive_widening_count_wins)
     return wins;
@@ -465,7 +465,7 @@ void Tree::updateUnPruneAt()
     scale=(1-params->uct_progressive_widening_c*this->getRatio());
   else
     scale=1;
-  unprunenextchildat=lastunprune+(int)(unprunebase*scale); //t(n+1)=t(n)+(a*b^n)*(1-c*p)
+  unprunenextchildat=lastunprune+unprunebase*scale; //t(n+1)=t(n)+(a*b^n)*(1-c*p)
 }
 
 void Tree::checkForUnPruning()
@@ -682,7 +682,7 @@ void Tree::expandLeaf()
     params->engine->getFeatures()->clearCFGDist();
     
     this->pruneChildren();
-    this->checkForUnPruning(); //unprune first child
+    this->unPruneNow(); //unprune first child
   }
   
   delete startboard;

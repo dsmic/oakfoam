@@ -1937,15 +1937,18 @@ void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
     playouttree->addWin();
   else
     playouttree->addLose();
-  if (params->uct_points_bonus!=0)
+  if (!playouttree->isTerminalResult())
   {
-    if (playoutcol==Go::BLACK)
-      playouttree->addPartialResult(finalscore*params->uct_points_bonus,0);
-    else
-      playouttree->addPartialResult(-finalscore*params->uct_points_bonus,0);
+    if (params->uct_points_bonus!=0)
+    {
+      if (playoutcol==Go::BLACK)
+        playouttree->addPartialResult(finalscore*params->uct_points_bonus,0);
+      else
+        playouttree->addPartialResult(-finalscore*params->uct_points_bonus,0);
+    }
+    if (params->uct_length_bonus!=0)
+      playouttree->addPartialResult(playoutboard->getMovesMade()*params->uct_length_bonus,0);
   }
-  if (params->uct_length_bonus!=0)
-    playouttree->addPartialResult(playoutboard->getMovesMade()*params->uct_length_bonus,0);
   
   if (params->debug_on)
   {
@@ -1991,7 +1994,7 @@ void Engine::displayPlayoutLiveGfx(int totalplayouts, bool livegfx)
   for(std::list<Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
   {
     if ((*iter)->getPlayouts()>maxplayouts)
-      maxplayouts=(*iter)->getPlayouts();
+      maxplayouts=(int)(*iter)->getPlayouts();
   }
   float colorfactor=(col==Go::BLACK?1:-1);
   for(std::list<Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
