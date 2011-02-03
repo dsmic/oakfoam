@@ -44,6 +44,16 @@ class Features;
     __adjpos = __intpos+P_SW; { __body }; \
   }
 
+#define foreach_diagonal(__pos, __adjpos, __body) \
+  { \
+    int __intpos = __pos; \
+    int __adjpos; \
+    __adjpos = __intpos+P_NE; { __body }; \
+    __adjpos = __intpos+P_SE; { __body }; \
+    __adjpos = __intpos+P_NW; { __body }; \
+    __adjpos = __intpos+P_SW; { __body }; \
+  }
+
 namespace Go
 {
   //typedef std::allocator<int> allocator_int;
@@ -319,6 +329,8 @@ namespace Go
       bool weakEye(Go::Color col, int pos);
       int touchingEmpty(int pos);
       int surroundingEmpty(int pos);
+      void countAdjacentColors(int pos, int &empty, int &black, int &white, int &offboard);
+      void countDiagonalColors(int pos, int &empty, int &black, int &white, int &offboard);
       void turnSymmetryOff() { symmetryupdated=false;currentsymmetry=NONE; };
       void turnSymmetryOn() { symmetryupdated=true;currentsymmetry=this->computeSymmetry(); };
       

@@ -1378,3 +1378,55 @@ int Go::Board::getThreeEmptyChainCenterFrom(int pos)
     return -1;
 }
 
+void Go::Board::countAdjacentColors(int pos, int &empty, int &black, int &white, int &offboard)
+{
+  empty=0;
+  black=0;
+  white=0;
+  offboard=0;
+  
+  foreach_adjacent(pos,p,{
+    switch (this->getColor(p))
+    {
+      case Go::EMPTY:
+        empty++;
+        break;
+      case Go::BLACK:
+        black++;
+        break;
+      case Go::WHITE:
+        white++;
+        break;
+      default:
+        offboard++;
+        break;
+    }
+  });
+}
+
+void Go::Board::countDiagonalColors(int pos, int &empty, int &black, int &white, int &offboard)
+{
+  empty=0;
+  black=0;
+  white=0;
+  offboard=0;
+  
+  foreach_diagonal(pos,p,{
+    switch (this->getColor(p))
+    {
+      case Go::EMPTY:
+        empty++;
+        break;
+      case Go::BLACK:
+        black++;
+        break;
+      case Go::WHITE:
+        white++;
+        break;
+      default:
+        offboard++;
+        break;
+    }
+  });
+}
+
