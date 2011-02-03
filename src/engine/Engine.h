@@ -35,6 +35,8 @@
 #define PLAYOUT_FILLBOARD_ENABLED true
 #define PLAYOUT_FILLBOARD_N 5
 #define PLAYOUT_ANYCAPTURE_ENABLED true
+#define PLAYOUT_LGRF1_ENABLED false
+#define PLAYOUT_LGRF2_ENABLED false
 
 #define SUREWIN_THRESHOLD 0.85
 
@@ -150,11 +152,12 @@ class Engine
     std::string lastexplanation;
     Parameters *params;
     Features *features;
+    int *lgrf1,*lgrf2;
     
     void addGtpCommands();
     
     void randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, int *posarray);
-    void randomPlayout(Go::Board *board, std::list<Go::Move> startmoves, Go::Color colfirst, Go::BitBoard *firstlist, Go::BitBoard *secondlist);
+    void randomPlayout(Go::Board *board, std::list<Go::Move> &startmoves, Go::Color colfirst, Go::BitBoard *firstlist, Go::BitBoard *secondlist);
     void clearMoveTree();
     void chooseSubTree(Go::Move move);
     
@@ -164,6 +167,16 @@ class Engine
     void displayPlayoutLiveGfx(int totalplayouts=-1, bool livegfx=true);
     
     void allowContinuedPlay();
+    
+    void setupLGRF();
+    int getLGRF1(Go::Color col, int pos1);
+    int getLGRF2(Go::Color col, int pos1, int pos2);
+    void setLGRF1(Go::Color col, int pos1, int val);
+    void setLGRF2(Go::Color col, int pos1, int pos2, int val);
+    bool hasLGRF1(Go::Color col, int pos1);
+    bool hasLGRF2(Go::Color col, int pos1, int pos2);
+    void clearLGRF1(Go::Color col, int pos1);
+    void clearLGRF2(Go::Color col, int pos1, int pos2);
 };
 
 #endif

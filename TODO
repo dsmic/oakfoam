@@ -3,7 +3,6 @@ TODO
 
 Now: (current focus)
   move playout code out of engine
-  implement Drake's Last-Good-Reply-with-Forgetting policy (LGRF-2)
   change uct_* params to tree_*
   make describeengine build time update at every build
   tune fillboard's N

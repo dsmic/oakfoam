@@ -40,6 +40,8 @@ class Parameters
     bool playout_fillboard_enabled;
     int playout_fillboard_n;
     bool playout_anycapture_enabled;
+    bool playout_lgrf1_enabled;
+    bool playout_lgrf2_enabled;
     
     float ucb_c;
     float ucb_init;

@@ -46,6 +46,8 @@ Engine::Engine(Gtp::Engine *ge)
   params->addParameter("mcts","playout_fillboard_enabled",&(params->playout_fillboard_enabled),PLAYOUT_FILLBOARD_ENABLED);
   params->addParameter("mcts","playout_fillboard_n",&(params->playout_fillboard_n),PLAYOUT_FILLBOARD_N);
   params->addParameter("mcts","playout_anycapture_enabled",&(params->playout_anycapture_enabled),PLAYOUT_ANYCAPTURE_ENABLED);
+  params->addParameter("mcts","playout_lgrf1_enabled",&(params->playout_lgrf1_enabled),PLAYOUT_LGRF1_ENABLED);
+  params->addParameter("mcts","playout_lgrf2_enabled",&(params->playout_lgrf2_enabled),PLAYOUT_LGRF2_ENABLED);
   
   params->addParameter("mcts","ucb_c",&(params->ucb_c),UCB_C);
   params->addParameter("mcts","ucb_init",&(params->ucb_init),UCB_INIT);
@@ -99,6 +101,10 @@ Engine::Engine(Gtp::Engine *ge)
   
   features=new Features(params);
   features->loadGammaDefaults();
+  
+  lgrf1=NULL;
+  lgrf2=NULL;
+  this->setupLGRF();
   
   time=new Time(params,0);
   
@@ -1424,6 +1430,7 @@ void Engine::clearBoard()
     currentboard->turnSymmetryOff();
   this->clearMoveTree();
   params->surewin_expected=false;
+  this->setupLGRF();
 }
 
 void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, int *posarray)
@@ -1432,6 +1439,41 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
   {
     move=Go::Move(col,Go::Move::PASS);
     return;
+  }
+  
+  if (params->playout_lgrf2_enabled)
+  {
+    if (!board->getLastMove().isPass() && !board->getSecondLastMove().isPass())
+    {
+      int pos1=board->getSecondLastMove().getPosition();
+      int pos2=board->getLastMove().getPosition();
+      if (this->hasLGRF2(col,pos1,pos2))
+      {
+        int np=this->getLGRF2(col,pos1,pos2);
+        if (board->validMove(Go::Move(col,np)))
+        {
+          move=Go::Move(col,np);
+          return;
+        }
+      }
+    }
+  }
+  
+  if (params->playout_lgrf1_enabled)
+  {
+    if (!board->getLastMove().isPass())
+    {
+      int pos1=board->getLastMove().getPosition();
+      if (this->hasLGRF1(col,pos1))
+      {
+        int np=this->getLGRF1(col,pos1);
+        if (board->validMove(Go::Move(col,np)))
+        {
+          move=Go::Move(col,np);
+          return;
+        }
+      }
+    }
   }
   
   if (params->playout_features_enabled)
@@ -1737,7 +1779,7 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
   move=Go::Move(col,Go::Move::PASS);
 }
 
-void Engine::randomPlayout(Go::Board *board, std::list<Go::Move> startmoves, Go::Color colfirst, Go::BitBoard *firstlist, Go::BitBoard *secondlist)
+void Engine::randomPlayout(Go::Board *board, std::list<Go::Move> &playoutmoves, Go::Color colfirst, Go::BitBoard *firstlist, Go::BitBoard *secondlist)
 {
   if (board->getPassesPlayed()>=2)
     return;
@@ -1746,7 +1788,7 @@ void Engine::randomPlayout(Go::Board *board, std::list<Go::Move> startmoves, Go:
   
   if (params->debug_on)
     gtpe->getOutput()->printfDebug("[playout]:");
-  for(std::list<Go::Move>::iterator iter=startmoves.begin();iter!=startmoves.end();++iter)
+  for(std::list<Go::Move>::iterator iter=playoutmoves.begin();iter!=playoutmoves.end();++iter)
   {
     board->makeMove((*iter));
     if (params->debug_on)
@@ -1772,6 +1814,7 @@ void Engine::randomPlayout(Go::Board *board, std::list<Go::Move> startmoves, Go:
     bool resign;
     this->randomPlayoutMove(board,coltomove,move,posarray);
     board->makeMove(move);
+    playoutmoves.push_back(move);
     if ((coltomove==colfirst?firstlist:secondlist)!=NULL && !move.isPass() && !move.isResign())
       (coltomove==colfirst?firstlist:secondlist)->set(move.getPosition());
     resign=move.isResign();
@@ -1928,15 +1971,17 @@ void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
     firstlist->clear();
     secondlist->clear();
   }
-  this->randomPlayout(playoutboard,playoutmoves,col,(params->rave_moves>0?firstlist:NULL),(params->rave_moves>0?secondlist:NULL));
-  float finalscore=playoutboard->score()-komi;
-  
   Go::Color playoutcol=playoutmoves.back().getColor();
+  
+  this->randomPlayout(playoutboard,playoutmoves,col,(params->rave_moves>0?firstlist:NULL),(params->rave_moves>0?secondlist:NULL));
+  
+  float finalscore=playoutboard->score()-komi;
   bool playoutwin=Go::Board::isWinForColor(playoutcol,finalscore);
   if (playoutwin)
     playouttree->addWin();
   else
     playouttree->addLose();
+  
   if (!playouttree->isTerminalResult())
   {
     if (params->uct_points_bonus!=0)
@@ -1962,7 +2007,7 @@ void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
   
   if (params->debug_on)
   {
-    if (playoutwin && playoutmoves.back().getColor()==col)
+    if (playoutwin && playoutcol==col)
       gtpe->getOutput()->printfDebug("[result]:win\n");
     else
       gtpe->getOutput()->printfDebug("[result]:lose\n");
@@ -1977,6 +2022,69 @@ void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
       playouttree->updateRAVE(wincol,firstlist,secondlist);
     else
       playouttree->updateRAVE(wincol,secondlist,firstlist);
+  }
+  
+  if (params->playout_lgrf1_enabled)
+  {
+    bool blackwin=Go::Board::isWinForColor(Go::BLACK,finalscore);
+    Go::Color wincol=(blackwin?Go::BLACK:Go::WHITE);
+    
+    Go::Move move1=Go::Move(Go::EMPTY,Go::Move::PASS);
+    for(std::list<Go::Move>::iterator iter=playoutmoves.begin();iter!=playoutmoves.end();++iter)
+    {
+      if (!(*iter).isPass() && !move1.isPass())
+      {
+        Go::Color c=(*iter).getColor();
+        int mp=(*iter).getPosition();
+        int p1=move1.getPosition();
+        if (c==wincol)
+        {
+          if (params->debug_on)
+            fprintf(stderr,"adding LGRF1: %s %s\n",move1.toString(boardsize).c_str(),(*iter).toString(boardsize).c_str());
+          this->setLGRF1(c,p1,mp);
+        }
+        else
+        {
+          if (params->debug_on && this->hasLGRF1(c,p1))
+            fprintf(stderr,"forgetting LGRF1: %s %s\n",move1.toString(boardsize).c_str(),(*iter).toString(boardsize).c_str());
+          this->clearLGRF1(c,p1);
+        }
+      }
+      move1=(*iter);
+    }
+  }
+  
+  if (params->playout_lgrf2_enabled)
+  {
+    bool blackwin=Go::Board::isWinForColor(Go::BLACK,finalscore);
+    Go::Color wincol=(blackwin?Go::BLACK:Go::WHITE);
+    
+    Go::Move move1=Go::Move(Go::EMPTY,Go::Move::PASS);
+    Go::Move move2=Go::Move(Go::EMPTY,Go::Move::PASS);
+    for(std::list<Go::Move>::iterator iter=playoutmoves.begin();iter!=playoutmoves.end();++iter)
+    {
+      if (!(*iter).isPass() && !move1.isPass() && !move2.isPass())
+      {
+        Go::Color c=(*iter).getColor();
+        int mp=(*iter).getPosition();
+        int p1=move1.getPosition();
+        int p2=move2.getPosition();
+        if (c==wincol)
+        {
+          if (params->debug_on)
+            fprintf(stderr,"adding LGRF2: %s %s %s\n",move1.toString(boardsize).c_str(),move2.toString(boardsize).c_str(),(*iter).toString(boardsize).c_str());
+          this->setLGRF2(c,p1,p2,mp);
+        }
+        else
+        {
+          if (params->debug_on && this->hasLGRF2(c,p1,p2))
+            fprintf(stderr,"forgetting LGRF2: %s %s %s\n",move1.toString(boardsize).c_str(),move2.toString(boardsize).c_str(),(*iter).toString(boardsize).c_str());
+          this->clearLGRF2(c,p1,p2);
+        }
+      }
+      move1=move2;
+      move2=(*iter);
+    }
   }
   
   delete playoutboard;
@@ -2109,5 +2217,73 @@ void Engine::allowContinuedPlay()
     movetree->allowContinuedPlay();
     gtpe->getOutput()->printfDebug("WARNING! continuing play from a terminal position\n");
   }
+}
+
+void Engine::setupLGRF()
+{
+  if (lgrf1!=NULL)
+    delete lgrf1;
+  if (lgrf2!=NULL)
+    delete lgrf2;
+  
+  lgrf1=new int[2*currentboard->getPositionMax()];
+  lgrf2=new int[2*currentboard->getPositionMax()*currentboard->getPositionMax()];
+  
+  for (int c=0;c<2;c++)
+  {
+    Go::Color col=(c==0?Go::BLACK:Go::WHITE);
+    for (int p1=0;p1<currentboard->getPositionMax();p1++)
+    {
+      this->clearLGRF1(col,p1);
+      for (int p2=0;p2<currentboard->getPositionMax();p2++)
+      {
+        this->clearLGRF2(col,p1,p2);
+      }
+    }
+  }
+}
+
+int Engine::getLGRF1(Go::Color col, int pos1)
+{
+  int c=(col==Go::BLACK?0:1);
+  return lgrf1[c*currentboard->getPositionMax()+pos1];
+}
+
+int Engine::getLGRF2(Go::Color col, int pos1, int pos2)
+{
+  int c=(col==Go::BLACK?0:1);
+  return lgrf2[(c*currentboard->getPositionMax()+pos1)*currentboard->getPositionMax()+pos2];
+}
+
+void Engine::setLGRF1(Go::Color col, int pos1, int val)
+{
+  int c=(col==Go::BLACK?0:1);
+  lgrf1[c*currentboard->getPositionMax()+pos1]=val;
+}
+
+void Engine::setLGRF2(Go::Color col, int pos1, int pos2, int val)
+{
+  int c=(col==Go::BLACK?0:1);
+  lgrf2[(c*currentboard->getPositionMax()+pos1)*currentboard->getPositionMax()+pos2]=val;
+}
+
+bool Engine::hasLGRF1(Go::Color col, int pos1)
+{
+  return (this->getLGRF1(col,pos1)!=-1);
+}
+
+bool Engine::hasLGRF2(Go::Color col, int pos1, int pos2)
+{
+  return (this->getLGRF2(col,pos1,pos2)!=-1);
+}
+
+void Engine::clearLGRF1(Go::Color col, int pos1)
+{
+  this->setLGRF1(col,pos1,-1);
+}
+
+void Engine::clearLGRF2(Go::Color col, int pos1, int pos2)
+{
+  this->setLGRF2(col,pos1,pos2,-1);
 }
 
