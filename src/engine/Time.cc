@@ -103,7 +103,10 @@ float Time::getAllocatedTimeForNextTurn(Go::Color col)
   {
     if (this->inOvertime(col))
     {
-      return ((this->timeLeft(col)-params->time_buffer)/this->stonesLeft(col));
+      float time_per_move=((this->timeLeft(col)-params->time_buffer)/this->stonesLeft(col));
+      if (time_per_move<params->time_move_minimum)
+        time_per_move=params->time_move_minimum;
+      return time_per_move;
     }
     else
     {
