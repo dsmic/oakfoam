@@ -187,6 +187,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("loadfeaturegammas",this,&Engine::gtpLoadFeatureGammas);
   gtpe->addFunctionCommand("listfeatureids",this,&Engine::gtpListFeatureIds);
   gtpe->addFunctionCommand("showcfgfrom",this,&Engine::gtpShowCFGFrom);
+  gtpe->addFunctionCommand("showcircdistfrom",this,&Engine::gtpShowCircDistFrom);
   
   gtpe->addFunctionCommand("time_settings",this,&Engine::gtpTimeSettings);
   gtpe->addFunctionCommand("time_left",this,&Engine::gtpTimeLeft);
@@ -209,6 +210,7 @@ void Engine::addGtpCommands()
   //gtpe->addAnalyzeCommand("showvalidmoves","Show Valid Moves","sboard");
   //gtpe->addAnalyzeCommand("showgroupsize","Show Group Size","sboard");
   gtpe->addAnalyzeCommand("showcfgfrom %%p","Show CFG From","sboard");
+  gtpe->addAnalyzeCommand("showcircdistfrom %%p","Show Circular Distance From","sboard");
   gtpe->addAnalyzeCommand("showpatternmatches","Show Pattern Matches","sboard");
   gtpe->addAnalyzeCommand("shownakadecenters","Show Nakade Centers","sboard");
   gtpe->addAnalyzeCommand("featurematchesat %%p","Feature Matches At","string");
@@ -915,6 +917,43 @@ void Engine::gtpShowCFGFrom(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd
   gtpe->getOutput()->endResponse(true);
   
   delete cfgdist;
+}
+
+void Engine::gtpShowCircDistFrom(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("vertex is required");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  Gtp::Vertex vert = cmd->getVertexArg(0);
+  
+  if (vert.x==-3 && vert.y==-3)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("invalid vertex");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("\n");
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      int dist=Go::circDist(vert.x,vert.y,x,y);
+      gtpe->getOutput()->printf("\"%d\" ",dist);
+    }
+    gtpe->getOutput()->printf("\n");
+  }
+
+  gtpe->getOutput()->endResponse(true);
 }
 
 void Engine::gtpShowSymmetryTransforms(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
