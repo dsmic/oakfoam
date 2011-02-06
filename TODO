@@ -5,10 +5,8 @@ Now: (current focus)
   move playout code out of engine
   change uct_* params to tree_*
   make describeengine build time update at every build
-  tune fillboard's N
-  check for Mogo patterns quickly?
-  reduce expand_after?
-  use RAVE with Features for unpruning
+  use RAVE together with Features for unpruning?
+  larger patterns
 
 Soon: (before next major release)
   implement superko in tree
@@ -36,6 +34,9 @@ Soon: (before next major release)
   fillboard not on 1st/2nd line?
   tune how much progressive widening can depend on winrate
   make sure scoring at end of kgs ranked game works (opponent can't "cheat")
+  check for Mogo patterns quickly?
+  reduce expand_after?
+  tune fillboard's N
 
 Later: (at some point)
   make sure install works and is described somewhere
