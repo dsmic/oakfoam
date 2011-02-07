@@ -2,6 +2,7 @@
 
 #include <cstdlib>
 #include <sstream>
+#include <iomanip>
 #include <iostream>
 #include <fstream>
 
@@ -248,4 +249,205 @@ void Pattern::ThreeByThreeTable::processPermutations(bool addpatterns, Pattern::
   }
 }
 
+Pattern::CircularDictionary::CircularDictionary()
+{
+  int base=0;
+  for (int d=2;d<=PATTERN_CIRC_MAXSIZE;d++)
+  {
+    baseoffset[d]=base;
+    int start=d/3+(d%3!=0?1:0);
+    int end=d/2;
+    for (int b=start;b<=end;b++)
+    {
+      int a=d-2*b;
+      if (a>=0 && a<=b)
+      {
+        if (a==0)
+        {
+          dictx[d].push_back(0);
+          dicty[d].push_back(b);
+          dictx[d].push_back(b);
+          dicty[d].push_back(0);
+          dictx[d].push_back(0);
+          dicty[d].push_back(-b);
+          dictx[d].push_back(-b);
+          dicty[d].push_back(0);
+          
+          base+=4;
+        }
+        else if (a==b)
+        {
+          dictx[d].push_back(b);
+          dicty[d].push_back(b);
+          dictx[d].push_back(b);
+          dicty[d].push_back(-b);
+          dictx[d].push_back(-b);
+          dicty[d].push_back(-b);
+          dictx[d].push_back(-b);
+          dicty[d].push_back(b);
+          
+          base+=4;
+        }
+        else
+        {
+          dictx[d].push_back(a);
+          dicty[d].push_back(b);
+          dictx[d].push_back(b);
+          dicty[d].push_back(a);
+          dictx[d].push_back(b);
+          dicty[d].push_back(-a);
+          dictx[d].push_back(a);
+          dicty[d].push_back(-b);
+          
+          dictx[d].push_back(-a);
+          dicty[d].push_back(-b);
+          dictx[d].push_back(-b);
+          dicty[d].push_back(-a);
+          dictx[d].push_back(-b);
+          dicty[d].push_back(a);
+          dictx[d].push_back(-a);
+          dicty[d].push_back(b);
+          
+          base+=8;
+        }
+      }
+    }
+  }
+}
+
+Pattern::Circular::Circular(Pattern::CircularDictionary *dict, Go::Board *board, int pos, int sz)
+{
+  size=sz;
+  if (size>PATTERN_CIRC_MAXSIZE)
+    size=PATTERN_CIRC_MAXSIZE;
+  
+  for (int i=0;i<PATTERN_CIRC_32BITPARTS;i++)
+  {
+    hash[i]=0;
+  }
+  
+  int x=Go::Position::pos2x(pos,board->getSize());
+  int y=Go::Position::pos2y(pos,board->getSize());
+  int base=0;
+  
+  for (int d=2;d<=size;d++)
+  {
+    std::list<int> *xoffsets=dict->getXOffsetsForSize(d);
+    std::list<int> *yoffsets=dict->getYOffsetsForSize(d);
+    std::list<int>::iterator iterx=xoffsets->begin();
+    std::list<int>::iterator itery=yoffsets->begin();
+    while(iterx!=xoffsets->end() && itery!=yoffsets->end())
+    {
+      int fx=x+(*iterx);
+      int fy=y+(*itery);
+      Go::Color col;
+      
+      if (fx<0 || fy<0 || fx>=board->getSize() || fy>=board->getSize())
+        col=Go::OFFBOARD;
+      else
+        col=board->getColor(Go::Position::xy2pos(fx,fy,board->getSize()));
+      
+      this->initColor(base,col);
+      
+      ++iterx;
+      ++itery;
+      base++;
+    }
+  }
+}
+
+int Pattern::Circular::hashColor(Go::Color col)
+{
+  switch (col)
+  {
+    case Go::EMPTY:
+      return 0;
+    case Go::BLACK:
+      return 1;
+    case Go::WHITE:
+      return 2;
+    case Go::OFFBOARD:
+      return 3;
+    default:
+      return 3;
+  }
+}
+
+void Pattern::Circular::initColor(int offset, Go::Color col)
+{
+  int part=offset/(32/2);
+  int bitoffset=(offset%(32/2))*2;
+  
+  hash[part]|=Pattern::Circular::hashColor(col)<<(32-bitoffset-2);
+}
+
+void Pattern::Circular::resetColor(int offset)
+{
+  int part=offset/(32/2);
+  int bitoffset=(offset%(32/2))*2;
+  
+  hash[part]&=~((boost::uint_fast32_t)(3<<(32-bitoffset-2)));
+}
+
+std::string Pattern::Circular::toString(Pattern::CircularDictionary *dict)
+{
+  std::ostringstream ss;
+  
+  ss<<size;
+  int len=0;
+  if (size==PATTERN_CIRC_MAXSIZE)
+    len=PATTERN_CIRC_32BITPARTS;
+  else
+  {
+    int l=dict->getBaseOffset(size+1);
+    len=l/(32/2)+(l%(32/2)>0?1:0);
+  }
+    
+  for (int i=0;i<len;i++)
+  {
+    ss<<std::hex<<":"<<std::setw(8)<<std::setfill('0')<<hash[i];
+  }
+  
+  return ss.str();
+}
+
+Pattern::Circular Pattern::Circular::getSubPattern(Pattern::CircularDictionary *dict, int newsize)
+{
+  Pattern::Circular newpatt;
+  int s=newsize;
+  if (newsize>size)
+    s=size;
+  
+  newpatt.size=s;
+  
+  for (int i=0;i<PATTERN_CIRC_32BITPARTS;i++)
+  {
+    newpatt.hash[i]=hash[i];
+  }
+  
+  if (s==PATTERN_CIRC_MAXSIZE)
+    return newpatt;
+  
+  int l=dict->getBaseOffset(s+1);
+  fprintf(stderr,"l: %d\n",l);
+  for (int i=l;i<PATTERN_CIRC_32BITPARTS*(32/2);i++)
+  {
+    newpatt.resetColor(i);
+  }
+  
+  return newpatt;
+}
+
+bool Pattern::Circular::operator==(Pattern::Circular other)
+{
+  if (size!=other.size)
+    return false;
+  
+  for (int i=0;i<PATTERN_CIRC_32BITPARTS;i++)
+  {
+    if (hash[i]!=other.hash[i])
+      return false;
+  }
+  return true;
+};
 

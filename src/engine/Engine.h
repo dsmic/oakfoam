@@ -127,6 +127,7 @@ class Engine
     static void gtpListFeatureIds(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowCFGFrom(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowCircDistFrom(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpListCircularPatternsAt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     
     static void gtpTimeSettings(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpTimeLeft(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
@@ -154,6 +155,7 @@ class Engine
     Parameters *params;
     Features *features;
     int *lgrf1,*lgrf2;
+    Pattern::CircularDictionary *circdict;
     
     void addGtpCommands();
     

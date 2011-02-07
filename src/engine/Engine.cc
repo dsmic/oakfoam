@@ -106,6 +106,8 @@ Engine::Engine(Gtp::Engine *ge)
   lgrf2=NULL;
   this->setupLGRF();
   
+  circdict=new Pattern::CircularDictionary();
+  
   time=new Time(params,0);
   
   lastexplanation="";
@@ -118,6 +120,7 @@ Engine::Engine(Gtp::Engine *ge)
 
 Engine::~Engine()
 {
+  delete circdict;
   delete features;
   delete patterntable;
   if (movetree!=NULL)
@@ -188,6 +191,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("listfeatureids",this,&Engine::gtpListFeatureIds);
   gtpe->addFunctionCommand("showcfgfrom",this,&Engine::gtpShowCFGFrom);
   gtpe->addFunctionCommand("showcircdistfrom",this,&Engine::gtpShowCircDistFrom);
+  gtpe->addFunctionCommand("listcircpatternsat",this,&Engine::gtpListCircularPatternsAt);
   
   gtpe->addFunctionCommand("time_settings",this,&Engine::gtpTimeSettings);
   gtpe->addFunctionCommand("time_left",this,&Engine::gtpTimeLeft);
@@ -211,6 +215,7 @@ void Engine::addGtpCommands()
   //gtpe->addAnalyzeCommand("showgroupsize","Show Group Size","sboard");
   gtpe->addAnalyzeCommand("showcfgfrom %%p","Show CFG From","sboard");
   gtpe->addAnalyzeCommand("showcircdistfrom %%p","Show Circular Distance From","sboard");
+  gtpe->addAnalyzeCommand("listcircpatternsat %%p","List Circular Patterns At","string");
   gtpe->addAnalyzeCommand("showpatternmatches","Show Pattern Matches","sboard");
   gtpe->addAnalyzeCommand("shownakadecenters","Show Nakade Centers","sboard");
   gtpe->addAnalyzeCommand("featurematchesat %%p","Feature Matches At","string");
@@ -953,6 +958,40 @@ void Engine::gtpShowCircDistFrom(void *instance, Gtp::Engine* gtpe, Gtp::Command
     gtpe->getOutput()->printf("\n");
   }
 
+  gtpe->getOutput()->endResponse(true);
+}
+
+void Engine::gtpListCircularPatternsAt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("vertex is required");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  Gtp::Vertex vert = cmd->getVertexArg(0);
+  
+  if (vert.x==-3 && vert.y==-3)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("invalid vertex");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  int pos=Go::Position::xy2pos(vert.x,vert.y,me->boardsize);
+  Pattern::Circular pattcirc=Pattern::Circular(me->circdict,me->currentboard,pos,PATTERN_CIRC_MAXSIZE);
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printf("Circular Patterns at %s:\n",Go::Position::pos2string(pos,me->boardsize).c_str());
+  for (int s=2;s<=PATTERN_CIRC_MAXSIZE;s++)
+  {
+    gtpe->getOutput()->printf(" %s\n",pattcirc.getSubPattern(me->circdict,s).toString(me->circdict).c_str());
+  }
   gtpe->getOutput()->endResponse(true);
 }
 

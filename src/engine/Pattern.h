@@ -11,6 +11,9 @@
 #define PATTERN_3x3_TABLE_BYTES (1<<16)/8
 #define PATTERN_3x3_GAMMAS (1<<16)
 
+#define PATTERN_CIRC_MAXSIZE 15
+#define PATTERN_CIRC_32BITPARTS 10
+
 #define PATTERN_3x3_DEFAULTS " \
 +*BWBEE??? \
 +*BWEEE?E? \
@@ -28,6 +31,8 @@
 "
 
 #include <string>
+#include <list>
+#include <boost/cstdint.hpp>
 #include "Go.h"
 
 namespace Pattern
@@ -161,6 +166,47 @@ namespace Pattern
     
     private:
       float *gammas;
+  };
+  
+  class CircularDictionary
+  {
+    public:
+      CircularDictionary();
+      
+      std::list<int> *getXOffsetsForSize(int size) { return &(dictx[size]); }; // XXX: no bounds checking!
+      std::list<int> *getYOffsetsForSize(int size) { return &(dicty[size]); }; // XXX: no bounds checking!
+      int getBaseOffset(int size) { return baseoffset[size]; };
+    
+    private:
+      std::list<int> dictx[PATTERN_CIRC_MAXSIZE+1];
+      std::list<int> dicty[PATTERN_CIRC_MAXSIZE+1];
+      int baseoffset[PATTERN_CIRC_MAXSIZE+1];
+  };
+  
+  class Circular
+  {
+    public:
+      Circular(Pattern::CircularDictionary *dict, Go::Board *board, int pos, int sz);
+      
+      int getSize() { return size; };
+      boost::uint_fast32_t *getHash() { return hash; };
+      
+      Pattern::Circular getSubPattern(Pattern::CircularDictionary *dict, int newsize);
+      
+      std::string toString(Pattern::CircularDictionary *dict);
+      
+      bool operator==(Pattern::Circular other);
+      bool operator!=(Pattern::Circular other) { return !(*this == other); };
+    
+    private:
+      Circular() {};
+      
+      int size;
+      boost::uint_fast32_t hash[PATTERN_CIRC_32BITPARTS];
+      
+      static int hashColor(Go::Color col);
+      void initColor(int offset, Go::Color col);
+      void resetColor(int offset);
   };
 };
 #endif
