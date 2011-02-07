@@ -251,6 +251,25 @@ void Pattern::ThreeByThreeTable::processPermutations(bool addpatterns, Pattern::
 
 Pattern::CircularDictionary::CircularDictionary()
 {
+  for (int i=0;i<PATTERN_CIRC_32BITPARTS;i++)
+  {
+    rot_r2[i]=0;
+    rot_r4[i]=0;
+    rot_l6[i]=0;
+    rot_l12[i]=0;
+    flip_0[i]=0;
+    flip_r2[i]=0;
+    flip_r4[i]=0;
+    flip_r6[i]=0;
+    flip_r10[i]=0;
+    flip_r14[i]=0;
+    flip_l2[i]=0;
+    flip_l4[i]=0;
+    flip_l6[i]=0;
+    flip_l10[i]=0;
+    flip_l14[i]=0;
+  }
+  
   int base=0;
   for (int d=2;d<=PATTERN_CIRC_MAXSIZE;d++)
   {
@@ -266,12 +285,20 @@ Pattern::CircularDictionary::CircularDictionary()
         {
           dictx[d].push_back(0);
           dicty[d].push_back(b);
+          this->setTrans(rot_r2,base);
+          this->setTrans(flip_0,base);
           dictx[d].push_back(b);
           dicty[d].push_back(0);
+          this->setTrans(rot_r2,base+1);
+          this->setTrans(flip_r4,base+1);
           dictx[d].push_back(0);
           dicty[d].push_back(-b);
+          this->setTrans(rot_r2,base+2);
+          this->setTrans(flip_0,base+2);
           dictx[d].push_back(-b);
           dicty[d].push_back(0);
+          this->setTrans(rot_l6,base+3);
+          this->setTrans(flip_l4,base+3);
           
           base+=4;
         }
@@ -279,12 +306,20 @@ Pattern::CircularDictionary::CircularDictionary()
         {
           dictx[d].push_back(b);
           dicty[d].push_back(b);
+          this->setTrans(rot_r2,base);
+          this->setTrans(flip_r6,base);
           dictx[d].push_back(b);
           dicty[d].push_back(-b);
+          this->setTrans(rot_r2,base+1);
+          this->setTrans(flip_r2,base+1);
           dictx[d].push_back(-b);
           dicty[d].push_back(-b);
+          this->setTrans(rot_r2,base+2);
+          this->setTrans(flip_l2,base+2);
           dictx[d].push_back(-b);
           dicty[d].push_back(b);
+          this->setTrans(rot_l6,base+3);
+          this->setTrans(flip_l6,base+3);
           
           base+=4;
         }
@@ -292,21 +327,37 @@ Pattern::CircularDictionary::CircularDictionary()
         {
           dictx[d].push_back(a);
           dicty[d].push_back(b);
+          this->setTrans(rot_r4,base);
+          this->setTrans(flip_r14,base);
           dictx[d].push_back(b);
           dicty[d].push_back(a);
+          this->setTrans(rot_r4,base+1);
+          this->setTrans(flip_r10,base+1);
           dictx[d].push_back(b);
           dicty[d].push_back(-a);
+          this->setTrans(rot_r4,base+2);
+          this->setTrans(flip_r6,base+2);
           dictx[d].push_back(a);
           dicty[d].push_back(-b);
+          this->setTrans(rot_r4,base+3);
+          this->setTrans(flip_r2,base+3);
           
           dictx[d].push_back(-a);
           dicty[d].push_back(-b);
+          this->setTrans(rot_r4,base+4);
+          this->setTrans(flip_l2,base+4);
           dictx[d].push_back(-b);
           dicty[d].push_back(-a);
+          this->setTrans(rot_r4,base+5);
+          this->setTrans(flip_l6,base+5);
           dictx[d].push_back(-b);
           dicty[d].push_back(a);
+          this->setTrans(rot_l12,base+6);
+          this->setTrans(flip_l10,base+6);
           dictx[d].push_back(-a);
           dicty[d].push_back(b);
+          this->setTrans(rot_l12,base+7);
+          this->setTrans(flip_l14,base+7);
           
           base+=8;
         }
@@ -389,6 +440,14 @@ void Pattern::Circular::resetColor(int offset)
   hash[part]&=~((boost::uint_fast32_t)(3<<(32-bitoffset-2)));
 }
 
+void Pattern::CircularDictionary::setTrans(boost::uint_fast32_t data[PATTERN_CIRC_32BITPARTS], int offset)
+{
+  int part=offset/(32/2);
+  int bitoffset=(offset%(32/2))*2;
+  
+  data[part]|=(3)<<(32-bitoffset-2);
+}
+
 std::string Pattern::Circular::toString(Pattern::CircularDictionary *dict)
 {
   std::ostringstream ss;
@@ -449,5 +508,58 @@ bool Pattern::Circular::operator==(Pattern::Circular other)
       return false;
   }
   return true;
-};
+}
+
+void Pattern::Circular::invert()
+{
+  for (int i=0;i<PATTERN_CIRC_32BITPARTS;i++)
+  {
+    boost::uint_fast32_t upper=hash[i]&(0xAAAAAAAA);
+    boost::uint_fast32_t lower=hash[i]&(0x55555555);
+    hash[i]=(upper>>1)|(lower<<1);
+  }
+}
+
+void Pattern::Circular::rotateRight(Pattern::CircularDictionary *dict)
+{
+  boost::uint_fast32_t withnext=0;
+  for (int i=0;i<PATTERN_CIRC_32BITPARTS;i++)
+  {
+    boost::uint_fast32_t orig=hash[i];
+    boost::uint_fast32_t r2=dict->rot_r2[i];
+    boost::uint_fast32_t r4=dict->rot_r4[i];
+    boost::uint_fast32_t l6=dict->rot_l6[i];
+    boost::uint_fast32_t l12=dict->rot_l12[i];
+    
+    if (i>0)
+      hash[i-1]|=((orig&l6)>>(32-6))|((orig&l12)>>(32-12));  
+    hash[i]=((orig&r2)>>2)|((orig&r4)>>4)|((orig&l6)<<6)|((orig&l12)<<12)|withnext;
+    withnext=((orig&r2)<<(32-2))|((orig&r4)<<(32-4));
+  }
+}
+
+void Pattern::Circular::flipHorizontal(Pattern::CircularDictionary *dict)
+{
+  boost::uint_fast32_t withnext=0;
+  for (int i=0;i<PATTERN_CIRC_32BITPARTS;i++)
+  {
+    boost::uint_fast32_t orig=hash[i];
+    boost::uint_fast32_t none=dict->flip_0[i];
+    boost::uint_fast32_t r2=dict->flip_r2[i];
+    boost::uint_fast32_t r4=dict->flip_r4[i];
+    boost::uint_fast32_t r6=dict->flip_r6[i];
+    boost::uint_fast32_t r10=dict->flip_r10[i];
+    boost::uint_fast32_t r14=dict->flip_r14[i];
+    boost::uint_fast32_t l2=dict->flip_l2[i];
+    boost::uint_fast32_t l4=dict->flip_l4[i];
+    boost::uint_fast32_t l6=dict->flip_l6[i];
+    boost::uint_fast32_t l10=dict->flip_l10[i];
+    boost::uint_fast32_t l14=dict->flip_l14[i];
+    
+    if (i>0)
+      hash[i-1]|=((orig&l2)>>(32-2))|((orig&l4)>>(32-4))|((orig&l6)>>(32-6))|((orig&l10)>>(32-10))|((orig&l14)>>(32-14));  
+    hash[i]=(orig&none)|((orig&r2)>>2)|((orig&r4)>>4)|((orig&r6)>>6)|((orig&r10)>>10)|((orig&r14)>>14)|((orig&l2)<<2)|((orig&l4)<<4)|((orig&l6)<<6)|((orig&l10)<<10)|((orig&l14)<<14)|withnext;
+    withnext=((orig&r2)<<(32-2))|((orig&r4)<<(32-4))|((orig&r6)<<(32-6))|((orig&r10)<<(32-10))|((orig&r14)<<(32-14));
+  }
+}
 

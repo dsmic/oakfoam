@@ -120,6 +120,10 @@ Engine::Engine(Gtp::Engine *ge)
 
 Engine::~Engine()
 {
+  if (lgrf1!=NULL)
+    delete[] lgrf1;
+  if (lgrf2!=NULL)
+    delete[] lgrf2;
   delete circdict;
   delete features;
   delete patterntable;
@@ -992,6 +996,8 @@ void Engine::gtpListCircularPatternsAt(void *instance, Gtp::Engine* gtpe, Gtp::C
   {
     gtpe->getOutput()->printf(" %s\n",pattcirc.getSubPattern(me->circdict,s).toString(me->circdict).c_str());
   }
+  //pattcirc.rotateRight(me->circdict);
+  //gtpe->getOutput()->printf(" %s\n",pattcirc.toString(me->circdict).c_str());
   gtpe->getOutput()->endResponse(true);
 }
 

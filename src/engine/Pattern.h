@@ -173,6 +173,22 @@ namespace Pattern
     public:
       CircularDictionary();
       
+      boost::uint_fast32_t rot_r2[PATTERN_CIRC_32BITPARTS];
+      boost::uint_fast32_t rot_r4[PATTERN_CIRC_32BITPARTS];
+      boost::uint_fast32_t rot_l6[PATTERN_CIRC_32BITPARTS];
+      boost::uint_fast32_t rot_l12[PATTERN_CIRC_32BITPARTS];
+      boost::uint_fast32_t flip_0[PATTERN_CIRC_32BITPARTS];
+      boost::uint_fast32_t flip_r2[PATTERN_CIRC_32BITPARTS];
+      boost::uint_fast32_t flip_r4[PATTERN_CIRC_32BITPARTS];
+      boost::uint_fast32_t flip_r6[PATTERN_CIRC_32BITPARTS];
+      boost::uint_fast32_t flip_r10[PATTERN_CIRC_32BITPARTS];
+      boost::uint_fast32_t flip_r14[PATTERN_CIRC_32BITPARTS];
+      boost::uint_fast32_t flip_l2[PATTERN_CIRC_32BITPARTS];
+      boost::uint_fast32_t flip_l4[PATTERN_CIRC_32BITPARTS];
+      boost::uint_fast32_t flip_l6[PATTERN_CIRC_32BITPARTS];
+      boost::uint_fast32_t flip_l10[PATTERN_CIRC_32BITPARTS];
+      boost::uint_fast32_t flip_l14[PATTERN_CIRC_32BITPARTS];
+      
       std::list<int> *getXOffsetsForSize(int size) { return &(dictx[size]); }; // XXX: no bounds checking!
       std::list<int> *getYOffsetsForSize(int size) { return &(dicty[size]); }; // XXX: no bounds checking!
       int getBaseOffset(int size) { return baseoffset[size]; };
@@ -181,6 +197,8 @@ namespace Pattern
       std::list<int> dictx[PATTERN_CIRC_MAXSIZE+1];
       std::list<int> dicty[PATTERN_CIRC_MAXSIZE+1];
       int baseoffset[PATTERN_CIRC_MAXSIZE+1];
+      
+      void setTrans(boost::uint_fast32_t data[PATTERN_CIRC_32BITPARTS], int offset);
   };
   
   class Circular
@@ -191,12 +209,17 @@ namespace Pattern
       int getSize() { return size; };
       boost::uint_fast32_t *getHash() { return hash; };
       
+      Pattern::Circular copy() { return this->getSubPattern(NULL,size); };
       Pattern::Circular getSubPattern(Pattern::CircularDictionary *dict, int newsize);
       
       std::string toString(Pattern::CircularDictionary *dict);
       
       bool operator==(Pattern::Circular other);
       bool operator!=(Pattern::Circular other) { return !(*this == other); };
+      
+      void invert();
+      void rotateRight(Pattern::CircularDictionary *dict);
+      void flipHorizontal(Pattern::CircularDictionary *dict);
     
     private:
       Circular() {};
