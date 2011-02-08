@@ -488,7 +488,7 @@ Pattern::Circular Pattern::Circular::getSubPattern(Pattern::CircularDictionary *
     return newpatt;
   
   int l=dict->getBaseOffset(s+1);
-  fprintf(stderr,"l: %d\n",l);
+  //fprintf(stderr,"l: %d\n",l);
   for (int i=l;i<PATTERN_CIRC_32BITPARTS*(32/2);i++)
   {
     newpatt.resetColor(i);
@@ -508,6 +508,30 @@ bool Pattern::Circular::operator==(Pattern::Circular other)
       return false;
   }
   return true;
+}
+
+bool Pattern::Circular::operator<(Pattern::Circular other)
+{
+  for (int i=0;i<PATTERN_CIRC_32BITPARTS;i++)
+  {
+    if (hash[i]<other.hash[i])
+      return true;
+    else if (hash[i]>other.hash[i])
+      return false;
+  }
+  return false;
+}
+
+bool Pattern::Circular::operator<(Pattern::Circular *other)
+{
+  for (int i=0;i<PATTERN_CIRC_32BITPARTS;i++)
+  {
+    if (hash[i]<other->hash[i])
+      return true;
+    else if (hash[i]>other->hash[i])
+      return false;
+  }
+  return false;
 }
 
 void Pattern::Circular::invert()
@@ -560,6 +584,45 @@ void Pattern::Circular::flipHorizontal(Pattern::CircularDictionary *dict)
       hash[i-1]|=((orig&l2)>>(32-2))|((orig&l4)>>(32-4))|((orig&l6)>>(32-6))|((orig&l10)>>(32-10))|((orig&l14)>>(32-14));  
     hash[i]=(orig&none)|((orig&r2)>>2)|((orig&r4)>>4)|((orig&r6)>>6)|((orig&r10)>>10)|((orig&r14)>>14)|((orig&l2)<<2)|((orig&l4)<<4)|((orig&l6)<<6)|((orig&l10)<<10)|((orig&l14)<<14)|withnext;
     withnext=((orig&r2)<<(32-2))|((orig&r4)<<(32-4))|((orig&r6)<<(32-6))|((orig&r10)<<(32-10))|((orig&r14)<<(32-14));
+  }
+}
+
+void Pattern::Circular::convertToSmallestEquivalent(Pattern::CircularDictionary *dict)
+{
+  Pattern::Circular alternative=this->copy();
+  
+  //fprintf(stderr,"comparing: %s\n",this->toString(dict).c_str());
+  
+  for (int x=0;x<4;x++)
+  {
+    if (alternative<this)
+    {
+      //fprintf(stderr,"found: %s\n",alternative.toString(dict).c_str());
+      for (int i=0;i<PATTERN_CIRC_32BITPARTS;i++)
+      {
+        hash[i]=alternative.hash[i];
+      }
+    }
+    //else
+    //  fprintf(stderr,"missed: %s\n",alternative.toString(dict).c_str());
+    alternative.rotateRight(dict);
+  }
+  
+  alternative.flipHorizontal(dict);
+  
+  for (int x=0;x<4;x++)
+  {
+    if (alternative<this)
+    {
+      //fprintf(stderr,"found: %s\n",alternative.toString(dict).c_str());
+      for (int i=0;i<PATTERN_CIRC_32BITPARTS;i++)
+      {
+        hash[i]=alternative.hash[i];
+      }
+    }
+    //else
+    //  fprintf(stderr,"missed: %s\n",alternative.toString(dict).c_str());
+    alternative.rotateRight(dict);
   }
 }
 

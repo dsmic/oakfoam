@@ -216,10 +216,14 @@ namespace Pattern
       
       bool operator==(Pattern::Circular other);
       bool operator!=(Pattern::Circular other) { return !(*this == other); };
+      bool operator<(Pattern::Circular other);
+      bool operator<(Pattern::Circular *other);
       
       void invert();
       void rotateRight(Pattern::CircularDictionary *dict);
       void flipHorizontal(Pattern::CircularDictionary *dict);
+      
+      void convertToSmallestEquivalent(Pattern::CircularDictionary *dict);
     
     private:
       Circular() {};

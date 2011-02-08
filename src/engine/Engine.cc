@@ -996,8 +996,18 @@ void Engine::gtpListCircularPatternsAt(void *instance, Gtp::Engine* gtpe, Gtp::C
   {
     gtpe->getOutput()->printf(" %s\n",pattcirc.getSubPattern(me->circdict,s).toString(me->circdict).c_str());
   }
+  /*pattcirc.rotateRight(me->circdict);
+  gtpe->getOutput()->printf(" %s\n",pattcirc.toString(me->circdict).c_str());
+  pattcirc.rotateRight(me->circdict);
+  gtpe->getOutput()->printf(" %s\n",pattcirc.toString(me->circdict).c_str());
+  pattcirc.rotateRight(me->circdict);
+  gtpe->getOutput()->printf(" %s\n",pattcirc.toString(me->circdict).c_str());
+  pattcirc.rotateRight(me->circdict);*/
   //pattcirc.rotateRight(me->circdict);
-  //gtpe->getOutput()->printf(" %s\n",pattcirc.toString(me->circdict).c_str());
+  //pattcirc.flipHorizontal(me->circdict);
+  gtpe->getOutput()->printf("Smallest Equivalent:\n");
+  pattcirc.convertToSmallestEquivalent(me->circdict);
+  gtpe->getOutput()->printf(" %s\n",pattcirc.toString(me->circdict).c_str());
   gtpe->getOutput()->endResponse(true);
 }
 
