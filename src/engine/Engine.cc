@@ -196,6 +196,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("showcfgfrom",this,&Engine::gtpShowCFGFrom);
   gtpe->addFunctionCommand("showcircdistfrom",this,&Engine::gtpShowCircDistFrom);
   gtpe->addFunctionCommand("listcircpatternsat",this,&Engine::gtpListCircularPatternsAt);
+  gtpe->addFunctionCommand("listallcircularpatterns",this,&Engine::gtpListAllCircularPatterns);
   
   gtpe->addFunctionCommand("time_settings",this,&Engine::gtpTimeSettings);
   gtpe->addFunctionCommand("time_left",this,&Engine::gtpTimeLeft);
@@ -1009,6 +1010,43 @@ void Engine::gtpListCircularPatternsAt(void *instance, Gtp::Engine* gtpe, Gtp::C
   pattcirc.convertToSmallestEquivalent(me->circdict);
   gtpe->getOutput()->printf(" %s\n",pattcirc.toString(me->circdict).c_str());
   gtpe->getOutput()->endResponse(true);
+}
+
+void Engine::gtpListAllCircularPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  int size=0;
+  if (cmd->numArgs()>=1)
+  {
+    size=cmd->getIntArg(0);
+  }
+  
+  Go::Board *board=me->currentboard;
+  Go::Color col=board->nextToMove();
+  
+  gtpe->getOutput()->startResponse(cmd);
+  for (int p=0;p<board->getPositionMax();p++)
+  {
+    if (me->currentboard->validMove(Go::Move(col,p)))
+    {
+      Pattern::Circular pattcirc=Pattern::Circular(me->circdict,board,p,PATTERN_CIRC_MAXSIZE);
+      if (col==Go::WHITE)
+        pattcirc.invert();
+      pattcirc.convertToSmallestEquivalent(me->circdict);
+      if (size==0)
+      {
+        for (int s=4;s<=PATTERN_CIRC_MAXSIZE;s++)
+        {
+          gtpe->getOutput()->printf(" %s",pattcirc.getSubPattern(me->circdict,s).toString(me->circdict).c_str());
+        }
+      }
+      else
+        gtpe->getOutput()->printf(" %s",pattcirc.getSubPattern(me->circdict,size).toString(me->circdict).c_str());
+    }
+  }
+
+  gtpe->getOutput()->endResponse();
 }
 
 void Engine::gtpShowSymmetryTransforms(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
