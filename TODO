@@ -37,6 +37,7 @@ Soon: (before next major release)
   check for Mogo patterns quickly?
   reduce expand_after?
   tune fillboard's N
+  support terminal jigo in tree
 
 Later: (at some point)
   make sure install works and is described somewhere
