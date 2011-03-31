@@ -2114,7 +2114,7 @@ void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
   bool playoutwin=Go::Board::isWinForColor(playoutcol,finalscore);
   bool playoutjigo=(finalscore==0);
   if (playoutjigo)
-    playouttree->addPartialResult(0.5,0,false);
+    playouttree->addPartialResult(0.5,1,false);
   else if (playoutwin)
     playouttree->addWin();
   else

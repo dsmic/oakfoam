@@ -140,14 +140,15 @@ void Tree::addRAVELoses(int n)
 
 void Tree::addPartialResult(float win, float playout, bool invertwin)
 {
+  //fprintf(stderr,"adding partial result: %f %f %d\n",win,playout,invertwin);
   wins+=win;
   playouts+=playout;
   if (!this->isRoot())
   {
     if (invertwin)
-      parent->addPartialResult(-win,playout);
+      parent->addPartialResult(-win,playout,invertwin);
     else
-      parent->addPartialResult(1-win,playout);
+      parent->addPartialResult(1-win,playout,invertwin);
   }
   this->checkForUnPruning();
 }
