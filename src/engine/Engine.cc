@@ -417,7 +417,10 @@ void Engine::gtpFinalScore(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   score=me->currentboard->score()-me->komi;
   
   gtpe->getOutput()->startResponse(cmd);
-  gtpe->getOutput()->printScore(score);
+  if (score==0) // jigo
+    gtpe->getOutput()->printf("0");
+  else
+    gtpe->getOutput()->printScore(score);
   gtpe->getOutput()->endResponse();
 }
 
@@ -2109,7 +2112,10 @@ void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
   
   float finalscore=playoutboard->score()-komi;
   bool playoutwin=Go::Board::isWinForColor(playoutcol,finalscore);
-  if (playoutwin)
+  bool playoutjigo=(finalscore==0);
+  if (playoutjigo)
+    playouttree->addPartialResult(0.5,0,false);
+  else if (playoutwin)
     playouttree->addWin();
   else
     playouttree->addLose();
@@ -2139,7 +2145,9 @@ void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
   
   if (params->debug_on)
   {
-    if (playoutwin && playoutcol==col)
+    if (finalscore==0)
+      gtpe->getOutput()->printfDebug("[result]:jigo\n");
+    else if (playoutwin && playoutcol==col)
       gtpe->getOutput()->printfDebug("[result]:win\n");
     else
       gtpe->getOutput()->printfDebug("[result]:lose\n");
@@ -2147,75 +2155,84 @@ void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
   
   if (params->rave_moves>0)
   {
-    bool blackwin=Go::Board::isWinForColor(Go::BLACK,finalscore);
-    Go::Color wincol=(blackwin?Go::BLACK:Go::WHITE);
-    
-    if (col==Go::BLACK)
-      playouttree->updateRAVE(wincol,firstlist,secondlist);
-    else
-      playouttree->updateRAVE(wincol,secondlist,firstlist);
+    if (!playoutjigo) // ignore jigos for RAVE
+    {
+      bool blackwin=Go::Board::isWinForColor(Go::BLACK,finalscore);
+      Go::Color wincol=(blackwin?Go::BLACK:Go::WHITE);
+      
+      if (col==Go::BLACK)
+        playouttree->updateRAVE(wincol,firstlist,secondlist);
+      else
+        playouttree->updateRAVE(wincol,secondlist,firstlist);
+    }
   }
   
   if (params->playout_lgrf1_enabled)
   {
-    bool blackwin=Go::Board::isWinForColor(Go::BLACK,finalscore);
-    Go::Color wincol=(blackwin?Go::BLACK:Go::WHITE);
-    
-    Go::Move move1=Go::Move(Go::EMPTY,Go::Move::PASS);
-    for(std::list<Go::Move>::iterator iter=playoutmoves.begin();iter!=playoutmoves.end();++iter)
+    if (!playoutjigo) // ignore jigos
     {
-      if (!(*iter).isPass() && !move1.isPass())
+      bool blackwin=Go::Board::isWinForColor(Go::BLACK,finalscore);
+      Go::Color wincol=(blackwin?Go::BLACK:Go::WHITE);
+      
+      Go::Move move1=Go::Move(Go::EMPTY,Go::Move::PASS);
+      for(std::list<Go::Move>::iterator iter=playoutmoves.begin();iter!=playoutmoves.end();++iter)
       {
-        Go::Color c=(*iter).getColor();
-        int mp=(*iter).getPosition();
-        int p1=move1.getPosition();
-        if (c==wincol)
+        if (!(*iter).isPass() && !move1.isPass())
         {
-          if (params->debug_on)
-            fprintf(stderr,"adding LGRF1: %s %s\n",move1.toString(boardsize).c_str(),(*iter).toString(boardsize).c_str());
-          this->setLGRF1(c,p1,mp);
+          Go::Color c=(*iter).getColor();
+          int mp=(*iter).getPosition();
+          int p1=move1.getPosition();
+          if (c==wincol)
+          {
+            if (params->debug_on)
+              fprintf(stderr,"adding LGRF1: %s %s\n",move1.toString(boardsize).c_str(),(*iter).toString(boardsize).c_str());
+            this->setLGRF1(c,p1,mp);
+          }
+          else
+          {
+            if (params->debug_on && this->hasLGRF1(c,p1))
+              fprintf(stderr,"forgetting LGRF1: %s %s\n",move1.toString(boardsize).c_str(),(*iter).toString(boardsize).c_str());
+            this->clearLGRF1(c,p1);
+          }
         }
-        else
-        {
-          if (params->debug_on && this->hasLGRF1(c,p1))
-            fprintf(stderr,"forgetting LGRF1: %s %s\n",move1.toString(boardsize).c_str(),(*iter).toString(boardsize).c_str());
-          this->clearLGRF1(c,p1);
-        }
+        move1=(*iter);
       }
-      move1=(*iter);
     }
   }
   
   if (params->playout_lgrf2_enabled)
   {
-    bool blackwin=Go::Board::isWinForColor(Go::BLACK,finalscore);
-    Go::Color wincol=(blackwin?Go::BLACK:Go::WHITE);
-    
-    Go::Move move1=Go::Move(Go::EMPTY,Go::Move::PASS);
-    Go::Move move2=Go::Move(Go::EMPTY,Go::Move::PASS);
-    for(std::list<Go::Move>::iterator iter=playoutmoves.begin();iter!=playoutmoves.end();++iter)
+    if (!playoutjigo) // ignore jigos
     {
-      if (!(*iter).isPass() && !move1.isPass() && !move2.isPass())
+      bool blackwin=Go::Board::isWinForColor(Go::BLACK,finalscore);
+      Go::Color wincol=(blackwin?Go::BLACK:Go::WHITE);
+      
+      Go::Move move1=Go::Move(Go::EMPTY,Go::Move::PASS);
+      Go::Move move2=Go::Move(Go::EMPTY,Go::Move::PASS);
+      for(std::list<Go::Move>::iterator iter=playoutmoves.begin();iter!=playoutmoves.end();++iter)
       {
-        Go::Color c=(*iter).getColor();
-        int mp=(*iter).getPosition();
-        int p1=move1.getPosition();
-        int p2=move2.getPosition();
-        if (c==wincol)
+        if (!(*iter).isPass() && !move1.isPass() && !move2.isPass())
         {
-          if (params->debug_on)
-            fprintf(stderr,"adding LGRF2: %s %s %s\n",move1.toString(boardsize).c_str(),move2.toString(boardsize).c_str(),(*iter).toString(boardsize).c_str());
-          this->setLGRF2(c,p1,p2,mp);
+          Go::Color c=(*iter).getColor();
+          int mp=(*iter).getPosition();
+          int p1=move1.getPosition();
+          int p2=move2.getPosition();
+          if (c==wincol)
+          {
+            if (params->debug_on)
+              fprintf(stderr,"adding LGRF2: %s %s %s\n",move1.toString(boardsize).c_str(),move2.toString(boardsize).c_str(),(*iter).toString(boardsize).c_str());
+            this->setLGRF2(c,p1,p2,mp);
+          }
+          else
+          {
+            if (params->debug_on && this->hasLGRF2(c,p1,p2))
+              fprintf(stderr,"forgetting LGRF2: %s %s %s\n",move1.toString(boardsize).c_str(),move2.toString(boardsize).c_str(),(*iter).toString(boardsize).c_str());
+            this->clearLGRF2(c,p1,p2);
+          }
         }
-        else
-        {
-          if (params->debug_on && this->hasLGRF2(c,p1,p2))
-            fprintf(stderr,"forgetting LGRF2: %s %s %s\n",move1.toString(boardsize).c_str(),move2.toString(boardsize).c_str(),(*iter).toString(boardsize).c_str());
-          this->clearLGRF2(c,p1,p2);
-        }
+        move1=move2;
+        move2=(*iter);
       }
-      move1=move2;
-      move2=(*iter);
     }
   }
   

@@ -52,7 +52,6 @@ Later: (at some point)
   document parameters
   use rotational symmetry?
   copy all board data with a copy() (groups and liberties)
-  handle jigo correctly
   extensive comparison of playouts with strength
   add more debug messages and debug levels
   more regression testing

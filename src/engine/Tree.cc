@@ -149,6 +149,7 @@ void Tree::addPartialResult(float win, float playout, bool invertwin)
     else
       parent->addPartialResult(1-win,playout);
   }
+  this->checkForUnPruning();
 }
 
 Tree *Tree::getChild(Go::Move move)
