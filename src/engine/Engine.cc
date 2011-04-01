@@ -1706,6 +1706,7 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
     {
       int i=rand.getRandomInt(atarimovescount);
       move=Go::Move(col,atarimoves[i]);
+      //gtpe->getOutput()->printfDebug("[playoutmove]: atari\n");
       return;
     }
   }
@@ -1725,7 +1726,7 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
           if (group!=NULL && group->getColor()==col && group->inAtari())
           {
             int liberty=group->getAtariPosition();
-            bool iscaptureorconnect=board->isCapture(Go::Move(col,liberty)) || board->isExtension(Go::Move(col,liberty));
+            bool iscaptureorconnect=board->isCapture(Go::Move(col,liberty)) || (board->isExtension(Go::Move(col,liberty)) && !board->isSelfAtari(Go::Move(col,liberty)));
             if (iscaptureorconnect && board->validMove(Go::Move(col,liberty)))
             {
               possiblemoves[possiblemovescount]=liberty;
@@ -1740,6 +1741,7 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
     {
       int i=rand.getRandomInt(possiblemovescount);
       move=Go::Move(col,possiblemoves[i]);
+      //gtpe->getOutput()->printfDebug("[playoutmove]: last atari %d %d %d\n",board->isCapture(move),board->isExtension(move),board->isSelfAtari(move));
       return;
     }
   }
@@ -1766,6 +1768,7 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
     {
       int i=rand.getRandomInt(possiblemovescount);
       move=Go::Move(col,possiblemoves[i]);
+      //gtpe->getOutput()->printfDebug("[playoutmove]: nakade\n");
       return;
     }
   }
@@ -1778,6 +1781,7 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
       if (board->getColor(p)==Go::EMPTY && board->surroundingEmpty(p)==8 && board->validMove(Go::Move(col,p)))
       {
         move=Go::Move(col,p);
+        //gtpe->getOutput()->printfDebug("[playoutmove]: fillboard\n");
         return;
       }
     }
@@ -1794,7 +1798,7 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
       int size=board->getSize();
       
       foreach_adjdiag(pos,p,{
-        if (board->validMove(Go::Move(col,p)) && !board->weakEye(col,p))
+        if (board->validMove(Go::Move(col,p)) && !board->weakEye(col,p) && !board->isSelfAtari(Go::Move(col,p)))
         {
           unsigned int pattern=Pattern::ThreeByThree::makeHash(board,p);
           if (col==Go::WHITE)
@@ -1834,6 +1838,7 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
     {
       int i=rand.getRandomInt(patternmovescount);
       move=Go::Move(col,patternmoves[i]);
+      //gtpe->getOutput()->printfDebug("[playoutmove]: pattern\n");
       return;
     }
   }
@@ -1861,6 +1866,7 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
     {
       int i=rand.getRandomInt(possiblemovescount);
       move=Go::Move(col,possiblemoves[i]);
+      //gtpe->getOutput()->printfDebug("[playoutmove]: any capture\n");
       return;
     }
   }
@@ -1871,6 +1877,7 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
     if (board->validMove(Go::Move(col,p)) && !board->weakEye(col,p))
     {
       move=Go::Move(col,p);
+      //gtpe->getOutput()->printfDebug("[playoutmove]: random\n");
       return;
     }
   }
@@ -1908,6 +1915,7 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
     if (validmoves->get(rp) && !board->weakEye(col,rp))
     {
       move=Go::Move(col,rp);
+      //gtpe->getOutput()->printfDebug("[playoutmove]: random\n");
       return;
     }
   }
