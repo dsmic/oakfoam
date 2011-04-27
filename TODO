@@ -38,6 +38,7 @@ Soon: (before next major release)
   reduce expand_after?
   tune fillboard's N
   support terminal jigo in tree
+  use Benson algo in tree and playouts
 
 Later: (at some point)
   make sure install works and is described somewhere
