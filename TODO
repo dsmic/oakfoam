@@ -39,6 +39,7 @@ Soon: (before next major release)
   tune fillboard's N
   support terminal jigo in tree
   use Benson algo in tree and playouts
+  use Criticality as a feature
 
 Later: (at some point)
   make sure install works and is described somewhere
