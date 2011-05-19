@@ -108,9 +108,13 @@ Engine::Engine(Gtp::Engine *ge)
   
   circdict=new Pattern::CircularDictionary();
   
+  book=new Book(params);
+  
   time=new Time(params,0);
   
   lastexplanation="";
+  
+  movehistory=new std::list<Go::Move>();
   
   this->addGtpCommands();
   
@@ -130,8 +134,10 @@ Engine::~Engine()
   if (movetree!=NULL)
     delete movetree;
   delete currentboard;
+  delete movehistory;
   delete params;
   delete time;
+  delete book;
 }
 
 void Engine::updateParameter(std::string id)
@@ -211,9 +217,18 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("showtreelivegfx",this,&Engine::gtpShowTreeLiveGfx);
   gtpe->addFunctionCommand("describeengine",this,&Engine::gtpDescribeEngine);
   
+  gtpe->addFunctionCommand("bookshow",this,&Engine::gtpBookShow);
+  gtpe->addFunctionCommand("bookadd",this,&Engine::gtpBookAdd);
+  gtpe->addFunctionCommand("bookclear",this,&Engine::gtpBookClear);
+  
   //gtpe->addAnalyzeCommand("final_score","Final Score","string");
   //gtpe->addAnalyzeCommand("showboard","Show Board","string");
   gtpe->addAnalyzeCommand("boardstats","Board Stats","string");
+  
+  gtpe->addAnalyzeCommand("bookshow","Book Show","gfx");
+  gtpe->addAnalyzeCommand("bookadd %%p","Book Add","none");
+  gtpe->addAnalyzeCommand("bookclear","Book Clear","none");
+  
   gtpe->addAnalyzeCommand("showsymmetrytransforms","Show Symmetry Transforms","sboard");
   //gtpe->addAnalyzeCommand("showliberties","Show Liberties","sboard");
   //gtpe->addAnalyzeCommand("showvalidmoves","Show Valid Moves","sboard");
@@ -1130,6 +1145,57 @@ void Engine::gtpDescribeEngine(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
   gtpe->getOutput()->endResponse(true);
 }
 
+void Engine::gtpBookShow(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString(me->book->show(me->movehistory));
+  gtpe->getOutput()->endResponse(true);
+}
+
+void Engine::gtpBookAdd(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("vertex is required");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  Gtp::Vertex vert = cmd->getVertexArg(0);
+  
+  if (vert.x==-3 && vert.y==-3)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("invalid vertex");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  int pos=Go::Position::xy2pos(vert.x,vert.y,me->boardsize);
+  Go::Move move=Go::Move(me->currentboard->nextToMove(),pos);
+  
+  me->book->add(me->movehistory,move);
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->endResponse();
+}
+
+void Engine::gtpBookClear(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  delete me->book;
+  me->book = new Book(me->params);
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->endResponse();
+}
+
 void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
@@ -1541,6 +1607,7 @@ void Engine::makeMove(Go::Move move)
   }
   
   currentboard->makeMove(move);
+  movehistory->push_back(move);
   if (params->uct_keep_subtree)
     this->chooseSubTree(move);
   else
@@ -1560,7 +1627,9 @@ void Engine::setBoardSize(int s)
 void Engine::clearBoard()
 {
   delete currentboard;
+  delete movehistory;
   currentboard = new Go::Board(boardsize);
+  movehistory = new std::list<Go::Move>();
   if (!params->uct_symmetry_use)
     currentboard->turnSymmetryOff();
   this->clearMoveTree();

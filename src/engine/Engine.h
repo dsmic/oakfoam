@@ -67,6 +67,7 @@
 #include "Parameters.h"
 #include "Features.h"
 #include "Time.h"
+#include "Book.h"
 #include "../gtp/Gtp.h"
 
 class Engine
@@ -142,6 +143,10 @@ class Engine
     static void gtpShowNakadeCenters(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowTreeLiveGfx(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpDescribeEngine(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    
+    static void gtpBookShow(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpBookAdd(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpBookClear(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
   
   private:
     Gtp::Engine *gtpe;
@@ -157,6 +162,8 @@ class Engine
     Features *features;
     int *lgrf1,*lgrf2;
     Pattern::CircularDictionary *circdict;
+    Book *book;
+    std::list<Go::Move> *movehistory;
     
     void addGtpCommands();
     

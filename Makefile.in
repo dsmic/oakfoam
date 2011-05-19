@@ -60,7 +60,7 @@ am_oakfoam_OBJECTS = src/Oakfoam.$(OBJEXT) src/main.$(OBJEXT) \
 	src/engine/Tree.$(OBJEXT) src/engine/Random.$(OBJEXT) \
 	src/engine/Pattern.$(OBJEXT) src/engine/Parameters.$(OBJEXT) \
 	src/engine/Features.$(OBJEXT) src/engine/Time.$(OBJEXT) \
-	src/gtp/Gtp.$(OBJEXT)
+	src/engine/Book.$(OBJEXT) src/gtp/Gtp.$(OBJEXT)
 oakfoam_OBJECTS = $(am_oakfoam_OBJECTS)
 oakfoam_LDADD = $(LDADD)
 SCRIPTS = $(dist_noinst_SCRIPTS)
@@ -195,6 +195,7 @@ oakfoam_SOURCES = src/Oakfoam.h src/Oakfoam.cc src/main.cc \
                       src/engine/Parameters.h src/engine/Parameters.cc \
                       src/engine/Features.h src/engine/Features.cc \
                       src/engine/Time.h src/engine/Time.cc \
+                      src/engine/Book.h src/engine/Book.cc \
                       src/gtp/Gtp.h src/gtp/Gtp.cc
 
 dist_noinst_SCRIPTS = autogen.sh
@@ -322,6 +323,8 @@ src/engine/Features.$(OBJEXT): src/engine/$(am__dirstamp) \
 	src/engine/$(DEPDIR)/$(am__dirstamp)
 src/engine/Time.$(OBJEXT): src/engine/$(am__dirstamp) \
 	src/engine/$(DEPDIR)/$(am__dirstamp)
+src/engine/Book.$(OBJEXT): src/engine/$(am__dirstamp) \
+	src/engine/$(DEPDIR)/$(am__dirstamp)
 src/gtp/$(am__dirstamp):
 	@$(MKDIR_P) src/gtp
 	@: > src/gtp/$(am__dirstamp)
@@ -337,6 +340,7 @@ oakfoam$(EXEEXT): $(oakfoam_OBJECTS) $(oakfoam_DEPENDENCIES)
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 	-rm -f src/Oakfoam.$(OBJEXT)
+	-rm -f src/engine/Book.$(OBJEXT)
 	-rm -f src/engine/Engine.$(OBJEXT)
 	-rm -f src/engine/Features.$(OBJEXT)
 	-rm -f src/engine/Go.$(OBJEXT)
@@ -353,6 +357,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/Oakfoam.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/main.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/engine/$(DEPDIR)/Book.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/engine/$(DEPDIR)/Engine.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/engine/$(DEPDIR)/Features.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/engine/$(DEPDIR)/Go.Po@am__quote@

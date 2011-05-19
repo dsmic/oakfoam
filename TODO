@@ -2,6 +2,9 @@ TODO
 ------------------
 
 Now: (current focus)
+  use symmetry in book
+  load/save book from/to file
+  use book for move
   move playout code out of engine
   change uct_* params to tree_*
   make describeengine build time update at every build
@@ -45,7 +48,6 @@ Later: (at some point)
   make sure install works and is described somewhere
   add handicap settings
   add timestamp to log?
-  add an opening book?
   replace FunctionList and ConstantList with std::list<>
   rename/refactor Engine to better name?
   move Go:: objects into own files?
