@@ -27,6 +27,8 @@ class Parameters
     std::string move_policy_string;
     Parameters::MovePolicy move_policy;
     
+    bool book_use;
+    
     int playouts_per_move;
     int playouts_per_move_min;
     int playouts_per_move_max;

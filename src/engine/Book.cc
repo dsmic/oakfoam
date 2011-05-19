@@ -91,6 +91,23 @@ void Book::add(std::list<Go::Move> *movehistory, Go::Move move)
     addtree->setGood(true);
 }
 
+std::list<Go::Move> Book::getGoodMoves(std::list<Go::Move> *movehistory)
+{
+  std::list<Go::Move> list = std::list<Go::Move>();
+  Book::Tree *ctree=this->getTree(movehistory);
+  
+  if (ctree==NULL)
+    return list;
+  
+  for(std::list<Book::Tree*>::iterator iter=ctree->getChildren()->begin();iter!=ctree->getChildren()->end();++iter) 
+  {
+    if ((*iter)->isGood())
+      list.push_back((*iter)->getMove());
+  }
+  
+  return list;
+}
+
 Book::Tree::Tree(Go::Move mov, bool gd, Book::Tree *p)
 {
   parent=p;

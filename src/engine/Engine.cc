@@ -33,6 +33,8 @@ Engine::Engine(Gtp::Engine *ge)
   params->addParameter("mcts","move_policy",&(params->move_policy_string),mpoptions,"uct",&Engine::updateParameterWrapper,this);
   params->move_policy=Parameters::MP_UCT;
   
+  params->addParameter("mcts","book_use",&(params->book_use),BOOK_USE);
+  
   params->addParameter("mcts","playouts_per_move",&(params->playouts_per_move),PLAYOUTS_PER_MOVE);
   params->addParameter("mcts","playouts_per_move_max",&(params->playouts_per_move_max),PLAYOUTS_PER_MOVE_MAX);
   params->addParameter("mcts","playouts_per_move_min",&(params->playouts_per_move_min),PLAYOUTS_PER_MOVE_MIN);
@@ -1323,6 +1325,35 @@ void Engine::gtpTimeLeft(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 
 void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
 {
+  if (params->book_use)
+  {
+    std::list<Go::Move> bookmoves=book->getGoodMoves(movehistory);
+    
+    if (bookmoves.size()>0)
+    {
+      int r=rand.getRandomInt(bookmoves.size());
+      int i=0;
+      for (std::list<Go::Move>::iterator iter=bookmoves.begin();iter!=bookmoves.end();++iter)
+      {
+        if (i==r)
+        {
+          *move=new Go::Move(*iter);
+          
+          if (playmove)
+            this->makeMove(**move);
+            
+          lastexplanation="selected move from book";
+          
+          gtpe->getOutput()->printfDebug("[genmove]: %s\n",lastexplanation.c_str());
+          if (params->livegfx_on)
+            gtpe->getOutput()->printfDebug("gogui-gfx: TEXT [genmove]: %s\n",lastexplanation.c_str());
+          
+          return;
+        }
+        i++;
+      }
+    }
+  }
   if (params->move_policy==Parameters::MP_UCT || params->move_policy==Parameters::MP_ONEPLY)
   {
     boost::timer timer;

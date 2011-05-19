@@ -4,7 +4,6 @@ TODO
 Now: (current focus)
   use symmetry in book
   load/save book from/to file
-  use book for move
   move playout code out of engine
   change uct_* params to tree_*
   make describeengine build time update at every build

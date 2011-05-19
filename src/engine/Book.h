@@ -14,6 +14,7 @@ class Book
     ~Book();
     
     void add(std::list<Go::Move> *movehistory, Go::Move move);
+    std::list<Go::Move> getGoodMoves(std::list<Go::Move> *movehistory);
     
     std::string show(std::list<Go::Move> *movehistory);
   
