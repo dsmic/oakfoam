@@ -1121,7 +1121,7 @@ std::list<Go::Board::SymmetryTransform> Go::Board::getSymmetryTransformsFromPrim
     trans.swapXY=false;
     trans.invertY=true;
     list.push_back(trans);
-    trans.swapXY=false;
+    trans.swapXY=true;
     list.push_back(trans);
   }
   else if (sym==Go::Board::VERTICAL_HORIZONTAL)

@@ -10,19 +10,64 @@
 Book::Book(Parameters *p)
 {
   params=p;
-  tree=new Book::Tree();
   
-  //this->add(NULL,Go::Move(Go::BLACK,Go::Position::xy2pos(4,4,params->board_size)));
+  //trees.push_back(new Book::TreeHolder(9));
+  //trees.push_back(new Book::TreeHolder(13));
+  //trees.push_back(new Book::TreeHolder(19));
 }
 
 Book::~Book()
 {
+  for (std::list<Book::TreeHolder*>::iterator iter=trees.begin();iter!=trees.end();++iter)
+  {
+    delete (*iter);
+  }
+}
+
+Book::TreeHolder::TreeHolder(int sz)
+{
+  size=sz;
+  tree=new Book::Tree();
+}
+
+Book::TreeHolder::~TreeHolder()
+{
   delete tree;
 }
 
-Book::Tree *Book::getTree(std::list<Go::Move> *movehistory)
+void Book::TreeHolder::clear()
 {
-  Book::Tree *ctree=tree;
+  delete tree;
+  tree=new Book::Tree();
+}
+
+Book::Tree *Book::getTree(int size)
+{
+  for (std::list<Book::TreeHolder*>::iterator iter=trees.begin();iter!=trees.end();++iter)
+  {
+    if ((*iter)->getSize()==size)
+      return (*iter)->getTree();
+  }
+  
+  return NULL;
+}
+
+void Book::clear(int size)
+{
+  for (std::list<Book::TreeHolder*>::iterator iter=trees.begin();iter!=trees.end();++iter)
+  {
+    if ((*iter)->getSize()==size)
+    {
+      (*iter)->clear();
+    }
+  }
+}
+
+Book::Tree *Book::getTree(int size, std::list<Go::Move> *movehistory)
+{
+  Book::Tree *ctree=this->getTree(size);
+  if (ctree==NULL)
+    return NULL;
   
   if (movehistory!=NULL)
   {
@@ -37,10 +82,10 @@ Book::Tree *Book::getTree(std::list<Go::Move> *movehistory)
   return ctree;
 }
 
-std::string Book::show(std::list<Go::Move> *movehistory)
+std::string Book::show(int size, std::list<Go::Move> *movehistory)
 {
   std::ostringstream ss;
-  Book::Tree *ctree=this->getTree(movehistory);
+  Book::Tree *ctree=this->getTree(size,movehistory);
   
   if (ctree==NULL)
     return "TEXT out of book\n";
@@ -49,24 +94,27 @@ std::string Book::show(std::list<Go::Move> *movehistory)
   for(std::list<Book::Tree*>::iterator iter=ctree->getChildren()->begin();iter!=ctree->getChildren()->end();++iter) 
   {
     if ((*iter)->isGood())
-      ss<<" "<<Go::Position::pos2string((*iter)->getMove().getPosition(),params->board_size);
+      ss<<" "<<Go::Position::pos2string((*iter)->getMove().getPosition(),size);
   }
   ss<<"\n";
   ss<<"COLOR blue";
   for(std::list<Book::Tree*>::iterator iter=ctree->getChildren()->begin();iter!=ctree->getChildren()->end();++iter) 
   {
     if (!(*iter)->isGood())
-      ss<<" "<<Go::Position::pos2string((*iter)->getMove().getPosition(),params->board_size);
+      ss<<" "<<Go::Position::pos2string((*iter)->getMove().getPosition(),size);
   }
   ss<<"\n";
   ss<<"TEXT G:good B:other\n";
   return ss.str();
 }
 
-void Book::add(std::list<Go::Move> *movehistory, Go::Move move)
+void Book::add(int size, std::list<Go::Move> *movehistory, Go::Move move)
 {
   std::list<Go::Move> *moves1=new std::list<Go::Move>();
   std::list<Go::Move> *moves2=new std::list<Go::Move>();
+  
+  if (this->getTree(size)==NULL)
+    trees.push_back(new Book::TreeHolder(size));
   
   for (std::list<Go::Move>::iterator iter=movehistory->begin();iter!=movehistory->end();++iter)
   {
@@ -74,24 +122,24 @@ void Book::add(std::list<Go::Move> *movehistory, Go::Move move)
   }
   moves2->push_back(move);
   
-  this->addPermutations(moves1,moves2);
+  this->addPermutations(size,moves1,moves2);
   
   delete moves1;
   delete moves2;
 }
 
-void Book::addPermutations(std::list<Go::Move> *moves1, std::list<Go::Move> *moves2)
+void Book::addPermutations(int size, std::list<Go::Move> *moves1, std::list<Go::Move> *moves2)
 {
   if (moves2->size()==0)
   {
     Go::Move move=moves1->back();
     moves1->pop_back();
-    this->addSingleSeq(moves1,move);
+    this->addSingleSeq(size,moves1,move);
     moves1->push_back(move);
   }
   else
   {
-    Go::Board *board=new Go::Board(params->board_size);
+    Go::Board *board=new Go::Board(size);
     
     for (std::list<Go::Move>::iterator iter=moves1->begin();iter!=moves1->end();++iter)
     {
@@ -105,7 +153,7 @@ void Book::addPermutations(std::list<Go::Move> *moves1, std::list<Go::Move> *mov
     if (sym==Go::Board::NONE)
     {
       moves1->push_back(move);
-      this->addPermutations(moves1,moves2);
+      this->addPermutations(size,moves1,moves2);
       moves1->pop_back();
     }
     else
@@ -124,7 +172,7 @@ void Book::addPermutations(std::list<Go::Move> *moves1, std::list<Go::Move> *mov
         }
         
         moves1->push_back(newmove);
-        this->addPermutations(moves1,newmoves2);
+        this->addPermutations(size,moves1,newmoves2);
         moves1->pop_back();
         delete newmoves2;
       }
@@ -136,9 +184,11 @@ void Book::addPermutations(std::list<Go::Move> *moves1, std::list<Go::Move> *mov
   }
 }
 
-void Book::addSingleSeq(std::list<Go::Move> *movehistory, Go::Move move)
+void Book::addSingleSeq(int size, std::list<Go::Move> *movehistory, Go::Move move)
 {
-  Book::Tree *ctree=tree;
+  Book::Tree *ctree=this->getTree(size);
+  if (ctree==NULL)
+    return;
   
   if (movehistory!=NULL)
   {
@@ -164,7 +214,7 @@ void Book::addSingleSeq(std::list<Go::Move> *movehistory, Go::Move move)
     addtree->setGood(true);
 }
 
-void Book::remove(std::list<Go::Move> *movehistory, Go::Move move)
+void Book::remove(int size, std::list<Go::Move> *movehistory, Go::Move move)
 {
   std::list<Go::Move> *moves1=new std::list<Go::Move>();
   std::list<Go::Move> *moves2=new std::list<Go::Move>();
@@ -175,24 +225,24 @@ void Book::remove(std::list<Go::Move> *movehistory, Go::Move move)
   }
   moves2->push_back(move);
   
-  this->removePermutations(moves1,moves2);
+  this->removePermutations(size,moves1,moves2);
   
   delete moves1;
   delete moves2;
 }
 
-void Book::removePermutations(std::list<Go::Move> *moves1, std::list<Go::Move> *moves2)
+void Book::removePermutations(int size, std::list<Go::Move> *moves1, std::list<Go::Move> *moves2)
 {
   if (moves2->size()==0)
   {
     Go::Move move=moves1->back();
     moves1->pop_back();
-    this->removeSingleSeq(moves1,move);
+    this->removeSingleSeq(size,moves1,move);
     moves1->push_back(move);
   }
   else
   {
-    Go::Board *board=new Go::Board(params->board_size);
+    Go::Board *board=new Go::Board(size);
     
     for (std::list<Go::Move>::iterator iter=moves1->begin();iter!=moves1->end();++iter)
     {
@@ -206,7 +256,7 @@ void Book::removePermutations(std::list<Go::Move> *moves1, std::list<Go::Move> *
     if (sym==Go::Board::NONE)
     {
       moves1->push_back(move);
-      this->removePermutations(moves1,moves2);
+      this->removePermutations(size,moves1,moves2);
       moves1->pop_back();
     }
     else
@@ -225,7 +275,7 @@ void Book::removePermutations(std::list<Go::Move> *moves1, std::list<Go::Move> *
         }
         
         moves1->push_back(newmove);
-        this->removePermutations(moves1,newmoves2);
+        this->removePermutations(size,moves1,newmoves2);
         moves1->pop_back();
         delete newmoves2;
       }
@@ -237,9 +287,11 @@ void Book::removePermutations(std::list<Go::Move> *moves1, std::list<Go::Move> *
   }
 }
 
-void Book::removeSingleSeq(std::list<Go::Move> *movehistory, Go::Move move)
+void Book::removeSingleSeq(int size, std::list<Go::Move> *movehistory, Go::Move move)
 {
-  Book::Tree *ctree=tree;
+  Book::Tree *ctree=this->getTree(size);
+  if (ctree==NULL)
+    return;
   
   if (movehistory!=NULL)
   {
@@ -279,10 +331,10 @@ void Book::removeIfNoGoodMoves(Book::Tree *starttree)
   this->removeIfNoGoodMoves(parent);
 }
 
-std::list<Go::Move> Book::getMoves(std::list<Go::Move> *movehistory, bool good)
+std::list<Go::Move> Book::getMoves(int size, std::list<Go::Move> *movehistory, bool good)
 {
   std::list<Go::Move> list = std::list<Go::Move>();
-  Book::Tree *ctree=this->getTree(movehistory);
+  Book::Tree *ctree=this->getTree(size, movehistory);
   
   if (ctree==NULL)
     return list;

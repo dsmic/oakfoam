@@ -1154,7 +1154,7 @@ void Engine::gtpBookShow(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   Engine *me=(Engine*)instance;
   
   gtpe->getOutput()->startResponse(cmd);
-  gtpe->getOutput()->printString(me->book->show(me->movehistory));
+  gtpe->getOutput()->printString(me->book->show(me->boardsize,me->movehistory));
   gtpe->getOutput()->endResponse(true);
 }
 
@@ -1183,7 +1183,7 @@ void Engine::gtpBookAdd(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   int pos=Go::Position::xy2pos(vert.x,vert.y,me->boardsize);
   Go::Move move=Go::Move(me->currentboard->nextToMove(),pos);
   
-  me->book->add(me->movehistory,move);
+  me->book->add(me->boardsize,me->movehistory,move);
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->endResponse();
@@ -1214,7 +1214,7 @@ void Engine::gtpBookRemove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   int pos=Go::Position::xy2pos(vert.x,vert.y,me->boardsize);
   Go::Move move=Go::Move(me->currentboard->nextToMove(),pos);
   
-  me->book->remove(me->movehistory,move);
+  me->book->remove(me->boardsize,me->movehistory,move);
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->endResponse();
@@ -1224,8 +1224,7 @@ void Engine::gtpBookClear(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
   
-  delete me->book;
-  me->book = new Book(me->params);
+  me->book->clear(me->boardsize);
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->endResponse();
@@ -1360,7 +1359,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
 {
   if (params->book_use)
   {
-    std::list<Go::Move> bookmoves=book->getMoves(movehistory);
+    std::list<Go::Move> bookmoves=book->getMoves(boardsize,movehistory);
     
     if (bookmoves.size()>0)
     {

@@ -13,11 +13,12 @@ class Book
     Book(Parameters *p);
     ~Book();
     
-    void add(std::list<Go::Move> *movehistory, Go::Move move);
-    void remove(std::list<Go::Move> *movehistory, Go::Move move);
-    std::list<Go::Move> getMoves(std::list<Go::Move> *movehistory, bool good=true);
+    void add(int size, std::list<Go::Move> *movehistory, Go::Move move);
+    void remove(int size, std::list<Go::Move> *movehistory, Go::Move move);
+    std::list<Go::Move> getMoves(int size, std::list<Go::Move> *movehistory, bool good=true);
+    void clear(int size);
     
-    std::string show(std::list<Go::Move> *movehistory);
+    std::string show(int size, std::list<Go::Move> *movehistory);
   
   private:
     class Tree
@@ -43,15 +44,31 @@ class Book
         Go::Move move;
         bool good;
     };
+    class TreeHolder
+    {
+      public:
+      TreeHolder(int sz);
+      ~TreeHolder();
+      
+      int getSize() { return size; };
+      Book::Tree *getTree() { return tree; };
+      void clear();
+      
+      private:
+        int size;
+        Book::Tree *tree;
+    };
     
     Parameters *params;
-    Book::Tree *tree;
+    std::list<Book::TreeHolder*> trees;
     
-    void addPermutations(std::list<Go::Move> *moves1, std::list<Go::Move> *moves2);
-    void addSingleSeq(std::list<Go::Move> *movehistory, Go::Move move);
-    void removePermutations(std::list<Go::Move> *moves1, std::list<Go::Move> *moves2);
-    void removeSingleSeq(std::list<Go::Move> *movehistory, Go::Move move);
-    Book::Tree *getTree(std::list<Go::Move> *movehistory);
+    Book::Tree *getTree(int size);
+    
+    void addPermutations(int size, std::list<Go::Move> *moves1, std::list<Go::Move> *moves2);
+    void addSingleSeq(int size, std::list<Go::Move> *movehistory, Go::Move move);
+    void removePermutations(int size, std::list<Go::Move> *moves1, std::list<Go::Move> *moves2);
+    void removeSingleSeq(int size, std::list<Go::Move> *movehistory, Go::Move move);
+    Book::Tree *getTree(int size, std::list<Go::Move> *movehistory);
     void removeIfNoGoodMoves(Book::Tree *starttree);
 };
 #endif
