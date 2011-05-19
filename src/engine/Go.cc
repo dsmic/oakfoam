@@ -1135,12 +1135,12 @@ std::list<Go::Board::SymmetryTransform> Go::Board::getSymmetryTransformsFromPrim
   }
   else if (sym==Go::Board::VERTICAL)
   {
-    Go::Board::SymmetryTransform trans={false,true,false};
+    Go::Board::SymmetryTransform trans={true,false,false};
     list.push_back(trans);
   }
   else if (sym==Go::Board::HORIZONTAL)
   {
-    Go::Board::SymmetryTransform trans={true,false,false};
+    Go::Board::SymmetryTransform trans={false,true,false};
     list.push_back(trans);
   }
   else if (sym==Go::Board::DIAGONAL_BOTH)

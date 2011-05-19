@@ -14,6 +14,7 @@ class Book
     ~Book();
     
     void add(std::list<Go::Move> *movehistory, Go::Move move);
+    void remove(std::list<Go::Move> *movehistory, Go::Move move);
     std::list<Go::Move> getMoves(std::list<Go::Move> *movehistory, bool good=true);
     
     std::string show(std::list<Go::Move> *movehistory);
@@ -33,6 +34,7 @@ class Book
         bool isLeaf() { return (children->size()==0); };
         bool isGood() { return good; };
         void addChild(Book::Tree *child);
+        void removeChild(Book::Tree *child);
         void setGood(bool g) { good=g; };
       
       private:
@@ -45,8 +47,11 @@ class Book
     Parameters *params;
     Book::Tree *tree;
     
-    void addSingleSeq(std::list<Go::Move> *movehistory, Go::Move move);
     void addPermutations(std::list<Go::Move> *moves1, std::list<Go::Move> *moves2);
+    void addSingleSeq(std::list<Go::Move> *movehistory, Go::Move move);
+    void removePermutations(std::list<Go::Move> *moves1, std::list<Go::Move> *moves2);
+    void removeSingleSeq(std::list<Go::Move> *movehistory, Go::Move move);
     Book::Tree *getTree(std::list<Go::Move> *movehistory);
+    void removeIfNoGoodMoves(Book::Tree *starttree);
 };
 #endif

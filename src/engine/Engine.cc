@@ -221,6 +221,7 @@ void Engine::addGtpCommands()
   
   gtpe->addFunctionCommand("bookshow",this,&Engine::gtpBookShow);
   gtpe->addFunctionCommand("bookadd",this,&Engine::gtpBookAdd);
+  gtpe->addFunctionCommand("bookremove",this,&Engine::gtpBookRemove);
   gtpe->addFunctionCommand("bookclear",this,&Engine::gtpBookClear);
   
   //gtpe->addAnalyzeCommand("final_score","Final Score","string");
@@ -229,6 +230,7 @@ void Engine::addGtpCommands()
   
   gtpe->addAnalyzeCommand("bookshow","Book Show","gfx");
   gtpe->addAnalyzeCommand("bookadd %%p","Book Add","none");
+  gtpe->addAnalyzeCommand("bookremove %%p","Book Remove","none");
   gtpe->addAnalyzeCommand("bookclear","Book Clear","none");
   
   gtpe->addAnalyzeCommand("showsymmetrytransforms","Show Symmetry Transforms","sboard");
@@ -1182,6 +1184,37 @@ void Engine::gtpBookAdd(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   Go::Move move=Go::Move(me->currentboard->nextToMove(),pos);
   
   me->book->add(me->movehistory,move);
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->endResponse();
+}
+
+void Engine::gtpBookRemove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("vertex is required");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  Gtp::Vertex vert = cmd->getVertexArg(0);
+  
+  if (vert.x==-3 && vert.y==-3)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("invalid vertex");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  int pos=Go::Position::xy2pos(vert.x,vert.y,me->boardsize);
+  Go::Move move=Go::Move(me->currentboard->nextToMove(),pos);
+  
+  me->book->remove(me->movehistory,move);
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->endResponse();
