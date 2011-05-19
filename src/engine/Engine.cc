@@ -1327,7 +1327,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
 {
   if (params->book_use)
   {
-    std::list<Go::Move> bookmoves=book->getGoodMoves(movehistory);
+    std::list<Go::Move> bookmoves=book->getMoves(movehistory);
     
     if (bookmoves.size()>0)
     {

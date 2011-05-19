@@ -2,7 +2,6 @@ TODO
 ------------------
 
 Now: (current focus)
-  use symmetry in book
   load/save book from/to file
   move playout code out of engine
   change uct_* params to tree_*

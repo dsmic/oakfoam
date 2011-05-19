@@ -14,7 +14,7 @@ class Book
     ~Book();
     
     void add(std::list<Go::Move> *movehistory, Go::Move move);
-    std::list<Go::Move> getGoodMoves(std::list<Go::Move> *movehistory);
+    std::list<Go::Move> getMoves(std::list<Go::Move> *movehistory, bool good=true);
     
     std::string show(std::list<Go::Move> *movehistory);
   
@@ -45,6 +45,8 @@ class Book
     Parameters *params;
     Book::Tree *tree;
     
+    void addSingleSeq(std::list<Go::Move> *movehistory, Go::Move move);
+    void addPermutations(std::list<Go::Move> *moves1, std::list<Go::Move> *moves2);
     Book::Tree *getTree(std::list<Go::Move> *movehistory);
 };
 #endif

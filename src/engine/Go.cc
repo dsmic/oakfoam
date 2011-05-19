@@ -1097,6 +1097,76 @@ Go::Board::SymmetryTransform Go::Board::getSymmetryTransformBetweenPositions(int
   return trans;
 }
 
+std::list<Go::Board::SymmetryTransform> Go::Board::getSymmetryTransformsFromPrimary(Go::Board::Symmetry sym)
+{
+  std::list<Go::Board::SymmetryTransform> list=std::list<Go::Board::SymmetryTransform>();
+  Go::Board::SymmetryTransform transbase={false,false,false};
+  list.push_back(transbase);
+  
+  if (sym==Go::Board::FULL)
+  {
+    Go::Board::SymmetryTransform trans={false,false,true};
+    list.push_back(trans);
+    trans.swapXY=false;
+    trans.invertY=true;
+    list.push_back(trans);
+    trans.swapXY=true;
+    list.push_back(trans);
+    trans.swapXY=false;
+    trans.invertY=false;
+    trans.invertX=true;
+    list.push_back(trans);
+    trans.swapXY=true;
+    list.push_back(trans);
+    trans.swapXY=false;
+    trans.invertY=true;
+    list.push_back(trans);
+    trans.swapXY=false;
+    list.push_back(trans);
+  }
+  else if (sym==Go::Board::VERTICAL_HORIZONTAL)
+  {
+    Go::Board::SymmetryTransform trans={false,true,false};
+    list.push_back(trans);
+    trans.invertX=true;
+    list.push_back(trans);
+    trans.invertY=false;
+    list.push_back(trans);
+  }
+  else if (sym==Go::Board::VERTICAL)
+  {
+    Go::Board::SymmetryTransform trans={false,true,false};
+    list.push_back(trans);
+  }
+  else if (sym==Go::Board::HORIZONTAL)
+  {
+    Go::Board::SymmetryTransform trans={true,false,false};
+    list.push_back(trans);
+  }
+  else if (sym==Go::Board::DIAGONAL_BOTH)
+  {
+    Go::Board::SymmetryTransform trans={false,false,true};
+    list.push_back(trans);
+    trans.invertX=true;
+    trans.invertY=true;
+    list.push_back(trans);
+    trans.swapXY=false;
+    list.push_back(trans);
+  }
+  else if (sym==Go::Board::DIAGONAL_UP)
+  {
+    Go::Board::SymmetryTransform trans={false,false,true};
+    list.push_back(trans);
+  }
+  else if (sym==Go::Board::DIAGONAL_DOWN)
+  {
+    Go::Board::SymmetryTransform trans={true,true,true};
+    list.push_back(trans);
+  }
+  
+  return list;
+}
+
 void Go::Board::updateFeatureGammas()
 {
   if (markchanges && features!=NULL)
