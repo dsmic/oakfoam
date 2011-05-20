@@ -54,9 +54,9 @@ int Go::Position::string2pos(std::string str, int boardsize)
     y=0;
     for (unsigned int i=1;i<str.length();i++)
     {
-      y=y*10+str.at(i)-'0'-1;
+      y=(y*10)+(str.at(i)-'0');
     }
-    return Go::Position::xy2pos(x,y,boardsize);
+    return Go::Position::xy2pos(x,y-1,boardsize);
   }
 }
 
