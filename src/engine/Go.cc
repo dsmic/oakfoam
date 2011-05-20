@@ -38,6 +38,28 @@ std::string Go::Position::pos2string(int pos, int boardsize)
   }
 }
 
+int Go::Position::string2pos(std::string str, int boardsize)
+{
+  std::transform(str.begin(),str.end(),str.begin(),::tolower);
+  if (str=="pass")
+    return -1;
+  else if (str=="resign")
+    return -2;
+  else
+  {
+    int x,y;
+    x=str.at(0)-'a';
+    if (str.at(0)>='i')
+      x--;
+    y=0;
+    for (unsigned int i=1;i<str.length();i++)
+    {
+      y=y*10+str.at(i)-'0'-1;
+    }
+    return Go::Position::xy2pos(x,y,boardsize);
+  }
+}
+
 std::string Go::Move::toString(int boardsize)
 {
   if (this->isPass())

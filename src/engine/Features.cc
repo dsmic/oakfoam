@@ -351,7 +351,10 @@ bool Features::loadGammaFile(std::string filename)
   while (std::getline(fin,line))
   {
     if (!this->loadGammaLine(line))
+    {
+      fin.close();
       return false;
+    }
   }
   
   fin.close();

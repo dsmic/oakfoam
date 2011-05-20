@@ -10,10 +10,6 @@
 Book::Book(Parameters *p)
 {
   params=p;
-  
-  //trees.push_back(new Book::TreeHolder(9));
-  //trees.push_back(new Book::TreeHolder(13));
-  //trees.push_back(new Book::TreeHolder(19));
 }
 
 Book::~Book()
@@ -385,5 +381,68 @@ void Book::Tree::removeChild(Book::Tree *child)
 {
   children->remove(child);
   child->parent=NULL;
+}
+
+bool Book::loadFile(std::string filename)
+{
+  std::ifstream fin(filename.c_str());
+  
+  if (!fin)
+    return false;
+  
+  std::string line;
+  while (std::getline(fin,line))
+  {
+    if (!this->loadLine(line))
+    {
+      fin.close();
+      return false;
+    }
+  }
+  
+  fin.close();
+  
+  return true;
+}
+
+bool Book::loadLine(std::string line)
+{
+  std::string sizestring,part;
+  int size;
+  std::list<Go::Move> movehistory=std::list<Go::Move>();
+  bool founddivider=false;
+  Go::Color col=Go::BLACK;
+  
+  std::transform(line.begin(),line.end(),line.begin(),::tolower);
+  
+  std::istringstream issline(line);
+  if (!getline(issline,sizestring,' '))
+    return false;
+  std::istringstream isssize(sizestring);
+  if (!(isssize >> size))
+    return false;
+  
+  //fprintf(stderr,"s: %d\n",size);
+  
+  while (getline(issline,part,' '))
+  {
+    if (part=="|")
+      founddivider=true;
+    else if (founddivider)
+    {
+      Go::Move move=Go::Move(col,Go::Position::string2pos(part,size));
+      this->add(size,&movehistory,move);
+      //fprintf(stderr,"m: %s %s\n",part.c_str(),move.toString(size).c_str());
+    }
+    else
+    {
+      Go::Move move=Go::Move(col,Go::Position::string2pos(part,size));
+      movehistory.push_back(move);
+      //fprintf(stderr,"h: %s %s\n",part.c_str(),move.toString(size).c_str());
+      col=Go::otherColor(col);
+    }
+  }
+  
+  return true;
 }
 

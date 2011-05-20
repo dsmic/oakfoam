@@ -150,6 +150,7 @@ class Engine
     static void gtpBookAdd(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpBookRemove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpBookClear(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpBookLoad(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
   
   private:
     Gtp::Engine *gtpe;

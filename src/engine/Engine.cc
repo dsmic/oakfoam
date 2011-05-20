@@ -223,6 +223,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("bookadd",this,&Engine::gtpBookAdd);
   gtpe->addFunctionCommand("bookremove",this,&Engine::gtpBookRemove);
   gtpe->addFunctionCommand("bookclear",this,&Engine::gtpBookClear);
+  gtpe->addFunctionCommand("bookload",this,&Engine::gtpBookLoad);
   
   //gtpe->addAnalyzeCommand("final_score","Final Score","string");
   //gtpe->addAnalyzeCommand("showboard","Show Board","string");
@@ -232,6 +233,7 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("bookadd %%p","Book Add","none");
   gtpe->addAnalyzeCommand("bookremove %%p","Book Remove","none");
   gtpe->addAnalyzeCommand("bookclear","Book Clear","none");
+  gtpe->addAnalyzeCommand("bookload %%r","Book Load","none");
   
   gtpe->addAnalyzeCommand("showsymmetrytransforms","Show Symmetry Transforms","sboard");
   //gtpe->addAnalyzeCommand("showliberties","Show Liberties","sboard");
@@ -1228,6 +1230,38 @@ void Engine::gtpBookClear(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->endResponse();
+}
+
+void Engine::gtpBookLoad(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("need 1 arg");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  std::string filename=cmd->getStringArg(0);
+  
+  delete me->book;
+  me->book=new Book(me->params);
+  bool success=me->book->loadFile(filename);
+  
+  if (success)
+  {
+    gtpe->getOutput()->startResponse(cmd);
+    gtpe->getOutput()->printf("loaded book: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+  else
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("error loading book: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
 }
 
 void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)

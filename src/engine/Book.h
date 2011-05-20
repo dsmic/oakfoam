@@ -19,6 +19,8 @@ class Book
     void clear(int size);
     
     std::string show(int size, std::list<Go::Move> *movehistory);
+    bool loadFile(std::string filename);
+    bool loadLine(std::string line);
   
   private:
     class Tree
