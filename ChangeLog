@@ -1,6 +1,14 @@
 
 version 0.0.9: xxxx-xx-xx
-  * todo
+  * handle Canadian overtime settings
+  * added CFG as a feature
+  * fixed major RAVE bug
+  * nakade-aware playouts
+  * point and length playout bonusses
+  * added LGRF-1/2
+  * treat jigos as half wins
+  * added Fuego-style opening book
+  * started work on larger patterns
 
 version 0.0.8: 2011-01-13
   * change some default parameters
