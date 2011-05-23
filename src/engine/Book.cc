@@ -118,19 +118,19 @@ void Book::add(int size, std::list<Go::Move> *movehistory, Go::Move move)
   }
   moves2->push_back(move);
   
-  this->addPermutations(size,moves1,moves2);
+  this->addPermutations(size,moves1,moves2,true);
   
   delete moves1;
   delete moves2;
 }
 
-void Book::addPermutations(int size, std::list<Go::Move> *moves1, std::list<Go::Move> *moves2)
+void Book::addPermutations(int size, std::list<Go::Move> *moves1, std::list<Go::Move> *moves2, bool primary)
 {
   if (moves2->size()==0)
   {
     Go::Move move=moves1->back();
     moves1->pop_back();
-    this->addSingleSeq(size,moves1,move);
+    this->addSingleSeq(size,moves1,move,primary);
     moves1->push_back(move);
   }
   else
@@ -149,17 +149,20 @@ void Book::addPermutations(int size, std::list<Go::Move> *moves1, std::list<Go::
     if (sym==Go::Board::NONE)
     {
       moves1->push_back(move);
-      this->addPermutations(size,moves1,moves2);
+      this->addPermutations(size,moves1,moves2,primary);
       moves1->pop_back();
     }
     else
     {
+      Go::Board::SymmetryTransform primtrans=board->getSymmetryTransformToPrimary(sym,move.getPosition());
+      int primarypos=board->doSymmetryTransform(primtrans,move.getPosition());
       std::list<Go::Board::SymmetryTransform> transfroms = board->getSymmetryTransformsFromPrimary(sym);
       
       for (std::list<Go::Board::SymmetryTransform>::iterator iter=transfroms.begin();iter!=transfroms.end();++iter)
       {
         Go::Board::SymmetryTransform trans=(*iter);
-        Go::Move newmove=Go::Move(move.getColor(),board->doSymmetryTransform(trans,move.getPosition()));
+        int newpos=board->doSymmetryTransform(trans,move.getPosition());
+        Go::Move newmove=Go::Move(move.getColor(),newpos);
         std::list<Go::Move> *newmoves2=new std::list<Go::Move>();
         
         for (std::list<Go::Move>::iterator iter2=moves2->begin();iter2!=moves2->end();++iter2)
@@ -168,7 +171,7 @@ void Book::addPermutations(int size, std::list<Go::Move> *moves1, std::list<Go::
         }
         
         moves1->push_back(newmove);
-        this->addPermutations(size,moves1,newmoves2);
+        this->addPermutations(size,moves1,newmoves2,primary&&(newpos==primarypos));
         moves1->pop_back();
         delete newmoves2;
       }
@@ -180,7 +183,7 @@ void Book::addPermutations(int size, std::list<Go::Move> *moves1, std::list<Go::
   }
 }
 
-void Book::addSingleSeq(int size, std::list<Go::Move> *movehistory, Go::Move move)
+void Book::addSingleSeq(int size, std::list<Go::Move> *movehistory, Go::Move move, bool primary)
 {
   Book::Tree *ctree=this->getTree(size);
   if (ctree==NULL)
@@ -194,6 +197,7 @@ void Book::addSingleSeq(int size, std::list<Go::Move> *movehistory, Go::Move mov
       if (newtree==NULL)
       {
         newtree=new Book::Tree((*iter),false);
+        newtree->setPrimary(primary);
         ctree->addChild(newtree);
       }
       ctree=newtree;
@@ -204,6 +208,7 @@ void Book::addSingleSeq(int size, std::list<Go::Move> *movehistory, Go::Move mov
   if (addtree==NULL)
   {
     addtree=new Book::Tree(move,true);
+    addtree->setPrimary(primary);
     ctree->addChild(addtree);
   }
   else
@@ -350,6 +355,7 @@ Book::Tree::Tree(Go::Move mov, bool gd, Book::Tree *p)
   children=new std::list<Book::Tree*>();
   move=mov;
   good=gd;
+  primary=false;
 }
 
 Book::Tree::~Tree()
@@ -444,5 +450,72 @@ bool Book::loadLine(std::string line)
   }
   
   return true;
+}
+
+bool Book::saveFile(std::string filename)
+{
+  std::ofstream fout(filename.c_str());
+  std::list<Go::Move> *movehistory=new std::list<Go::Move>();
+  
+  if (!fout)
+  {
+    delete movehistory;
+    return false;
+  }
+  
+  //fprintf(stderr,"out\n");
+  
+  for (std::list<Book::TreeHolder*>::iterator iter=trees.begin();iter!=trees.end();++iter)
+  {
+    int size=(*iter)->getSize();
+    Book::Tree *tree=(*iter)->getTree();
+    
+    //fprintf(stderr,"sz: %d\n",size);
+    
+    fout<<this->outputTree(size,tree,movehistory);
+  }
+  
+  fout.close();
+  delete movehistory;
+  return true;
+}
+
+std::string Book::outputTree(int size, Book::Tree *tree, std::list<Go::Move> *movehistory)
+{
+  std::ostringstream ss,ssgood;
+  bool foundgood=false;
+  
+  for(std::list<Book::Tree*>::iterator iter=tree->getChildren()->begin();iter!=tree->getChildren()->end();++iter) 
+  {
+    if ((*iter)->isPrimary() && (*iter)->isGood())
+    {
+      foundgood=true;
+      ssgood<<" "<<Go::Position::pos2string((*iter)->getMove().getPosition(),size);
+    }
+  }
+  
+  if (foundgood)
+  {
+    ss<<size;
+    for(std::list<Go::Move>::iterator iter=movehistory->begin();iter!=movehistory->end();++iter) 
+    {
+      ss<<" "<<Go::Position::pos2string((*iter).getPosition(),size);
+    }
+    ss<<" |"<<ssgood.str()<<"\n";
+  }
+  
+  for(std::list<Book::Tree*>::iterator iter=tree->getChildren()->begin();iter!=tree->getChildren()->end();++iter) 
+  {
+    if ((*iter)->isPrimary())
+    {
+      movehistory->push_back((*iter)->getMove());
+      ss<<this->outputTree(size,(*iter),movehistory);
+      movehistory->pop_back();
+    }
+  }
+  
+  //fprintf(stderr,"s: %s\n",ss.str().c_str());
+  
+  return ss.str();
 }
 

@@ -21,6 +21,7 @@ class Book
     std::string show(int size, std::list<Go::Move> *movehistory);
     bool loadFile(std::string filename);
     bool loadLine(std::string line);
+    bool saveFile(std::string filename);
   
   private:
     class Tree
@@ -39,12 +40,14 @@ class Book
         void addChild(Book::Tree *child);
         void removeChild(Book::Tree *child);
         void setGood(bool g) { good=g; };
+        void setPrimary(bool p) { primary=p; };
+        bool isPrimary() { return primary; };
       
       private:
         Book::Tree *parent;
         std::list<Book::Tree*> *children;
         Go::Move move;
-        bool good;
+        bool good,primary;
     };
     class TreeHolder
     {
@@ -66,11 +69,13 @@ class Book
     
     Book::Tree *getTree(int size);
     
-    void addPermutations(int size, std::list<Go::Move> *moves1, std::list<Go::Move> *moves2);
-    void addSingleSeq(int size, std::list<Go::Move> *movehistory, Go::Move move);
+    void addPermutations(int size, std::list<Go::Move> *moves1, std::list<Go::Move> *moves2, bool primary);
+    void addSingleSeq(int size, std::list<Go::Move> *movehistory, Go::Move move, bool primary);
     void removePermutations(int size, std::list<Go::Move> *moves1, std::list<Go::Move> *moves2);
     void removeSingleSeq(int size, std::list<Go::Move> *movehistory, Go::Move move);
     Book::Tree *getTree(int size, std::list<Go::Move> *movehistory);
     void removeIfNoGoodMoves(Book::Tree *starttree);
+    
+    std::string outputTree(int size, Book::Tree *tree, std::list<Go::Move> *movehistory);
 };
 #endif
