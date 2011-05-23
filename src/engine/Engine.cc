@@ -142,6 +142,40 @@ Engine::~Engine()
   delete book;
 }
 
+void Engine::postCmdLineArgs(bool book_autoload)
+{
+  gtpe->getOutput()->printfDebug("seed: %lu\n",params->rand_seed);
+  if (book_autoload)
+  {
+    bool loaded=false;
+    if (!loaded)
+    {
+      std::string filename="book.dat";
+      gtpe->getOutput()->printfDebug("loading opening book from '%s'... ",filename.c_str());
+      loaded=book->loadFile(filename);
+      if (loaded)
+        gtpe->getOutput()->printfDebug("done\n");
+      else
+        gtpe->getOutput()->printfDebug("error\n");
+    }
+    #ifdef TOPSRCDIR
+      if (!loaded)
+      {
+        std::string filename=TOPSRCDIR "/book.dat";
+        gtpe->getOutput()->printfDebug("loading opening book from '%s'... ",filename.c_str());
+        loaded=book->loadFile(filename);
+        if (loaded)
+          gtpe->getOutput()->printfDebug("done\n");
+        else
+          gtpe->getOutput()->printfDebug("error\n");
+      }
+    #endif
+    
+    if (!loaded)
+      gtpe->getOutput()->printfDebug("no opening book loaded\n");
+  }
+}
+
 void Engine::updateParameter(std::string id)
 {
   if (id=="move_policy")

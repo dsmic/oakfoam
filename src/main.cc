@@ -16,6 +16,7 @@ void printusage()
   std::cout << "  -c, --config FILE     execute the GTP commands in FILE first (no output)\n";
   std::cout << "  -h, --help            display this help and exit\n";
   std::cout << "  -l, --log FILE        log everything to FILE\n";
+  std::cout << "  --nobook              do not auto load the opening book\n";
   std::cout << "  -V, --version         display version and exit\n";
   std::cout << "\n";
   std::cout << "Report bugs to: " << PACKAGE_BUGREPORT << "\n";
@@ -91,6 +92,10 @@ int main(int argc, char* argv[])
       }
       
       oakfoam.gtpe->getOutput()->setLogFile(logfile);
+    }
+    else if (arg=="--nobook" )
+    {
+      oakfoam.book_autoload=false;
     }
     else
     {

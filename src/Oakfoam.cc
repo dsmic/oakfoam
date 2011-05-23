@@ -7,6 +7,8 @@ Oakfoam::Oakfoam()
   
   gtpe->addConstantCommand("name",PACKAGE_NAME);
   gtpe->addConstantCommand("version",PACKAGE_VERSION);
+  
+  book_autoload=true;
 }
 
 Oakfoam::~Oakfoam()
@@ -17,6 +19,7 @@ Oakfoam::~Oakfoam()
 
 void Oakfoam::run()
 {
+  engine->postCmdLineArgs(book_autoload);
   gtpe->run();
 }
 

@@ -21,6 +21,7 @@ class Oakfoam
     
     Gtp::Engine *gtpe;
     Engine *engine;
+    bool book_autoload;
 };
 
 #endif

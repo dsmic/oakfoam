@@ -85,6 +85,7 @@ class Engine
       MP_UCT
     };
     
+    void postCmdLineArgs(bool book_autoload);
     void generateMove(Go::Color col, Go::Move **move, bool playmove);
     bool isMoveAllowed(Go::Move move);
     void makeMove(Go::Move move);
