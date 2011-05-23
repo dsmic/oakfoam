@@ -2,7 +2,8 @@ TODO
 ------------------
 
 Now: (current focus)
-  load/save book from/to file
+  save book to file
+  add results from first playout moves to tree
   move playout code out of engine
   change uct_* params to tree_*
   make describeengine build time update at every build
