@@ -432,6 +432,7 @@ void Book::Tree::addChild(Book::Tree *child, int size)
   child->setSymmetry(board->getSymmetry());
   //fprintf(stderr,"ac: %s %s\n",board->getSymmetryString(board->getSymmetry()).c_str(),child->getMove().toString(size).c_str());
   
+  delete board;
   delete moves;
 }
 
