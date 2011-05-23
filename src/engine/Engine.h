@@ -75,7 +75,7 @@
 class Engine
 {
   public:
-    Engine(Gtp::Engine *ge);
+    Engine(Gtp::Engine *ge, std::string ln);
     ~Engine();
     
     enum MovePolicy
@@ -155,6 +155,7 @@ class Engine
   
   private:
     Gtp::Engine *gtpe;
+    std::string longname;
     Go::Board *currentboard;
     float komi;
     int boardsize;

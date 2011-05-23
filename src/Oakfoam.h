@@ -2,6 +2,7 @@
 #define DEF_OAKFOAM_OAKFOAM_H
 
 #include <config.h>
+#include <build.h>
 
 #include <iostream>
 #include <string>

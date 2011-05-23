@@ -186,7 +186,8 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-oakfoam_SOURCES = src/Oakfoam.h src/Oakfoam.cc src/main.cc \
+oakfoam_SOURCES = build.h \
+                      src/Oakfoam.h src/Oakfoam.cc src/main.cc \
                       src/engine/Go.h src/engine/Go.cc \
                       src/engine/Engine.h src/engine/Engine.cc \
                       src/engine/Tree.h src/engine/Tree.cc \
@@ -711,6 +712,7 @@ uninstall-am: uninstall-binPROGRAMS
 	mostlyclean-generic pdf pdf-am ps ps-am tags uninstall \
 	uninstall-am uninstall-binPROGRAMS
 
+.PHONY: build.h
 
 .PHONY: oakfoam-profiled
 oakfoam-profiled:

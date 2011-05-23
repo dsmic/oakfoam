@@ -6,11 +6,11 @@
 #include <fstream>
 #include <iomanip>
 #include <boost/timer.hpp>
-#include <config.h>
 
-Engine::Engine(Gtp::Engine *ge)
+Engine::Engine(Gtp::Engine *ge, std::string ln)
 {
   gtpe=ge;
+  longname=ln;
   
   unsigned long seed=std::time(0);
   rand=Random(seed);
@@ -1147,7 +1147,7 @@ void Engine::gtpDescribeEngine(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
   Engine *me=(Engine*)instance;
   
   gtpe->getOutput()->startResponse(cmd);
-  gtpe->getOutput()->printf(PACKAGE_NAME " : " PACKAGE_VERSION " (" __DATE__ " " __TIME__ ")\n");
+  gtpe->getOutput()->printf("%s\n",me->longname.c_str());
   gtpe->getOutput()->printf("parameters:\n");
   me->params->printParametersForDescription(gtpe);
   gtpe->getOutput()->endResponse(true);

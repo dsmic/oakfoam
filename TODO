@@ -5,7 +5,6 @@ Now: (current focus)
   add results from first playout moves to tree
   move playout code out of engine
   change uct_* params to tree_*
-  make describeengine build time update at every build
   use RAVE together with Features for unpruning?
   larger patterns
 
