@@ -24,6 +24,7 @@ Book::TreeHolder::TreeHolder(int sz)
 {
   size=sz;
   tree=new Book::Tree();
+  tree->setSymmetry(Go::Board::FULL);
 }
 
 Book::TreeHolder::~TreeHolder()
@@ -104,6 +105,24 @@ std::string Book::show(int size, std::list<Go::Move> *movehistory)
   return ss.str();
 }
 
+void Book::addMoves(int size, std::list<Go::Move> *moves)
+{
+  Book::Tree *tree=this->getTree(size);
+  if (tree==NULL)
+    return;
+  
+  for (std::list<Go::Move>::iterator iter=moves->begin();iter!=moves->end();++iter)
+  {
+    Book::Tree *newtree=tree->getChild((*iter));
+    if (newtree==NULL)
+    {
+      newtree=new Book::Tree((*iter),false);
+      tree->addChild(newtree,size);
+    }
+    tree=newtree;
+  }
+}
+
 void Book::add(int size, std::list<Go::Move> *movehistory, Go::Move move)
 {
   std::list<Go::Move> *moves1=new std::list<Go::Move>();
@@ -135,17 +154,22 @@ void Book::addPermutations(int size, std::list<Go::Move> *moves1, std::list<Go::
   }
   else
   {
-    Go::Board *board=new Go::Board(size);
+    //Go::Board *board=new Go::Board(size);
     
-    for (std::list<Go::Move>::iterator iter=moves1->begin();iter!=moves1->end();++iter)
-    {
-      board->makeMove((*iter));
-    }
+    //for (std::list<Go::Move>::iterator iter=moves1->begin();iter!=moves1->end();++iter)
+    //{
+    //  board->makeMove((*iter));
+    //}
     
     Go::Move move=moves2->front();
     moves2->pop_front();
     
-    Go::Board::Symmetry sym=board->getSymmetry();
+    //Go::Board::Symmetry sym=board->getSymmetry();
+    this->addMoves(size,moves1);
+    Book::Tree *tree=this->getTree(size,moves1);
+    Go::Board::Symmetry sym=tree->getSymmetry();
+    //Go::Board *board=new Go::Board(size);
+    //fprintf(stderr,"sym: %s %s\n",board->getSymmetryString(sym).c_str(),move.toString(size).c_str());
     if (sym==Go::Board::NONE)
     {
       moves1->push_back(move);
@@ -154,20 +178,26 @@ void Book::addPermutations(int size, std::list<Go::Move> *moves1, std::list<Go::
     }
     else
     {
-      Go::Board::SymmetryTransform primtrans=board->getSymmetryTransformToPrimary(sym,move.getPosition());
-      int primarypos=board->doSymmetryTransform(primtrans,move.getPosition());
-      std::list<Go::Board::SymmetryTransform> transfroms = board->getSymmetryTransformsFromPrimary(sym);
+      //Go::Board::SymmetryTransform primtrans=board->getSymmetryTransformToPrimary(sym,move.getPosition());
+      Go::Board::SymmetryTransform primtrans=Go::Board::getSymmetryTransformToPrimaryStatic(size,sym,move.getPosition());
+      //int primarypos=board->doSymmetryTransform(primtrans,move.getPosition());
+      int primarypos=Go::Board::doSymmetryTransformStatic(primtrans,size,move.getPosition());
+      //std::list<Go::Board::SymmetryTransform> transfroms = board->getSymmetryTransformsFromPrimary(sym);
+      std::list<Go::Board::SymmetryTransform> transfroms = Go::Board::getSymmetryTransformsFromPrimaryStatic(sym);
       
       for (std::list<Go::Board::SymmetryTransform>::iterator iter=transfroms.begin();iter!=transfroms.end();++iter)
       {
         Go::Board::SymmetryTransform trans=(*iter);
-        int newpos=board->doSymmetryTransform(trans,move.getPosition());
+        //int newpos=board->doSymmetryTransform(trans,move.getPosition());
+        int newpos=Go::Board::doSymmetryTransformStatic(trans,size,move.getPosition());
         Go::Move newmove=Go::Move(move.getColor(),newpos);
         std::list<Go::Move> *newmoves2=new std::list<Go::Move>();
         
         for (std::list<Go::Move>::iterator iter2=moves2->begin();iter2!=moves2->end();++iter2)
         {
-          newmoves2->push_back(Go::Move((*iter2).getColor(),board->doSymmetryTransform(trans,(*iter2).getPosition())));
+          //int npos=board->doSymmetryTransform(trans,(*iter2).getPosition());
+          int npos=Go::Board::doSymmetryTransformStatic(trans,size,(*iter2).getPosition());
+          newmoves2->push_back(Go::Move((*iter2).getColor(),npos));
         }
         
         moves1->push_back(newmove);
@@ -179,7 +209,7 @@ void Book::addPermutations(int size, std::list<Go::Move> *moves1, std::list<Go::
     
     moves2->push_front(move);
     
-    delete board;
+    //delete board;
   }
 }
 
@@ -189,6 +219,8 @@ void Book::addSingleSeq(int size, std::list<Go::Move> *movehistory, Go::Move mov
   if (ctree==NULL)
     return;
   
+  //Go::Board *board=new Go::Board(size);
+  
   if (movehistory!=NULL)
   {
     for (std::list<Go::Move>::iterator iter=movehistory->begin();iter!=movehistory->end();++iter)
@@ -197,10 +229,12 @@ void Book::addSingleSeq(int size, std::list<Go::Move> *movehistory, Go::Move mov
       if (newtree==NULL)
       {
         newtree=new Book::Tree((*iter),false);
-        newtree->setPrimary(primary);
-        ctree->addChild(newtree);
+        //newtree->setSymmetry(board->getSymmetry());
+        ctree->addChild(newtree,size);
       }
+      newtree->setPrimary(primary);
       ctree=newtree;
+      //board->makeMove((*iter));
     }
   }
   
@@ -208,11 +242,12 @@ void Book::addSingleSeq(int size, std::list<Go::Move> *movehistory, Go::Move mov
   if (addtree==NULL)
   {
     addtree=new Book::Tree(move,true);
-    addtree->setPrimary(primary);
-    ctree->addChild(addtree);
+    //addtree->setSymmetry(board->getSymmetry());
+    ctree->addChild(addtree,size);
   }
   else
     addtree->setGood(true);
+  addtree->setPrimary(primary);
 }
 
 void Book::remove(int size, std::list<Go::Move> *movehistory, Go::Move move)
@@ -356,6 +391,7 @@ Book::Tree::Tree(Go::Move mov, bool gd, Book::Tree *p)
   move=mov;
   good=gd;
   primary=false;
+  sym=Go::Board::NONE;
 }
 
 Book::Tree::~Tree()
@@ -377,16 +413,43 @@ Book::Tree *Book::Tree::getChild(Go::Move m)
   return NULL;
 }
 
-void Book::Tree::addChild(Book::Tree *child)
+void Book::Tree::addChild(Book::Tree *child, int size)
 {
   child->parent=this;
   children->push_back(child);
+  
+  std::list<Go::Move> *moves=new std::list<Go::Move>();
+  this->getMovesFromRoot(moves);
+  
+  Go::Board *board=new Go::Board(size);
+    
+  for (std::list<Go::Move>::iterator iter=moves->begin();iter!=moves->end();++iter)
+  {
+    board->makeMove((*iter));
+  }
+  board->makeMove(child->getMove());
+  
+  child->setSymmetry(board->getSymmetry());
+  //fprintf(stderr,"ac: %s %s\n",board->getSymmetryString(board->getSymmetry()).c_str(),child->getMove().toString(size).c_str());
+  
+  delete moves;
 }
 
 void Book::Tree::removeChild(Book::Tree *child)
 {
   children->remove(child);
   child->parent=NULL;
+}
+
+void Book::Tree::getMovesFromRoot(std::list<Go::Move> *moves)
+{
+  if (this->isRoot())
+    return;
+  else
+  {
+    parent->getMovesFromRoot(moves);
+    moves->push_back(move);
+  }
 }
 
 bool Book::loadFile(std::string filename)
@@ -437,8 +500,8 @@ bool Book::loadLine(std::string line)
     else if (founddivider)
     {
       Go::Move move=Go::Move(col,Go::Position::string2pos(part,size));
-      this->add(size,&movehistory,move);
       //fprintf(stderr,"m: %s %s\n",part.c_str(),move.toString(size).c_str());
+      this->add(size,&movehistory,move);
     }
     else
     {

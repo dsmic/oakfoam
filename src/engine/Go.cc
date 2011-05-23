@@ -943,10 +943,15 @@ int Go::Board::doSymmetryTransformPrimitive(Go::Board::Symmetry sym, int pos)
 
 int Go::Board::doSymmetryTransformToPrimary(Go::Board::Symmetry sym, int pos)
 {
-  return doSymmetryTransform(getSymmetryTransformToPrimary(sym,pos),pos);
+  return this->doSymmetryTransform(this->getSymmetryTransformToPrimary(sym,pos),pos);
 }
 
 Go::Board::SymmetryTransform Go::Board::getSymmetryTransformToPrimary(Go::Board::Symmetry sym, int pos)
+{
+  return Go::Board::getSymmetryTransformToPrimaryStatic(size,sym,pos);
+}
+
+Go::Board::SymmetryTransform Go::Board::getSymmetryTransformToPrimaryStatic(int size, Go::Board::Symmetry sym, int pos)
 {
   int x=Go::Position::pos2x(pos,size);
   int y=Go::Position::pos2y(pos,size);
@@ -1120,6 +1125,11 @@ Go::Board::SymmetryTransform Go::Board::getSymmetryTransformBetweenPositions(int
 }
 
 std::list<Go::Board::SymmetryTransform> Go::Board::getSymmetryTransformsFromPrimary(Go::Board::Symmetry sym)
+{
+  return Go::Board::getSymmetryTransformsFromPrimaryStatic(sym);
+}
+
+std::list<Go::Board::SymmetryTransform> Go::Board::getSymmetryTransformsFromPrimaryStatic(Go::Board::Symmetry sym)
 {
   std::list<Go::Board::SymmetryTransform> list=std::list<Go::Board::SymmetryTransform>();
   Go::Board::SymmetryTransform transbase={false,false,false};

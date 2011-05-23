@@ -346,11 +346,13 @@ namespace Go
       std::string getSymmetryString(Go::Board::Symmetry sym);
       int doSymmetryTransformToPrimary(Go::Board::Symmetry sym, int pos);
       Go::Board::SymmetryTransform getSymmetryTransformToPrimary(Go::Board::Symmetry sym, int pos);
+      static Go::Board::SymmetryTransform getSymmetryTransformToPrimaryStatic(int size, Go::Board::Symmetry sym, int pos);
       int doSymmetryTransform(Go::Board::SymmetryTransform trans, int pos, bool reverse=false);
       static int doSymmetryTransformStatic(Go::Board::SymmetryTransform trans, int size, int pos);
       static int doSymmetryTransformStaticReverse(Go::Board::SymmetryTransform trans, int size, int pos);
       static Go::Board::SymmetryTransform getSymmetryTransformBetweenPositions(int size, int pos1, int pos2);
       std::list<Go::Board::SymmetryTransform> getSymmetryTransformsFromPrimary(Go::Board::Symmetry sym);
+      static std::list<Go::Board::SymmetryTransform> getSymmetryTransformsFromPrimaryStatic(Go::Board::Symmetry sym);
       
       bool isCapture(Go::Move move);
       bool isExtension(Go::Move move);

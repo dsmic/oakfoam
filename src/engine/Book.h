@@ -37,17 +37,22 @@ class Book
         bool isRoot() { return (parent==NULL); };
         bool isLeaf() { return (children->size()==0); };
         bool isGood() { return good; };
-        void addChild(Book::Tree *child);
+        void addChild(Book::Tree *child, int size);
         void removeChild(Book::Tree *child);
         void setGood(bool g) { good=g; };
         void setPrimary(bool p) { primary=p; };
         bool isPrimary() { return primary; };
+        void setSymmetry(Go::Board::Symmetry s) { sym=s; };
+        Go::Board::Symmetry getSymmetry() { return sym; };
       
       private:
         Book::Tree *parent;
         std::list<Book::Tree*> *children;
         Go::Move move;
         bool good,primary;
+        Go::Board::Symmetry sym;
+        
+        void getMovesFromRoot(std::list<Go::Move> *moves);
     };
     class TreeHolder
     {
@@ -75,6 +80,7 @@ class Book
     void removeSingleSeq(int size, std::list<Go::Move> *movehistory, Go::Move move);
     Book::Tree *getTree(int size, std::list<Go::Move> *movehistory);
     void removeIfNoGoodMoves(Book::Tree *starttree);
+    void addMoves(int size, std::list<Go::Move> *moves);
     
     std::string outputTree(int size, Book::Tree *tree, std::list<Go::Move> *movehistory);
 };
