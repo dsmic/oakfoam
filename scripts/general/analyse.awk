@@ -21,7 +21,7 @@ BEGIN {
     match($2,/([0-9.]+)/,m);
     r=m[1];
     delta=(r-lastr);
-    print game,NR,lastr,r,delta;
+    printf "%3d %6d %.2f %.2f %+.2f\n",game,NR,lastr,r,delta;
     lastr=r;
     moveplayed=1;
   }

@@ -606,8 +606,10 @@ void Tree::expandLeaf()
   Tree *nmt=new Tree(params,Go::Move(col,Go::Move::PASS));
   if (winnow)
     nmt->addPriorWins(1);
-  if (startboard->getPassesPlayed()==0 && !(params->surewin_expected && col==params->engine->getCurrentBoard()->nextToMove()))
-    nmt->addPriorLoses(UCT_PASS_DETER);
+  #if UCT_PASS_DETER>0
+    if (startboard->getPassesPlayed()==0 && !(params->surewin_expected && col==params->engine->getCurrentBoard()->nextToMove()))
+      nmt->addPriorLoses(UCT_PASS_DETER);
+  #endif
   nmt->addRAVEWins(params->rave_init_wins);
   this->addChild(nmt);
   
@@ -708,11 +710,14 @@ void Tree::updateRAVE(Go::Color wincol,Go::BitBoard *blacklist,Go::BitBoard *whi
   {
     parent->updateRAVE(wincol,blacklist,whitelist);
     
-    int pos=this->getMove().getPosition();
-    if (this->getMove().getColor()==Go::BLACK)
-      blacklist->clear(pos);
-    else
-      whitelist->clear(pos);
+    if (this->getMove().isNormal())
+    {
+      int pos=this->getMove().getPosition();
+      if (this->getMove().getColor()==Go::BLACK)
+        blacklist->clear(pos);
+      else
+        whitelist->clear(pos);
+    }
   }
   
   if (!this->isLeaf())

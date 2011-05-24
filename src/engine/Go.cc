@@ -1437,18 +1437,48 @@ Go::ObjectBoard<int> *Go::Board::getCFGFrom(int pos, int max)
   return cfgdist;
 }
 
-int Go::Board::getThreeEmptyChainCenterFrom(int pos)
+int Go::Board::getThreeEmptyGroupCenterFrom(int pos)
 {
   if (this->getColor(pos)!=Go::EMPTY)
     return -1;
   
   int empnei=this->touchingEmpty(pos);
+  Go::Color col=Go::EMPTY;
   
   if (empnei==2) // possibly at center
   {
+    int empty,black,white,offboard;
     foreach_adjacent(pos,p,{
-      if (this->getColor(p)==Go::EMPTY && this->touchingEmpty(p)!=1)
-        return -1;
+      if (this->getColor(p)==Go::EMPTY)
+      {
+        if (this->touchingEmpty(p)!=1)
+          return -1;
+        else
+        {
+          this->countAdjacentColors(p,empty,black,white,offboard);
+          if (col==Go::EMPTY)
+          {
+            if (black>0 && white>0)
+              return -1;
+            else if (black>0)
+              col=Go::BLACK;
+            else if (white>0)
+              col=Go::WHITE;
+          }
+          else if (col==Go::BLACK && white>0)
+            return -1;
+          else if (col==Go::WHITE && black>0)
+            return -1;
+        }
+      }
+      else if (this->getColor(p)!=Go::OFFBOARD)
+      {
+        Go::Color col2=this->getColor(p);
+        if (col==Go::EMPTY)
+            col=col2;
+        else if (col!=col2)
+          return -1;
+      }
     });
     return pos;
   }
@@ -1457,19 +1487,8 @@ int Go::Board::getThreeEmptyChainCenterFrom(int pos)
     foreach_adjacent(pos,p,{
       if (this->getColor(p)==Go::EMPTY)
       {
-        int empnei2=this->touchingEmpty(p);
-        if (empnei2==2)
-        {
-          foreach_adjacent(p,q,{
-            if (q!=pos && this->getColor(q)==Go::EMPTY)
-            {
-              if (this->touchingEmpty(q)==1)
-                return p;
-              else
-                return -1;
-            }
-          });
-        }
+        if (this->touchingEmpty(p)==2)
+          return this->getThreeEmptyGroupCenterFrom(p);
         else
           return -1;
       }

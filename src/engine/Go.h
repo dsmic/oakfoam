@@ -30,6 +30,17 @@ class Features;
     __adjpos = __intpos+P_W; { __body }; \
   }
 
+#define foreach_onandadj(__pos, __adjpos, __body) \
+  { \
+    int __intpos = __pos; \
+    int __adjpos; \
+    __adjpos = __intpos; { __body }; \
+    __adjpos = __intpos+P_N; { __body }; \
+    __adjpos = __intpos+P_S; { __body }; \
+    __adjpos = __intpos+P_E; { __body }; \
+    __adjpos = __intpos+P_W; { __body }; \
+  }
+
 #define foreach_adjdiag(__pos, __adjpos, __body) \
   { \
     int __intpos = __pos; \
@@ -199,6 +210,7 @@ namespace Go
       
       inline bool isPass() {return (pos==-1);};
       inline bool isResign() {return (pos==-2);};
+      inline bool isNormal() {return (pos!=-1) && (pos!=-2);};
       
       std::string toString(int boardsize);
       
@@ -361,7 +373,7 @@ namespace Go
       int getDistanceToBorder(int pos);
       int getCircularDistance(int pos1, int pos2);
       Go::ObjectBoard<int> *getCFGFrom(int pos, int max=0);
-      int getThreeEmptyChainCenterFrom(int pos);
+      int getThreeEmptyGroupCenterFrom(int pos);
     
     private:
       int size;

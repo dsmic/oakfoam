@@ -1149,7 +1149,7 @@ void Engine::gtpShowNakadeCenters(void *instance, Gtp::Engine* gtpe, Gtp::Comman
     for (int x=0;x<me->boardsize;x++)
     {
       int pos=Go::Position::xy2pos(x,y,me->boardsize);
-      int centerpos=me->currentboard->getThreeEmptyChainCenterFrom(pos);
+      int centerpos=me->currentboard->getThreeEmptyGroupCenterFrom(pos);
       if (centerpos==-1)
         gtpe->getOutput()->printf("\"\" ");
       else
@@ -1819,6 +1819,8 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
         if (board->validMove(Go::Move(col,np)))
         {
           move=Go::Move(col,np);
+          if (params->debug_on)
+            gtpe->getOutput()->printfDebug("[playoutmove]: lgrf2\n");
           return;
         }
       }
@@ -1836,6 +1838,8 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
         if (board->validMove(Go::Move(col,np)))
         {
           move=Go::Move(col,np);
+          if (params->debug_on)
+            gtpe->getOutput()->printfDebug("[playoutmove]: lgrf1\n");
           return;
         }
       }
@@ -1870,6 +1874,8 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
     
     if (!foundmove)
       move=Go::Move(col,Go::Move::PASS);
+    if (params->debug_on)
+        gtpe->getOutput()->printfDebug("[playoutmove]: features\n");
     //delete gammas;
     return;
   }
@@ -1878,24 +1884,11 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
   {
     int *atarimoves=posarray;
     int atarimovescount=0;
+    int size=board->getSize();
     
-    /*std::list<Go::Group*,Go::allocator_groupptr> *groups=board->getGroups();
-    for(std::list<Go::Group*,Go::allocator_groupptr>::iterator iter=groups->begin();iter!=groups->end();++iter) 
-    {
-      if ((*iter)->inAtari())
-      {
-        int liberty=(*iter)->getAtariPosition();
-        if (board->validMove(Go::Move(col,liberty)) && ((*iter)->getColor()!=col || board->touchingEmpty(liberty)>1))
-        {
-          atarimoves[atarimovescount]=liberty;
-          atarimovescount++;
-        }
-      }
-    }*/
     if (!board->getLastMove().isPass())
     {
-      int size=board->getSize();
-      foreach_adjacent(board->getLastMove().getPosition(),p,{
+      foreach_onandadj(board->getLastMove().getPosition(),p,{
         if (board->inGroup(p))
         {
           Go::Group *group=board->getGroup(p);
@@ -1903,6 +1896,7 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
           {
             int liberty=group->getAtariPosition();
             bool iscaptureorconnect=board->isCapture(Go::Move(col,liberty)) || board->isExtension(Go::Move(col,liberty));
+            //fprintf(stderr,"a: %s %s %d",Go::Position::pos2string(p,size).c_str(),Go::Position::pos2string(liberty,size).c_str(),iscaptureorconnect);
             if (board->validMove(Go::Move(col,liberty)) && iscaptureorconnect)
             {
               atarimoves[atarimovescount]=liberty;
@@ -1914,8 +1908,7 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
     }
     if (!board->getSecondLastMove().isPass())
     {
-      int size=board->getSize();
-      foreach_adjacent(board->getSecondLastMove().getPosition(),p,{
+      foreach_onandadj(board->getSecondLastMove().getPosition(),p,{
         if (board->inGroup(p))
         {
           Go::Group *group=board->getGroup(p);
@@ -1937,7 +1930,8 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
     {
       int i=rand.getRandomInt(atarimovescount);
       move=Go::Move(col,atarimoves[i]);
-      //gtpe->getOutput()->printfDebug("[playoutmove]: atari\n");
+      if (params->debug_on)
+        gtpe->getOutput()->printfDebug("[playoutmove]: atari\n");
       return;
     }
   }
@@ -1973,6 +1967,8 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
       int i=rand.getRandomInt(possiblemovescount);
       move=Go::Move(col,possiblemoves[i]);
       //gtpe->getOutput()->printfDebug("[playoutmove]: last atari %d %d %d\n",board->isCapture(move),board->isExtension(move),board->isSelfAtari(move));
+      if (params->debug_on)
+        gtpe->getOutput()->printfDebug("[playoutmove]: lastatari\n");
       return;
     }
   }
@@ -1986,7 +1982,7 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
     {
       int size=board->getSize();
       foreach_adjacent(board->getLastMove().getPosition(),p,{
-        int centerpos=board->getThreeEmptyChainCenterFrom(p);
+        int centerpos=board->getThreeEmptyGroupCenterFrom(p);
         if (centerpos!=-1 && board->validMove(Go::Move(col,centerpos)))
         {
           possiblemoves[possiblemovescount]=centerpos;
@@ -1999,7 +1995,8 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
     {
       int i=rand.getRandomInt(possiblemovescount);
       move=Go::Move(col,possiblemoves[i]);
-      //gtpe->getOutput()->printfDebug("[playoutmove]: nakade\n");
+      if (params->debug_on)
+        gtpe->getOutput()->printfDebug("[playoutmove]: nakade\n");
       return;
     }
   }
@@ -2012,7 +2009,8 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
       if (board->getColor(p)==Go::EMPTY && board->surroundingEmpty(p)==8 && board->validMove(Go::Move(col,p)))
       {
         move=Go::Move(col,p);
-        //gtpe->getOutput()->printfDebug("[playoutmove]: fillboard\n");
+        if (params->debug_on)
+          gtpe->getOutput()->printfDebug("[playoutmove]: fillboard\n");
         return;
       }
     }
@@ -2069,7 +2067,8 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
     {
       int i=rand.getRandomInt(patternmovescount);
       move=Go::Move(col,patternmoves[i]);
-      //gtpe->getOutput()->printfDebug("[playoutmove]: pattern\n");
+      if (params->debug_on)
+        gtpe->getOutput()->printfDebug("[playoutmove]: pattern\n");
       return;
     }
   }
@@ -2097,7 +2096,8 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
     {
       int i=rand.getRandomInt(possiblemovescount);
       move=Go::Move(col,possiblemoves[i]);
-      //gtpe->getOutput()->printfDebug("[playoutmove]: any capture\n");
+      if (params->debug_on)
+        gtpe->getOutput()->printfDebug("[playoutmove]: anycapture\n");
       return;
     }
   }
@@ -2108,7 +2108,8 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
     if (board->validMove(Go::Move(col,p)) && !board->weakEye(col,p))
     {
       move=Go::Move(col,p);
-      //gtpe->getOutput()->printfDebug("[playoutmove]: random\n");
+      if (params->debug_on)
+        gtpe->getOutput()->printfDebug("[playoutmove]: random quick-pick\n");
       return;
     }
   }
@@ -2146,7 +2147,8 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
     if (validmoves->get(rp) && !board->weakEye(col,rp))
     {
       move=Go::Move(col,rp);
-      //gtpe->getOutput()->printfDebug("[playoutmove]: random\n");
+      if (params->debug_on)
+        gtpe->getOutput()->printfDebug("[playoutmove]: random\n");
       return;
     }
   }

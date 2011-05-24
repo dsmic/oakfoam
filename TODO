@@ -2,6 +2,7 @@ TODO
 ------------------
 
 Now: (current focus)
+  keep track of adjacent groups, so "ko-threats" can be answered
   add results from first playout moves to tree
   move playout code out of engine
   change uct_* params to tree_*
