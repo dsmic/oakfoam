@@ -3,15 +3,17 @@
 # analyse a log file and print out:
 # -- [game]
 #   for each clear_board cmd
-# [game] [line] [ratio] [delta]
+# [game] [line] [lastratio] [ratio] [delta]
 #   for each generated move
 #
-# usage: ./analyse.awk | awk "\$4<-0.3"
+# usage: ./analyse.awk | awk '$5<-0.3'
 
 BEGIN {
   IGNORECASE=1;
   lastr=0;
-  game=0;
+  game=1;
+  moveplayed=0;
+  print "--",game;
 }
 /\[genmove\]/{
   if ($2 ~ /^r:/) {
@@ -19,14 +21,18 @@ BEGIN {
     match($2,/([0-9.]+)/,m);
     r=m[1];
     delta=(r-lastr);
-    print game,NR,r,delta;
+    print game,NR,lastr,r,delta;
     lastr=r;
+    moveplayed=1;
   }
 }
 /clear_board/{
-  lastr=0;
-  game++;
-  print "--",game;
+  if (moveplayed) {
+    lastr=0;
+    game++;
+    moveplayed=0;
+    print "--",game;
+  }
 }
 
 
