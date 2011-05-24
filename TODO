@@ -2,7 +2,6 @@ TODO
 ------------------
 
 Now: (current focus)
-  add script to detect "unforeseen" loses
   add results from first playout moves to tree
   move playout code out of engine
   change uct_* params to tree_*
