@@ -258,6 +258,7 @@ namespace Go
         pseudoliberties+=othergroup->pseudoliberties;
         libpossum+=othergroup->libpossum;
         libpossumsq+=othergroup->libpossumsq;
+        adjacentgroups.splice(adjacentgroups.end(),*othergroup->getAdjacentGroups());
       };
       inline bool isRoot() { return (parent==NULL); };
       
@@ -270,6 +271,7 @@ namespace Go
       inline int getAtariPosition() { if (this->inAtari()) return libpossum/pseudoliberties; else return -1; };
       void addTouchingEmpties();
       bool isOneOfTwoLiberties(int pos);
+      std::list<int> *getAdjacentGroups() { return &adjacentgroups; };
     
     private:
       Go::Color color;
@@ -282,6 +284,8 @@ namespace Go
       int pseudoliberties;
       int libpossum;
       int libpossumsq;
+      
+      std::list<int> adjacentgroups;
   };
   
   class Board

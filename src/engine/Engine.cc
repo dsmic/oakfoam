@@ -40,6 +40,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln)
   params->addParameter("mcts","playouts_per_move_min",&(params->playouts_per_move_min),PLAYOUTS_PER_MOVE_MIN);
   
   params->addParameter("mcts","playout_atari_enabled",&(params->playout_atari_enabled),PLAYOUT_ATARI_ENABLED);
+  params->addParameter("mcts","playout_lastcapture_enabled",&(params->playout_lastcapture_enabled),PLAYOUT_LASTCAPTURE_ENABLED);
   params->addParameter("mcts","playout_patterns_enabled",&(params->playout_patterns_enabled),PLAYOUT_PATTERNS_ENABLED);
   params->addParameter("mcts","playout_features_enabled",&(params->playout_features_enabled),PLAYOUT_FEATURES_ENABLED);
   params->addParameter("mcts","playout_features_incremental",&(params->playout_features_incremental),PLAYOUT_FEATURES_INCREMENTAL);
@@ -239,6 +240,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("showcircdistfrom",this,&Engine::gtpShowCircDistFrom);
   gtpe->addFunctionCommand("listcircpatternsat",this,&Engine::gtpListCircularPatternsAt);
   gtpe->addFunctionCommand("listallcircularpatterns",this,&Engine::gtpListAllCircularPatterns);
+  gtpe->addFunctionCommand("listadjacentgroupsof",this,&Engine::gtpListAdjacentGroupsOf);
   
   gtpe->addFunctionCommand("time_settings",this,&Engine::gtpTimeSettings);
   gtpe->addFunctionCommand("time_left",this,&Engine::gtpTimeLeft);
@@ -278,6 +280,7 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("showcfgfrom %%p","Show CFG From","sboard");
   gtpe->addAnalyzeCommand("showcircdistfrom %%p","Show Circular Distance From","sboard");
   gtpe->addAnalyzeCommand("listcircpatternsat %%p","List Circular Patterns At","string");
+  gtpe->addAnalyzeCommand("listadjacentgroupsof %%p","List Adjacent Groups Of","string");
   gtpe->addAnalyzeCommand("showpatternmatches","Show Pattern Matches","sboard");
   gtpe->addAnalyzeCommand("shownakadecenters","Show Nakade Centers","sboard");
   gtpe->addAnalyzeCommand("featurematchesat %%p","Feature Matches At","string");
@@ -286,7 +289,7 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("showtreelivegfx","Show Tree Live Gfx","gfx");
   //gtpe->addAnalyzeCommand("loadpatterns %%r","Load Patterns","none");
   //gtpe->addAnalyzeCommand("clearpatterns","Clear Patterns","none");
-  //gtpe->addAnalyzeCommand("doboardcopy","Do Board Copy","none");
+  gtpe->addAnalyzeCommand("doboardcopy","Do Board Copy","none");
   gtpe->addAnalyzeCommand("param mcts","Parameters (MCTS)","param");
   gtpe->addAnalyzeCommand("param time","Parameters (Time)","param");
   gtpe->addAnalyzeCommand("param other","Parameters (Other)","param");
@@ -1107,6 +1110,53 @@ void Engine::gtpListAllCircularPatterns(void *instance, Gtp::Engine* gtpe, Gtp::
   }
 
   gtpe->getOutput()->endResponse();
+}
+
+void Engine::gtpListAdjacentGroupsOf(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("vertex is required");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  Gtp::Vertex vert = cmd->getVertexArg(0);
+  
+  if (vert.x==-3 && vert.y==-3)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("invalid vertex");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  int pos=Go::Position::xy2pos(vert.x,vert.y,me->boardsize);
+  Go::Group *group=NULL;
+  if (me->currentboard->inGroup(pos))
+    group=me->currentboard->getGroup(pos);
+  
+  if (group!=NULL)
+  {
+    std::list<int> *adjacentgroups=group->getAdjacentGroups();
+    
+    gtpe->getOutput()->startResponse(cmd);
+    gtpe->getOutput()->printf("list of size %d:\n",adjacentgroups->size());
+    for(std::list<int>::iterator iter=adjacentgroups->begin();iter!=adjacentgroups->end();++iter)
+    {
+      if (me->currentboard->inGroup((*iter)))
+        gtpe->getOutput()->printf("%s\n",Go::Position::pos2string((*iter),me->boardsize).c_str());
+    }
+    gtpe->getOutput()->endResponse(true);
+  }
+  else
+  {
+    gtpe->getOutput()->startResponse(cmd);
+    gtpe->getOutput()->endResponse();
+  }
 }
 
 void Engine::gtpShowSymmetryTransforms(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
@@ -1932,6 +1982,53 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
       move=Go::Move(col,atarimoves[i]);
       if (params->debug_on)
         gtpe->getOutput()->printfDebug("[playoutmove]: atari\n");
+      return;
+    }
+  }
+  
+  if (params->playout_lastcapture_enabled)
+  {
+    int *possiblemoves=posarray;
+    int possiblemovescount=0;
+    int size=board->getSize();
+    
+    if (!board->getLastMove().isPass())
+    {
+      foreach_adjacent(board->getLastMove().getPosition(),p,{
+        if (board->inGroup(p))
+        {
+          Go::Group *group=board->getGroup(p);
+          if (group!=NULL && group->inAtari())
+          {
+            std::list<int> *adjacentgroups=group->getAdjacentGroups();
+            for(std::list<int>::iterator iter=adjacentgroups->begin();iter!=adjacentgroups->end();++iter)
+            {
+              if (board->inGroup((*iter)))
+              {
+                Go::Group *othergroup=board->getGroup((*iter));
+                if (othergroup->inAtari())
+                {
+                  int liberty=othergroup->getAtariPosition();
+                  bool iscaptureorconnect=board->isCapture(Go::Move(col,liberty)) || board->isExtension(Go::Move(col,liberty));
+                  if (board->validMove(Go::Move(col,liberty)) && iscaptureorconnect)
+                  {
+                    possiblemoves[possiblemovescount]=liberty;
+                    possiblemovescount++;
+                  }
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+    
+    if (possiblemovescount>0)
+    {
+      int i=rand.getRandomInt(possiblemovescount);
+      move=Go::Move(col,possiblemoves[i]);
+      if (params->debug_on)
+        gtpe->getOutput()->printfDebug("[playoutmove]: lastcapture\n");
       return;
     }
   }

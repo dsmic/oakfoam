@@ -34,6 +34,7 @@ class Parameters
     int playouts_per_move_max;
     
     bool playout_atari_enabled;
+    bool playout_lastcapture_enabled;
     bool playout_patterns_enabled;
     bool playout_features_enabled;
     bool playout_features_incremental;

@@ -505,6 +505,9 @@ void Go::Board::makeMove(Go::Move move)
       Go::Group *othergroup=this->getGroup(p);
       othergroup->removePseudoLiberty(pos);
       
+      thisgroup->getAdjacentGroups()->push_back(p);
+      othergroup->getAdjacentGroups()->push_back(pos);
+      
       if (othergroup->numOfPseudoLiberties()==0)
       {
         if (removeGroup(othergroup)==1)
@@ -663,6 +666,23 @@ void Go::Board::refreshGroups()
         this->spreadGroup(q,newgroup);
       });
       groups.push_back(newgroup);
+    }
+  }
+  
+  for (int p=0;p<sizedata;p++)
+  {
+    if (this->inGroup(p))
+    {
+      Go::Group *group=this->getGroup(p);
+      Go::Color othercol=Go::otherColor(group->getColor());
+      foreach_adjacent(p,q,{
+        if (this->getColor(q)==othercol)
+        {
+          //Go::Group *othergroup=this->getGroup(q);
+          group->getAdjacentGroups()->push_back(q);
+          //othergroup->getAdjacentGroups()->push_back(p);
+        }
+      });
     }
   }
   

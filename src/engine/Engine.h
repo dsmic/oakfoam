@@ -27,6 +27,7 @@
 
 #define PLAYOUT_MAX_MOVE_FACTOR 3
 #define PLAYOUT_ATARI_ENABLED true
+#define PLAYOUT_LASTCAPTURE_ENABLED true
 #define PLAYOUT_PATTERNS_ENABLED true
 #define PLAYOUT_FEATURES_ENABLED false
 #define PLAYOUT_FEATURES_INCREMENTAL false
@@ -133,6 +134,7 @@ class Engine
     static void gtpShowCircDistFrom(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpListCircularPatternsAt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpListAllCircularPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpListAdjacentGroupsOf(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     
     static void gtpTimeSettings(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpTimeLeft(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
