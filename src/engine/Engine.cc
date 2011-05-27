@@ -39,18 +39,18 @@ Engine::Engine(Gtp::Engine *ge, std::string ln)
   params->addParameter("mcts","playouts_per_move_max",&(params->playouts_per_move_max),PLAYOUTS_PER_MOVE_MAX);
   params->addParameter("mcts","playouts_per_move_min",&(params->playouts_per_move_min),PLAYOUTS_PER_MOVE_MIN);
   
-  params->addParameter("mcts","playout_atari_enabled",&(params->playout_atari_enabled),PLAYOUT_ATARI_ENABLED);
-  params->addParameter("mcts","playout_lastcapture_enabled",&(params->playout_lastcapture_enabled),PLAYOUT_LASTCAPTURE_ENABLED);
-  params->addParameter("mcts","playout_patterns_enabled",&(params->playout_patterns_enabled),PLAYOUT_PATTERNS_ENABLED);
+  params->addParameter("mcts","playout_lgrf2_enabled",&(params->playout_lgrf2_enabled),PLAYOUT_LGRF2_ENABLED);
+  params->addParameter("mcts","playout_lgrf1_enabled",&(params->playout_lgrf1_enabled),PLAYOUT_LGRF1_ENABLED);
   params->addParameter("mcts","playout_features_enabled",&(params->playout_features_enabled),PLAYOUT_FEATURES_ENABLED);
   params->addParameter("mcts","playout_features_incremental",&(params->playout_features_incremental),PLAYOUT_FEATURES_INCREMENTAL);
+  params->addParameter("mcts","playout_atari_enabled",&(params->playout_atari_enabled),PLAYOUT_ATARI_ENABLED);
   params->addParameter("mcts","playout_lastatari_enabled",&(params->playout_lastatari_enabled),PLAYOUT_LASTATARI_ENABLED);
+  params->addParameter("mcts","playout_lastcapture_enabled",&(params->playout_lastcapture_enabled),PLAYOUT_LASTCAPTURE_ENABLED);
   params->addParameter("mcts","playout_nakade_enabled",&(params->playout_nakade_enabled),PLAYOUT_NAKADE_ENABLED);
   params->addParameter("mcts","playout_fillboard_enabled",&(params->playout_fillboard_enabled),PLAYOUT_FILLBOARD_ENABLED);
   params->addParameter("mcts","playout_fillboard_n",&(params->playout_fillboard_n),PLAYOUT_FILLBOARD_N);
+  params->addParameter("mcts","playout_patterns_enabled",&(params->playout_patterns_enabled),PLAYOUT_PATTERNS_ENABLED);
   params->addParameter("mcts","playout_anycapture_enabled",&(params->playout_anycapture_enabled),PLAYOUT_ANYCAPTURE_ENABLED);
-  params->addParameter("mcts","playout_lgrf1_enabled",&(params->playout_lgrf1_enabled),PLAYOUT_LGRF1_ENABLED);
-  params->addParameter("mcts","playout_lgrf2_enabled",&(params->playout_lgrf2_enabled),PLAYOUT_LGRF2_ENABLED);
   
   params->addParameter("mcts","ucb_c",&(params->ucb_c),UCB_C);
   params->addParameter("mcts","ucb_init",&(params->ucb_init),UCB_INIT);
@@ -1859,7 +1859,7 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
   
   if (params->playout_lgrf2_enabled)
   {
-    if (!board->getLastMove().isPass() && !board->getSecondLastMove().isPass())
+    if (board->getLastMove().isNormal() && board->getSecondLastMove().isNormal())
     {
       int pos1=board->getSecondLastMove().getPosition();
       int pos2=board->getLastMove().getPosition();
@@ -1879,7 +1879,7 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
   
   if (params->playout_lgrf1_enabled)
   {
-    if (!board->getLastMove().isPass())
+    if (board->getLastMove().isNormal())
     {
       int pos1=board->getLastMove().getPosition();
       if (this->hasLGRF1(col,pos1))
@@ -1936,7 +1936,7 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
     int atarimovescount=0;
     int size=board->getSize();
     
-    if (!board->getLastMove().isPass())
+    if (board->getLastMove().isNormal())
     {
       foreach_onandadj(board->getLastMove().getPosition(),p,{
         if (board->inGroup(p))
@@ -1956,7 +1956,7 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
         }
       });
     }
-    if (!board->getSecondLastMove().isPass())
+    if (board->getSecondLastMove().isNormal())
     {
       foreach_onandadj(board->getSecondLastMove().getPosition(),p,{
         if (board->inGroup(p))
@@ -1986,70 +1986,24 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
     }
   }
   
-  if (params->playout_lastcapture_enabled)
+  if (params->playout_lastatari_enabled)
   {
     int *possiblemoves=posarray;
     int possiblemovescount=0;
     int size=board->getSize();
     
-    if (!board->getLastMove().isPass())
+    if (board->getLastMove().isNormal())
     {
-      foreach_adjacent(board->getLastMove().getPosition(),p,{
+      foreach_onandadj(board->getLastMove().getPosition(),p,{
         if (board->inGroup(p))
         {
           Go::Group *group=board->getGroup(p);
           if (group!=NULL && group->inAtari())
           {
-            std::list<int> *adjacentgroups=group->getAdjacentGroups();
-            for(std::list<int>::iterator iter=adjacentgroups->begin();iter!=adjacentgroups->end();++iter)
-            {
-              if (board->inGroup((*iter)))
-              {
-                Go::Group *othergroup=board->getGroup((*iter));
-                if (othergroup->inAtari())
-                {
-                  int liberty=othergroup->getAtariPosition();
-                  bool iscaptureorconnect=board->isCapture(Go::Move(col,liberty)) || board->isExtension(Go::Move(col,liberty));
-                  if (board->validMove(Go::Move(col,liberty)) && iscaptureorconnect)
-                  {
-                    possiblemoves[possiblemovescount]=liberty;
-                    possiblemovescount++;
-                  }
-                }
-              }
-            }
-          }
-        }
-      });
-    }
-    
-    if (possiblemovescount>0)
-    {
-      int i=rand.getRandomInt(possiblemovescount);
-      move=Go::Move(col,possiblemoves[i]);
-      if (params->debug_on)
-        gtpe->getOutput()->printfDebug("[playoutmove]: lastcapture\n");
-      return;
-    }
-  }
-  
-  if (params->playout_lastatari_enabled)
-  {
-    int *possiblemoves=posarray;
-    int possiblemovescount=0;
-    
-    if (!board->getLastMove().isPass())
-    {
-      int size=board->getSize();
-      foreach_adjacent(board->getLastMove().getPosition(),p,{
-        if (board->inGroup(p))
-        {
-          Go::Group *group=board->getGroup(p);
-          if (group!=NULL && group->getColor()==col && group->inAtari())
-          {
             int liberty=group->getAtariPosition();
-            bool iscaptureorconnect=board->isCapture(Go::Move(col,liberty)) || (board->isExtension(Go::Move(col,liberty)) && !board->isSelfAtari(Go::Move(col,liberty)));
-            if (iscaptureorconnect && board->validMove(Go::Move(col,liberty)))
+            bool iscaptureorconnect=board->isCapture(Go::Move(col,liberty)) || board->isExtension(Go::Move(col,liberty));
+            //fprintf(stderr,"la: %s %s %d %d %d\n",Go::Position::pos2string(p,size).c_str(),Go::Position::pos2string(liberty,size).c_str(),board->isCapture(Go::Move(col,liberty)),board->isExtension(Go::Move(col,liberty)),board->isSelfAtari(Go::Move(col,liberty)));
+            if (board->validMove(Go::Move(col,liberty)) && iscaptureorconnect)
             {
               possiblemoves[possiblemovescount]=liberty;
               possiblemovescount++;
@@ -2070,12 +2024,70 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
     }
   }
   
+  if (params->playout_lastcapture_enabled)
+  {
+    int *possiblemoves=posarray;
+    int possiblemovescount=0;
+    int size=board->getSize();
+    
+    if (board->getLastMove().isNormal())
+    {
+      foreach_adjacent(board->getLastMove().getPosition(),p,{
+        if (board->inGroup(p))
+        {
+          Go::Group *group=board->getGroup(p);
+          if (group!=NULL && group->inAtari())
+          {
+            std::list<int> *adjacentgroups=group->getAdjacentGroups();
+            adjacentgroups->sort();
+            adjacentgroups->unique();
+            for(std::list<int>::iterator iter=adjacentgroups->begin();iter!=adjacentgroups->end();++iter)
+            {
+              if (board->inGroup((*iter)))
+              {
+                Go::Group *othergroup=board->getGroup((*iter));
+                if (othergroup->inAtari())
+                {
+                  int liberty=othergroup->getAtariPosition();
+                  bool iscaptureorconnect=board->isCapture(Go::Move(col,liberty)) || board->isExtension(Go::Move(col,liberty));
+                  if (board->validMove(Go::Move(col,liberty)) && iscaptureorconnect)
+                  {
+                    if (possiblemovescount<board->getPositionMax())
+                    {
+                      possiblemoves[possiblemovescount]=liberty;
+                      possiblemovescount++;
+                    }
+                  }
+                }
+              }
+              else
+              {
+                std::list<int>::iterator tmp=iter;
+                --iter;
+                adjacentgroups->erase(tmp);
+              }
+            }
+          }
+        }
+      });
+    }
+    
+    if (possiblemovescount>0)
+    {
+      int i=rand.getRandomInt(possiblemovescount);
+      move=Go::Move(col,possiblemoves[i]);
+      if (params->debug_on)
+        gtpe->getOutput()->printfDebug("[playoutmove]: lastcapture\n");
+      return;
+    }
+  }
+  
   if (params->playout_nakade_enabled)
   {
     int *possiblemoves=posarray;
     int possiblemovescount=0;
     
-    if (!board->getLastMove().isPass())
+    if (board->getLastMove().isNormal())
     {
       int size=board->getSize();
       foreach_adjacent(board->getLastMove().getPosition(),p,{
@@ -2118,7 +2130,7 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
     int *patternmoves=posarray;
     int patternmovescount=0;
     
-    if (!board->getLastMove().isPass() && !board->getLastMove().isResign())
+    if (board->getLastMove().isNormal())
     {
       int pos=board->getLastMove().getPosition();
       int size=board->getSize();
@@ -2139,7 +2151,7 @@ void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, 
       });
     }
     
-    if (!board->getSecondLastMove().isPass() && !board->getSecondLastMove().isResign())
+    if (board->getSecondLastMove().isNormal())
     {
       int pos=board->getSecondLastMove().getPosition();
       int size=board->getSize();

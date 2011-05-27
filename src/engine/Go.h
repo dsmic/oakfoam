@@ -271,6 +271,7 @@ namespace Go
       inline int getAtariPosition() { if (this->inAtari()) return libpossum/pseudoliberties; else return -1; };
       void addTouchingEmpties();
       bool isOneOfTwoLiberties(int pos);
+      int getOtherOneOfTwoLiberties(int pos);
       std::list<int> *getAdjacentGroups() { return &adjacentgroups; };
     
     private:

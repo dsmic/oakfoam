@@ -130,6 +130,31 @@ bool Go::Group::isOneOfTwoLiberties(int pos)
   return (ps>0 && (ps*lpsq)==(lps*lps));
 }
 
+int Go::Group::getOtherOneOfTwoLiberties(int pos)
+{
+  if (pseudoliberties>8 || this->inAtari())
+    return -1;
+  
+  int ps=pseudoliberties;
+  int lps=libpossum;
+  int lpsq=libpossumsq;
+  int size=board->getSize();
+  
+  foreach_adjacent(pos,p,{
+    if (board->inGroup(p) && board->getGroup(p)==this)
+    {
+      ps--;
+      lps-=pos;
+      lpsq-=pos*pos;
+    }
+  });
+  
+  if (ps>0 && (ps*lpsq)==(lps*lps))
+    return lps/ps;
+  else
+    return -1;
+}
+
 Go::Board::Board(int s)
 {
   size=s;
@@ -1322,6 +1347,7 @@ bool Go::Board::isExtension(Go::Move move)
   int pos=move.getPosition();
   bool foundgroupinatari=false;
   int foundconnectingliberties=0;
+  int libpos=-1;
   foreach_adjacent(pos,p,{
     if (this->inGroup(p))
     {
@@ -1330,14 +1356,34 @@ bool Go::Board::isExtension(Go::Move move)
       {
         if (group->inAtari())
           foundgroupinatari=true;
-        else if (group->isOneOfTwoLiberties(pos))
-          foundconnectingliberties++;
-        else
-          foundconnectingliberties=2;
+        else if (foundconnectingliberties<2)
+        {
+          int otherlib=group->getOtherOneOfTwoLiberties(pos);
+          if (otherlib!=-1)
+          {
+            if (foundconnectingliberties==0)
+            {
+              foundconnectingliberties=1;
+              libpos=otherlib;
+            }
+            else if (libpos!=otherlib)
+              foundconnectingliberties=2;
+          }
+          else
+            foundconnectingliberties=2;
+        }
       }
     }
-    else if (this->onBoard(p))
-      foundconnectingliberties++;
+    else if (this->onBoard(p) && foundconnectingliberties<2)
+    {
+      if (foundconnectingliberties==0)
+      {
+        foundconnectingliberties=1;
+        libpos=p;
+      }
+      else if (libpos!=p)
+        foundconnectingliberties=2;
+    }
   });
   if (foundgroupinatari && foundconnectingliberties>=2)
     return true;
@@ -1354,24 +1400,30 @@ bool Go::Board::isSelfAtari(Go::Move move)
     return false;
   
   bool foundgroupwith2libsorless=false;
+  int libpos=-1;
   bool foundconnection=false;
-  Go::Group *grp2libs=NULL;
+  //Go::Group *grp2libs=NULL;
   foreach_adjacent(pos,p,{
     if (this->inGroup(p))
     {
       Go::Group *group=this->getGroup(p);
-      if (col==group->getColor() && group->isOneOfTwoLiberties(pos))
+      if (col==group->getColor())
       {
-        if (!foundgroupwith2libsorless)
+        int otherlib=group->getOtherOneOfTwoLiberties(pos);
+        if (otherlib!=-1)
         {
-          foundgroupwith2libsorless=true;
-          grp2libs=group;
+          if (!foundgroupwith2libsorless)
+          {
+            foundgroupwith2libsorless=true;
+            //grp2libs=group;
+            libpos=otherlib;
+          }
+          else if (libpos!=otherlib)
+            foundconnection=true;
         }
-        else if (group!=grp2libs)
+        else if (!group->inAtari()) // more than 2 libs
           foundconnection=true;
       }
-      else if (col==group->getColor() && !group->inAtari())
-        foundconnection=true;
     }
   });
   if (!foundconnection)
