@@ -22,7 +22,8 @@ Tree::Tree(Parameters *prms, Go::Move mov, Tree *p)
   terminaloverride=false;
   pruned=false;
   prunedchildren=0;
-  prunefactor=0;
+  gamma=0;
+  childrentotalgamma=0;
   unprunenextchildat=0;
   lastunprune=0;
   unprunebase=0;
@@ -234,7 +235,7 @@ float Tree::getVal()
 
 float Tree::getUrgency()
 {
-  float bias;
+  float uctbias;
   if (this->isTerminalWin())
     return TREE_TERMINAL_URGENCY;
   else if (this->isTerminalLose())
@@ -254,18 +255,21 @@ float Tree::getUrgency()
   float plts=playouts+priorplayouts;
   
   if (parent==NULL || params->ucb_c==0)
-    bias=0;
+    uctbias=0;
   else
   {
     if (parent->getPlayouts()>1 && plts>0)
-      bias=params->ucb_c*sqrt(log((float)parent->getPlayouts())/(plts));
+      uctbias=params->ucb_c*sqrt(log((float)parent->getPlayouts())/(plts));
     else if (parent->getPlayouts()>1)
-      bias=params->ucb_c*sqrt(log((float)parent->getPlayouts())/(1));
+      uctbias=params->ucb_c*sqrt(log((float)parent->getPlayouts())/(1));
     else
-      bias=params->ucb_c/2;
+      uctbias=params->ucb_c/2;
   }
   
-  return this->getVal()+bias;
+  if (params->uct_progressive_bias_enabled)
+    return this->getVal()+uctbias+this->getProgressiveBias();
+  else
+    return this->getVal()+uctbias;
 }
 
 std::list<Go::Move> Tree::getMovesFromRoot()
@@ -436,9 +440,9 @@ void Tree::unPruneNextChild()
       {
         if ((*iter)->isPruned())
         {
-          if ((*iter)->prunefactor>bestfactor || bestchild==NULL)
+          if ((*iter)->gamma>bestfactor || bestchild==NULL)
           {
-            bestfactor=(*iter)->prunefactor;
+            bestfactor=(*iter)->gamma;
             bestchild=(*iter);
           }
         }
@@ -680,20 +684,23 @@ void Tree::expandLeaf()
     }
   }
   
-  if (params->uct_progressive_widening_enabled)
+  if (params->uct_progressive_widening_enabled || params->uct_progressive_bias_enabled)
   {
     params->engine->getFeatures()->setupCFGDist(startboard);
     
     for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
     {
-      float factor=params->engine->getFeatures()->getMoveGamma(startboard,(*iter)->getMove());
-      (*iter)->setPruneFactor(factor);
+      float gamma=params->engine->getFeatures()->getMoveGamma(startboard,(*iter)->getMove());
+      (*iter)->setFeatureGamma(gamma);
     }
     
     params->engine->getFeatures()->clearCFGDist();
     
-    this->pruneChildren();
-    this->unPruneNow(); //unprune first child
+    if (params->uct_progressive_widening_enabled)
+    {
+      this->pruneChildren();
+      this->unPruneNow(); //unprune first child
+    }
   }
   
   delete startboard;
@@ -752,5 +759,13 @@ void Tree::updateRAVE(Go::Color wincol,Go::BitBoard *blacklist,Go::BitBoard *whi
       }
     }
   }
+}
+
+float Tree::getProgressiveBias()
+{
+  float bias=params->uct_progressive_bias_h*gamma/(playouts+1);
+  if (params->uct_progressive_bias_scaled && !this->isRoot())
+    bias/=parent->getChildrenTotalFeatureGamma();
+  return bias;
 }
 

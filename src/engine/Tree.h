@@ -36,9 +36,14 @@ class Tree
     bool isPruned() { return pruned; };
     void setPruned(bool p) { pruned=p; };
     void pruneChildren();
-    void setPruneFactor(float p) { prunefactor=p; };
     void checkForUnPruning();
     void unPruneNow();
+    
+    void setFeatureGamma(float g) { gamma=g; if (!this->isRoot()) {parent->childrentotalgamma+=gamma;} };
+    float getFeatureGamma() { return gamma; };
+    float getChildrenTotalFeatureGamma() { return childrentotalgamma; };
+    
+    float getProgressiveBias();
     
     Tree *getChild(Go::Move move);
     float getPlayouts() { return playouts; };
@@ -84,7 +89,7 @@ class Tree
     bool terminaloverride;
     bool pruned;
     unsigned int prunedchildren;
-    float prunefactor;
+    float gamma,childrentotalgamma;
     float lastunprune,unprunenextchildat;
     float unprunebase;
     

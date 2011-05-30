@@ -64,6 +64,9 @@ class Parameters
     bool uct_progressive_widening_count_wins;
     float uct_points_bonus;
     float uct_length_bonus;
+    bool uct_progressive_bias_enabled;
+    float uct_progressive_bias_h;
+    bool uct_progressive_bias_scaled;
     
     float surewin_threshold;
     bool surewin_expected;

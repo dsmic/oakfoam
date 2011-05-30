@@ -2,15 +2,15 @@ TODO
 ------------------
 
 Now: (current focus)
+  tune and compare progressive biasing
+  implement superko in tree
   add results from first playout moves to tree
-  change from progressive widening to biasing
   move playout code out of engine
   change uct_* params to tree_*
   use RAVE together with Features for unpruning?
   larger patterns
 
 Soon: (before next major release)
-  implement superko in tree
   tune parameters
   try UCB1-TUNED formula (p.216(169) in SylvainGellyThesis)
   try a "global RAVE"
