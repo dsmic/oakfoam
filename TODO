@@ -3,6 +3,7 @@ TODO
 
 Now: (current focus)
   add results from first playout moves to tree
+  change from progressive widening to biasing
   move playout code out of engine
   change uct_* params to tree_*
   use RAVE together with Features for unpruning?
