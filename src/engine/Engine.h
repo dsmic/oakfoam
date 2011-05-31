@@ -28,7 +28,7 @@
 #define UCT_PROGRESSIVE_BIAS_H 1.00
 #define UCT_PROGRESSIVE_BIAS_SCALED true
 
-#define RULES_POSITIONAL_SUPERKO_ENABLED false
+#define RULES_POSITIONAL_SUPERKO_ENABLED true
 
 #define PLAYOUT_MAX_MOVE_FACTOR 3
 #define PLAYOUT_ATARI_ENABLED false
@@ -104,6 +104,8 @@ class Engine
     Pattern::ThreeByThreeTable *getPatternTable() { return patterntable; };
     Features *getFeatures() { return features; };
     Random *getRandom() { return &rand; };
+    Go::ZobristTable *getZobristTable() { return zobristtable; };
+    std::list<Go::ZobristHash> *getZobristHashHistory() { return hashhistory; };
     
     static void updateParameterWrapper(void *instance, std::string id)
     {
@@ -181,6 +183,7 @@ class Engine
     Book *book;
     std::list<Go::Move> *movehistory;
     Go::ZobristTable *zobristtable;
+    std::list<Go::ZobristHash> *hashhistory;
     
     void addGtpCommands();
     

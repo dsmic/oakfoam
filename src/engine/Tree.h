@@ -13,7 +13,7 @@ class Parameters;
 class Tree
 {
   public:
-    Tree(Parameters *prms, Go::Move mov = Go::Move(Go::EMPTY,Go::Move::RESIGN), Tree *p = NULL);
+    Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov = Go::Move(Go::EMPTY,Go::Move::RESIGN), Tree *p = NULL);
     ~Tree();
     
     Tree *getParent() { return parent; };
@@ -74,6 +74,9 @@ class Tree
     
     void allowContinuedPlay();
     
+    Go::ZobristHash getHash() { return hash; };
+    bool isSuperkoViolationWith(Go::ZobristHash h);
+    
     std::string toSGFString();
     
   private:
@@ -92,6 +95,8 @@ class Tree
     float gamma,childrentotalgamma;
     float lastunprune,unprunenextchildat;
     float unprunebase;
+    
+    Go::ZobristHash hash;
     
     void passPlayoutUp(bool win, Tree *source);
     

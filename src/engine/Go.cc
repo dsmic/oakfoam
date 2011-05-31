@@ -1629,6 +1629,9 @@ Go::ZobristHash Go::Board::getZobristHash(Go::ZobristTable *table)
 {
   Go::ZobristHash hash=0;
   
+  if (size!=table->getSize())
+    return 0;
+  
   for (int p=0;p<sizedata;p++)
   {
     if (this->getColor(p)!=Go::EMPTY && this->getColor(p)!=Go::OFFBOARD)

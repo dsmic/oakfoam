@@ -3,7 +3,6 @@ TODO
 
 Now: (current focus)
   tune and compare progressive biasing
-  implement superko in tree
   add results from first playout moves to tree
   move playout code out of engine
   change uct_* params to tree_*

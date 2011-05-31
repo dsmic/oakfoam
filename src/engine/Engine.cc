@@ -125,6 +125,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln)
   lastexplanation="";
   
   movehistory=new std::list<Go::Move>();
+  hashhistory=new std::list<Go::ZobristHash>();
   
   this->addGtpCommands();
   
@@ -145,6 +146,7 @@ Engine::~Engine()
     delete movetree;
   delete currentboard;
   delete movehistory;
+  delete hashhistory;
   delete params;
   delete time;
   delete book;
@@ -1844,6 +1846,7 @@ void Engine::makeMove(Go::Move move)
   
   currentboard->makeMove(move);
   movehistory->push_back(move);
+  hashhistory->push_back(currentboard->getZobristHash(zobristtable));
   if (params->uct_keep_subtree)
     this->chooseSubTree(move);
   else
@@ -1865,10 +1868,12 @@ void Engine::clearBoard()
   bool newsize=(zobristtable->getSize()!=boardsize);
   delete currentboard;
   delete movehistory;
+  delete hashhistory;
   if (newsize)
     delete zobristtable;
   currentboard = new Go::Board(boardsize);
   movehistory = new std::list<Go::Move>();
+  hashhistory=new std::list<Go::ZobristHash>();
   if (newsize)
     zobristtable=new Go::ZobristTable(params,boardsize);
   if (!params->uct_symmetry_use)
@@ -2347,9 +2352,9 @@ void Engine::clearMoveTree()
     delete movetree;
   
   if (currentboard->getMovesMade()>0)
-    movetree=new Tree(params,currentboard->getLastMove());
+    movetree=new Tree(params,currentboard->getZobristHash(zobristtable),currentboard->getLastMove());
   else
-    movetree=new Tree(params);
+    movetree=new Tree(params,0);
 }
 
 void Engine::chooseSubTree(Go::Move move)

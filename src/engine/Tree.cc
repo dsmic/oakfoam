@@ -5,7 +5,7 @@
 #include "Parameters.h"
 #include "Engine.h"
 
-Tree::Tree(Parameters *prms, Go::Move mov, Tree *p)
+Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p)
 {
   parent=p;
   children=new std::list<Tree*>();
@@ -27,6 +27,7 @@ Tree::Tree(Parameters *prms, Go::Move mov, Tree *p)
   unprunenextchildat=0;
   lastunprune=0;
   unprunebase=0;
+  hash=h;
   
   if (parent!=NULL)
   {
@@ -607,7 +608,7 @@ void Tree::expandLeaf()
   Go::Color col=startboard->nextToMove();
   
   bool winnow=Go::Board::isWinForColor(col,startboard->score()-params->engine->getKomi());
-  Tree *nmt=new Tree(params,Go::Move(col,Go::Move::PASS));
+  Tree *nmt=new Tree(params,startboard->getZobristHash(params->engine->getZobristTable()),Go::Move(col,Go::Move::PASS));
   if (winnow)
     nmt->addPriorWins(1);
   #if UCT_PASS_DETER>0
@@ -624,17 +625,50 @@ void Tree::expandLeaf()
     {
       if (validmovesbitboard->get(p))
       {
-        Tree *nmt=new Tree(params,Go::Move(col,p));
-        if (params->uct_pattern_prior>0 && !startboard->weakEye(col,p))
+        bool superkoviolation=false;
+        if (params->rules_positional_superko_enabled)
         {
-          unsigned int pattern=Pattern::ThreeByThree::makeHash(startboard,p);
-          if (col==Go::WHITE)
-            pattern=Pattern::ThreeByThree::invert(pattern);
-          if (params->engine->getPatternTable()->isPattern(pattern))
-            nmt->addPriorWins(params->uct_pattern_prior);
+          Go::Board *thisboard=startboard->copy();
+          thisboard->makeMove(Go::Move(col,p));
+          Go::ZobristHash hash=thisboard->getZobristHash(params->engine->getZobristTable());
+          delete thisboard;
+          
+          superkoviolation=this->isSuperkoViolationWith(hash);
+          
+          if (!superkoviolation)
+          {
+            std::list<Go::ZobristHash> *hashhistory=params->engine->getZobristHashHistory();
+            for(std::list<Go::ZobristHash>::iterator iter=hashhistory->begin();iter!=hashhistory->end();++iter)
+            {
+              //fprintf(stderr,"0x%016llx 0x%016llx\n",hash,(*iter));
+              if ((*iter)==hash)
+              {
+                superkoviolation=true;
+                break;
+              }
+            }
+          }
         }
-        nmt->addRAVEWins(params->rave_init_wins);
-        this->addChild(nmt);
+        
+        //if (superkoviolation)
+        //  fprintf(stderr,"superko violation avoided\n");
+        
+        if (!superkoviolation)
+        {
+          Tree *nmt=new Tree(params,hash,Go::Move(col,p));
+          
+          if (params->uct_pattern_prior>0 && !startboard->weakEye(col,p))
+          {
+            unsigned int pattern=Pattern::ThreeByThree::makeHash(startboard,p);
+            if (col==Go::WHITE)
+              pattern=Pattern::ThreeByThree::invert(pattern);
+            if (params->engine->getPatternTable()->isPattern(pattern))
+              nmt->addPriorWins(params->uct_pattern_prior);
+          }
+          nmt->addRAVEWins(params->rave_init_wins);
+          
+          this->addChild(nmt);
+        }
       }
     }
     
@@ -767,5 +801,16 @@ float Tree::getProgressiveBias()
   if (params->uct_progressive_bias_scaled && !this->isRoot())
     bias/=parent->getChildrenTotalFeatureGamma();
   return bias;
+}
+
+bool Tree::isSuperkoViolationWith(Go::ZobristHash h)
+{
+  //fprintf(stderr,"0x%016llx 0x%016llx\n",h,hash);
+  if (hash==h)
+    return true;
+  else if (!this->isRoot())
+    return parent->isSuperkoViolationWith(h);
+  else
+    return false;
 }
 
