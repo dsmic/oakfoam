@@ -38,9 +38,10 @@ Soon: (before next major release)
   check for Mogo patterns quickly?
   reduce expand_after?
   tune fillboard's N
-  support terminal jigo in tree
+  support terminal jigo in tree?
   use Benson algo in tree and playouts
   use Criticality as a feature
+  look into transposition table-like structure
 
 Later: (at some point)
   make sure install works and is described somewhere
