@@ -186,7 +186,23 @@ Go::Board::Board(int s)
   
   blackvalidmoves=new Go::BitBoard(size);
   whitevalidmoves=new Go::BitBoard(size);
-  this->refreshValidMoves();
+  blackvalidmovecount=0;
+  whitevalidmovecount=0;
+  for (int p=0;p<sizedata;p++)
+  {
+    if (this->getColor(p)!=Go::OFFBOARD)
+    {
+      blackvalidmoves->set(p);
+      blackvalidmovecount++;
+      whitevalidmoves->set(p);
+      whitevalidmovecount++;
+    }
+    else
+    {
+      blackvalidmoves->clear(p);
+      whitevalidmoves->clear(p);
+    }
+  }
   
   symmetryupdated=true;
   currentsymmetry=Go::Board::FULL;
