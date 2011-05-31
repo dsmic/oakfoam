@@ -6,8 +6,11 @@
 #include <boost/pool/pool.hpp>
 #include <boost/pool/pool_alloc.hpp>
 #include <boost/pool/object_pool.hpp>
+#include <boost/cstdint.hpp>
 //from "Features.h":
 class Features;
+//from "Parameters.h":
+class Parameters;
 
 #define SYMMETRY_ONLYDEGRAGE false
 
@@ -222,6 +225,25 @@ namespace Go
       int pos;
   };
   
+  typedef boost::uint_fast64_t ZobristHash;
+  
+  class ZobristTable
+  {
+    public:
+      ZobristTable(Parameters *prms, int sz);
+      ~ZobristTable();
+      
+      int getSize() { return size; };
+      Go::ZobristHash getHash(Go::Color col, int pos);
+    
+    private:
+      Parameters *params;
+      int size,sizedata;
+      Go::ZobristHash *blackhashes,*whitehashes;
+      
+      Go::ZobristHash getRandomHash();
+  };
+  
   class Group;
   
   class Vertex
@@ -379,6 +401,8 @@ namespace Go
       int getCircularDistance(int pos1, int pos2);
       Go::ObjectBoard<int> *getCFGFrom(int pos, int max=0);
       int getThreeEmptyGroupCenterFrom(int pos);
+      
+      Go::ZobristHash getZobristHash(Go::ZobristTable *table);
     
     private:
       int size;

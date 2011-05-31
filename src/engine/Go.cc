@@ -3,6 +3,8 @@
 #include <cstdio>
 #include <sstream>
 #include "Features.h"
+#include "Parameters.h"
+#include "Engine.h"
 
 Go::BitBoard::BitBoard(int s)
 {
@@ -1621,5 +1623,57 @@ void Go::Board::countDiagonalColors(int pos, int &empty, int &black, int &white,
         break;
     }
   });
+}
+
+Go::ZobristHash Go::Board::getZobristHash(Go::ZobristTable *table)
+{
+  Go::ZobristHash hash=0;
+  
+  for (int p=0;p<sizedata;p++)
+  {
+    if (this->getColor(p)!=Go::EMPTY && this->getColor(p)!=Go::OFFBOARD)
+    {
+      hash^=table->getHash(this->getColor(p),p);
+      //fprintf(stderr,"0x%016llx\n",hash);
+    }
+  }
+  
+  return hash;
+}
+
+Go::ZobristTable::ZobristTable(Parameters *prms, int sz)
+{
+  params=prms;
+  size=sz;
+  sizedata=1+(sz+1)*(sz+2);
+  blackhashes=new Go::ZobristHash[sizedata];
+  whitehashes=new Go::ZobristHash[sizedata];
+  
+  for (int i=0;i<sizedata;i++)
+  {
+    blackhashes[i]=this->getRandomHash();
+    whitehashes[i]=this->getRandomHash();
+  }
+}
+
+Go::ZobristTable::~ZobristTable()
+{
+  delete[] blackhashes;
+  delete[] whitehashes;
+}
+
+Go::ZobristHash Go::ZobristTable::getRandomHash()
+{
+  return ((Go::ZobristHash)params->engine->getRandom()->getRandomInt() << 32) | ((Go::ZobristHash)params->engine->getRandom()->getRandomInt());
+}
+
+Go::ZobristHash Go::ZobristTable::getHash(Go::Color col, int pos)
+{
+  if (col==Go::BLACK)
+    return blackhashes[pos];
+  else if (col==Go::WHITE)
+    return whitehashes[pos];
+  else
+    return 0;
 }
 

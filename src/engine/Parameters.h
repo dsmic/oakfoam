@@ -5,6 +5,8 @@
 #include <list>
 //from "Engine.h":
 class Engine;
+//from "Random.h":
+class Random;
 #include "../gtp/Gtp.h"
 
 class Parameters
@@ -67,6 +69,8 @@ class Parameters
     bool uct_progressive_bias_enabled;
     float uct_progressive_bias_h;
     bool uct_progressive_bias_scaled;
+    
+    bool rules_positional_superko_enabled;
     
     float surewin_threshold;
     bool surewin_expected;

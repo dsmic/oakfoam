@@ -24,6 +24,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln)
   currentboard=new Go::Board(boardsize);
   komi=5.5;
   
+  zobristtable=new Go::ZobristTable(params,boardsize);
+  
   params->addParameter("other","rand_seed",&(params->rand_seed),seed,&Engine::updateParameterWrapper,this);
   
   std::list<std::string> *mpoptions=new std::list<std::string>();
@@ -83,6 +85,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln)
   
   params->addParameter("mcts","resign_ratio_threshold",&(params->resign_ratio_threshold),RESIGN_RATIO_THRESHOLD);
   params->addParameter("mcts","resign_move_factor_threshold",&(params->resign_move_factor_threshold),RESIGN_MOVE_FACTOR_THRESHOLD);
+  
+  params->addParameter("mcts","rules_positional_superko_enabled",&(params->rules_positional_superko_enabled),RULES_POSITIONAL_SUPERKO_ENABLED);
   
   params->addParameter("time","time_k",&(params->time_k),TIME_K);
   params->addParameter("time","time_buffer",&(params->time_buffer),TIME_BUFFER);
@@ -144,6 +148,7 @@ Engine::~Engine()
   delete params;
   delete time;
   delete book;
+  delete zobristtable;
 }
 
 void Engine::postCmdLineArgs(bool book_autoload)
@@ -265,16 +270,11 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("bookload",this,&Engine::gtpBookLoad);
   gtpe->addFunctionCommand("booksave",this,&Engine::gtpBookSave);
   
+  gtpe->addFunctionCommand("showcurrenthash",this,&Engine::gtpShowCurrentHash);
+  
   //gtpe->addAnalyzeCommand("final_score","Final Score","string");
   //gtpe->addAnalyzeCommand("showboard","Show Board","string");
   gtpe->addAnalyzeCommand("boardstats","Board Stats","string");
-  
-  gtpe->addAnalyzeCommand("bookshow","Book Show","gfx");
-  gtpe->addAnalyzeCommand("bookadd %%p","Book Add","none");
-  gtpe->addAnalyzeCommand("bookremove %%p","Book Remove","none");
-  gtpe->addAnalyzeCommand("bookclear","Book Clear","none");
-  gtpe->addAnalyzeCommand("bookload %%r","Book Load","none");
-  gtpe->addAnalyzeCommand("booksave %%w","Book Save","none");
   
   gtpe->addAnalyzeCommand("showsymmetrytransforms","Show Symmetry Transforms","sboard");
   //gtpe->addAnalyzeCommand("showliberties","Show Liberties","sboard");
@@ -285,7 +285,7 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("listcircpatternsat %%p","List Circular Patterns At","string");
   gtpe->addAnalyzeCommand("listadjacentgroupsof %%p","List Adjacent Groups Of","string");
   gtpe->addAnalyzeCommand("showpatternmatches","Show Pattern Matches","sboard");
-  gtpe->addAnalyzeCommand("shownakadecenters","Show Nakade Centers","sboard");
+  //gtpe->addAnalyzeCommand("shownakadecenters","Show Nakade Centers","sboard");
   gtpe->addAnalyzeCommand("featurematchesat %%p","Feature Matches At","string");
   gtpe->addAnalyzeCommand("featureprobdistribution","Feature Probability Distribution","cboard");
   gtpe->addAnalyzeCommand("loadfeaturegammas %%r","Load Feature Gammas","none");
@@ -293,13 +293,25 @@ void Engine::addGtpCommands()
   //gtpe->addAnalyzeCommand("loadpatterns %%r","Load Patterns","none");
   //gtpe->addAnalyzeCommand("clearpatterns","Clear Patterns","none");
   gtpe->addAnalyzeCommand("doboardcopy","Do Board Copy","none");
+  gtpe->addAnalyzeCommand("showcurrenthash","Show Current Hash","string");
+  
   gtpe->addAnalyzeCommand("param mcts","Parameters (MCTS)","param");
   gtpe->addAnalyzeCommand("param time","Parameters (Time)","param");
   gtpe->addAnalyzeCommand("param other","Parameters (Other)","param");
   gtpe->addAnalyzeCommand("donplayouts %%s","Do N Playouts","none");
   gtpe->addAnalyzeCommand("donplayouts 1","Do 1 Playout","none");
-  gtpe->addAnalyzeCommand("donplayouts 1000","Do 1000 Playouts","none");
+  gtpe->addAnalyzeCommand("donplayouts 100","Do 100 Playouts","none");
+  gtpe->addAnalyzeCommand("donplayouts 1000","Do 1k Playouts","none");
+  gtpe->addAnalyzeCommand("donplayouts 10000","Do 10k Playouts","none");
+  gtpe->addAnalyzeCommand("donplayouts 100000","Do 100k Playouts","none");
   gtpe->addAnalyzeCommand("outputsgf %%w","Output SGF","none");
+  
+  gtpe->addAnalyzeCommand("bookshow","Book Show","gfx");
+  gtpe->addAnalyzeCommand("bookadd %%p","Book Add","none");
+  gtpe->addAnalyzeCommand("bookremove %%p","Book Remove","none");
+  gtpe->addAnalyzeCommand("bookclear","Book Clear","none");
+  gtpe->addAnalyzeCommand("bookload %%r","Book Load","none");
+  gtpe->addAnalyzeCommand("booksave %%w","Book Save","none");
 }
 
 void Engine::gtpBoardSize(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
@@ -1240,6 +1252,15 @@ void Engine::gtpDescribeEngine(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
   gtpe->getOutput()->endResponse(true);
 }
 
+void Engine::gtpShowCurrentHash(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printf("Current hash: 0x%016llx",me->currentboard->getZobristHash(me->zobristtable));
+  gtpe->getOutput()->endResponse();
+}
+
 void Engine::gtpBookShow(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
@@ -1841,10 +1862,15 @@ void Engine::setBoardSize(int s)
 
 void Engine::clearBoard()
 {
+  bool newsize=(zobristtable->getSize()!=boardsize);
   delete currentboard;
   delete movehistory;
+  if (newsize)
+    delete zobristtable;
   currentboard = new Go::Board(boardsize);
   movehistory = new std::list<Go::Move>();
+  if (newsize)
+    zobristtable=new Go::ZobristTable(params,boardsize);
   if (!params->uct_symmetry_use)
     currentboard->turnSymmetryOff();
   this->clearMoveTree();

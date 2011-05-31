@@ -7,16 +7,16 @@
 #include <boost/random/uniform_real.hpp>
 #include <boost/random/variate_generator.hpp>
 
-Random::Random(long unsigned int s)
+Random::Random(unsigned long s)
 {
   seed=s;
 }
 
-long unsigned int Random::getRandomInt()
+unsigned long Random::getRandomInt()
 {
   //Park-Miller "Minimal Standard" PRNG
   
-  long unsigned int hi, lo;
+  unsigned long hi, lo;
   
   lo= 16807 * (seed & 0xffff);
   hi= 16807 * (seed >> 16);
@@ -29,13 +29,13 @@ long unsigned int Random::getRandomInt()
   return (seed=lo);
 }
 
-long unsigned int Random::getRandomInt(long unsigned int max)
+unsigned long Random::getRandomInt(unsigned long max)
 {
   return this->getRandomInt() % max; //XXX: not uniform, but good enough
 }
 
 float Random::getRandomReal()
 {
-  return (float)this->getRandomInt() / ((long unsigned int)(1) << 31);
+  return (float)this->getRandomInt() / ((unsigned long)(1) << 31);
 }
 

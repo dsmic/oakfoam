@@ -541,7 +541,7 @@ Tree *Tree::getUrgentChild()
       float urgency;
       
       if ((*iter)->getPlayouts()==0 && (*iter)->getRAVEPlayouts()==0 && (*iter)->getPriorPlayouts()==0)
-        urgency=(*iter)->getUrgency()+(params->engine->getRandom().getRandomReal()/1000);
+        urgency=(*iter)->getUrgency()+(params->engine->getRandom()->getRandomReal()/1000);
       else
       {
         urgency=(*iter)->getUrgency();

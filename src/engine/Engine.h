@@ -28,6 +28,8 @@
 #define UCT_PROGRESSIVE_BIAS_H 1.00
 #define UCT_PROGRESSIVE_BIAS_SCALED true
 
+#define RULES_POSITIONAL_SUPERKO_ENABLED false
+
 #define PLAYOUT_MAX_MOVE_FACTOR 3
 #define PLAYOUT_ATARI_ENABLED false
 #define PLAYOUT_LASTCAPTURE_ENABLED true
@@ -101,7 +103,7 @@ class Engine
     void setKomi(float k) { komi=k; };
     Pattern::ThreeByThreeTable *getPatternTable() { return patterntable; };
     Features *getFeatures() { return features; };
-    Random getRandom() { return rand; };
+    Random *getRandom() { return &rand; };
     
     static void updateParameterWrapper(void *instance, std::string id)
     {
@@ -158,6 +160,8 @@ class Engine
     static void gtpBookClear(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpBookLoad(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpBookSave(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    
+    static void gtpShowCurrentHash(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
   
   private:
     Gtp::Engine *gtpe;
@@ -176,6 +180,7 @@ class Engine
     Pattern::CircularDictionary *circdict;
     Book *book;
     std::list<Go::Move> *movehistory;
+    Go::ZobristTable *zobristtable;
     
     void addGtpCommands();
     

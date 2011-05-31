@@ -5,14 +5,14 @@ class Random
 {
   public:
     Random() {};
-    Random(long unsigned int s);
+    Random(unsigned long s);
     
-    long unsigned int getRandomInt();
-    long unsigned int getRandomInt(long unsigned int max);
+    unsigned long getRandomInt();
+    unsigned long getRandomInt(unsigned long max);
     float getRandomReal();
   
   private:
-    long unsigned int seed;
+    unsigned long seed;
 };
 
 #endif
