@@ -6,7 +6,6 @@ Now: (current focus)
   add results from first playout moves to tree
   move playout code out of engine
   change uct_* params to tree_*
-  use RAVE together with Features for unpruning?
   larger patterns
 
 Soon: (before next major release)
@@ -27,14 +26,11 @@ Soon: (before next major release)
   keep track of board hashes incrementally
   speedup features in playouts
   try LGRF-1/2 with a variable queue
-  progressive widening occurs related to "factor" (features)
   setting to filter boardsize, time_settings, etc. for kgs
   setting to use a total number of playouts per game for time testing
   patterns only near last move?
   fillboard not on 1st/2nd line?
-  tune how much progressive widening can depend on winrate
   make sure scoring at end of kgs ranked game works (opponent can't "cheat")
-  check for Mogo patterns quickly?
   reduce expand_after?
   tune fillboard's N
   support terminal jigo in tree?
