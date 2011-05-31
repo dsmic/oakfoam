@@ -244,6 +244,34 @@ namespace Go
       Go::ZobristHash getRandomHash();
   };
   
+  class ZobristTree
+  {
+    public:
+      ZobristTree();
+      ~ZobristTree();
+      
+      void addHash(Go::ZobristHash hash);
+      bool hasHash(Go::ZobristHash hash);
+    
+    private:
+      class Node
+      {
+        public:
+          Node(Go::ZobristHash h);
+          ~Node();
+          
+          Go::ZobristHash getHash() { return hash; };
+          void add(Go::ZobristHash h);
+          Go::ZobristTree::Node *find(Go::ZobristHash h);
+        
+        private:
+          Go::ZobristHash hash;
+          Go::ZobristTree::Node *left,*right;
+      };
+      
+      Go::ZobristTree::Node *tree;
+  };
+  
   class Group;
   
   class Vertex

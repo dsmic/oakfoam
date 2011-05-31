@@ -20,7 +20,7 @@ dist_noinst_SCRIPTS = autogen.sh
 .PHONY: oakfoam-profiled
 oakfoam-profiled:
 	@make clean all CXXFLAGS="$(CXXFLAGS) -fprofile-generate -march=native"
-	./oakfoam -c profile.gtp
+	./oakfoam --nobook -c profile.gtp
 	@make clean all clean-profiled CXXFLAGS="$(CXXFLAGS) -fprofile-use -march=native"
 
 .PHONY: clean-profiled

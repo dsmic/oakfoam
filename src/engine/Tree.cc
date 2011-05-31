@@ -636,18 +636,7 @@ void Tree::expandLeaf()
           superkoviolation=this->isSuperkoViolationWith(hash);
           
           if (!superkoviolation)
-          {
-            std::list<Go::ZobristHash> *hashhistory=params->engine->getZobristHashHistory();
-            for(std::list<Go::ZobristHash>::iterator iter=hashhistory->begin();iter!=hashhistory->end();++iter)
-            {
-              //fprintf(stderr,"0x%016llx 0x%016llx\n",hash,(*iter));
-              if ((*iter)==hash)
-              {
-                superkoviolation=true;
-                break;
-              }
-            }
-          }
+            superkoviolation=params->engine->getZobristHashTree()->hasHash(hash);
         }
         
         //if (superkoviolation)

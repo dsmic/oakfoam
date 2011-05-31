@@ -105,7 +105,7 @@ class Engine
     Features *getFeatures() { return features; };
     Random *getRandom() { return &rand; };
     Go::ZobristTable *getZobristTable() { return zobristtable; };
-    std::list<Go::ZobristHash> *getZobristHashHistory() { return hashhistory; };
+    Go::ZobristTree *getZobristHashTree() { return hashtree; };
     
     static void updateParameterWrapper(void *instance, std::string id)
     {
@@ -183,7 +183,7 @@ class Engine
     Book *book;
     std::list<Go::Move> *movehistory;
     Go::ZobristTable *zobristtable;
-    std::list<Go::ZobristHash> *hashhistory;
+    Go::ZobristTree *hashtree;
     
     void addGtpCommands();
     

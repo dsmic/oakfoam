@@ -1680,3 +1680,78 @@ Go::ZobristHash Go::ZobristTable::getHash(Go::Color col, int pos)
     return 0;
 }
 
+Go::ZobristTree::ZobristTree()
+{
+  tree=new Go::ZobristTree::Node(0);
+}
+
+Go::ZobristTree::~ZobristTree()
+{
+  delete tree;
+}
+
+void Go::ZobristTree::addHash(Go::ZobristHash hash)
+{
+  tree->add(hash);
+}
+
+bool Go::ZobristTree::hasHash(Go::ZobristHash hash)
+{
+  return (tree->find(hash)!=NULL);
+}
+
+Go::ZobristTree::Node::Node(Go::ZobristHash h)
+{
+  hash=h;
+  left=NULL;
+  right=NULL;
+}
+
+Go::ZobristTree::Node::~Node()
+{
+  if (left!=NULL)
+    delete left;
+  if (right!=NULL)
+    delete right;
+}
+
+void Go::ZobristTree::Node::add(Go::ZobristHash h)
+{
+  if (h==hash)
+    return;
+  else if (h<hash)
+  {
+    if (left==NULL)
+      left=new Go::ZobristTree::Node(h);
+    else
+      left->add(h);
+  }
+  else
+  {
+    if (right==NULL)
+      right=new Go::ZobristTree::Node(h);
+    else
+      right->add(h);
+  }
+}
+
+Go::ZobristTree::Node *Go::ZobristTree::Node::find(Go::ZobristHash h)
+{
+  if (h==hash)
+    return this;
+  else if (h<hash)
+  {
+    if (left==NULL)
+      return NULL;
+    else
+      return left->find(h);
+  }
+  else
+  {
+    if (right==NULL)
+      return NULL;
+    else
+      return right->find(h);
+  }
+}
+
