@@ -7,6 +7,7 @@ Now: (current focus)
   move playout code out of engine
   change uct_* params to tree_*
   larger patterns
+  speedup superko detection when expand_after is smaller (<50)
 
 Soon: (before next major release)
   tune parameters
