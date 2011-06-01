@@ -39,9 +39,10 @@ class Tree
     void checkForUnPruning();
     void unPruneNow();
     
-    void setFeatureGamma(float g) { gamma=g; if (!this->isRoot()) {parent->childrentotalgamma+=gamma;} };
+    void setFeatureGamma(float g);
     float getFeatureGamma() { return gamma; };
     float getChildrenTotalFeatureGamma() { return childrentotalgamma; };
+    float getMaxChildFeatureGamma() { return maxchildgamma; };
     
     float getProgressiveBias();
     
@@ -92,7 +93,7 @@ class Tree
     bool terminaloverride;
     bool pruned;
     unsigned int prunedchildren;
-    float gamma,childrentotalgamma;
+    float gamma,childrentotalgamma,maxchildgamma;
     float lastunprune,unprunenextchildat;
     float unprunebase;
     

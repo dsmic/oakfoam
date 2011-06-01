@@ -24,6 +24,7 @@ Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p)
   prunedchildren=0;
   gamma=0;
   childrentotalgamma=0;
+  maxchildgamma=0;
   unprunenextchildat=0;
   lastunprune=0;
   unprunebase=0;
@@ -789,6 +790,8 @@ float Tree::getProgressiveBias()
   float bias=params->uct_progressive_bias_h*gamma/(playouts+1);
   if (params->uct_progressive_bias_scaled && !this->isRoot())
     bias/=parent->getChildrenTotalFeatureGamma();
+  if (params->uct_progressive_bias_relative && !this->isRoot())
+    bias/=parent->getMaxChildFeatureGamma();
   return bias;
 }
 
@@ -801,5 +804,16 @@ bool Tree::isSuperkoViolationWith(Go::ZobristHash h)
     return parent->isSuperkoViolationWith(h);
   else
     return false;
+}
+
+void Tree::setFeatureGamma(float g)
+{
+  gamma=g;
+  if (!this->isRoot())
+  {
+    parent->childrentotalgamma+=gamma;
+    if (gamma>(parent->maxchildgamma))
+      parent->maxchildgamma=gamma;
+  }
 }
 

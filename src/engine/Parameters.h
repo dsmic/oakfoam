@@ -69,6 +69,7 @@ class Parameters
     bool uct_progressive_bias_enabled;
     float uct_progressive_bias_h;
     bool uct_progressive_bias_scaled;
+    bool uct_progressive_bias_relative;
     
     bool rules_positional_superko_enabled;
     
