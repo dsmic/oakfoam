@@ -72,6 +72,7 @@ class Parameters
     bool uct_progressive_bias_relative;
     
     bool rules_positional_superko_enabled;
+    bool rules_superko_top_ply;
     
     float surewin_threshold;
     bool surewin_expected;

@@ -72,6 +72,7 @@ class Tree
     Tree *getRobustChild(bool descend=false);
     Tree *getUrgentChild();
     void updateRAVE(Go::Color wincol,Go::BitBoard *blacklist,Go::BitBoard *whitelist);
+    void prunePossibleSuperkoViolations();
     
     void allowContinuedPlay();
     

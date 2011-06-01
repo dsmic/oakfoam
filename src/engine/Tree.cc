@@ -627,7 +627,7 @@ void Tree::expandLeaf()
       if (validmovesbitboard->get(p))
       {
         bool superkoviolation=false;
-        if (params->rules_positional_superko_enabled)
+        if (params->rules_positional_superko_enabled && !params->rules_superko_top_ply)
         {
           Go::Board *thisboard=startboard->copy();
           thisboard->makeMove(Go::Move(col,p));
@@ -814,6 +814,44 @@ void Tree::setFeatureGamma(float g)
     parent->childrentotalgamma+=gamma;
     if (gamma>(parent->maxchildgamma))
       parent->maxchildgamma=gamma;
+  }
+}
+
+void Tree::prunePossibleSuperkoViolations()
+{
+  if (params->rules_positional_superko_enabled && params->rules_superko_top_ply)
+  {
+    std::list<Go::Move> startmoves=this->getMovesFromRoot();
+    Go::Board *startboard=params->engine->getCurrentBoard()->copy();
+    
+    for(std::list<Go::Move>::iterator iter=startmoves.begin();iter!=startmoves.end();++iter)
+    {
+      startboard->makeMove((*iter));
+    }
+    
+    for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
+    {
+      Go::Board *thisboard=startboard->copy();
+      thisboard->makeMove((*iter)->getMove());
+      Go::ZobristHash hash=thisboard->getZobristHash(params->engine->getZobristTable());
+      delete thisboard;
+      
+      bool superkoviolation=this->isSuperkoViolationWith(hash);
+      
+      if (!superkoviolation)
+        superkoviolation=params->engine->getZobristHashTree()->hasHash(hash);
+      
+      if (superkoviolation)
+      {
+        std::list<Tree*>::iterator tmpiter=iter;
+        Tree *tmptree=(*iter);
+        --iter;
+        children->erase(tmpiter);
+        delete tmptree;
+      }
+    }
+    
+    delete startboard;
   }
 }
 
