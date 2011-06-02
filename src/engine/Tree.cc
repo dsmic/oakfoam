@@ -831,23 +831,26 @@ void Tree::prunePossibleSuperkoViolations()
     
     for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
     {
-      Go::Board *thisboard=startboard->copy();
-      thisboard->makeMove((*iter)->getMove());
-      Go::ZobristHash hash=thisboard->getZobristHash(params->engine->getZobristTable());
-      delete thisboard;
-      
-      bool superkoviolation=this->isSuperkoViolationWith(hash);
-      
-      if (!superkoviolation)
-        superkoviolation=params->engine->getZobristHashTree()->hasHash(hash);
-      
-      if (superkoviolation)
+      if ((*iter)->getMove().isNormal())
       {
-        std::list<Tree*>::iterator tmpiter=iter;
-        Tree *tmptree=(*iter);
-        --iter;
-        children->erase(tmpiter);
-        delete tmptree;
+        Go::Board *thisboard=startboard->copy();
+        thisboard->makeMove((*iter)->getMove());
+        Go::ZobristHash hash=thisboard->getZobristHash(params->engine->getZobristTable());
+        delete thisboard;
+        
+        bool superkoviolation=this->isSuperkoViolationWith(hash);
+        
+        if (!superkoviolation)
+          superkoviolation=params->engine->getZobristHashTree()->hasHash(hash);
+        
+        if (superkoviolation)
+        {
+          std::list<Tree*>::iterator tmpiter=iter;
+          Tree *tmptree=(*iter);
+          --iter;
+          children->erase(tmpiter);
+          delete tmptree;
+        }
       }
     }
     
