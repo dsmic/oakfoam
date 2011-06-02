@@ -3,10 +3,14 @@ TODO
 
 Now: (current focus)
   tune and compare progressive biasing
+  try progressive widening and biasing combined
   add results from first playout moves to tree
   move playout code out of engine
   change uct_* params to tree_*
   larger patterns
+  do a playout eye rule eval
+  look at Feasibility (Baier Hendrik)
+  look at Dynamic Komi (Baier Hendrik)
 
 Soon: (before next major release)
   tune parameters
