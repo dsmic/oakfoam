@@ -80,21 +80,30 @@ void Benson::solve()
     }
   }
   
-  /*for(std::list<Benson::Region*>::iterator iter=blackregions.begin();iter!=blackregions.end();++iter) 
+  for(std::list<Benson::Region*>::iterator iter=blackregions.begin();iter!=blackregions.end();++iter) 
   {
-    for(std::list<int>::iterator iter2=(*iter)->positions.begin();iter2!=(*iter)->positions.end();++iter2) 
+    if ((*iter)->isvital && !(*iter)->hasstones)
     {
-      safepositions->set((*iter2),Go::BLACK);
+      for(std::list<int>::iterator iter2=(*iter)->positions.begin();iter2!=(*iter)->positions.end();++iter2) 
+      {
+        safepositions->set((*iter2),Go::BLACK);
+      }
     }
   }
   
   for(std::list<Benson::Region*>::iterator iter=whiteregions.begin();iter!=whiteregions.end();++iter) 
   {
-    for(std::list<int>::iterator iter2=(*iter)->positions.begin();iter2!=(*iter)->positions.end();++iter2) 
+    if ((*iter)->isvital && !(*iter)->hasstones)
     {
-      safepositions->set((*iter2),Go::WHITE);
+      for(std::list<int>::iterator iter2=(*iter)->positions.begin();iter2!=(*iter)->positions.end();++iter2) 
+      {
+        if (safepositions->get((*iter2))==Go::EMPTY)
+          safepositions->set((*iter2),Go::WHITE);
+        else
+          safepositions->set((*iter2),Go::EMPTY);
+      }
     }
-  }*/
+  }
 }
 
 void Benson::updateChainsAndRegions()
@@ -121,6 +130,8 @@ void Benson::updateChainsAndRegions()
     {
       Benson::Region *region=new Benson::Region();
       region->col=Go::BLACK;
+      region->isvital=false;
+      region->hasstones=false;
       this->spreadRegion(region,p,usedflags);
       blackregions.push_back(region);
     }
@@ -133,6 +144,8 @@ void Benson::updateChainsAndRegions()
     {
       Benson::Region *region=new Benson::Region();
       region->col=Go::WHITE;
+      region->isvital=false;
+      region->hasstones=false;
       this->spreadRegion(region,p,usedflags);
       whiteregions.push_back(region);
     }
@@ -148,6 +161,8 @@ void Benson::spreadRegion(Benson::Region *region, int pos, Go::BitBoard *usedfla
   
   usedflags->set(pos);
   region->positions.push_back(pos);
+  if (board->getColor(pos)!=Go::EMPTY)
+    region->hasstones=true;
   
   foreach_adjacent(pos,p,{
     if (board->getColor(p)==region->col)
@@ -176,6 +191,8 @@ bool Benson::isVitalTo(Benson::Region *region, Benson::Chain *chain)
     }
   }
   
+  region->isvital=true;
+  
   return true;
 }
 
@@ -183,9 +200,10 @@ void Benson::updateVitalRegions()
 {
   for(std::list<Benson::Region*>::iterator iter=blackregions.begin();iter!=blackregions.end();++iter) 
   {
+    (*iter)->isvital=false;
     for(std::list<Benson::Chain*>::iterator iter2=blackchains.begin();iter2!=blackchains.end();++iter2) 
     {
-      if ((*iter2)->vitalregions<2 && this->isVitalTo((*iter),(*iter2)))
+      if (this->isVitalTo((*iter),(*iter2)))
       {
         (*iter2)->vitalregions++;
         //fprintf(stderr,"vital++: %d %s\n",(*iter2)->vitalregions,Go::Position::pos2string((*iter2)->group->getPosition(),size).c_str());
@@ -195,9 +213,10 @@ void Benson::updateVitalRegions()
   
   for(std::list<Benson::Region*>::iterator iter=whiteregions.begin();iter!=whiteregions.end();++iter) 
   {
+    (*iter)->isvital=false;
     for(std::list<Benson::Chain*>::iterator iter2=whitechains.begin();iter2!=whitechains.end();++iter2) 
     {
-      if ((*iter2)->vitalregions<2 && this->isVitalTo((*iter),(*iter2)))
+      if (this->isVitalTo((*iter),(*iter2)))
       {
         (*iter2)->vitalregions++;
         //fprintf(stderr,"vital++: %d %s\n",(*iter2)->vitalregions,Go::Position::pos2string((*iter2)->group->getPosition(),size).c_str());

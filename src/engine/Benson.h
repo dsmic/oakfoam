@@ -30,6 +30,8 @@ class Benson
       Go::Color col;
       std::list<int> positions;
       std::list<int> adjpositions;
+      bool isvital;
+      bool hasstones;
     };
     
     std::list<Benson::Chain*> blackchains,whitechains;
