@@ -79,6 +79,7 @@
 #include "Features.h"
 #include "Time.h"
 #include "Book.h"
+#include "Playout.h"
 #include "../gtp/Gtp.h"
 
 class Engine
@@ -109,6 +110,7 @@ class Engine
     Random *getRandom() { return &rand; };
     Go::ZobristTable *getZobristTable() { return zobristtable; };
     Go::ZobristTree *getZobristHashTree() { return hashtree; };
+    Gtp::Engine *getGtpEngine() { return gtpe; };
     
     static void updateParameterWrapper(void *instance, std::string id)
     {
@@ -181,17 +183,15 @@ class Engine
     std::string lastexplanation;
     Parameters *params;
     Features *features;
-    int *lgrf1,*lgrf2;
     Pattern::CircularDictionary *circdict;
     Book *book;
     std::list<Go::Move> *movehistory;
     Go::ZobristTable *zobristtable;
     Go::ZobristTree *hashtree;
+    Playout *playout;
     
     void addGtpCommands();
     
-    void randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, int *posarray);
-    void randomPlayout(Go::Board *board, std::list<Go::Move> &startmoves, Go::Color colfirst, Go::BitBoard *firstlist, Go::BitBoard *secondlist);
     void clearMoveTree();
     void chooseSubTree(Go::Move move);
     
@@ -201,16 +201,6 @@ class Engine
     void displayPlayoutLiveGfx(int totalplayouts=-1, bool livegfx=true);
     
     void allowContinuedPlay();
-    
-    void setupLGRF();
-    int getLGRF1(Go::Color col, int pos1);
-    int getLGRF2(Go::Color col, int pos1, int pos2);
-    void setLGRF1(Go::Color col, int pos1, int val);
-    void setLGRF2(Go::Color col, int pos1, int pos2, int val);
-    bool hasLGRF1(Go::Color col, int pos1);
-    bool hasLGRF2(Go::Color col, int pos1, int pos2);
-    void clearLGRF1(Go::Color col, int pos1);
-    void clearLGRF2(Go::Color col, int pos1, int pos2);
 };
 
 #endif

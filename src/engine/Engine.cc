@@ -117,15 +117,13 @@ Engine::Engine(Gtp::Engine *ge, std::string ln)
   features=new Features(params);
   features->loadGammaDefaults();
   
-  lgrf1=NULL;
-  lgrf2=NULL;
-  this->setupLGRF();
-  
   circdict=new Pattern::CircularDictionary();
   
   book=new Book(params);
   
   time=new Time(params,0);
+  
+  playout=new Playout(params);
   
   lastexplanation="";
   
@@ -140,10 +138,6 @@ Engine::Engine(Gtp::Engine *ge, std::string ln)
 
 Engine::~Engine()
 {
-  if (lgrf1!=NULL)
-    delete[] lgrf1;
-  if (lgrf2!=NULL)
-    delete[] lgrf2;
   delete circdict;
   delete features;
   delete patterntable;
@@ -156,6 +150,7 @@ Engine::~Engine()
   delete time;
   delete book;
   delete zobristtable;
+  delete playout;
 }
 
 void Engine::postCmdLineArgs(bool book_autoload)
@@ -1705,15 +1700,13 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
   }
   else
   {
-    int *posarray = new int[currentboard->getPositionMax()];
     *move=new Go::Move(col,Go::Move::PASS);
     Go::Board *playoutboard=currentboard->copy();
     playoutboard->turnSymmetryOff();
     if (params->playout_features_enabled)
       playoutboard->setFeatures(features,params->playout_features_incremental);
-    this->randomPlayoutMove(playoutboard,col,**move,posarray);
+    playout->getPlayoutMove(playoutboard,col,**move);
     delete playoutboard;
-    delete[] posarray;
     this->makeMove(**move);
   }
 }
@@ -1898,470 +1891,7 @@ void Engine::clearBoard()
     currentboard->turnSymmetryOff();
   this->clearMoveTree();
   params->surewin_expected=false;
-  this->setupLGRF();
-}
-
-void Engine::randomPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, int *posarray)
-{
-  if (board->numOfValidMoves(col)==0)
-  {
-    move=Go::Move(col,Go::Move::PASS);
-    return;
-  }
-  
-  if (params->playout_lgrf2_enabled)
-  {
-    if (board->getLastMove().isNormal() && board->getSecondLastMove().isNormal())
-    {
-      int pos1=board->getSecondLastMove().getPosition();
-      int pos2=board->getLastMove().getPosition();
-      if (this->hasLGRF2(col,pos1,pos2))
-      {
-        int np=this->getLGRF2(col,pos1,pos2);
-        if (board->validMove(Go::Move(col,np)))
-        {
-          move=Go::Move(col,np);
-          if (params->debug_on)
-            gtpe->getOutput()->printfDebug("[playoutmove]: lgrf2\n");
-          return;
-        }
-      }
-    }
-  }
-  
-  if (params->playout_lgrf1_enabled)
-  {
-    if (board->getLastMove().isNormal())
-    {
-      int pos1=board->getLastMove().getPosition();
-      if (this->hasLGRF1(col,pos1))
-      {
-        int np=this->getLGRF1(col,pos1);
-        if (board->validMove(Go::Move(col,np)))
-        {
-          move=Go::Move(col,np);
-          if (params->debug_on)
-            gtpe->getOutput()->printfDebug("[playoutmove]: lgrf1\n");
-          return;
-        }
-      }
-    }
-  }
-  
-  if (params->playout_features_enabled)
-  {
-    //Go::ObjectBoard<float> *gammas=new Go::ObjectBoard<float>(boardsize);
-    //float totalgamma=features->getBoardGammas(board,col,gammas);
-    float totalgamma=board->getFeatureTotalGamma();
-    float randomgamma=totalgamma*rand.getRandomReal();
-    bool foundmove=false;
-    
-    for (int p=0;p<board->getPositionMax();p++)
-    {
-      Go::Move m=Go::Move(col,p);
-      if (board->validMove(m))
-      {
-        //float gamma=gammas->get(p);
-        float gamma=board->getFeatureGamma(p);
-        if (randomgamma<gamma)
-        {
-          move=m;
-          foundmove=true;
-          break;
-        }
-        else
-          randomgamma-=gamma;
-      }
-    }
-    
-    if (!foundmove)
-      move=Go::Move(col,Go::Move::PASS);
-    if (params->debug_on)
-        gtpe->getOutput()->printfDebug("[playoutmove]: features\n");
-    //delete gammas;
-    return;
-  }
-  
-  if (params->playout_atari_enabled)
-  {
-    int *atarimoves=posarray;
-    int atarimovescount=0;
-    int size=board->getSize();
-    
-    if (board->getLastMove().isNormal())
-    {
-      foreach_onandadj(board->getLastMove().getPosition(),p,{
-        if (board->inGroup(p))
-        {
-          Go::Group *group=board->getGroup(p);
-          if (group!=NULL && group->inAtari())
-          {
-            int liberty=group->getAtariPosition();
-            bool iscaptureorconnect=board->isCapture(Go::Move(col,liberty)) || board->isExtension(Go::Move(col,liberty));
-            //fprintf(stderr,"a: %s %s %d",Go::Position::pos2string(p,size).c_str(),Go::Position::pos2string(liberty,size).c_str(),iscaptureorconnect);
-            if (board->validMove(Go::Move(col,liberty)) && iscaptureorconnect)
-            {
-              atarimoves[atarimovescount]=liberty;
-              atarimovescount++;
-            }
-          }
-        }
-      });
-    }
-    if (board->getSecondLastMove().isNormal())
-    {
-      foreach_onandadj(board->getSecondLastMove().getPosition(),p,{
-        if (board->inGroup(p))
-        {
-          Go::Group *group=board->getGroup(p);
-          if (group!=NULL && group->inAtari())
-          {
-            int liberty=group->getAtariPosition();
-            bool iscaptureorconnect=board->isCapture(Go::Move(col,liberty)) || board->isExtension(Go::Move(col,liberty));
-            if (board->validMove(Go::Move(col,liberty)) && iscaptureorconnect)
-            {
-              atarimoves[atarimovescount]=liberty;
-              atarimovescount++;
-            }
-          }
-        }
-      });
-    }
-    
-    if (atarimovescount>0)
-    {
-      int i=rand.getRandomInt(atarimovescount);
-      move=Go::Move(col,atarimoves[i]);
-      if (params->debug_on)
-        gtpe->getOutput()->printfDebug("[playoutmove]: atari\n");
-      return;
-    }
-  }
-  
-  if (params->playout_lastatari_enabled)
-  {
-    int *possiblemoves=posarray;
-    int possiblemovescount=0;
-    int size=board->getSize();
-    
-    if (board->getLastMove().isNormal())
-    {
-      foreach_onandadj(board->getLastMove().getPosition(),p,{
-        if (board->inGroup(p))
-        {
-          Go::Group *group=board->getGroup(p);
-          if (group!=NULL && group->inAtari())
-          {
-            int liberty=group->getAtariPosition();
-            bool iscaptureorconnect=board->isCapture(Go::Move(col,liberty)) || board->isExtension(Go::Move(col,liberty));
-            //fprintf(stderr,"la: %s %s %d %d %d\n",Go::Position::pos2string(p,size).c_str(),Go::Position::pos2string(liberty,size).c_str(),board->isCapture(Go::Move(col,liberty)),board->isExtension(Go::Move(col,liberty)),board->isSelfAtari(Go::Move(col,liberty)));
-            if (board->validMove(Go::Move(col,liberty)) && iscaptureorconnect)
-            {
-              possiblemoves[possiblemovescount]=liberty;
-              possiblemovescount++;
-            }
-          }
-        }
-      });
-    }
-    
-    if (possiblemovescount>0)
-    {
-      int i=rand.getRandomInt(possiblemovescount);
-      move=Go::Move(col,possiblemoves[i]);
-      //gtpe->getOutput()->printfDebug("[playoutmove]: last atari %d %d %d\n",board->isCapture(move),board->isExtension(move),board->isSelfAtari(move));
-      if (params->debug_on)
-        gtpe->getOutput()->printfDebug("[playoutmove]: lastatari\n");
-      return;
-    }
-  }
-  
-  if (params->playout_lastcapture_enabled)
-  {
-    int *possiblemoves=posarray;
-    int possiblemovescount=0;
-    int size=board->getSize();
-    
-    if (board->getLastMove().isNormal())
-    {
-      foreach_adjacent(board->getLastMove().getPosition(),p,{
-        if (board->inGroup(p))
-        {
-          Go::Group *group=board->getGroup(p);
-          if (group!=NULL && group->inAtari())
-          {
-            std::list<int> *adjacentgroups=group->getAdjacentGroups();
-            adjacentgroups->sort();
-            adjacentgroups->unique();
-            for(std::list<int>::iterator iter=adjacentgroups->begin();iter!=adjacentgroups->end();++iter)
-            {
-              if (board->inGroup((*iter)))
-              {
-                Go::Group *othergroup=board->getGroup((*iter));
-                if (othergroup->inAtari())
-                {
-                  int liberty=othergroup->getAtariPosition();
-                  bool iscaptureorconnect=board->isCapture(Go::Move(col,liberty)) || board->isExtension(Go::Move(col,liberty));
-                  if (board->validMove(Go::Move(col,liberty)) && iscaptureorconnect)
-                  {
-                    if (possiblemovescount<board->getPositionMax())
-                    {
-                      possiblemoves[possiblemovescount]=liberty;
-                      possiblemovescount++;
-                    }
-                  }
-                }
-              }
-              else
-              {
-                std::list<int>::iterator tmp=iter;
-                --iter;
-                adjacentgroups->erase(tmp);
-              }
-            }
-          }
-        }
-      });
-    }
-    
-    if (possiblemovescount>0)
-    {
-      int i=rand.getRandomInt(possiblemovescount);
-      move=Go::Move(col,possiblemoves[i]);
-      if (params->debug_on)
-        gtpe->getOutput()->printfDebug("[playoutmove]: lastcapture\n");
-      return;
-    }
-  }
-  
-  if (params->playout_nakade_enabled)
-  {
-    int *possiblemoves=posarray;
-    int possiblemovescount=0;
-    
-    if (board->getLastMove().isNormal())
-    {
-      int size=board->getSize();
-      foreach_adjacent(board->getLastMove().getPosition(),p,{
-        int centerpos=board->getThreeEmptyGroupCenterFrom(p);
-        if (centerpos!=-1 && board->validMove(Go::Move(col,centerpos)))
-        {
-          possiblemoves[possiblemovescount]=centerpos;
-          possiblemovescount++;
-        }
-      });
-    }
-    
-    if (possiblemovescount>0)
-    {
-      int i=rand.getRandomInt(possiblemovescount);
-      move=Go::Move(col,possiblemoves[i]);
-      if (params->debug_on)
-        gtpe->getOutput()->printfDebug("[playoutmove]: nakade\n");
-      return;
-    }
-  }
-  
-  if (params->playout_fillboard_enabled)
-  {
-    for (int i=0;i<params->playout_fillboard_n;i++)
-    {
-      int p=rand.getRandomInt(board->getPositionMax());
-      if (board->getColor(p)==Go::EMPTY && board->surroundingEmpty(p)==8 && board->validMove(Go::Move(col,p)))
-      {
-        move=Go::Move(col,p);
-        if (params->debug_on)
-          gtpe->getOutput()->printfDebug("[playoutmove]: fillboard\n");
-        return;
-      }
-    }
-  }
-  
-  if (params->playout_patterns_enabled)
-  {
-    int *patternmoves=posarray;
-    int patternmovescount=0;
-    
-    if (board->getLastMove().isNormal())
-    {
-      int pos=board->getLastMove().getPosition();
-      int size=board->getSize();
-      
-      foreach_adjdiag(pos,p,{
-        if (board->validMove(Go::Move(col,p)) && !board->weakEye(col,p) && !board->isSelfAtari(Go::Move(col,p)))
-        {
-          unsigned int pattern=Pattern::ThreeByThree::makeHash(board,p);
-          if (col==Go::WHITE)
-            pattern=Pattern::ThreeByThree::invert(pattern);
-          
-          if (patterntable->isPattern(pattern))
-          {
-            patternmoves[patternmovescount]=p;
-            patternmovescount++;
-          }
-        }
-      });
-    }
-    
-    if (board->getSecondLastMove().isNormal())
-    {
-      int pos=board->getSecondLastMove().getPosition();
-      int size=board->getSize();
-      
-      foreach_adjdiag(pos,p,{
-        if (board->validMove(Go::Move(col,p)) && !board->weakEye(col,p))
-        {
-          unsigned int pattern=Pattern::ThreeByThree::makeHash(board,p);
-          if (col==Go::WHITE)
-            pattern=Pattern::ThreeByThree::invert(pattern);
-          
-          if (patterntable->isPattern(pattern))
-          {
-            patternmoves[patternmovescount]=p;
-            patternmovescount++;
-          }
-        }
-      });
-    }
-    
-    if (patternmovescount>0)
-    {
-      int i=rand.getRandomInt(patternmovescount);
-      move=Go::Move(col,patternmoves[i]);
-      if (params->debug_on)
-        gtpe->getOutput()->printfDebug("[playoutmove]: pattern\n");
-      return;
-    }
-  }
-  
-  if (params->playout_anycapture_enabled)
-  {
-    int *possiblemoves=posarray;
-    int possiblemovescount=0;
-    
-    std::list<Go::Group*,Go::allocator_groupptr> *groups=board->getGroups();
-    for(std::list<Go::Group*,Go::allocator_groupptr>::iterator iter=groups->begin();iter!=groups->end();++iter) 
-    {
-      if ((*iter)->getColor()!=col && (*iter)->inAtari())
-      {
-        int liberty=(*iter)->getAtariPosition();
-        if (board->validMove(Go::Move(col,liberty)))
-        {
-          possiblemoves[possiblemovescount]=liberty;
-          possiblemovescount++;
-        }
-      }
-    }
-    
-    if (possiblemovescount>0)
-    {
-      int i=rand.getRandomInt(possiblemovescount);
-      move=Go::Move(col,possiblemoves[i]);
-      if (params->debug_on)
-        gtpe->getOutput()->printfDebug("[playoutmove]: anycapture\n");
-      return;
-    }
-  }
-  
-  for (int i=0;i<10;i++)
-  {
-    int p=rand.getRandomInt(board->getPositionMax());
-    if (board->validMove(Go::Move(col,p)) && !board->weakEye(col,p))
-    {
-      move=Go::Move(col,p);
-      if (params->debug_on)
-        gtpe->getOutput()->printfDebug("[playoutmove]: random quick-pick\n");
-      return;
-    }
-  }
-  
-  Go::BitBoard *validmoves=board->getValidMoves(col);
-  /*int *possiblemoves=posarray;
-  int possiblemovescount=0;
-  
-  for (int p=0;p<board->getPositionMax();p++)
-  {
-    if (validmoves->get(p) && !board->weakEye(col,p))
-    {
-      possiblemoves[possiblemovescount]=p;
-      possiblemovescount++;
-    }
-  }
-  
-  if (possiblemovescount==0)
-    move=Go::Move(col,Go::Move::PASS);
-  else if (possiblemovescount==1)
-    move=Go::Move(col,possiblemoves[0]);
-  else
-  {
-    int r=rand.getRandomInt(possiblemovescount);
-    move=Go::Move(col,possiblemoves[r]);
-  }*/
-  
-  int r=rand.getRandomInt(board->getPositionMax());
-  int d=rand.getRandomInt(1)*2-1;
-  for (int p=0;p<board->getPositionMax();p++)
-  {
-    int rp=(r+p*d);
-    if (rp<0) rp+=board->getPositionMax();
-    if (rp>=board->getPositionMax()) rp-=board->getPositionMax();
-    if (validmoves->get(rp) && !board->weakEye(col,rp))
-    {
-      move=Go::Move(col,rp);
-      if (params->debug_on)
-        gtpe->getOutput()->printfDebug("[playoutmove]: random\n");
-      return;
-    }
-  }
-  move=Go::Move(col,Go::Move::PASS);
-}
-
-void Engine::randomPlayout(Go::Board *board, std::list<Go::Move> &playoutmoves, Go::Color colfirst, Go::BitBoard *firstlist, Go::BitBoard *secondlist)
-{
-  if (board->getPassesPlayed()>=2)
-    return;
-  
-  board->turnSymmetryOff();
-  
-  if (params->debug_on)
-    gtpe->getOutput()->printfDebug("[playout]:");
-  for(std::list<Go::Move>::iterator iter=playoutmoves.begin();iter!=playoutmoves.end();++iter)
-  {
-    board->makeMove((*iter));
-    if (params->debug_on)
-      gtpe->getOutput()->printfDebug(" %s",(*iter).toString(boardsize).c_str());
-    if (((*iter).getColor()==colfirst?firstlist:secondlist)!=NULL && !(*iter).isPass() && !(*iter).isResign())
-      ((*iter).getColor()==colfirst?firstlist:secondlist)->set((*iter).getPosition());
-    if (board->getPassesPlayed()>=2 || (*iter).isResign())
-    {
-      if (params->debug_on)
-        gtpe->getOutput()->printfDebug("\n");
-      return;
-    }
-  }
-  if (params->debug_on)
-    gtpe->getOutput()->printfDebug("\n");
-  
-  Go::Color coltomove=board->nextToMove();
-  Go::Move move=Go::Move(coltomove,Go::Move::PASS);
-  int movesalready=board->getMovesMade();
-  int *posarray = new int[board->getPositionMax()];
-  while (board->getPassesPlayed()<2)
-  {
-    bool resign;
-    this->randomPlayoutMove(board,coltomove,move,posarray);
-    board->makeMove(move);
-    playoutmoves.push_back(move);
-    if ((coltomove==colfirst?firstlist:secondlist)!=NULL && !move.isPass() && !move.isResign())
-      (coltomove==colfirst?firstlist:secondlist)->set(move.getPosition());
-    resign=move.isResign();
-    coltomove=Go::otherColor(coltomove);
-    if (resign)
-      break;
-    if (board->getMovesMade()>(boardsize*boardsize*PLAYOUT_MAX_MOVE_FACTOR+movesalready))
-      break;
-  }
-  delete[] posarray;
+  playout->resetLGRF();
 }
 
 void Engine::clearMoveTree()
@@ -2514,9 +2044,9 @@ void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
   }
   Go::Color playoutcol=playoutmoves.back().getColor();
   
-  this->randomPlayout(playoutboard,playoutmoves,col,(params->rave_moves>0?firstlist:NULL),(params->rave_moves>0?secondlist:NULL));
+  float finalscore;
+  playout->doPlayout(playoutboard,finalscore,playoutmoves,col,(params->rave_moves>0?firstlist:NULL),(params->rave_moves>0?secondlist:NULL));
   
-  float finalscore=playoutboard->score()-komi;
   bool playoutwin=Go::Board::isWinForColor(playoutcol,finalscore);
   bool playoutjigo=(finalscore==0);
   if (playoutjigo)
@@ -2570,75 +2100,6 @@ void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
         playouttree->updateRAVE(wincol,firstlist,secondlist);
       else
         playouttree->updateRAVE(wincol,secondlist,firstlist);
-    }
-  }
-  
-  if (params->playout_lgrf1_enabled)
-  {
-    if (!playoutjigo) // ignore jigos
-    {
-      bool blackwin=Go::Board::isWinForColor(Go::BLACK,finalscore);
-      Go::Color wincol=(blackwin?Go::BLACK:Go::WHITE);
-      
-      Go::Move move1=Go::Move(Go::EMPTY,Go::Move::PASS);
-      for(std::list<Go::Move>::iterator iter=playoutmoves.begin();iter!=playoutmoves.end();++iter)
-      {
-        if (!(*iter).isPass() && !move1.isPass())
-        {
-          Go::Color c=(*iter).getColor();
-          int mp=(*iter).getPosition();
-          int p1=move1.getPosition();
-          if (c==wincol)
-          {
-            if (params->debug_on)
-              fprintf(stderr,"adding LGRF1: %s %s\n",move1.toString(boardsize).c_str(),(*iter).toString(boardsize).c_str());
-            this->setLGRF1(c,p1,mp);
-          }
-          else
-          {
-            if (params->debug_on && this->hasLGRF1(c,p1))
-              fprintf(stderr,"forgetting LGRF1: %s %s\n",move1.toString(boardsize).c_str(),(*iter).toString(boardsize).c_str());
-            this->clearLGRF1(c,p1);
-          }
-        }
-        move1=(*iter);
-      }
-    }
-  }
-  
-  if (params->playout_lgrf2_enabled)
-  {
-    if (!playoutjigo) // ignore jigos
-    {
-      bool blackwin=Go::Board::isWinForColor(Go::BLACK,finalscore);
-      Go::Color wincol=(blackwin?Go::BLACK:Go::WHITE);
-      
-      Go::Move move1=Go::Move(Go::EMPTY,Go::Move::PASS);
-      Go::Move move2=Go::Move(Go::EMPTY,Go::Move::PASS);
-      for(std::list<Go::Move>::iterator iter=playoutmoves.begin();iter!=playoutmoves.end();++iter)
-      {
-        if (!(*iter).isPass() && !move1.isPass() && !move2.isPass())
-        {
-          Go::Color c=(*iter).getColor();
-          int mp=(*iter).getPosition();
-          int p1=move1.getPosition();
-          int p2=move2.getPosition();
-          if (c==wincol)
-          {
-            if (params->debug_on)
-              fprintf(stderr,"adding LGRF2: %s %s %s\n",move1.toString(boardsize).c_str(),move2.toString(boardsize).c_str(),(*iter).toString(boardsize).c_str());
-            this->setLGRF2(c,p1,p2,mp);
-          }
-          else
-          {
-            if (params->debug_on && this->hasLGRF2(c,p1,p2))
-              fprintf(stderr,"forgetting LGRF2: %s %s %s\n",move1.toString(boardsize).c_str(),move2.toString(boardsize).c_str(),(*iter).toString(boardsize).c_str());
-            this->clearLGRF2(c,p1,p2);
-          }
-        }
-        move1=move2;
-        move2=(*iter);
-      }
     }
   }
   
@@ -2784,71 +2245,4 @@ void Engine::allowContinuedPlay()
   }
 }
 
-void Engine::setupLGRF()
-{
-  if (lgrf1!=NULL)
-    delete lgrf1;
-  if (lgrf2!=NULL)
-    delete lgrf2;
-  
-  lgrf1=new int[2*currentboard->getPositionMax()];
-  lgrf2=new int[2*currentboard->getPositionMax()*currentboard->getPositionMax()];
-  
-  for (int c=0;c<2;c++)
-  {
-    Go::Color col=(c==0?Go::BLACK:Go::WHITE);
-    for (int p1=0;p1<currentboard->getPositionMax();p1++)
-    {
-      this->clearLGRF1(col,p1);
-      for (int p2=0;p2<currentboard->getPositionMax();p2++)
-      {
-        this->clearLGRF2(col,p1,p2);
-      }
-    }
-  }
-}
-
-int Engine::getLGRF1(Go::Color col, int pos1)
-{
-  int c=(col==Go::BLACK?0:1);
-  return lgrf1[c*currentboard->getPositionMax()+pos1];
-}
-
-int Engine::getLGRF2(Go::Color col, int pos1, int pos2)
-{
-  int c=(col==Go::BLACK?0:1);
-  return lgrf2[(c*currentboard->getPositionMax()+pos1)*currentboard->getPositionMax()+pos2];
-}
-
-void Engine::setLGRF1(Go::Color col, int pos1, int val)
-{
-  int c=(col==Go::BLACK?0:1);
-  lgrf1[c*currentboard->getPositionMax()+pos1]=val;
-}
-
-void Engine::setLGRF2(Go::Color col, int pos1, int pos2, int val)
-{
-  int c=(col==Go::BLACK?0:1);
-  lgrf2[(c*currentboard->getPositionMax()+pos1)*currentboard->getPositionMax()+pos2]=val;
-}
-
-bool Engine::hasLGRF1(Go::Color col, int pos1)
-{
-  return (this->getLGRF1(col,pos1)!=-1);
-}
-
-bool Engine::hasLGRF2(Go::Color col, int pos1, int pos2)
-{
-  return (this->getLGRF2(col,pos1,pos2)!=-1);
-}
-
-void Engine::clearLGRF1(Go::Color col, int pos1)
-{
-  this->setLGRF1(col,pos1,-1);
-}
-
-void Engine::clearLGRF2(Go::Color col, int pos1, int pos2)
-{
-  this->setLGRF2(col,pos1,pos2,-1);
-}
 
