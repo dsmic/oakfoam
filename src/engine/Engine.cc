@@ -1684,6 +1684,17 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     params->surewin_expected=(bestratio>=params->surewin_threshold);
     if (params->surewin_expected)
       ss << " surewin!";
+    Tree *pvtree=movetree->getRobustChild(true);
+    if (pvtree!=NULL)
+    {
+      std::list<Go::Move> pvmoves=pvtree->getMovesFromRoot();
+      ss<<" pv:(";
+      for(std::list<Go::Move>::iterator iter=pvmoves.begin();iter!=pvmoves.end();++iter) 
+      {
+        ss<<(iter!=pvmoves.begin()?",":"")<<Go::Position::pos2string((*iter).getPosition(),boardsize);
+      }
+      ss<<")";
+    }
     lastexplanation=ss.str();
     
     gtpe->getOutput()->printfDebug("[genmove]: %s\n",lastexplanation.c_str());
@@ -2430,7 +2441,7 @@ void Engine::doNPlayouts(int n)
       
       if (params->livegfx_on)
       {
-        if (livegfxupdate>=(params->livegfx_update_playouts-1))
+        if (livegfxupdate>=(params->livegfx_update_playouts))
         {
           livegfxupdate=0;
           

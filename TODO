@@ -8,9 +8,6 @@ Now: (current focus)
   move playout code out of engine
   change uct_* params to tree_*
   larger patterns
-  look at Feasibility (Baier Hendrik)
-  look at Dynamic Komi (Baier Hendrik)
-  record primary variation in explanation
 
 Soon: (before next major release)
   tune parameters
@@ -41,6 +38,8 @@ Soon: (before next major release)
   use Benson algo in tree and playouts
   use Criticality as a feature
   look into transposition table-like structure
+  look at Feasibility for 19x19 (Baier Hendrik)
+  look at Dynamic Komi for 19x19 (Baier Hendrik)
 
 Later: (at some point)
   make sure install works and is described somewhere

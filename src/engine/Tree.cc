@@ -714,8 +714,11 @@ void Tree::expandLeaf()
     
     for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
     {
-      float gamma=params->engine->getFeatures()->getMoveGamma(startboard,(*iter)->getMove());
-      (*iter)->setFeatureGamma(gamma);
+      if ((*iter)->isPrimary())
+      {
+        float gamma=params->engine->getFeatures()->getMoveGamma(startboard,(*iter)->getMove());
+        (*iter)->setFeatureGamma(gamma);
+      }
     }
     
     params->engine->getFeatures()->clearCFGDist();
