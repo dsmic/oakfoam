@@ -8,9 +8,9 @@ Now: (current focus)
   move playout code out of engine
   change uct_* params to tree_*
   larger patterns
-  do a playout eye rule eval
   look at Feasibility (Baier Hendrik)
   look at Dynamic Komi (Baier Hendrik)
+  record primary variation in explanation
 
 Soon: (before next major release)
   tune parameters

@@ -819,10 +819,30 @@ bool Go::Board::weakEye(Go::Color col, int pos)
     return false;
   else
   {
+    bool onside=false;
+    Go::Color othercol=Go::otherColor(col);
+    int othercols=0;
+    
     foreach_adjacent(pos,p,{
-      if (this->getColor(p)!=Go::OFFBOARD && (this->getColor(p)!=col || this->getGroup(p)->inAtari()))
+      if (this->getColor(p)==Go::OFFBOARD)
+        onside=true;
+      else if (this->getColor(p)!=col)
         return false;
     });
+    
+    foreach_diagonal(pos,p,{
+      if (this->getColor(p)==othercol)
+      {
+        othercols++;
+        if (onside || othercols>=2)
+          return false;
+      }
+    });
+    
+    /*foreach_adjacent(pos,p,{
+      if (this->getColor(p)!=Go::OFFBOARD && (this->getColor(p)!=col || this->getGroup(p)->inAtari()))
+        return false;
+    });*/
     
     return true;
   }
