@@ -81,6 +81,9 @@ Engine::Engine(Gtp::Engine *ge, std::string ln)
   params->addParameter("mcts","uct_progressive_bias_scaled",&(params->uct_progressive_bias_scaled),UCT_PROGRESSIVE_BIAS_SCALED);
   params->addParameter("mcts","uct_progressive_bias_relative",&(params->uct_progressive_bias_relative),UCT_PROGRESSIVE_BIAS_RELATIVE);
   
+  params->addParameter("mcts","uct_slow_update_rate",&(params->uct_slow_update_rate),UCT_SLOW_UPDATE_RATE);
+  params->uct_slow_update_last=0;
+  
   params->addParameter("mcts","surewin_threshold",&(params->surewin_threshold),SUREWIN_THRESHOLD);
   params->surewin_expected=false;
   
@@ -1600,8 +1603,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     }
     
     movetree->prunePossibleSuperkoViolations();
-    
     this->allowContinuedPlay();
+    params->uct_slow_update_last=0;
     
     Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
     Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
@@ -1681,9 +1684,6 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     if (!time->isNoTiming() || movetree->isTerminalResult())
       ss << " plts:"<<totalplayouts;
     ss << " ppms:"<<std::setprecision(2)<<playouts_per_milli;
-    params->surewin_expected=(bestratio>=params->surewin_threshold);
-    if (params->surewin_expected)
-      ss << " surewin!";
     Tree *pvtree=movetree->getRobustChild(true);
     if (pvtree!=NULL)
     {
@@ -1695,6 +1695,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
       }
       ss<<")";
     }
+    if (params->surewin_expected)
+      ss << " surewin!";
     lastexplanation=ss.str();
     
     gtpe->getOutput()->printfDebug("[genmove]: %s\n",lastexplanation.c_str());
@@ -1862,6 +1864,7 @@ void Engine::makeMove(Go::Move move)
   currentboard->makeMove(move);
   movehistory->push_back(move);
   hashtree->addHash(currentboard->getZobristHash(zobristtable));
+  params->uct_slow_update_last=0;
   if (params->uct_keep_subtree)
     this->chooseSubTree(move);
   else
@@ -2370,6 +2373,8 @@ void Engine::clearMoveTree()
     movetree=new Tree(params,currentboard->getZobristHash(zobristtable),currentboard->getLastMove());
   else
     movetree=new Tree(params,0);
+  
+  params->uct_slow_update_last=0;
 }
 
 void Engine::chooseSubTree(Go::Move move)
@@ -2635,6 +2640,16 @@ void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
         move2=(*iter);
       }
     }
+  }
+  
+  params->uct_slow_update_last++;
+  if (params->uct_slow_update_last>=params->uct_slow_update_rate)
+  {
+    params->uct_slow_update_last=0;
+    
+    Tree *besttree=movetree->getRobustChild();
+    if (besttree!=NULL)
+      params->surewin_expected=(besttree->getRatio()>=params->surewin_threshold);
   }
   
   delete playoutboard;

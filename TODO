@@ -21,7 +21,6 @@ Soon: (before next major release)
   progressively add more reward for points diff if winrate very good?
   add hg tracked cgos,kgs?,gomill? scripts
   make SL page
-  update surewin during genmove
   reduce thinking time if surewin?
   think for longer if needed
   keep track of board hashes incrementally
