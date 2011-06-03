@@ -80,6 +80,7 @@
 #include "Time.h"
 #include "Book.h"
 #include "Playout.h"
+#include "Benson.h"
 #include "../gtp/Gtp.h"
 
 class Engine
@@ -169,6 +170,7 @@ class Engine
     static void gtpBookSave(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     
     static void gtpShowCurrentHash(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpShowSafePositions(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
   
   private:
     Gtp::Engine *gtpe;

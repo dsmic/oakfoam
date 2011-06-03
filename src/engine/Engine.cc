@@ -273,6 +273,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("booksave",this,&Engine::gtpBookSave);
   
   gtpe->addFunctionCommand("showcurrenthash",this,&Engine::gtpShowCurrentHash);
+  gtpe->addFunctionCommand("showsafepositions",this,&Engine::gtpShowSafePositions);
   
   //gtpe->addAnalyzeCommand("final_score","Final Score","string");
   //gtpe->addAnalyzeCommand("showboard","Show Board","string");
@@ -286,6 +287,7 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("showcircdistfrom %%p","Show Circular Distance From","sboard");
   gtpe->addAnalyzeCommand("listcircpatternsat %%p","List Circular Patterns At","string");
   gtpe->addAnalyzeCommand("listadjacentgroupsof %%p","List Adjacent Groups Of","string");
+  gtpe->addAnalyzeCommand("showsafepositions","Show Safe Positions","gfx");
   gtpe->addAnalyzeCommand("showpatternmatches","Show Pattern Matches","sboard");
   //gtpe->addAnalyzeCommand("shownakadecenters","Show Nakade Centers","sboard");
   gtpe->addAnalyzeCommand("featurematchesat %%p","Feature Matches At","string");
@@ -1403,6 +1405,32 @@ void Engine::gtpBookSave(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     gtpe->getOutput()->printf("error saving book: %s",filename.c_str());
     gtpe->getOutput()->endResponse();
   }
+}
+
+void Engine::gtpShowSafePositions(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  Go::Board *board=me->currentboard;
+  Benson *benson=new Benson(board);
+  benson->solve();
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printf("BLACK");
+  for (int p=0;p<board->getPositionMax();p++)
+  {
+    if (benson->getSafePositions()->get(p)==Go::BLACK)
+      gtpe->getOutput()->printf(" %s",Go::Position::pos2string(p,me->boardsize).c_str());
+  }
+  gtpe->getOutput()->printf("\nWHITE");
+  for (int p=0;p<board->getPositionMax();p++)
+  {
+    if (benson->getSafePositions()->get(p)==Go::WHITE)
+      gtpe->getOutput()->printf(" %s",Go::Position::pos2string(p,me->boardsize).c_str());
+  }
+  gtpe->getOutput()->endResponse();
+  
+  delete benson;
 }
 
 void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)

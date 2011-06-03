@@ -14,6 +14,7 @@ oakfoam_SOURCES     = build.h \
                       src/engine/Time.h src/engine/Time.cc \
                       src/engine/Book.h src/engine/Book.cc \
                       src/engine/Playout.h src/engine/Playout.cc \
+                      src/engine/Benson.h src/engine/Benson.cc \
                       src/gtp/Gtp.h src/gtp/Gtp.cc
                       
 dist_noinst_SCRIPTS = autogen.sh
