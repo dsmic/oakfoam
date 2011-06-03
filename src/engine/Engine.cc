@@ -2446,11 +2446,11 @@ void Engine::doNPlayouts(int n)
       
       if (params->livegfx_on)
       {
-        if (livegfxupdate>=(params->livegfx_update_playouts))
+        if (livegfxupdate>=(params->livegfx_update_playouts-1))
         {
           livegfxupdate=0;
           
-          this->displayPlayoutLiveGfx(i);
+          this->displayPlayoutLiveGfx(i+1);
           
           boost::timer delay;
           while (delay.elapsed()<params->livegfx_delay) {}
