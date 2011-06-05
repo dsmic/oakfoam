@@ -412,7 +412,7 @@ void Go::Board::spreadScore(Go::Board::ScoreVertex *scoredata, int pos, Go::Colo
 bool Go::Board::validMove(Go::Move move)
 {
   Go::BitBoard *validmoves=(move.getColor()==Go::BLACK?blackvalidmoves:whitevalidmoves);
-  return validmoves->get(move.getPosition()) || move.isPass() || move.isResign();
+  return move.isPass() || move.isResign() || validmoves->get(move.getPosition());
 }
 
 bool Go::Board::validMoveCheck(Go::Move move)
