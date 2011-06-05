@@ -545,7 +545,10 @@ void Go::Board::makeMove(Go::Move move)
         this->mergeGroups(thisgroup,othergroup);
       thisgroup=thisgroup->find();
     }
-    else if (this->getColor(p)==othercol)
+  });
+  
+  foreach_adjacent(pos,p,{
+    if (this->getColor(p)==othercol)
     {
       Go::Group *othergroup=this->getGroup(p);
       othergroup->removePseudoLiberty(pos);
