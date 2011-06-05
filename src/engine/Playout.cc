@@ -44,6 +44,7 @@ void Playout::doPlayout(Go::Board *board, float &finalscore, std::list<Go::Move>
     {
       if (params->debug_on)
         gtpe->getOutput()->printfDebug("\n");
+      finalscore=board->score()-(params->engine->getKomi());
       return;
     }
   }

@@ -2112,9 +2112,9 @@ void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
     if (finalscore==0)
       gtpe->getOutput()->printfDebug("[result]:jigo\n");
     else if (playoutwin && playoutcol==col)
-      gtpe->getOutput()->printfDebug("[result]:win\n");
+      gtpe->getOutput()->printfDebug("[result]:win (fs:%+.1f)\n",finalscore);
     else
-      gtpe->getOutput()->printfDebug("[result]:lose\n");
+      gtpe->getOutput()->printfDebug("[result]:lose (fs:%+.1f)\n",finalscore);
   }
   
   if (params->rave_moves>0)
