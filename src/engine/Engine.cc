@@ -1160,11 +1160,11 @@ void Engine::gtpListAdjacentGroupsOf(void *instance, Gtp::Engine* gtpe, Gtp::Com
   
   if (group!=NULL)
   {
-    std::list<int> *adjacentgroups=group->getAdjacentGroups();
+    std::list<int,Go::allocator_int> *adjacentgroups=group->getAdjacentGroups();
     
     gtpe->getOutput()->startResponse(cmd);
     gtpe->getOutput()->printf("list of size %d:\n",adjacentgroups->size());
-    for(std::list<int>::iterator iter=adjacentgroups->begin();iter!=adjacentgroups->end();++iter)
+    for(std::list<int,Go::allocator_int>::iterator iter=adjacentgroups->begin();iter!=adjacentgroups->end();++iter)
     {
       if (me->currentboard->inGroup((*iter)))
         gtpe->getOutput()->printf("%s\n",Go::Position::pos2string((*iter),me->boardsize).c_str());
@@ -2028,7 +2028,7 @@ void Engine::doNPlayouts(int n)
 
 void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
 {
-  bool givenfirstlist,givensecondlist;
+  //bool givenfirstlist,givensecondlist;
   Go::Color col=currentboard->nextToMove();
   
   if (movetree->isLeaf())
@@ -2038,8 +2038,8 @@ void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
     movetree->prunePossibleSuperkoViolations();
   }
   
-  givenfirstlist=(firstlist==NULL);
-  givensecondlist=(secondlist==NULL);
+  //givenfirstlist=(firstlist==NULL);
+  //givensecondlist=(secondlist==NULL);
   
   Tree *playouttree = movetree->getUrgentChild();
   if (playouttree==NULL)
@@ -2056,10 +2056,10 @@ void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
     return;
   }
   
-  if (!givenfirstlist)
-    firstlist=new Go::BitBoard(boardsize);
-  if (!givensecondlist)
-    secondlist=new Go::BitBoard(boardsize);
+  //if (!givenfirstlist)
+  //  firstlist=new Go::BitBoard(boardsize);
+  //if (!givensecondlist)
+  //  secondlist=new Go::BitBoard(boardsize);
   
   Go::Board *playoutboard=currentboard->copy();
   playoutboard->turnSymmetryOff();
@@ -2143,10 +2143,10 @@ void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
   
   delete playoutboard;
   
-  if (!givenfirstlist)
-    delete firstlist;
-  if (!givensecondlist)
-    delete secondlist;
+  //if (!givenfirstlist)
+  //  delete firstlist;
+  //if (!givensecondlist)
+  //  delete secondlist;
 }
 
 void Engine::displayPlayoutLiveGfx(int totalplayouts, bool livegfx)

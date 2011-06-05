@@ -4,11 +4,12 @@ TODO
 Now: (current focus)
   tune and compare progressive biasing
   try progressive widening and biasing combined
+  add results from first playout moves to tree
+  stop timed search if best move cannot change
   larger patterns
   change uct_* params to tree_*
 
 Soon: (before next major release)
-  add results from first playout moves to tree
   try UCB1-TUNED formula (p.216(169) in SylvainGellyThesis)
   implement the mercy rule?
   prefer games that end sooner? (don't drag on at end)

@@ -347,10 +347,10 @@ void Playout::getPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, in
           Go::Group *group=board->getGroup(p);
           if (group!=NULL && group->inAtari())
           {
-            std::list<int> *adjacentgroups=group->getAdjacentGroups();
+            Go::list_int *adjacentgroups=group->getAdjacentGroups();
             adjacentgroups->sort();
             adjacentgroups->unique();
-            for(std::list<int>::iterator iter=adjacentgroups->begin();iter!=adjacentgroups->end();++iter)
+            for(Go::list_int::iterator iter=adjacentgroups->begin();iter!=adjacentgroups->end();++iter)
             {
               if (board->inGroup((*iter)))
               {
@@ -371,7 +371,7 @@ void Playout::getPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, in
               }
               else
               {
-                std::list<int>::iterator tmp=iter;
+                Go::list_int::iterator tmp=iter;
                 --iter;
                 adjacentgroups->erase(tmp);
               }

@@ -75,6 +75,8 @@ namespace Go
   class Group;
   //typedef std::allocator<Go::Group*> allocator_groupptr;
   typedef boost::fast_pool_allocator<Go::Group*> allocator_groupptr;
+  
+  typedef std::list<int,Go::allocator_int> list_int;
 
   enum Color
   {
@@ -322,7 +324,7 @@ namespace Go
       void addTouchingEmpties();
       bool isOneOfTwoLiberties(int pos);
       int getOtherOneOfTwoLiberties(int pos);
-      std::list<int> *getAdjacentGroups() { return &adjacentgroups; };
+      std::list<int,Go::allocator_int> *getAdjacentGroups() { return &adjacentgroups; };
     
     private:
       Go::Color color;
@@ -336,7 +338,7 @@ namespace Go
       int libpossum;
       int libpossumsq;
       
-      std::list<int> adjacentgroups;
+      std::list<int,Go::allocator_int> adjacentgroups;
   };
   
   class Board

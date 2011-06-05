@@ -199,7 +199,7 @@ class Engine
     
     void doNPlayouts(int n);
     bool writeSGF(std::string filename, Go::Board *board, Tree *tree);
-    void doPlayout(Go::BitBoard *firstlist=NULL,Go::BitBoard *secondlist=NULL);
+    void doPlayout(Go::BitBoard *firstlist, Go::BitBoard *secondlist);
     void displayPlayoutLiveGfx(int totalplayouts=-1, bool livegfx=true);
     
     void allowContinuedPlay();
