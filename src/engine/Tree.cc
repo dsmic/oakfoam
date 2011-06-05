@@ -47,6 +47,7 @@ Tree::~Tree()
   {
     delete (*iter);
   }
+  children->clear();
   delete children;
 }
 

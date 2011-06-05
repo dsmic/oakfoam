@@ -1889,7 +1889,7 @@ void Engine::makeMove(Go::Move move)
   if (params->uct_keep_subtree)
     this->chooseSubTree(move);
   else
-    delete movetree;
+    this->clearMoveTree();
 }
 
 void Engine::setBoardSize(int s)

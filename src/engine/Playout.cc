@@ -576,9 +576,9 @@ void Playout::getPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, in
 void Playout::resetLGRF()
 {
   if (lgrf1!=NULL)
-    delete lgrf1;
+    delete[] lgrf1;
   if (lgrf2!=NULL)
-    delete lgrf2;
+    delete[] lgrf2;
   
   lgrfpositionmax=params->engine->getCurrentBoard()->getPositionMax();
   
