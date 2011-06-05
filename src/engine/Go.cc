@@ -346,7 +346,7 @@ int Go::Board::score()
   
   for (int p=0;p<sizedata;p++)
   {
-    if (this->getColor(p)!=Go::OFFBOARD && !scoredata[p].touched && this->getColor(p)!=Go::EMPTY)
+    if (!scoredata[p].touched && this->getColor(p)!=Go::EMPTY)
     {
       this->spreadScore(scoredata,p,this->getColor(p));
     }
@@ -369,13 +369,15 @@ int Go::Board::score()
 
 void Go::Board::spreadScore(Go::Board::ScoreVertex *scoredata, int pos, Go::Color col)
 {
-  bool wastouched=scoredata[pos].touched;
+  bool wastouched;
   
   if (this->getColor(pos)==Go::OFFBOARD || col==Go::OFFBOARD)
     return;
   
   if (this->getColor(pos)!=Go::EMPTY && col==Go::EMPTY)
     return;
+  
+  wastouched=scoredata[pos].touched;
   
   if (this->getColor(pos)!=Go::EMPTY)
   {
@@ -410,7 +412,7 @@ void Go::Board::spreadScore(Go::Board::ScoreVertex *scoredata, int pos, Go::Colo
 bool Go::Board::validMove(Go::Move move)
 {
   Go::BitBoard *validmoves=(move.getColor()==Go::BLACK?blackvalidmoves:whitevalidmoves);
-  return move.isPass() || move.isResign() || validmoves->get(move.getPosition());
+  return validmoves->get(move.getPosition()) || move.isPass() || move.isResign();
 }
 
 bool Go::Board::validMoveCheck(Go::Move move)
@@ -603,7 +605,8 @@ void Go::Board::makeMove(Go::Move move)
   
   if (symmetryupdated)
     this->updateSymmetry();
-  this->updateFeatureGammas();
+  if (features!=NULL)
+    this->updateFeatureGammas();
 }
 
 void Go::Board::refreshValidMoves()
