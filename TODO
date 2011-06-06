@@ -9,6 +9,7 @@ Now: (current focus)
   stop timed search if best move cannot change
   larger patterns
   change uct_* params to tree_*
+  option to output games to sgf with explanations
 
 Soon: (before next major release)
   try UCB1-TUNED formula (p.216(169) in SylvainGellyThesis)
