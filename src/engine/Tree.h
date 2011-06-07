@@ -70,11 +70,16 @@ class Tree
     
     void expandLeaf();
     Tree *getRobustChild(bool descend=false);
+    Tree *getSecondRobustChild(Tree *firstchild=NULL);
     Tree *getUrgentChild();
+    Tree *getBestRatioChild(float playoutthreshold=0);
     void updateRAVE(Go::Color wincol,Go::BitBoard *blacklist,Go::BitBoard *whitelist);
     void prunePossibleSuperkoViolations();
     
     void allowContinuedPlay();
+    
+    float secondBestPlayoutRatio();
+    float bestChildRatioDiff();
     
     Go::ZobristHash getHash() { return hash; };
     bool isSuperkoViolationWith(Go::ZobristHash h);

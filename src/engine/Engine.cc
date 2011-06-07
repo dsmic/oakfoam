@@ -1681,6 +1681,9 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
       bestratio=besttree->getRatio();
     }
     
+    float ratio2=besttree->secondBestPlayoutRatio();
+    bool bestsame=(besttree==(movetree->getBestRatioChild(10)));
+    
     if (playmove)
       this->makeMove(**move);
     
@@ -1707,6 +1710,9 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     if (!time->isNoTiming() || movetree->isTerminalResult())
       ss << " plts:"<<totalplayouts;
     ss << " ppms:"<<std::setprecision(2)<<playouts_per_milli;
+    ss << " rd:"<<std::setprecision(2)<<besttree->bestChildRatioDiff();
+    ss << " r2:"<<std::setprecision(2)<<ratio2;
+    ss << " bs:"<<bestsame;
     Tree *pvtree=movetree->getRobustChild(true);
     if (pvtree!=NULL)
     {

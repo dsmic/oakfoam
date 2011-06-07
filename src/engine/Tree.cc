@@ -862,3 +862,63 @@ void Tree::prunePossibleSuperkoViolations()
   }
 }
 
+float Tree::bestChildRatioDiff()
+{
+  Tree *bestchild=this->getRobustChild();
+  
+  if (bestchild==NULL)
+    return -1;
+  
+  return (this->getRatio()+bestchild->getRatio()-1);
+}
+
+Tree *Tree::getSecondRobustChild(Tree *firstchild)
+{
+  if (firstchild==NULL)
+    firstchild=this->getRobustChild();
+  
+  Tree *besttree=NULL;
+  int bestsims=0;
+  
+  for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
+  {
+    if ((((*iter)->getPlayouts()>bestsims || (*iter)->isTerminalWin()) && (*iter)!=firstchild) || besttree==NULL)
+    {
+      besttree=(*iter);
+      bestsims=(*iter)->getPlayouts();
+      if (besttree->isTerminalWin())
+        break;
+    }
+  }
+  
+  return besttree;
+}
+
+float Tree::secondBestPlayoutRatio()
+{
+  if (this->isRoot())
+    return -1;
+  
+  Tree *secondbest=parent->getSecondRobustChild(this);
+  return (this->getPlayouts()/secondbest->getPlayouts());
+}
+
+Tree *Tree::getBestRatioChild(float playoutthreshold)
+{
+  Tree *besttree=NULL;
+  float bestratio=0;
+  
+  for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
+  {
+    if (((*iter)->getRatio()>bestratio && (*iter)->getPlayouts()>playoutthreshold) || (*iter)->isTerminalWin())
+    {
+      besttree=(*iter);
+      bestratio=(*iter)->getRatio();
+      if (besttree->isTerminalWin())
+        break;
+    }
+  }
+  
+  return besttree;
+}
+
