@@ -81,7 +81,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln)
   params->addParameter("mcts","uct_progressive_bias_scaled",&(params->uct_progressive_bias_scaled),UCT_PROGRESSIVE_BIAS_SCALED);
   params->addParameter("mcts","uct_progressive_bias_relative",&(params->uct_progressive_bias_relative),UCT_PROGRESSIVE_BIAS_RELATIVE);
   
-  params->addParameter("mcts","uct_slow_update_rate",&(params->uct_slow_update_rate),UCT_SLOW_UPDATE_RATE);
+  params->addParameter("mcts","uct_slow_update_interval",&(params->uct_slow_update_interval),UCT_SLOW_UPDATE_INTERVAL);
   params->uct_slow_update_last=0;
   
   params->addParameter("mcts","surewin_threshold",&(params->surewin_threshold),SUREWIN_THRESHOLD);
@@ -2138,7 +2138,7 @@ void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
   }
   
   params->uct_slow_update_last++;
-  if (params->uct_slow_update_last>=params->uct_slow_update_rate)
+  if (params->uct_slow_update_last>=params->uct_slow_update_interval)
   {
     params->uct_slow_update_last=0;
     

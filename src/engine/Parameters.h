@@ -71,7 +71,7 @@ class Parameters
     bool uct_progressive_bias_scaled;
     bool uct_progressive_bias_relative;
     
-    int uct_slow_update_rate;
+    int uct_slow_update_interval;
     int uct_slow_update_last;
     
     bool rules_positional_superko_enabled;
