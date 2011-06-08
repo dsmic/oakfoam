@@ -10,6 +10,7 @@ Now: (current focus)
   larger patterns
   change uct_* params to tree_*
   option to output games to sgf with explanations
+  add chance a playout move is uniformly random (no heuristics)
 
 Soon: (before next major release)
   try UCB1-TUNED formula (p.216(169) in SylvainGellyThesis)
@@ -58,4 +59,5 @@ Later: (at some point)
   add hg tracked cgos,kgs?,gomill? scripts
   make SL page
   support terminal jigo in tree?
+  add seg fault and exception handling
 
