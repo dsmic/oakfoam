@@ -1670,6 +1670,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     
     Tree *besttree=movetree->getRobustChild();
     float bestratio=0;
+    float ratiodelta=-1,ratio2=-1;
+    bool bestsame=false;
     if (besttree==NULL)
     {
       fprintf(stderr,"WARNING! No move found!\n");
@@ -1681,10 +1683,11 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     {
       *move=new Go::Move(col,besttree->getMove().getPosition());
       bestratio=besttree->getRatio();
+      
+      ratiodelta=besttree->bestChildRatioDiff();
+      ratio2=besttree->secondBestPlayoutRatio();
+      bestsame=(besttree==(movetree->getBestRatioChild(10)));
     }
-    
-    float ratio2=besttree->secondBestPlayoutRatio();
-    bool bestsame=(besttree==(movetree->getBestRatioChild(10)));
     
     if (playmove)
       this->makeMove(**move);
@@ -1712,7 +1715,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     if (!time->isNoTiming() || movetree->isTerminalResult())
       ss << " plts:"<<totalplayouts;
     ss << " ppms:"<<std::setprecision(2)<<playouts_per_milli;
-    ss << " rd:"<<std::setprecision(2)<<besttree->bestChildRatioDiff();
+    ss << " rd:"<<std::setprecision(2)<<ratiodelta;
     ss << " r2:"<<std::setprecision(2)<<ratio2;
     ss << " bs:"<<bestsame;
     Tree *pvtree=movetree->getRobustChild(true);
