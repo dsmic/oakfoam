@@ -53,6 +53,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln)
   params->addParameter("mcts","playout_fillboard_n",&(params->playout_fillboard_n),PLAYOUT_FILLBOARD_N);
   params->addParameter("mcts","playout_patterns_enabled",&(params->playout_patterns_enabled),PLAYOUT_PATTERNS_ENABLED);
   params->addParameter("mcts","playout_anycapture_enabled",&(params->playout_anycapture_enabled),PLAYOUT_ANYCAPTURE_ENABLED);
+  params->addParameter("mcts","playout_mercy_rule_enabled",&(params->playout_mercy_rule_enabled),PLAYOUT_MERCY_RULE_ENABLED);
+  params->addParameter("mcts","playout_mercy_rule_factor",&(params->playout_mercy_rule_factor),PLAYOUT_MERCY_RULE_FACTOR);
   
   params->addParameter("mcts","ucb_c",&(params->ucb_c),UCB_C);
   params->addParameter("mcts","ucb_init",&(params->ucb_init),UCB_INIT);

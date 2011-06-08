@@ -55,6 +55,8 @@ void Playout::doPlayout(Go::Board *board, float &finalscore, std::list<Go::Move>
   Go::Move move=Go::Move(coltomove,Go::Move::PASS);
   int movesalready=board->getMovesMade();
   int *posarray = new int[board->getPositionMax()];
+  bool mercywin=false;
+  board->resetCaptures(); // for mercy rule
   while (board->getPassesPlayed()<2)
   {
     bool resign;
@@ -67,15 +69,33 @@ void Playout::doPlayout(Go::Board *board, float &finalscore, std::list<Go::Move>
     coltomove=Go::otherColor(coltomove);
     if (resign)
       break;
+    if (params->playout_mercy_rule_enabled)
+    {
+      if (coltomove==Go::BLACK && (board->getStoneCapturesOf(Go::BLACK)-board->getStoneCapturesOf(Go::WHITE))>(board->getSize()*board->getSize()*params->playout_mercy_rule_factor))
+      {
+        mercywin=true;
+        finalscore=-0.5;
+        break;
+      }
+      else if (coltomove==Go::WHITE && (board->getStoneCapturesOf(Go::WHITE)-board->getStoneCapturesOf(Go::BLACK))>(board->getSize()*board->getSize()*params->playout_mercy_rule_factor))
+      {
+        mercywin=true;
+        finalscore=+0.5;
+        break;
+      }
+    }
     if (board->getMovesMade()>(board->getSize()*board->getSize()*PLAYOUT_MAX_MOVE_FACTOR+movesalready))
       break;
   }
   delete[] posarray;
   
-  finalscore=board->score()-params->engine->getKomi();
+  if (!mercywin)
+    finalscore=board->score()-params->engine->getKomi();
   //Go::Color playoutcol=playoutmoves.back().getColor();
   //bool playoutwin=Go::Board::isWinForColor(playoutcol,finalscore);
   bool playoutjigo=(finalscore==0);
+  
+  //fprintf(stderr,"plt: %d %d %.1f\n%s\n",mercywin,board->getMovesMade(),finalscore,board->toString().c_str());
   
   if (params->playout_lgrf1_enabled)
   {

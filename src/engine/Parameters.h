@@ -47,6 +47,8 @@ class Parameters
     bool playout_anycapture_enabled;
     bool playout_lgrf1_enabled;
     bool playout_lgrf2_enabled;
+    bool playout_mercy_rule_enabled;
+    float playout_mercy_rule_factor;
     
     float ucb_c;
     float ucb_init;

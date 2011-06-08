@@ -214,6 +214,9 @@ Go::Board::Board(int s)
   whitegammas=new Go::ObjectBoard<float>(s);
   blackgammas->fill(0);
   whitegammas->fill(0);
+  
+  blackcaptures=0;
+  whitecaptures=0;
 }
 
 Go::Board::~Board()
@@ -269,6 +272,9 @@ void Go::Board::copyOver(Go::Board *copyboard)
   if (copyboard->symmetryupdated)
     copyboard->updateSymmetry();
   copyboard->updateFeatureGammas();
+  
+  copyboard->blackcaptures=this->blackcaptures;
+  copyboard->whitecaptures=this->whitecaptures;
 }
 
 std::string Go::Board::toString()
@@ -786,6 +792,10 @@ void Go::Board::spreadRemoveStones(Go::Color col, int pos, std::list<int,Go::all
   
   this->setColor(pos,Go::EMPTY);
   this->setGroup(pos,NULL);
+  if (col==Go::BLACK)
+    blackcaptures++;
+  else
+    whitecaptures++;
   
   foreach_adjacent(pos,p,{
     if (this->getColor(p)==col)

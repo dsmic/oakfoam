@@ -383,6 +383,8 @@ namespace Go
       int getPositionMax() { return sizedata; };
       Go::Move getLastMove() { return lastmove; };
       Go::Move getSecondLastMove() { return secondlastmove; };
+      int getStoneCapturesOf(Go::Color col) { return (col==Go::BLACK?blackcaptures:whitecaptures); };
+      void resetCaptures() { blackcaptures=0; whitecaptures=0; };
       
       inline Go::Color getColor(int pos) { return data[pos].color; };
       inline Go::Group *getGroup(int pos) { return data[pos].group->find(); };
@@ -457,6 +459,7 @@ namespace Go
       float whitetotalgamma;
       Go::ObjectBoard<float> *blackgammas;
       Go::ObjectBoard<float> *whitegammas;
+      int blackcaptures,whitecaptures;
       
       inline Go::Group *getGroupWithoutFind(int pos) { return data[pos].group; };
       inline void setColor(int pos, Go::Color col) { data[pos].color=col; if (markchanges) { lastchanges->set(pos); } };
