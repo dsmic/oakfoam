@@ -10,7 +10,9 @@ Now: (current focus)
   larger patterns
   change uct_* params to tree_*
   option to output games to sgf with explanations
+  try features in playouts after other heuristics, just before random
   add chance a playout move is uniformly random (no heuristics)
+  do superko pruning after a number of playouts through a node
 
 Soon: (before next major release)
   try UCB1-TUNED formula (p.216(169) in SylvainGellyThesis)

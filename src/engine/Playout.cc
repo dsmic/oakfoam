@@ -226,40 +226,6 @@ void Playout::getPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, in
     }
   }
   
-  if (params->playout_features_enabled)
-  {
-    //Go::ObjectBoard<float> *gammas=new Go::ObjectBoard<float>(boardsize);
-    //float totalgamma=features->getBoardGammas(board,col,gammas);
-    float totalgamma=board->getFeatureTotalGamma();
-    float randomgamma=totalgamma*rand->getRandomReal();
-    bool foundmove=false;
-    
-    for (int p=0;p<board->getPositionMax();p++)
-    {
-      Go::Move m=Go::Move(col,p);
-      if (board->validMove(m))
-      {
-        //float gamma=gammas->get(p);
-        float gamma=board->getFeatureGamma(p);
-        if (randomgamma<gamma)
-        {
-          move=m;
-          foundmove=true;
-          break;
-        }
-        else
-          randomgamma-=gamma;
-      }
-    }
-    
-    if (!foundmove)
-      move=Go::Move(col,Go::Move::PASS);
-    if (params->debug_on)
-        gtpe->getOutput()->printfDebug("[playoutmove]: features\n");
-    //delete gammas;
-    return;
-  }
-  
   if (params->playout_atari_enabled)
   {
     int *atarimoves=posarray;
@@ -539,6 +505,40 @@ void Playout::getPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, in
         gtpe->getOutput()->printfDebug("[playoutmove]: anycapture\n");
       return;
     }
+  }
+  
+  if (params->playout_features_enabled)
+  {
+    //Go::ObjectBoard<float> *gammas=new Go::ObjectBoard<float>(boardsize);
+    //float totalgamma=features->getBoardGammas(board,col,gammas);
+    float totalgamma=board->getFeatureTotalGamma();
+    float randomgamma=totalgamma*rand->getRandomReal();
+    bool foundmove=false;
+    
+    for (int p=0;p<board->getPositionMax();p++)
+    {
+      Go::Move m=Go::Move(col,p);
+      if (board->validMove(m))
+      {
+        //float gamma=gammas->get(p);
+        float gamma=board->getFeatureGamma(p);
+        if (randomgamma<gamma)
+        {
+          move=m;
+          foundmove=true;
+          break;
+        }
+        else
+          randomgamma-=gamma;
+      }
+    }
+    
+    if (!foundmove)
+      move=Go::Move(col,Go::Move::PASS);
+    if (params->debug_on)
+        gtpe->getOutput()->printfDebug("[playoutmove]: features\n");
+    //delete gammas;
+    return;
   }
   
   for (int i=0;i<10;i++)
