@@ -43,8 +43,6 @@ Engine::Engine(Gtp::Engine *ge, std::string ln)
   
   params->addParameter("mcts","playout_lgrf2_enabled",&(params->playout_lgrf2_enabled),PLAYOUT_LGRF2_ENABLED);
   params->addParameter("mcts","playout_lgrf1_enabled",&(params->playout_lgrf1_enabled),PLAYOUT_LGRF1_ENABLED);
-  params->addParameter("mcts","playout_features_enabled",&(params->playout_features_enabled),PLAYOUT_FEATURES_ENABLED);
-  params->addParameter("mcts","playout_features_incremental",&(params->playout_features_incremental),PLAYOUT_FEATURES_INCREMENTAL);
   params->addParameter("mcts","playout_atari_enabled",&(params->playout_atari_enabled),PLAYOUT_ATARI_ENABLED);
   params->addParameter("mcts","playout_lastatari_enabled",&(params->playout_lastatari_enabled),PLAYOUT_LASTATARI_ENABLED);
   params->addParameter("mcts","playout_lastcapture_enabled",&(params->playout_lastcapture_enabled),PLAYOUT_LASTCAPTURE_ENABLED);
@@ -53,6 +51,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln)
   params->addParameter("mcts","playout_fillboard_n",&(params->playout_fillboard_n),PLAYOUT_FILLBOARD_N);
   params->addParameter("mcts","playout_patterns_enabled",&(params->playout_patterns_enabled),PLAYOUT_PATTERNS_ENABLED);
   params->addParameter("mcts","playout_anycapture_enabled",&(params->playout_anycapture_enabled),PLAYOUT_ANYCAPTURE_ENABLED);
+  params->addParameter("mcts","playout_features_enabled",&(params->playout_features_enabled),PLAYOUT_FEATURES_ENABLED);
+  params->addParameter("mcts","playout_features_incremental",&(params->playout_features_incremental),PLAYOUT_FEATURES_INCREMENTAL);
   params->addParameter("mcts","playout_mercy_rule_enabled",&(params->playout_mercy_rule_enabled),PLAYOUT_MERCY_RULE_ENABLED);
   params->addParameter("mcts","playout_mercy_rule_factor",&(params->playout_mercy_rule_factor),PLAYOUT_MERCY_RULE_FACTOR);
   
