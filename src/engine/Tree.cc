@@ -853,12 +853,22 @@ void Tree::prunePossibleSuperkoViolations()
           Tree *tmptree=(*iter);
           --iter;
           children->erase(tmpiter);
+          if (tmptree->isPruned())
+            prunedchildren--;
           delete tmptree;
         }
       }
     }
     
     delete startboard;
+  }
+  
+  if (prunedchildren==children->size())
+  {
+    unprunenextchildat=0;
+    lastunprune=0;
+    unprunebase=0;
+    this->unPruneNow(); //unprune at least one child
   }
 }
 
