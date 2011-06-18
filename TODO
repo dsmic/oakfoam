@@ -2,8 +2,6 @@ TODO
 ------------------
 
 Now: (current focus)
-  tune and compare progressive biasing
-  try progressive widening and biasing combined
   test impact of lastmove playout heuristic
   add results from first playout moves to tree
   stop timed search if best move cannot change
