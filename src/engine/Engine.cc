@@ -4,6 +4,7 @@
 #include <cmath>
 #include <vector>
 #include <fstream>
+#include <sstream>
 #include <iomanip>
 #include <boost/timer.hpp>
 
@@ -318,6 +319,8 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("bookclear","Book Clear","none");
   gtpe->addAnalyzeCommand("bookload %%r","Book Load","none");
   gtpe->addAnalyzeCommand("booksave %%w","Book Save","none");
+  
+  gtpe->setInterruptFlag(&stopthinking);
 }
 
 void Engine::gtpBoardSize(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
@@ -1599,6 +1602,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     float time_allocated;
     float playouts_per_milli;
     
+    stopthinking=false;
+    
     if (!time->isNoTiming())
     {
       if (params->time_ignore)
@@ -1645,6 +1650,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
         gtpe->getOutput()->printfDebug("SOLVED: found 100%% sure result after %d plts!\n",totalplayouts);
         break;
       }
+      else if (stopthinking)
+        break;
       
       this->doPlayout(firstlist,secondlist);
       totalplayouts++;
@@ -1998,6 +2005,8 @@ void Engine::doNPlayouts(int n)
   {
     int livegfxupdate=0;
     
+    stopthinking=false;
+    
     this->allowContinuedPlay();
     
     Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
@@ -2010,6 +2019,8 @@ void Engine::doNPlayouts(int n)
         gtpe->getOutput()->printfDebug("SOLVED! found 100%% sure result after %d plts!\n",i);
         break;
       }
+      else if (stopthinking)
+        break;
       
       this->doPlayout(firstlist,secondlist);
       

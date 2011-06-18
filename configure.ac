@@ -2,7 +2,7 @@ AC_INIT([Oakfoam], [0.0.9-dev], [flash.slash@gmail.com], [oakfoam])
 AM_INIT_AUTOMAKE([-Wall subdir-objects])
 
 AM_CONFIG_HEADER([config.h])
-CXXFLAGS="-Wall -g -O3 -DTOPSRCDIR=\\\"`pwd`\\\""
+CXXFLAGS="-Wall -g -O3 -DTOPSRCDIR=\\\"`pwd`\\\" -lboost_thread-mt"
 
 AC_PROG_CXX
 AC_PROG_CXX_C_O

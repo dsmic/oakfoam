@@ -5,7 +5,7 @@
 #include <sstream>
 //#include <iomanip>
 //#include <iostream>
-//#include <fstream>
+#include <fstream>
 
 Book::Book(Parameters *p)
 {

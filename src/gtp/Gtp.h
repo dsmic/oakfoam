@@ -1,15 +1,14 @@
 #ifndef DEF_OAKFOAM_GTP_H
 #define DEF_OAKFOAM_GTP_H
 
-#include <iostream>
 #include <cstdio>
 #include <cstdarg>
 #include <string>
-#include <sstream>
 #include <vector>
 #include <list>
-#include <algorithm>
-#include <fstream>
+#include <boost/thread/thread.hpp>
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/barrier.hpp>
 
 namespace Gtp
 {
@@ -139,16 +138,50 @@ namespace Gtp
       void addConstantCommand(std::string cmd, std::string value);
       void addFunctionCommand(std::string cmd, void *inst, Gtp::Engine::CommandFunction func);
       void addAnalyzeCommand(std::string cmd, std::string label, std::string type);
+      void setInterruptFlag(bool *intr) { interrupt=intr; };
       
       bool executeCommand(std::string line);
+      void finishLastCommand();
       
       Gtp::Output *getOutput() { return output; };
       
     private:
+      class WorkerThread
+      {
+        public:
+          WorkerThread(Gtp::Engine *eng, Gtp::Engine::FunctionList *fi, Gtp::Command *c);
+          ~WorkerThread();
+          
+          void run();
+        
+        private:
+          class Function
+          {
+            public:
+              Function(WorkerThread *wt) { workerthread=wt; };
+
+              void operator()();
+
+            private:
+              WorkerThread *workerthread;
+          };
+          
+          Gtp::Engine *engine;
+          Gtp::Engine::FunctionList *funcitem;
+          Gtp::Command *cmd;
+          
+          boost::barrier startbarrier;
+          boost::mutex::scoped_lock *lock;
+          boost::thread thisthread;
+      };
+      
       Gtp::Engine::FunctionList *functionlist;
       Gtp::Engine::ConstantList *constantlist;
       Gtp::Output *output;
       std::list<std::string> analyzeList;
+      Gtp::Engine::WorkerThread *workerthread;
+      boost::mutex workerbusy;
+      bool *interrupt;
       
       void parseInput(std::string in, Gtp::Command **cmd);
       void doCommand(Gtp::Command *cmd);

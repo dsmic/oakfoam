@@ -1,5 +1,11 @@
 #include "Gtp.h"
 
+#include <iostream>
+#include <sstream>
+#include <algorithm>
+#include <fstream>
+
+
 Gtp::Engine::Engine()
 {
   output=new Gtp::Output();
@@ -11,10 +17,15 @@ Gtp::Engine::Engine()
   this->addFunctionCommand("known_command",this,&Gtp::Engine::cmdKnownCommand);
   
   this->addFunctionCommand("gogui-analyze_commands",this,&Gtp::Engine::cmdAnalyzeCommands);
+  this->addConstantCommand("gogui-interrupt","");
+  
+  workerthread=NULL;
+  interrupt=NULL;
 }
 
 Gtp::Engine::~Engine()
 {
+  this->finishLastCommand();
   delete output;
   if (functionlist!=NULL)
     delete functionlist;
@@ -34,6 +45,8 @@ void Gtp::Engine::run()
     if (!this->executeCommand(buff))
       break;
   }
+  
+  this->finishLastCommand();
 }
 
 bool Gtp::Engine::executeCommand(std::string line)
@@ -49,14 +62,13 @@ bool Gtp::Engine::executeCommand(std::string line)
     
     if (cmdname=="quit")
     {
+      this->finishLastCommand();
       this->getOutput()->startResponse(cmd);
       this->getOutput()->endResponse();
       running=false;
     }
     else
       doCommand(cmd);
-    
-    delete cmd;
   }
   
   return running;
@@ -75,7 +87,14 @@ void Gtp::Engine::parseInput(std::string in, Gtp::Command **cmd)
   for (int i=0;i<(int)in.length();i++)
   {
     if (in.at(i)=='#')
+    {
+      if (interrupt!=NULL && (in.rfind("interrupt")!=((unsigned)-1)))
+      {
+        *interrupt=true;
+        //fprintf(stderr,"interrupt!!!\n");
+      }
       break;
+    }
     else if (in.at(i)=='\t')
       inproper+=' ';
     else if (in.at(i)=='\n' || ((int)in.at(i)>=32 && (int)in.at(i)<127))
@@ -114,6 +133,8 @@ void Gtp::Engine::doCommand(Gtp::Command *cmd)
   Gtp::Engine::ConstantList *clist=constantlist;
   Gtp::Engine::FunctionList *flist=functionlist;
   
+  this->finishLastCommand();
+  
   while (clist!=NULL)
   {
     if (clist->getCommandName()==cmd->getCommandName())
@@ -121,6 +142,7 @@ void Gtp::Engine::doCommand(Gtp::Command *cmd)
       this->getOutput()->startResponse(cmd);
       this->getOutput()->printString(clist->getValue());
       this->getOutput()->endResponse();
+      delete cmd;
       return;
     }
     clist=clist->getNext();
@@ -130,9 +152,7 @@ void Gtp::Engine::doCommand(Gtp::Command *cmd)
   {
     if (flist->getCommandName()==cmd->getCommandName())
     {
-      Gtp::Engine::CommandFunction func;
-      func=flist->getFunction();
-      (*func)(flist->getInstance(),this,cmd);
+      workerthread=new WorkerThread(this,flist,cmd);
       return;
     }
     flist=flist->getNext();
@@ -141,6 +161,49 @@ void Gtp::Engine::doCommand(Gtp::Command *cmd)
   this->getOutput()->startResponse(cmd,false);
   this->getOutput()->printString("unknown command");
   this->getOutput()->endResponse();
+  delete cmd;
+}
+
+void Gtp::Engine::finishLastCommand()
+{
+  boost::mutex::scoped_lock lock(workerbusy);
+  if (workerthread!=NULL)
+  {
+    delete workerthread;
+    workerthread=NULL;
+  }
+}
+
+Gtp::Engine::WorkerThread::WorkerThread(Gtp::Engine *eng, Gtp::Engine::FunctionList *fi, Gtp::Command *c)
+  : engine(eng),
+    funcitem(fi),
+    cmd(c),
+    startbarrier(2),
+    thisthread(Gtp::Engine::WorkerThread::Function(this))
+{
+  lock=new boost::mutex::scoped_lock(engine->workerbusy);
+  startbarrier.wait();
+}
+
+Gtp::Engine::WorkerThread::~WorkerThread()
+{
+  thisthread.join();
+}
+
+void Gtp::Engine::WorkerThread::Function::operator()()
+{
+  workerthread->run();
+}
+
+void Gtp::Engine::WorkerThread::run()
+{
+  startbarrier.wait();
+  //fprintf(stderr,"thread start %p %p %p\n",engine,funcitem,cmd);
+  Gtp::Engine::CommandFunction func=funcitem->getFunction();
+  (*func)(funcitem->getInstance(),engine,cmd);
+  delete cmd;
+  //fprintf(stderr,"thread done\n");
+  delete lock;
 }
 
 void Gtp::Engine::addConstantCommand(std::string cmd, std::string value)

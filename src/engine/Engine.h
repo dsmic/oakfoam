@@ -114,6 +114,7 @@ class Engine
     Go::ZobristTable *getZobristTable() { return zobristtable; };
     Go::ZobristTree *getZobristHashTree() { return hashtree; };
     Gtp::Engine *getGtpEngine() { return gtpe; };
+    void stopThinking() { stopthinking=true; };
     
     static void updateParameterWrapper(void *instance, std::string id)
     {
@@ -193,6 +194,7 @@ class Engine
     Go::ZobristTable *zobristtable;
     Go::ZobristTree *hashtree;
     Playout *playout;
+    bool stopthinking;
     
     void addGtpCommands();
     

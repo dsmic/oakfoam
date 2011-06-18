@@ -69,6 +69,7 @@ int main(int argc, char* argv[])
       
       fin.close();
       
+      oakfoam.gtpe->finishLastCommand();
       oakfoam.gtpe->getOutput()->setOutputOn(true);
     }
     else if (arg=="-l" || arg=="--log" )
