@@ -28,10 +28,10 @@ Soon: (before next major release)
   make sure scoring at end of kgs ranked game works (opponent can't "cheat")
   reduce expand_after?
   tune fillboard's N
-  use Benson algo in tree and playouts
-  use Criticality as a feature
+  try Criticality as a feature
   look into transposition table-like structure
   look at Feasibility for 19x19 (Baier Hendrik)
+  try Feasibility as a feature
   look at Dynamic Komi for 19x19 (Baier Hendrik)
   try LGRF-1/2 with a variable queue (see 6.3.5 Multiple Reply LGR in Baier Hendrik)
 
@@ -62,4 +62,5 @@ Later: (at some point)
   make SL page
   support terminal jigo in tree?
   add seg fault and exception handling
+  try use Benson algo in tree and playouts?
 
