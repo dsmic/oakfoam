@@ -4,16 +4,16 @@ TODO
 Now: (current focus)
   try tune rave_init_wins
   test impact of lastcapture playout heuristic
-  add results from first playout moves to tree
   stop timed search if best move cannot change
   larger patterns
   change uct_* params to tree_*
   option to output games to sgf with explanations
-  try features in playouts after other heuristics, just before random
   add chance a playout move is uniformly random (no heuristics)
   do superko pruning after a number of playouts through a node
+  change gtp worker thread setup to be running all the time (faster)
 
 Soon: (before next major release)
+  add results from first playout moves to tree
   try UCB1-TUNED formula (p.216(169) in SylvainGellyThesis)
   prefer games that end sooner? (don't drag on at end)
   progressively add more reward for points diff if winrate very good?
