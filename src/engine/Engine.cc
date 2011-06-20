@@ -112,7 +112,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln)
   
   params->addParameter("other","debug",&(params->debug_on),DEBUG_ON);
   
-  params->addParameter("other","interrupts_enabled",&(params->interrupts_enabled),INTERRUPTS_ENABLED);
+  params->addParameter("other","interrupts_enabled",&(params->interrupts_enabled),INTERRUPTS_ENABLED,&Engine::updateParameterWrapper,this);
   
   params->addParameter("other","features_only_small",&(params->features_only_small),false);
   params->addParameter("other","features_output_competitions",&(params->features_output_competitions),false);
