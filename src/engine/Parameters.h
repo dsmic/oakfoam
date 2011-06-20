@@ -79,6 +79,8 @@ class Parameters
     bool pondering_enabled;
     int pondering_playouts_max;
     
+    bool interrupts_enabled;
+    
     bool rules_positional_superko_enabled;
     bool rules_superko_top_ply;
     

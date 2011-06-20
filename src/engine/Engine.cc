@@ -112,6 +112,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln)
   
   params->addParameter("other","debug",&(params->debug_on),DEBUG_ON);
   
+  params->addParameter("other","interrupts_enabled",&(params->interrupts_enabled),INTERRUPTS_ENABLED);
+  
   params->addParameter("other","features_only_small",&(params->features_only_small),false);
   params->addParameter("other","features_output_competitions",&(params->features_output_competitions),false);
   params->addParameter("other","features_output_competitions_mmstyle",&(params->features_output_competitions_mmstyle),false);
@@ -224,6 +226,10 @@ void Engine::updateParameter(std::string id)
       params->rand_seed=std::time(0);
     rand=Random(params->rand_seed);
   }
+  else if (id=="interrupts_enabled")
+  {
+    gtpe->setWorkerEnabled(params->interrupts_enabled);
+  }
 }
 
 void Engine::addGtpCommands()
@@ -325,6 +331,7 @@ void Engine::addGtpCommands()
   
   gtpe->setInterruptFlag(&stopthinking);
   gtpe->setPonderer(&Engine::ponderWrapper,this,&stoppondering);
+  gtpe->setWorkerEnabled(params->interrupts_enabled);
 }
 
 void Engine::gtpBoardSize(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)

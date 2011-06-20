@@ -142,6 +142,7 @@ namespace Gtp
       void addAnalyzeCommand(std::string cmd, std::string label, std::string type);
       void setInterruptFlag(volatile bool *intr) { interrupt=intr; };
       void setPonderer(Gtp::Engine::PonderFunction f, void *i, volatile bool *s);
+      void setWorkerEnabled(bool en) { workerenabled=en; };
       
       bool executeCommand(std::string line);
       void finishLastCommand();
@@ -221,6 +222,7 @@ namespace Gtp
       Gtp::Engine::ConstantList *constantlist;
       Gtp::Output *output;
       std::list<std::string> analyzeList;
+      bool workerenabled;
       Gtp::Engine::WorkerThread *workerthread;
       boost::mutex workerbusy;
       Gtp::Engine::PonderThread *ponderthread;

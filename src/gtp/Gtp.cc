@@ -19,6 +19,7 @@ Gtp::Engine::Engine()
   this->addFunctionCommand("gogui-analyze_commands",this,&Gtp::Engine::cmdAnalyzeCommands);
   this->addConstantCommand("gogui-interrupt","");
   
+  workerenabled=true;
   workerthread=new WorkerThread(this);
   interrupt=NULL;
   ponderthread=NULL;
@@ -161,7 +162,15 @@ void Gtp::Engine::doCommand(Gtp::Command *cmd)
   {
     if (flist->getCommandName()==cmd->getCommandName())
     {
-      workerthread->doCmd(flist,cmd,&Gtp::Engine::startPonderingWrapper);
+      if (workerenabled)
+        workerthread->doCmd(flist,cmd,&Gtp::Engine::startPonderingWrapper);
+      else
+      {
+        Gtp::Engine::CommandFunction func=flist->getFunction();
+        (*func)(flist->getInstance(),this,cmd);
+        delete cmd;
+        this->startPondering();
+      }
       return;
     }
     flist=flist->getNext();
