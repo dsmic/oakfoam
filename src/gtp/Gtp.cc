@@ -68,6 +68,7 @@ bool Gtp::Engine::executeCommand(std::string line)
       this->getOutput()->startResponse(cmd);
       this->getOutput()->endResponse();
       running=false;
+      delete cmd;
     }
     else
       doCommand(cmd);
