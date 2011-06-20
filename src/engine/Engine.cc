@@ -2307,7 +2307,8 @@ void Engine::ponder()
   if (params->move_policy==Parameters::MP_UCT || params->move_policy==Parameters::MP_ONEPLY)
   {
     //fprintf(stderr,"pondering starting!\n");
-    this->allowContinuedPlay();
+    //this->allowContinuedPlay();
+    params->uct_slow_update_last=0;
     
     Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
     Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
