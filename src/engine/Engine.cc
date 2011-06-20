@@ -101,6 +101,9 @@ Engine::Engine(Gtp::Engine *ge, std::string ln)
   params->addParameter("time","time_move_minimum",&(params->time_move_minimum),TIME_MOVE_MINIMUM);
   params->addParameter("time","time_ignore",&(params->time_ignore),false);
   
+  params->addParameter("time","pondering_enabled",&(params->pondering_enabled),PONDERING_ENABLED);
+  params->addParameter("time","pondering_playouts_max",&(params->pondering_playouts_max),PONDERING_PLAYOUTS_MAX);
+  
   params->addParameter("other","live_gfx",&(params->livegfx_on),LIVEGFX_ON);
   params->addParameter("other","live_gfx_update_playouts",&(params->livegfx_update_playouts),LIVEGFX_UPDATE_PLAYOUTS);
   params->addParameter("other","live_gfx_delay",&(params->livegfx_delay),LIVEGFX_DELAY);
@@ -321,6 +324,7 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("booksave %%w","Book Save","none");
   
   gtpe->setInterruptFlag(&stopthinking);
+  gtpe->setPonderer(&Engine::ponderWrapper,this,&stoppondering);
 }
 
 void Engine::gtpBoardSize(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
@@ -2292,6 +2296,38 @@ void Engine::allowContinuedPlay()
     currentboard->resetPassesPlayed();
     movetree->allowContinuedPlay();
     gtpe->getOutput()->printfDebug("WARNING! continuing play from a terminal position\n");
+  }
+}
+
+void Engine::ponder()
+{
+  if (!(params->pondering_enabled) || (currentboard->getMovesMade()<=0) || (book->getMoves(boardsize,movehistory).size()>0))
+    return;
+  
+  if (params->move_policy==Parameters::MP_UCT || params->move_policy==Parameters::MP_ONEPLY)
+  {
+    //fprintf(stderr,"pondering starting!\n");
+    this->allowContinuedPlay();
+    
+    Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
+    Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
+    
+    int playouts=0;
+    while (!stoppondering && movetree->getPlayouts()<(params->pondering_playouts_max))
+    {
+      if (movetree->isTerminalResult())
+      {
+        gtpe->getOutput()->printfDebug("SOLVED! found 100%% sure result after %d plts!\n",playouts);
+        break;
+      }
+      
+      this->doPlayout(firstlist,secondlist);
+      playouts++;
+    }
+    
+    delete firstlist;
+    delete secondlist;
+    //fprintf(stderr,"pondering done! %d %.0f\n",playouts,movetree->getPlayouts());
   }
 }
 

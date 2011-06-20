@@ -21,6 +21,7 @@ Gtp::Engine::Engine()
   
   workerthread=new WorkerThread(this);
   interrupt=NULL;
+  ponderthread=NULL;
 }
 
 Gtp::Engine::~Engine()
@@ -28,6 +29,11 @@ Gtp::Engine::~Engine()
   this->finishLastCommand();
   if (workerthread!=NULL)
     delete workerthread;
+  if (ponderthread!=NULL)
+  {
+    ponderthread->ponderStop();
+    delete ponderthread;
+  }
   delete output;
   if (functionlist!=NULL)
     delete functionlist;
@@ -155,7 +161,7 @@ void Gtp::Engine::doCommand(Gtp::Command *cmd)
   {
     if (flist->getCommandName()==cmd->getCommandName())
     {
-      workerthread->doCmd(flist,cmd);
+      workerthread->doCmd(flist,cmd,&Gtp::Engine::startPonderingWrapper);
       return;
     }
     flist=flist->getNext();
@@ -170,6 +176,17 @@ void Gtp::Engine::doCommand(Gtp::Command *cmd)
 void Gtp::Engine::finishLastCommand()
 {
   boost::mutex::scoped_lock lock(workerbusy);
+  this->stopPondering();
+}
+
+void Gtp::Engine::setPonderer(Gtp::Engine::PonderFunction f, void *i, volatile bool *s)
+{
+  if (ponderthread!=NULL)
+  {
+    ponderthread->ponderStop();
+    delete ponderthread;
+  }
+  ponderthread=new PonderThread(f,i,s);
 }
 
 Gtp::Engine::WorkerThread::WorkerThread(Gtp::Engine *eng)
@@ -204,16 +221,69 @@ void Gtp::Engine::WorkerThread::run()
     (*func)(funcitem->getInstance(),engine,cmd);
     delete cmd;
     //fprintf(stderr,"job done\n");
+    (*ponderfunc)(engine);
     delete lock;
   }
 }
 
-void Gtp::Engine::WorkerThread::doCmd(Gtp::Engine::FunctionList *fi, Gtp::Command *c)
+void Gtp::Engine::WorkerThread::doCmd(Gtp::Engine::FunctionList *fi, Gtp::Command *c, Gtp::Engine::PonderFunction pf)
 {
   lock=new boost::mutex::scoped_lock(engine->workerbusy);
   funcitem=fi;
   cmd=c;
+  ponderfunc=pf;
   startbarrier.wait();
+}
+
+Gtp::Engine::PonderThread::PonderThread(Gtp::Engine::PonderFunction f, void *i, volatile bool *s)
+  : func(f),
+    instance(i),
+    stop(s),
+    running(true),
+    startbarrier(2),
+    thisthread(Gtp::Engine::PonderThread::Worker(this))
+{
+}
+
+Gtp::Engine::PonderThread::~PonderThread()
+{
+  running=false;
+  startbarrier.wait();
+  thisthread.join();
+}
+
+void Gtp::Engine::PonderThread::Worker::operator()()
+{
+  ponderthread->run();
+}
+
+void Gtp::Engine::PonderThread::run()
+{
+  while (running)
+  {
+    startbarrier.wait();
+    if (!running)
+      break;
+    //fprintf(stderr,"pondering start\n");
+    (*func)(instance);
+    //fprintf(stderr,"pondering done\n");
+    delete lock;
+  }
+}
+
+void Gtp::Engine::PonderThread::ponderStart()
+{
+  lock=new boost::mutex::scoped_lock(busymutex);
+  *stop=false;
+  startbarrier.wait();
+}
+
+void Gtp::Engine::PonderThread::ponderStop()
+{
+  //fprintf(stderr,"pondering stop\n");
+  *stop=true;
+  boost::mutex::scoped_lock lock(busymutex);
+  //fprintf(stderr,"pondering stopped\n");
 }
 
 void Gtp::Engine::addConstantCommand(std::string cmd, std::string value)

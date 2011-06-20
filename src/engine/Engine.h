@@ -49,6 +49,9 @@
 #define PLAYOUT_MERCY_RULE_ENABLED true
 #define PLAYOUT_MERCY_RULE_FACTOR 0.40
 
+#define PONDERING_ENABLED false
+#define PONDERING_PLAYOUTS_MAX 100000
+
 #define SUREWIN_THRESHOLD 0.90
 
 #define RESIGN_RATIO_THRESHOLD 0.05
@@ -115,6 +118,8 @@ class Engine
     Go::ZobristTree *getZobristHashTree() { return hashtree; };
     Gtp::Engine *getGtpEngine() { return gtpe; };
     void stopThinking() { stopthinking=true; };
+    static void ponderWrapper(void *instance) { ((Engine*)instance)->ponder(); };
+    void ponder();
     
     static void updateParameterWrapper(void *instance, std::string id)
     {
@@ -194,7 +199,8 @@ class Engine
     Go::ZobristTable *zobristtable;
     Go::ZobristTree *hashtree;
     Playout *playout;
-    bool stopthinking;
+    volatile bool stopthinking;
+    volatile bool stoppondering;
     
     void addGtpCommands();
     

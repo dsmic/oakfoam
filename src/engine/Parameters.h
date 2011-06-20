@@ -76,6 +76,9 @@ class Parameters
     int uct_slow_update_interval;
     int uct_slow_update_last;
     
+    bool pondering_enabled;
+    int pondering_playouts_max;
+    
     bool rules_positional_superko_enabled;
     bool rules_superko_top_ply;
     

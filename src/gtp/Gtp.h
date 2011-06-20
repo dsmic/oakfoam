@@ -9,6 +9,7 @@
 #include <boost/thread/thread.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/barrier.hpp>
+#include <boost/function.hpp>
 
 namespace Gtp
 {
@@ -82,6 +83,7 @@ namespace Gtp
       ~Engine();
       
       typedef void (*CommandFunction)(void *instance, Gtp::Engine*, Gtp::Command*);
+      typedef void (*PonderFunction)(void *instance);
       
       class FunctionList
       {
@@ -138,10 +140,14 @@ namespace Gtp
       void addConstantCommand(std::string cmd, std::string value);
       void addFunctionCommand(std::string cmd, void *inst, Gtp::Engine::CommandFunction func);
       void addAnalyzeCommand(std::string cmd, std::string label, std::string type);
-      void setInterruptFlag(bool *intr) { interrupt=intr; };
+      void setInterruptFlag(volatile bool *intr) { interrupt=intr; };
+      void setPonderer(Gtp::Engine::PonderFunction f, void *i, volatile bool *s);
       
       bool executeCommand(std::string line);
       void finishLastCommand();
+      static void startPonderingWrapper(void *instance) { ((Gtp::Engine*)instance)->startPondering(); };
+      void startPondering() { if (ponderthread!=NULL) ponderthread->ponderStart(); };
+      void stopPondering() { if (ponderthread!=NULL) ponderthread->ponderStop(); };
       
       Gtp::Output *getOutput() { return output; };
       
@@ -152,7 +158,7 @@ namespace Gtp
           WorkerThread(Gtp::Engine *eng);
           ~WorkerThread();
           
-          void doCmd(Gtp::Engine::FunctionList *fi, Gtp::Command *c);
+          void doCmd(Gtp::Engine::FunctionList *fi, Gtp::Command *c, Gtp::Engine::PonderFunction pf);
           void run();
         
         private:
@@ -170,9 +176,43 @@ namespace Gtp
           Gtp::Engine *engine;
           Gtp::Engine::FunctionList *funcitem;
           Gtp::Command *cmd;
+          Gtp::Engine::PonderFunction ponderfunc;
           
           bool running;
           boost::barrier startbarrier;
+          boost::mutex::scoped_lock *lock;
+          boost::thread thisthread;
+      };
+      
+      class PonderThread
+      {
+        public:
+          PonderThread(Gtp::Engine::PonderFunction f, void *i, volatile bool *s);
+          ~PonderThread();
+          
+          void ponderStart();
+          void ponderStop();
+          void run();
+        
+        private:
+          class Worker
+          {
+            public:
+              Worker(PonderThread *pt) { ponderthread=pt; };
+
+              void operator()();
+
+            private:
+              PonderThread *ponderthread;
+          };
+          
+          Gtp::Engine::PonderFunction func;
+          void *instance;
+          volatile bool *stop;
+          
+          bool running;
+          boost::barrier startbarrier;
+          boost::mutex busymutex;
           boost::mutex::scoped_lock *lock;
           boost::thread thisthread;
       };
@@ -183,7 +223,8 @@ namespace Gtp
       std::list<std::string> analyzeList;
       Gtp::Engine::WorkerThread *workerthread;
       boost::mutex workerbusy;
-      bool *interrupt;
+      Gtp::Engine::PonderThread *ponderthread;
+      volatile bool *interrupt;
       
       void parseInput(std::string in, Gtp::Command **cmd);
       void doCommand(Gtp::Command *cmd);

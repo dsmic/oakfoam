@@ -13,8 +13,8 @@ Oakfoam::Oakfoam()
 
 Oakfoam::~Oakfoam()
 {
-  delete engine;
   delete gtpe;
+  delete engine;
 }
 
 void Oakfoam::run()
