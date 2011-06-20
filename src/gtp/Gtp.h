@@ -149,16 +149,17 @@ namespace Gtp
       class WorkerThread
       {
         public:
-          WorkerThread(Gtp::Engine *eng, Gtp::Engine::FunctionList *fi, Gtp::Command *c);
+          WorkerThread(Gtp::Engine *eng);
           ~WorkerThread();
           
+          void doCmd(Gtp::Engine::FunctionList *fi, Gtp::Command *c);
           void run();
         
         private:
-          class Function
+          class Worker
           {
             public:
-              Function(WorkerThread *wt) { workerthread=wt; };
+              Worker(WorkerThread *wt) { workerthread=wt; };
 
               void operator()();
 
@@ -170,6 +171,7 @@ namespace Gtp
           Gtp::Engine::FunctionList *funcitem;
           Gtp::Command *cmd;
           
+          bool running;
           boost::barrier startbarrier;
           boost::mutex::scoped_lock *lock;
           boost::thread thisthread;

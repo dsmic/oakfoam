@@ -19,13 +19,15 @@ Gtp::Engine::Engine()
   this->addFunctionCommand("gogui-analyze_commands",this,&Gtp::Engine::cmdAnalyzeCommands);
   this->addConstantCommand("gogui-interrupt","");
   
-  workerthread=NULL;
+  workerthread=new WorkerThread(this);
   interrupt=NULL;
 }
 
 Gtp::Engine::~Engine()
 {
   this->finishLastCommand();
+  if (workerthread!=NULL)
+    delete workerthread;
   delete output;
   if (functionlist!=NULL)
     delete functionlist;
@@ -152,7 +154,7 @@ void Gtp::Engine::doCommand(Gtp::Command *cmd)
   {
     if (flist->getCommandName()==cmd->getCommandName())
     {
-      workerthread=new WorkerThread(this,flist,cmd);
+      workerthread->doCmd(flist,cmd);
       return;
     }
     flist=flist->getNext();
@@ -167,43 +169,50 @@ void Gtp::Engine::doCommand(Gtp::Command *cmd)
 void Gtp::Engine::finishLastCommand()
 {
   boost::mutex::scoped_lock lock(workerbusy);
-  if (workerthread!=NULL)
-  {
-    delete workerthread;
-    workerthread=NULL;
-  }
 }
 
-Gtp::Engine::WorkerThread::WorkerThread(Gtp::Engine *eng, Gtp::Engine::FunctionList *fi, Gtp::Command *c)
+Gtp::Engine::WorkerThread::WorkerThread(Gtp::Engine *eng)
   : engine(eng),
-    funcitem(fi),
-    cmd(c),
+    running(true),
     startbarrier(2),
-    thisthread(Gtp::Engine::WorkerThread::Function(this))
+    thisthread(Gtp::Engine::WorkerThread::Worker(this))
 {
-  lock=new boost::mutex::scoped_lock(engine->workerbusy);
-  startbarrier.wait();
 }
 
 Gtp::Engine::WorkerThread::~WorkerThread()
 {
+  running=false;
+  startbarrier.wait();
   thisthread.join();
 }
 
-void Gtp::Engine::WorkerThread::Function::operator()()
+void Gtp::Engine::WorkerThread::Worker::operator()()
 {
   workerthread->run();
 }
 
 void Gtp::Engine::WorkerThread::run()
 {
+  while (running)
+  {
+    startbarrier.wait();
+    if (!running)
+      break;
+    //fprintf(stderr,"job start %p %p %p\n",engine,funcitem,cmd);
+    Gtp::Engine::CommandFunction func=funcitem->getFunction();
+    (*func)(funcitem->getInstance(),engine,cmd);
+    delete cmd;
+    //fprintf(stderr,"job done\n");
+    delete lock;
+  }
+}
+
+void Gtp::Engine::WorkerThread::doCmd(Gtp::Engine::FunctionList *fi, Gtp::Command *c)
+{
+  lock=new boost::mutex::scoped_lock(engine->workerbusy);
+  funcitem=fi;
+  cmd=c;
   startbarrier.wait();
-  //fprintf(stderr,"thread start %p %p %p\n",engine,funcitem,cmd);
-  Gtp::Engine::CommandFunction func=funcitem->getFunction();
-  (*func)(funcitem->getInstance(),engine,cmd);
-  delete cmd;
-  //fprintf(stderr,"thread done\n");
-  delete lock;
 }
 
 void Gtp::Engine::addConstantCommand(std::string cmd, std::string value)

@@ -10,7 +10,6 @@ Now: (current focus)
   option to output games to sgf with explanations
   add chance a playout move is uniformly random (no heuristics)
   do superko pruning after a number of playouts through a node
-  change gtp worker thread setup to be running all the time (faster)
 
 Soon: (before next major release)
   add results from first playout moves to tree
