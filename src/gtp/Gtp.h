@@ -143,12 +143,13 @@ namespace Gtp
       void setInterruptFlag(volatile bool *intr) { interrupt=intr; };
       void setPonderer(Gtp::Engine::PonderFunction f, void *i, volatile bool *s);
       void setWorkerEnabled(bool en) { workerenabled=en; };
+      void setPonderEnabled(bool en) { ponderenabled=en; };
       
       bool executeCommand(std::string line);
       void finishLastCommand();
       static void startPonderingWrapper(void *instance) { ((Gtp::Engine*)instance)->startPondering(); };
-      void startPondering() { if (ponderthread!=NULL) ponderthread->ponderStart(); };
-      void stopPondering() { if (ponderthread!=NULL) ponderthread->ponderStop(); };
+      void startPondering() { if (ponderenabled && ponderthread!=NULL) ponderthread->ponderStart(); };
+      void stopPondering() { if (ponderenabled && ponderthread!=NULL) ponderthread->ponderStop(); };
       
       Gtp::Output *getOutput() { return output; };
       
@@ -227,6 +228,7 @@ namespace Gtp
       boost::mutex workerbusy;
       Gtp::Engine::PonderThread *ponderthread;
       volatile bool *interrupt;
+      bool ponderenabled;
       
       void parseInput(std::string in, Gtp::Command **cmd);
       void doCommand(Gtp::Command *cmd);

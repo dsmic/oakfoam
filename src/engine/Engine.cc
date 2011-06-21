@@ -230,6 +230,10 @@ void Engine::updateParameter(std::string id)
   {
     gtpe->setWorkerEnabled(params->interrupts_enabled);
   }
+  else if (id=="pondering_enabled")
+  {
+    gtpe->setPonderEnabled(params->pondering_enabled);
+  }
 }
 
 void Engine::addGtpCommands()
@@ -332,6 +336,7 @@ void Engine::addGtpCommands()
   gtpe->setInterruptFlag(&stopthinking);
   gtpe->setPonderer(&Engine::ponderWrapper,this,&stoppondering);
   gtpe->setWorkerEnabled(params->interrupts_enabled);
+  gtpe->setPonderEnabled(params->pondering_enabled);
 }
 
 void Engine::gtpBoardSize(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)

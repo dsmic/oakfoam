@@ -23,6 +23,7 @@ Gtp::Engine::Engine()
   workerthread=new WorkerThread(this);
   interrupt=NULL;
   ponderthread=NULL;
+  ponderenabled=false;
 }
 
 Gtp::Engine::~Engine()
