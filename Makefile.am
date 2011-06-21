@@ -16,7 +16,9 @@ oakfoam_SOURCES     = build.h \
                       src/engine/Playout.h src/engine/Playout.cc \
                       src/engine/Benson.h src/engine/Benson.cc \
                       src/gtp/Gtp.h src/gtp/Gtp.cc
-                      
+oakfoam_CPPFLAGS    = $(BOOST_CPPFLAGS)
+oakfoam_LDFLAGS     = -pthread -static $(BOOST_LDFLAGS)
+oakfoam_LDADD       = $(BOOST_THREAD_LIB)
 dist_noinst_SCRIPTS = autogen.sh
 
 .PHONY: oakfoam-profiled

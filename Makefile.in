@@ -55,15 +55,24 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am__dirstamp = $(am__leading_dot)dirstamp
-am_oakfoam_OBJECTS = src/Oakfoam.$(OBJEXT) src/main.$(OBJEXT) \
-	src/engine/Go.$(OBJEXT) src/engine/Engine.$(OBJEXT) \
-	src/engine/Tree.$(OBJEXT) src/engine/Random.$(OBJEXT) \
-	src/engine/Pattern.$(OBJEXT) src/engine/Parameters.$(OBJEXT) \
-	src/engine/Features.$(OBJEXT) src/engine/Time.$(OBJEXT) \
-	src/engine/Book.$(OBJEXT) src/engine/Playout.$(OBJEXT) \
-	src/engine/Benson.$(OBJEXT) src/gtp/Gtp.$(OBJEXT)
+am_oakfoam_OBJECTS = src/oakfoam-Oakfoam.$(OBJEXT) \
+	src/oakfoam-main.$(OBJEXT) src/engine/oakfoam-Go.$(OBJEXT) \
+	src/engine/oakfoam-Engine.$(OBJEXT) \
+	src/engine/oakfoam-Tree.$(OBJEXT) \
+	src/engine/oakfoam-Random.$(OBJEXT) \
+	src/engine/oakfoam-Pattern.$(OBJEXT) \
+	src/engine/oakfoam-Parameters.$(OBJEXT) \
+	src/engine/oakfoam-Features.$(OBJEXT) \
+	src/engine/oakfoam-Time.$(OBJEXT) \
+	src/engine/oakfoam-Book.$(OBJEXT) \
+	src/engine/oakfoam-Playout.$(OBJEXT) \
+	src/engine/oakfoam-Benson.$(OBJEXT) \
+	src/gtp/oakfoam-Gtp.$(OBJEXT)
 oakfoam_OBJECTS = $(am_oakfoam_OBJECTS)
-oakfoam_LDADD = $(LDADD)
+am__DEPENDENCIES_1 =
+oakfoam_DEPENDENCIES = $(am__DEPENDENCIES_1)
+oakfoam_LINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(oakfoam_LDFLAGS) \
+	$(LDFLAGS) -o $@
 SCRIPTS = $(dist_noinst_SCRIPTS)
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
@@ -202,6 +211,9 @@ oakfoam_SOURCES = build.h \
                       src/engine/Benson.h src/engine/Benson.cc \
                       src/gtp/Gtp.h src/gtp/Gtp.cc
 
+oakfoam_CPPFLAGS = $(BOOST_CPPFLAGS)
+oakfoam_LDFLAGS = -pthread -static $(BOOST_LDFLAGS)
+oakfoam_LDADD = $(BOOST_THREAD_LIB)
 dist_noinst_SCRIPTS = autogen.sh
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
@@ -302,36 +314,37 @@ src/$(am__dirstamp):
 src/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) src/$(DEPDIR)
 	@: > src/$(DEPDIR)/$(am__dirstamp)
-src/Oakfoam.$(OBJEXT): src/$(am__dirstamp) \
+src/oakfoam-Oakfoam.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
-src/main.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
+src/oakfoam-main.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/engine/$(am__dirstamp):
 	@$(MKDIR_P) src/engine
 	@: > src/engine/$(am__dirstamp)
 src/engine/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) src/engine/$(DEPDIR)
 	@: > src/engine/$(DEPDIR)/$(am__dirstamp)
-src/engine/Go.$(OBJEXT): src/engine/$(am__dirstamp) \
+src/engine/oakfoam-Go.$(OBJEXT): src/engine/$(am__dirstamp) \
 	src/engine/$(DEPDIR)/$(am__dirstamp)
-src/engine/Engine.$(OBJEXT): src/engine/$(am__dirstamp) \
+src/engine/oakfoam-Engine.$(OBJEXT): src/engine/$(am__dirstamp) \
 	src/engine/$(DEPDIR)/$(am__dirstamp)
-src/engine/Tree.$(OBJEXT): src/engine/$(am__dirstamp) \
+src/engine/oakfoam-Tree.$(OBJEXT): src/engine/$(am__dirstamp) \
 	src/engine/$(DEPDIR)/$(am__dirstamp)
-src/engine/Random.$(OBJEXT): src/engine/$(am__dirstamp) \
+src/engine/oakfoam-Random.$(OBJEXT): src/engine/$(am__dirstamp) \
 	src/engine/$(DEPDIR)/$(am__dirstamp)
-src/engine/Pattern.$(OBJEXT): src/engine/$(am__dirstamp) \
+src/engine/oakfoam-Pattern.$(OBJEXT): src/engine/$(am__dirstamp) \
 	src/engine/$(DEPDIR)/$(am__dirstamp)
-src/engine/Parameters.$(OBJEXT): src/engine/$(am__dirstamp) \
+src/engine/oakfoam-Parameters.$(OBJEXT): src/engine/$(am__dirstamp) \
 	src/engine/$(DEPDIR)/$(am__dirstamp)
-src/engine/Features.$(OBJEXT): src/engine/$(am__dirstamp) \
+src/engine/oakfoam-Features.$(OBJEXT): src/engine/$(am__dirstamp) \
 	src/engine/$(DEPDIR)/$(am__dirstamp)
-src/engine/Time.$(OBJEXT): src/engine/$(am__dirstamp) \
+src/engine/oakfoam-Time.$(OBJEXT): src/engine/$(am__dirstamp) \
 	src/engine/$(DEPDIR)/$(am__dirstamp)
-src/engine/Book.$(OBJEXT): src/engine/$(am__dirstamp) \
+src/engine/oakfoam-Book.$(OBJEXT): src/engine/$(am__dirstamp) \
 	src/engine/$(DEPDIR)/$(am__dirstamp)
-src/engine/Playout.$(OBJEXT): src/engine/$(am__dirstamp) \
+src/engine/oakfoam-Playout.$(OBJEXT): src/engine/$(am__dirstamp) \
 	src/engine/$(DEPDIR)/$(am__dirstamp)
-src/engine/Benson.$(OBJEXT): src/engine/$(am__dirstamp) \
+src/engine/oakfoam-Benson.$(OBJEXT): src/engine/$(am__dirstamp) \
 	src/engine/$(DEPDIR)/$(am__dirstamp)
 src/gtp/$(am__dirstamp):
 	@$(MKDIR_P) src/gtp
@@ -339,46 +352,46 @@ src/gtp/$(am__dirstamp):
 src/gtp/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) src/gtp/$(DEPDIR)
 	@: > src/gtp/$(DEPDIR)/$(am__dirstamp)
-src/gtp/Gtp.$(OBJEXT): src/gtp/$(am__dirstamp) \
+src/gtp/oakfoam-Gtp.$(OBJEXT): src/gtp/$(am__dirstamp) \
 	src/gtp/$(DEPDIR)/$(am__dirstamp)
 oakfoam$(EXEEXT): $(oakfoam_OBJECTS) $(oakfoam_DEPENDENCIES) 
 	@rm -f oakfoam$(EXEEXT)
-	$(CXXLINK) $(oakfoam_OBJECTS) $(oakfoam_LDADD) $(LIBS)
+	$(oakfoam_LINK) $(oakfoam_OBJECTS) $(oakfoam_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
-	-rm -f src/Oakfoam.$(OBJEXT)
-	-rm -f src/engine/Benson.$(OBJEXT)
-	-rm -f src/engine/Book.$(OBJEXT)
-	-rm -f src/engine/Engine.$(OBJEXT)
-	-rm -f src/engine/Features.$(OBJEXT)
-	-rm -f src/engine/Go.$(OBJEXT)
-	-rm -f src/engine/Parameters.$(OBJEXT)
-	-rm -f src/engine/Pattern.$(OBJEXT)
-	-rm -f src/engine/Playout.$(OBJEXT)
-	-rm -f src/engine/Random.$(OBJEXT)
-	-rm -f src/engine/Time.$(OBJEXT)
-	-rm -f src/engine/Tree.$(OBJEXT)
-	-rm -f src/gtp/Gtp.$(OBJEXT)
-	-rm -f src/main.$(OBJEXT)
+	-rm -f src/engine/oakfoam-Benson.$(OBJEXT)
+	-rm -f src/engine/oakfoam-Book.$(OBJEXT)
+	-rm -f src/engine/oakfoam-Engine.$(OBJEXT)
+	-rm -f src/engine/oakfoam-Features.$(OBJEXT)
+	-rm -f src/engine/oakfoam-Go.$(OBJEXT)
+	-rm -f src/engine/oakfoam-Parameters.$(OBJEXT)
+	-rm -f src/engine/oakfoam-Pattern.$(OBJEXT)
+	-rm -f src/engine/oakfoam-Playout.$(OBJEXT)
+	-rm -f src/engine/oakfoam-Random.$(OBJEXT)
+	-rm -f src/engine/oakfoam-Time.$(OBJEXT)
+	-rm -f src/engine/oakfoam-Tree.$(OBJEXT)
+	-rm -f src/gtp/oakfoam-Gtp.$(OBJEXT)
+	-rm -f src/oakfoam-Oakfoam.$(OBJEXT)
+	-rm -f src/oakfoam-main.$(OBJEXT)
 
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/Oakfoam.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/main.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/engine/$(DEPDIR)/Benson.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/engine/$(DEPDIR)/Book.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/engine/$(DEPDIR)/Engine.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/engine/$(DEPDIR)/Features.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/engine/$(DEPDIR)/Go.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/engine/$(DEPDIR)/Parameters.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/engine/$(DEPDIR)/Pattern.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/engine/$(DEPDIR)/Playout.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/engine/$(DEPDIR)/Random.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/engine/$(DEPDIR)/Time.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/engine/$(DEPDIR)/Tree.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/gtp/$(DEPDIR)/Gtp.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/oakfoam-Oakfoam.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/oakfoam-main.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/engine/$(DEPDIR)/oakfoam-Benson.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/engine/$(DEPDIR)/oakfoam-Book.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/engine/$(DEPDIR)/oakfoam-Engine.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/engine/$(DEPDIR)/oakfoam-Features.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/engine/$(DEPDIR)/oakfoam-Go.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/engine/$(DEPDIR)/oakfoam-Parameters.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/engine/$(DEPDIR)/oakfoam-Pattern.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/engine/$(DEPDIR)/oakfoam-Playout.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/engine/$(DEPDIR)/oakfoam-Random.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/engine/$(DEPDIR)/oakfoam-Time.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/engine/$(DEPDIR)/oakfoam-Tree.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/gtp/$(DEPDIR)/oakfoam-Gtp.Po@am__quote@
 
 .cc.o:
 @am__fastdepCXX_TRUE@	depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
@@ -395,6 +408,202 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+
+src/oakfoam-Oakfoam.o: src/Oakfoam.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT src/oakfoam-Oakfoam.o -MD -MP -MF src/$(DEPDIR)/oakfoam-Oakfoam.Tpo -c -o src/oakfoam-Oakfoam.o `test -f 'src/Oakfoam.cc' || echo '$(srcdir)/'`src/Oakfoam.cc
+@am__fastdepCXX_TRUE@	$(am__mv) src/$(DEPDIR)/oakfoam-Oakfoam.Tpo src/$(DEPDIR)/oakfoam-Oakfoam.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/Oakfoam.cc' object='src/oakfoam-Oakfoam.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o src/oakfoam-Oakfoam.o `test -f 'src/Oakfoam.cc' || echo '$(srcdir)/'`src/Oakfoam.cc
+
+src/oakfoam-Oakfoam.obj: src/Oakfoam.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT src/oakfoam-Oakfoam.obj -MD -MP -MF src/$(DEPDIR)/oakfoam-Oakfoam.Tpo -c -o src/oakfoam-Oakfoam.obj `if test -f 'src/Oakfoam.cc'; then $(CYGPATH_W) 'src/Oakfoam.cc'; else $(CYGPATH_W) '$(srcdir)/src/Oakfoam.cc'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) src/$(DEPDIR)/oakfoam-Oakfoam.Tpo src/$(DEPDIR)/oakfoam-Oakfoam.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/Oakfoam.cc' object='src/oakfoam-Oakfoam.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o src/oakfoam-Oakfoam.obj `if test -f 'src/Oakfoam.cc'; then $(CYGPATH_W) 'src/Oakfoam.cc'; else $(CYGPATH_W) '$(srcdir)/src/Oakfoam.cc'; fi`
+
+src/oakfoam-main.o: src/main.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT src/oakfoam-main.o -MD -MP -MF src/$(DEPDIR)/oakfoam-main.Tpo -c -o src/oakfoam-main.o `test -f 'src/main.cc' || echo '$(srcdir)/'`src/main.cc
+@am__fastdepCXX_TRUE@	$(am__mv) src/$(DEPDIR)/oakfoam-main.Tpo src/$(DEPDIR)/oakfoam-main.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/main.cc' object='src/oakfoam-main.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o src/oakfoam-main.o `test -f 'src/main.cc' || echo '$(srcdir)/'`src/main.cc
+
+src/oakfoam-main.obj: src/main.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT src/oakfoam-main.obj -MD -MP -MF src/$(DEPDIR)/oakfoam-main.Tpo -c -o src/oakfoam-main.obj `if test -f 'src/main.cc'; then $(CYGPATH_W) 'src/main.cc'; else $(CYGPATH_W) '$(srcdir)/src/main.cc'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) src/$(DEPDIR)/oakfoam-main.Tpo src/$(DEPDIR)/oakfoam-main.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/main.cc' object='src/oakfoam-main.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o src/oakfoam-main.obj `if test -f 'src/main.cc'; then $(CYGPATH_W) 'src/main.cc'; else $(CYGPATH_W) '$(srcdir)/src/main.cc'; fi`
+
+src/engine/oakfoam-Go.o: src/engine/Go.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT src/engine/oakfoam-Go.o -MD -MP -MF src/engine/$(DEPDIR)/oakfoam-Go.Tpo -c -o src/engine/oakfoam-Go.o `test -f 'src/engine/Go.cc' || echo '$(srcdir)/'`src/engine/Go.cc
+@am__fastdepCXX_TRUE@	$(am__mv) src/engine/$(DEPDIR)/oakfoam-Go.Tpo src/engine/$(DEPDIR)/oakfoam-Go.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/engine/Go.cc' object='src/engine/oakfoam-Go.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o src/engine/oakfoam-Go.o `test -f 'src/engine/Go.cc' || echo '$(srcdir)/'`src/engine/Go.cc
+
+src/engine/oakfoam-Go.obj: src/engine/Go.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT src/engine/oakfoam-Go.obj -MD -MP -MF src/engine/$(DEPDIR)/oakfoam-Go.Tpo -c -o src/engine/oakfoam-Go.obj `if test -f 'src/engine/Go.cc'; then $(CYGPATH_W) 'src/engine/Go.cc'; else $(CYGPATH_W) '$(srcdir)/src/engine/Go.cc'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) src/engine/$(DEPDIR)/oakfoam-Go.Tpo src/engine/$(DEPDIR)/oakfoam-Go.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/engine/Go.cc' object='src/engine/oakfoam-Go.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o src/engine/oakfoam-Go.obj `if test -f 'src/engine/Go.cc'; then $(CYGPATH_W) 'src/engine/Go.cc'; else $(CYGPATH_W) '$(srcdir)/src/engine/Go.cc'; fi`
+
+src/engine/oakfoam-Engine.o: src/engine/Engine.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT src/engine/oakfoam-Engine.o -MD -MP -MF src/engine/$(DEPDIR)/oakfoam-Engine.Tpo -c -o src/engine/oakfoam-Engine.o `test -f 'src/engine/Engine.cc' || echo '$(srcdir)/'`src/engine/Engine.cc
+@am__fastdepCXX_TRUE@	$(am__mv) src/engine/$(DEPDIR)/oakfoam-Engine.Tpo src/engine/$(DEPDIR)/oakfoam-Engine.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/engine/Engine.cc' object='src/engine/oakfoam-Engine.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o src/engine/oakfoam-Engine.o `test -f 'src/engine/Engine.cc' || echo '$(srcdir)/'`src/engine/Engine.cc
+
+src/engine/oakfoam-Engine.obj: src/engine/Engine.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT src/engine/oakfoam-Engine.obj -MD -MP -MF src/engine/$(DEPDIR)/oakfoam-Engine.Tpo -c -o src/engine/oakfoam-Engine.obj `if test -f 'src/engine/Engine.cc'; then $(CYGPATH_W) 'src/engine/Engine.cc'; else $(CYGPATH_W) '$(srcdir)/src/engine/Engine.cc'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) src/engine/$(DEPDIR)/oakfoam-Engine.Tpo src/engine/$(DEPDIR)/oakfoam-Engine.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/engine/Engine.cc' object='src/engine/oakfoam-Engine.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o src/engine/oakfoam-Engine.obj `if test -f 'src/engine/Engine.cc'; then $(CYGPATH_W) 'src/engine/Engine.cc'; else $(CYGPATH_W) '$(srcdir)/src/engine/Engine.cc'; fi`
+
+src/engine/oakfoam-Tree.o: src/engine/Tree.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT src/engine/oakfoam-Tree.o -MD -MP -MF src/engine/$(DEPDIR)/oakfoam-Tree.Tpo -c -o src/engine/oakfoam-Tree.o `test -f 'src/engine/Tree.cc' || echo '$(srcdir)/'`src/engine/Tree.cc
+@am__fastdepCXX_TRUE@	$(am__mv) src/engine/$(DEPDIR)/oakfoam-Tree.Tpo src/engine/$(DEPDIR)/oakfoam-Tree.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/engine/Tree.cc' object='src/engine/oakfoam-Tree.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o src/engine/oakfoam-Tree.o `test -f 'src/engine/Tree.cc' || echo '$(srcdir)/'`src/engine/Tree.cc
+
+src/engine/oakfoam-Tree.obj: src/engine/Tree.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT src/engine/oakfoam-Tree.obj -MD -MP -MF src/engine/$(DEPDIR)/oakfoam-Tree.Tpo -c -o src/engine/oakfoam-Tree.obj `if test -f 'src/engine/Tree.cc'; then $(CYGPATH_W) 'src/engine/Tree.cc'; else $(CYGPATH_W) '$(srcdir)/src/engine/Tree.cc'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) src/engine/$(DEPDIR)/oakfoam-Tree.Tpo src/engine/$(DEPDIR)/oakfoam-Tree.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/engine/Tree.cc' object='src/engine/oakfoam-Tree.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o src/engine/oakfoam-Tree.obj `if test -f 'src/engine/Tree.cc'; then $(CYGPATH_W) 'src/engine/Tree.cc'; else $(CYGPATH_W) '$(srcdir)/src/engine/Tree.cc'; fi`
+
+src/engine/oakfoam-Random.o: src/engine/Random.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT src/engine/oakfoam-Random.o -MD -MP -MF src/engine/$(DEPDIR)/oakfoam-Random.Tpo -c -o src/engine/oakfoam-Random.o `test -f 'src/engine/Random.cc' || echo '$(srcdir)/'`src/engine/Random.cc
+@am__fastdepCXX_TRUE@	$(am__mv) src/engine/$(DEPDIR)/oakfoam-Random.Tpo src/engine/$(DEPDIR)/oakfoam-Random.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/engine/Random.cc' object='src/engine/oakfoam-Random.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o src/engine/oakfoam-Random.o `test -f 'src/engine/Random.cc' || echo '$(srcdir)/'`src/engine/Random.cc
+
+src/engine/oakfoam-Random.obj: src/engine/Random.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT src/engine/oakfoam-Random.obj -MD -MP -MF src/engine/$(DEPDIR)/oakfoam-Random.Tpo -c -o src/engine/oakfoam-Random.obj `if test -f 'src/engine/Random.cc'; then $(CYGPATH_W) 'src/engine/Random.cc'; else $(CYGPATH_W) '$(srcdir)/src/engine/Random.cc'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) src/engine/$(DEPDIR)/oakfoam-Random.Tpo src/engine/$(DEPDIR)/oakfoam-Random.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/engine/Random.cc' object='src/engine/oakfoam-Random.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o src/engine/oakfoam-Random.obj `if test -f 'src/engine/Random.cc'; then $(CYGPATH_W) 'src/engine/Random.cc'; else $(CYGPATH_W) '$(srcdir)/src/engine/Random.cc'; fi`
+
+src/engine/oakfoam-Pattern.o: src/engine/Pattern.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT src/engine/oakfoam-Pattern.o -MD -MP -MF src/engine/$(DEPDIR)/oakfoam-Pattern.Tpo -c -o src/engine/oakfoam-Pattern.o `test -f 'src/engine/Pattern.cc' || echo '$(srcdir)/'`src/engine/Pattern.cc
+@am__fastdepCXX_TRUE@	$(am__mv) src/engine/$(DEPDIR)/oakfoam-Pattern.Tpo src/engine/$(DEPDIR)/oakfoam-Pattern.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/engine/Pattern.cc' object='src/engine/oakfoam-Pattern.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o src/engine/oakfoam-Pattern.o `test -f 'src/engine/Pattern.cc' || echo '$(srcdir)/'`src/engine/Pattern.cc
+
+src/engine/oakfoam-Pattern.obj: src/engine/Pattern.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT src/engine/oakfoam-Pattern.obj -MD -MP -MF src/engine/$(DEPDIR)/oakfoam-Pattern.Tpo -c -o src/engine/oakfoam-Pattern.obj `if test -f 'src/engine/Pattern.cc'; then $(CYGPATH_W) 'src/engine/Pattern.cc'; else $(CYGPATH_W) '$(srcdir)/src/engine/Pattern.cc'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) src/engine/$(DEPDIR)/oakfoam-Pattern.Tpo src/engine/$(DEPDIR)/oakfoam-Pattern.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/engine/Pattern.cc' object='src/engine/oakfoam-Pattern.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o src/engine/oakfoam-Pattern.obj `if test -f 'src/engine/Pattern.cc'; then $(CYGPATH_W) 'src/engine/Pattern.cc'; else $(CYGPATH_W) '$(srcdir)/src/engine/Pattern.cc'; fi`
+
+src/engine/oakfoam-Parameters.o: src/engine/Parameters.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT src/engine/oakfoam-Parameters.o -MD -MP -MF src/engine/$(DEPDIR)/oakfoam-Parameters.Tpo -c -o src/engine/oakfoam-Parameters.o `test -f 'src/engine/Parameters.cc' || echo '$(srcdir)/'`src/engine/Parameters.cc
+@am__fastdepCXX_TRUE@	$(am__mv) src/engine/$(DEPDIR)/oakfoam-Parameters.Tpo src/engine/$(DEPDIR)/oakfoam-Parameters.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/engine/Parameters.cc' object='src/engine/oakfoam-Parameters.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o src/engine/oakfoam-Parameters.o `test -f 'src/engine/Parameters.cc' || echo '$(srcdir)/'`src/engine/Parameters.cc
+
+src/engine/oakfoam-Parameters.obj: src/engine/Parameters.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT src/engine/oakfoam-Parameters.obj -MD -MP -MF src/engine/$(DEPDIR)/oakfoam-Parameters.Tpo -c -o src/engine/oakfoam-Parameters.obj `if test -f 'src/engine/Parameters.cc'; then $(CYGPATH_W) 'src/engine/Parameters.cc'; else $(CYGPATH_W) '$(srcdir)/src/engine/Parameters.cc'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) src/engine/$(DEPDIR)/oakfoam-Parameters.Tpo src/engine/$(DEPDIR)/oakfoam-Parameters.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/engine/Parameters.cc' object='src/engine/oakfoam-Parameters.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o src/engine/oakfoam-Parameters.obj `if test -f 'src/engine/Parameters.cc'; then $(CYGPATH_W) 'src/engine/Parameters.cc'; else $(CYGPATH_W) '$(srcdir)/src/engine/Parameters.cc'; fi`
+
+src/engine/oakfoam-Features.o: src/engine/Features.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT src/engine/oakfoam-Features.o -MD -MP -MF src/engine/$(DEPDIR)/oakfoam-Features.Tpo -c -o src/engine/oakfoam-Features.o `test -f 'src/engine/Features.cc' || echo '$(srcdir)/'`src/engine/Features.cc
+@am__fastdepCXX_TRUE@	$(am__mv) src/engine/$(DEPDIR)/oakfoam-Features.Tpo src/engine/$(DEPDIR)/oakfoam-Features.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/engine/Features.cc' object='src/engine/oakfoam-Features.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o src/engine/oakfoam-Features.o `test -f 'src/engine/Features.cc' || echo '$(srcdir)/'`src/engine/Features.cc
+
+src/engine/oakfoam-Features.obj: src/engine/Features.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT src/engine/oakfoam-Features.obj -MD -MP -MF src/engine/$(DEPDIR)/oakfoam-Features.Tpo -c -o src/engine/oakfoam-Features.obj `if test -f 'src/engine/Features.cc'; then $(CYGPATH_W) 'src/engine/Features.cc'; else $(CYGPATH_W) '$(srcdir)/src/engine/Features.cc'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) src/engine/$(DEPDIR)/oakfoam-Features.Tpo src/engine/$(DEPDIR)/oakfoam-Features.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/engine/Features.cc' object='src/engine/oakfoam-Features.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o src/engine/oakfoam-Features.obj `if test -f 'src/engine/Features.cc'; then $(CYGPATH_W) 'src/engine/Features.cc'; else $(CYGPATH_W) '$(srcdir)/src/engine/Features.cc'; fi`
+
+src/engine/oakfoam-Time.o: src/engine/Time.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT src/engine/oakfoam-Time.o -MD -MP -MF src/engine/$(DEPDIR)/oakfoam-Time.Tpo -c -o src/engine/oakfoam-Time.o `test -f 'src/engine/Time.cc' || echo '$(srcdir)/'`src/engine/Time.cc
+@am__fastdepCXX_TRUE@	$(am__mv) src/engine/$(DEPDIR)/oakfoam-Time.Tpo src/engine/$(DEPDIR)/oakfoam-Time.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/engine/Time.cc' object='src/engine/oakfoam-Time.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o src/engine/oakfoam-Time.o `test -f 'src/engine/Time.cc' || echo '$(srcdir)/'`src/engine/Time.cc
+
+src/engine/oakfoam-Time.obj: src/engine/Time.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT src/engine/oakfoam-Time.obj -MD -MP -MF src/engine/$(DEPDIR)/oakfoam-Time.Tpo -c -o src/engine/oakfoam-Time.obj `if test -f 'src/engine/Time.cc'; then $(CYGPATH_W) 'src/engine/Time.cc'; else $(CYGPATH_W) '$(srcdir)/src/engine/Time.cc'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) src/engine/$(DEPDIR)/oakfoam-Time.Tpo src/engine/$(DEPDIR)/oakfoam-Time.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/engine/Time.cc' object='src/engine/oakfoam-Time.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o src/engine/oakfoam-Time.obj `if test -f 'src/engine/Time.cc'; then $(CYGPATH_W) 'src/engine/Time.cc'; else $(CYGPATH_W) '$(srcdir)/src/engine/Time.cc'; fi`
+
+src/engine/oakfoam-Book.o: src/engine/Book.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT src/engine/oakfoam-Book.o -MD -MP -MF src/engine/$(DEPDIR)/oakfoam-Book.Tpo -c -o src/engine/oakfoam-Book.o `test -f 'src/engine/Book.cc' || echo '$(srcdir)/'`src/engine/Book.cc
+@am__fastdepCXX_TRUE@	$(am__mv) src/engine/$(DEPDIR)/oakfoam-Book.Tpo src/engine/$(DEPDIR)/oakfoam-Book.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/engine/Book.cc' object='src/engine/oakfoam-Book.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o src/engine/oakfoam-Book.o `test -f 'src/engine/Book.cc' || echo '$(srcdir)/'`src/engine/Book.cc
+
+src/engine/oakfoam-Book.obj: src/engine/Book.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT src/engine/oakfoam-Book.obj -MD -MP -MF src/engine/$(DEPDIR)/oakfoam-Book.Tpo -c -o src/engine/oakfoam-Book.obj `if test -f 'src/engine/Book.cc'; then $(CYGPATH_W) 'src/engine/Book.cc'; else $(CYGPATH_W) '$(srcdir)/src/engine/Book.cc'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) src/engine/$(DEPDIR)/oakfoam-Book.Tpo src/engine/$(DEPDIR)/oakfoam-Book.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/engine/Book.cc' object='src/engine/oakfoam-Book.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o src/engine/oakfoam-Book.obj `if test -f 'src/engine/Book.cc'; then $(CYGPATH_W) 'src/engine/Book.cc'; else $(CYGPATH_W) '$(srcdir)/src/engine/Book.cc'; fi`
+
+src/engine/oakfoam-Playout.o: src/engine/Playout.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT src/engine/oakfoam-Playout.o -MD -MP -MF src/engine/$(DEPDIR)/oakfoam-Playout.Tpo -c -o src/engine/oakfoam-Playout.o `test -f 'src/engine/Playout.cc' || echo '$(srcdir)/'`src/engine/Playout.cc
+@am__fastdepCXX_TRUE@	$(am__mv) src/engine/$(DEPDIR)/oakfoam-Playout.Tpo src/engine/$(DEPDIR)/oakfoam-Playout.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/engine/Playout.cc' object='src/engine/oakfoam-Playout.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o src/engine/oakfoam-Playout.o `test -f 'src/engine/Playout.cc' || echo '$(srcdir)/'`src/engine/Playout.cc
+
+src/engine/oakfoam-Playout.obj: src/engine/Playout.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT src/engine/oakfoam-Playout.obj -MD -MP -MF src/engine/$(DEPDIR)/oakfoam-Playout.Tpo -c -o src/engine/oakfoam-Playout.obj `if test -f 'src/engine/Playout.cc'; then $(CYGPATH_W) 'src/engine/Playout.cc'; else $(CYGPATH_W) '$(srcdir)/src/engine/Playout.cc'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) src/engine/$(DEPDIR)/oakfoam-Playout.Tpo src/engine/$(DEPDIR)/oakfoam-Playout.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/engine/Playout.cc' object='src/engine/oakfoam-Playout.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o src/engine/oakfoam-Playout.obj `if test -f 'src/engine/Playout.cc'; then $(CYGPATH_W) 'src/engine/Playout.cc'; else $(CYGPATH_W) '$(srcdir)/src/engine/Playout.cc'; fi`
+
+src/engine/oakfoam-Benson.o: src/engine/Benson.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT src/engine/oakfoam-Benson.o -MD -MP -MF src/engine/$(DEPDIR)/oakfoam-Benson.Tpo -c -o src/engine/oakfoam-Benson.o `test -f 'src/engine/Benson.cc' || echo '$(srcdir)/'`src/engine/Benson.cc
+@am__fastdepCXX_TRUE@	$(am__mv) src/engine/$(DEPDIR)/oakfoam-Benson.Tpo src/engine/$(DEPDIR)/oakfoam-Benson.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/engine/Benson.cc' object='src/engine/oakfoam-Benson.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o src/engine/oakfoam-Benson.o `test -f 'src/engine/Benson.cc' || echo '$(srcdir)/'`src/engine/Benson.cc
+
+src/engine/oakfoam-Benson.obj: src/engine/Benson.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT src/engine/oakfoam-Benson.obj -MD -MP -MF src/engine/$(DEPDIR)/oakfoam-Benson.Tpo -c -o src/engine/oakfoam-Benson.obj `if test -f 'src/engine/Benson.cc'; then $(CYGPATH_W) 'src/engine/Benson.cc'; else $(CYGPATH_W) '$(srcdir)/src/engine/Benson.cc'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) src/engine/$(DEPDIR)/oakfoam-Benson.Tpo src/engine/$(DEPDIR)/oakfoam-Benson.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/engine/Benson.cc' object='src/engine/oakfoam-Benson.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o src/engine/oakfoam-Benson.obj `if test -f 'src/engine/Benson.cc'; then $(CYGPATH_W) 'src/engine/Benson.cc'; else $(CYGPATH_W) '$(srcdir)/src/engine/Benson.cc'; fi`
+
+src/gtp/oakfoam-Gtp.o: src/gtp/Gtp.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT src/gtp/oakfoam-Gtp.o -MD -MP -MF src/gtp/$(DEPDIR)/oakfoam-Gtp.Tpo -c -o src/gtp/oakfoam-Gtp.o `test -f 'src/gtp/Gtp.cc' || echo '$(srcdir)/'`src/gtp/Gtp.cc
+@am__fastdepCXX_TRUE@	$(am__mv) src/gtp/$(DEPDIR)/oakfoam-Gtp.Tpo src/gtp/$(DEPDIR)/oakfoam-Gtp.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/gtp/Gtp.cc' object='src/gtp/oakfoam-Gtp.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o src/gtp/oakfoam-Gtp.o `test -f 'src/gtp/Gtp.cc' || echo '$(srcdir)/'`src/gtp/Gtp.cc
+
+src/gtp/oakfoam-Gtp.obj: src/gtp/Gtp.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT src/gtp/oakfoam-Gtp.obj -MD -MP -MF src/gtp/$(DEPDIR)/oakfoam-Gtp.Tpo -c -o src/gtp/oakfoam-Gtp.obj `if test -f 'src/gtp/Gtp.cc'; then $(CYGPATH_W) 'src/gtp/Gtp.cc'; else $(CYGPATH_W) '$(srcdir)/src/gtp/Gtp.cc'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) src/gtp/$(DEPDIR)/oakfoam-Gtp.Tpo src/gtp/$(DEPDIR)/oakfoam-Gtp.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/gtp/Gtp.cc' object='src/gtp/oakfoam-Gtp.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o src/gtp/oakfoam-Gtp.obj `if test -f 'src/gtp/Gtp.cc'; then $(CYGPATH_W) 'src/gtp/Gtp.cc'; else $(CYGPATH_W) '$(srcdir)/src/gtp/Gtp.cc'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
