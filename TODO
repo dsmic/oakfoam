@@ -2,7 +2,7 @@ TODO
 ------------------
 
 Now: (current focus)
-  try tune rave_init_wins
+  improve pondering performance on havarti
   test impact of lastcapture playout heuristic
   stop timed search if best move cannot change
   larger patterns
