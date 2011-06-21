@@ -101,7 +101,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln)
   params->addParameter("time","time_move_minimum",&(params->time_move_minimum),TIME_MOVE_MINIMUM);
   params->addParameter("time","time_ignore",&(params->time_ignore),false);
   
-  params->addParameter("time","pondering_enabled",&(params->pondering_enabled),PONDERING_ENABLED);
+  params->addParameter("time","pondering_enabled",&(params->pondering_enabled),PONDERING_ENABLED,&Engine::updateParameterWrapper,this);
   params->addParameter("time","pondering_playouts_max",&(params->pondering_playouts_max),PONDERING_PLAYOUTS_MAX);
   
   params->addParameter("other","live_gfx",&(params->livegfx_on),LIVEGFX_ON);
