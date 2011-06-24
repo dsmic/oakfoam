@@ -78,6 +78,7 @@ class Tree
     
     void allowContinuedPlay();
     
+    float secondBestPlayouts();
     float secondBestPlayoutRatio();
     float bestChildRatioDiff();
     

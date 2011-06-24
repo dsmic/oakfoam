@@ -1686,7 +1686,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
         Tree *besttree=movetree->getRobustChild();
         if (besttree!=NULL)
         {
-          float currentpart=besttree->getPlayouts()/totalplayouts-1/(params->uct_last_r2+1);
+          float currentpart=(besttree->getPlayouts()-besttree->secondBestPlayouts())/totalplayouts;
           float overallratio;
           if (time_allocated>0) // timed search
             overallratio=(float)time_allocated/timer.elapsed();

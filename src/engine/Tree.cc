@@ -904,13 +904,28 @@ Tree *Tree::getSecondRobustChild(Tree *firstchild)
   return besttree;
 }
 
+float Tree::secondBestPlayouts()
+{
+  if (this->isRoot())
+    return 0;
+  
+  Tree *secondbest=parent->getSecondRobustChild(this);
+  if (secondbest==NULL)
+    return 0;
+  else
+    return secondbest->getPlayouts();
+}
+
 float Tree::secondBestPlayoutRatio()
 {
   if (this->isRoot())
     return -1;
   
   Tree *secondbest=parent->getSecondRobustChild(this);
-  return (this->getPlayouts()/secondbest->getPlayouts());
+  if (secondbest==NULL)
+    return -1;
+  else
+    return (this->getPlayouts()/secondbest->getPlayouts());
 }
 
 Tree *Tree::getBestRatioChild(float playoutthreshold)
