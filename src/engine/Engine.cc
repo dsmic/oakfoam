@@ -2313,7 +2313,7 @@ void Engine::allowContinuedPlay()
 
 void Engine::ponder()
 {
-  if (!(params->pondering_enabled) || (currentboard->getMovesMade()<=0) || (currentboard->getPassesPlayed()>=2) || (book->getMoves(boardsize,movehistory).size()>0))
+  if (!(params->pondering_enabled) || (currentboard->getMovesMade()<=0) || (currentboard->getPassesPlayed()>=2) || (currentboard->getLastMove().isResign()) || (book->getMoves(boardsize,movehistory).size()>0))
     return;
   
   if (params->move_policy==Parameters::MP_UCT || params->move_policy==Parameters::MP_ONEPLY)
