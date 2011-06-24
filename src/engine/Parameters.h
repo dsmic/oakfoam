@@ -76,6 +76,9 @@ class Parameters
     int uct_slow_update_interval;
     int uct_slow_update_last;
     
+    bool uct_stop_early;
+    float uct_last_r2;
+    
     bool pondering_enabled;
     int pondering_playouts_max;
     

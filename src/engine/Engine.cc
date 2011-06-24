@@ -86,6 +86,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln)
   
   params->addParameter("mcts","uct_slow_update_interval",&(params->uct_slow_update_interval),UCT_SLOW_UPDATE_INTERVAL);
   params->uct_slow_update_last=0;
+  params->addParameter("mcts","uct_stop_early",&(params->uct_stop_early),UCT_STOP_EARLY);
   
   params->addParameter("mcts","surewin_threshold",&(params->surewin_threshold),SUREWIN_THRESHOLD);
   params->surewin_expected=false;
@@ -142,6 +143,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln)
   
   movetree=NULL;
   this->clearMoveTree();
+  
+  params->uct_last_r2=0;
 }
 
 Engine::~Engine()
@@ -1617,6 +1620,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     int livegfxupdate=0;
     float time_allocated;
     float playouts_per_milli;
+    bool early_stop=false;
     
     stopthinking=false;
     
@@ -1651,6 +1655,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     movetree->prunePossibleSuperkoViolations();
     this->allowContinuedPlay();
     params->uct_slow_update_last=0;
+    params->uct_last_r2=-1;
     
     Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
     Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
@@ -1664,13 +1669,38 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
       else if (movetree->isTerminalResult())
       {
         gtpe->getOutput()->printfDebug("SOLVED: found 100%% sure result after %d plts!\n",totalplayouts);
+        early_stop=true;
         break;
       }
       else if (stopthinking)
+      {
+        early_stop=true;
         break;
+      }
       
       this->doPlayout(firstlist,secondlist);
       totalplayouts++;
+      
+      if (params->uct_stop_early && params->uct_slow_update_last==0)
+      {
+        Tree *besttree=movetree->getRobustChild();
+        if (besttree!=NULL)
+        {
+          float currentpart=besttree->getPlayouts()/totalplayouts-1/(params->uct_last_r2+1);
+          float overallratio;
+          if (time_allocated>0) // timed search
+            overallratio=(float)time_allocated/timer.elapsed();
+          else
+            overallratio=(float)params->playouts_per_move/totalplayouts;
+          
+          if ((overallratio-1)<currentpart)
+          {
+            gtpe->getOutput()->printfDebug("best move cannot change! (%.3f %.3f)\n",currentpart,overallratio);
+            early_stop=true;
+            break;
+          }
+        }
+      }
       
       if (params->livegfx_on)
       {
@@ -1693,7 +1723,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     
     Tree *besttree=movetree->getRobustChild();
     float bestratio=0;
-    float ratiodelta=-1,ratio2=-1;
+    float ratiodelta=-1;
     bool bestsame=false;
     if (besttree==NULL)
     {
@@ -1708,9 +1738,11 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
       bestratio=besttree->getRatio();
       
       ratiodelta=besttree->bestChildRatioDiff();
-      ratio2=besttree->secondBestPlayoutRatio();
       bestsame=(besttree==(movetree->getBestRatioChild(10)));
     }
+    
+    if (params->uct_slow_update_last!=0)
+      this->doSlowUpdate();
     
     if (playmove)
       this->makeMove(**move);
@@ -1735,11 +1767,11 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
       if (time->stonesLeft(col)>0)
         ss << " s:"<<time->stonesLeft(col);
     }
-    if (!time->isNoTiming() || movetree->isTerminalResult())
+    if (!time->isNoTiming() || early_stop)
       ss << " plts:"<<totalplayouts;
     ss << " ppms:"<<std::setprecision(2)<<playouts_per_milli;
     ss << " rd:"<<std::setprecision(2)<<ratiodelta;
-    ss << " r2:"<<std::setprecision(2)<<ratio2;
+    ss << " r2:"<<std::setprecision(2)<<params->uct_last_r2;
     ss << " bs:"<<bestsame;
     Tree *pvtree=movetree->getRobustChild(true);
     if (pvtree!=NULL)
@@ -2174,9 +2206,7 @@ void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
   {
     params->uct_slow_update_last=0;
     
-    Tree *besttree=movetree->getRobustChild();
-    if (besttree!=NULL)
-      params->surewin_expected=(besttree->getRatio()>=params->surewin_threshold);
+    this->doSlowUpdate();
   }
   
   delete playoutboard;
@@ -2341,6 +2371,17 @@ void Engine::ponder()
     delete firstlist;
     delete secondlist;
     //fprintf(stderr,"pondering done! %d %.0f\n",playouts,movetree->getPlayouts());
+  }
+}
+
+void Engine::doSlowUpdate()
+{
+  Tree *besttree=movetree->getRobustChild();
+  if (besttree!=NULL)
+  {
+    params->surewin_expected=(besttree->getRatio()>=params->surewin_threshold);
+    
+    params->uct_last_r2=besttree->secondBestPlayoutRatio();
   }
 }
 

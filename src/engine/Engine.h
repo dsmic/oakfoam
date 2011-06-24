@@ -29,6 +29,7 @@
 #define UCT_PROGRESSIVE_BIAS_SCALED true
 #define UCT_PROGRESSIVE_BIAS_RELATIVE false
 #define UCT_SLOW_UPDATE_INTERVAL 100
+#define UCT_STOP_EARLY true
 
 #define RULES_POSITIONAL_SUPERKO_ENABLED true
 #define RULES_SUPERKO_TOP_PLY true
@@ -213,6 +214,7 @@ class Engine
     bool writeSGF(std::string filename, Go::Board *board, Tree *tree);
     void doPlayout(Go::BitBoard *firstlist, Go::BitBoard *secondlist);
     void displayPlayoutLiveGfx(int totalplayouts=-1, bool livegfx=true);
+    void doSlowUpdate();
     
     void allowContinuedPlay();
 };
