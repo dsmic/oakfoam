@@ -10,6 +10,7 @@ Now: (current focus)
   do superko pruning after a number of playouts through a node
   replace volatile bool's with a sync primitive
   look why bs=0 even when r2 is high
+  add debug levels
 
 Soon: (before next major release)
   add results from first playout moves to tree
@@ -48,7 +49,6 @@ Later: (at some point)
   use rotational symmetry?
   copy all board data with a copy() (groups and liberties)
   extensive comparison of playouts with strength
-  add more debug messages and debug levels
   more regression testing
   add loadsgf command
   setting to filter boardsize, time_settings, etc. for kgs
