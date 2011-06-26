@@ -1689,7 +1689,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
           float currentpart=(besttree->getPlayouts()-besttree->secondBestPlayouts())/totalplayouts;
           float overallratio;
           if (time_allocated>0) // timed search
-            overallratio=(float)time_allocated/timer.elapsed();
+            overallratio=(float)(time_allocated+TIME_RESOLUTION)/timer.elapsed();
           else
             overallratio=(float)params->playouts_per_move/totalplayouts;
           
