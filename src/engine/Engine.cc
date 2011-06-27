@@ -294,6 +294,7 @@ void Engine::addGtpCommands()
   
   gtpe->addFunctionCommand("showcurrenthash",this,&Engine::gtpShowCurrentHash);
   gtpe->addFunctionCommand("showsafepositions",this,&Engine::gtpShowSafePositions);
+  gtpe->addFunctionCommand("dobenchmark",this,&Engine::gtpDoBenchmark);
   
   //gtpe->addAnalyzeCommand("final_score","Final Score","string");
   //gtpe->addAnalyzeCommand("showboard","Show Board","string");
@@ -1456,6 +1457,33 @@ void Engine::gtpShowSafePositions(void *instance, Gtp::Engine* gtpe, Gtp::Comman
   gtpe->getOutput()->endResponse();
   
   delete benson;
+}
+
+void Engine::gtpDoBenchmark(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  int games;
+  if (cmd->numArgs()==0)
+    games=1000;
+  else
+    games=cmd->getIntArg(0);
+  
+  boost::timer timer;
+  float finalscore;
+  for (int i=0;i<games;i++)
+  {
+    Go::Board *board=new Go::Board(me->boardsize);
+    std::list<Go::Move> playoutmoves;
+    me->playout->doPlayout(board,finalscore,playoutmoves,Go::BLACK,NULL,NULL);
+    delete board;
+  }
+  
+  float rate=(float)games/timer.elapsed()/1000;
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printf("ppms: %.2f",rate);
+  gtpe->getOutput()->endResponse();
 }
 
 void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
