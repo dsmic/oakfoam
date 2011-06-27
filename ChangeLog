@@ -9,6 +9,12 @@ version 0.0.9: xxxx-xx-xx
   * treat jigos as half wins
   * added Fuego-style opening book
   * started work on larger patterns
+  * positional superko detection
+  * added progressive bias
+  * mercy rule
+  * support gogui-interrupt extension
+  * added pondering
+  * stop thinking if best move cannot change
 
 version 0.0.8: 2011-01-13
   * change some default parameters
