@@ -7,7 +7,7 @@
 #########################################
 
 OUTPUT="results_`date +%F_%T`"
-OAKFOAM="../oakfoam --log $OUTPUT/oakfoam.log"
+OAKFOAM="../oakfoam --nobook --log $OUTPUT/oakfoam.log"
 PROGRAM="gogui-adapter \"$OAKFOAM\""
 # Use gogui-adapter to emulate loadsgf
 
