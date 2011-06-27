@@ -187,6 +187,13 @@ void Playout::getPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, in
     return;
   }
   
+  if (params->playout_random_chance>0)
+  {
+    float f=rand->getRandomReal();
+    if (f<params->playout_random_chance)
+      goto random;
+  }
+  
   if (params->playout_lgrf2_enabled)
   {
     if (board->getLastMove().isNormal() && board->getSecondLastMove().isNormal())
@@ -540,6 +547,8 @@ void Playout::getPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, in
     //delete gammas;
     return;
   }
+  
+  random: // for playout_random_chance
   
   for (int i=0;i<10;i++)
   {

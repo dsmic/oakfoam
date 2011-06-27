@@ -6,7 +6,7 @@ Now: (current focus)
   larger patterns
   change uct_* params to tree_*
   option to output games to sgf with explanations
-  add chance a playout move is uniformly random (no heuristics)
+  tune playout_random_chance
   do superko pruning after a number of playouts through a node
   replace volatile bool's with a sync primitive
   look why bs=0 even when r2 is high

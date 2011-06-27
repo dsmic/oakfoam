@@ -54,6 +54,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln)
   params->addParameter("mcts","playout_anycapture_enabled",&(params->playout_anycapture_enabled),PLAYOUT_ANYCAPTURE_ENABLED);
   params->addParameter("mcts","playout_features_enabled",&(params->playout_features_enabled),PLAYOUT_FEATURES_ENABLED);
   params->addParameter("mcts","playout_features_incremental",&(params->playout_features_incremental),PLAYOUT_FEATURES_INCREMENTAL);
+  params->addParameter("mcts","playout_random_chance",&(params->playout_random_chance),PLAYOUT_RANDOM_CHANCE);
   params->addParameter("mcts","playout_mercy_rule_enabled",&(params->playout_mercy_rule_enabled),PLAYOUT_MERCY_RULE_ENABLED);
   params->addParameter("mcts","playout_mercy_rule_factor",&(params->playout_mercy_rule_factor),PLAYOUT_MERCY_RULE_FACTOR);
   

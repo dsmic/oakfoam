@@ -49,6 +49,7 @@ class Parameters
     bool playout_lgrf2_enabled;
     bool playout_mercy_rule_enabled;
     float playout_mercy_rule_factor;
+    float playout_random_chance;
     
     float ucb_c;
     float ucb_init;
