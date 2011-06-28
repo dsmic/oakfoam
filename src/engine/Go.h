@@ -435,6 +435,8 @@ namespace Go
       int getThreeEmptyGroupCenterFrom(int pos);
       
       Go::ZobristHash getZobristHash(Go::ZobristTable *table);
+      
+      Go::Color getScoredOwner(int pos);
     
     private:
       int size;
@@ -460,6 +462,13 @@ namespace Go
       Go::ObjectBoard<float> *blackgammas;
       Go::ObjectBoard<float> *whitegammas;
       int blackcaptures,whitecaptures;
+      
+      struct ScoreVertex
+      {
+        bool touched;
+        Go::Color color;
+      };
+      Go::Board::ScoreVertex *lastscoredata;
       
       inline Go::Group *getGroupWithoutFind(int pos) { return data[pos].group; };
       inline void setColor(int pos, Go::Color col) { data[pos].color=col; if (markchanges) { lastchanges->set(pos); } };
@@ -487,12 +496,6 @@ namespace Go
       bool hasSymmetryDiagonalUp();
       void updateSymmetry();
       int doSymmetryTransformPrimitive(Go::Board::Symmetry sym, int pos);
-      
-      struct ScoreVertex
-      {
-        bool touched;
-        Go::Color color;
-      };
       
       void spreadScore(Go::Board::ScoreVertex *scoredata, int pos, Go::Color col);
       

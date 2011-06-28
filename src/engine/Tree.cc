@@ -29,6 +29,9 @@ Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p)
   lastunprune=0;
   unprunebase=0;
   hash=h;
+  ownedblack=0;
+  ownedwhite=0;
+  ownedwinner=0;
   
   if (parent!=NULL)
   {
@@ -945,5 +948,78 @@ Tree *Tree::getBestRatioChild(float playoutthreshold)
   }
   
   return besttree;
+}
+
+void Tree::updateCriticality(Go::Board *board, Go::Color wincol)
+{
+  //fprintf(stderr,"[crit_up]: %d %d\n",this->isRoot(),params->uct_criticality_siblings);
+  
+  if (params->uct_criticality_siblings)
+  {
+    for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
+    {
+      if ((*iter)->getMove().isNormal())
+      {
+        int pos=(*iter)->getMove().getPosition();
+        bool black=(board->getScoredOwner(pos)==Go::BLACK);
+        bool white=(board->getScoredOwner(pos)==Go::WHITE);
+        bool winner=(board->getScoredOwner(pos)==wincol);
+        (*iter)->addCriticalityStats(winner,black,white);
+      }
+    }
+  }
+  
+  if (this->isRoot())
+    return;
+  else
+  {
+    if (!(params->uct_criticality_siblings) && move.isNormal())
+    {
+      int pos=move.getPosition();
+      bool black=(board->getScoredOwner(pos)==Go::BLACK);
+      bool white=(board->getScoredOwner(pos)==Go::WHITE);
+      bool winner=(board->getScoredOwner(pos)==wincol);
+      this->addCriticalityStats(winner,black,white);
+    }
+    
+    parent->updateCriticality(board,wincol);
+  }
+}
+
+void Tree::addCriticalityStats(bool winner, bool black, bool white)
+{
+  //fprintf(stderr,"[crit_add]: %d %d %d\n",winner,black,white);
+  
+  if (winner)
+    ownedwinner++;
+  if (black)
+    ownedblack++;
+  if (white)
+    ownedwhite++;
+}
+
+float Tree::getCriticality()
+{
+  if (!move.isNormal() || (params->uct_criticality_siblings && this->isRoot()))
+    return 0;
+  else
+  {
+    int plts=(params->uct_criticality_siblings?parent->playouts:playouts);
+    if (plts==0)
+      return 0;
+    float ratio=(params->uct_criticality_siblings?1-parent->getRatio():this->getRatio());
+    float crit;
+    if (move.getColor()==Go::BLACK)
+      crit=(float)ownedwinner/plts-(ratio*ownedblack/plts+(1-ratio)*ownedwhite/plts);
+    else
+      crit=(float)ownedwinner/plts-(ratio*ownedwhite/plts+(1-ratio)*ownedblack/plts);
+    
+    //fprintf(stderr,"[crit]: %.2f\n",crit);
+    
+    if (crit>=0)
+      return crit;
+    else
+      return 0;
+  }
 }
 

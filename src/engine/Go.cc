@@ -217,6 +217,7 @@ Go::Board::Board(int s)
   
   blackcaptures=0;
   whitecaptures=0;
+  lastscoredata=NULL;
 }
 
 Go::Board::~Board()
@@ -235,6 +236,9 @@ Go::Board::~Board()
     pool_group.destroy((*iter));
   }*/
   groups.resize(0);
+  
+  if (lastscoredata!=NULL)
+    delete[] lastscoredata;
   
   delete[] data;
 }
@@ -369,7 +373,11 @@ int Go::Board::score()
       s--;
   }
   
-  delete[] scoredata;
+  if (lastscoredata!=NULL)
+    delete[] lastscoredata;
+  lastscoredata=scoredata;
+  
+  //delete[] scoredata;
   return s;
 }
 
@@ -413,6 +421,14 @@ void Go::Board::spreadScore(Go::Board::ScoreVertex *scoredata, int pos, Go::Colo
   foreach_adjacent(pos,p,{
     this->spreadScore(scoredata,p,col);
   });
+}
+
+Go::Color Go::Board::getScoredOwner(int pos)
+{
+  if (lastscoredata!=NULL)
+    return lastscoredata[pos].color;
+  else
+    return Go::EMPTY;
 }
 
 bool Go::Board::validMove(Go::Move move)

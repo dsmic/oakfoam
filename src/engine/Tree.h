@@ -85,6 +85,9 @@ class Tree
     Go::ZobristHash getHash() { return hash; };
     bool isSuperkoViolationWith(Go::ZobristHash h);
     
+    void updateCriticality(Go::Board *board, Go::Color wincol);
+    float getCriticality();
+    
     std::string toSGFString();
     
   private:
@@ -103,6 +106,7 @@ class Tree
     float gamma,childrentotalgamma,maxchildgamma;
     float lastunprune,unprunenextchildat;
     float unprunebase;
+    int ownedblack,ownedwhite,ownedwinner;
     
     Go::ZobristHash hash;
     
@@ -111,6 +115,8 @@ class Tree
     void unPruneNextChild();
     float unPruneMetric();
     void updateUnPruneAt();
+    
+    void addCriticalityStats(bool winner, bool black, bool white);
     
     static float variance(int wins, int playouts);
 };

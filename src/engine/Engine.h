@@ -28,6 +28,7 @@
 #define UCT_PROGRESSIVE_BIAS_H 10.0
 #define UCT_PROGRESSIVE_BIAS_SCALED true
 #define UCT_PROGRESSIVE_BIAS_RELATIVE false
+#define UCT_CRITICALITY_SIBLINGS true
 #define UCT_SLOW_UPDATE_INTERVAL 100
 #define UCT_STOP_EARLY true
 
@@ -185,6 +186,7 @@ class Engine
     static void gtpShowCurrentHash(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowSafePositions(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpDoBenchmark(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpShowCriticality(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
   
   private:
     Gtp::Engine *gtpe;

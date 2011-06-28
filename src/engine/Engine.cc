@@ -84,6 +84,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln)
   params->addParameter("mcts","uct_progressive_bias_h",&(params->uct_progressive_bias_h),UCT_PROGRESSIVE_BIAS_H);
   params->addParameter("mcts","uct_progressive_bias_scaled",&(params->uct_progressive_bias_scaled),UCT_PROGRESSIVE_BIAS_SCALED);
   params->addParameter("mcts","uct_progressive_bias_relative",&(params->uct_progressive_bias_relative),UCT_PROGRESSIVE_BIAS_RELATIVE);
+  params->addParameter("mcts","uct_criticality_siblings",&(params->uct_criticality_siblings),UCT_CRITICALITY_SIBLINGS);
   
   params->addParameter("mcts","uct_slow_update_interval",&(params->uct_slow_update_interval),UCT_SLOW_UPDATE_INTERVAL);
   params->uct_slow_update_last=0;
@@ -295,6 +296,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("showcurrenthash",this,&Engine::gtpShowCurrentHash);
   gtpe->addFunctionCommand("showsafepositions",this,&Engine::gtpShowSafePositions);
   gtpe->addFunctionCommand("dobenchmark",this,&Engine::gtpDoBenchmark);
+  gtpe->addFunctionCommand("showcriticality",this,&Engine::gtpShowCriticality);
   
   //gtpe->addAnalyzeCommand("final_score","Final Score","string");
   //gtpe->addAnalyzeCommand("showboard","Show Board","string");
@@ -314,6 +316,7 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("featurematchesat %%p","Feature Matches At","string");
   gtpe->addAnalyzeCommand("featureprobdistribution","Feature Probability Distribution","cboard");
   gtpe->addAnalyzeCommand("loadfeaturegammas %%r","Load Feature Gammas","none");
+  gtpe->addAnalyzeCommand("showcriticality","Show Criticality","cboard");
   gtpe->addAnalyzeCommand("showtreelivegfx","Show Tree Live Gfx","gfx");
   //gtpe->addAnalyzeCommand("loadpatterns %%r","Load Patterns","none");
   //gtpe->addAnalyzeCommand("clearpatterns","Clear Patterns","none");
@@ -1486,6 +1489,58 @@ void Engine::gtpDoBenchmark(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd
   gtpe->getOutput()->endResponse();
 }
 
+void Engine::gtpShowCriticality(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  Go::Board *board=me->currentboard;
+  Go::Color col=board->nextToMove();
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("\n");
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      Go::Move move=Go::Move(col,Go::Position::xy2pos(x,y,me->boardsize)); 
+      Tree *tree=me->movetree->getChild(move);
+      if (tree==NULL || !tree->isPrimary())
+        gtpe->getOutput()->printf("\"\" ");
+      else
+      {
+        float crit=tree->getCriticality();
+        int plts=(me->params->uct_criticality_siblings?me->movetree->getPlayouts():tree->getPlayouts());
+        if (crit==0 && (!move.isNormal() || plts==0))
+          gtpe->getOutput()->printf("\"\" ");
+        else
+        {
+          float r,g,b;
+          float x=crit*2;
+          
+          // scale from blue-red
+          r=x*2;
+          if (r>1)
+            r=1;
+          g=0;
+          b=1-r;
+          
+          if (r<0)
+            r=0;
+          if (g<0)
+            g=0;
+          if (b<0)
+            b=0;
+          gtpe->getOutput()->printf("#%02x%02x%02x ",(int)(r*255),(int)(g*255),(int)(b*255));
+          //gtpe->getOutput()->printf("#%06x ",(int)(prob*(1<<24)));
+        }
+      }
+    }
+    gtpe->getOutput()->printf("\n");
+  }
+
+  gtpe->getOutput()->endResponse(true);
+}
+
 void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
@@ -2182,6 +2237,12 @@ void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
     playouttree->addWin();
   else
     playouttree->addLose();
+  
+  if (!playoutjigo)
+  {
+    Go::Color wincol=(finalscore>0?Go::BLACK:Go::WHITE);
+    playouttree->updateCriticality(playoutboard,wincol);
+  }
   
   if (!playouttree->isTerminalResult())
   {
