@@ -272,10 +272,15 @@ float Tree::getUrgency()
       uctbias=params->ucb_c/2;
   }
   
+  float val=this->getVal()+uctbias;
+  
   if (params->uct_progressive_bias_enabled)
-    return this->getVal()+uctbias+this->getProgressiveBias();
-  else
-    return this->getVal()+uctbias;
+    val+=this->getProgressiveBias();
+  
+  if (params->uct_criticality_urgency_factor>0 && (params->uct_criticality_siblings?parent->playouts:playouts)>(params->uct_criticality_min_playouts))
+    val+=params->uct_criticality_urgency_factor*this->getCriticality();
+  
+  return val;
 }
 
 std::list<Go::Move> Tree::getMovesFromRoot()
@@ -498,6 +503,14 @@ void Tree::unPruneNow()
 {
   unprunenextchildat=this->unPruneMetric();
   this->unPruneNextChild();
+}
+
+float Tree::getUnPruneFactor()
+{
+  if (params->uct_criticality_unprune_factor>0 && (params->uct_criticality_siblings?parent->playouts:playouts)>(params->uct_criticality_min_playouts))
+    return gamma/parent->getChildrenTotalFeatureGamma() + params->uct_criticality_unprune_factor*this->getCriticality();
+  else
+    return gamma/parent->getChildrenTotalFeatureGamma();
 }
 
 void Tree::allowContinuedPlay()

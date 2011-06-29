@@ -115,6 +115,7 @@ class Tree
     void unPruneNextChild();
     float unPruneMetric();
     void updateUnPruneAt();
+    float getUnPruneFactor();
     
     void addCriticalityStats(bool winner, bool black, bool white);
     

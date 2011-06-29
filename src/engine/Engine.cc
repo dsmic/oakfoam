@@ -84,6 +84,9 @@ Engine::Engine(Gtp::Engine *ge, std::string ln)
   params->addParameter("mcts","uct_progressive_bias_h",&(params->uct_progressive_bias_h),UCT_PROGRESSIVE_BIAS_H);
   params->addParameter("mcts","uct_progressive_bias_scaled",&(params->uct_progressive_bias_scaled),UCT_PROGRESSIVE_BIAS_SCALED);
   params->addParameter("mcts","uct_progressive_bias_relative",&(params->uct_progressive_bias_relative),UCT_PROGRESSIVE_BIAS_RELATIVE);
+  params->addParameter("mcts","uct_criticality_urgency_factor",&(params->uct_criticality_urgency_factor),UCT_CRITICALITY_URGENCY_FACTOR);
+  params->addParameter("mcts","uct_criticality_unprune_factor",&(params->uct_criticality_unprune_factor),UCT_CRITICALITY_UNPRUNE_FACTOR);
+  params->addParameter("mcts","uct_criticality_min_playouts",&(params->uct_criticality_min_playouts),UCT_CRITICALITY_MIN_PLAYOUTS);
   params->addParameter("mcts","uct_criticality_siblings",&(params->uct_criticality_siblings),UCT_CRITICALITY_SIBLINGS);
   
   params->addParameter("mcts","uct_slow_update_interval",&(params->uct_slow_update_interval),UCT_SLOW_UPDATE_INTERVAL);
