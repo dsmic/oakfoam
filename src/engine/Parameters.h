@@ -75,6 +75,7 @@ class Parameters
     bool uct_progressive_bias_relative;
     float uct_criticality_urgency_factor;
     float uct_criticality_unprune_factor;
+    bool uct_criticality_unprune_multiply;
     int uct_criticality_min_playouts;
     bool uct_criticality_siblings;
     

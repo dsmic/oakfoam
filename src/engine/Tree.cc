@@ -442,7 +442,7 @@ void Tree::unPruneNextChild()
   if (prunedchildren>0)
   {
     Tree *bestchild=NULL;
-    float bestfactor=0;
+    float bestfactor=-1;
     int unpruned=0;
     
     for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
@@ -451,9 +451,9 @@ void Tree::unPruneNextChild()
       {
         if ((*iter)->isPruned())
         {
-          if ((*iter)->gamma>bestfactor || bestchild==NULL)
+          if ((*iter)->getUnPruneFactor()>bestfactor || bestchild==NULL)
           {
-            bestfactor=(*iter)->gamma;
+            bestfactor=(*iter)->getUnPruneFactor();
             bestchild=(*iter);
           }
         }
@@ -508,7 +508,12 @@ void Tree::unPruneNow()
 float Tree::getUnPruneFactor()
 {
   if (params->uct_criticality_unprune_factor>0 && (params->uct_criticality_siblings?parent->playouts:playouts)>(params->uct_criticality_min_playouts))
-    return gamma/parent->getChildrenTotalFeatureGamma() + params->uct_criticality_unprune_factor*this->getCriticality();
+  {
+    if (params->uct_criticality_unprune_multiply)
+      return gamma/parent->getChildrenTotalFeatureGamma()*(1+params->uct_criticality_unprune_factor*this->getCriticality());
+    else
+      return gamma/parent->getChildrenTotalFeatureGamma() + params->uct_criticality_unprune_factor*this->getCriticality();
+  }
   else
     return gamma/parent->getChildrenTotalFeatureGamma();
 }
