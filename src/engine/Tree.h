@@ -45,6 +45,7 @@ class Tree
     float getMaxChildFeatureGamma() { return maxchildgamma; };
     
     float getProgressiveBias();
+    void setProgressiveBiasBonus(float b) { biasbonus=b; };
     
     Tree *getChild(Go::Move move);
     float getPlayouts() { return playouts; };
@@ -107,6 +108,7 @@ class Tree
     float lastunprune,unprunenextchildat;
     float unprunebase;
     int ownedblack,ownedwhite,ownedwinner;
+    float biasbonus;
     
     Go::ZobristHash hash;
     

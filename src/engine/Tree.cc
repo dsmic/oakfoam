@@ -32,6 +32,7 @@ Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p)
   ownedblack=0;
   ownedwhite=0;
   ownedwinner=0;
+  biasbonus=0;
   
   if (parent!=NULL)
   {
@@ -817,7 +818,7 @@ float Tree::getProgressiveBias()
     bias/=parent->getChildrenTotalFeatureGamma();
   if (params->uct_progressive_bias_relative && !this->isRoot())
     bias/=parent->getMaxChildFeatureGamma();
-  return bias;
+  return bias+biasbonus;
 }
 
 bool Tree::isSuperkoViolationWith(Go::ZobristHash h)

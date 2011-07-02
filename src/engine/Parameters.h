@@ -95,6 +95,7 @@ class Parameters
     
     float surewin_threshold;
     bool surewin_expected;
+    float surewin_pass_bonus;
     
     float resign_ratio_threshold;
     float resign_move_factor_threshold;
