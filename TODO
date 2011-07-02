@@ -10,6 +10,7 @@ Now: (current focus)
   replace volatile bool's with a sync primitive
   look why bs=0 even when r2 is high
   add debug levels
+  try make progressive bias decay with parent playouts
 
 Soon: (before next major release)
   add results from first playout moves to tree
@@ -24,7 +25,6 @@ Soon: (before next major release)
   patterns only near last move?
   fillboard not on 1st/2nd line?
   make sure scoring at end of kgs ranked game works (opponent can't "cheat")
-  reduce expand_after?
   tune fillboard's N
   look into transposition table-like structure
   look at Feasibility for 19x19 (Baier Hendrik), possibly as a feature
