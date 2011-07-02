@@ -2474,10 +2474,9 @@ void Engine::doSlowUpdate()
   Tree *besttree=movetree->getRobustChild();
   if (besttree!=NULL)
   {
-    bool wassurewin=params->surewin_expected;
     params->surewin_expected=(besttree->getRatio()>=params->surewin_threshold);
     
-    if (!wassurewin && params->surewin_expected && params->surewin_pass_bonus>0)
+    if (params->surewin_expected && params->surewin_pass_bonus>0)
     {
       Tree *passtree=movetree->getChild(Go::Move(currentboard->nextToMove(),Go::Move::PASS));
       

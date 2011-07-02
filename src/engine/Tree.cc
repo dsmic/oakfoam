@@ -813,12 +813,12 @@ void Tree::updateRAVE(Go::Color wincol,Go::BitBoard *blacklist,Go::BitBoard *whi
 
 float Tree::getProgressiveBias()
 {
-  float bias=params->uct_progressive_bias_h*gamma/(playouts+1);
+  float bias=params->uct_progressive_bias_h*gamma;
   if (params->uct_progressive_bias_scaled && !this->isRoot())
     bias/=parent->getChildrenTotalFeatureGamma();
   if (params->uct_progressive_bias_relative && !this->isRoot())
     bias/=parent->getMaxChildFeatureGamma();
-  return bias+biasbonus;
+  return (bias+biasbonus)/(playouts+1);
 }
 
 bool Tree::isSuperkoViolationWith(Go::ZobristHash h)
