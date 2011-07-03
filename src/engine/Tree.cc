@@ -279,7 +279,12 @@ float Tree::getUrgency()
     val+=this->getProgressiveBias();
   
   if (params->uct_criticality_urgency_factor>0 && (params->uct_criticality_siblings?parent->playouts:playouts)>(params->uct_criticality_min_playouts))
-    val+=params->uct_criticality_urgency_factor*this->getCriticality();
+  {
+    if (params->uct_criticality_urgency_decay)
+      val+=params->uct_criticality_urgency_factor*this->getCriticality()/(playouts+1);
+    else
+      val+=params->uct_criticality_urgency_factor*this->getCriticality();
+  }
   
   return val;
 }
