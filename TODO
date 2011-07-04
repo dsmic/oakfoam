@@ -2,11 +2,11 @@ TODO
 ------------------
 
 Now: (current focus)
+  do superko pruning after a number of playouts through a node
   fix threads hanging on havarti
   larger patterns
   change uct_* params to tree_*
-  option to output games to sgf with explanations
-  do superko pruning after a number of playouts through a node
+  option to output games to sgf with explanations (see gomill-savesgf)
   replace volatile bool's with a sync primitive
   look why bs=0 even when r2 is high
   add debug levels
@@ -16,7 +16,6 @@ Soon: (before next major release)
   add results from first playout moves to tree
   try UCB1-TUNED formula (p.216(169) in SylvainGellyThesis)
   prefer games that end sooner? (don't drag on at end)
-  progressively add more reward for points diff if winrate very good?
   reduce thinking time if surewin?
   think for longer if needed
   keep track of board hashes incrementally
@@ -58,4 +57,5 @@ Later: (at some point)
   support terminal jigo in tree?
   add seg fault and exception handling
   try use Benson algo in tree and playouts?
+  progressively add more reward for points diff if winrate very good?
 
