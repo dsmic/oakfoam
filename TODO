@@ -2,7 +2,6 @@ TODO
 ------------------
 
 Now: (current focus)
-  do superko pruning after a number of playouts through a node
   replace volatile bool's with a sync primitive
   fix threads hanging on havarti
   larger patterns

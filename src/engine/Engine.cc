@@ -104,6 +104,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln)
   
   params->addParameter("mcts","rules_positional_superko_enabled",&(params->rules_positional_superko_enabled),RULES_POSITIONAL_SUPERKO_ENABLED);
   params->addParameter("mcts","rules_superko_top_ply",&(params->rules_superko_top_ply),RULES_SUPERKO_TOP_PLY);
+  params->addParameter("mcts","rules_superko_prune_after",&(params->rules_superko_prune_after),RULES_SUPERKO_PRUNE_AFTER);
   
   params->addParameter("time","time_k",&(params->time_k),TIME_K);
   params->addParameter("time","time_buffer",&(params->time_buffer),TIME_BUFFER);
@@ -1742,7 +1743,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
       this->clearMoveTree();
     }
     
-    movetree->prunePossibleSuperkoViolations();
+    movetree->pruneSuperkoViolations();
     this->allowContinuedPlay();
     params->uct_slow_update_last=0;
     params->uct_last_r2=-1;
@@ -2121,7 +2122,7 @@ void Engine::chooseSubTree(Go::Move move)
   movetree->divorceChild(subtree);
   delete movetree;
   movetree=subtree;
-  movetree->prunePossibleSuperkoViolations();
+  movetree->pruneSuperkoViolations();
 }
 
 bool Engine::writeSGF(std::string filename, Go::Board *board, Tree *tree)
@@ -2195,7 +2196,7 @@ void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
   {
     this->allowContinuedPlay();
     movetree->expandLeaf();
-    movetree->prunePossibleSuperkoViolations();
+    movetree->pruneSuperkoViolations();
   }
   
   //givenfirstlist=(firstlist==NULL);

@@ -75,7 +75,7 @@ class Tree
     Tree *getUrgentChild();
     Tree *getBestRatioChild(float playoutthreshold=0);
     void updateRAVE(Go::Color wincol,Go::BitBoard *blacklist,Go::BitBoard *whitelist);
-    void prunePossibleSuperkoViolations();
+    void pruneSuperkoViolations();
     
     void allowContinuedPlay();
     
@@ -109,6 +109,7 @@ class Tree
     float unprunebase;
     int ownedblack,ownedwhite,ownedwinner;
     float biasbonus;
+    bool superkoprunedchildren;
     
     Go::ZobristHash hash;
     

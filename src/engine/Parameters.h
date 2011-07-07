@@ -93,6 +93,7 @@ class Parameters
     
     bool rules_positional_superko_enabled;
     bool rules_superko_top_ply;
+    int rules_superko_prune_after;
     
     float surewin_threshold;
     bool surewin_expected;

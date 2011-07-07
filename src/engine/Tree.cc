@@ -33,6 +33,7 @@ Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p)
   ownedwhite=0;
   ownedwinner=0;
   biasbonus=0;
+  superkoprunedchildren=false;
   
   if (parent!=NULL)
   {
@@ -564,6 +565,9 @@ Tree *Tree::getUrgentChild()
   float besturgency=0;
   Tree *besttree=NULL;
   
+  if (!superkoprunedchildren && playouts>(params->rules_superko_prune_after))
+    this->pruneSuperkoViolations();
+  
   for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
   {
     if ((*iter)->isPrimary() && !(*iter)->isPruned())
@@ -848,9 +852,9 @@ void Tree::setFeatureGamma(float g)
   }
 }
 
-void Tree::prunePossibleSuperkoViolations()
+void Tree::pruneSuperkoViolations()
 {
-  if (params->rules_positional_superko_enabled && params->rules_superko_top_ply)
+  if (!superkoprunedchildren && params->rules_positional_superko_enabled && params->rules_superko_top_ply)
   {
     std::list<Go::Move> startmoves=this->getMovesFromRoot();
     Go::Board *startboard=params->engine->getCurrentBoard()->copy();
@@ -887,15 +891,16 @@ void Tree::prunePossibleSuperkoViolations()
       }
     }
     
+    if (prunedchildren==children->size())
+    {
+      unprunenextchildat=0;
+      lastunprune=0;
+      unprunebase=0;
+      this->unPruneNow(); //unprune at least one child
+    }
+    
     delete startboard;
-  }
-  
-  if (prunedchildren==children->size())
-  {
-    unprunenextchildat=0;
-    lastunprune=0;
-    unprunebase=0;
-    this->unPruneNow(); //unprune at least one child
+    superkoprunedchildren=true;
   }
 }
 
