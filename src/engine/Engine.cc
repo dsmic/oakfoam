@@ -33,86 +33,86 @@ Engine::Engine(Gtp::Engine *ge, std::string ln)
   mpoptions->push_back("playout");
   mpoptions->push_back("1-ply");
   mpoptions->push_back("uct");
-  params->addParameter("mcts","move_policy",&(params->move_policy_string),mpoptions,"uct",&Engine::updateParameterWrapper,this);
+  params->addParameter("general","move_policy",&(params->move_policy_string),mpoptions,"uct",&Engine::updateParameterWrapper,this);
   params->move_policy=Parameters::MP_UCT;
   
-  params->addParameter("mcts","book_use",&(params->book_use),BOOK_USE);
+  params->addParameter("general","book_use",&(params->book_use),BOOK_USE);
   
-  params->addParameter("mcts","playouts_per_move",&(params->playouts_per_move),PLAYOUTS_PER_MOVE);
-  params->addParameter("mcts","playouts_per_move_max",&(params->playouts_per_move_max),PLAYOUTS_PER_MOVE_MAX);
-  params->addParameter("mcts","playouts_per_move_min",&(params->playouts_per_move_min),PLAYOUTS_PER_MOVE_MIN);
+  params->addParameter("general","playouts_per_move",&(params->playouts_per_move),PLAYOUTS_PER_MOVE);
+  params->addParameter("general","playouts_per_move_max",&(params->playouts_per_move_max),PLAYOUTS_PER_MOVE_MAX);
+  params->addParameter("general","playouts_per_move_min",&(params->playouts_per_move_min),PLAYOUTS_PER_MOVE_MIN);
   
-  params->addParameter("mcts","playout_lgrf2_enabled",&(params->playout_lgrf2_enabled),PLAYOUT_LGRF2_ENABLED);
-  params->addParameter("mcts","playout_lgrf1_enabled",&(params->playout_lgrf1_enabled),PLAYOUT_LGRF1_ENABLED);
-  params->addParameter("mcts","playout_atari_enabled",&(params->playout_atari_enabled),PLAYOUT_ATARI_ENABLED);
-  params->addParameter("mcts","playout_lastatari_enabled",&(params->playout_lastatari_enabled),PLAYOUT_LASTATARI_ENABLED);
-  params->addParameter("mcts","playout_lastcapture_enabled",&(params->playout_lastcapture_enabled),PLAYOUT_LASTCAPTURE_ENABLED);
-  params->addParameter("mcts","playout_nakade_enabled",&(params->playout_nakade_enabled),PLAYOUT_NAKADE_ENABLED);
-  params->addParameter("mcts","playout_fillboard_enabled",&(params->playout_fillboard_enabled),PLAYOUT_FILLBOARD_ENABLED);
-  params->addParameter("mcts","playout_fillboard_n",&(params->playout_fillboard_n),PLAYOUT_FILLBOARD_N);
-  params->addParameter("mcts","playout_patterns_enabled",&(params->playout_patterns_enabled),PLAYOUT_PATTERNS_ENABLED);
-  params->addParameter("mcts","playout_anycapture_enabled",&(params->playout_anycapture_enabled),PLAYOUT_ANYCAPTURE_ENABLED);
-  params->addParameter("mcts","playout_features_enabled",&(params->playout_features_enabled),PLAYOUT_FEATURES_ENABLED);
-  params->addParameter("mcts","playout_features_incremental",&(params->playout_features_incremental),PLAYOUT_FEATURES_INCREMENTAL);
-  params->addParameter("mcts","playout_random_chance",&(params->playout_random_chance),PLAYOUT_RANDOM_CHANCE);
-  params->addParameter("mcts","playout_mercy_rule_enabled",&(params->playout_mercy_rule_enabled),PLAYOUT_MERCY_RULE_ENABLED);
-  params->addParameter("mcts","playout_mercy_rule_factor",&(params->playout_mercy_rule_factor),PLAYOUT_MERCY_RULE_FACTOR);
+  params->addParameter("playout","playout_lgrf2_enabled",&(params->playout_lgrf2_enabled),PLAYOUT_LGRF2_ENABLED);
+  params->addParameter("playout","playout_lgrf1_enabled",&(params->playout_lgrf1_enabled),PLAYOUT_LGRF1_ENABLED);
+  params->addParameter("playout","playout_atari_enabled",&(params->playout_atari_enabled),PLAYOUT_ATARI_ENABLED);
+  params->addParameter("playout","playout_lastatari_enabled",&(params->playout_lastatari_enabled),PLAYOUT_LASTATARI_ENABLED);
+  params->addParameter("playout","playout_lastcapture_enabled",&(params->playout_lastcapture_enabled),PLAYOUT_LASTCAPTURE_ENABLED);
+  params->addParameter("playout","playout_nakade_enabled",&(params->playout_nakade_enabled),PLAYOUT_NAKADE_ENABLED);
+  params->addParameter("playout","playout_fillboard_enabled",&(params->playout_fillboard_enabled),PLAYOUT_FILLBOARD_ENABLED);
+  params->addParameter("playout","playout_fillboard_n",&(params->playout_fillboard_n),PLAYOUT_FILLBOARD_N);
+  params->addParameter("playout","playout_patterns_enabled",&(params->playout_patterns_enabled),PLAYOUT_PATTERNS_ENABLED);
+  params->addParameter("playout","playout_anycapture_enabled",&(params->playout_anycapture_enabled),PLAYOUT_ANYCAPTURE_ENABLED);
+  params->addParameter("playout","playout_features_enabled",&(params->playout_features_enabled),PLAYOUT_FEATURES_ENABLED);
+  params->addParameter("playout","playout_features_incremental",&(params->playout_features_incremental),PLAYOUT_FEATURES_INCREMENTAL);
+  params->addParameter("playout","playout_random_chance",&(params->playout_random_chance),PLAYOUT_RANDOM_CHANCE);
+  params->addParameter("playout","playout_mercy_rule_enabled",&(params->playout_mercy_rule_enabled),PLAYOUT_MERCY_RULE_ENABLED);
+  params->addParameter("playout","playout_mercy_rule_factor",&(params->playout_mercy_rule_factor),PLAYOUT_MERCY_RULE_FACTOR);
   
-  params->addParameter("mcts","ucb_c",&(params->ucb_c),UCB_C);
-  params->addParameter("mcts","ucb_init",&(params->ucb_init),UCB_INIT);
+  params->addParameter("tree","ucb_c",&(params->ucb_c),UCB_C);
+  params->addParameter("tree","ucb_init",&(params->ucb_init),UCB_INIT);
   
-  params->addParameter("mcts","rave_moves",&(params->rave_moves),RAVE_MOVES);
-  params->addParameter("mcts","rave_init_wins",&(params->rave_init_wins),RAVE_INIT_WINS);
+  params->addParameter("tree","rave_moves",&(params->rave_moves),RAVE_MOVES);
+  params->addParameter("tree","rave_init_wins",&(params->rave_init_wins),RAVE_INIT_WINS);
   
-  params->addParameter("mcts","uct_expand_after",&(params->uct_expand_after),UCT_EXPAND_AFTER);
-  params->addParameter("mcts","uct_keep_subtree",&(params->uct_keep_subtree),UCT_KEEP_SUBTREE,&Engine::updateParameterWrapper,this);
-  params->addParameter("mcts","uct_symmetry_use",&(params->uct_symmetry_use),UCT_SYMMETRY_USE,&Engine::updateParameterWrapper,this);
+  params->addParameter("tree","uct_expand_after",&(params->uct_expand_after),UCT_EXPAND_AFTER);
+  params->addParameter("tree","uct_keep_subtree",&(params->uct_keep_subtree),UCT_KEEP_SUBTREE,&Engine::updateParameterWrapper,this);
+  params->addParameter("tree","uct_symmetry_use",&(params->uct_symmetry_use),UCT_SYMMETRY_USE,&Engine::updateParameterWrapper,this);
   if (params->uct_symmetry_use)
     currentboard->turnSymmetryOn();
   else
     currentboard->turnSymmetryOff();
-  params->addParameter("mcts","uct_atari_prior",&(params->uct_atari_prior),UCT_ATARI_PRIOR);
-  params->addParameter("mcts","uct_pattern_prior",&(params->uct_pattern_prior),UCT_PATTERN_PRIOR);
-  params->addParameter("mcts","uct_progressive_widening_enabled",&(params->uct_progressive_widening_enabled),UCT_PROGRESSIVE_WIDENING_ENABLED);
-  params->addParameter("mcts","uct_progressive_widening_a",&(params->uct_progressive_widening_a),UCT_PROGRESSIVE_WIDENING_A);
-  params->addParameter("mcts","uct_progressive_widening_b",&(params->uct_progressive_widening_b),UCT_PROGRESSIVE_WIDENING_B);
-  params->addParameter("mcts","uct_progressive_widening_c",&(params->uct_progressive_widening_c),UCT_PROGRESSIVE_WIDENING_C);
-  params->addParameter("mcts","uct_progressive_widening_count_wins",&(params->uct_progressive_widening_count_wins),UCT_PROGRESSIVE_WIDENING_COUNT_WINS);
-  params->addParameter("mcts","uct_points_bonus",&(params->uct_points_bonus),UCT_POINTS_BONUS);
-  params->addParameter("mcts","uct_length_bonus",&(params->uct_length_bonus),UCT_LENGTH_BONUS);
-  params->addParameter("mcts","uct_progressive_bias_enabled",&(params->uct_progressive_bias_enabled),UCT_PROGRESSIVE_BIAS_ENABLED);
-  params->addParameter("mcts","uct_progressive_bias_h",&(params->uct_progressive_bias_h),UCT_PROGRESSIVE_BIAS_H);
-  params->addParameter("mcts","uct_progressive_bias_scaled",&(params->uct_progressive_bias_scaled),UCT_PROGRESSIVE_BIAS_SCALED);
-  params->addParameter("mcts","uct_progressive_bias_relative",&(params->uct_progressive_bias_relative),UCT_PROGRESSIVE_BIAS_RELATIVE);
-  params->addParameter("mcts","uct_criticality_urgency_factor",&(params->uct_criticality_urgency_factor),UCT_CRITICALITY_URGENCY_FACTOR);
-  params->addParameter("mcts","uct_criticality_urgency_decay",&(params->uct_criticality_urgency_decay),UCT_CRITICALITY_URGENCY_DECAY);
-  params->addParameter("mcts","uct_criticality_unprune_factor",&(params->uct_criticality_unprune_factor),UCT_CRITICALITY_UNPRUNE_FACTOR);
-  params->addParameter("mcts","uct_criticality_unprune_multiply",&(params->uct_criticality_unprune_multiply),UCT_CRITICALITY_UNPRUNE_MULTIPLY);
-  params->addParameter("mcts","uct_criticality_min_playouts",&(params->uct_criticality_min_playouts),UCT_CRITICALITY_MIN_PLAYOUTS);
-  params->addParameter("mcts","uct_criticality_siblings",&(params->uct_criticality_siblings),UCT_CRITICALITY_SIBLINGS);
+  params->addParameter("tree","uct_atari_prior",&(params->uct_atari_prior),UCT_ATARI_PRIOR);
+  params->addParameter("tree","uct_pattern_prior",&(params->uct_pattern_prior),UCT_PATTERN_PRIOR);
+  params->addParameter("tree","uct_progressive_widening_enabled",&(params->uct_progressive_widening_enabled),UCT_PROGRESSIVE_WIDENING_ENABLED);
+  params->addParameter("tree","uct_progressive_widening_a",&(params->uct_progressive_widening_a),UCT_PROGRESSIVE_WIDENING_A);
+  params->addParameter("tree","uct_progressive_widening_b",&(params->uct_progressive_widening_b),UCT_PROGRESSIVE_WIDENING_B);
+  params->addParameter("tree","uct_progressive_widening_c",&(params->uct_progressive_widening_c),UCT_PROGRESSIVE_WIDENING_C);
+  params->addParameter("tree","uct_progressive_widening_count_wins",&(params->uct_progressive_widening_count_wins),UCT_PROGRESSIVE_WIDENING_COUNT_WINS);
+  params->addParameter("tree","uct_points_bonus",&(params->uct_points_bonus),UCT_POINTS_BONUS);
+  params->addParameter("tree","uct_length_bonus",&(params->uct_length_bonus),UCT_LENGTH_BONUS);
+  params->addParameter("tree","uct_progressive_bias_enabled",&(params->uct_progressive_bias_enabled),UCT_PROGRESSIVE_BIAS_ENABLED);
+  params->addParameter("tree","uct_progressive_bias_h",&(params->uct_progressive_bias_h),UCT_PROGRESSIVE_BIAS_H);
+  params->addParameter("tree","uct_progressive_bias_scaled",&(params->uct_progressive_bias_scaled),UCT_PROGRESSIVE_BIAS_SCALED);
+  params->addParameter("tree","uct_progressive_bias_relative",&(params->uct_progressive_bias_relative),UCT_PROGRESSIVE_BIAS_RELATIVE);
+  params->addParameter("tree","uct_criticality_urgency_factor",&(params->uct_criticality_urgency_factor),UCT_CRITICALITY_URGENCY_FACTOR);
+  params->addParameter("tree","uct_criticality_urgency_decay",&(params->uct_criticality_urgency_decay),UCT_CRITICALITY_URGENCY_DECAY);
+  params->addParameter("tree","uct_criticality_unprune_factor",&(params->uct_criticality_unprune_factor),UCT_CRITICALITY_UNPRUNE_FACTOR);
+  params->addParameter("tree","uct_criticality_unprune_multiply",&(params->uct_criticality_unprune_multiply),UCT_CRITICALITY_UNPRUNE_MULTIPLY);
+  params->addParameter("tree","uct_criticality_min_playouts",&(params->uct_criticality_min_playouts),UCT_CRITICALITY_MIN_PLAYOUTS);
+  params->addParameter("tree","uct_criticality_siblings",&(params->uct_criticality_siblings),UCT_CRITICALITY_SIBLINGS);
   
-  params->addParameter("mcts","uct_slow_update_interval",&(params->uct_slow_update_interval),UCT_SLOW_UPDATE_INTERVAL);
+  params->addParameter("tree","uct_slow_update_interval",&(params->uct_slow_update_interval),UCT_SLOW_UPDATE_INTERVAL);
   params->uct_slow_update_last=0;
-  params->addParameter("mcts","uct_stop_early",&(params->uct_stop_early),UCT_STOP_EARLY);
+  params->addParameter("tree","uct_stop_early",&(params->uct_stop_early),UCT_STOP_EARLY);
   
-  params->addParameter("mcts","surewin_threshold",&(params->surewin_threshold),SUREWIN_THRESHOLD);
+  params->addParameter("tree","surewin_threshold",&(params->surewin_threshold),SUREWIN_THRESHOLD);
   params->surewin_expected=false;
-  params->addParameter("mcts","surewin_pass_bonus",&(params->surewin_pass_bonus),SUREWIN_PASS_BONUS);
+  params->addParameter("tree","surewin_pass_bonus",&(params->surewin_pass_bonus),SUREWIN_PASS_BONUS);
   
-  params->addParameter("mcts","resign_ratio_threshold",&(params->resign_ratio_threshold),RESIGN_RATIO_THRESHOLD);
-  params->addParameter("mcts","resign_move_factor_threshold",&(params->resign_move_factor_threshold),RESIGN_MOVE_FACTOR_THRESHOLD);
+  params->addParameter("tree","resign_ratio_threshold",&(params->resign_ratio_threshold),RESIGN_RATIO_THRESHOLD);
+  params->addParameter("tree","resign_move_factor_threshold",&(params->resign_move_factor_threshold),RESIGN_MOVE_FACTOR_THRESHOLD);
   
-  params->addParameter("mcts","rules_positional_superko_enabled",&(params->rules_positional_superko_enabled),RULES_POSITIONAL_SUPERKO_ENABLED);
-  params->addParameter("mcts","rules_superko_top_ply",&(params->rules_superko_top_ply),RULES_SUPERKO_TOP_PLY);
-  params->addParameter("mcts","rules_superko_prune_after",&(params->rules_superko_prune_after),RULES_SUPERKO_PRUNE_AFTER);
+  params->addParameter("rules","rules_positional_superko_enabled",&(params->rules_positional_superko_enabled),RULES_POSITIONAL_SUPERKO_ENABLED);
+  params->addParameter("rules","rules_superko_top_ply",&(params->rules_superko_top_ply),RULES_SUPERKO_TOP_PLY);
+  params->addParameter("rules","rules_superko_prune_after",&(params->rules_superko_prune_after),RULES_SUPERKO_PRUNE_AFTER);
   
   params->addParameter("time","time_k",&(params->time_k),TIME_K);
   params->addParameter("time","time_buffer",&(params->time_buffer),TIME_BUFFER);
   params->addParameter("time","time_move_minimum",&(params->time_move_minimum),TIME_MOVE_MINIMUM);
   params->addParameter("time","time_ignore",&(params->time_ignore),false);
   
-  params->addParameter("time","pondering_enabled",&(params->pondering_enabled),PONDERING_ENABLED,&Engine::updateParameterWrapper,this);
-  params->addParameter("time","pondering_playouts_max",&(params->pondering_playouts_max),PONDERING_PLAYOUTS_MAX);
+  params->addParameter("general","pondering_enabled",&(params->pondering_enabled),PONDERING_ENABLED,&Engine::updateParameterWrapper,this);
+  params->addParameter("general","pondering_playouts_max",&(params->pondering_playouts_max),PONDERING_PLAYOUTS_MAX);
   
   params->addParameter("other","live_gfx",&(params->livegfx_on),LIVEGFX_ON);
   params->addParameter("other","live_gfx_update_playouts",&(params->livegfx_update_playouts),LIVEGFX_UPDATE_PLAYOUTS);
@@ -330,8 +330,11 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("doboardcopy","Do Board Copy","none");
   gtpe->addAnalyzeCommand("showcurrenthash","Show Current Hash","string");
   
-  gtpe->addAnalyzeCommand("param mcts","Parameters (MCTS)","param");
+  gtpe->addAnalyzeCommand("param general","Parameters (General)","param");
+  gtpe->addAnalyzeCommand("param tree","Parameters (Tree)","param");
+  gtpe->addAnalyzeCommand("param playout","Parameters (Playout)","param");
   gtpe->addAnalyzeCommand("param time","Parameters (Time)","param");
+  gtpe->addAnalyzeCommand("param rules","Parameters (Rules)","param");
   gtpe->addAnalyzeCommand("param other","Parameters (Other)","param");
   gtpe->addAnalyzeCommand("donplayouts %%s","Do N Playouts","none");
   gtpe->addAnalyzeCommand("donplayouts 1","Do 1 Playout","none");
