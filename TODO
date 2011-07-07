@@ -3,14 +3,12 @@ TODO
 
 Now: (current focus)
   do superko pruning after a number of playouts through a node
+  replace volatile bool's with a sync primitive
   fix threads hanging on havarti
   larger patterns
   change uct_* params to tree_*
   option to output games to sgf with explanations (see gomill-savesgf)
-  replace volatile bool's with a sync primitive
-  look why bs=0 even when r2 is high
   add debug levels
-  try make progressive bias decay with parent playouts
 
 Soon: (before next major release)
   add results from first playout moves to tree
@@ -29,6 +27,8 @@ Soon: (before next major release)
   look at Feasibility for 19x19 (Baier Hendrik), possibly as a feature
   look at Dynamic Komi for 19x19 (Baier Hendrik)
   try LGRF-1/2 with a variable queue (see 6.3.5 Multiple Reply LGR in Baier Hendrik)
+  try make progressive bias decay with parent playouts
+  look why bs=0 even when r2 is high (possibly fixed since stop_early)
 
 Later: (at some point)
   tune parameters
