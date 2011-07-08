@@ -854,7 +854,7 @@ void Tree::setFeatureGamma(float g)
 
 void Tree::pruneSuperkoViolations()
 {
-  if (!superkoprunedchildren && params->rules_positional_superko_enabled && params->rules_superko_top_ply)
+  if (!superkoprunedchildren && !this->isLeaf() && params->rules_positional_superko_enabled && params->rules_superko_top_ply)
   {
     std::list<Go::Move> startmoves=this->getMovesFromRoot();
     Go::Board *startboard=params->engine->getCurrentBoard()->copy();
