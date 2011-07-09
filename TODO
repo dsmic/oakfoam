@@ -2,6 +2,7 @@ TODO
 ------------------
 
 Now: (current focus)
+  initial random seed xor'ed with pid
   replace volatile bool's with a sync primitive
   fix threads hanging on havarti
   larger patterns
