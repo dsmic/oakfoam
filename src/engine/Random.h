@@ -4,8 +4,8 @@
 class Random
 {
   public:
-    Random() {};
-    Random(unsigned long s);
+    Random(unsigned long s=0);
+    unsigned long getSeed() { return seed; };
     
     unsigned long getRandomInt();
     unsigned long getRandomInt(unsigned long max);

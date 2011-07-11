@@ -1,6 +1,7 @@
 #include "Random.h"
 
 #include <cmath>
+#include <cstdlib>
 #include <boost/timer.hpp>
 #include <boost/random/linear_congruential.hpp>
 #include <boost/random/uniform_int.hpp>
@@ -9,7 +10,10 @@
 
 Random::Random(unsigned long s)
 {
-  seed=s;
+  if (s==0)
+    seed=((unsigned long)std::time(0))^((unsigned long)getpid());
+  else
+    seed=s;
 }
 
 unsigned long Random::getRandomInt()

@@ -13,8 +13,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln)
   gtpe=ge;
   longname=ln;
   
-  unsigned long seed=std::time(0);
-  rand=Random(seed);
+  rand=Random();
   
   params=new Parameters();
   
@@ -27,7 +26,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln)
   
   zobristtable=new Go::ZobristTable(params,boardsize);
   
-  params->addParameter("other","rand_seed",&(params->rand_seed),seed,&Engine::updateParameterWrapper,this);
+  params->addParameter("other","rand_seed",&(params->rand_seed),rand.getSeed(),&Engine::updateParameterWrapper,this);
   
   std::list<std::string> *mpoptions=new std::list<std::string>();
   mpoptions->push_back("playout");
@@ -234,9 +233,8 @@ void Engine::updateParameter(std::string id)
   }
   else if (id=="rand_seed")
   {
-    if (params->rand_seed==0)
-      params->rand_seed=std::time(0);
     rand=Random(params->rand_seed);
+    params->rand_seed=rand.getSeed();
   }
   else if (id=="interrupts_enabled")
   {

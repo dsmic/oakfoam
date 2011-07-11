@@ -2,13 +2,13 @@ TODO
 ------------------
 
 Now: (current focus)
-  initial random seed xor'ed with pid
   replace volatile bool's with a sync primitive
   fix threads hanging on havarti
   larger patterns
   change uct_* params to tree_*
   option to output games to sgf with explanations (see gomill-savesgf)
   add debug levels
+  don't compute board symmetry for playout board when copied
 
 Soon: (before next major release)
   add results from first playout moves to tree
