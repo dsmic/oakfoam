@@ -1052,3 +1052,16 @@ float Tree::getCriticality()
   }
 }
 
+float Tree::getTerritoryOwner()
+{
+  if (!move.isNormal() || (params->uct_criticality_siblings && this->isRoot()))
+    return 0;
+  else
+  {
+    int plts=(params->uct_criticality_siblings?parent->playouts:playouts);
+    if (plts==0)
+      return 0;
+    return (float)(ownedblack-ownedwhite)/plts;
+  }
+}
+

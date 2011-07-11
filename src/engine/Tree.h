@@ -89,6 +89,8 @@ class Tree
     void updateCriticality(Go::Board *board, Go::Color wincol);
     float getCriticality();
     
+    float getTerritoryOwner();
+    
     std::string toSGFString();
     
   private:

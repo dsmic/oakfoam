@@ -302,6 +302,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("showsafepositions",this,&Engine::gtpShowSafePositions);
   gtpe->addFunctionCommand("dobenchmark",this,&Engine::gtpDoBenchmark);
   gtpe->addFunctionCommand("showcriticality",this,&Engine::gtpShowCriticality);
+  gtpe->addFunctionCommand("showterritory",this,&Engine::gtpShowTerritory);
   
   //gtpe->addAnalyzeCommand("final_score","Final Score","string");
   //gtpe->addAnalyzeCommand("showboard","Show Board","string");
@@ -322,6 +323,7 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("featureprobdistribution","Feature Probability Distribution","cboard");
   gtpe->addAnalyzeCommand("loadfeaturegammas %%r","Load Feature Gammas","none");
   gtpe->addAnalyzeCommand("showcriticality","Show Criticality","cboard");
+  gtpe->addAnalyzeCommand("showterritory","Show Territory","dboard");
   gtpe->addAnalyzeCommand("showtreelivegfx","Show Tree Live Gfx","gfx");
   //gtpe->addAnalyzeCommand("loadpatterns %%r","Load Patterns","none");
   //gtpe->addAnalyzeCommand("clearpatterns","Clear Patterns","none");
@@ -1542,6 +1544,32 @@ void Engine::gtpShowCriticality(void *instance, Gtp::Engine* gtpe, Gtp::Command*
           //gtpe->getOutput()->printf("#%06x ",(int)(prob*(1<<24)));
         }
       }
+    }
+    gtpe->getOutput()->printf("\n");
+  }
+
+  gtpe->getOutput()->endResponse(true);
+}
+
+void Engine::gtpShowTerritory(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  Go::Board *board=me->currentboard;
+  Go::Color col=board->nextToMove();
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("\n");
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      Go::Move move=Go::Move(col,Go::Position::xy2pos(x,y,me->boardsize)); 
+      Tree *tree=me->movetree->getChild(move);
+      if (tree==NULL || !tree->isPrimary())
+        gtpe->getOutput()->printf("0 ");
+      else
+        gtpe->getOutput()->printf("%.2f ",tree->getTerritoryOwner());
     }
     gtpe->getOutput()->printf("\n");
   }
