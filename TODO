@@ -2,13 +2,14 @@ TODO
 ------------------
 
 Now: (current focus)
+  change superko to optionally use a flag instead of deletion
+  change superko to check for violation when a playout through that node is first attempted
   replace volatile bool's with a sync primitive
   fix threads hanging on havarti
   larger patterns
   change uct_* params to tree_*
   option to output games to sgf with explanations (see gomill-savesgf)
   add debug levels
-  don't compute board symmetry for playout board when copied
 
 Soon: (before next major release)
   add results from first playout moves to tree

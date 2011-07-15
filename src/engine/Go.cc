@@ -273,8 +273,8 @@ void Go::Board::copyOver(Go::Board *copyboard)
   
   copyboard->refreshGroups();
   
-  if (copyboard->symmetryupdated)
-    copyboard->updateSymmetry();
+  copyboard->symmetryupdated=this->symmetryupdated;
+  copyboard->currentsymmetry=this->currentsymmetry;
   copyboard->updateFeatureGammas();
   
   copyboard->blackcaptures=this->blackcaptures;
