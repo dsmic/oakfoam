@@ -981,6 +981,8 @@ Tree *Tree::getBestRatioChild(float playoutthreshold)
 
 void Tree::updateCriticality(Go::Board *board, Go::Color wincol)
 {
+  if (params->uct_criticality_unprune_factor==0 && params->uct_criticality_urgency_factor==0)
+    return;
   //fprintf(stderr,"[crit_up]: %d %d\n",this->isRoot(),params->uct_criticality_siblings);
   
   if (params->uct_criticality_siblings)
