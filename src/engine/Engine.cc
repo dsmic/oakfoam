@@ -1805,13 +1805,19 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
         if (besttree!=NULL)
         {
           float currentpart=(besttree->getPlayouts()-besttree->secondBestPlayouts())/totalplayouts;
-          float overallratio;
+          float overallratio,overallratiotimed;
           if (time_allocated>0) // timed search
-            overallratio=(float)(time_allocated+TIME_RESOLUTION)/timer.elapsed();
+          {
+            overallratio=(float)params->playouts_per_move_max/totalplayouts;
+            overallratiotimed=(float)(time_allocated+TIME_RESOLUTION)/timer.elapsed();
+          }
           else
+          {
             overallratio=(float)params->playouts_per_move/totalplayouts;
+            overallratiotimed=0;
+          }
           
-          if ((overallratio-1)<currentpart)
+          if (((overallratio-1)<currentpart) || ((time_allocated>0) && ((overallratiotimed-1)<currentpart)))
           {
             gtpe->getOutput()->printfDebug("best move cannot change! (%.3f %.3f)\n",currentpart,overallratio);
             early_stop=true;
