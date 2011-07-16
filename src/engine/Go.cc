@@ -7,11 +7,11 @@
 #include "Engine.h"
 
 Go::BitBoard::BitBoard(int s)
+  : size(s),
+    sizesq(s*s),
+    sizedata(1+(s+1)*(s+2)),
+    data(new bool[sizedata])
 {
-  size=s;
-  sizesq=s*s;
-  sizedata=1+(s+1)*(s+2);
-  data=new bool[sizedata];
   for (int i=0;i<sizedata;i++)
     data[i]=false;
 }
@@ -62,7 +62,7 @@ int Go::Position::string2pos(std::string str, int boardsize)
   }
 }
 
-std::string Go::Move::toString(int boardsize)
+std::string Go::Move::toString(int boardsize) const
 {
   if (this->isPass())
   {
@@ -90,10 +90,10 @@ std::string Go::Move::toString(int boardsize)
 }
 
 Go::Group::Group(Go::Board *brd, int pos)
+  : board(brd),
+    color(board->getColor(pos)),
+    position(pos)
 {
-  board=brd;
-  color=board->getColor(pos);
-  position=pos;
   stonescount=1;
   parent=NULL;
   pseudoliberties=0;
@@ -110,7 +110,7 @@ void Go::Group::addTouchingEmpties()
   });
 }
 
-bool Go::Group::isOneOfTwoLiberties(int pos)
+bool Go::Group::isOneOfTwoLiberties(int pos) const
 {
   if (pseudoliberties>8 || this->inAtari())
     return false;
@@ -132,7 +132,7 @@ bool Go::Group::isOneOfTwoLiberties(int pos)
   return (ps>0 && (ps*lpsq)==(lps*lps));
 }
 
-int Go::Group::getOtherOneOfTwoLiberties(int pos)
+int Go::Group::getOtherOneOfTwoLiberties(int pos) const
 {
   if (pseudoliberties>8 || this->inAtari())
     return -1;
@@ -158,12 +158,11 @@ int Go::Group::getOtherOneOfTwoLiberties(int pos)
 }
 
 Go::Board::Board(int s)
+  : size(s),
+    sizesq(s*s),
+    sizedata(1+(s+1)*(s+2)),
+    data(new Go::Vertex[sizedata])
 {
-  size=s;
-  sizesq=s*s;
-  sizedata=1+(s+1)*(s+2);
-  data=new Go::Vertex[sizedata];
-  
   markchanges=false;
   lastchanges=new Go::BitBoard(size);
   
@@ -253,7 +252,7 @@ Go::Board *Go::Board::copy()
   return copyboard;
 }
 
-void Go::Board::copyOver(Go::Board *copyboard)
+void Go::Board::copyOver(Go::Board *copyboard) const
 {
   if (size!=copyboard->getSize())
     throw Go::Exception("cannot copy to a different size board");
@@ -281,7 +280,7 @@ void Go::Board::copyOver(Go::Board *copyboard)
   copyboard->whitecaptures=this->whitecaptures;
 }
 
-std::string Go::Board::toString()
+std::string Go::Board::toString() const
 {
   std::ostringstream ss;
   
@@ -303,7 +302,7 @@ std::string Go::Board::toString()
   return ss.str();
 }
 
-std::string Go::Board::toSGFString()
+std::string Go::Board::toSGFString() const
 {
   std::ostringstream ss,ssb,ssw;
   
@@ -423,7 +422,7 @@ void Go::Board::spreadScore(Go::Board::ScoreVertex *scoredata, int pos, Go::Colo
   });
 }
 
-Go::Color Go::Board::getScoredOwner(int pos)
+Go::Color Go::Board::getScoredOwner(int pos) const
 {
   if (lastscoredata!=NULL)
     return lastscoredata[pos].color;
@@ -431,13 +430,13 @@ Go::Color Go::Board::getScoredOwner(int pos)
     return Go::EMPTY;
 }
 
-bool Go::Board::validMove(Go::Move move)
+bool Go::Board::validMove(Go::Move move) const
 {
   Go::BitBoard *validmoves=(move.getColor()==Go::BLACK?blackvalidmoves:whitevalidmoves);
   return move.isPass() || move.isResign() || validmoves->get(move.getPosition());
 }
 
-bool Go::Board::validMoveCheck(Go::Move move)
+bool Go::Board::validMoveCheck(Go::Move move) const
 {
   if (move.isPass() || move.isResign())
     return true;
@@ -677,7 +676,7 @@ void Go::Board::removeValidMove(Go::Move move)
   }
 }
 
-int Go::Board::touchingEmpty(int pos)
+int Go::Board::touchingEmpty(int pos) const
 {
   int lib=0;
   
@@ -689,7 +688,7 @@ int Go::Board::touchingEmpty(int pos)
   return lib;
 }
 
-int Go::Board::surroundingEmpty(int pos)
+int Go::Board::surroundingEmpty(int pos) const
 {
   int lib=0;
   
@@ -701,7 +700,7 @@ int Go::Board::surroundingEmpty(int pos)
   return lib;
 }
 
-bool Go::Board::touchingAtLeastOneEmpty(int pos)
+bool Go::Board::touchingAtLeastOneEmpty(int pos) const
 {
   foreach_adjacent(pos,p,{
     if (this->getColor(p)==Go::EMPTY)
@@ -845,7 +844,7 @@ void Go::Board::mergeGroups(Go::Group *first, Go::Group *second)
   first->unionWith(second);
 }
 
-bool Go::Board::weakEye(Go::Color col, int pos)
+bool Go::Board::weakEye(Go::Color col, int pos) const
 {
   if (col==Go::EMPTY || col==Go::OFFBOARD || this->getColor(pos)!=Go::EMPTY)
     return false;
@@ -894,7 +893,7 @@ bool Go::Board::isWinForColor(Go::Color col, float score)
   return ((score*k)>0);
 }
 
-bool Go::Board::hasSymmetryVertical()
+bool Go::Board::hasSymmetryVertical() const
 {
   if (simpleko!=-1)
     return false;
@@ -917,7 +916,7 @@ bool Go::Board::hasSymmetryVertical()
   return true;
 }
 
-bool Go::Board::hasSymmetryHorizontal()
+bool Go::Board::hasSymmetryHorizontal() const
 {
   if (simpleko!=-1)
     return false;
@@ -940,7 +939,7 @@ bool Go::Board::hasSymmetryHorizontal()
   return true;
 }
 
-bool Go::Board::hasSymmetryDiagonalDown()
+bool Go::Board::hasSymmetryDiagonalDown() const
 {
   if (simpleko!=-1)
     return false;
@@ -963,7 +962,7 @@ bool Go::Board::hasSymmetryDiagonalDown()
   return true;
 }
 
-bool Go::Board::hasSymmetryDiagonalUp()
+bool Go::Board::hasSymmetryDiagonalUp() const
 {
   if (simpleko!=-1)
     return false;
@@ -1008,7 +1007,7 @@ Go::Board::Symmetry Go::Board::computeSymmetry()
     return Go::Board::NONE;
 }
 
-std::string Go::Board::getSymmetryString(Go::Board::Symmetry sym)
+std::string Go::Board::getSymmetryString(Go::Board::Symmetry sym) const
 {
   if (sym==Go::Board::FULL)
     return "FULL";
@@ -1040,7 +1039,7 @@ void Go::Board::updateSymmetry()
   #endif
 }
 
-int Go::Board::doSymmetryTransformPrimitive(Go::Board::Symmetry sym, int pos)
+int Go::Board::doSymmetryTransformPrimitive(Go::Board::Symmetry sym, int pos) const
 {
   int x=Go::Position::pos2x(pos,size);
   int y=Go::Position::pos2y(pos,size);
@@ -1061,7 +1060,7 @@ int Go::Board::doSymmetryTransformToPrimary(Go::Board::Symmetry sym, int pos)
   return this->doSymmetryTransform(this->getSymmetryTransformToPrimary(sym,pos),pos);
 }
 
-Go::Board::SymmetryTransform Go::Board::getSymmetryTransformToPrimary(Go::Board::Symmetry sym, int pos)
+Go::Board::SymmetryTransform Go::Board::getSymmetryTransformToPrimary(Go::Board::Symmetry sym, int pos) const
 {
   return Go::Board::getSymmetryTransformToPrimaryStatic(size,sym,pos);
 }
@@ -1239,7 +1238,7 @@ Go::Board::SymmetryTransform Go::Board::getSymmetryTransformBetweenPositions(int
   return trans;
 }
 
-std::list<Go::Board::SymmetryTransform> Go::Board::getSymmetryTransformsFromPrimary(Go::Board::Symmetry sym)
+std::list<Go::Board::SymmetryTransform> Go::Board::getSymmetryTransformsFromPrimary(Go::Board::Symmetry sym) const
 {
   return Go::Board::getSymmetryTransformsFromPrimaryStatic(sym);
 }
@@ -1396,7 +1395,7 @@ void Go::Board::updateFeatureGamma(Go::Color col, int pos)
   (col==Go::BLACK?blacktotalgamma:whitetotalgamma)+=(gamma-oldgamma);
 }
 
-bool Go::Board::isCapture(Go::Move move)
+bool Go::Board::isCapture(Go::Move move) const
 {
   Go::Color col=move.getColor();
   int pos=move.getPosition();
@@ -1411,7 +1410,7 @@ bool Go::Board::isCapture(Go::Move move)
   return false;
 }
 
-bool Go::Board::isExtension(Go::Move move)
+bool Go::Board::isExtension(Go::Move move) const
 {
   Go::Color col=move.getColor();
   int pos=move.getPosition();
@@ -1461,7 +1460,7 @@ bool Go::Board::isExtension(Go::Move move)
     return false;
 }
 
-bool Go::Board::isSelfAtari(Go::Move move)
+bool Go::Board::isSelfAtari(Go::Move move) const
 {
   Go::Color col=move.getColor();
   int pos=move.getPosition();
@@ -1502,7 +1501,7 @@ bool Go::Board::isSelfAtari(Go::Move move)
     return false;
 }
 
-bool Go::Board::isAtari(Go::Move move)
+bool Go::Board::isAtari(Go::Move move) const
 {
   Go::Color col=move.getColor();
   int pos=move.getPosition();
@@ -1517,7 +1516,7 @@ bool Go::Board::isAtari(Go::Move move)
   return false;
 }
 
-int Go::Board::getDistanceToBorder(int pos)
+int Go::Board::getDistanceToBorder(int pos) const
 {
   int x=Go::Position::pos2x(pos,size);
   int y=Go::Position::pos2y(pos,size);
@@ -1535,7 +1534,7 @@ int Go::Board::getDistanceToBorder(int pos)
   return dist;
 }
 
-int Go::Board::getCircularDistance(int pos1, int pos2)
+int Go::Board::getCircularDistance(int pos1, int pos2) const
 {
   int x1=Go::Position::pos2x(pos1,size);
   int y1=Go::Position::pos2y(pos1,size);
@@ -1545,7 +1544,7 @@ int Go::Board::getCircularDistance(int pos1, int pos2)
   return Go::circDist(x1,y1,x2,y2);
 }
 
-Go::ObjectBoard<int> *Go::Board::getCFGFrom(int pos, int max)
+Go::ObjectBoard<int> *Go::Board::getCFGFrom(int pos, int max) const
 {
   Go::ObjectBoard<int> *cfgdist=new Go::ObjectBoard<int>(size);
   std::list<int> posqueue, distqueue;
@@ -1579,7 +1578,7 @@ Go::ObjectBoard<int> *Go::Board::getCFGFrom(int pos, int max)
   return cfgdist;
 }
 
-int Go::Board::getThreeEmptyGroupCenterFrom(int pos)
+int Go::Board::getThreeEmptyGroupCenterFrom(int pos) const
 {
   if (this->getColor(pos)!=Go::EMPTY)
     return -1;
@@ -1641,7 +1640,7 @@ int Go::Board::getThreeEmptyGroupCenterFrom(int pos)
     return -1;
 }
 
-void Go::Board::countAdjacentColors(int pos, int &empty, int &black, int &white, int &offboard)
+void Go::Board::countAdjacentColors(int pos, int &empty, int &black, int &white, int &offboard) const
 {
   empty=0;
   black=0;
@@ -1667,7 +1666,7 @@ void Go::Board::countAdjacentColors(int pos, int &empty, int &black, int &white,
   });
 }
 
-void Go::Board::countDiagonalColors(int pos, int &empty, int &black, int &white, int &offboard)
+void Go::Board::countDiagonalColors(int pos, int &empty, int &black, int &white, int &offboard) const
 {
   empty=0;
   black=0;
@@ -1693,7 +1692,7 @@ void Go::Board::countDiagonalColors(int pos, int &empty, int &black, int &white,
   });
 }
 
-Go::ZobristHash Go::Board::getZobristHash(Go::ZobristTable *table)
+Go::ZobristHash Go::Board::getZobristHash(Go::ZobristTable *table) const
 {
   Go::ZobristHash hash=0;
   
@@ -1713,13 +1712,12 @@ Go::ZobristHash Go::Board::getZobristHash(Go::ZobristTable *table)
 }
 
 Go::ZobristTable::ZobristTable(Parameters *prms, int sz)
+  : params(prms),
+    size(sz),
+    sizedata(1+(sz+1)*(sz+2)),
+    blackhashes(new Go::ZobristHash[sizedata]),
+    whitehashes(new Go::ZobristHash[sizedata])
 {
-  params=prms;
-  size=sz;
-  sizedata=1+(sz+1)*(sz+2);
-  blackhashes=new Go::ZobristHash[sizedata];
-  whitehashes=new Go::ZobristHash[sizedata];
-  
   for (int i=0;i<sizedata;i++)
   {
     blackhashes[i]=this->getRandomHash();
@@ -1738,7 +1736,7 @@ Go::ZobristHash Go::ZobristTable::getRandomHash()
   return ((Go::ZobristHash)params->engine->getRandom()->getRandomInt() << 32) | ((Go::ZobristHash)params->engine->getRandom()->getRandomInt());
 }
 
-Go::ZobristHash Go::ZobristTable::getHash(Go::Color col, int pos)
+Go::ZobristHash Go::ZobristTable::getHash(Go::Color col, int pos) const
 {
   if (col==Go::BLACK)
     return blackhashes[pos];
@@ -1748,9 +1746,8 @@ Go::ZobristHash Go::ZobristTable::getHash(Go::Color col, int pos)
     return 0;
 }
 
-Go::ZobristTree::ZobristTree()
+Go::ZobristTree::ZobristTree() : tree(new Go::ZobristTree::Node(0))
 {
-  tree=new Go::ZobristTree::Node(0);
 }
 
 Go::ZobristTree::~ZobristTree()
@@ -1763,14 +1760,13 @@ void Go::ZobristTree::addHash(Go::ZobristHash hash)
   tree->add(hash);
 }
 
-bool Go::ZobristTree::hasHash(Go::ZobristHash hash)
+bool Go::ZobristTree::hasHash(Go::ZobristHash hash) const
 {
   return (tree->find(hash)!=NULL);
 }
 
-Go::ZobristTree::Node::Node(Go::ZobristHash h)
+Go::ZobristTree::Node::Node(Go::ZobristHash h) : hash(h)
 {
-  hash=h;
   left=NULL;
   right=NULL;
 }
@@ -1803,10 +1799,10 @@ void Go::ZobristTree::Node::add(Go::ZobristHash h)
   }
 }
 
-Go::ZobristTree::Node *Go::ZobristTree::Node::find(Go::ZobristHash h)
+Go::ZobristTree::Node *Go::ZobristTree::Node::find(Go::ZobristHash h) const
 {
   if (h==hash)
-    return this;
+    return (Go::ZobristTree::Node *)this;
   else if (h<hash)
   {
     if (left==NULL)

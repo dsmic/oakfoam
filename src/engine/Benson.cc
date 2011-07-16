@@ -4,10 +4,10 @@
 #include <cstdio>
 
 Benson::Benson(Go::Board *bd)
+  : board(bd),
+    size(board->getSize()),
+    safepositions(new Go::ObjectBoard<Go::Color>(size))
 {
-  board=bd;
-  size=board->getSize();
-  safepositions=new Go::ObjectBoard<Go::Color>(size);
   safepositions->fill(Go::EMPTY);
 }
 
@@ -172,7 +172,7 @@ void Benson::spreadRegion(Benson::Region *region, int pos, Go::BitBoard *usedfla
   });
 }
 
-bool Benson::isVitalTo(Benson::Region *region, Benson::Chain *chain)
+bool Benson::isVitalTo(Benson::Region *region, Benson::Chain *chain) const
 {
   if (region->col!=chain->col)
     return false;

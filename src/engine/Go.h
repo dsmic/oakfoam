@@ -150,15 +150,15 @@ namespace Go
       BitBoard(int s);
       ~BitBoard();
       
-      inline bool get(int pos) { return data[pos]; };
+      inline bool get(int pos) const { return data[pos]; };
       inline void set(int pos, bool val=true) { data[pos]=val; };
       inline void clear(int pos) { this->set(pos,false); };
       inline void fill(bool val) { for (int i=0;i<sizedata;i++) data[i]=val; };
       inline void clear() { this->fill(false); };
     
     private:
-      int size,sizesq,sizedata;
-      bool *data;
+      const int size,sizesq,sizedata;
+      bool *const data;
   };
   
   template<typename T>
@@ -166,24 +166,23 @@ namespace Go
   {
     public:
       ObjectBoard(int s)
-      {
-        size=s;
-        sizesq=s*s;
-        sizedata=1+(s+1)*(s+2);
-        data=new T[sizedata];
-      };
+        : size(s),
+          sizesq(s*s),
+          sizedata(1+(s+1)*(s+2)),
+          data(new T[sizedata])
+      {};
       ~ObjectBoard()
       {
         delete[] data;
       };
       
-      inline T get(int pos) { return data[pos]; };
-      inline void set(int pos, T val) { data[pos]=val; };
+      inline T get(int pos) const { return data[pos]; };
+      inline void set(int pos, const T val) { data[pos]=val; };
       inline void fill(T val) { for (int i=0;i<sizedata;i++) data[i]=val; };
     
     private:
-      int size,sizesq,sizedata;
-      T *data;
+      const int size,sizesq,sizedata;
+      T *const data;
   };
   
   class Move
@@ -196,31 +195,29 @@ namespace Go
         RESIGN
       };
       
-      inline Move() {color=Go::EMPTY;pos=-2;};
-      inline Move(Go::Color col, int p) {color=col;pos=p;};
-      inline Move(Go::Color col, int x, int y, int boardsize) {color=col;pos=(x<0?x:Go::Position::xy2pos(x,y,boardsize));};
-      inline Move(Go::Color col, Go::Move::Type type)
+      inline Move() : color(Go::EMPTY), pos(-2) {};
+      inline Move(Go::Color col, int p) : color(col), pos(p) {};
+      inline Move(Go::Color col, int x, int y, int boardsize) : color(col), pos(x<0?x:Go::Position::xy2pos(x,y,boardsize)) {};
+      inline Move(Go::Color col, Go::Move::Type type) : color(col), pos((type==PASS)?-1:-2)
       {
         if (type==NORMAL)
           throw Go::Exception("invalid type");
-        color=col;
-        pos=(type==PASS)?-1:-2;
       };
       
-      inline Go::Color getColor() {return color;};
-      inline int getPosition() {return pos;};
-      inline int getX(int boardsize) {return (this->isPass()||this->isResign()?pos:Go::Position::pos2x(pos,boardsize));};
-      inline int getY(int boardsize) {return (this->isPass()||this->isResign()?pos:Go::Position::pos2y(pos,boardsize));};
+      inline Go::Color getColor() const {return color;};
+      inline int getPosition() const {return pos;};
+      inline int getX(int boardsize) const {return (this->isPass()||this->isResign()?pos:Go::Position::pos2x(pos,boardsize));};
+      inline int getY(int boardsize) const {return (this->isPass()||this->isResign()?pos:Go::Position::pos2y(pos,boardsize));};
       void setPosition(int p) {pos=p;};
       
-      inline bool isPass() {return (pos==-1);};
-      inline bool isResign() {return (pos==-2);};
-      inline bool isNormal() {return (pos!=-1) && (pos!=-2);};
+      inline bool isPass() const {return (pos==-1);};
+      inline bool isResign() const {return (pos==-2);};
+      inline bool isNormal() const {return (pos!=-1) && (pos!=-2);};
       
-      std::string toString(int boardsize);
+      std::string toString(int boardsize) const;
       
-      inline bool operator==(Go::Move other) { return (color==other.getColor() && pos==other.getPosition()); };
-      inline bool operator!=(Go::Move other) { return !(*this == other); };
+      inline bool operator==(const Go::Move other) const { return (color==other.getColor() && pos==other.getPosition()); };
+      inline bool operator!=(const Go::Move other) const { return !(*this == other); };
     
     private:
       Go::Color color;
@@ -235,13 +232,13 @@ namespace Go
       ZobristTable(Parameters *prms, int sz);
       ~ZobristTable();
       
-      int getSize() { return size; };
-      Go::ZobristHash getHash(Go::Color col, int pos);
+      int getSize() const { return size; };
+      Go::ZobristHash getHash(Go::Color col, int pos) const;
     
     private:
-      Parameters *params;
-      int size,sizedata;
-      Go::ZobristHash *blackhashes,*whitehashes;
+      Parameters *const params;
+      const int size,sizedata;
+      Go::ZobristHash *const blackhashes,*const whitehashes;
       
       Go::ZobristHash getRandomHash();
   };
@@ -253,7 +250,7 @@ namespace Go
       ~ZobristTree();
       
       void addHash(Go::ZobristHash hash);
-      bool hasHash(Go::ZobristHash hash);
+      bool hasHash(Go::ZobristHash hash) const;
     
     private:
       class Node
@@ -262,16 +259,16 @@ namespace Go
           Node(Go::ZobristHash h);
           ~Node();
           
-          Go::ZobristHash getHash() { return hash; };
+          Go::ZobristHash getHash() const { return hash; };
           void add(Go::ZobristHash h);
-          Go::ZobristTree::Node *find(Go::ZobristHash h);
+          Go::ZobristTree::Node *find(Go::ZobristHash h) const;
         
         private:
-          Go::ZobristHash hash;
+          const Go::ZobristHash hash;
           Go::ZobristTree::Node *left,*right;
       };
       
-      Go::ZobristTree::Node *tree;
+      Go::ZobristTree::Node *const tree;
   };
   
   class Group;
@@ -291,14 +288,14 @@ namespace Go
       Group(Go::Board *brd, int pos);
       ~Group() {};
       
-      Go::Color getColor() {return color;};
-      int getPosition() {return position;};
+      Go::Color getColor() const {return color;};
+      int getPosition() const {return position;};
       
       void setParent(Go::Group *p) { parent=p; };
-      Go::Group *find()
+      Go::Group *find() const
       {
         if (parent==NULL)
-          return this;
+          return (Go::Group *)this;
         else
           //return (parent=parent->find());
           return parent->find();
@@ -312,24 +309,24 @@ namespace Go
         libpossumsq+=othergroup->libpossumsq;
         adjacentgroups.splice(adjacentgroups.end(),*othergroup->getAdjacentGroups());
       };
-      inline bool isRoot() { return (parent==NULL); };
+      inline bool isRoot() const { return (parent==NULL); };
       
-      inline int numOfStones() { return stonescount; };
-      inline int numOfPseudoLiberties() { return pseudoliberties; };
+      inline int numOfStones() const { return stonescount; };
+      inline int numOfPseudoLiberties() const { return pseudoliberties; };
       
       inline void addPseudoLiberty(int pos) { pseudoliberties++; libpossum+=pos; libpossumsq+=pos*pos; };
       inline void removePseudoLiberty(int pos) { pseudoliberties--; libpossum-=pos; libpossumsq-=pos*pos; };
-      inline bool inAtari() { return (pseudoliberties>0 && (pseudoliberties*libpossumsq)==(libpossum*libpossum)); };
-      inline int getAtariPosition() { if (this->inAtari()) return libpossum/pseudoliberties; else return -1; };
+      inline bool inAtari() const { return (pseudoliberties>0 && (pseudoliberties*libpossumsq)==(libpossum*libpossum)); };
+      inline int getAtariPosition() const { if (this->inAtari()) return libpossum/pseudoliberties; else return -1; };
       void addTouchingEmpties();
-      bool isOneOfTwoLiberties(int pos);
-      int getOtherOneOfTwoLiberties(int pos);
+      bool isOneOfTwoLiberties(int pos) const;
+      int getOtherOneOfTwoLiberties(int pos) const;
       std::list<int,Go::allocator_int> *getAdjacentGroups() { return &adjacentgroups; };
     
     private:
-      Go::Color color;
-      int position;
-      Go::Board *board;
+      Go::Board *const board;
+      const Go::Color color;
+      const int position;
       
       int stonescount;
       Go::Group *parent;
@@ -366,83 +363,83 @@ namespace Go
       ~Board();
       
       Go::Board *copy();
-      void copyOver(Go::Board *copyboard);
-      std::string toString();
-      std::string toSGFString();
-      Go::Vertex *boardData() { return data; }; //read-only
+      void copyOver(Go::Board *copyboard) const;
+      std::string toString() const;
+      std::string toSGFString() const;
+      const Go::Vertex *boardData() const { return data; }; //read-only
       std::list<Go::Group*,Go::allocator_groupptr> *getGroups() { return &groups; };
       
-      int getSize() { return size; };
-      int getSimpleKo() { return simpleko; };
-      bool isCurrentSimpleKo() { return (simpleko!=-1); };
-      int getMovesMade() { return movesmade; };
-      int getPassesPlayed() { return passesplayed; };
+      int getSize() const { return size; };
+      int getSimpleKo() const { return simpleko; };
+      bool isCurrentSimpleKo() const { return (simpleko!=-1); };
+      int getMovesMade() const { return movesmade; };
+      int getPassesPlayed() const { return passesplayed; };
       void resetPassesPlayed() { passesplayed=0; };
-      Go::Color nextToMove() { return nexttomove; };
+      Go::Color nextToMove() const { return nexttomove; };
       void setNextToMove(Go::Color col) { nexttomove=col; }; //clear ko?
-      int getPositionMax() { return sizedata; };
-      Go::Move getLastMove() { return lastmove; };
-      Go::Move getSecondLastMove() { return secondlastmove; };
-      int getStoneCapturesOf(Go::Color col) { return (col==Go::BLACK?blackcaptures:whitecaptures); };
+      int getPositionMax() const { return sizedata; };
+      Go::Move getLastMove() const { return lastmove; };
+      Go::Move getSecondLastMove() const { return secondlastmove; };
+      int getStoneCapturesOf(Go::Color col) const { return (col==Go::BLACK?blackcaptures:whitecaptures); };
       void resetCaptures() { blackcaptures=0; whitecaptures=0; };
       
-      inline Go::Color getColor(int pos) { return data[pos].color; };
-      inline Go::Group *getGroup(int pos) { return data[pos].group->find(); };
-      inline bool inGroup(int pos) { return (data[pos].group!=NULL); };
-      inline bool onBoard(int pos) { return (data[pos].color!=Go::OFFBOARD); };
+      inline Go::Color getColor(int pos) const { return data[pos].color; };
+      inline Go::Group *getGroup(int pos) const { return data[pos].group->find(); };
+      inline bool inGroup(int pos) const { return (data[pos].group!=NULL); };
+      inline bool onBoard(int pos) const { return (data[pos].color!=Go::OFFBOARD); };
       
       void makeMove(Go::Move move);
-      bool validMove(Go::Move move);
+      bool validMove(Go::Move move) const;
       
-      int numOfValidMoves(Go::Color col) { return (col==Go::BLACK?blackvalidmovecount:whitevalidmovecount); };
-      Go::BitBoard *getValidMoves(Go::Color col) { return (col==Go::BLACK?blackvalidmoves:whitevalidmoves); };
+      int numOfValidMoves(Go::Color col) const { return (col==Go::BLACK?blackvalidmovecount:whitevalidmovecount); };
+      Go::BitBoard *getValidMoves(Go::Color col) const { return (col==Go::BLACK?blackvalidmoves:whitevalidmoves); };
       
       int score();
-      bool weakEye(Go::Color col, int pos);
-      int touchingEmpty(int pos);
-      int surroundingEmpty(int pos);
-      void countAdjacentColors(int pos, int &empty, int &black, int &white, int &offboard);
-      void countDiagonalColors(int pos, int &empty, int &black, int &white, int &offboard);
+      bool weakEye(Go::Color col, int pos) const;
+      int touchingEmpty(int pos) const;
+      int surroundingEmpty(int pos) const;
+      void countAdjacentColors(int pos, int &empty, int &black, int &white, int &offboard) const;
+      void countDiagonalColors(int pos, int &empty, int &black, int &white, int &offboard) const;
       void turnSymmetryOff() { symmetryupdated=false;currentsymmetry=NONE; };
       void turnSymmetryOn() { symmetryupdated=true;currentsymmetry=this->computeSymmetry(); };
       
       void setFeatures(Features *feat, bool inc) { features=feat; incfeatures=inc; markchanges=true; this->refreshFeatureGammas(); };
-      float getFeatureTotalGamma() { return (nexttomove==Go::BLACK?blacktotalgamma:whitetotalgamma); };
-      float getFeatureGamma(int pos) { return (nexttomove==Go::BLACK?blackgammas:whitegammas)->get(pos); };
+      float getFeatureTotalGamma() const { return (nexttomove==Go::BLACK?blacktotalgamma:whitetotalgamma); };
+      float getFeatureGamma(int pos) const { return (nexttomove==Go::BLACK?blackgammas:whitegammas)->get(pos); };
       
       static bool isWinForColor(Go::Color col, float score);
       
       Go::Board::Symmetry computeSymmetry();
-      Go::Board::Symmetry getSymmetry() { return currentsymmetry; };
-      std::string getSymmetryString(Go::Board::Symmetry sym);
+      Go::Board::Symmetry getSymmetry() const { return currentsymmetry; };
+      std::string getSymmetryString(Go::Board::Symmetry sym) const;
       int doSymmetryTransformToPrimary(Go::Board::Symmetry sym, int pos);
-      Go::Board::SymmetryTransform getSymmetryTransformToPrimary(Go::Board::Symmetry sym, int pos);
+      Go::Board::SymmetryTransform getSymmetryTransformToPrimary(Go::Board::Symmetry sym, int pos) const;
       static Go::Board::SymmetryTransform getSymmetryTransformToPrimaryStatic(int size, Go::Board::Symmetry sym, int pos);
       int doSymmetryTransform(Go::Board::SymmetryTransform trans, int pos, bool reverse=false);
       static int doSymmetryTransformStatic(Go::Board::SymmetryTransform trans, int size, int pos);
       static int doSymmetryTransformStaticReverse(Go::Board::SymmetryTransform trans, int size, int pos);
       static Go::Board::SymmetryTransform getSymmetryTransformBetweenPositions(int size, int pos1, int pos2);
-      std::list<Go::Board::SymmetryTransform> getSymmetryTransformsFromPrimary(Go::Board::Symmetry sym);
+      std::list<Go::Board::SymmetryTransform> getSymmetryTransformsFromPrimary(Go::Board::Symmetry sym) const;
       static std::list<Go::Board::SymmetryTransform> getSymmetryTransformsFromPrimaryStatic(Go::Board::Symmetry sym);
       
-      bool isCapture(Go::Move move);
-      bool isExtension(Go::Move move);
-      bool isSelfAtari(Go::Move move);
-      bool isAtari(Go::Move move);
-      int getDistanceToBorder(int pos);
-      int getCircularDistance(int pos1, int pos2);
-      Go::ObjectBoard<int> *getCFGFrom(int pos, int max=0);
-      int getThreeEmptyGroupCenterFrom(int pos);
+      bool isCapture(Go::Move move) const;
+      bool isExtension(Go::Move move) const;
+      bool isSelfAtari(Go::Move move) const;
+      bool isAtari(Go::Move move) const;
+      int getDistanceToBorder(int pos) const;
+      int getCircularDistance(int pos1, int pos2) const;
+      Go::ObjectBoard<int> *getCFGFrom(int pos, int max=0) const;
+      int getThreeEmptyGroupCenterFrom(int pos) const;
       
-      Go::ZobristHash getZobristHash(Go::ZobristTable *table);
+      Go::ZobristHash getZobristHash(Go::ZobristTable *table) const;
       
-      Go::Color getScoredOwner(int pos);
+      Go::Color getScoredOwner(int pos) const;
     
     private:
-      int size;
-      int sizesq;
-      int sizedata;
-      Go::Vertex *data;
+      const int size;
+      const int sizesq;
+      const int sizedata;
+      Go::Vertex *const data;
       std::list<Go::Group*,Go::allocator_groupptr> groups;
       int movesmade,passesplayed;
       Go::Color nexttomove;
@@ -470,13 +467,13 @@ namespace Go
       };
       Go::Board::ScoreVertex *lastscoredata;
       
-      inline Go::Group *getGroupWithoutFind(int pos) { return data[pos].group; };
+      inline Go::Group *getGroupWithoutFind(int pos) const { return data[pos].group; };
       inline void setColor(int pos, Go::Color col) { data[pos].color=col; if (markchanges) { lastchanges->set(pos); } };
       inline void setGroup(int pos, Go::Group *grp) { data[pos].group=grp; };
-      inline int getPseudoLiberties(int pos) { if (data[pos].group==NULL) return 0; else return data[pos].group->find()->numOfPseudoLiberties(); };
-      inline int getGroupSize(int pos) { if (data[pos].group==NULL) return 0; else return data[pos].group->find()->numOfStones(); };
+      inline int getPseudoLiberties(int pos) const { if (data[pos].group==NULL) return 0; else return data[pos].group->find()->numOfPseudoLiberties(); };
+      inline int getGroupSize(int pos) const { if (data[pos].group==NULL) return 0; else return data[pos].group->find()->numOfStones(); };
       
-      bool touchingAtLeastOneEmpty(int pos);
+      bool touchingAtLeastOneEmpty(int pos) const;
       
       void refreshGroups();
       void spreadGroup(int pos, Go::Group *group);
@@ -484,18 +481,18 @@ namespace Go
       void spreadRemoveStones(Go::Color col, int pos, std::list<int,Go::allocator_int> *possiblesuicides);
       void mergeGroups(Go::Group *first, Go::Group *second);
       
-      bool validMoveCheck(Go::Move move);
+      bool validMoveCheck(Go::Move move) const;
       void refreshValidMoves();
       void refreshValidMoves(Go::Color col);
       void addValidMove(Go::Move move);
       void removeValidMove(Go::Move move);
       
-      bool hasSymmetryVertical();
-      bool hasSymmetryHorizontal();
-      bool hasSymmetryDiagonalDown();
-      bool hasSymmetryDiagonalUp();
+      bool hasSymmetryVertical() const;
+      bool hasSymmetryHorizontal() const;
+      bool hasSymmetryDiagonalDown() const;
+      bool hasSymmetryDiagonalUp() const;
       void updateSymmetry();
-      int doSymmetryTransformPrimitive(Go::Board::Symmetry sym, int pos);
+      int doSymmetryTransformPrimitive(Go::Board::Symmetry sym, int pos) const;
       
       void spreadScore(Go::Board::ScoreVertex *scoredata, int pos, Go::Color col);
       

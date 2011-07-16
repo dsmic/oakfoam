@@ -60,19 +60,19 @@ class Book
       TreeHolder(int sz);
       ~TreeHolder();
       
-      int getSize() { return size; };
-      Book::Tree *getTree() { return tree; };
+      int getSize() const { return size; };
+      Book::Tree *getTree() const { return tree; };
       void clear();
       
       private:
-        int size;
+        const int size;
         Book::Tree *tree;
     };
     
-    Parameters *params;
+    Parameters *const params;
     std::list<Book::TreeHolder*> trees;
     
-    Book::Tree *getTree(int size);
+    Book::Tree *getTree(int size); //error if const
     
     void addPermutations(int size, std::list<Go::Move> *moves1, std::list<Go::Move> *moves2, bool primary);
     void addSingleSeq(int size, std::list<Go::Move> *movehistory, Go::Move move, bool primary);

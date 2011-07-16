@@ -7,9 +7,8 @@
 //#include <iostream>
 #include <fstream>
 
-Book::Book(Parameters *p)
+Book::Book(Parameters *p) : params(p)
 {
-  params=p;
 }
 
 Book::~Book()
@@ -20,9 +19,8 @@ Book::~Book()
   }
 }
 
-Book::TreeHolder::TreeHolder(int sz)
+Book::TreeHolder::TreeHolder(int sz) : size(sz)
 {
-  size=sz;
   tree=new Book::Tree();
   tree->setSymmetry(Go::Board::FULL);
 }

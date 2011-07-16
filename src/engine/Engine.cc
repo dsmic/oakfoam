@@ -8,14 +8,12 @@
 #include <iomanip>
 #include <boost/timer.hpp>
 
-Engine::Engine(Gtp::Engine *ge, std::string ln)
+Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
 {
   gtpe=ge;
   longname=ln;
   
   rand=Random();
-  
-  params=new Parameters();
   
   params->engine=this;
   

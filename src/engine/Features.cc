@@ -8,9 +8,8 @@
 #include "Parameters.h"
 #include "Pattern.h"
 
-Features::Features(Parameters *prms)
+Features::Features(Parameters *prms) : params(prms)
 {
-  params=prms;
   patterngammas=new Pattern::ThreeByThreeGammas();
   patternids=new Pattern::ThreeByThreeGammas();
   
@@ -45,7 +44,7 @@ Features::~Features()
   delete patternids;
 }
 
-unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::Board *board, Go::Move move, bool checkforvalidmove)
+unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::Board *board, Go::Move move, bool checkforvalidmove) const
 {
   if ((featclass!=Features::PASS && move.isPass()) || move.isResign())
     return 0;
@@ -189,7 +188,7 @@ unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::B
   }
 }
 
-float Features::getFeatureGamma(Features::FeatureClass featclass, unsigned int level)
+float Features::getFeatureGamma(Features::FeatureClass featclass, unsigned int level) const
 {
   if (level==0 && featclass!=Features::PATTERN3X3)
     return 1.0;
@@ -217,7 +216,7 @@ float Features::getFeatureGamma(Features::FeatureClass featclass, unsigned int l
   }
 }
 
-float Features::getMoveGamma(Go::Board *board, Go::Move move, bool checkforvalidmove)
+float Features::getMoveGamma(Go::Board *board, Go::Move move, bool checkforvalidmove) const
 {
   float g=1.0;
   
@@ -239,7 +238,7 @@ float Features::getMoveGamma(Go::Board *board, Go::Move move, bool checkforvalid
   return g;
 }
 
-float Features::getBoardGamma(Go::Board *board, Go::Color col)
+float Features::getBoardGamma(Go::Board *board, Go::Color col) const
 {
   float total=0;
   
@@ -256,7 +255,7 @@ float Features::getBoardGamma(Go::Board *board, Go::Color col)
   return total;
 }
 
-float Features::getBoardGammas(Go::Board *board, Go::Color col, Go::ObjectBoard<float> *gammas)
+float Features::getBoardGammas(Go::Board *board, Go::Color col, Go::ObjectBoard<float> *gammas) const
 {
   float total=0;
   
@@ -281,7 +280,7 @@ float Features::getBoardGammas(Go::Board *board, Go::Color col, Go::ObjectBoard<
   return total;
 }
 
-std::string Features::getFeatureClassName(Features::FeatureClass featclass)
+std::string Features::getFeatureClassName(Features::FeatureClass featclass) const
 {
   switch (featclass)
   {
@@ -312,7 +311,7 @@ std::string Features::getFeatureClassName(Features::FeatureClass featclass)
   }
 }
 
-Features::FeatureClass Features::getFeatureClassFromName(std::string name)
+Features::FeatureClass Features::getFeatureClassFromName(std::string name) const
 {
   if (name=="pass")
     return Features::PASS;
@@ -424,30 +423,30 @@ bool Features::loadGammaLine(std::string line)
   return this->setFeatureGamma(featclass,level,gamma);
 }
 
-float *Features::getStandardGamma(Features::FeatureClass featclass)
+float *Features::getStandardGamma(Features::FeatureClass featclass) const
 {
   switch (featclass)
   {
     case Features::PASS:
-      return gammas_pass;
+      return (float *)gammas_pass;
     case Features::CAPTURE:
-      return gammas_capture;
+      return (float *)gammas_capture;
     case Features::EXTENSION:
-      return gammas_extension;
+      return (float *)gammas_extension;
     case Features::ATARI:
-      return gammas_atari;
+      return (float *)gammas_atari;
     case Features::SELFATARI:
-      return gammas_selfatari;
+      return (float *)gammas_selfatari;
     case Features::BORDERDIST:
-      return gammas_borderdist;
+      return (float *)gammas_borderdist;
     case Features::LASTDIST:
-      return gammas_lastdist;
+      return (float *)gammas_lastdist;
     case Features::SECONDLASTDIST:
-      return gammas_secondlastdist;
+      return (float *)gammas_secondlastdist;
     case Features::CFGLASTDIST:
-      return gammas_cfglastdist;
+      return (float *)gammas_cfglastdist;
     case Features::CFGSECONDLASTDIST:
-      return gammas_cfgsecondlastdist;
+      return (float *)gammas_cfgsecondlastdist;
     default:
       return NULL;
   }
@@ -474,7 +473,7 @@ bool Features::setFeatureGamma(Features::FeatureClass featclass, unsigned int le
   }
 }
 
-std::string Features::getMatchingFeaturesString(Go::Board *board, Go::Move move, bool pretty)
+std::string Features::getMatchingFeaturesString(Go::Board *board, Go::Move move, bool pretty) const
 {
   std::ostringstream ss;
   unsigned int level,base;
@@ -593,7 +592,7 @@ std::string Features::getMatchingFeaturesString(Go::Board *board, Go::Move move,
   return ss.str();
 }
 
-std::string Features::getFeatureIdList()
+std::string Features::getFeatureIdList() const
 {
   std::ostringstream ss;
   unsigned int id=0;

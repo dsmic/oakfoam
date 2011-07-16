@@ -413,12 +413,12 @@ void Gtp::Output::printString(std::string str)
   this->printf(str);
 }
 
-unsigned int Gtp::Command::numArgs()
+unsigned int Gtp::Command::numArgs() const
 {
   return arguments.size();
 }
 
-std::string Gtp::Command::getStringArg(int i)
+std::string Gtp::Command::getStringArg(int i) const
 {
   if (i<0 || i>=((int)arguments.size()))
     return "";
@@ -426,7 +426,7 @@ std::string Gtp::Command::getStringArg(int i)
     return arguments.at(i);
 }
 
-int Gtp::Command::getIntArg(int i)
+int Gtp::Command::getIntArg(int i) const
 {
   std::string arg=this->getStringArg(i);
   std::istringstream iss(arg);
@@ -438,7 +438,7 @@ int Gtp::Command::getIntArg(int i)
     return 0;
 }
 
-float Gtp::Command::getFloatArg(int i)
+float Gtp::Command::getFloatArg(int i) const
 {
   std::string arg=this->getStringArg(i);
   std::istringstream iss(arg);
@@ -450,7 +450,7 @@ float Gtp::Command::getFloatArg(int i)
     return 0;
 }
 
-Gtp::Color Gtp::Command::getColorArg(int i)
+Gtp::Color Gtp::Command::getColorArg(int i) const
 {
   std::string arg=this->getStringArg(i);
   std::transform(arg.begin(),arg.end(),arg.begin(),::tolower);
@@ -463,7 +463,7 @@ Gtp::Color Gtp::Command::getColorArg(int i)
     return Gtp::INVALID;
 }
 
-Gtp::Vertex Gtp::Command::getVertexArg(int i)
+Gtp::Vertex Gtp::Command::getVertexArg(int i) const
 {
   std::string arg=this->getStringArg(i);
   std::transform(arg.begin(),arg.end(),arg.begin(),::tolower);

@@ -18,7 +18,7 @@ class Playout
     void resetLGRF();
   
   private:
-    Parameters *params;
+    Parameters *const params;
     Gtp::Engine *gtpe;
     
     int *lgrf1,*lgrf2;
@@ -26,12 +26,12 @@ class Playout
     
     void getPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, int *posarray);
     
-    int getLGRF1(Go::Color col, int pos1);
-    int getLGRF2(Go::Color col, int pos1, int pos2);
+    int getLGRF1(Go::Color col, int pos1) const;
+    int getLGRF2(Go::Color col, int pos1, int pos2) const;
     void setLGRF1(Go::Color col, int pos1, int val);
     void setLGRF2(Go::Color col, int pos1, int pos2, int val);
-    bool hasLGRF1(Go::Color col, int pos1);
-    bool hasLGRF2(Go::Color col, int pos1, int pos2);
+    bool hasLGRF1(Go::Color col, int pos1) const;
+    bool hasLGRF2(Go::Color col, int pos1, int pos2) const;
     void clearLGRF1(Go::Color col, int pos1);
     void clearLGRF2(Go::Color col, int pos1, int pos2);
 };

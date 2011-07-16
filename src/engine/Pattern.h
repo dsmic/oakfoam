@@ -74,9 +74,8 @@ namespace Pattern
   class ThreeByThreeTable
   {
     public:
-      ThreeByThreeTable()
+      ThreeByThreeTable() : table((unsigned char *)malloc(PATTERN_3x3_TABLE_BYTES))
       {
-        table=(unsigned char *)malloc(PATTERN_3x3_TABLE_BYTES);
         for (int i=0;i<PATTERN_3x3_TABLE_BYTES;i++)
           table[i]=0;
       };
@@ -84,7 +83,7 @@ namespace Pattern
       
       inline void addPattern(unsigned int hash) { table[byteNum(hash)]|=(1<<bitNum(hash)); };
       inline void clearPattern(unsigned int hash) { table[byteNum(hash)]&=(~(1<<bitNum(hash))); };
-      inline bool isPattern(unsigned int hash) { return (table[byteNum(hash)]&(1<<bitNum(hash))); };
+      inline bool isPattern(unsigned int hash) const { return (table[byteNum(hash)]&(1<<bitNum(hash))); };
       inline void updatePattern(bool add, unsigned int hash) { if (add) addPattern(hash); else clearPattern(hash); };
       
       void updatePatternTransformed(bool addpattern, unsigned int pattern, bool addinverted=true);
@@ -94,10 +93,10 @@ namespace Pattern
       bool loadPatternDefaults() { return this->loadPatternString(PATTERN_3x3_DEFAULTS); };
     
     private:
-      unsigned char *table; //assume sizeof(char)==1
+      unsigned char *const table; //assume sizeof(char)==1
       
-      inline int byteNum(unsigned int hash) { return (hash/8); };
-      inline int bitNum(unsigned int hash) { return (hash%8); };
+      inline int byteNum(unsigned int hash) const { return (hash/8); };
+      inline int bitNum(unsigned int hash) const { return (hash%8); };
       
       enum Color
       {
@@ -152,20 +151,19 @@ namespace Pattern
   class ThreeByThreeGammas
   {
     public:
-      ThreeByThreeGammas()
+      ThreeByThreeGammas() : gammas((float *)malloc(sizeof(float)*PATTERN_3x3_GAMMAS))
       {
-        gammas=(float *)malloc(sizeof(float)*PATTERN_3x3_GAMMAS);
         for (int i=0;i<PATTERN_3x3_GAMMAS;i++)
           gammas[i]=-1;
       };
       ~ThreeByThreeGammas() { free(gammas); };
       
-      float getGamma(unsigned int hash) { return gammas[hash]; };
+      float getGamma(unsigned int hash) const { return gammas[hash]; };
       void setGamma(unsigned int hash, float g) { gammas[hash]=g; };
-      bool hasGamma(unsigned int hash) { return (gammas[hash]!=-1); };
+      bool hasGamma(unsigned int hash) const { return (gammas[hash]!=-1); };
     
     private:
-      float *gammas;
+      float *const gammas;
   };
   
   class CircularDictionary
@@ -204,20 +202,20 @@ namespace Pattern
   class Circular
   {
     public:
-      Circular(Pattern::CircularDictionary *dict, Go::Board *board, int pos, int sz);
+      Circular(Pattern::CircularDictionary *dict, const Go::Board *board, int pos, int sz);
       
-      int getSize() { return size; };
-      boost::uint_fast32_t *getHash() { return hash; };
+      int getSize() const { return size; };
+      boost::uint_fast32_t *getHash() const { return (boost::uint_fast32_t *)hash; };
       
       Pattern::Circular copy() { return this->getSubPattern(NULL,size); };
-      Pattern::Circular getSubPattern(Pattern::CircularDictionary *dict, int newsize);
+      Pattern::Circular getSubPattern(Pattern::CircularDictionary *dict, int newsize) const;
       
-      std::string toString(Pattern::CircularDictionary *dict);
+      std::string toString(Pattern::CircularDictionary *dict) const;
       
-      bool operator==(Pattern::Circular other);
-      bool operator!=(Pattern::Circular other) { return !(*this == other); };
-      bool operator<(Pattern::Circular other);
-      bool operator<(Pattern::Circular *other);
+      bool operator==(const Pattern::Circular other) const;
+      bool operator!=(const Pattern::Circular other) const { return !(*this == other); };
+      bool operator<(const Pattern::Circular other) const;
+      bool operator<(const Pattern::Circular *other) const;
       
       void invert();
       void rotateRight(Pattern::CircularDictionary *dict);
@@ -226,9 +224,9 @@ namespace Pattern
       void convertToSmallestEquivalent(Pattern::CircularDictionary *dict);
     
     private:
-      Circular() {};
+      Circular(int sz=0) : size(sz) {};
       
-      int size;
+      const int size;
       boost::uint_fast32_t hash[PATTERN_CIRC_32BITPARTS];
       
       static int hashColor(Go::Color col);

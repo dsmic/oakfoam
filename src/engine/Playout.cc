@@ -6,9 +6,8 @@
 #include "Pattern.h"
 #include "Random.h"
 
-Playout::Playout(Parameters *prms)
+Playout::Playout(Parameters *prms) : params(prms)
 {
-  params=prms;
   gtpe=params->engine->getGtpEngine();
   
   lgrf1=NULL;
@@ -629,13 +628,13 @@ void Playout::resetLGRF()
   }
 }
 
-int Playout::getLGRF1(Go::Color col, int pos1)
+int Playout::getLGRF1(Go::Color col, int pos1) const
 {
   int c=(col==Go::BLACK?0:1);
   return lgrf1[c*lgrfpositionmax+pos1];
 }
 
-int Playout::getLGRF2(Go::Color col, int pos1, int pos2)
+int Playout::getLGRF2(Go::Color col, int pos1, int pos2) const
 {
   int c=(col==Go::BLACK?0:1);
   return lgrf2[(c*lgrfpositionmax+pos1)*lgrfpositionmax+pos2];
@@ -653,12 +652,12 @@ void Playout::setLGRF2(Go::Color col, int pos1, int pos2, int val)
   lgrf2[(c*lgrfpositionmax+pos1)*lgrfpositionmax+pos2]=val;
 }
 
-bool Playout::hasLGRF1(Go::Color col, int pos1)
+bool Playout::hasLGRF1(Go::Color col, int pos1) const
 {
   return (this->getLGRF1(col,pos1)!=-1);
 }
 
-bool Playout::hasLGRF2(Go::Color col, int pos1, int pos2)
+bool Playout::hasLGRF2(Go::Color col, int pos1, int pos2) const
 {
   return (this->getLGRF2(col,pos1,pos2)!=-1);
 }

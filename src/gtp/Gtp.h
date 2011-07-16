@@ -31,15 +31,15 @@ namespace Gtp
     public:
       Command(int i, std::string cmdname, std::vector<std::string> args) { id=i; commandname=cmdname; arguments=args; };
       
-      int getId() { return id; };
-      std::string getCommandName() { return commandname; };
+      int getId() const { return id; };
+      std::string getCommandName() const { return commandname; };
       
-      unsigned int numArgs();
-      std::string getStringArg(int i);
-      int getIntArg(int i);
-      float getFloatArg(int i);
-      Gtp::Color getColorArg(int i);
-      Gtp::Vertex getVertexArg(int i);
+      unsigned int numArgs() const;
+      std::string getStringArg(int i) const;
+      int getIntArg(int i) const;
+      float getFloatArg(int i) const;
+      Gtp::Color getColorArg(int i) const;
+      Gtp::Vertex getVertexArg(int i) const;
       
     private:
       int id;
@@ -53,7 +53,7 @@ namespace Gtp
       Output() { outputon=true; logfile=NULL; };
       ~Output() { if (logfile!=NULL) { fclose(logfile); }};
       
-      bool isOutputOn() { return outputon; };
+      bool isOutputOn() const { return outputon; };
       void setOutputOn(bool outon) { outputon=outon; };
       void setLogFile(FILE *lf) { logfile=lf; };
       
@@ -91,11 +91,11 @@ namespace Gtp
           FunctionList(std::string cmdname, void *inst, Gtp::Engine::CommandFunction func) { commandname=cmdname; instance=inst; function=func; next=NULL; };
           ~FunctionList() { if (next!=NULL) delete next; };
           
-          std::string getCommandName() { return commandname; };
-          void *getInstance() { return instance; };
-          Gtp::Engine::CommandFunction getFunction() { return function; };
+          std::string getCommandName() const { return commandname; };
+          void *getInstance() const { return instance; };
+          Gtp::Engine::CommandFunction getFunction() const { return function; };
           void setNext(Gtp::Engine::FunctionList *n) { next=n; };
-          Gtp::Engine::FunctionList *getNext() { return next; };
+          Gtp::Engine::FunctionList *getNext() const { return next; };
           void add(Gtp::Engine::FunctionList *newfunclist)
           {
             if (next==NULL)
@@ -117,10 +117,10 @@ namespace Gtp
           ConstantList(std::string cmdname, std::string val) { commandname=cmdname; value=val; next=NULL; };
           ~ConstantList() { if (next!=NULL) delete next; };
           
-          std::string getCommandName() { return commandname; };
-          std::string getValue() { return value; };
+          std::string getCommandName() const { return commandname; };
+          std::string getValue() const { return value; };
           void setNext(Gtp::Engine::ConstantList *n) { next=n; };
-          Gtp::Engine::ConstantList *getNext() { return next; };
+          Gtp::Engine::ConstantList *getNext() const { return next; };
           void add(Gtp::Engine::ConstantList *newconstlist)
           {
             if (next==NULL)
@@ -151,7 +151,7 @@ namespace Gtp
       void startPondering() { if (ponderenabled && ponderthread!=NULL) ponderthread->ponderStart(); };
       void stopPondering() { if (ponderenabled && ponderthread!=NULL) ponderthread->ponderStop(); };
       
-      Gtp::Output *getOutput() { return output; };
+      Gtp::Output *getOutput() const { return output; };
       
     private:
       class WorkerThread

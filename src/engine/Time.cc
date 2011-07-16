@@ -3,20 +3,20 @@
 #include "Parameters.h"
 
 Time::Time(Parameters *prms, float main, float overtime, int stones)
+  : params(prms),
+    base_main(main),
+    base_overtime(overtime),
+    base_stones(stones)
 {
-  params=prms;
-  base_main=main;
-  base_overtime=overtime;
-  base_stones=stones;
   this->setupTimeForColors();
 }
 
 Time::Time(Parameters *prms, float main)
+  : params(prms),
+    base_main(main),
+    base_overtime(0),
+    base_stones(0)
 {
-  params=prms;
-  base_main=main;
-  base_overtime=0;
-  base_stones=0;
   this->setupTimeForColors();
 }
 
@@ -45,20 +45,20 @@ void Time::setupTimeForColors()
   }
 }
 
-float *Time::timeLeftForColor(Go::Color col)
+float *Time::timeLeftForColor(Go::Color col) const
 {
   if (col==Go::BLACK)
-    return &black_time_left;
+    return (float *)&black_time_left;
   else
-    return &white_time_left;
+    return (float *)&white_time_left;
 }
 
-int *Time::stonesLeftForColor(Go::Color col)
+int *Time::stonesLeftForColor(Go::Color col) const
 {
   if (col==Go::BLACK)
-    return &black_stones_left;
+    return (int *)&black_stones_left;
   else
-    return &white_stones_left;
+    return (int *)&white_stones_left;
 }
 
 void Time::useTime(Go::Color col, float timeused)
@@ -95,7 +95,7 @@ void Time::updateTimeLeft(Go::Color col, float time, int stones)
   *(this->stonesLeftForColor(col))=stones;
 }
 
-float Time::getAllocatedTimeForNextTurn(Go::Color col)
+float Time::getAllocatedTimeForNextTurn(Go::Color col) const
 {
   if (this->isNoTiming())
     return 0;

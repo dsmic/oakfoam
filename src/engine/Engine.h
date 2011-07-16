@@ -118,18 +118,18 @@ class Engine
     void generateMove(Go::Color col, Go::Move **move, bool playmove);
     bool isMoveAllowed(Go::Move move);
     void makeMove(Go::Move move);
-    int getBoardSize() { return currentboard->getSize(); };
+    int getBoardSize() const { return currentboard->getSize(); };
     void setBoardSize(int s);
-    Go::Board *getCurrentBoard() { return currentboard; };
+    Go::Board *getCurrentBoard() const { return currentboard; };
     void clearBoard();
-    float getKomi() { return komi; };
+    float getKomi() const { return komi; };
     void setKomi(float k) { komi=k; };
-    Pattern::ThreeByThreeTable *getPatternTable() { return patterntable; };
-    Features *getFeatures() { return features; };
-    Random *getRandom() { return &rand; };
-    Go::ZobristTable *getZobristTable() { return zobristtable; };
-    Go::ZobristTree *getZobristHashTree() { return hashtree; };
-    Gtp::Engine *getGtpEngine() { return gtpe; };
+    Pattern::ThreeByThreeTable *getPatternTable() const { return patterntable; };
+    Features *getFeatures() const { return features; };
+    Random *getRandom() { return &rand; }; //cannot use const for some reason
+    Go::ZobristTable *getZobristTable() const { return zobristtable; };
+    Go::ZobristTree *getZobristHashTree() const { return hashtree; };
+    Gtp::Engine *getGtpEngine() const { return gtpe; };
     void stopThinking() { stopthinking=true; };
     static void ponderWrapper(void *instance) { ((Engine*)instance)->ponder(); };
     void ponder();
@@ -207,7 +207,7 @@ class Engine
     Random rand;
     Pattern::ThreeByThreeTable *patterntable;
     std::string lastexplanation;
-    Parameters *params;
+    Parameters *const params;
     Features *features;
     Pattern::CircularDictionary *circdict;
     Book *book;

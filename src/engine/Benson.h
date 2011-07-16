@@ -11,12 +11,12 @@ class Benson
     ~Benson();
     
     void solve();
-    Go::ObjectBoard<Go::Color> *getSafePositions() { return safepositions; };
+    Go::ObjectBoard<Go::Color> *getSafePositions() const { return safepositions; };
   
   private:
-    Go::Board *board;
-    int size;
-    Go::ObjectBoard<Go::Color> *safepositions;
+    Go::Board *const board;
+    const int size;
+    Go::ObjectBoard<Go::Color> *const safepositions;
     
     struct Chain
     {
@@ -39,7 +39,7 @@ class Benson
     
     void updateChainsAndRegions();
     void spreadRegion(Benson::Region *region, int pos, Go::BitBoard *usedflags);
-    bool isVitalTo(Benson::Region *region, Benson::Chain *chain);
+    bool isVitalTo(Benson::Region *region, Benson::Chain *chain) const;
     void updateVitalRegions();
     bool removeNonVitalChains();
     bool removeNonSurroundedRegions();

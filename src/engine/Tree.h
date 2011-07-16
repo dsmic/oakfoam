@@ -16,47 +16,47 @@ class Tree
     Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov = Go::Move(Go::EMPTY,Go::Move::RESIGN), Tree *p = NULL);
     ~Tree();
     
-    Tree *getParent() { return parent; };
-    std::list<Tree*> *getChildren() { return children; };
-    Go::Move getMove() { return move; };
-    bool isRoot() { return (parent==NULL); };
-    bool isLeaf() { return (children->size()==0); };
-    bool isTerminal();
-    bool isTerminalWin() { return (this->isTerminalResult() && wins>0); };
-    bool isTerminalLose() { return (this->isTerminalResult() && wins<=0); };
-    bool isTerminalResult() { return hasTerminalWinrate; };
-    std::list<Go::Move> getMovesFromRoot();
+    Tree *getParent() const { return parent; };
+    std::list<Tree*> *getChildren() const { return children; };
+    Go::Move getMove() const { return move; };
+    bool isRoot() const { return (parent==NULL); };
+    bool isLeaf() const { return (children->size()==0); };
+    bool isTerminal() const;
+    bool isTerminalWin() const { return (this->isTerminalResult() && wins>0); };
+    bool isTerminalLose() const { return (this->isTerminalResult() && wins<=0); };
+    bool isTerminalResult() const { return hasTerminalWinrate; };
+    std::list<Go::Move> getMovesFromRoot() const;
     void divorceChild(Tree *child);
-    bool isPrimary() { return (symmetryprimary==NULL); };
-    Tree *getPrimary() { return symmetryprimary; };
+    bool isPrimary() const { return (symmetryprimary==NULL); };
+    Tree *getPrimary() const { return symmetryprimary; };
     void setPrimary(Tree *p) { symmetryprimary=p; };
     void performSymmetryTransformParentPrimary();
     void performSymmetryTransform(Go::Board::SymmetryTransform trans);
     
-    bool isPruned() { return pruned; };
+    bool isPruned() const { return pruned; };
     void setPruned(bool p) { pruned=p; };
     void pruneChildren();
     void checkForUnPruning();
     void unPruneNow();
     
     void setFeatureGamma(float g);
-    float getFeatureGamma() { return gamma; };
-    float getChildrenTotalFeatureGamma() { return childrentotalgamma; };
-    float getMaxChildFeatureGamma() { return maxchildgamma; };
+    float getFeatureGamma() const { return gamma; };
+    float getChildrenTotalFeatureGamma() const { return childrentotalgamma; };
+    float getMaxChildFeatureGamma() const { return maxchildgamma; };
     
-    float getProgressiveBias();
+    float getProgressiveBias() const;
     void setProgressiveBiasBonus(float b) { biasbonus=b; };
     
-    Tree *getChild(Go::Move move);
-    float getPlayouts() { return playouts; };
-    float getRAVEPlayouts() { return raveplayouts; };
-    float getPriorPlayouts() { return priorplayouts; };
-    float getRatio();
-    float getRAVERatio();
-    float getPriorRatio();
-    float getBasePriorRatio();
-    float getVal();
-    float getUrgency();
+    Tree *getChild(Go::Move move) const;
+    float getPlayouts() const { return playouts; };
+    float getRAVEPlayouts() const { return raveplayouts; };
+    float getPriorPlayouts() const { return priorplayouts; };
+    float getRatio() const;
+    float getRAVERatio() const;
+    float getPriorRatio() const;
+    float getBasePriorRatio() const;
+    float getVal() const;
+    float getUrgency() const;
     
     void addChild(Tree *node);
     void addWin(Tree *source=NULL);
@@ -70,28 +70,28 @@ class Tree
     void addPartialResult(float win, float playout, bool invertwin=true);
     
     void expandLeaf();
-    Tree *getRobustChild(bool descend=false);
-    Tree *getSecondRobustChild(Tree *firstchild=NULL);
+    Tree *getRobustChild(bool descend=false) const;
+    Tree *getSecondRobustChild(const Tree *firstchild=NULL) const;
     Tree *getUrgentChild();
-    Tree *getBestRatioChild(float playoutthreshold=0);
+    Tree *getBestRatioChild(float playoutthreshold=0) const;
     void updateRAVE(Go::Color wincol,Go::BitBoard *blacklist,Go::BitBoard *whitelist);
     void pruneSuperkoViolations();
     
     void allowContinuedPlay();
     
-    float secondBestPlayouts();
-    float secondBestPlayoutRatio();
-    float bestChildRatioDiff();
+    float secondBestPlayouts() const;
+    float secondBestPlayoutRatio() const;
+    float bestChildRatioDiff() const;
     
-    Go::ZobristHash getHash() { return hash; };
-    bool isSuperkoViolationWith(Go::ZobristHash h);
+    Go::ZobristHash getHash() const { return hash; };
+    bool isSuperkoViolationWith(Go::ZobristHash h) const;
     
     void updateCriticality(Go::Board *board, Go::Color wincol);
-    float getCriticality();
+    float getCriticality() const;
     
-    float getTerritoryOwner();
+    float getTerritoryOwner() const;
     
-    std::string toSGFString();
+    std::string toSGFString() const;
     
   private:
     Tree *parent;
@@ -101,7 +101,7 @@ class Tree
     Go::Move move;
     float playouts,raveplayouts,priorplayouts;
     float wins,ravewins,priorwins;
-    Parameters *params;
+    Parameters *const params;
     bool hasTerminalWinrate;
     bool terminaloverride;
     bool pruned;
@@ -118,9 +118,9 @@ class Tree
     void passPlayoutUp(bool win, Tree *source);
     
     void unPruneNextChild();
-    float unPruneMetric();
+    float unPruneMetric() const;
     void updateUnPruneAt();
-    float getUnPruneFactor();
+    float getUnPruneFactor() const;
     
     void addCriticalityStats(bool winner, bool black, bool white);
     

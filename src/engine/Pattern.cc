@@ -366,12 +366,8 @@ Pattern::CircularDictionary::CircularDictionary()
   }
 }
 
-Pattern::Circular::Circular(Pattern::CircularDictionary *dict, Go::Board *board, int pos, int sz)
+Pattern::Circular::Circular(Pattern::CircularDictionary *dict, const Go::Board *board, int pos, int sz) : size(sz>PATTERN_CIRC_MAXSIZE?PATTERN_CIRC_MAXSIZE:sz)
 {
-  size=sz;
-  if (size>PATTERN_CIRC_MAXSIZE)
-    size=PATTERN_CIRC_MAXSIZE;
-  
   for (int i=0;i<PATTERN_CIRC_32BITPARTS;i++)
   {
     hash[i]=0;
@@ -448,7 +444,7 @@ void Pattern::CircularDictionary::setTrans(boost::uint_fast32_t data[PATTERN_CIR
   data[part]|=(3)<<(32-bitoffset-2);
 }
 
-std::string Pattern::Circular::toString(Pattern::CircularDictionary *dict)
+std::string Pattern::Circular::toString(Pattern::CircularDictionary *dict) const
 {
   std::ostringstream ss;
   
@@ -470,14 +466,12 @@ std::string Pattern::Circular::toString(Pattern::CircularDictionary *dict)
   return ss.str();
 }
 
-Pattern::Circular Pattern::Circular::getSubPattern(Pattern::CircularDictionary *dict, int newsize)
+Pattern::Circular Pattern::Circular::getSubPattern(Pattern::CircularDictionary *dict, int newsize) const
 {
-  Pattern::Circular newpatt;
   int s=newsize;
   if (newsize>size)
     s=size;
-  
-  newpatt.size=s;
+  Pattern::Circular newpatt(s);
   
   for (int i=0;i<PATTERN_CIRC_32BITPARTS;i++)
   {
@@ -497,7 +491,7 @@ Pattern::Circular Pattern::Circular::getSubPattern(Pattern::CircularDictionary *
   return newpatt;
 }
 
-bool Pattern::Circular::operator==(Pattern::Circular other)
+bool Pattern::Circular::operator==(const Pattern::Circular other) const
 {
   if (size!=other.size)
     return false;
@@ -510,7 +504,7 @@ bool Pattern::Circular::operator==(Pattern::Circular other)
   return true;
 }
 
-bool Pattern::Circular::operator<(Pattern::Circular other)
+bool Pattern::Circular::operator<(const Pattern::Circular other) const
 {
   for (int i=0;i<PATTERN_CIRC_32BITPARTS;i++)
   {
@@ -522,7 +516,7 @@ bool Pattern::Circular::operator<(Pattern::Circular other)
   return false;
 }
 
-bool Pattern::Circular::operator<(Pattern::Circular *other)
+bool Pattern::Circular::operator<(const Pattern::Circular *other) const
 {
   for (int i=0;i<PATTERN_CIRC_32BITPARTS;i++)
   {

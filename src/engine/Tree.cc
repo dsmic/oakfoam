@@ -5,11 +5,10 @@
 #include "Parameters.h"
 #include "Engine.h"
 
-Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p)
+Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p) : params(prms)
 {
   parent=p;
   children=new std::list<Tree*>();
-  params=prms;
   move=mov;
   playouts=0;
   wins=0;
@@ -65,7 +64,7 @@ void Tree::addChild(Tree *node)
   node->parent=this;
 }
 
-float Tree::getRatio()
+float Tree::getRatio() const
 {
   if (playouts>0)
     return (float)wins/playouts;
@@ -75,7 +74,7 @@ float Tree::getRatio()
     return 0;
 }
 
-float Tree::getRAVERatio()
+float Tree::getRAVERatio() const
 {
   if (raveplayouts>0)
     return (float)ravewins/raveplayouts;
@@ -83,7 +82,7 @@ float Tree::getRAVERatio()
     return 0;
 }
 
-float Tree::getPriorRatio()
+float Tree::getPriorRatio() const
 {
   if (priorplayouts>0)
     return (float)priorwins/priorplayouts;
@@ -91,7 +90,7 @@ float Tree::getPriorRatio()
     return 0;
 }
 
-float Tree::getBasePriorRatio()
+float Tree::getBasePriorRatio() const
 {
   if (playouts>0 || priorplayouts>0)
     return (float)(wins+priorwins)/(playouts+priorplayouts);
@@ -162,7 +161,7 @@ void Tree::addPartialResult(float win, float playout, bool invertwin)
   this->checkForUnPruning();
 }
 
-Tree *Tree::getChild(Go::Move move)
+Tree *Tree::getChild(Go::Move move) const
 {
   for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
   {
@@ -212,7 +211,7 @@ void Tree::passPlayoutUp(bool win, Tree *source)
   }
 }
 
-float Tree::getVal()
+float Tree::getVal() const
 {
   if (this->isTerminal())
   {
@@ -241,7 +240,7 @@ float Tree::getVal()
   }
 }
 
-float Tree::getUrgency()
+float Tree::getUrgency() const
 {
   float uctbias;
   if (this->isTerminalWin())
@@ -290,7 +289,7 @@ float Tree::getUrgency()
   return val;
 }
 
-std::list<Go::Move> Tree::getMovesFromRoot()
+std::list<Go::Move> Tree::getMovesFromRoot() const
 {
   if (this->isRoot())
     return std::list<Go::Move>();
@@ -302,7 +301,7 @@ std::list<Go::Move> Tree::getMovesFromRoot()
   }
 }
 
-bool Tree::isTerminal()
+bool Tree::isTerminal() const
 {
   if (terminaloverride)
     return false;
@@ -330,7 +329,7 @@ float Tree::variance(int wins, int playouts)
   return wins-(float)(wins*wins)/playouts;
 }
 
-std::string Tree::toSGFString()
+std::string Tree::toSGFString() const
 {
   std::ostringstream ss;
   if (!this->isRoot())
@@ -481,7 +480,7 @@ void Tree::unPruneNextChild()
   }
 }
 
-float Tree::unPruneMetric()
+float Tree::unPruneMetric() const
 {
   if (params->uct_progressive_widening_count_wins)
     return wins;
@@ -512,7 +511,7 @@ void Tree::unPruneNow()
   this->unPruneNextChild();
 }
 
-float Tree::getUnPruneFactor()
+float Tree::getUnPruneFactor() const
 {
   if (params->uct_criticality_unprune_factor>0 && (params->uct_criticality_siblings?parent->playouts:playouts)>(params->uct_criticality_min_playouts))
   {
@@ -535,7 +534,7 @@ void Tree::allowContinuedPlay()
   }
 }
 
-Tree *Tree::getRobustChild(bool descend)
+Tree *Tree::getRobustChild(bool descend) const
 {
   float bestsims=0;
   Tree *besttree=NULL;
@@ -820,7 +819,7 @@ void Tree::updateRAVE(Go::Color wincol,Go::BitBoard *blacklist,Go::BitBoard *whi
   }
 }
 
-float Tree::getProgressiveBias()
+float Tree::getProgressiveBias() const
 {
   float bias=params->uct_progressive_bias_h*gamma;
   if (params->uct_progressive_bias_scaled && !this->isRoot())
@@ -830,7 +829,7 @@ float Tree::getProgressiveBias()
   return (bias+biasbonus)/(playouts+1);
 }
 
-bool Tree::isSuperkoViolationWith(Go::ZobristHash h)
+bool Tree::isSuperkoViolationWith(Go::ZobristHash h) const
 {
   //fprintf(stderr,"0x%016llx 0x%016llx\n",h,hash);
   if (hash==h)
@@ -904,7 +903,7 @@ void Tree::pruneSuperkoViolations()
   }
 }
 
-float Tree::bestChildRatioDiff()
+float Tree::bestChildRatioDiff() const
 {
   Tree *bestchild=this->getRobustChild();
   
@@ -914,7 +913,7 @@ float Tree::bestChildRatioDiff()
   return (this->getRatio()+bestchild->getRatio()-1);
 }
 
-Tree *Tree::getSecondRobustChild(Tree *firstchild)
+Tree *Tree::getSecondRobustChild(const Tree *firstchild) const
 {
   if (firstchild==NULL)
     firstchild=this->getRobustChild();
@@ -936,7 +935,7 @@ Tree *Tree::getSecondRobustChild(Tree *firstchild)
   return besttree;
 }
 
-float Tree::secondBestPlayouts()
+float Tree::secondBestPlayouts() const
 {
   if (this->isRoot())
     return 0;
@@ -948,7 +947,7 @@ float Tree::secondBestPlayouts()
     return secondbest->getPlayouts();
 }
 
-float Tree::secondBestPlayoutRatio()
+float Tree::secondBestPlayoutRatio() const
 {
   if (this->isRoot())
     return -1;
@@ -960,7 +959,7 @@ float Tree::secondBestPlayoutRatio()
     return (this->getPlayouts()/secondbest->getPlayouts());
 }
 
-Tree *Tree::getBestRatioChild(float playoutthreshold)
+Tree *Tree::getBestRatioChild(float playoutthreshold) const
 {
   Tree *besttree=NULL;
   float bestratio=0;
@@ -1029,7 +1028,7 @@ void Tree::addCriticalityStats(bool winner, bool black, bool white)
     ownedwhite++;
 }
 
-float Tree::getCriticality()
+float Tree::getCriticality() const
 {
   if (!move.isNormal() || (params->uct_criticality_siblings && this->isRoot()))
     return 0;
@@ -1054,7 +1053,7 @@ float Tree::getCriticality()
   }
 }
 
-float Tree::getTerritoryOwner()
+float Tree::getTerritoryOwner() const
 {
   if (!move.isNormal() || (params->uct_criticality_siblings && this->isRoot()))
     return 0;
