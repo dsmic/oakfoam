@@ -1,5 +1,5 @@
 
-version 0.0.9: xxxx-xx-xx
+version 0.0.9: 2011-07-18
   * handle Canadian overtime settings
   * added CFG as a feature
   * fixed major RAVE bug
@@ -15,6 +15,7 @@ version 0.0.9: xxxx-xx-xx
   * support gogui-interrupt extension
   * added pondering
   * stop thinking if best move cannot change
+  * added criticality
 
 version 0.0.8: 2011-01-13
   * change some default parameters
