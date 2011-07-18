@@ -875,8 +875,9 @@ void Tree::pruneSuperkoViolations()
         Go::ZobristHash hash=thisboard->getZobristHash(params->engine->getZobristTable());
         (*iter)->setHash(hash);
         delete thisboard;
+        (*iter)->doSuperkoCheck();
         
-        bool violation=this->isSuperkoViolationWith(hash);
+        /*bool violation=this->isSuperkoViolationWith(hash);
         
         if (!violation)
           violation=params->engine->getZobristHashTree()->hasHash(hash);
@@ -890,17 +891,17 @@ void Tree::pruneSuperkoViolations()
           if (tmptree->isPruned())
             prunedchildren--;
           delete tmptree;
-        }
+        }*/
       }
     }
     
-    if (prunedchildren==children->size())
+    /*if (prunedchildren==children->size())
     {
       unprunenextchildat=0;
       lastunprune=0;
       unprunebase=0;
       this->unPruneNow(); //unprune at least one child
-    }
+    }*/
     
     delete startboard;
     superkoprunedchildren=true;
@@ -1081,6 +1082,7 @@ void Tree::doSuperkoCheck()
       superkoviolation=params->engine->getZobristHashTree()->hasHash(hash);
     if (superkoviolation)
     {
+      //fprintf(stderr,"superko violation pruned\n");
       pruned=true;
       if (!this->isRoot())
       {
