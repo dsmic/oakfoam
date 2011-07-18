@@ -1073,10 +1073,28 @@ float Tree::getTerritoryOwner() const
 void Tree::doSuperkoCheck()
 {
   superkoviolation=false;
-  if (!this->isRoot())
-    superkoviolation=parent->isSuperkoViolationWith(hash);
-  if (!superkoviolation)
-    superkoviolation=params->engine->getZobristHashTree()->hasHash(hash);
+  if (move.isNormal())
+  {
+    if (!this->isRoot())
+      superkoviolation=parent->isSuperkoViolationWith(hash);
+    if (!superkoviolation)
+      superkoviolation=params->engine->getZobristHashTree()->hasHash(hash);
+    if (superkoviolation)
+    {
+      pruned=true;
+      if (!this->isRoot())
+      {
+        parent->prunedchildren++;
+        if (parent->prunedchildren==parent->children->size())
+        {
+          parent->unprunenextchildat=0;
+          parent->lastunprune=0;
+          parent->unprunebase=0;
+          parent->unPruneNow(); //unprune at least one child
+        }
+      }
+    }
+  }
   superkochecked=true;
 }
 

@@ -50,7 +50,7 @@ void Playout::doPlayout(Go::Board *board, float &finalscore, Tree *playouttree, 
   if (params->debug_on)
     gtpe->getOutput()->printfDebug("\n");
   
-  if (params->rules_superko_at_playout && playouttree!=NULL && !playouttree->isSuperkoChecked())
+  if (params->rules_positional_superko_enabled && params->rules_superko_at_playout && playouttree!=NULL && !playouttree->isSuperkoChecked())
   {
     Go::ZobristHash hash=board->getZobristHash(params->engine->getZobristTable());
     playouttree->setHash(hash);

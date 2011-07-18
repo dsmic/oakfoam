@@ -3,7 +3,6 @@ TODO
 
 Now: (current focus)
   change superko to optionally use a flag instead of deletion
-  change superko to check for violation when a playout through that node is first attempted
   replace volatile bool's with a sync primitive
   fix threads hanging on havarti
   larger patterns
