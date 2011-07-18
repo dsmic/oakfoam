@@ -84,7 +84,11 @@ class Tree
     float bestChildRatioDiff() const;
     
     Go::ZobristHash getHash() const { return hash; };
+    void setHash(Go::ZobristHash h) { hash=h; };
     bool isSuperkoViolationWith(Go::ZobristHash h) const;
+    bool isSuperkoViolation() const { return superkoviolation; };
+    bool isSuperkoChecked() const { return superkochecked; };
+    void doSuperkoCheck();
     
     void updateCriticality(Go::Board *board, Go::Color wincol);
     float getCriticality() const;
@@ -111,7 +115,7 @@ class Tree
     float unprunebase;
     int ownedblack,ownedwhite,ownedwinner;
     float biasbonus;
-    bool superkoprunedchildren;
+    bool superkoprunedchildren,superkoviolation,superkochecked;
     
     Go::ZobristHash hash;
     

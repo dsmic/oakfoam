@@ -33,6 +33,8 @@ Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p) : params(
   ownedwinner=0;
   biasbonus=0;
   superkoprunedchildren=false;
+  superkoviolation=false;
+  superkochecked=false;
   
   if (parent!=NULL)
   {
@@ -165,7 +167,7 @@ Tree *Tree::getChild(Go::Move move) const
 {
   for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
   {
-    if ((*iter)->getMove()==move) 
+    if ((*iter)->getMove()==move && !(*iter)->isSuperkoViolation()) 
       return (*iter);
   }
   return NULL;
@@ -381,7 +383,7 @@ std::string Tree::toSGFString() const
     int i=0;
     for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
     {
-      if (usedchild[i]==false && ((*iter)->getPlayouts()>0 || (*iter)->isTerminal()))
+      if (usedchild[i]==false && ((*iter)->getPlayouts()>0 || (*iter)->isTerminal()) && !(*iter)->isSuperkoViolation())
       {
         if (bestchild==NULL || (*iter)->getPlayouts()>bestchild->getPlayouts() || (*iter)->isTerminalWin())
         {
@@ -453,7 +455,7 @@ void Tree::unPruneNextChild()
     
     for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
     {
-      if ((*iter)->isPrimary())
+      if ((*iter)->isPrimary() && !(*iter)->isSuperkoViolation())
       {
         if ((*iter)->isPruned())
         {
@@ -657,24 +659,25 @@ void Tree::expandLeaf()
     {
       if (validmovesbitboard->get(p))
       {
-        bool superkoviolation=false;
-        if (params->rules_positional_superko_enabled && !params->rules_superko_top_ply)
+        bool violation=false;
+        Go::ZobristHash hash=0;
+        if (params->rules_positional_superko_enabled && !params->rules_superko_top_ply && !params->rules_superko_at_playout)
         {
           Go::Board *thisboard=startboard->copy();
           thisboard->makeMove(Go::Move(col,p));
-          Go::ZobristHash hash=thisboard->getZobristHash(params->engine->getZobristTable());
+          hash=thisboard->getZobristHash(params->engine->getZobristTable());
           delete thisboard;
           
-          superkoviolation=this->isSuperkoViolationWith(hash);
+          violation=this->isSuperkoViolationWith(hash);
           
-          if (!superkoviolation)
-            superkoviolation=params->engine->getZobristHashTree()->hasHash(hash);
+          if (!violation)
+            violation=params->engine->getZobristHashTree()->hasHash(hash);
         }
         
-        //if (superkoviolation)
+        //if (violation)
         //  fprintf(stderr,"superko violation avoided\n");
         
-        if (!superkoviolation)
+        if (!violation)
         {
           Tree *nmt=new Tree(params,hash,Go::Move(col,p));
           
@@ -853,7 +856,7 @@ void Tree::setFeatureGamma(float g)
 
 void Tree::pruneSuperkoViolations()
 {
-  if (!superkoprunedchildren && !this->isLeaf() && params->rules_positional_superko_enabled && params->rules_superko_top_ply)
+  if (!superkoprunedchildren && !this->isLeaf() && params->rules_positional_superko_enabled && params->rules_superko_top_ply && !params->rules_superko_at_playout)
   {
     std::list<Go::Move> startmoves=this->getMovesFromRoot();
     Go::Board *startboard=params->engine->getCurrentBoard()->copy();
@@ -870,14 +873,15 @@ void Tree::pruneSuperkoViolations()
         Go::Board *thisboard=startboard->copy();
         thisboard->makeMove((*iter)->getMove());
         Go::ZobristHash hash=thisboard->getZobristHash(params->engine->getZobristTable());
+        (*iter)->setHash(hash);
         delete thisboard;
         
-        bool superkoviolation=this->isSuperkoViolationWith(hash);
+        bool violation=this->isSuperkoViolationWith(hash);
         
-        if (!superkoviolation)
-          superkoviolation=params->engine->getZobristHashTree()->hasHash(hash);
+        if (!violation)
+          violation=params->engine->getZobristHashTree()->hasHash(hash);
         
-        if (superkoviolation)
+        if (violation)
         {
           std::list<Tree*>::iterator tmpiter=iter;
           Tree *tmptree=(*iter);
@@ -1064,5 +1068,15 @@ float Tree::getTerritoryOwner() const
       return 0;
     return (float)(ownedblack-ownedwhite)/plts;
   }
+}
+
+void Tree::doSuperkoCheck()
+{
+  superkoviolation=false;
+  if (!this->isRoot())
+    superkoviolation=parent->isSuperkoViolationWith(hash);
+  if (!superkoviolation)
+    superkoviolation=params->engine->getZobristHashTree()->hasHash(hash);
+  superkochecked=true;
 }
 

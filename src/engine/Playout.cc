@@ -23,7 +23,7 @@ Playout::~Playout()
     delete[] lgrf2;
 }
 
-void Playout::doPlayout(Go::Board *board, float &finalscore, std::list<Go::Move> &playoutmoves, Go::Color colfirst, Go::BitBoard *firstlist, Go::BitBoard *secondlist)
+void Playout::doPlayout(Go::Board *board, float &finalscore, Tree *playouttree, std::list<Go::Move> &playoutmoves, Go::Color colfirst, Go::BitBoard *firstlist, Go::BitBoard *secondlist)
 {
   if (board->getPassesPlayed()>=2)
     return;
@@ -49,6 +49,18 @@ void Playout::doPlayout(Go::Board *board, float &finalscore, std::list<Go::Move>
   }
   if (params->debug_on)
     gtpe->getOutput()->printfDebug("\n");
+  
+  if (params->rules_superko_at_playout && playouttree!=NULL && !playouttree->isSuperkoChecked())
+  {
+    Go::ZobristHash hash=board->getZobristHash(params->engine->getZobristTable());
+    playouttree->setHash(hash);
+    playouttree->doSuperkoCheck();
+    if (playouttree->isSuperkoViolation())
+    {
+      finalscore=0;
+      return;
+    }
+  }
   
   Go::Color coltomove=board->nextToMove();
   Go::Move move=Go::Move(coltomove,Go::Move::PASS);

@@ -4,6 +4,8 @@
 #include "Go.h"
 //from "Parameters.h":
 class Parameters;
+//from "Tree.h":
+class Tree;
 #include "../gtp/Gtp.h"
 
 class Playout
@@ -12,7 +14,7 @@ class Playout
     Playout(Parameters *prms);
     ~Playout();
     
-    void doPlayout(Go::Board *board, float &finalscore, std::list<Go::Move> &playoutmoves, Go::Color colfirst, Go::BitBoard *firstlist, Go::BitBoard *secondlist);
+    void doPlayout(Go::Board *board, float &finalscore, Tree *playouttree, std::list<Go::Move> &playoutmoves, Go::Color colfirst, Go::BitBoard *firstlist, Go::BitBoard *secondlist);
     void getPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move);
     
     void resetLGRF();
