@@ -664,16 +664,16 @@ class Features
     Features(Parameters *prms);
     ~Features();
     
-    unsigned int matchFeatureClass(Features::FeatureClass featclass, Go::Board *board, Go::Move move, bool checkforvalidmove=true) const;
+    unsigned int matchFeatureClass(Features::FeatureClass featclass, Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove=true) const;
     float getFeatureGamma(Features::FeatureClass featclass, unsigned int level) const;
-    float getMoveGamma(Go::Board *board, Go::Move move, bool checkforvalidmove=true) const;
-    float getBoardGamma(Go::Board *board, Go::Color col) const;
-    float getBoardGammas(Go::Board *board, Go::Color col, Go::ObjectBoard<float> *gammas) const;
+    float getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove=true) const;
+    float getBoardGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Color col) const;
+    float getBoardGammas(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Color col, Go::ObjectBoard<float> *gammas) const;
     std::string getFeatureClassName(Features::FeatureClass featclass) const;
     Features::FeatureClass getFeatureClassFromName(std::string name) const;
     bool setFeatureGamma(Features::FeatureClass featclass, unsigned int level, float gamma);
     
-    std::string getMatchingFeaturesString(Go::Board *board, Go::Move move, bool pretty=true) const;
+    std::string getMatchingFeaturesString(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool pretty=true) const;
     std::string getFeatureIdList() const;
     
     bool loadGammaLine(std::string line);
@@ -681,8 +681,7 @@ class Features
     bool loadGammaString(std::string lines);
     void loadGammaDefaults() { this->loadGammaString(FEATURES_DEFAULT); };
     
-    void setupCFGDist(Go::Board *board);
-    void clearCFGDist();
+    void computeCFGDist(Go::Board *board, Go::ObjectBoard<int> **cfglastdist, Go::ObjectBoard<int> **cfgsecondlastdist);
   
   private:
     Parameters *const params;
@@ -698,9 +697,6 @@ class Features
     float gammas_secondlastdist[SECONDLASTDIST_LEVELS];
     float gammas_cfglastdist[CFGLASTDIST_LEVELS];
     float gammas_cfgsecondlastdist[CFGSECONDLASTDIST_LEVELS];
-    
-    Go::ObjectBoard<int> *cfglastdist;
-    Go::ObjectBoard<int> *cfgsecondlastdist;
     
     float *getStandardGamma(Features::FeatureClass featclass) const;
     void updatePatternIds();

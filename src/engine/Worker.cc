@@ -17,11 +17,12 @@ Worker::Thread::Thread(int i, Engine *eng)
     thisthread(Worker::Thread::Functional(this))
 {
   settings->thread=this;
-  settings->rand=new Random((unsigned long)id); // todo
+  settings->rand=new Random(0,id);
 }
 
 Worker::Thread::~Thread()
 {
+  this->wait();
   muststop=true;
   alive=false;
   runbarrier.wait();
@@ -30,15 +31,21 @@ Worker::Thread::~Thread()
   delete settings;
 }
 
+void Worker::Thread::setRandomSeed(unsigned long seed)
+{
+  delete settings->rand;
+  settings->rand=new Random(seed,id);
+}
+
 void Worker::Thread::run()
 {
-  while (alive)
+  while (true)
   {
     runbarrier.wait();
     if (!alive)
       break;
     running=true;
-    fprintf(stderr,"run start %d\n",id);
+    fprintf(stderr,"run start %d %lu\n",id,settings->rand->getSeed());
     engine->doThreadWork(settings);
     fprintf(stderr,"run done\n");
     running=false;
@@ -103,6 +110,14 @@ void Worker::Pool::waitAll()
   for(std::list<Worker::Thread*>::iterator iter=threads.begin();iter!=threads.end();++iter) 
   {
     (*iter)->wait();
+  }
+}
+
+void Worker::Pool::setRandomSeeds(unsigned long seed)
+{
+  for(std::list<Worker::Thread*>::iterator iter=threads.begin();iter!=threads.end();++iter) 
+  {
+    (*iter)->setRandomSeed(seed);
   }
 }
 

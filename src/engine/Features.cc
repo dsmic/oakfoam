@@ -33,9 +33,6 @@ Features::Features(Parameters *prms) : params(prms)
     gammas_cfglastdist[i]=1.0;
   for (int i=0;i<CFGSECONDLASTDIST_LEVELS;i++)
     gammas_cfgsecondlastdist[i]=1.0;
-  
-  cfglastdist=NULL;
-  cfgsecondlastdist=NULL;
 }
 
 Features::~Features()
@@ -44,7 +41,7 @@ Features::~Features()
   delete patternids;
 }
 
-unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::Board *board, Go::Move move, bool checkforvalidmove) const
+unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove) const
 {
   if ((featclass!=Features::PASS && move.isPass()) || move.isResign())
     return 0;
@@ -216,29 +213,29 @@ float Features::getFeatureGamma(Features::FeatureClass featclass, unsigned int l
   }
 }
 
-float Features::getMoveGamma(Go::Board *board, Go::Move move, bool checkforvalidmove) const
+float Features::getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove) const
 {
   float g=1.0;
   
   if (checkforvalidmove && !board->validMove(move))
     return 0;
   
-  g*=this->getFeatureGamma(Features::PASS,this->matchFeatureClass(Features::PASS,board,move,false));
-  g*=this->getFeatureGamma(Features::CAPTURE,this->matchFeatureClass(Features::CAPTURE,board,move,false));
-  g*=this->getFeatureGamma(Features::EXTENSION,this->matchFeatureClass(Features::EXTENSION,board,move,false));
-  g*=this->getFeatureGamma(Features::SELFATARI,this->matchFeatureClass(Features::SELFATARI,board,move,false));
-  g*=this->getFeatureGamma(Features::ATARI,this->matchFeatureClass(Features::ATARI,board,move,false));
-  g*=this->getFeatureGamma(Features::BORDERDIST,this->matchFeatureClass(Features::BORDERDIST,board,move,false));
-  g*=this->getFeatureGamma(Features::LASTDIST,this->matchFeatureClass(Features::LASTDIST,board,move,false));
-  g*=this->getFeatureGamma(Features::SECONDLASTDIST,this->matchFeatureClass(Features::SECONDLASTDIST,board,move,false));
-  g*=this->getFeatureGamma(Features::CFGLASTDIST,this->matchFeatureClass(Features::CFGLASTDIST,board,move,false));
-  g*=this->getFeatureGamma(Features::CFGSECONDLASTDIST,this->matchFeatureClass(Features::CFGSECONDLASTDIST,board,move,false));
-  g*=this->getFeatureGamma(Features::PATTERN3X3,this->matchFeatureClass(Features::PATTERN3X3,board,move,false));
+  g*=this->getFeatureGamma(Features::PASS,this->matchFeatureClass(Features::PASS,board,cfglastdist,cfgsecondlastdist,move,false));
+  g*=this->getFeatureGamma(Features::CAPTURE,this->matchFeatureClass(Features::CAPTURE,board,cfglastdist,cfgsecondlastdist,move,false));
+  g*=this->getFeatureGamma(Features::EXTENSION,this->matchFeatureClass(Features::EXTENSION,board,cfglastdist,cfgsecondlastdist,move,false));
+  g*=this->getFeatureGamma(Features::SELFATARI,this->matchFeatureClass(Features::SELFATARI,board,cfglastdist,cfgsecondlastdist,move,false));
+  g*=this->getFeatureGamma(Features::ATARI,this->matchFeatureClass(Features::ATARI,board,cfglastdist,cfgsecondlastdist,move,false));
+  g*=this->getFeatureGamma(Features::BORDERDIST,this->matchFeatureClass(Features::BORDERDIST,board,cfglastdist,cfgsecondlastdist,move,false));
+  g*=this->getFeatureGamma(Features::LASTDIST,this->matchFeatureClass(Features::LASTDIST,board,cfglastdist,cfgsecondlastdist,move,false));
+  g*=this->getFeatureGamma(Features::SECONDLASTDIST,this->matchFeatureClass(Features::SECONDLASTDIST,board,cfglastdist,cfgsecondlastdist,move,false));
+  g*=this->getFeatureGamma(Features::CFGLASTDIST,this->matchFeatureClass(Features::CFGLASTDIST,board,cfglastdist,cfgsecondlastdist,move,false));
+  g*=this->getFeatureGamma(Features::CFGSECONDLASTDIST,this->matchFeatureClass(Features::CFGSECONDLASTDIST,board,cfglastdist,cfgsecondlastdist,move,false));
+  g*=this->getFeatureGamma(Features::PATTERN3X3,this->matchFeatureClass(Features::PATTERN3X3,board,cfglastdist,cfgsecondlastdist,move,false));
   
   return g;
 }
 
-float Features::getBoardGamma(Go::Board *board, Go::Color col) const
+float Features::getBoardGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Color col) const
 {
   float total=0;
   
@@ -246,16 +243,16 @@ float Features::getBoardGamma(Go::Board *board, Go::Color col) const
   {
     Go::Move move=Go::Move(col,p);
     if (board->validMove(move))
-      total+=this->getMoveGamma(board,move,false);
+      total+=this->getMoveGamma(board,cfglastdist,cfgsecondlastdist,move,false);
   }
   
   Go::Move passmove=Go::Move(col,Go::Move::PASS);
-  total+=this->getMoveGamma(board,passmove,false);
+  total+=this->getMoveGamma(board,cfglastdist,cfgsecondlastdist,passmove,false);
   
   return total;
 }
 
-float Features::getBoardGammas(Go::Board *board, Go::Color col, Go::ObjectBoard<float> *gammas) const
+float Features::getBoardGammas(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Color col, Go::ObjectBoard<float> *gammas) const
 {
   float total=0;
   
@@ -264,7 +261,7 @@ float Features::getBoardGammas(Go::Board *board, Go::Color col, Go::ObjectBoard<
     Go::Move move=Go::Move(col,p);
     if (board->validMove(move))
     {
-      float gamma=this->getMoveGamma(board,move,false);;
+      float gamma=this->getMoveGamma(board,cfglastdist,cfgsecondlastdist,move,false);;
       gammas->set(p,gamma);
       total+=gamma;
     }
@@ -272,7 +269,7 @@ float Features::getBoardGammas(Go::Board *board, Go::Color col, Go::ObjectBoard<
   
   {
     Go::Move move=Go::Move(col,Go::Move::PASS);
-    float gamma=this->getMoveGamma(board,move,false);;
+    float gamma=this->getMoveGamma(board,cfglastdist,cfgsecondlastdist,move,false);;
     gammas->set(0,gamma);
     total+=gamma;
   }
@@ -473,14 +470,14 @@ bool Features::setFeatureGamma(Features::FeatureClass featclass, unsigned int le
   }
 }
 
-std::string Features::getMatchingFeaturesString(Go::Board *board, Go::Move move, bool pretty) const
+std::string Features::getMatchingFeaturesString(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool pretty) const
 {
   std::ostringstream ss;
   unsigned int level,base;
   
   base=0;
   
-  level=this->matchFeatureClass(Features::PASS,board,move);
+  level=this->matchFeatureClass(Features::PASS,board,cfglastdist,cfgsecondlastdist,move);
   if (level>0)
   {
     if (pretty)
@@ -490,7 +487,7 @@ std::string Features::getMatchingFeaturesString(Go::Board *board, Go::Move move,
   }
   base+=PASS_LEVELS;
   
-  level=this->matchFeatureClass(Features::CAPTURE,board,move);
+  level=this->matchFeatureClass(Features::CAPTURE,board,cfglastdist,cfgsecondlastdist,move);
   if (level>0)
   {
     if (pretty)
@@ -500,7 +497,7 @@ std::string Features::getMatchingFeaturesString(Go::Board *board, Go::Move move,
   }
   base+=CAPTURE_LEVELS;
   
-  level=this->matchFeatureClass(Features::EXTENSION,board,move);
+  level=this->matchFeatureClass(Features::EXTENSION,board,cfglastdist,cfgsecondlastdist,move);
   if (level>0)
   {
     if (pretty)
@@ -510,7 +507,7 @@ std::string Features::getMatchingFeaturesString(Go::Board *board, Go::Move move,
   }
   base+=EXTENSION_LEVELS;
   
-  level=this->matchFeatureClass(Features::SELFATARI,board,move);
+  level=this->matchFeatureClass(Features::SELFATARI,board,cfglastdist,cfgsecondlastdist,move);
   if (level>0)
   {
     if (pretty)
@@ -520,7 +517,7 @@ std::string Features::getMatchingFeaturesString(Go::Board *board, Go::Move move,
   }
   base+=SELFATARI_LEVELS;
   
-  level=this->matchFeatureClass(Features::ATARI,board,move);
+  level=this->matchFeatureClass(Features::ATARI,board,cfglastdist,cfgsecondlastdist,move);
   if (level>0)
   {
     if (pretty)
@@ -530,7 +527,7 @@ std::string Features::getMatchingFeaturesString(Go::Board *board, Go::Move move,
   }
   base+=ATARI_LEVELS;
   
-  level=this->matchFeatureClass(Features::BORDERDIST,board,move);
+  level=this->matchFeatureClass(Features::BORDERDIST,board,cfglastdist,cfgsecondlastdist,move);
   if (level>0)
   {
     if (pretty)
@@ -540,7 +537,7 @@ std::string Features::getMatchingFeaturesString(Go::Board *board, Go::Move move,
   }
   base+=BORDERDIST_LEVELS;
   
-  level=this->matchFeatureClass(Features::LASTDIST,board,move);
+  level=this->matchFeatureClass(Features::LASTDIST,board,cfglastdist,cfgsecondlastdist,move);
   if (level>0)
   {
     if (pretty)
@@ -550,7 +547,7 @@ std::string Features::getMatchingFeaturesString(Go::Board *board, Go::Move move,
   }
   base+=LASTDIST_LEVELS;
   
-  level=this->matchFeatureClass(Features::SECONDLASTDIST,board,move);
+  level=this->matchFeatureClass(Features::SECONDLASTDIST,board,cfglastdist,cfgsecondlastdist,move);
   if (level>0)
   {
     if (pretty)
@@ -560,7 +557,7 @@ std::string Features::getMatchingFeaturesString(Go::Board *board, Go::Move move,
   }
   base+=SECONDLASTDIST_LEVELS;
   
-  level=this->matchFeatureClass(Features::CFGLASTDIST,board,move);
+  level=this->matchFeatureClass(Features::CFGLASTDIST,board,cfglastdist,cfgsecondlastdist,move);
   if (level>0)
   {
     if (pretty)
@@ -570,7 +567,7 @@ std::string Features::getMatchingFeaturesString(Go::Board *board, Go::Move move,
   }
   base+=CFGLASTDIST_LEVELS;
   
-  level=this->matchFeatureClass(Features::CFGSECONDLASTDIST,board,move);
+  level=this->matchFeatureClass(Features::CFGSECONDLASTDIST,board,cfglastdist,cfgsecondlastdist,move);
   if (level>0)
   {
     if (pretty)
@@ -580,7 +577,7 @@ std::string Features::getMatchingFeaturesString(Go::Board *board, Go::Move move,
   }
   base+=CFGSECONDLASTDIST_LEVELS;
   
-  level=this->matchFeatureClass(Features::PATTERN3X3,board,move);
+  level=this->matchFeatureClass(Features::PATTERN3X3,board,cfglastdist,cfgsecondlastdist,move);
   if (patterngammas->hasGamma(level) && !move.isPass() && !move.isResign())
   {
     if (pretty)
@@ -652,24 +649,11 @@ void Features::updatePatternIds()
   }
 }
 
-void Features::setupCFGDist(Go::Board *board)
+void Features::computeCFGDist(Go::Board *board, Go::ObjectBoard<int> **cfglastdist, Go::ObjectBoard<int> **cfgsecondlastdist)
 {
-  this->clearCFGDist();
-  
   if (!board->getLastMove().isPass() && !board->getLastMove().isResign())
-    cfglastdist=board->getCFGFrom(board->getLastMove().getPosition(),CFGLASTDIST_LEVELS);
+    *cfglastdist=board->getCFGFrom(board->getLastMove().getPosition(),CFGLASTDIST_LEVELS);
   if (!board->getSecondLastMove().isPass() && !board->getSecondLastMove().isResign())
-    cfgsecondlastdist=board->getCFGFrom(board->getSecondLastMove().getPosition(),CFGSECONDLASTDIST_LEVELS);
-}
-
-void Features::clearCFGDist()
-{
-  if (cfglastdist!=NULL)
-    delete cfglastdist;
-  if (cfgsecondlastdist!=NULL)
-    delete cfgsecondlastdist;
-  
-  cfglastdist=NULL;
-  cfgsecondlastdist=NULL;
+    *cfgsecondlastdist=board->getCFGFrom(board->getSecondLastMove().getPosition(),CFGSECONDLASTDIST_LEVELS);
 }
 

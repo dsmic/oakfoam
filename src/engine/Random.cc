@@ -1,6 +1,7 @@
 #include "Random.h"
 
 #include <cmath>
+#include <cstdio>
 #include <cstdlib>
 #include <boost/timer.hpp>
 #include <boost/random/linear_congruential.hpp>
@@ -8,12 +9,12 @@
 #include <boost/random/uniform_real.hpp>
 #include <boost/random/variate_generator.hpp>
 
-Random::Random(unsigned long s)
+Random::Random(unsigned long s, int threadid)
 {
   if (s==0)
-    seed=((unsigned long)std::time(0))^((unsigned long)getpid());
+    seed=Random::makeSeed(threadid);
   else
-    seed=s;
+    seed=s^((unsigned long)threadid);
 }
 
 unsigned long Random::getRandomInt()
@@ -41,5 +42,10 @@ unsigned long Random::getRandomInt(unsigned long max)
 float Random::getRandomReal()
 {
   return (float)this->getRandomInt() / ((unsigned long)(1) << 31);
+}
+
+unsigned long Random::makeSeed(int threadid)
+{
+  return ((unsigned long)std::time(0))^((unsigned long)getpid()<<6)^((unsigned long)threadid);
 }
 

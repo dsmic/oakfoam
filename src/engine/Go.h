@@ -11,6 +11,8 @@
 class Features;
 //from "Parameters.h":
 class Parameters;
+//from "Random.h":
+class Random;
 
 #define SYMMETRY_ONLYDEGRAGE false
 
@@ -238,6 +240,7 @@ namespace Go
     private:
       Parameters *const params;
       const int size,sizedata;
+      Random *const rand;
       Go::ZobristHash *const blackhashes,*const whitehashes;
       
       Go::ZobristHash getRandomHash();
@@ -498,8 +501,8 @@ namespace Go
       
       void refreshFeatureGammas();
       void updateFeatureGammas();
-      void updateFeatureGamma(int pos);
-      void updateFeatureGamma(Go::Color col, int pos);
+      void updateFeatureGamma(Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, int pos);
+      void updateFeatureGamma(Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Color col, int pos);
   };
 };
 

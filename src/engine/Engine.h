@@ -130,7 +130,6 @@ class Engine
     void setKomi(float k) { komi=k; };
     Pattern::ThreeByThreeTable *getPatternTable() const { return patterntable; };
     Features *getFeatures() const { return features; };
-    Random *getRandom() { return &rand; }; //cannot use const for some reason
     Go::ZobristTable *getZobristTable() const { return zobristtable; };
     Go::ZobristTree *getZobristHashTree() const { return hashtree; };
     Gtp::Engine *getGtpEngine() const { return gtpe; };
@@ -212,7 +211,6 @@ class Engine
     int boardsize;
     Time *time;
     Tree *movetree;
-    Random rand;
     Pattern::ThreeByThreeTable *patterntable;
     std::string lastexplanation;
     Parameters *const params;

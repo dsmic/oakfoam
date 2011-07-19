@@ -257,6 +257,7 @@ Gtp::Engine::PonderThread::PonderThread(Gtp::Engine::PonderFunction f, void *i, 
 
 Gtp::Engine::PonderThread::~PonderThread()
 {
+  this->ponderStop();
   running=false;
   startbarrier.wait();
   thisthread.join();
@@ -269,7 +270,7 @@ void Gtp::Engine::PonderThread::Worker::operator()()
 
 void Gtp::Engine::PonderThread::run()
 {
-  while (running)
+  while (true)
   {
     startbarrier.wait();
     if (!running)

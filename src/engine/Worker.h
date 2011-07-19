@@ -31,6 +31,8 @@ namespace Worker
       ~Thread();
       
       int getID() const { return id; };
+      Worker::Settings *getSettings() const { return settings; };
+      void setRandomSeed(unsigned long seed);
       
       void start();
       void stop();
@@ -69,9 +71,12 @@ namespace Worker
       ~Pool();
       
       int getSize() const { return size; };
+      Worker::Thread *getThreadZero() const { return threads.front(); };
+      
       void startAll();
       void stopAll();
       void waitAll();
+      void setRandomSeeds(unsigned long seed);
     
     private:
       Parameters *const params; 

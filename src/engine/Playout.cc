@@ -5,6 +5,7 @@
 #include "Engine.h"
 #include "Pattern.h"
 #include "Random.h"
+#include "Worker.h"
 
 Playout::Playout(Parameters *prms) : params(prms)
 {
@@ -23,7 +24,7 @@ Playout::~Playout()
     delete[] lgrf2;
 }
 
-void Playout::doPlayout(Go::Board *board, float &finalscore, Tree *playouttree, std::list<Go::Move> &playoutmoves, Go::Color colfirst, Go::BitBoard *firstlist, Go::BitBoard *secondlist)
+void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &finalscore, Tree *playouttree, std::list<Go::Move> &playoutmoves, Go::Color colfirst, Go::BitBoard *firstlist, Go::BitBoard *secondlist)
 {
   if (board->getPassesPlayed()>=2)
     return;
@@ -71,7 +72,7 @@ void Playout::doPlayout(Go::Board *board, float &finalscore, Tree *playouttree, 
   while (board->getPassesPlayed()<2)
   {
     bool resign;
-    this->getPlayoutMove(board,coltomove,move,posarray);
+    this->getPlayoutMove(settings,board,coltomove,move,posarray);
     board->makeMove(move);
     playoutmoves.push_back(move);
     if ((coltomove==colfirst?firstlist:secondlist)!=NULL && !move.isPass() && !move.isResign())
@@ -178,19 +179,19 @@ void Playout::doPlayout(Go::Board *board, float &finalscore, Tree *playouttree, 
   }
 }
 
-void Playout::getPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move)
+void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move)
 {
   int *posarray = new int[board->getPositionMax()];
   
-  this->getPlayoutMove(board,col,move,posarray);
+  this->getPlayoutMove(settings,board,col,move,posarray);
   
   delete[] posarray;
 }
 
-void Playout::getPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, int *posarray)
+void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray)
 {
-  Random *rand=params->engine->getRandom();
-  Pattern::ThreeByThreeTable *patterntable=params->engine->getPatternTable();
+  Random *const rand=settings->rand;
+  Pattern::ThreeByThreeTable *const patterntable=params->engine->getPatternTable();
   
   if (board->numOfValidMoves(col)==0)
   {

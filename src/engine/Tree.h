@@ -6,9 +6,15 @@
 
 #include <list>
 #include <string>
+#include <boost/thread/mutex.hpp>
 #include "Go.h"
 //from "Parameters.h":
 class Parameters;
+//from "Worker.h":
+namespace Worker
+{
+  class Settings;
+};
 
 class Tree
 {
@@ -72,7 +78,7 @@ class Tree
     void expandLeaf();
     Tree *getRobustChild(bool descend=false) const;
     Tree *getSecondRobustChild(const Tree *firstchild=NULL) const;
-    Tree *getUrgentChild();
+    Tree *getUrgentChild(Worker::Settings *settings);
     Tree *getBestRatioChild(float playoutthreshold=0) const;
     void updateRAVE(Go::Color wincol,Go::BitBoard *blacklist,Go::BitBoard *whitelist);
     void pruneSuperkoViolations();
@@ -116,10 +122,11 @@ class Tree
     int ownedblack,ownedwhite,ownedwinner;
     float biasbonus;
     bool superkoprunedchildren,superkoviolation,superkochecked;
-    
     Go::ZobristHash hash;
+    boost::mutex expandmutex,updatemutex,unprunemutex;
     
     void passPlayoutUp(bool win, Tree *source);
+    bool allChildrenTerminalLoses();
     
     void unPruneNextChild();
     float unPruneMetric() const;

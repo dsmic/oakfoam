@@ -6,6 +6,11 @@
 class Parameters;
 //from "Tree.h":
 class Tree;
+//from "Worker.h":
+namespace Worker
+{
+  class Settings;
+};
 #include "../gtp/Gtp.h"
 
 class Playout
@@ -14,8 +19,8 @@ class Playout
     Playout(Parameters *prms);
     ~Playout();
     
-    void doPlayout(Go::Board *board, float &finalscore, Tree *playouttree, std::list<Go::Move> &playoutmoves, Go::Color colfirst, Go::BitBoard *firstlist, Go::BitBoard *secondlist);
-    void getPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move);
+    void doPlayout(Worker::Settings *settings, Go::Board *board, float &finalscore, Tree *playouttree, std::list<Go::Move> &playoutmoves, Go::Color colfirst, Go::BitBoard *firstlist, Go::BitBoard *secondlist);
+    void getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move);
     
     void resetLGRF();
   
@@ -26,7 +31,7 @@ class Playout
     int *lgrf1,*lgrf2;
     int lgrfpositionmax;
     
-    void getPlayoutMove(Go::Board *board, Go::Color col, Go::Move &move, int *posarray);
+    void getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray);
     
     int getLGRF1(Go::Color col, int pos1) const;
     int getLGRF2(Go::Color col, int pos1, int pos2) const;

@@ -13,8 +13,6 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   gtpe=ge;
   longname=ln;
   
-  rand=Random();
-  
   params->engine=this;
   
   boardsize=9;
@@ -24,7 +22,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   
   zobristtable=new Go::ZobristTable(params,boardsize);
   
-  params->addParameter("other","rand_seed",&(params->rand_seed),rand.getSeed(),&Engine::updateParameterWrapper,this);
+  params->addParameter("other","rand_seed",&(params->rand_seed),Random::makeSeed(),&Engine::updateParameterWrapper,this);
   
   std::list<std::string> *mpoptions=new std::list<std::string>();
   mpoptions->push_back("playout");
@@ -179,6 +177,7 @@ Engine::~Engine()
 
 void Engine::postCmdLineArgs(bool book_autoload)
 {
+  params->rand_seed=threadpool->getThreadZero()->getSettings()->rand->getSeed();
   gtpe->getOutput()->printfDebug("seed: %lu\n",params->rand_seed);
   if (book_autoload)
   {
@@ -238,8 +237,8 @@ void Engine::updateParameter(std::string id)
   }
   else if (id=="rand_seed")
   {
-    rand=Random(params->rand_seed);
-    params->rand_seed=rand.getSeed();
+    threadpool->setRandomSeeds(params->rand_seed);
+    params->rand_seed=threadpool->getThreadZero()->getSettings()->rand->getSeed();
   }
   else if (id=="interrupts_enabled")
   {
@@ -871,27 +870,32 @@ void Engine::gtpFeatureMatchesAt(void *instance, Gtp::Engine* gtpe, Gtp::Command
   int pos=Go::Position::xy2pos(vert.x,vert.y,me->boardsize);
   Go::Move move=Go::Move(col,pos);
   
-  me->features->setupCFGDist(board);
+  Go::ObjectBoard<int> *cfglastdist=NULL;
+  Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
+  me->features->computeCFGDist(board,&cfglastdist,&cfgsecondlastdist);
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printf("Feature Matches for %s:\n",move.toString(board->getSize()).c_str());
-  gtpe->getOutput()->printf("PASS:              %u\n",me->features->matchFeatureClass(Features::PASS,board,move));
-  gtpe->getOutput()->printf("CAPTURE:           %u\n",me->features->matchFeatureClass(Features::CAPTURE,board,move));
-  gtpe->getOutput()->printf("EXTENSION:         %u\n",me->features->matchFeatureClass(Features::EXTENSION,board,move));
-  gtpe->getOutput()->printf("SELFATARI:         %u\n",me->features->matchFeatureClass(Features::SELFATARI,board,move));
-  gtpe->getOutput()->printf("ATARI:             %u\n",me->features->matchFeatureClass(Features::ATARI,board,move));
-  gtpe->getOutput()->printf("BORDERDIST:        %u\n",me->features->matchFeatureClass(Features::BORDERDIST,board,move));
-  gtpe->getOutput()->printf("LASTDIST:          %u\n",me->features->matchFeatureClass(Features::LASTDIST,board,move));
-  gtpe->getOutput()->printf("SECONDLASTDIST:    %u\n",me->features->matchFeatureClass(Features::SECONDLASTDIST,board,move));
-  gtpe->getOutput()->printf("CFGLASTDIST:       %u\n",me->features->matchFeatureClass(Features::CFGLASTDIST,board,move));
-  gtpe->getOutput()->printf("CFGSECONDLASTDIST: %u\n",me->features->matchFeatureClass(Features::CFGSECONDLASTDIST,board,move));
-  gtpe->getOutput()->printf("PATTERN3X3:        0x%04x\n",me->features->matchFeatureClass(Features::PATTERN3X3,board,move));
-  float gamma=me->features->getMoveGamma(board,move);
-  float total=me->features->getBoardGamma(board,col);
+  gtpe->getOutput()->printf("PASS:              %u\n",me->features->matchFeatureClass(Features::PASS,board,cfglastdist,cfgsecondlastdist,move));
+  gtpe->getOutput()->printf("CAPTURE:           %u\n",me->features->matchFeatureClass(Features::CAPTURE,board,cfglastdist,cfgsecondlastdist,move));
+  gtpe->getOutput()->printf("EXTENSION:         %u\n",me->features->matchFeatureClass(Features::EXTENSION,board,cfglastdist,cfgsecondlastdist,move));
+  gtpe->getOutput()->printf("SELFATARI:         %u\n",me->features->matchFeatureClass(Features::SELFATARI,board,cfglastdist,cfgsecondlastdist,move));
+  gtpe->getOutput()->printf("ATARI:             %u\n",me->features->matchFeatureClass(Features::ATARI,board,cfglastdist,cfgsecondlastdist,move));
+  gtpe->getOutput()->printf("BORDERDIST:        %u\n",me->features->matchFeatureClass(Features::BORDERDIST,board,cfglastdist,cfgsecondlastdist,move));
+  gtpe->getOutput()->printf("LASTDIST:          %u\n",me->features->matchFeatureClass(Features::LASTDIST,board,cfglastdist,cfgsecondlastdist,move));
+  gtpe->getOutput()->printf("SECONDLASTDIST:    %u\n",me->features->matchFeatureClass(Features::SECONDLASTDIST,board,cfglastdist,cfgsecondlastdist,move));
+  gtpe->getOutput()->printf("CFGLASTDIST:       %u\n",me->features->matchFeatureClass(Features::CFGLASTDIST,board,cfglastdist,cfgsecondlastdist,move));
+  gtpe->getOutput()->printf("CFGSECONDLASTDIST: %u\n",me->features->matchFeatureClass(Features::CFGSECONDLASTDIST,board,cfglastdist,cfgsecondlastdist,move));
+  gtpe->getOutput()->printf("PATTERN3X3:        0x%04x\n",me->features->matchFeatureClass(Features::PATTERN3X3,board,cfglastdist,cfgsecondlastdist,move));
+  float gamma=me->features->getMoveGamma(board,cfglastdist,cfgsecondlastdist,move);
+  float total=me->features->getBoardGamma(board,cfglastdist,cfgsecondlastdist,col);
   gtpe->getOutput()->printf("Gamma: %.2f/%.2f (%.2f)\n",gamma,total,gamma/total);
   gtpe->getOutput()->endResponse(true);
   
-  me->features->clearCFGDist();
+  if (cfglastdist!=NULL)
+    delete cfglastdist;
+  if (cfgsecondlastdist!=NULL)
+    delete cfgsecondlastdist;
 }
 
 void Engine::gtpFeatureProbDistribution(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
@@ -900,7 +904,12 @@ void Engine::gtpFeatureProbDistribution(void *instance, Gtp::Engine* gtpe, Gtp::
   
   Go::Board *board=me->currentboard;
   Go::Color col=board->nextToMove();
-  float totalgamma=me->features->getBoardGamma(board,col);
+  
+  Go::ObjectBoard<int> *cfglastdist=NULL;
+  Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
+  me->features->computeCFGDist(board,&cfglastdist,&cfgsecondlastdist);
+  
+  float totalgamma=me->features->getBoardGamma(board,cfglastdist,cfgsecondlastdist,col);
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printString("\n");
@@ -909,7 +918,7 @@ void Engine::gtpFeatureProbDistribution(void *instance, Gtp::Engine* gtpe, Gtp::
     for (int x=0;x<me->boardsize;x++)
     {
       Go::Move move=Go::Move(col,Go::Position::xy2pos(x,y,me->boardsize)); 
-      float gamma=me->features->getMoveGamma(board,move);
+      float gamma=me->features->getMoveGamma(board,cfglastdist,cfgsecondlastdist,move);
       if (gamma<=0)
         gtpe->getOutput()->printf("\"\" ");
       else
@@ -951,6 +960,11 @@ void Engine::gtpFeatureProbDistribution(void *instance, Gtp::Engine* gtpe, Gtp::
   }
 
   gtpe->getOutput()->endResponse(true);
+  
+  if (cfglastdist!=NULL)
+    delete cfglastdist;
+  if (cfgsecondlastdist!=NULL)
+    delete cfgsecondlastdist;
 }
 
 void Engine::gtpListAllPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
@@ -1501,7 +1515,7 @@ void Engine::gtpDoBenchmark(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd
   {
     Go::Board *board=new Go::Board(me->boardsize);
     std::list<Go::Move> playoutmoves;
-    me->playout->doPlayout(board,finalscore,NULL,playoutmoves,Go::BLACK,NULL,NULL);
+    me->playout->doPlayout(me->threadpool->getThreadZero()->getSettings(),board,finalscore,NULL,playoutmoves,Go::BLACK,NULL,NULL);
     delete board;
   }
   
@@ -1723,7 +1737,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     
     if (bookmoves.size()>0)
     {
-      int r=rand.getRandomInt(bookmoves.size());
+      int r=threadpool->getThreadZero()->getSettings()->rand->getRandomInt(bookmoves.size());
       int i=0;
       for (std::list<Go::Move>::iterator iter=bookmoves.begin();iter!=bookmoves.end();++iter)
       {
@@ -1789,9 +1803,14 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     params->uct_slow_update_last=0;
     params->uct_last_r2=-1;
     
+    int startplayouts=movetree->getPlayouts();
+    
     params->thread_job=Parameters::TJ_GENMOVE;
     threadpool->startAll();
     threadpool->waitAll();
+    
+    totalplayouts=movetree->getPlayouts()-startplayouts;
+    fprintf(stderr,"tplts: %d\n",totalplayouts);
     
     Tree *besttree=movetree->getRobustChild();
     float bestratio=0;
@@ -1823,6 +1842,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
       gtpe->getOutput()->printfDebug("gogui-gfx: CLEAR\n");
     
     float time_used=timer.elapsed();
+    fprintf(stderr,"tu: %f\n",time_used);
     if (time_used>0)
       playouts_per_milli=(float)totalplayouts/(time_used*1000);
     else
@@ -1871,7 +1891,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     playoutboard->turnSymmetryOff();
     if (params->playout_features_enabled)
       playoutboard->setFeatures(features,params->playout_features_incremental);
-    playout->getPlayoutMove(playoutboard,col,**move);
+    playout->getPlayoutMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,**move);
     delete playoutboard;
     this->makeMove(**move);
   }
@@ -1887,12 +1907,14 @@ void Engine::makeMove(Go::Move move)
   if (params->features_output_competitions)
   {
     bool isawinner=true;
-    features->setupCFGDist(currentboard);
+    Go::ObjectBoard<int> *cfglastdist=NULL;
+    Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
+    features->computeCFGDist(currentboard,&cfglastdist,&cfgsecondlastdist);
     
     if (params->features_output_competitions_mmstyle)
     {
       int p=move.getPosition();
-      std::string featurestring=features->getMatchingFeaturesString(currentboard,move,!params->features_output_competitions_mmstyle);
+      std::string featurestring=features->getMatchingFeaturesString(currentboard,cfglastdist,cfgsecondlastdist,move,!params->features_output_competitions_mmstyle);
       if (featurestring.length()>0)
       {
         gtpe->getOutput()->printfDebug("[features]:# competition (%d,%s)\n",(currentboard->getMovesMade()+1),Go::Position::pos2string(move.getPosition(),boardsize).c_str());
@@ -1914,7 +1936,7 @@ void Engine::makeMove(Go::Move move)
         Go::Move m=Go::Move(col,p);
         if (currentboard->validMove(m) || m==move)
         {
-          std::string featurestring=features->getMatchingFeaturesString(currentboard,m,!params->features_output_competitions_mmstyle);
+          std::string featurestring=features->getMatchingFeaturesString(currentboard,cfglastdist,cfgsecondlastdist,m,!params->features_output_competitions_mmstyle);
           if (featurestring.length()>0)
           {
             gtpe->getOutput()->printfDebug("[features]:%s",Go::Position::pos2string(p,boardsize).c_str());
@@ -1936,13 +1958,16 @@ void Engine::makeMove(Go::Move move)
             gtpe->getOutput()->printfDebug("*");
           else
             gtpe->getOutput()->printfDebug(":");
-          gtpe->getOutput()->printfDebug("%s",features->getMatchingFeaturesString(currentboard,m,!params->features_output_competitions_mmstyle).c_str());
+          gtpe->getOutput()->printfDebug("%s",features->getMatchingFeaturesString(currentboard,cfglastdist,cfgsecondlastdist,m,!params->features_output_competitions_mmstyle).c_str());
           gtpe->getOutput()->printfDebug("\n");
         }
       }
     }
     
-    features->clearCFGDist();
+    if (cfglastdist!=NULL)
+      delete cfglastdist;
+    if (cfgsecondlastdist!=NULL)
+      delete cfgsecondlastdist;
   }
   
   if (params->features_ordered_comparison)
@@ -1955,6 +1980,10 @@ void Engine::makeMove(Go::Move move)
     int bestpos=0;
     Go::Color col=move.getColor();
     int matchedat=0;
+    
+    Go::ObjectBoard<int> *cfglastdist=NULL;
+    Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
+    features->computeCFGDist(currentboard,&cfglastdist,&cfgsecondlastdist);
   
     gtpe->getOutput()->printfDebug("[feature_comparison]:# comparison (%d,%s)\n",(currentboard->getMovesMade()+1),Go::Position::pos2string(move.getPosition(),boardsize).c_str());
     
@@ -1968,7 +1997,7 @@ void Engine::makeMove(Go::Move move)
           Go::Move m=Go::Move(col,p);
           if (currentboard->validMove(m) || m==move)
           {
-            float gamma=features->getMoveGamma(currentboard,m);;
+            float gamma=features->getMoveGamma(currentboard,cfglastdist,cfgsecondlastdist,m);;
             if (gamma>bestgamma)
             {
               bestgamma=gamma;
@@ -1985,7 +2014,7 @@ void Engine::makeMove(Go::Move move)
           Go::Move m=Go::Move(col,Go::Move::PASS);
           if (currentboard->validMove(m) || m==move)
           {
-            float gamma=features->getMoveGamma(currentboard,m);;
+            float gamma=features->getMoveGamma(currentboard,cfglastdist,cfgsecondlastdist,m);;
             if (gamma>bestgamma)
             {
               bestgamma=gamma;
@@ -2018,6 +2047,11 @@ void Engine::makeMove(Go::Move move)
     }
     gtpe->getOutput()->printfDebug("\n");
     gtpe->getOutput()->printfDebug("[feature_comparison]:matched at: %d\n",matchedat);
+    
+    if (cfglastdist!=NULL)
+      delete cfglastdist;
+    if (cfgsecondlastdist!=NULL)
+      delete cfgsecondlastdist;
   }
   
   currentboard->makeMove(move);
@@ -2156,7 +2190,7 @@ void Engine::doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::
   //givenfirstlist=(firstlist==NULL);
   //givensecondlist=(secondlist==NULL);
   
-  Tree *playouttree = movetree->getUrgentChild();
+  Tree *playouttree = movetree->getUrgentChild(settings);
   if (playouttree==NULL)
   {
     if (params->debug_on)
@@ -2188,7 +2222,7 @@ void Engine::doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::
   Go::Color playoutcol=playoutmoves.back().getColor();
   
   float finalscore;
-  playout->doPlayout(playoutboard,finalscore,playouttree,playoutmoves,col,(params->rave_moves>0?firstlist:NULL),(params->rave_moves>0?secondlist:NULL));
+  playout->doPlayout(settings,playoutboard,finalscore,playouttree,playoutmoves,col,(params->rave_moves>0?firstlist:NULL),(params->rave_moves>0?secondlist:NULL));
   
   bool playoutwin=Go::Board::isWinForColor(playoutcol,finalscore);
   bool playoutjigo=(finalscore==0);

@@ -4,6 +4,7 @@
 #include <sstream>
 #include "Parameters.h"
 #include "Engine.h"
+#include "Worker.h"
 
 Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p) : params(prms)
 {
@@ -102,6 +103,9 @@ float Tree::getBasePriorRatio() const
 
 void Tree::addWin(Tree *source)
 {
+  boost::mutex::scoped_lock lock(updatemutex);
+  if (this->isTerminalResult())
+    return;
   wins++;
   playouts++;
   this->passPlayoutUp(true,source);
@@ -110,6 +114,9 @@ void Tree::addWin(Tree *source)
 
 void Tree::addLose(Tree *source)
 {
+  boost::mutex::scoped_lock lock(updatemutex);
+  if (this->isTerminalResult())
+    return;
   playouts++;
   this->passPlayoutUp(false,source);
   this->checkForUnPruning();
@@ -128,12 +135,14 @@ void Tree::addPriorLoses(int n)
 
 void Tree::addRAVEWin()
 {
+  //boost::mutex::scoped_lock lock(updatemutex);
   ravewins++;
   raveplayouts++;
 }
 
 void Tree::addRAVELose()
 {
+  //boost::mutex::scoped_lock lock(updatemutex);
   raveplayouts++;
 }
 
@@ -150,6 +159,7 @@ void Tree::addRAVELoses(int n)
 
 void Tree::addPartialResult(float win, float playout, bool invertwin)
 {
+  boost::mutex::scoped_lock lock(updatemutex);
   //fprintf(stderr,"adding partial result: %f %f %d\n",win,playout,invertwin);
   wins+=win;
   playouts+=playout;
@@ -173,6 +183,16 @@ Tree *Tree::getChild(Go::Move move) const
   return NULL;
 }
 
+bool Tree::allChildrenTerminalLoses()
+{
+  for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
+  {
+    if ((*iter)->isPrimary() && !(*iter)->isTerminalLose()) 
+      return false;
+  }
+  return true;
+}
+
 void Tree::passPlayoutUp(bool win, Tree *source)
 {
   bool passterminal=(this->isTerminal() && !this->isTerminalResult()) || (source!=NULL && source->isTerminalResult());
@@ -181,15 +201,18 @@ void Tree::passPlayoutUp(bool win, Tree *source)
   {
     if (prunedchildren==0)
     {
-      wins=1;
-      playouts=-1;
-      hasTerminalWinrate=true;
+      if (this->allChildrenTerminalLoses())
+      {
+        wins=1;
+        //playouts=-1;
+        hasTerminalWinrate=true;
+      }
     }
     else
       this->unPruneNow();
   }
   
-  if (parent!=NULL)
+  if (!this->isRoot())
   {
     //assume alternating colours going up
     if (win)
@@ -200,11 +223,13 @@ void Tree::passPlayoutUp(bool win, Tree *source)
   
   if (passterminal && (!win || prunedchildren==0))
   {
+    if (win && !this->allChildrenTerminalLoses())
+      return;
     if (win)
       wins=1;
     else
       wins=0;
-    playouts=-1;
+    //playouts=-1;
     hasTerminalWinrate=true;
     //fprintf(stderr,"New Terminal Result %d!\n",win);
     
@@ -215,13 +240,10 @@ void Tree::passPlayoutUp(bool win, Tree *source)
 
 float Tree::getVal() const
 {
-  if (this->isTerminal())
-  {
-    if (playouts==-1)
-      return wins;
-    else
-      return 1;
-  }
+  if (this->isTerminalResult())
+    return wins;
+  else if (this->isTerminal())
+    return 1;
   if (params->rave_moves==0 || raveplayouts==0)
     return this->getBasePriorRatio();
   else if (playouts==0)
@@ -504,13 +526,19 @@ void Tree::checkForUnPruning()
 {
   this->updateUnPruneAt();
   if (this->unPruneMetric()>=unprunenextchildat)
-    this->unPruneNextChild();
+  {
+    boost::mutex::scoped_lock lock(unprunemutex);
+    if (this->unPruneMetric()>=unprunenextchildat)
+      this->unPruneNextChild();
+  }
 }
 
 void Tree::unPruneNow()
 {
-  unprunenextchildat=this->unPruneMetric();
-  this->unPruneNextChild();
+  float tmp=unprunenextchildat=this->unPruneMetric();
+  boost::mutex::scoped_lock lock(unprunemutex);
+  if (tmp==unprunenextchildat)
+    this->unPruneNextChild();
 }
 
 float Tree::getUnPruneFactor() const
@@ -561,7 +589,7 @@ Tree *Tree::getRobustChild(bool descend) const
     return besttree->getRobustChild(descend);
 }
 
-Tree *Tree::getUrgentChild()
+Tree *Tree::getUrgentChild(Worker::Settings *settings)
 {
   float besturgency=0;
   Tree *besttree=NULL;
@@ -576,7 +604,7 @@ Tree *Tree::getUrgentChild()
       float urgency;
       
       if ((*iter)->getPlayouts()==0 && (*iter)->getRAVEPlayouts()==0 && (*iter)->getPriorPlayouts()==0)
-        urgency=(*iter)->getUrgency()+(params->engine->getRandom()->getRandomReal()/1000);
+        urgency=(*iter)->getUrgency()+(settings->rand->getRandomReal()/1000);
       else
       {
         urgency=(*iter)->getUrgency();
@@ -612,7 +640,7 @@ Tree *Tree::getUrgentChild()
   if (besttree->isLeaf())
     return besttree;
   else
-    return besttree->getUrgentChild();
+    return besttree->getUrgentChild(settings);
 }
 
 void Tree::expandLeaf()
@@ -621,6 +649,10 @@ void Tree::expandLeaf()
     return;
   else if (this->isTerminal())
     fprintf(stderr,"WARNING! Trying to expand a terminal node!\n");
+  
+  boost::mutex::scoped_lock lock(expandmutex);
+  if (!this->isLeaf())
+    return;
   
   std::list<Go::Move> startmoves=this->getMovesFromRoot();
   Go::Board *startboard=params->engine->getCurrentBoard()->copy();
@@ -744,18 +776,23 @@ void Tree::expandLeaf()
   
   if (params->uct_progressive_widening_enabled || params->uct_progressive_bias_enabled)
   {
-    params->engine->getFeatures()->setupCFGDist(startboard);
+    Go::ObjectBoard<int> *cfglastdist=NULL;
+    Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
+    params->engine->getFeatures()->computeCFGDist(startboard,&cfglastdist,&cfgsecondlastdist);
     
     for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
     {
       if ((*iter)->isPrimary())
       {
-        float gamma=params->engine->getFeatures()->getMoveGamma(startboard,(*iter)->getMove());
+        float gamma=params->engine->getFeatures()->getMoveGamma(startboard,cfglastdist,cfgsecondlastdist,(*iter)->getMove());
         (*iter)->setFeatureGamma(gamma);
       }
     }
     
-    params->engine->getFeatures()->clearCFGDist();
+    if (cfglastdist!=NULL)
+      delete cfglastdist;
+    if (cfgsecondlastdist!=NULL)
+      delete cfgsecondlastdist;
     
     if (params->uct_progressive_widening_enabled)
     {
@@ -1086,7 +1123,7 @@ void Tree::doSuperkoCheck()
       pruned=true;
       if (!this->isRoot())
       {
-        parent->prunedchildren++;
+        //parent->prunedchildren++;
         if (parent->prunedchildren==parent->children->size())
         {
           parent->unprunenextchildat=0;

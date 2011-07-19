@@ -5,6 +5,7 @@
 #include "Features.h"
 #include "Parameters.h"
 #include "Engine.h"
+#include "Random.h"
 
 Go::BitBoard::BitBoard(int s)
   : size(s),
@@ -1317,6 +1318,10 @@ void Go::Board::updateFeatureGammas()
 {
   if (markchanges && features!=NULL)
   {
+    Go::ObjectBoard<int> *cfglastdist=NULL;
+    Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
+    features->computeCFGDist(this,&cfglastdist,&cfgsecondlastdist);
+    
     if (incfeatures)
     {
       //expand to 3x3 neighbourhood first
@@ -1339,11 +1344,11 @@ void Go::Board::updateFeatureGammas()
       for (int p=0;p<sizedata;p++)
       {
         if (changes3x3->get(p))
-          this->updateFeatureGamma(p);
+          this->updateFeatureGamma(cfglastdist,cfgsecondlastdist,p);
       }
       delete changes3x3;
       
-      this->updateFeatureGamma(0); //pass
+      this->updateFeatureGamma(cfglastdist,cfgsecondlastdist,0); //pass
       
       lastchanges->clear();
     }
@@ -1355,9 +1360,14 @@ void Go::Board::updateFeatureGammas()
       
       for (int p=0;p<sizedata;p++)
       {
-        this->updateFeatureGamma(nexttomove,p);
+        this->updateFeatureGamma(cfglastdist,cfgsecondlastdist,nexttomove,p);
       }
     }
+    
+    if (cfglastdist!=NULL)
+      delete cfglastdist;
+    if (cfgsecondlastdist!=NULL)
+      delete cfgsecondlastdist;
   }
 }
 
@@ -1369,26 +1379,35 @@ void Go::Board::refreshFeatureGammas()
   whitegammas->fill(0);
   lastchanges->clear();
   
+  Go::ObjectBoard<int> *cfglastdist=NULL;
+  Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
+  features->computeCFGDist(this,&cfglastdist,&cfgsecondlastdist);
+  
   for (int p=0;p<sizedata;p++)
   {
-    this->updateFeatureGamma(p);
+    this->updateFeatureGamma(cfglastdist,cfgsecondlastdist,p);
   }
+  
+  if (cfglastdist!=NULL)
+    delete cfglastdist;
+  if (cfgsecondlastdist!=NULL)
+    delete cfgsecondlastdist;
 }
 
-void Go::Board::updateFeatureGamma(int pos)
+void Go::Board::updateFeatureGamma(Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, int pos)
 {
-  this->updateFeatureGamma(Go::BLACK,pos);
-  this->updateFeatureGamma(Go::WHITE,pos);
+  this->updateFeatureGamma(cfglastdist,cfgsecondlastdist,Go::BLACK,pos);
+  this->updateFeatureGamma(cfglastdist,cfgsecondlastdist,Go::WHITE,pos);
 }
 
-void Go::Board::updateFeatureGamma(Go::Color col, int pos)
+void Go::Board::updateFeatureGamma(Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Color col, int pos)
 {
   float oldgamma=(col==Go::BLACK?blackgammas:whitegammas)->get(pos);
   float gamma;
   if (pos==0) //pass
-    gamma=features->getMoveGamma(this,Go::Move(col,Go::Move::PASS));
+    gamma=features->getMoveGamma(this,cfglastdist,cfgsecondlastdist,Go::Move(col,Go::Move::PASS));
   else if (!this->weakEye(nexttomove,pos))
-    gamma=features->getMoveGamma(this,Go::Move(col,pos));
+    gamma=features->getMoveGamma(this,cfglastdist,cfgsecondlastdist,Go::Move(col,pos));
   else
     gamma=0;
   (col==Go::BLACK?blackgammas:whitegammas)->set(pos,gamma);
@@ -1715,6 +1734,7 @@ Go::ZobristTable::ZobristTable(Parameters *prms, int sz)
   : params(prms),
     size(sz),
     sizedata(1+(sz+1)*(sz+2)),
+    rand(new Random()),
     blackhashes(new Go::ZobristHash[sizedata]),
     whitehashes(new Go::ZobristHash[sizedata])
 {
@@ -1727,13 +1747,14 @@ Go::ZobristTable::ZobristTable(Parameters *prms, int sz)
 
 Go::ZobristTable::~ZobristTable()
 {
+  delete rand;
   delete[] blackhashes;
   delete[] whitehashes;
 }
 
 Go::ZobristHash Go::ZobristTable::getRandomHash()
 {
-  return ((Go::ZobristHash)params->engine->getRandom()->getRandomInt() << 32) | ((Go::ZobristHash)params->engine->getRandom()->getRandomInt());
+  return ((Go::ZobristHash)rand->getRandomInt() << 32) | ((Go::ZobristHash)rand->getRandomInt());
 }
 
 Go::ZobristHash Go::ZobristTable::getHash(Go::Color col, int pos) const
