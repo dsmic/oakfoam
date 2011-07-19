@@ -68,6 +68,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
     currentboard->turnSymmetryOn();
   else
     currentboard->turnSymmetryOff();
+  params->addParameter("tree","uct_virtual_loss",&(params->uct_virtual_loss),UCT_VIRTUAL_LOSS);
   params->addParameter("tree","uct_atari_prior",&(params->uct_atari_prior),UCT_ATARI_PRIOR);
   params->addParameter("tree","uct_pattern_prior",&(params->uct_pattern_prior),UCT_PATTERN_PRIOR);
   params->addParameter("tree","uct_progressive_widening_enabled",&(params->uct_progressive_widening_enabled),UCT_PROGRESSIVE_WIDENING_ENABLED);
@@ -1810,7 +1811,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     threadpool->waitAll();
     
     totalplayouts=movetree->getPlayouts()-startplayouts;
-    fprintf(stderr,"tplts: %d\n",totalplayouts);
+    //fprintf(stderr,"tplts: %d\n",totalplayouts);
     
     Tree *besttree=movetree->getRobustChild();
     float bestratio=0;
@@ -1842,7 +1843,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
       gtpe->getOutput()->printfDebug("gogui-gfx: CLEAR\n");
     
     float time_used=timer.elapsed();
-    fprintf(stderr,"tu: %f\n",time_used);
+    //fprintf(stderr,"tu: %f\n",time_used);
     if (time_used>0)
       playouts_per_milli=(float)totalplayouts/(time_used*1000);
     else
@@ -2285,6 +2286,9 @@ void Engine::doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::
         playouttree->updateRAVE(wincol,secondlist,firstlist);
     }
   }
+  
+  if (params->uct_virtual_loss)
+    playouttree->removeVirtualLoss();
   
   if (settings->thread->getID()==0)
   {

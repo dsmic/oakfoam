@@ -69,6 +69,7 @@ class Parameters
     int uct_expand_after;
     bool uct_keep_subtree;
     bool uct_symmetry_use;
+    bool uct_virtual_loss;
     int uct_atari_prior;
     int uct_pattern_prior;
     bool uct_progressive_widening_enabled;

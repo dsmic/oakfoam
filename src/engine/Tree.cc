@@ -122,6 +122,20 @@ void Tree::addLose(Tree *source)
   this->checkForUnPruning();
 }
 
+void Tree::addVirtualLoss()
+{
+  boost::mutex::scoped_lock lock(updatemutex);
+  playouts++;
+}
+
+void Tree::removeVirtualLoss()
+{
+  boost::mutex::scoped_lock lock(updatemutex);
+  playouts--;
+  if (!this->isRoot() && !parent->isRoot())
+    parent->removeVirtualLoss();
+}
+
 void Tree::addPriorWins(int n)
 {
   priorwins+=n;
@@ -636,6 +650,9 @@ Tree *Tree::getUrgentChild(Worker::Settings *settings)
     if (besttree->getPlayouts()>params->uct_expand_after)
       besttree->expandLeaf();
   }
+  
+  if (params->uct_virtual_loss)
+    besttree->addVirtualLoss();
   
   if (besttree->isLeaf())
     return besttree;

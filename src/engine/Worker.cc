@@ -45,9 +45,9 @@ void Worker::Thread::run()
     if (!alive)
       break;
     running=true;
-    fprintf(stderr,"run start %d %lu\n",id,settings->rand->getSeed());
+    //fprintf(stderr,"run start %d %lu\n",id,settings->rand->getSeed());
     engine->doThreadWork(settings);
-    fprintf(stderr,"run done\n");
+    //fprintf(stderr,"run done\n");
     running=false;
     delete lock;
   }

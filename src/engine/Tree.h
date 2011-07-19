@@ -67,6 +67,8 @@ class Tree
     void addChild(Tree *node);
     void addWin(Tree *source=NULL);
     void addLose(Tree *source=NULL);
+    void addVirtualLoss();
+    void removeVirtualLoss();
     void addPriorWins(int n);
     void addPriorLoses(int n);
     void addRAVEWin();
