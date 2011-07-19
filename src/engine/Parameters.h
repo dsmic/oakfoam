@@ -31,6 +31,15 @@ class Parameters
     
     bool book_use;
     
+    int thread_count;
+    enum ThreadJob
+    {
+      TJ_GENMOVE,
+      TJ_PONDER,
+      TJ_DONPLTS
+    };
+    Parameters::ThreadJob thread_job;
+    
     int playouts_per_move;
     int playouts_per_move_min;
     int playouts_per_move_max;

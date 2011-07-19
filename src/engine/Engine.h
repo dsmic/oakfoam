@@ -62,6 +62,8 @@
 #define PONDERING_ENABLED false
 #define PONDERING_PLAYOUTS_MAX 100000
 
+#define THREAD_COUNT 1
+
 #define INTERRUPTS_ENABLED false
 
 #define SUREWIN_THRESHOLD 0.90
@@ -100,6 +102,7 @@
 #include "Book.h"
 #include "Playout.h"
 #include "Benson.h"
+#include "Worker.h"
 #include "../gtp/Gtp.h"
 
 class Engine
@@ -134,6 +137,10 @@ class Engine
     void stopThinking() { stopthinking=true; };
     static void ponderWrapper(void *instance) { ((Engine*)instance)->ponder(); };
     void ponder();
+    void generateThread(Worker::Settings *settings);
+    void ponderThread(Worker::Settings *settings);
+    void doNPlayoutsThread(Worker::Settings *settings);
+    void doThreadWork(Worker::Settings *settings);
     
     static void updateParameterWrapper(void *instance, std::string id)
     {
@@ -218,6 +225,7 @@ class Engine
     Playout *playout;
     volatile bool stopthinking;
     volatile bool stoppondering;
+    Worker::Pool *threadpool;
     
     void addGtpCommands();
     
@@ -226,7 +234,7 @@ class Engine
     
     void doNPlayouts(int n);
     bool writeSGF(std::string filename, Go::Board *board, Tree *tree);
-    void doPlayout(Go::BitBoard *firstlist, Go::BitBoard *secondlist);
+    void doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::BitBoard *secondlist);
     void displayPlayoutLiveGfx(int totalplayouts=-1, bool livegfx=true);
     void doSlowUpdate();
     

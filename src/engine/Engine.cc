@@ -35,6 +35,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   
   params->addParameter("general","book_use",&(params->book_use),BOOK_USE);
   
+  params->addParameter("general","thread_count",&(params->thread_count),THREAD_COUNT,&Engine::updateParameterWrapper,this);
+  
   params->addParameter("general","playouts_per_move",&(params->playouts_per_move),PLAYOUTS_PER_MOVE);
   params->addParameter("general","playouts_per_move_max",&(params->playouts_per_move_max),PLAYOUTS_PER_MOVE_MAX);
   params->addParameter("general","playouts_per_move_min",&(params->playouts_per_move_min),PLAYOUTS_PER_MOVE_MIN);
@@ -152,10 +154,14 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   this->clearMoveTree();
   
   params->uct_last_r2=0;
+  
+  params->thread_job=Parameters::TJ_GENMOVE;
+  threadpool = new Worker::Pool(params);
 }
 
 Engine::~Engine()
 {
+  delete threadpool;
   delete circdict;
   delete features;
   delete patterntable;
@@ -242,6 +248,14 @@ void Engine::updateParameter(std::string id)
   else if (id=="pondering_enabled")
   {
     gtpe->setPonderEnabled(params->pondering_enabled);
+  }
+  else if (id=="thread_count")
+  {
+    if (threadpool->getSize()!=params->thread_count)
+    {
+      delete threadpool;
+      threadpool = new Worker::Pool(params);
+    }
   }
 }
 
@@ -1736,7 +1750,6 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
   {
     boost::timer timer;
     int totalplayouts=0;
-    int livegfxupdate=0;
     float time_allocated;
     float playouts_per_milli;
     bool early_stop=false;
@@ -1776,75 +1789,9 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     params->uct_slow_update_last=0;
     params->uct_last_r2=-1;
     
-    Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
-    Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
-    
-    for (int i=0;i<params->playouts_per_move_max;i++)
-    {
-      if (i>=params->playouts_per_move && time_allocated==0)
-        break;
-      else if (i>=params->playouts_per_move_min && time_allocated>0 && timer.elapsed()>time_allocated)
-        break;
-      else if (movetree->isTerminalResult())
-      {
-        gtpe->getOutput()->printfDebug("SOLVED: found 100%% sure result after %d plts!\n",totalplayouts);
-        early_stop=true;
-        break;
-      }
-      else if (stopthinking)
-      {
-        early_stop=true;
-        break;
-      }
-      
-      this->doPlayout(firstlist,secondlist);
-      totalplayouts++;
-      
-      if (params->uct_stop_early && params->uct_slow_update_last==0)
-      {
-        Tree *besttree=movetree->getRobustChild();
-        if (besttree!=NULL)
-        {
-          float currentpart=(besttree->getPlayouts()-besttree->secondBestPlayouts())/totalplayouts;
-          float overallratio,overallratiotimed;
-          if (time_allocated>0) // timed search
-          {
-            overallratio=(float)params->playouts_per_move_max/totalplayouts;
-            overallratiotimed=(float)(time_allocated+TIME_RESOLUTION)/timer.elapsed();
-          }
-          else
-          {
-            overallratio=(float)params->playouts_per_move/totalplayouts;
-            overallratiotimed=0;
-          }
-          
-          if (((overallratio-1)<currentpart) || ((time_allocated>0) && ((overallratiotimed-1)<currentpart)))
-          {
-            gtpe->getOutput()->printfDebug("best move cannot change! (%.3f %.3f)\n",currentpart,overallratio);
-            early_stop=true;
-            break;
-          }
-        }
-      }
-      
-      if (params->livegfx_on)
-      {
-        if (livegfxupdate>=(params->livegfx_update_playouts-1))
-        {
-          livegfxupdate=0;
-          
-          this->displayPlayoutLiveGfx(totalplayouts);
-          
-          boost::timer delay;
-          while (delay.elapsed()<params->livegfx_delay) {}
-        }
-        else
-          livegfxupdate++;
-      }
-    }
-    
-    delete firstlist;
-    delete secondlist;
+    params->thread_job=Parameters::TJ_GENMOVE;
+    threadpool->startAll();
+    threadpool->waitAll();
     
     Tree *besttree=movetree->getRobustChild();
     float bestratio=0;
@@ -2176,52 +2123,25 @@ void Engine::doNPlayouts(int n)
 {
   if (params->move_policy==Parameters::MP_UCT || params->move_policy==Parameters::MP_ONEPLY)
   {
-    int livegfxupdate=0;
-    
     stopthinking=false;
     
     this->allowContinuedPlay();
     
-    Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
-    Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
+    int oldplts=params->playouts_per_move;
+    params->playouts_per_move=n;
     
-    for (int i=0;i<n;i++)
-    {
-      if (movetree->isTerminalResult())
-      {
-        gtpe->getOutput()->printfDebug("SOLVED! found 100%% sure result after %d plts!\n",i);
-        break;
-      }
-      else if (stopthinking)
-        break;
-      
-      this->doPlayout(firstlist,secondlist);
-      
-      if (params->livegfx_on)
-      {
-        if (livegfxupdate>=(params->livegfx_update_playouts-1))
-        {
-          livegfxupdate=0;
-          
-          this->displayPlayoutLiveGfx(i+1);
-          
-          boost::timer delay;
-          while (delay.elapsed()<params->livegfx_delay) {}
-        }
-        else
-          livegfxupdate++;
-      }
-    }
+    params->thread_job=Parameters::TJ_DONPLTS;
+    threadpool->startAll();
+    threadpool->waitAll();
     
-    delete firstlist;
-    delete secondlist;
+    params->playouts_per_move=oldplts;
     
     if (params->livegfx_on)
       gtpe->getOutput()->printfDebug("gogui-gfx: CLEAR\n");
   }
 }
 
-void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
+void Engine::doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::BitBoard *secondlist)
 {
   //bool givenfirstlist,givensecondlist;
   Go::Color col=currentboard->nextToMove();
@@ -2332,12 +2252,15 @@ void Engine::doPlayout(Go::BitBoard *firstlist,Go::BitBoard *secondlist)
     }
   }
   
-  params->uct_slow_update_last++;
-  if (params->uct_slow_update_last>=params->uct_slow_update_interval)
+  if (settings->thread->getID()==0)
   {
-    params->uct_slow_update_last=0;
-    
-    this->doSlowUpdate();
+    params->uct_slow_update_last++;
+    if (params->uct_slow_update_last>=params->uct_slow_update_interval)
+    {
+      params->uct_slow_update_last=0;
+      
+      this->doSlowUpdate();
+    }
   }
   
   delete playoutboard;
@@ -2483,6 +2406,24 @@ void Engine::ponder()
     this->allowContinuedPlay();
     params->uct_slow_update_last=0;
     
+    params->thread_job=Parameters::TJ_PONDER;
+    threadpool->startAll();
+    threadpool->waitAll();
+    //fprintf(stderr,"pondering done! %d %.0f\n",playouts,movetree->getPlayouts());
+  }
+}
+
+void Engine::ponderThread(Worker::Settings *settings)
+{
+  if (!(params->pondering_enabled) || (currentboard->getMovesMade()<=0) || (currentboard->getPassesPlayed()>=2) || (currentboard->getLastMove().isResign()) || (book->getMoves(boardsize,movehistory).size()>0))
+    return;
+  
+  if (params->move_policy==Parameters::MP_UCT || params->move_policy==Parameters::MP_ONEPLY)
+  {
+    //fprintf(stderr,"pondering starting!\n");
+    this->allowContinuedPlay();
+    params->uct_slow_update_last=0;
+    
     Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
     Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
     
@@ -2495,7 +2436,7 @@ void Engine::ponder()
         break;
       }
       
-      this->doPlayout(firstlist,secondlist);
+      this->doPlayout(settings,firstlist,secondlist);
       playouts++;
     }
     
@@ -2524,6 +2465,154 @@ void Engine::doSlowUpdate()
     }
     
     params->uct_last_r2=besttree->secondBestPlayoutRatio();
+  }
+}
+
+void Engine::generateThread(Worker::Settings *settings)
+{
+  Go::Color col=currentboard->nextToMove();
+  boost::timer timer;
+  int totalplayouts=0;
+  int livegfxupdate=0;
+  float time_allocated;
+  bool early_stop=false;
+  
+  if (!time->isNoTiming())
+  {
+    if (params->time_ignore)
+      time_allocated=0;
+    else
+      time_allocated=time->getAllocatedTimeForNextTurn(col);
+  }
+  else
+    time_allocated=0;
+  
+  Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
+  Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
+  
+  for (int i=0;i<params->playouts_per_move_max;i++)
+  {
+    if (i>=params->playouts_per_move && time_allocated==0)
+      break;
+    else if (i>=params->playouts_per_move_min && time_allocated>0 && timer.elapsed()>time_allocated)
+      break;
+    else if (movetree->isTerminalResult())
+    {
+      gtpe->getOutput()->printfDebug("SOLVED: found 100%% sure result after %d plts!\n",totalplayouts);
+      early_stop=true;
+      break;
+    }
+    else if (stopthinking)
+    {
+      early_stop=true;
+      break;
+    }
+    
+    this->doPlayout(settings,firstlist,secondlist);
+    totalplayouts++;
+    
+    if (settings->thread->getID()==0 && params->uct_stop_early && params->uct_slow_update_last==0)
+    {
+      Tree *besttree=movetree->getRobustChild();
+      if (besttree!=NULL)
+      {
+        float currentpart=(besttree->getPlayouts()-besttree->secondBestPlayouts())/totalplayouts;
+        float overallratio,overallratiotimed;
+        if (time_allocated>0) // timed search
+        {
+          overallratio=(float)params->playouts_per_move_max/totalplayouts;
+          overallratiotimed=(float)(time_allocated+TIME_RESOLUTION)/timer.elapsed();
+        }
+        else
+        {
+          overallratio=(float)params->playouts_per_move/totalplayouts;
+          overallratiotimed=0;
+        }
+        
+        if (((overallratio-1)<currentpart) || ((time_allocated>0) && ((overallratiotimed-1)<currentpart)))
+        {
+          gtpe->getOutput()->printfDebug("best move cannot change! (%.3f %.3f)\n",currentpart,overallratio);
+          early_stop=true;
+          break;
+        }
+      }
+    }
+    
+    if (settings->thread->getID()==0 && params->livegfx_on)
+    {
+      if (livegfxupdate>=(params->livegfx_update_playouts-1))
+      {
+        livegfxupdate=0;
+        
+        this->displayPlayoutLiveGfx(totalplayouts);
+        
+        boost::timer delay;
+        while (delay.elapsed()<params->livegfx_delay) {}
+      }
+      else
+        livegfxupdate++;
+    }
+  }
+  
+  delete firstlist;
+  delete secondlist;
+  
+  stopthinking=true;
+}
+
+void Engine::doNPlayoutsThread(Worker::Settings *settings)
+{
+  int livegfxupdate=0;
+  Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
+  Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
+  
+  for (int i=0;i<params->playouts_per_move;i++)
+  {
+    if (movetree->isTerminalResult())
+    {
+      gtpe->getOutput()->printfDebug("SOLVED! found 100%% sure result after %d plts!\n",i);
+      break;
+    }
+    else if (stopthinking)
+      break;
+    
+    this->doPlayout(settings,firstlist,secondlist);
+    
+    if (settings->thread->getID()==0 && params->livegfx_on)
+    {
+      if (livegfxupdate>=(params->livegfx_update_playouts-1))
+      {
+        livegfxupdate=0;
+        
+        this->displayPlayoutLiveGfx(i+1);
+        
+        boost::timer delay;
+        while (delay.elapsed()<params->livegfx_delay) {}
+      }
+      else
+        livegfxupdate++;
+    }
+  }
+  
+  delete firstlist;
+  delete secondlist;
+  
+  stopthinking=true;
+}
+
+void Engine::doThreadWork(Worker::Settings *settings)
+{
+  switch (params->thread_job)
+  {
+    case Parameters::TJ_GENMOVE:
+      this->generateThread(settings);
+      break;
+    case Parameters::TJ_PONDER:
+      this->ponderThread(settings);
+      break;
+    case Parameters::TJ_DONPLTS:
+      this->doNPlayoutsThread(settings);
+      break;
   }
 }
 
