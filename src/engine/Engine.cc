@@ -1767,8 +1767,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     int totalplayouts=0;
     float time_allocated;
     float playouts_per_milli;
-    bool early_stop=false;
     
+    params->early_stop_occured=false;
     stopthinking=false;
     
     if (!time->isNoTiming())
@@ -1860,7 +1860,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
       if (time->stonesLeft(col)>0)
         ss << " s:"<<time->stonesLeft(col);
     }
-    if (!time->isNoTiming() || early_stop)
+    if (!time->isNoTiming() || params->early_stop_occured)
       ss << " plts:"<<totalplayouts;
     ss << " ppms:"<<std::setprecision(2)<<playouts_per_milli;
     ss << " rd:"<<std::setprecision(2)<<ratiodelta;
@@ -2513,7 +2513,6 @@ void Engine::generateThread(Worker::Settings *settings)
   int totalplayouts=0;
   int livegfxupdate=0;
   float time_allocated;
-  bool early_stop=false;
   
   if (!time->isNoTiming())
   {
@@ -2537,12 +2536,12 @@ void Engine::generateThread(Worker::Settings *settings)
     else if (movetree->isTerminalResult())
     {
       gtpe->getOutput()->printfDebug("SOLVED: found 100%% sure result after %d plts!\n",totalplayouts);
-      early_stop=true;
+      params->early_stop_occured=true;
       break;
     }
     else if (stopthinking)
     {
-      early_stop=true;
+      params->early_stop_occured=true;
       break;
     }
     
@@ -2570,7 +2569,8 @@ void Engine::generateThread(Worker::Settings *settings)
         if (((overallratio-1)<currentpart) || ((time_allocated>0) && ((overallratiotimed-1)<currentpart)))
         {
           gtpe->getOutput()->printfDebug("best move cannot change! (%.3f %.3f)\n",currentpart,overallratio);
-          early_stop=true;
+          stopthinking=true;
+          params->early_stop_occured=true;
           break;
         }
       }
@@ -2595,7 +2595,7 @@ void Engine::generateThread(Worker::Settings *settings)
   delete firstlist;
   delete secondlist;
   
-  stopthinking=true;
+  //stopthinking=true;
 }
 
 void Engine::doNPlayoutsThread(Worker::Settings *settings)

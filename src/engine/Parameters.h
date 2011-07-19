@@ -94,6 +94,7 @@ class Parameters
     int uct_slow_update_last;
     
     bool uct_stop_early;
+    bool early_stop_occured;
     float uct_last_r2;
     
     bool pondering_enabled;
