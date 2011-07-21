@@ -2058,7 +2058,10 @@ void Engine::makeMove(Go::Move move)
   
   currentboard->makeMove(move);
   movehistory->push_back(move);
-  hashtree->addHash(currentboard->getZobristHash(zobristtable));
+  Go::ZobristHash hash=currentboard->getZobristHash(zobristtable);
+  if (hashtree->hasHash(hash))
+    gtpe->getOutput()->printfDebug("WARNING! move is a superko violation\n");
+  hashtree->addHash(hash);
   params->uct_slow_update_last=0;
   if (params->uct_keep_subtree)
     this->chooseSubTree(move);

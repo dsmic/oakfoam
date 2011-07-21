@@ -394,6 +394,8 @@ std::string Tree::toSGFString() const
       ss<<"Terminal Win\n";
     else if (this->isTerminalLose())
       ss<<"Terminal Lose\n";
+    if (this->isSuperkoViolation())
+      ss<<"Superko Violation!\n";
     ss<<"]";
   }
   
@@ -571,7 +573,7 @@ Tree *Tree::getRobustChild(bool descend) const
   
   for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
   {
-    if (!(*iter)->isTerminalLose() && ((*iter)->getPlayouts()>bestsims || (*iter)->isTerminalWin() || besttree==NULL))
+    if (!(*iter)->isTerminalLose() && !(*iter)->isSuperkoViolation() && ((*iter)->getPlayouts()>bestsims || (*iter)->isTerminalWin() || besttree==NULL))
     {
       besttree=(*iter);
       bestsims=(*iter)->getPlayouts();
@@ -1129,7 +1131,7 @@ void Tree::doSuperkoCheck()
       pruned=true;
       if (!this->isRoot())
       {
-        //parent->prunedchildren++;
+        parent->prunedchildren++;
         if (parent->prunedchildren==parent->children->size())
         {
           parent->unprunenextchildat=0;
