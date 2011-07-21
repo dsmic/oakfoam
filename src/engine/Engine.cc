@@ -1806,6 +1806,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     
     int startplayouts=movetree->getPlayouts();
     
+    params->uct_initial_playouts=startplayouts;
     params->thread_job=Parameters::TJ_GENMOVE;
     threadpool->startAll();
     threadpool->waitAll();
@@ -2510,7 +2511,7 @@ void Engine::generateThread(Worker::Settings *settings)
 {
   Go::Color col=currentboard->nextToMove();
   boost::timer timer;
-  int totalplayouts=0;
+  int threadplayouts=0;
   int livegfxupdate=0;
   float time_allocated;
   
@@ -2527,15 +2528,15 @@ void Engine::generateThread(Worker::Settings *settings)
   Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
   Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
   
-  for (int i=0;i<params->playouts_per_move_max;i++)
+  for (int i=0;i<(params->playouts_per_move_max/params->thread_count);i++)
   {
-    if (i>=params->playouts_per_move && time_allocated==0)
+    if (i>=(params->playouts_per_move/params->thread_count) && time_allocated==0)
       break;
-    else if (i>=params->playouts_per_move_min && time_allocated>0 && timer.elapsed()>time_allocated)
+    else if (i>=(params->playouts_per_move_min/params->thread_count) && time_allocated>0 && timer.elapsed()>time_allocated)
       break;
     else if (movetree->isTerminalResult())
     {
-      gtpe->getOutput()->printfDebug("SOLVED: found 100%% sure result after %d plts!\n",totalplayouts);
+      gtpe->getOutput()->printfDebug("SOLVED: found 100%% sure result after %d plts in this thread!\n",threadplayouts);
       params->early_stop_occured=true;
       break;
     }
@@ -2546,13 +2547,14 @@ void Engine::generateThread(Worker::Settings *settings)
     }
     
     this->doPlayout(settings,firstlist,secondlist);
-    totalplayouts++;
+    threadplayouts++;
     
     if (settings->thread->getID()==0 && params->uct_stop_early && params->uct_slow_update_last==0)
     {
       Tree *besttree=movetree->getRobustChild();
       if (besttree!=NULL)
       {
+        int totalplayouts=movetree->getPlayouts()-params->uct_initial_playouts;
         float currentpart=(besttree->getPlayouts()-besttree->secondBestPlayouts())/totalplayouts;
         float overallratio,overallratiotimed;
         if (time_allocated>0) // timed search
@@ -2582,7 +2584,7 @@ void Engine::generateThread(Worker::Settings *settings)
       {
         livegfxupdate=0;
         
-        this->displayPlayoutLiveGfx(totalplayouts);
+        this->displayPlayoutLiveGfx(threadplayouts);
         
         boost::timer delay;
         while (delay.elapsed()<params->livegfx_delay) {}
@@ -2604,7 +2606,7 @@ void Engine::doNPlayoutsThread(Worker::Settings *settings)
   Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
   Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
   
-  for (int i=0;i<params->playouts_per_move;i++)
+  for (int i=0;i<(params->playouts_per_move/params->thread_count);i++)
   {
     if (movetree->isTerminalResult())
     {

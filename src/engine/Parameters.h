@@ -96,6 +96,7 @@ class Parameters
     bool uct_stop_early;
     bool early_stop_occured;
     float uct_last_r2;
+    int uct_initial_playouts;
     
     bool pondering_enabled;
     int pondering_playouts_max;
