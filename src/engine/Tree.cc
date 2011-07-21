@@ -969,7 +969,7 @@ Tree *Tree::getSecondRobustChild(const Tree *firstchild) const
     firstchild=this->getRobustChild();
   
   Tree *besttree=NULL;
-  int bestsims=0;
+  float bestsims=0;
   
   for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
   {
@@ -1084,7 +1084,7 @@ float Tree::getCriticality() const
     return 0;
   else
   {
-    int plts=(params->uct_criticality_siblings?parent->playouts:playouts);
+    int plts=(int)(params->uct_criticality_siblings?parent->playouts:playouts);
     if (plts==0)
       return 0;
     float ratio=(params->uct_criticality_siblings?1-parent->getRatio():this->getRatio());
@@ -1109,7 +1109,7 @@ float Tree::getTerritoryOwner() const
     return 0;
   else
   {
-    int plts=(params->uct_criticality_siblings?parent->playouts:playouts);
+    int plts=(int)(params->uct_criticality_siblings?parent->playouts:playouts);
     if (plts==0)
       return 0;
     return (float)(ownedblack-ownedwhite)/plts;

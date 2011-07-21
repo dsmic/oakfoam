@@ -1548,7 +1548,7 @@ void Engine::gtpShowCriticality(void *instance, Gtp::Engine* gtpe, Gtp::Command*
       else
       {
         float crit=tree->getCriticality();
-        int plts=(me->params->uct_criticality_siblings?me->movetree->getPlayouts():tree->getPlayouts());
+        float plts=(me->params->uct_criticality_siblings?me->movetree->getPlayouts():tree->getPlayouts());
         if (crit==0 && (!move.isNormal() || plts==0))
           gtpe->getOutput()->printf("\"\" ");
         else
@@ -1805,14 +1805,14 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     params->uct_slow_update_last=0;
     params->uct_last_r2=-1;
     
-    int startplayouts=movetree->getPlayouts();
+    int startplayouts=(int)movetree->getPlayouts();
     
     params->uct_initial_playouts=startplayouts;
     params->thread_job=Parameters::TJ_GENMOVE;
     threadpool->startAll();
     threadpool->waitAll();
     
-    totalplayouts=movetree->getPlayouts()-startplayouts;
+    totalplayouts=(int)movetree->getPlayouts()-startplayouts;
     //fprintf(stderr,"tplts: %d\n",totalplayouts);
     
     Tree *besttree=movetree->getRobustChild();
@@ -2558,7 +2558,7 @@ void Engine::generateThread(Worker::Settings *settings)
       Tree *besttree=movetree->getRobustChild();
       if (besttree!=NULL)
       {
-        int totalplayouts=movetree->getPlayouts()-params->uct_initial_playouts;
+        int totalplayouts=(int)(movetree->getPlayouts()-params->uct_initial_playouts);
         float currentpart=(besttree->getPlayouts()-besttree->secondBestPlayouts())/totalplayouts;
         float overallratio,overallratiotimed;
         if (time_allocated>0) // timed search
