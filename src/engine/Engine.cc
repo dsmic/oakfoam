@@ -7,7 +7,6 @@
 #include <sstream>
 #include <iomanip>
 #include <boost/timer.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
 
 Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
 {
