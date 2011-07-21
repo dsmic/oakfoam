@@ -7,6 +7,7 @@
 #include <sstream>
 #include <iomanip>
 #include <boost/timer.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
 {
@@ -1510,7 +1511,7 @@ void Engine::gtpDoBenchmark(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd
   else
     games=cmd->getIntArg(0);
   
-  boost::timer timer;
+  boost::posix_time::ptime time_start=me->timeNow();
   float finalscore;
   for (int i=0;i<games;i++)
   {
@@ -1520,7 +1521,7 @@ void Engine::gtpDoBenchmark(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd
     delete board;
   }
   
-  float rate=(float)games/timer.elapsed()/1000;
+  float rate=(float)games/me->timeSince(time_start)/1000;
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printf("ppms: %.2f",rate);
@@ -1763,7 +1764,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
   }
   if (params->move_policy==Parameters::MP_UCT || params->move_policy==Parameters::MP_ONEPLY)
   {
-    boost::timer timer;
+    boost::posix_time::ptime time_start=this->timeNow();
     int totalplayouts=0;
     float time_allocated;
     float playouts_per_milli;
@@ -1843,7 +1844,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     if (params->livegfx_on)
       gtpe->getOutput()->printfDebug("gogui-gfx: CLEAR\n");
     
-    float time_used=timer.elapsed();
+    float time_used=this->timeSince(time_start);
     //fprintf(stderr,"tu: %f\n",time_used);
     if (time_used>0)
       playouts_per_milli=(float)totalplayouts/(time_used*1000);
@@ -2512,8 +2513,8 @@ void Engine::doSlowUpdate()
 
 void Engine::generateThread(Worker::Settings *settings)
 {
+  boost::posix_time::ptime time_start=this->timeNow();
   Go::Color col=currentboard->nextToMove();
-  boost::timer timer;
   int threadplayouts=0;
   int livegfxupdate=0;
   float time_allocated;
@@ -2535,7 +2536,7 @@ void Engine::generateThread(Worker::Settings *settings)
   {
     if (i>=(params->playouts_per_move/params->thread_count) && time_allocated==0)
       break;
-    else if (i>=(params->playouts_per_move_min/params->thread_count) && time_allocated>0 && timer.elapsed()>time_allocated)
+    else if (i>=(params->playouts_per_move_min/params->thread_count) && time_allocated>0 && this->timeSince(time_start)>time_allocated)
       break;
     else if (movetree->isTerminalResult())
     {
@@ -2563,7 +2564,7 @@ void Engine::generateThread(Worker::Settings *settings)
         if (time_allocated>0) // timed search
         {
           overallratio=(float)params->playouts_per_move_max/totalplayouts;
-          overallratiotimed=(float)(time_allocated+TIME_RESOLUTION)/timer.elapsed();
+          overallratiotimed=(float)(time_allocated+TIME_RESOLUTION)/this->timeSince(time_start);
         }
         else
         {
