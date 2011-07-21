@@ -2060,7 +2060,7 @@ void Engine::makeMove(Go::Move move)
   currentboard->makeMove(move);
   movehistory->push_back(move);
   Go::ZobristHash hash=currentboard->getZobristHash(zobristtable);
-  if (hashtree->hasHash(hash))
+  if (move.isNormal() && hashtree->hasHash(hash))
     gtpe->getOutput()->printfDebug("WARNING! move is a superko violation\n");
   hashtree->addHash(hash);
   params->uct_slow_update_last=0;
@@ -2640,8 +2640,6 @@ void Engine::doNPlayoutsThread(Worker::Settings *settings)
   
   delete firstlist;
   delete secondlist;
-  
-  stopthinking=true;
 }
 
 void Engine::doThreadWork(Worker::Settings *settings)
