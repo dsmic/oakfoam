@@ -19,6 +19,7 @@ Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p) : params(
   priorwins=0;
   symmetryprimary=NULL;
   hasTerminalWinrate=false;
+  hasTerminalWin=false;
   terminaloverride=false;
   pruned=false;
   prunedchildren=0;
@@ -71,8 +72,8 @@ float Tree::getRatio() const
 {
   if (playouts>0)
     return (float)wins/playouts;
-  else if (hasTerminalWinrate)
-    return wins;
+  else if (this->isTerminalResult())
+    return (hasTerminalWin?1:0);
   else
     return 0;
 }
@@ -175,8 +176,11 @@ void Tree::addPartialResult(float win, float playout, bool invertwin)
 {
   boost::mutex::scoped_lock lock(updatemutex);
   //fprintf(stderr,"adding partial result: %f %f %d\n",win,playout,invertwin);
-  wins+=win;
-  playouts+=playout;
+  if (!this->isTerminalResult())
+  {
+    wins+=win;
+    playouts+=playout;
+  }
   if (!this->isRoot())
   {
     if (invertwin)
@@ -199,31 +203,34 @@ Tree *Tree::getChild(Go::Move move) const
 
 bool Tree::allChildrenTerminalLoses()
 {
+  //fprintf(stderr,"check if all children of %s are losses: ",move.toString(params->board_size).c_str());
   for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
   {
-    if ((*iter)->isPrimary() && !(*iter)->isTerminalLose()) 
+    if ((*iter)->isPrimary() && !(*iter)->isTerminalLose())
+    {
+      //fprintf(stderr,"false\n");
       return false;
+    }
   }
+  //fprintf(stderr,"true (%d)\n",children->size());
   return true;
 }
 
 void Tree::passPlayoutUp(bool win, Tree *source)
 {
-  bool passterminal=(this->isTerminal() && !this->isTerminalResult()) || (source!=NULL && source->isTerminalResult());
+  bool passterminal=(!this->isTerminalResult()) && (this->isTerminal() || (source!=NULL && source->isTerminalResult()));
   
-  if (passterminal && win)
+  if (passterminal)
   {
-    if (prunedchildren==0)
+    if (source!=NULL)
+      win=!source->isTerminalWin();
+    if (!win || this->allChildrenTerminalLoses())
     {
-      if (this->allChildrenTerminalLoses())
-      {
-        wins=1;
-        //playouts=-1;
-        hasTerminalWinrate=true;
-      }
+      //fprintf(stderr,"Terminal info: (%d -> %d)(%d,%d)(%p,%d,%d,%s)\n",hasTerminalWin,win,hasTerminalWinrate,this->isTerminalResult(),source,(source!=NULL?source->isTerminalResult():0),(source!=NULL?source->hasTerminalWin:0),(source!=NULL?source->getMove().toString(params->board_size).c_str():""));
+      hasTerminalWin=win;
+      hasTerminalWinrate=true;
+      //fprintf(stderr,"New Terminal Result %d! (%s)\n",win,move.toString(params->board_size).c_str());
     }
-    else
-      this->unPruneNow();
   }
   
   if (!this->isRoot())
@@ -234,28 +241,12 @@ void Tree::passPlayoutUp(bool win, Tree *source)
     else
       parent->addWin(this);
   }
-  
-  if (passterminal && (!win || prunedchildren==0))
-  {
-    if (win && !this->allChildrenTerminalLoses())
-      return;
-    if (win)
-      wins=1;
-    else
-      wins=0;
-    //playouts=-1;
-    hasTerminalWinrate=true;
-    //fprintf(stderr,"New Terminal Result %d!\n",win);
-    
-    if (!win && !this->isRoot() && parent->prunedchildren>0)
-      parent->unPruneNow();
-  }
 }
 
 float Tree::getVal() const
 {
   if (this->isTerminalResult())
-    return wins;
+    return (hasTerminalWin?1:0);
   else if (this->isTerminal())
     return 1;
   if (params->rave_moves==0 || raveplayouts==0)
@@ -281,21 +272,16 @@ float Tree::getVal() const
 float Tree::getUrgency() const
 {
   float uctbias;
-  if (this->isTerminalWin())
-    return TREE_TERMINAL_URGENCY;
-  else if (this->isTerminalLose())
-    return -TREE_TERMINAL_URGENCY;
-  
-  if (playouts==0 && raveplayouts==0 && priorplayouts==0)
-    return params->ucb_init;
-  
   if (this->isTerminal())
   {
-    if (playouts==0 || this->getVal()>0)
+    if (this->isTerminalWin() || !this->isTerminalResult())
       return TREE_TERMINAL_URGENCY;
     else
       return -TREE_TERMINAL_URGENCY;
   }
+  
+  if (playouts==0 && raveplayouts==0 && priorplayouts==0)
+    return params->ucb_init;
   
   float plts=playouts+priorplayouts;
   
@@ -382,9 +368,9 @@ std::string Tree::toSGFString() const
       ss<<"pass";
     ss<<"]C[";
     if (this->isTerminalWin())
-      ss<<"Terminal Win\n";
+      ss<<"Terminal Win ("<<wins<<","<<hasTerminalWin<<")\n";
     else if (this->isTerminalLose())
-      ss<<"Terminal Lose\n";
+      ss<<"Terminal Lose ("<<wins<<","<<hasTerminalWin<<")\n";
     else
     {
       ss<<"Wins/Playouts: "<<wins<<"/"<<playouts<<"("<<this->getRatio()<<")\n";
@@ -404,6 +390,10 @@ std::string Tree::toSGFString() const
     if (!move.isResign())
       ss<<"Last Move: "<<move.toString(params->board_size)<<"\n";
     ss<<"Children: "<<children->size()<<"\n";
+    if (this->isTerminalWin())
+      ss<<"Terminal Win\n";
+    else if (this->isTerminalLose())
+      ss<<"Terminal Lose\n";
     ss<<"]";
   }
   
@@ -419,7 +409,7 @@ std::string Tree::toSGFString() const
     int i=0;
     for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
     {
-      if (usedchild[i]==false && ((*iter)->getPlayouts()>0 || (*iter)->isTerminal()) && !(*iter)->isSuperkoViolation())
+      if (usedchild[i]==false && ((*iter)->getPlayouts()>0 || (*iter)->isTerminal() || (params->outputsgf_maxchildren==0 && (*iter)->isPrimary())) && !(*iter)->isSuperkoViolation())
       {
         if (bestchild==NULL || (*iter)->getPlayouts()>bestchild->getPlayouts() || (*iter)->isTerminalWin())
         {
@@ -571,11 +561,7 @@ float Tree::getUnPruneFactor() const
 void Tree::allowContinuedPlay()
 {
   terminaloverride=true;
-  if (hasTerminalWinrate)
-  {
-    hasTerminalWinrate=false;
-    playouts=1;
-  }
+  hasTerminalWinrate=false;
 }
 
 Tree *Tree::getRobustChild(bool descend) const
@@ -585,7 +571,7 @@ Tree *Tree::getRobustChild(bool descend) const
   
   for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
   {
-    if ((*iter)->getPlayouts()>bestsims || (*iter)->isTerminalWin() || besttree==NULL)
+    if (!(*iter)->isTerminalLose() && ((*iter)->getPlayouts()>bestsims || (*iter)->isTerminalWin() || besttree==NULL))
     {
       besttree=(*iter);
       bestsims=(*iter)->getPlayouts();
@@ -669,7 +655,10 @@ void Tree::expandLeaf()
   
   boost::mutex::scoped_lock lock(expandmutex);
   if (!this->isLeaf())
+  {
+    //fprintf(stderr,"Node was already expanded!\n");
     return;
+  }
   
   std::list<Go::Move> startmoves=this->getMovesFromRoot();
   Go::Board *startboard=params->engine->getCurrentBoard()->copy();
@@ -1136,7 +1125,7 @@ void Tree::doSuperkoCheck()
       superkoviolation=params->engine->getZobristHashTree()->hasHash(hash);
     if (superkoviolation)
     {
-      //fprintf(stderr,"superko violation pruned\n");
+      //fprintf(stderr,"superko violation pruned (%s)\n",move.toString(params->board_size).c_str());
       pruned=true;
       if (!this->isRoot())
       {

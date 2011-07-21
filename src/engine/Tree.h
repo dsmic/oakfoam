@@ -28,8 +28,8 @@ class Tree
     bool isRoot() const { return (parent==NULL); };
     bool isLeaf() const { return (children->size()==0); };
     bool isTerminal() const;
-    bool isTerminalWin() const { return (this->isTerminalResult() && wins>0); };
-    bool isTerminalLose() const { return (this->isTerminalResult() && wins<=0); };
+    bool isTerminalWin() const { return (this->isTerminalResult() && hasTerminalWin); };
+    bool isTerminalLose() const { return (this->isTerminalResult() && !hasTerminalWin); };
     bool isTerminalResult() const { return hasTerminalWinrate; };
     std::list<Go::Move> getMovesFromRoot() const;
     void divorceChild(Tree *child);
@@ -114,7 +114,7 @@ class Tree
     float playouts,raveplayouts,priorplayouts;
     float wins,ravewins,priorwins;
     Parameters *const params;
-    bool hasTerminalWinrate;
+    bool hasTerminalWinrate,hasTerminalWin;
     bool terminaloverride;
     bool pruned;
     unsigned int prunedchildren;
