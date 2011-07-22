@@ -70,10 +70,10 @@ void Tree::addChild(Tree *node)
 
 float Tree::getRatio() const
 {
-  if (playouts>0)
-    return (float)wins/playouts;
-  else if (this->isTerminalResult())
+  if (this->isTerminalResult())
     return (hasTerminalWin?1:0);
+  else if (playouts>0)
+    return (float)wins/playouts;
   else
     return 0;
 }
@@ -96,7 +96,9 @@ float Tree::getPriorRatio() const
 
 float Tree::getBasePriorRatio() const
 {
-  if (playouts>0 || priorplayouts>0)
+  if (this->isTerminalResult())
+    return (hasTerminalWin?1:0);
+  else if (playouts>0 || priorplayouts>0)
     return (float)(wins+priorwins)/(playouts+priorplayouts);
   else
     return 0;
