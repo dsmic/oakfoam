@@ -226,12 +226,13 @@ void Tree::passPlayoutUp(bool win, Tree *source)
     
     if (passterminal)
     {
+      bool termwin=win;
       if (source!=NULL)
-        win=!source->isTerminalWin();
-      if (!win || this->allChildrenTerminalLoses())
+        termwin=!source->isTerminalWin();
+      if (!termwin || this->allChildrenTerminalLoses())
       {
         //fprintf(stderr,"Terminal info: (%d -> %d)(%d,%d)(%p,%d,%d,%s)\n",hasTerminalWin,win,hasTerminalWinrate,this->isTerminalResult(),source,(source!=NULL?source->isTerminalResult():0),(source!=NULL?source->hasTerminalWin:0),(source!=NULL?source->getMove().toString(params->board_size).c_str():""));
-        hasTerminalWin=win;
+        hasTerminalWin=termwin;
         hasTerminalWinrate=true;
         //fprintf(stderr,"New Terminal Result %d! (%s)\n",win,move.toString(params->board_size).c_str());
       }
@@ -386,6 +387,7 @@ std::string Tree::toSGFString() const
       ss<<"Wins/Playouts: "<<wins<<"/"<<playouts<<"("<<this->getRatio()<<")\n";
       ss<<"RAVE Wins/Playouts: "<<ravewins<<"/"<<raveplayouts<<"("<<this->getRAVERatio()<<")\n";
     }
+    ss<<"Urgency: "<<this->getUrgency()<<"\n";
     if (!this->isLeaf())
       ss<<"Pruned: "<<prunedchildren<<"/"<<children->size()<<"("<<(children->size()-prunedchildren)<<")\n";
     else if (this->isTerminal())
@@ -406,6 +408,7 @@ std::string Tree::toSGFString() const
       ss<<"Terminal Lose\n";
     if (this->isSuperkoViolation())
       ss<<"Superko Violation!\n";
+    ss<<"Wins/Playouts: "<<wins<<"/"<<playouts<<"("<<this->getRatio()<<")\n";
     ss<<"]";
   }
   
