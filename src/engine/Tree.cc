@@ -218,19 +218,27 @@ bool Tree::allChildrenTerminalLoses()
 
 void Tree::passPlayoutUp(bool win, Tree *source)
 {
-  bool passterminal=(!this->isTerminalResult()) && (this->isTerminal() || (source!=NULL && source->isTerminalResult()));
-  
-  if (passterminal)
+  if (params->uct_terminal_handling)
   {
-    if (source!=NULL)
-      win=!source->isTerminalWin();
-    if (!win || this->allChildrenTerminalLoses())
+    bool passterminal=(!this->isTerminalResult()) && (this->isTerminal() || (source!=NULL && source->isTerminalResult()));
+    
+    if (passterminal)
     {
-      //fprintf(stderr,"Terminal info: (%d -> %d)(%d,%d)(%p,%d,%d,%s)\n",hasTerminalWin,win,hasTerminalWinrate,this->isTerminalResult(),source,(source!=NULL?source->isTerminalResult():0),(source!=NULL?source->hasTerminalWin:0),(source!=NULL?source->getMove().toString(params->board_size).c_str():""));
-      hasTerminalWin=win;
-      hasTerminalWinrate=true;
-      //fprintf(stderr,"New Terminal Result %d! (%s)\n",win,move.toString(params->board_size).c_str());
+      if (source!=NULL)
+        win=!source->isTerminalWin();
+      if (!win || this->allChildrenTerminalLoses())
+      {
+        //fprintf(stderr,"Terminal info: (%d -> %d)(%d,%d)(%p,%d,%d,%s)\n",hasTerminalWin,win,hasTerminalWinrate,this->isTerminalResult(),source,(source!=NULL?source->isTerminalResult():0),(source!=NULL?source->hasTerminalWin:0),(source!=NULL?source->getMove().toString(params->board_size).c_str():""));
+        hasTerminalWin=win;
+        hasTerminalWinrate=true;
+        //fprintf(stderr,"New Terminal Result %d! (%s)\n",win,move.toString(params->board_size).c_str());
+      }
     }
+  }
+  else if (this->isTerminal() && !this->isTerminalResult())
+  {
+    hasTerminalWin=win;
+    hasTerminalWinrate=true;
   }
   
   if (!this->isRoot())

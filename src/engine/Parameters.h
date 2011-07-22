@@ -89,6 +89,7 @@ class Parameters
     bool uct_criticality_unprune_multiply;
     int uct_criticality_min_playouts;
     bool uct_criticality_siblings;
+    bool uct_terminal_handling;
     
     int uct_slow_update_interval;
     int uct_slow_update_last;

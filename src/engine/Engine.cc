@@ -92,6 +92,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("tree","uct_slow_update_interval",&(params->uct_slow_update_interval),UCT_SLOW_UPDATE_INTERVAL);
   params->uct_slow_update_last=0;
   params->addParameter("tree","uct_stop_early",&(params->uct_stop_early),UCT_STOP_EARLY);
+  params->addParameter("tree","uct_terminal_handling",&(params->uct_terminal_handling),UCT_TERMINAL_HANDLING);
   
   params->addParameter("tree","surewin_threshold",&(params->surewin_threshold),SUREWIN_THRESHOLD);
   params->surewin_expected=false;
