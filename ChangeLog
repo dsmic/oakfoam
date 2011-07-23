@@ -1,6 +1,6 @@
 
 version 0.0.10: xxxx-xx-xx
-  * todo
+  * multi-core parallelization
 
 version 0.0.9: 2011-07-18
   * handle Canadian overtime settings
