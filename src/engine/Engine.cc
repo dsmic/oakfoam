@@ -2469,13 +2469,14 @@ void Engine::ponderThread(Worker::Settings *settings)
     
     Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
     Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
+    int playouts;
     
-    int playouts=0;
-    while (!stoppondering && movetree->getPlayouts()<(params->pondering_playouts_max))
+    while (!stoppondering && (playouts=(int)movetree->getPlayouts())<(params->pondering_playouts_max))
     {
       if (movetree->isTerminalResult())
       {
         gtpe->getOutput()->printfDebug("SOLVED! found 100%% sure result after %d plts!\n",playouts);
+        stopthinking=true;
         break;
       }
       
@@ -2515,9 +2516,9 @@ void Engine::generateThread(Worker::Settings *settings)
 {
   boost::posix_time::ptime time_start=this->timeNow();
   Go::Color col=currentboard->nextToMove();
-  int threadplayouts=0;
   int livegfxupdate=0;
   float time_allocated;
+  int totalplayouts;
   
   if (!time->isNoTiming())
   {
@@ -2532,15 +2533,15 @@ void Engine::generateThread(Worker::Settings *settings)
   Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
   Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
   
-  for (int i=0;i<(params->playouts_per_move_max/params->thread_count);i++)
+  while ((totalplayouts=(int)(movetree->getPlayouts()-params->uct_initial_playouts))<(params->playouts_per_move_max))
   {
-    if (i>=(params->playouts_per_move/params->thread_count) && time_allocated==0)
+    if (totalplayouts>=(params->playouts_per_move) && time_allocated==0)
       break;
-    else if (i>=(params->playouts_per_move_min/params->thread_count) && time_allocated>0 && this->timeSince(time_start)>time_allocated)
+    else if (totalplayouts>=(params->playouts_per_move_min) && time_allocated>0 && this->timeSince(time_start)>time_allocated)
       break;
     else if (movetree->isTerminalResult())
     {
-      gtpe->getOutput()->printfDebug("SOLVED: found 100%% sure result after %d plts in this thread!\n",threadplayouts);
+      gtpe->getOutput()->printfDebug("SOLVED: found 100%% sure result after %d plts!\n",totalplayouts);
       params->early_stop_occured=true;
       break;
     }
@@ -2551,14 +2552,13 @@ void Engine::generateThread(Worker::Settings *settings)
     }
     
     this->doPlayout(settings,firstlist,secondlist);
-    threadplayouts++;
+    totalplayouts+=1;
     
     if (settings->thread->getID()==0 && params->uct_stop_early && params->uct_slow_update_last==0)
     {
       Tree *besttree=movetree->getRobustChild();
       if (besttree!=NULL)
       {
-        int totalplayouts=(int)(movetree->getPlayouts()-params->uct_initial_playouts);
         float currentpart=(besttree->getPlayouts()-besttree->secondBestPlayouts())/totalplayouts;
         float overallratio,overallratiotimed;
         if (time_allocated>0) // timed search
@@ -2588,7 +2588,7 @@ void Engine::generateThread(Worker::Settings *settings)
       {
         livegfxupdate=0;
         
-        this->displayPlayoutLiveGfx(threadplayouts);
+        this->displayPlayoutLiveGfx(totalplayouts);
         
         boost::timer delay;
         while (delay.elapsed()<params->livegfx_delay) {}
@@ -2609,18 +2609,21 @@ void Engine::doNPlayoutsThread(Worker::Settings *settings)
   int livegfxupdate=0;
   Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
   Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
+  int totalplayouts;
   
-  for (int i=0;i<(params->playouts_per_move/params->thread_count);i++)
+  while ((totalplayouts=(int)(movetree->getPlayouts()-params->uct_initial_playouts))<(params->playouts_per_move))
   {
     if (movetree->isTerminalResult())
     {
-      gtpe->getOutput()->printfDebug("SOLVED! found 100%% sure result after %d plts!\n",i);
+      gtpe->getOutput()->printfDebug("SOLVED! found 100%% sure result after %d plts!\n",totalplayouts);
+      stopthinking=true;
       break;
     }
     else if (stopthinking)
       break;
     
     this->doPlayout(settings,firstlist,secondlist);
+    totalplayouts+=1;
     
     if (settings->thread->getID()==0 && params->livegfx_on)
     {
@@ -2628,7 +2631,7 @@ void Engine::doNPlayoutsThread(Worker::Settings *settings)
       {
         livegfxupdate=0;
         
-        this->displayPlayoutLiveGfx(i+1);
+        this->displayPlayoutLiveGfx(totalplayouts+1);
         
         boost::timer delay;
         while (delay.elapsed()<params->livegfx_delay) {}
