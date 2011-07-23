@@ -2,8 +2,6 @@ TODO
 ------------------
 
 Now: (current focus)
-  replace volatile bool's with a sync primitive
-  fix threads hanging on havarti
   larger patterns
   change uct_* params to tree_*
   option to output games to sgf with explanations (see gomill-savesgf)
