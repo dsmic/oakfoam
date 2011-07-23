@@ -397,6 +397,51 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     }
   }
   
+  if (params->playout_last2libatari_enabled)
+  {
+    int *possiblemoves=posarray;
+    int possiblemovescount=0;
+    int size=board->getSize();
+    
+    if (board->getLastMove().isNormal())
+    {
+      foreach_adjdiag(board->getLastMove().getPosition(),p,{
+        if (board->getColor(p)==Go::EMPTY && board->validMove(Go::Move(col,p)))
+        {
+          foreach_adjacent(p,q,{
+            if (board->inGroup(q))
+            {
+              Go::Group *group=board->getGroup(q);
+              if (group!=NULL)
+              {
+                int s=group->getOtherOneOfTwoLiberties(p);
+                if (s>0)
+                {
+                  possiblemoves[possiblemovescount]=p;
+                  possiblemovescount++;
+                  if (board->validMove(Go::Move(col,s)))
+                  {
+                    possiblemoves[possiblemovescount]=s;
+                    possiblemovescount++;
+                  }
+                }
+              }
+            }
+          });
+        }
+      });
+    }
+    
+    if (possiblemovescount>0)
+    {
+      int i=rand->getRandomInt(possiblemovescount);
+      move=Go::Move(col,possiblemoves[i]);
+      if (params->debug_on)
+        gtpe->getOutput()->printfDebug("[playoutmove]: last2libatari\n");
+      return;
+    }
+  }
+  
   if (params->playout_nakade_enabled)
   {
     int *possiblemoves=posarray;
