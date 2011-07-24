@@ -791,8 +791,10 @@ int Playout::getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group *
         else
           return board->touchingEmpty(move.getPosition())+5;
       }
-      else
+      else if (group->numOfStones()>1)
         return board->touchingEmpty(move.getPosition())+1;
+      else
+        return 0;
     }
     else if (move.getColor()!=group->getColor())
     {
