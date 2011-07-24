@@ -60,6 +60,7 @@ class Parameters
     float playout_mercy_rule_factor;
     float playout_random_chance;
     bool playout_last2libatari_enabled;
+    bool playout_last2libatari_complex;
     
     float ucb_c;
     float ucb_init;

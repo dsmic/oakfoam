@@ -402,11 +402,12 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     int *possiblemoves=posarray;
     int possiblemovescount=0;
     int size=board->getSize();
+    int bestlevel=1;
     
     if (board->getLastMove().isNormal())
     {
       foreach_adjdiag(board->getLastMove().getPosition(),p,{
-        if (board->getColor(p)==Go::EMPTY && board->validMove(Go::Move(col,p)))
+        if (board->getColor(p)==Go::EMPTY)
         {
           foreach_adjacent(p,q,{
             if (board->inGroup(q))
@@ -417,12 +418,33 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                 int s=group->getOtherOneOfTwoLiberties(p);
                 if (s>0)
                 {
-                  possiblemoves[possiblemovescount]=p;
-                  possiblemovescount++;
+                  if (board->validMove(Go::Move(col,p)))
+                  {
+                    int lvl=this->getTwoLibertyMoveLevel(board,Go::Move(col,p),group);
+                    if (lvl>0 && lvl>=bestlevel)
+                    {
+                      if (lvl>bestlevel)
+                      {
+                        bestlevel=lvl;
+                        possiblemovescount=0;
+                      }
+                      possiblemoves[possiblemovescount]=p;
+                      possiblemovescount++;
+                    }
+                  }
                   if (board->validMove(Go::Move(col,s)))
                   {
-                    possiblemoves[possiblemovescount]=s;
-                    possiblemovescount++;
+                    int lvl=this->getTwoLibertyMoveLevel(board,Go::Move(col,s),group);
+                    if (lvl>0 && lvl>=bestlevel)
+                    {
+                      if (lvl>bestlevel)
+                      {
+                        bestlevel=lvl;
+                        possiblemovescount=0;
+                      }
+                      possiblemoves[possiblemovescount]=s;
+                      possiblemovescount++;
+                    }
                   }
                 }
               }
@@ -728,5 +750,40 @@ void Playout::clearLGRF1(Go::Color col, int pos1)
 void Playout::clearLGRF2(Go::Color col, int pos1, int pos2)
 {
   this->setLGRF2(col,pos1,pos2,-1);
+}
+
+int Playout::getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group *group)
+{
+  if (params->playout_last2libatari_complex)
+  {
+    if (!board->isSelfAtari(move))
+    {
+      if (board->isAtari(move))
+        return board->touchingEmpty(move.getPosition())+5;
+      else
+        return board->touchingEmpty(move.getPosition())+1;
+    }
+    else if (move.getColor()!=group->getColor())
+    {
+      Go::Color col=move.getColor();
+      Go::Color othercol=Go::otherColor(col);
+      int size=board->getSize();
+      
+      foreach_adjdiag(move.getPosition(),p,{
+        if (board->getColor(p)==othercol)
+        {
+          Go::Group *othergroup=board->getGroup(p);
+          if (othergroup!=group && !othergroup->inAtari())
+            return 0;
+        }
+      });
+      
+      return 1;
+    }
+    else
+      return 0;
+  }
+  else
+    return 1;
 }
 
