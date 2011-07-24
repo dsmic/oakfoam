@@ -776,6 +776,8 @@ int Playout::getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group *
           if (othergroup!=group && !othergroup->inAtari())
             return 0;
         }
+        else if (board->getColor(p)==col)
+          return 0;
       });
       
       return 1;
