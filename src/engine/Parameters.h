@@ -50,6 +50,7 @@ class Parameters
     bool playout_features_enabled;
     bool playout_features_incremental;
     bool playout_lastatari_enabled;
+    bool playout_lastatari_leavedouble;
     bool playout_nakade_enabled;
     bool playout_fillboard_enabled;
     int playout_fillboard_n;

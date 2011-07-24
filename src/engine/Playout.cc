@@ -306,29 +306,41 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     int *possiblemoves=posarray;
     int possiblemovescount=0;
     int size=board->getSize();
+    Go::Group *lastgroup=NULL;
+    bool doubleatari=false;
     
     if (board->getLastMove().isNormal())
     {
       foreach_onandadj(board->getLastMove().getPosition(),p,{
-        if (board->inGroup(p))
+        if (!doubleatari && board->inGroup(p))
         {
           Go::Group *group=board->getGroup(p);
           if (group!=NULL && group->inAtari())
           {
-            int liberty=group->getAtariPosition();
-            bool iscaptureorconnect=board->isCapture(Go::Move(col,liberty)) || board->isExtension(Go::Move(col,liberty));
-            //fprintf(stderr,"la: %s %s %d %d %d\n",Go::Position::pos2string(p,size).c_str(),Go::Position::pos2string(liberty,size).c_str(),board->isCapture(Go::Move(col,liberty)),board->isExtension(Go::Move(col,liberty)),board->isSelfAtari(Go::Move(col,liberty)));
-            if (board->validMove(Go::Move(col,liberty)) && iscaptureorconnect)
+            if (params->playout_lastatari_leavedouble)
             {
-              possiblemoves[possiblemovescount]=liberty;
-              possiblemovescount++;
+              if (lastgroup==NULL)
+                lastgroup=group;
+              else if (lastgroup!=group)
+                doubleatari=true;
+            }
+            if (!doubleatari)
+            {
+              int liberty=group->getAtariPosition();
+              bool iscaptureorconnect=board->isCapture(Go::Move(col,liberty)) || board->isExtension(Go::Move(col,liberty));
+              //fprintf(stderr,"la: %s %s %d %d %d\n",Go::Position::pos2string(p,size).c_str(),Go::Position::pos2string(liberty,size).c_str(),board->isCapture(Go::Move(col,liberty)),board->isExtension(Go::Move(col,liberty)),board->isSelfAtari(Go::Move(col,liberty)));
+              if (board->validMove(Go::Move(col,liberty)) && iscaptureorconnect)
+              {
+                possiblemoves[possiblemovescount]=liberty;
+                possiblemovescount++;
+              }
             }
           }
         }
       });
     }
     
-    if (possiblemovescount>0)
+    if (possiblemovescount>0 && !doubleatari)
     {
       int i=rand->getRandomInt(possiblemovescount);
       move=Go::Move(col,possiblemoves[i]);
