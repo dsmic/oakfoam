@@ -759,7 +759,26 @@ int Playout::getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group *
     if (!board->isSelfAtari(move))
     {
       if (board->isAtari(move))
-        return board->touchingEmpty(move.getPosition())+5;
+      {
+        Go::Color col=move.getColor();
+        Go::Color othercol=Go::otherColor(col);
+        int size=board->getSize();
+        bool stopsconnection=false;
+        
+        foreach_adjacent(move.getPosition(),p,{
+          if (board->getColor(p)==othercol)
+          {
+            Go::Group *othergroup=board->getGroup(p);
+            if (othergroup!=group && !othergroup->inAtari())
+              stopsconnection=true;
+          }
+        });
+        
+        if (stopsconnection)
+          return board->touchingEmpty(move.getPosition())+9;
+        else
+          return board->touchingEmpty(move.getPosition())+5;
+      }
       else
         return board->touchingEmpty(move.getPosition())+1;
     }
@@ -769,7 +788,7 @@ int Playout::getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group *
       Go::Color othercol=Go::otherColor(col);
       int size=board->getSize();
       
-      foreach_adjdiag(move.getPosition(),p,{
+      foreach_adjacent(move.getPosition(),p,{
         if (board->getColor(p)==othercol)
         {
           Go::Group *othergroup=board->getGroup(p);
