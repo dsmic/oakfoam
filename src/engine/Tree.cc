@@ -37,6 +37,7 @@ Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p) : params(
   superkoprunedchildren=false;
   superkoviolation=false;
   superkochecked=false;
+  superkochildrenviolations=0;
   
   if (parent!=NULL)
   {
@@ -489,7 +490,7 @@ void Tree::pruneChildren()
 
 void Tree::unPruneNextChild()
 {
-  if (prunedchildren>0)
+  if ((prunedchildren-superkochildrenviolations)>0)
   {
     Tree *bestchild=NULL;
     float bestfactor=-1;
@@ -1132,6 +1133,9 @@ float Tree::getTerritoryOwner() const
 
 void Tree::doSuperkoCheck()
 {
+  boost::mutex::scoped_lock lock(superkomutex);
+  if (superkochecked)
+    return;
   superkoviolation=false;
   if (move.isNormal())
   {
@@ -1145,6 +1149,7 @@ void Tree::doSuperkoCheck()
       pruned=true;
       if (!this->isRoot())
       {
+        parent->superkochildrenviolations++;
         parent->prunedchildren++;
         if (parent->prunedchildren==parent->children->size())
         {

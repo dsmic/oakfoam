@@ -124,8 +124,9 @@ class Tree
     int ownedblack,ownedwhite,ownedwinner;
     float biasbonus;
     bool superkoprunedchildren,superkoviolation,superkochecked;
+    int superkochildrenviolations;
     Go::ZobristHash hash;
-    boost::mutex expandmutex,updatemutex,unprunemutex;
+    boost::mutex expandmutex,updatemutex,unprunemutex,superkomutex;
     
     void passPlayoutUp(bool win, Tree *source);
     bool allChildrenTerminalLoses();
