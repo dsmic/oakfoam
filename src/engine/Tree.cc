@@ -107,21 +107,29 @@ float Tree::getBasePriorRatio() const
 
 void Tree::addWin(Tree *source)
 {
-  boost::mutex::scoped_lock lock(updatemutex);
+  boost::mutex::scoped_lock *lock=new boost::mutex::scoped_lock(updatemutex);
   if (this->isTerminalResult())
+  {
+    delete lock;
     return;
+  }
   wins++;
   playouts++;
+  delete lock;
   this->passPlayoutUp(true,source);
   this->checkForUnPruning();
 }
 
 void Tree::addLose(Tree *source)
 {
-  boost::mutex::scoped_lock lock(updatemutex);
+  boost::mutex::scoped_lock *lock=new boost::mutex::scoped_lock(updatemutex);
   if (this->isTerminalResult())
+  {
+    delete lock;
     return;
+  }
   playouts++;
+  delete lock;
   this->passPlayoutUp(false,source);
   this->checkForUnPruning();
 }
@@ -134,8 +142,9 @@ void Tree::addVirtualLoss()
 
 void Tree::removeVirtualLoss()
 {
-  boost::mutex::scoped_lock lock(updatemutex);
+  boost::mutex::scoped_lock *lock=new boost::mutex::scoped_lock(updatemutex);
   playouts--;
+  delete lock;
   if (!this->isRoot() && !parent->isRoot())
     parent->removeVirtualLoss();
 }
@@ -177,13 +186,14 @@ void Tree::addRAVELoses(int n)
 
 void Tree::addPartialResult(float win, float playout, bool invertwin)
 {
-  boost::mutex::scoped_lock lock(updatemutex);
+  boost::mutex::scoped_lock *lock=new boost::mutex::scoped_lock(updatemutex);
   //fprintf(stderr,"adding partial result: %f %f %d\n",win,playout,invertwin);
   if (!this->isTerminalResult())
   {
     wins+=win;
     playouts+=playout;
   }
+  delete lock;
   if (!this->isRoot())
   {
     if (invertwin)
@@ -227,6 +237,7 @@ void Tree::passPlayoutUp(bool win, Tree *source)
     
     if (passterminal)
     {
+      boost::mutex::scoped_lock *lock=new boost::mutex::scoped_lock(updatemutex);
       if (source!=NULL)
         win=!source->isTerminalWin();
       if (!win || this->allChildrenTerminalLoses())
@@ -238,6 +249,7 @@ void Tree::passPlayoutUp(bool win, Tree *source)
         if (!win && !this->isRoot() && parent->prunedchildren>0)
           parent->unPruneNow();
       }
+      delete lock;
     }
   }
   else if (this->isTerminal() && !this->isTerminalResult())
