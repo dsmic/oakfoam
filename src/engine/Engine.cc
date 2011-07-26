@@ -2173,6 +2173,7 @@ void Engine::doNPlayouts(int n)
     int oldplts=params->playouts_per_move;
     params->playouts_per_move=n;
     
+    params->uct_initial_playouts=(int)movetree->getPlayouts();
     params->thread_job=Parameters::TJ_DONPLTS;
     threadpool->startAll();
     threadpool->waitAll();
@@ -2452,6 +2453,7 @@ void Engine::ponder()
     this->allowContinuedPlay();
     params->uct_slow_update_last=0;
     
+    params->uct_initial_playouts=(int)movetree->getPlayouts();
     params->thread_job=Parameters::TJ_PONDER;
     threadpool->startAll();
     threadpool->waitAll();
