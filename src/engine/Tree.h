@@ -44,6 +44,7 @@ class Tree
     void pruneChildren();
     void checkForUnPruning();
     void unPruneNow();
+    bool hasPrunedChildren() const { return (prunedchildren-superkochildrenviolations)>0; };
     
     void setFeatureGamma(float g);
     float getFeatureGamma() const { return gamma; };

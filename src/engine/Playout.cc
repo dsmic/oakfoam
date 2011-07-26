@@ -27,7 +27,10 @@ Playout::~Playout()
 void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &finalscore, Tree *playouttree, std::list<Go::Move> &playoutmoves, Go::Color colfirst, Go::BitBoard *firstlist, Go::BitBoard *secondlist)
 {
   if (board->getPassesPlayed()>=2)
+  {
+    finalscore=board->score()-params->engine->getKomi();
     return;
+  }
   
   board->turnSymmetryOff();
   

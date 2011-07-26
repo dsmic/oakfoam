@@ -108,11 +108,11 @@ float Tree::getBasePriorRatio() const
 void Tree::addWin(Tree *source)
 {
   boost::mutex::scoped_lock *lock=new boost::mutex::scoped_lock(updatemutex);
-  if (this->isTerminalResult())
+  /*if (this->isTerminalResult())
   {
     delete lock;
     return;
-  }
+  }*/
   wins++;
   playouts++;
   delete lock;
@@ -123,11 +123,11 @@ void Tree::addWin(Tree *source)
 void Tree::addLose(Tree *source)
 {
   boost::mutex::scoped_lock *lock=new boost::mutex::scoped_lock(updatemutex);
-  if (this->isTerminalResult())
+  /*if (this->isTerminalResult())
   {
     delete lock;
     return;
-  }
+  }*/
   playouts++;
   delete lock;
   this->passPlayoutUp(false,source);
@@ -245,8 +245,9 @@ void Tree::passPlayoutUp(bool win, Tree *source)
         //fprintf(stderr,"Terminal info: (%d -> %d)(%d,%d)(%p,%d,%d,%s)\n",hasTerminalWin,win,hasTerminalWinrate,this->isTerminalResult(),source,(source!=NULL?source->isTerminalResult():0),(source!=NULL?source->hasTerminalWin:0),(source!=NULL?source->getMove().toString(params->board_size).c_str():""));
         hasTerminalWin=win;
         hasTerminalWinrate=true;
-        //fprintf(stderr,"New Terminal Result %d! (%s)\n",win,move.toString(params->board_size).c_str());
-        if (!win && !this->isRoot() && parent->prunedchildren>0)
+        if (params->debug_on)
+          params->engine->getGtpEngine()->getOutput()->printfDebug("New Terminal Result %d! (%s)\n",win,move.toString(params->board_size).c_str());
+        if (!win && !this->isRoot() && parent->hasPrunedChildren())
           parent->unPruneNow();
       }
       delete lock;
@@ -502,7 +503,7 @@ void Tree::pruneChildren()
 
 void Tree::unPruneNextChild()
 {
-  if ((prunedchildren-superkochildrenviolations)>0)
+  if (this->hasPrunedChildren())
   {
     Tree *bestchild=NULL;
     float bestfactor=-1;
@@ -649,10 +650,13 @@ Tree *Tree::getUrgentChild(Worker::Settings *settings)
     }
   }
   
+  if (besttree!=NULL && besttree->isTerminalLose() && this->hasPrunedChildren())
+    this->unPruneNow(); //unprune another child
+  
   if (params->debug_on)
   {
     if (besttree!=NULL)
-      fprintf(stderr,"[best]:%s\n",besttree->getMove().toString(params->board_size).c_str());
+      fprintf(stderr,"[best]:%s (%d,%d)\n",besttree->getMove().toString(params->board_size).c_str(),children->size()-prunedchildren,superkochildrenviolations);
     else
       fprintf(stderr,"WARNING! No urgent move found\n");
   }
