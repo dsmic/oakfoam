@@ -72,11 +72,11 @@ class Random;
 
 namespace Go
 {
-  //typedef std::allocator<int> allocator_int;
-  typedef boost::fast_pool_allocator<int> allocator_int;
+  typedef std::allocator<int> allocator_int;
+  //typedef boost::fast_pool_allocator<int> allocator_int;
   class Group;
-  //typedef std::allocator<Go::Group*> allocator_groupptr;
-  typedef boost::fast_pool_allocator<Go::Group*> allocator_groupptr;
+  typedef std::allocator<Go::Group*> allocator_groupptr;
+  //typedef boost::fast_pool_allocator<Go::Group*> allocator_groupptr;
   
   typedef std::list<int,Go::allocator_int> list_int;
 
