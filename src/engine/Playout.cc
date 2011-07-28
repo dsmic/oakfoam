@@ -369,8 +369,11 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
           if (group!=NULL && group->inAtari())
           {
             Go::list_int *adjacentgroups=group->getAdjacentGroups();
-            adjacentgroups->sort();
-            adjacentgroups->unique();
+            if (adjacentgroups->size()>(unsigned int)board->getPositionMax())
+            {
+              adjacentgroups->sort();
+              adjacentgroups->unique();
+            }
             for(Go::list_int::iterator iter=adjacentgroups->begin();iter!=adjacentgroups->end();++iter)
             {
               if (board->inGroup((*iter)))
