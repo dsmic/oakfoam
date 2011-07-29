@@ -15,6 +15,7 @@
 #define UCT_KEEP_SUBTREE true
 #define UCT_SYMMETRY_USE true
 #define UCT_VIRTUAL_LOSS true
+#define UCT_LOCK_FREE false
 #define UCT_ATARI_PRIOR 0
 #define UCT_PATTERN_PRIOR 0
 #define UCT_PASS_DETER 0

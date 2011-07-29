@@ -107,7 +107,7 @@ float Tree::getBasePriorRatio() const
 
 void Tree::addWin(Tree *source)
 {
-  boost::mutex::scoped_lock *lock=new boost::mutex::scoped_lock(updatemutex);
+  boost::mutex::scoped_lock *lock=(params->uct_lock_free?NULL:new boost::mutex::scoped_lock(updatemutex));
   /*if (this->isTerminalResult())
   {
     delete lock;
@@ -115,36 +115,41 @@ void Tree::addWin(Tree *source)
   }*/
   wins++;
   playouts++;
-  delete lock;
+  if (lock!=NULL)
+    delete lock;
   this->passPlayoutUp(true,source);
   this->checkForUnPruning();
 }
 
 void Tree::addLose(Tree *source)
 {
-  boost::mutex::scoped_lock *lock=new boost::mutex::scoped_lock(updatemutex);
+  boost::mutex::scoped_lock *lock=(params->uct_lock_free?NULL:new boost::mutex::scoped_lock(updatemutex));
   /*if (this->isTerminalResult())
   {
     delete lock;
     return;
   }*/
   playouts++;
-  delete lock;
+  if (lock!=NULL)
+    delete lock;
   this->passPlayoutUp(false,source);
   this->checkForUnPruning();
 }
 
 void Tree::addVirtualLoss()
 {
-  boost::mutex::scoped_lock lock(updatemutex);
+  boost::mutex::scoped_lock *lock=(params->uct_lock_free?NULL:new boost::mutex::scoped_lock(updatemutex));
   playouts++;
+  if (lock!=NULL)
+    delete lock;
 }
 
 void Tree::removeVirtualLoss()
 {
-  boost::mutex::scoped_lock *lock=new boost::mutex::scoped_lock(updatemutex);
+  boost::mutex::scoped_lock *lock=(params->uct_lock_free?NULL:new boost::mutex::scoped_lock(updatemutex));
   playouts--;
-  delete lock;
+  if (lock!=NULL)
+    delete lock;
   if (!this->isRoot() && !parent->isRoot())
     parent->removeVirtualLoss();
 }
@@ -186,14 +191,15 @@ void Tree::addRAVELoses(int n)
 
 void Tree::addPartialResult(float win, float playout, bool invertwin)
 {
-  boost::mutex::scoped_lock *lock=new boost::mutex::scoped_lock(updatemutex);
+  boost::mutex::scoped_lock *lock=(params->uct_lock_free?NULL:new boost::mutex::scoped_lock(updatemutex));
   //fprintf(stderr,"adding partial result: %f %f %d\n",win,playout,invertwin);
   if (!this->isTerminalResult())
   {
     wins+=win;
     playouts+=playout;
   }
-  delete lock;
+  if (lock!=NULL)
+    delete lock;
   if (!this->isRoot())
   {
     if (invertwin)
@@ -237,7 +243,7 @@ void Tree::passPlayoutUp(bool win, Tree *source)
     
     if (passterminal)
     {
-      boost::mutex::scoped_lock *lock=new boost::mutex::scoped_lock(updatemutex);
+      boost::mutex::scoped_lock *lock=(params->uct_lock_free?NULL:new boost::mutex::scoped_lock(updatemutex));
       if (source!=NULL)
         win=!source->isTerminalWin();
       if (!win || this->allChildrenTerminalLoses())
@@ -250,7 +256,8 @@ void Tree::passPlayoutUp(bool win, Tree *source)
         if (!win && !this->isRoot() && parent->hasPrunedChildren())
           parent->unPruneNow();
       }
-      delete lock;
+      if (lock!=NULL)
+        delete lock;
     }
   }
   else if (this->isTerminal() && !this->isTerminalResult())

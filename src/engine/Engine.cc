@@ -72,6 +72,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   else
     currentboard->turnSymmetryOff();
   params->addParameter("tree","uct_virtual_loss",&(params->uct_virtual_loss),UCT_VIRTUAL_LOSS);
+  params->addParameter("tree","uct_lock_free",&(params->uct_lock_free),UCT_LOCK_FREE);
   params->addParameter("tree","uct_atari_prior",&(params->uct_atari_prior),UCT_ATARI_PRIOR);
   params->addParameter("tree","uct_pattern_prior",&(params->uct_pattern_prior),UCT_PATTERN_PRIOR);
   params->addParameter("tree","uct_progressive_widening_enabled",&(params->uct_progressive_widening_enabled),UCT_PROGRESSIVE_WIDENING_ENABLED);
