@@ -18,15 +18,15 @@ oakfoam_SOURCES     = build.h \
                       src/engine/Worker.h src/engine/Worker.cc \
                       src/gtp/Gtp.h src/gtp/Gtp.cc
 oakfoam_CPPFLAGS    = $(BOOST_CPPFLAGS)
-oakfoam_LDFLAGS     = -pthread -static $(BOOST_LDFLAGS)
+oakfoam_LDFLAGS     = -pthread $(BOOST_LDFLAGS)
 oakfoam_LDADD       = $(BOOST_THREAD_LIB)
 dist_noinst_SCRIPTS = autogen.sh
 
 .PHONY: oakfoam-profiled
 oakfoam-profiled:
-	@make clean all CXXFLAGS="$(CXXFLAGS) -fprofile-generate -march=native"
+	@make clean all CXXFLAGS='$(CXXFLAGS) -fprofile-generate -march=native' oakfoam_LDFLAGS="-pthread -static $(BOOST_LDFLAGS)"
 	./oakfoam --nobook -c profile.gtp
-	@make clean all clean-profiled CXXFLAGS="$(CXXFLAGS) -fprofile-use -march=native"
+	@make clean all clean-profiled CXXFLAGS='$(CXXFLAGS) -fprofile-use -march=native' oakfoam_LDFLAGS="-pthread -static $(BOOST_LDFLAGS)"
 
 .PHONY: clean-profiled
 clean-profiled:
