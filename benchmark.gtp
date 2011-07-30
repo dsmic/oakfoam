@@ -1,0 +1,20 @@
+param move_policy 1-ply
+param playouts_per_move 10000
+param rave_moves 0
+param book_use 0
+param playout_lgrf2_enabled 0
+param playout_lgrf1_enabled 0
+param playout_atari_enabled 0
+param playout_lastatari_enabled 0
+param playout_lastcapture_enabled 0
+param playout_last2libatari_enabled 0
+param playout_nakade_enabled 0
+param playout_fillboard_enabled 0
+param playout_patterns_enabled 0
+param playout_anycapture_enabled 0
+param playout_features_enabled 0
+param playout_random_chance 0.000
+param playout_mercy_rule_enabled 1
+
+#genmove b
+#quit
