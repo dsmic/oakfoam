@@ -2475,9 +2475,9 @@ void Engine::ponderThread(Worker::Settings *settings)
     
     Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
     Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
-    int playouts;
+    long playouts;
     
-    while (!stoppondering && (playouts=(int)movetree->getPlayouts())<(params->pondering_playouts_max))
+    while (!stoppondering && (playouts=(long)movetree->getPlayouts())<(params->pondering_playouts_max))
     {
       if (movetree->isTerminalResult())
       {
@@ -2524,7 +2524,7 @@ void Engine::generateThread(Worker::Settings *settings)
   Go::Color col=currentboard->nextToMove();
   int livegfxupdate=0;
   float time_allocated;
-  int totalplayouts;
+  long totalplayouts;
   
   if (!time->isNoTiming())
   {
@@ -2539,7 +2539,7 @@ void Engine::generateThread(Worker::Settings *settings)
   Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
   Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
   
-  while ((totalplayouts=(int)(movetree->getPlayouts()-params->uct_initial_playouts))<(params->playouts_per_move_max))
+  while ((totalplayouts=(long)(movetree->getPlayouts()-params->uct_initial_playouts))<(params->playouts_per_move_max))
   {
     if (totalplayouts>=(params->playouts_per_move) && time_allocated==0)
       break;
@@ -2560,21 +2560,21 @@ void Engine::generateThread(Worker::Settings *settings)
     this->doPlayout(settings,firstlist,secondlist);
     totalplayouts+=1;
     
-    if (settings->thread->getID()==0 && params->uct_stop_early && params->uct_slow_update_last==0)
+    if (settings->thread->getID()==0 && params->uct_stop_early && params->uct_slow_update_last==0 && totalplayouts>=(params->playouts_per_move_min))
     {
       Tree *besttree=movetree->getRobustChild();
       if (besttree!=NULL)
       {
-        float currentpart=(besttree->getPlayouts()-besttree->secondBestPlayouts())/totalplayouts;
-        float overallratio,overallratiotimed;
+        double currentpart=(besttree->getPlayouts()-besttree->secondBestPlayouts())/totalplayouts;
+        double overallratio,overallratiotimed;
         if (time_allocated>0) // timed search
         {
-          overallratio=(float)params->playouts_per_move_max/totalplayouts;
-          overallratiotimed=(float)(time_allocated+TIME_RESOLUTION)/this->timeSince(time_start);
+          overallratio=(double)params->playouts_per_move_max/totalplayouts;
+          overallratiotimed=(double)(time_allocated+TIME_RESOLUTION)/this->timeSince(time_start);
         }
         else
         {
-          overallratio=(float)params->playouts_per_move/totalplayouts;
+          overallratio=(double)params->playouts_per_move/totalplayouts;
           overallratiotimed=0;
         }
         
@@ -2615,9 +2615,9 @@ void Engine::doNPlayoutsThread(Worker::Settings *settings)
   int livegfxupdate=0;
   Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
   Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
-  int totalplayouts;
+  long totalplayouts;
   
-  while ((totalplayouts=(int)(movetree->getPlayouts()-params->uct_initial_playouts))<(params->playouts_per_move))
+  while ((totalplayouts=(long)(movetree->getPlayouts()-params->uct_initial_playouts))<(params->playouts_per_move))
   {
     if (movetree->isTerminalResult())
     {
