@@ -10,6 +10,7 @@ Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p) : params(
 {
   parent=p;
   children=new std::list<Tree*>();
+  beenexpanded=false;
   move=mov;
   playouts=0;
   wins=0;
@@ -235,6 +236,16 @@ bool Tree::allChildrenTerminalLoses()
   return true;
 }
 
+bool Tree::hasOneUnprunedChildNotTerminalLoss()
+{
+  for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
+  {
+    if (!(*iter)->isPruned() && !(*iter)->isTerminalLose())
+      return true;
+  }
+  return false;
+}
+
 void Tree::passPlayoutUp(bool win, Tree *source)
 {
   if (params->uct_terminal_handling)
@@ -244,17 +255,24 @@ void Tree::passPlayoutUp(bool win, Tree *source)
     if (passterminal)
     {
       boost::mutex::scoped_lock *lock=(params->uct_lock_free?NULL:new boost::mutex::scoped_lock(updatemutex));
-      if (source!=NULL)
-        win=!source->isTerminalWin();
-      if (!win || this->allChildrenTerminalLoses())
+      if (!this->isTerminalResult())
       {
-        //fprintf(stderr,"Terminal info: (%d -> %d)(%d,%d)(%p,%d,%d,%s)\n",hasTerminalWin,win,hasTerminalWinrate,this->isTerminalResult(),source,(source!=NULL?source->isTerminalResult():0),(source!=NULL?source->hasTerminalWin:0),(source!=NULL?source->getMove().toString(params->board_size).c_str():""));
-        hasTerminalWin=win;
-        hasTerminalWinrate=true;
-        if (params->debug_on)
-          params->engine->getGtpEngine()->getOutput()->printfDebug("New Terminal Result %d! (%s)\n",win,move.toString(params->board_size).c_str());
-        if (!win && !this->isRoot() && parent->hasPrunedChildren())
-          parent->unPruneNow();
+        if (source!=NULL)
+          win=!source->isTerminalWin();
+        if (!win || this->allChildrenTerminalLoses())
+        {
+          //fprintf(stderr,"Terminal info: (%d -> %d)(%d,%d)(%p,%d,%d,%s)\n",hasTerminalWin,win,hasTerminalWinrate,this->isTerminalResult(),source,(source!=NULL?source->isTerminalResult():0),(source!=NULL?source->hasTerminalWin:0),(source!=NULL?source->getMove().toString(params->board_size).c_str():""));
+          hasTerminalWin=win;
+          hasTerminalWinrate=true;
+          if (params->debug_on)
+            params->engine->getGtpEngine()->getOutput()->printfDebug("New Terminal Result %d! (%s)\n",win,move.toString(params->board_size).c_str());
+          if (!win && !this->isRoot() && parent->hasPrunedChildren())
+          {
+            parent->unPruneNow();
+            while (parent->hasPrunedChildren() && !parent->hasOneUnprunedChildNotTerminalLoss())
+              parent->unPruneNow(); //unprune a non-terminal loss
+          }
+        }
       }
       if (lock!=NULL)
         delete lock;
@@ -658,12 +676,16 @@ Tree *Tree::getUrgentChild(Worker::Settings *settings)
   }
   
   if (besttree!=NULL && besttree->isTerminalLose() && this->hasPrunedChildren())
-    this->unPruneNow(); //unprune another child
+  {
+    //fprintf(stderr,"ERROR! Unpruning didn't occur! (%d,%d,%d)\n",children->size(),prunedchildren,superkochildrenviolations);
+    while (this->hasPrunedChildren() && !this->hasOneUnprunedChildNotTerminalLoss())
+      this->unPruneNow(); //unprune a non-terminal loss
+  }
   
   if (params->debug_on)
   {
     if (besttree!=NULL)
-      fprintf(stderr,"[best]:%s (%d,%d)\n",besttree->getMove().toString(params->board_size).c_str(),children->size()-prunedchildren,superkochildrenviolations);
+      fprintf(stderr,"[best]:%s (%d,%d)\n",besttree->getMove().toString(params->board_size).c_str(),(int)(children->size()-prunedchildren),superkochildrenviolations);
     else
       fprintf(stderr,"WARNING! No urgent move found\n");
   }
@@ -844,9 +866,12 @@ void Tree::expandLeaf()
     {
       this->pruneChildren();
       this->unPruneNow(); //unprune first child
+      while (this->hasPrunedChildren() && !this->hasOneUnprunedChildNotTerminalLoss())
+        this->unPruneNow(); //unprune a non-terminal loss
     }
   }
   
+  beenexpanded=true;
   delete startboard;
 }
 
@@ -1180,6 +1205,8 @@ void Tree::doSuperkoCheck()
           parent->lastunprune=0;
           parent->unprunebase=0;
           parent->unPruneNow(); //unprune at least one child
+          while (parent->hasPrunedChildren() && !parent->hasOneUnprunedChildNotTerminalLoss())
+            parent->unPruneNow(); //unprune a non-terminal loss
         }
       }
     }

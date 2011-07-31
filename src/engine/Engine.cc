@@ -1829,7 +1829,10 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
       *move=new Go::Move(col,Go::Move::RESIGN);
     }
     else if (!besttree->isTerminalWin() && besttree->getRatio()<params->resign_ratio_threshold && currentboard->getMovesMade()>(params->resign_move_factor_threshold*boardsize*boardsize))
+    {
       *move=new Go::Move(col,Go::Move::RESIGN);
+      bestratio=besttree->getRatio();
+    }
     else
     {
       *move=new Go::Move(col,besttree->getMove().getPosition());
@@ -1841,6 +1844,12 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     
     if (params->uct_slow_update_last!=0)
       this->doSlowUpdate();
+    
+    /*if ((**move).isResign())
+    {
+      gtpe->getOutput()->printfDebug("[resign]: %s\n",besttree!=NULL?besttree->getMove().toString(boardsize).c_str():"NONE");
+      this->writeSGF("debugresign.sgf",currentboard,movetree);
+    }*/
     
     if (playmove)
       this->makeMove(**move);
@@ -2155,9 +2164,12 @@ bool Engine::writeSGF(std::string filename, Go::Board *board, Tree *tree)
   std::ofstream sgffile;
   sgffile.open(filename.c_str());
   sgffile<<"(;\nFF[4]SZ["<<boardsize<<"]KM["<<komi<<"]\n";
+  if (board==NULL)
+    board=currentboard;
   sgffile<<board->toSGFString()<<"\n";
-  if (tree!=NULL)
-    sgffile<<tree->toSGFString()<<"\n)";
+  if (tree==NULL)
+    tree=movetree;
+  sgffile<<tree->toSGFString()<<"\n)";
   sgffile.close();
   
   return true;

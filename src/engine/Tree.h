@@ -26,7 +26,7 @@ class Tree
     std::list<Tree*> *getChildren() const { return children; };
     Go::Move getMove() const { return move; };
     bool isRoot() const { return (parent==NULL); };
-    bool isLeaf() const { return (children->size()==0); };
+    bool isLeaf() const { return !beenexpanded; };
     bool isTerminal() const;
     bool isTerminalWin() const { return (this->isTerminalResult() && hasTerminalWin); };
     bool isTerminalLose() const { return (this->isTerminalResult() && !hasTerminalWin); };
@@ -109,6 +109,7 @@ class Tree
   private:
     Tree *parent;
     std::list<Tree*> *children;
+    bool beenexpanded;
     Tree *symmetryprimary;
     
     Go::Move move;
@@ -131,6 +132,7 @@ class Tree
     
     void passPlayoutUp(bool win, Tree *source);
     bool allChildrenTerminalLoses();
+    bool hasOneUnprunedChildNotTerminalLoss();
     
     void unPruneNextChild();
     float unPruneMetric() const;

@@ -147,6 +147,7 @@ class Engine
     void ponderThread(Worker::Settings *settings);
     void doNPlayoutsThread(Worker::Settings *settings);
     void doThreadWork(Worker::Settings *settings);
+    bool writeSGF(std::string filename, Go::Board *board=NULL, Tree *tree=NULL);
     
     static void updateParameterWrapper(void *instance, std::string id)
     {
@@ -238,7 +239,6 @@ class Engine
     void chooseSubTree(Go::Move move);
     
     void doNPlayouts(int n);
-    bool writeSGF(std::string filename, Go::Board *board, Tree *tree);
     void doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::BitBoard *secondlist);
     void displayPlayoutLiveGfx(int totalplayouts=-1, bool livegfx=true);
     void doSlowUpdate();
