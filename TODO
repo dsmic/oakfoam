@@ -2,12 +2,14 @@ TODO
 ------------------
 
 Now: (current focus)
-  larger patterns
+  add debug levels
   change uct_* params to tree_*
   option to output games to sgf with explanations (see gomill-savesgf)
-  add debug levels
+  output best move at intervals
+  include RAVE in unpruning
 
 Soon: (before next major release)
+  larger patterns
   add results from first playout moves to tree
   try UCB1-TUNED formula (p.216(169) in SylvainGellyThesis)
   prefer games that end sooner? (don't drag on at end)
@@ -26,6 +28,7 @@ Soon: (before next major release)
   try LGRF-1/2 with a variable queue (see 6.3.5 Multiple Reply LGR in Baier Hendrik)
   try make progressive bias decay with parent playouts
   look why bs=0 even when r2 is high (possibly fixed since stop_early)
+  look at altering playout_random_chance with extreme winrate
 
 Later: (at some point)
   tune parameters
