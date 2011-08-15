@@ -1819,6 +1819,9 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     totalplayouts=(int)movetree->getPlayouts()-startplayouts;
     //fprintf(stderr,"tplts: %d\n",totalplayouts);
     
+    if (movetree->isTerminalResult())
+      gtpe->getOutput()->printfDebug("SOLVED! found 100%% sure result after %d plts!\n",totalplayouts);
+    
     Tree *besttree=movetree->getRobustChild();
     float bestratio=0;
     float ratiodelta=-1;
@@ -2190,6 +2193,8 @@ void Engine::doNPlayouts(int n)
     params->thread_job=Parameters::TJ_DONPLTS;
     threadpool->startAll();
     threadpool->waitAll();
+    if (movetree->isTerminalResult())
+      gtpe->getOutput()->printfDebug("SOLVED! found 100%% sure result after %d plts!\n",(int)movetree->getPlayouts()-params->uct_initial_playouts);
     
     params->playouts_per_move=oldplts;
     
@@ -2470,6 +2475,8 @@ void Engine::ponder()
     params->thread_job=Parameters::TJ_PONDER;
     threadpool->startAll();
     threadpool->waitAll();
+    if (movetree->isTerminalResult())
+      gtpe->getOutput()->printfDebug("SOLVED! found 100%% sure result after %d plts!\n",(int)movetree->getPlayouts()-params->uct_initial_playouts);
     //fprintf(stderr,"pondering done! %d %.0f\n",playouts,movetree->getPlayouts());
   }
 }
@@ -2493,7 +2500,6 @@ void Engine::ponderThread(Worker::Settings *settings)
     {
       if (movetree->isTerminalResult())
       {
-        gtpe->getOutput()->printfDebug("SOLVED! found 100%% sure result after %d plts!\n",playouts);
         stopthinking=true;
         break;
       }
@@ -2559,7 +2565,6 @@ void Engine::generateThread(Worker::Settings *settings)
       break;
     else if (movetree->isTerminalResult())
     {
-      gtpe->getOutput()->printfDebug("SOLVED: found 100%% sure result after %d plts!\n",totalplayouts);
       params->early_stop_occured=true;
       break;
     }
@@ -2633,7 +2638,6 @@ void Engine::doNPlayoutsThread(Worker::Settings *settings)
   {
     if (movetree->isTerminalResult())
     {
-      gtpe->getOutput()->printfDebug("SOLVED! found 100%% sure result after %d plts!\n",totalplayouts);
       stopthinking=true;
       break;
     }
