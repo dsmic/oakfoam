@@ -18,7 +18,7 @@ oakfoam_SOURCES     = build.h \
                       src/engine/Worker.h src/engine/Worker.cc \
                       src/gtp/Gtp.h src/gtp/Gtp.cc
 oakfoam_CPPFLAGS    = $(BOOST_CPPFLAGS)
-oakfoam_LDFLAGS     = -pthread $(BOOST_LDFLAGS)
+oakfoam_LDFLAGS     = $(BOOST_LDFLAGS)
 oakfoam_LDADD       = $(BOOST_THREAD_LIB)
 dist_noinst_SCRIPTS = autogen.sh
 

@@ -13,6 +13,11 @@ m4_include([m4/ax_boost_thread.m4])
 
 AX_BOOST_BASE([1.33.1])
 AX_BOOST_THREAD
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(,[[
+  #ifndef HAVE_BOOST_THREAD
+    error
+  #endif
+]])],,AC_MSG_ERROR([Boost::Thread library is required!]))
 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT

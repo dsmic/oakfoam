@@ -4206,13 +4206,17 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 			 CXXFLAGS_SAVE=$CXXFLAGS
 
-			 if test "x$build_os" = "xsolaris" ; then
+			 case "x$build_os" in
+         *solaris* )
   				 CXXFLAGS="-pthreads $CXXFLAGS"
-			 elif test "x$build_os" = "xming32" ; then
-				 CXXFLAGS="-mthreads $CXXFLAGS"
-			 else
-				CXXFLAGS="-pthread $CXXFLAGS"
-			 fi
+  				 ;;
+			   *ming32* )
+				   CXXFLAGS="-mthreads $CXXFLAGS"
+				   ;;
+			   * )
+				   CXXFLAGS="-pthread $CXXFLAGS"
+				   ;;
+			 esac
 			 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <boost/thread/thread.hpp>
@@ -4243,13 +4247,17 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_boost_thread" >&5
 $as_echo "$ax_cv_boost_thread" >&6; }
 		if test "x$ax_cv_boost_thread" = "xyes"; then
-           if test "x$build_os" = "xsolaris" ; then
-			  BOOST_CPPFLAGS="-pthreads $BOOST_CPPFLAGS"
-		   elif test "x$build_os" = "xming32" ; then
-			  BOOST_CPPFLAGS="-mthreads $BOOST_CPPFLAGS"
-		   else
-			  BOOST_CPPFLAGS="-pthread $BOOST_CPPFLAGS"
-		   fi
+       case "x$build_os" in
+         *solaris* )
+			     BOOST_CPPFLAGS="-pthreads $BOOST_CPPFLAGS"
+			     ;;
+		     *ming32* )
+			     BOOST_CPPFLAGS="-mthreads $BOOST_CPPFLAGS"
+			     ;;
+		     * )
+			     BOOST_CPPFLAGS="-pthread $BOOST_CPPFLAGS"
+			     ;;
+		   esac
 
 
 
@@ -4432,6 +4440,27 @@ fi
     	LDFLAGS="$LDFLAGS_SAVED"
 	fi
 
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  #ifndef HAVE_BOOST_THREAD
+    error
+  #endif
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+else
+  as_fn_error "Boost::Thread library is required!" "$LINENO" 5
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 ac_config_files="$ac_config_files Makefile"
 
