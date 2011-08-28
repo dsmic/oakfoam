@@ -1520,6 +1520,52 @@ bool Go::Board::isSelfAtari(Go::Move move) const
     return false;
 }
 
+bool Go::Board::isSelfAtariOfSize(Go::Move move, int minsize) const
+{
+  if (minsize==0)
+    return this->isSelfAtari(move);
+  
+  Go::Color col=move.getColor();
+  int pos=move.getPosition();
+  
+  if (this->touchingEmpty(pos)>1)
+    return false;
+  
+  bool foundgroupwith2libsorless=false;
+  int libpos=-1;
+  bool foundconnection=false;
+  int groupsize=0;
+  //Go::Group *grp2libs=NULL;
+  foreach_adjacent(pos,p,{
+    if (this->inGroup(p))
+    {
+      Go::Group *group=this->getGroup(p);
+      if (col==group->getColor())
+      {
+        int otherlib=group->getOtherOneOfTwoLiberties(pos);
+        if (otherlib!=-1)
+        {
+          if (!foundgroupwith2libsorless)
+          {
+            foundgroupwith2libsorless=true;
+            //grp2libs=group;
+            libpos=otherlib;
+          }
+          else if (libpos!=otherlib)
+            foundconnection=true;
+          groupsize+=group->numOfStones();
+        }
+        else if (!group->inAtari()) // more than 2 libs
+          foundconnection=true;
+      }
+    }
+  });
+  if (!foundconnection && groupsize>minsize)
+    return true;
+  else
+    return false;
+}
+
 bool Go::Board::isAtari(Go::Move move) const
 {
   Go::Color col=move.getColor();

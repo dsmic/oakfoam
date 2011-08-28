@@ -55,6 +55,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","playout_features_enabled",&(params->playout_features_enabled),PLAYOUT_FEATURES_ENABLED);
   params->addParameter("playout","playout_features_incremental",&(params->playout_features_incremental),PLAYOUT_FEATURES_INCREMENTAL);
   params->addParameter("playout","playout_random_chance",&(params->playout_random_chance),PLAYOUT_RANDOM_CHANCE);
+  params->addParameter("playout","playout_avoid_selfatari",&(params->playout_avoid_selfatari),PLAYOUT_AVOID_SELFATARI);
+  params->addParameter("playout","playout_avoid_selfatari_size",&(params->playout_avoid_selfatari_size),PLAYOUT_AVOID_SELFATARI_SIZE);
   params->addParameter("playout","playout_mercy_rule_enabled",&(params->playout_mercy_rule_enabled),PLAYOUT_MERCY_RULE_ENABLED);
   params->addParameter("playout","playout_mercy_rule_factor",&(params->playout_mercy_rule_factor),PLAYOUT_MERCY_RULE_FACTOR);
   

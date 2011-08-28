@@ -428,6 +428,7 @@ namespace Go
       bool isCapture(Go::Move move) const;
       bool isExtension(Go::Move move) const;
       bool isSelfAtari(Go::Move move) const;
+      bool isSelfAtariOfSize(Go::Move move, int minsize=0) const;
       bool isAtari(Go::Move move) const;
       int getDistanceToBorder(int pos) const;
       int getCircularDistance(int pos1, int pos2) const;

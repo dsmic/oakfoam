@@ -62,6 +62,8 @@ class Parameters
     float playout_random_chance;
     bool playout_last2libatari_enabled;
     bool playout_last2libatari_complex;
+    bool playout_avoid_selfatari;
+    int playout_avoid_selfatari_size;
     
     float ucb_c;
     float ucb_init;

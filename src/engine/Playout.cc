@@ -650,7 +650,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
   for (int i=0;i<10;i++)
   {
     int p=rand->getRandomInt(board->getPositionMax());
-    if (board->validMove(Go::Move(col,p)) && !board->weakEye(col,p))
+    if (board->validMove(Go::Move(col,p)) && !board->weakEye(col,p) && (!params->playout_avoid_selfatari || !board->isSelfAtariOfSize(Go::Move(col,p),params->playout_avoid_selfatari_size)))
     {
       move=Go::Move(col,p);
       if (params->debug_on)
@@ -665,7 +665,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
   
   for (int p=0;p<board->getPositionMax();p++)
   {
-    if (validmoves->get(p) && !board->weakEye(col,p))
+    if (validmoves->get(p) && !board->weakEye(col,p) && (!params->playout_avoid_selfatari || !board->isSelfAtariOfSize(Go::Move(col,p),params->playout_avoid_selfatari_size)))
     {
       possiblemoves[possiblemovescount]=p;
       possiblemovescount++;
@@ -689,7 +689,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     int rp=(r+p*d);
     if (rp<0) rp+=board->getPositionMax();
     if (rp>=board->getPositionMax()) rp-=board->getPositionMax();
-    if (validmoves->get(rp) && !board->weakEye(col,rp))
+    if (validmoves->get(rp) && !board->weakEye(col,rp) && (!params->playout_avoid_selfatari || !board->isSelfAtariOfSize(Go::Move(col,rp),params->playout_avoid_selfatari_size)))
     {
       move=Go::Move(col,rp);
       if (params->debug_on)
