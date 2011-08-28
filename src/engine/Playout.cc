@@ -557,7 +557,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
       int size=board->getSize();
       
       foreach_adjdiag(pos,p,{
-        if (board->validMove(Go::Move(col,p)) && !board->weakEye(col,p))
+        if (board->validMove(Go::Move(col,p)) && !board->weakEye(col,p) && !board->isSelfAtari(Go::Move(col,p)))
         {
           unsigned int pattern=Pattern::ThreeByThree::makeHash(board,p);
           if (col==Go::WHITE)
