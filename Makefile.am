@@ -17,8 +17,8 @@ oakfoam_SOURCES     = build.h \
                       src/engine/Benson.h src/engine/Benson.cc \
                       src/engine/Worker.h src/engine/Worker.cc \
                       src/gtp/Gtp.h src/gtp/Gtp.cc
-oakfoam_CPPFLAGS    = $(BOOST_CPPFLAGS)
-oakfoam_LDFLAGS     = $(BOOST_LDFLAGS)
+oakfoam_CPPFLAGS    = $(BOOST_CPPFLAGS) $(MPI_CPPFLAGS)
+oakfoam_LDFLAGS     = $(BOOST_LDFLAGS) $(MPI_LDFLAGS)
 oakfoam_LDADD       = $(BOOST_THREAD_LIB)
 dist_noinst_SCRIPTS = autogen.sh
 

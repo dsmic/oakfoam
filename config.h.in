@@ -9,6 +9,9 @@
 /* define if the Boost::Thread library is available */
 #undef HAVE_BOOST_THREAD
 
+/* Define if you have the MPI library. */
+#undef HAVE_MPI
+
 /* Name of package */
 #undef PACKAGE
 
