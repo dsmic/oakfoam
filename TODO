@@ -29,6 +29,7 @@ Soon: (before next major release)
   try make progressive bias decay with parent playouts
   look why bs=0 even when r2 is high (possibly fixed since stop_early)
   look at altering playout_random_chance with extreme winrate
+  look at a reverse LGR-kinda thing in the tree and playouts
 
 Later: (at some point)
   tune parameters
