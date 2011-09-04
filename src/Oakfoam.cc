@@ -6,11 +6,7 @@
 Oakfoam::Oakfoam()
 {
   gtpe=new Gtp::Engine();
-  #ifdef HAVE_MPI
-    engine=new Engine(gtpe,PACKAGE_NAME " : " PACKAGE_VERSION " (" BUILD_DATE " " BUILD_TIME ") (MPI)");
-  #else
-    engine=new Engine(gtpe,PACKAGE_NAME " : " PACKAGE_VERSION " (" BUILD_DATE " " BUILD_TIME ")");
-  #endif
+  engine=new Engine(gtpe,PACKAGE_NAME " : " PACKAGE_VERSION " (" BUILD_DATE " " BUILD_TIME ")");
   
   gtpe->addConstantCommand("name",PACKAGE_NAME);
   gtpe->addConstantCommand("version",PACKAGE_VERSION);
@@ -27,6 +23,6 @@ Oakfoam::~Oakfoam()
 void Oakfoam::run()
 {
   engine->postCmdLineArgs(book_autoload);
-  gtpe->run();
+  engine->run();
 }
 

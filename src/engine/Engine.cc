@@ -7,6 +7,12 @@
 #include <sstream>
 #include <iomanip>
 #include <boost/timer.hpp>
+#ifdef HAVE_MPI
+  #include <mpi.h>
+  #define MPIRANK0_ONLY(__body) {if (mpirank==0) { __body }}
+#else
+  #define MPIRANK0_ONLY(__body) { __body }
+#endif
 
 Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
 {
@@ -14,6 +20,14 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   longname=ln;
   
   params->engine=this;
+  
+  #ifdef HAVE_MPI
+    longname+=" (MPI)";
+    mpiworldsize=MPI::COMM_WORLD.Get_size();
+    mpirank=MPI::COMM_WORLD.Get_rank();
+    if (mpirank==0)
+      gtpe->getOutput()->printfDebug("mpi world size: %d\n",mpiworldsize);
+  #endif
   
   boardsize=9;
   params->board_size=boardsize;
@@ -167,6 +181,9 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
 
 Engine::~Engine()
 {
+  #ifdef HAVE_MPI
+    MPIRANK0_ONLY(this->mpiBroadcastCommand(Engine::MPICMD_QUIT););
+  #endif
   delete threadpool;
   delete circdict;
   delete features;
@@ -183,38 +200,60 @@ Engine::~Engine()
   delete playout;
 }
 
+void Engine::run()
+{
+  #ifdef HAVE_MPI
+    if (mpirank==0)
+      gtpe->run();
+    else
+      this->mpiCommandHandler();
+  #else
+    gtpe->run();
+  #endif
+}
+
 void Engine::postCmdLineArgs(bool book_autoload)
 {
   params->rand_seed=threadpool->getThreadZero()->getSettings()->rand->getSeed();
-  gtpe->getOutput()->printfDebug("seed: %lu\n",params->rand_seed);
+  #ifdef HAVE_MPI
+    gtpe->getOutput()->printfDebug("seed of rank %d: %lu\n",mpirank,params->rand_seed);
+  #else
+    gtpe->getOutput()->printfDebug("seed: %lu\n",params->rand_seed);
+  #endif
   if (book_autoload)
   {
     bool loaded=false;
     if (!loaded)
     {
       std::string filename="book.dat";
-      gtpe->getOutput()->printfDebug("loading opening book from '%s'... ",filename.c_str());
+      MPIRANK0_ONLY(gtpe->getOutput()->printfDebug("loading opening book from '%s'... ",filename.c_str()););
       loaded=book->loadFile(filename);
-      if (loaded)
-        gtpe->getOutput()->printfDebug("done\n");
-      else
-        gtpe->getOutput()->printfDebug("error\n");
+      MPIRANK0_ONLY(
+        if (loaded)
+          gtpe->getOutput()->printfDebug("done\n");
+        else
+          gtpe->getOutput()->printfDebug("error\n");
+      );
     }
     #ifdef TOPSRCDIR
       if (!loaded)
       {
         std::string filename=TOPSRCDIR "/book.dat";
-        gtpe->getOutput()->printfDebug("loading opening book from '%s'... ",filename.c_str());
+        MPIRANK0_ONLY(gtpe->getOutput()->printfDebug("loading opening book from '%s'... ",filename.c_str()););
         loaded=book->loadFile(filename);
-        if (loaded)
-          gtpe->getOutput()->printfDebug("done\n");
-        else
-          gtpe->getOutput()->printfDebug("error\n");
+        MPIRANK0_ONLY(
+          if (loaded)
+            gtpe->getOutput()->printfDebug("done\n");
+          else
+            gtpe->getOutput()->printfDebug("error\n");
+        );
       }
     #endif
     
-    if (!loaded)
-      gtpe->getOutput()->printfDebug("no opening book loaded\n");
+    MPIRANK0_ONLY(
+      if (!loaded)
+        gtpe->getOutput()->printfDebug("no opening book loaded\n");
+    );
   }
 }
 
@@ -1925,6 +1964,14 @@ bool Engine::isMoveAllowed(Go::Move move)
 
 void Engine::makeMove(Go::Move move)
 {
+  #ifdef HAVE_MPI
+    MPIRANK0_ONLY(
+      unsigned int tmp1=(unsigned int)move.getColor();
+      unsigned int tmp2=(unsigned int)move.getPosition();
+      this->mpiBroadcastCommand(MPICMD_MAKEMOVE,&tmp1,&tmp2);
+    );
+  #endif
+  
   if (params->features_output_competitions)
   {
     bool isawinner=true;
@@ -2093,13 +2140,34 @@ void Engine::setBoardSize(int s)
   if (s<BOARDSIZE_MIN || s>BOARDSIZE_MAX)
     return;
   
+  #ifdef HAVE_MPI
+    MPIRANK0_ONLY(
+      unsigned int tmp=(unsigned int)s;
+      this->mpiBroadcastCommand(MPICMD_SETBOARDSIZE,&tmp);
+    );
+  #endif
+  
   boardsize=s;
   params->board_size=boardsize;
   this->clearBoard();
 }
 
+void Engine::setKomi(float k)
+{
+  #ifdef HAVE_MPI
+    MPIRANK0_ONLY(
+      unsigned int tmp=(unsigned int)k;
+      this->mpiBroadcastCommand(MPICMD_SETKOMI,&tmp);
+    );
+  #endif
+  komi=k;
+}
+
 void Engine::clearBoard()
 {
+  #ifdef HAVE_MPI
+    MPIRANK0_ONLY(this->mpiBroadcastCommand(MPICMD_CLEARBOARD););
+  #endif
   bool newsize=(zobristtable->getSize()!=boardsize);
   delete currentboard;
   delete movehistory;
@@ -2684,5 +2752,72 @@ void Engine::doThreadWork(Worker::Settings *settings)
       break;
   }
 }
+
+#ifdef HAVE_MPI
+void Engine::mpiCommandHandler()
+{
+  Engine::MPICommand cmd;
+  unsigned int tmp1,tmp2;
+  bool running=true;
+  
+  gtpe->getOutput()->printfDebug("mpi rank %d reporting for duty!\n",mpirank);
+  
+  while (running)
+  {
+    MPI::COMM_WORLD.Bcast(&tmp1,1,MPI::UNSIGNED,0);
+    cmd=(Engine::MPICommand)tmp1;
+    //gtpe->getOutput()->printfDebug("recv cmd: %d (%d)\n",cmd,mpirank);
+    switch (cmd)
+    {
+      case MPICMD_CLEARBOARD:
+        this->clearBoard();
+        break;
+      case MPICMD_SETBOARDSIZE:
+        this->mpiRecvBroadcastedArgs(&tmp1);
+        this->setBoardSize((int)tmp1);
+        break;
+      case MPICMD_SETKOMI:
+        this->mpiRecvBroadcastedArgs(&tmp1);
+        this->setKomi((float)tmp1);
+        break;
+      case MPICMD_MAKEMOVE:
+        {
+          this->mpiRecvBroadcastedArgs(&tmp1,&tmp2);
+          Go::Move move = Go::Move((Go::Color)tmp1,(int)tmp2);
+          this->makeMove(move);
+        }
+        break;
+      case MPICMD_QUIT:
+      default:
+        running=false;
+        break;
+    };
+  }
+}
+
+
+void Engine::mpiBroadcastCommand(Engine::MPICommand cmd, unsigned int *arg1, unsigned int *arg2, unsigned int *arg3)
+{
+  //gtpe->getOutput()->printfDebug("send cmd: %d (%d)\n",cmd,mpirank);
+  MPI::COMM_WORLD.Bcast(&cmd,1,MPI::UNSIGNED,0);
+  
+  if (arg1!=NULL)
+    MPI::COMM_WORLD.Bcast(arg1,1,MPI::UNSIGNED,0);
+  if (arg2!=NULL)
+    MPI::COMM_WORLD.Bcast(arg2,1,MPI::UNSIGNED,0);
+  if (arg3!=NULL)
+    MPI::COMM_WORLD.Bcast(arg3,1,MPI::UNSIGNED,0);
+}
+
+void Engine::mpiRecvBroadcastedArgs(unsigned int *arg1, unsigned int *arg2, unsigned int *arg3)
+{
+  if (arg1!=NULL)
+    MPI::COMM_WORLD.Bcast(arg1,1,MPI::UNSIGNED,0);
+  if (arg2!=NULL)
+    MPI::COMM_WORLD.Bcast(arg2,1,MPI::UNSIGNED,0);
+  if (arg3!=NULL)
+    MPI::COMM_WORLD.Bcast(arg3,1,MPI::UNSIGNED,0);
+}
+#endif
 
 

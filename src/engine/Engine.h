@@ -98,6 +98,7 @@
 #define BOARDSIZE_MIN 2
 #define BOARDSIZE_MAX 25
 
+#include <config.h>
 #include <string>
 #include <list>
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -127,6 +128,7 @@ class Engine
       MP_UCT
     };
     
+    void run();
     void postCmdLineArgs(bool book_autoload);
     void generateMove(Go::Color col, Go::Move **move, bool playmove);
     bool isMoveAllowed(Go::Move move);
@@ -136,7 +138,7 @@ class Engine
     Go::Board *getCurrentBoard() const { return currentboard; };
     void clearBoard();
     float getKomi() const { return komi; };
-    void setKomi(float k) { komi=k; };
+    void setKomi(float k);
     Pattern::ThreeByThreeTable *getPatternTable() const { return patterntable; };
     Features *getFeatures() const { return features; };
     Go::ZobristTable *getZobristTable() const { return zobristtable; };
@@ -234,6 +236,23 @@ class Engine
     volatile bool stopthinking;
     volatile bool stoppondering;
     Worker::Pool *threadpool;
+    
+    #ifdef HAVE_MPI
+      int mpiworldsize,mpirank;
+      
+      enum MPICommand
+      {
+        MPICMD_QUIT,
+        MPICMD_MAKEMOVE,
+        MPICMD_SETBOARDSIZE,
+        MPICMD_SETKOMI,
+        MPICMD_CLEARBOARD
+      };
+      
+      void mpiCommandHandler();
+      void mpiBroadcastCommand(Engine::MPICommand cmd, unsigned int *arg1=NULL, unsigned int *arg2=NULL, unsigned int *arg3=NULL);
+      void mpiRecvBroadcastedArgs(unsigned int *arg1=NULL, unsigned int *arg2=NULL, unsigned int *arg3=NULL);
+    #endif
     
     void addGtpCommands();
     

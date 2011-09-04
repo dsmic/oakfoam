@@ -6,6 +6,10 @@
 #include <iostream>
 #include <fstream>
 
+#ifdef HAVE_MPI
+  #include <mpi.h>
+#endif
+
 #include "Oakfoam.h"
 
 void printusage()
@@ -24,7 +28,11 @@ void printusage()
 
 int main(int argc, char* argv[])
 {
-  Oakfoam oakfoam;
+  #ifdef HAVE_MPI
+    MPI::Init(argc,argv);
+  #endif
+  
+  Oakfoam *oakfoam=new Oakfoam();
   
   for(int i=1;i<argc;i++) 
   {
@@ -55,12 +63,12 @@ int main(int argc, char* argv[])
         return 1;
       }
       
-      oakfoam.gtpe->getOutput()->setOutputOn(false);
+      oakfoam->gtpe->getOutput()->setOutputOn(false);
       
       std::string line;
       while (std::getline(fin,line))
       {
-        if (!oakfoam.gtpe->executeCommand(line))
+        if (!oakfoam->gtpe->executeCommand(line))
         {
           fin.close();
           return 0;
@@ -69,8 +77,8 @@ int main(int argc, char* argv[])
       
       fin.close();
       
-      oakfoam.gtpe->finishLastCommand();
-      oakfoam.gtpe->getOutput()->setOutputOn(true);
+      oakfoam->gtpe->finishLastCommand();
+      oakfoam->gtpe->getOutput()->setOutputOn(true);
     }
     else if (arg=="-l" || arg=="--log" )
     {
@@ -92,11 +100,11 @@ int main(int argc, char* argv[])
         return 1;
       }
       
-      oakfoam.gtpe->getOutput()->setLogFile(logfile);
+      oakfoam->gtpe->getOutput()->setLogFile(logfile);
     }
     else if (arg=="--nobook" )
     {
-      oakfoam.book_autoload=false;
+      oakfoam->book_autoload=false;
     }
     else
     {
@@ -105,7 +113,13 @@ int main(int argc, char* argv[])
     }
   }
   
-  oakfoam.run();
+  oakfoam->run();
+  
+  delete oakfoam;
+  
+  #ifdef HAVE_MPI
+    MPI::Finalize();
+  #endif
   
   return 0;
 }

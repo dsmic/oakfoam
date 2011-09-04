@@ -4,7 +4,9 @@
 #include <sstream>
 #include <algorithm>
 #include <fstream>
-
+#ifdef HAVE_MPI
+  #include <mpi.h>
+#endif
 
 Gtp::Engine::Engine()
 {
