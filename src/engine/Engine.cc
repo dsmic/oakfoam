@@ -122,11 +122,13 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("tree","resign_move_factor_threshold",&(params->resign_move_factor_threshold),RESIGN_MOVE_FACTOR_THRESHOLD);
   
   params->addParameter("tree","territory_decayfactor",&(params->territory_decayfactor),TERRITORY_DECAYFACTOR);
+  params->addParameter("tree","territory_threshold",&(params->territory_threshold),TERRITORY_THRESHOLD);
   
   params->addParameter("rules","rules_positional_superko_enabled",&(params->rules_positional_superko_enabled),RULES_POSITIONAL_SUPERKO_ENABLED);
   params->addParameter("rules","rules_superko_top_ply",&(params->rules_superko_top_ply),RULES_SUPERKO_TOP_PLY);
   params->addParameter("rules","rules_superko_prune_after",&(params->rules_superko_prune_after),RULES_SUPERKO_PRUNE_AFTER);
   params->addParameter("rules","rules_superko_at_playout",&(params->rules_superko_at_playout),RULES_SUPERKO_AT_PLAYOUT);
+  params->addParameter("rules","rules_all_stones_alive",&(params->rules_all_stones_alive),RULES_ALL_STONES_ALIVE);
   
   params->addParameter("time","time_k",&(params->time_k),TIME_K);
   params->addParameter("time","time_buffer",&(params->time_buffer),TIME_BUFFER);
@@ -596,7 +598,10 @@ void Engine::gtpFinalScore(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   Engine *me=(Engine*)instance;
   float score;
   
-  score=me->currentboard->score()-me->komi;
+  if (me->params->rules_all_stones_alive)
+    score=me->currentboard->score()-me->komi;
+  else
+    score=me->currentboard->territoryScore(me->territorymap,me->params->territory_threshold)-me->komi;
   
   gtpe->getOutput()->startResponse(cmd);
   if (score==0) // jigo
@@ -623,8 +628,32 @@ void Engine::gtpFinalStatusList(void *instance, Gtp::Engine* gtpe, Gtp::Command*
   
   if (arg=="dead")
   {
-    gtpe->getOutput()->startResponse(cmd);
-    gtpe->getOutput()->endResponse();
+    if (me->params->rules_all_stones_alive)
+    {
+      gtpe->getOutput()->startResponse(cmd);
+      gtpe->getOutput()->endResponse();
+    }
+    else
+    {
+      gtpe->getOutput()->startResponse(cmd);
+      for (int x=0;x<me->boardsize;x++)
+      {
+        for (int y=0;y<me->boardsize;y++)
+        {
+          int pos=Go::Position::xy2pos(x,y,me->boardsize);
+          if (me->currentboard->boardData()[pos].color!=Go::EMPTY)
+          {
+            if (!me->currentboard->isAlive(me->territorymap,me->params->territory_threshold,pos))
+            {
+              Gtp::Vertex vert={x,y};
+              gtpe->getOutput()->printVertex(vert);
+              gtpe->getOutput()->printf(" ");
+            }
+          }
+        }
+      }
+      gtpe->getOutput()->endResponse();
+    }
   }
   else if (arg=="alive")
   {
@@ -633,11 +662,15 @@ void Engine::gtpFinalStatusList(void *instance, Gtp::Engine* gtpe, Gtp::Command*
     {
       for (int y=0;y<me->boardsize;y++)
       {
-        if (me->currentboard->boardData()[Go::Position::xy2pos(x,y,me->boardsize)].color!=Go::EMPTY)
+        int pos=Go::Position::xy2pos(x,y,me->boardsize);
+        if (me->currentboard->boardData()[pos].color!=Go::EMPTY)
         {
-          Gtp::Vertex vert={x,y};
-          gtpe->getOutput()->printVertex(vert);
-          gtpe->getOutput()->printf(" ");
+          if (me->params->rules_all_stones_alive || me->currentboard->isAlive(me->territorymap,me->params->territory_threshold,pos))
+          {
+            Gtp::Vertex vert={x,y};
+            gtpe->getOutput()->printVertex(vert);
+            gtpe->getOutput()->printf(" ");
+          }
         }
       }
     }
@@ -2410,6 +2443,10 @@ void Engine::doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::
   
   float finalscore;
   playout->doPlayout(settings,playoutboard,finalscore,playouttree,playoutmoves,col,(params->rave_moves>0?firstlist:NULL),(params->rave_moves>0?secondlist:NULL));
+  if (playoutboard->getPassesPlayed()>=2 && !params->rules_all_stones_alive)
+  {
+    finalscore=playoutboard->territoryScore(territorymap,params->territory_threshold)-params->engine->getKomi();
+  }
   
   bool playoutwin=Go::Board::isWinForColor(playoutcol,finalscore);
   bool playoutjigo=(finalscore==0);

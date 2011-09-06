@@ -106,6 +106,7 @@ class Parameters
     int uct_initial_playouts;
     
     float territory_decayfactor;
+    float territory_threshold;
     
     bool pondering_enabled;
     int pondering_playouts_max;
@@ -116,6 +117,7 @@ class Parameters
     bool rules_superko_top_ply;
     int rules_superko_prune_after;
     bool rules_superko_at_playout;
+    bool rules_all_stones_alive;
     
     float surewin_threshold;
     bool surewin_expected;

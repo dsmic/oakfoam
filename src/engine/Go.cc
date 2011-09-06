@@ -243,7 +243,7 @@ Go::Board::~Board()
   delete[] data;
 }
 
-Go::Board *Go::Board::copy()
+Go::Board *Go::Board::copy() const
 {
   Go::Board *copyboard;
   copyboard=new Go::Board(size);
@@ -1960,5 +1960,33 @@ void Go::TerritoryMap::decay(float factor)
     whiteowns->set(p,(float)whiteowns->get(p)*factor);
   }
   boards=(float)boards*factor;
+}
+
+bool Go::Board::isAlive(Go::TerritoryMap *tmap, float threshold, int pos) const
+{
+  Go::Color col=this->getColor(pos);
+  if (col==Go::BLACK)
+    return (1-tmap->getPositionOwner(pos))<threshold;
+  else if (col==Go::WHITE)
+    return (tmap->getPositionOwner(pos))<threshold;
+  else
+    return false;
+}
+
+int Go::Board::territoryScore(Go::TerritoryMap *tmap, float threshold) const
+{
+  int score;
+  Go::Board *tmpboard=this->copy();
+  
+  for (int p=0;p<sizedata;p++)
+  {
+    if (tmpboard->inGroup(p) && !tmpboard->isAlive(tmap,threshold,p))
+      tmpboard->removeGroup(tmpboard->getGroup(p));
+  }
+  
+  score=tmpboard->score();
+  
+  delete tmpboard;
+  return score;
 }
 

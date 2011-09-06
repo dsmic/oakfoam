@@ -382,7 +382,7 @@ namespace Go
       Board(int s);
       ~Board();
       
-      Go::Board *copy();
+      Go::Board *copy() const;
       void copyOver(Go::Board *copyboard) const;
       std::string toString() const;
       std::string toSGFString() const;
@@ -456,6 +456,8 @@ namespace Go
       
       Go::Color getScoredOwner(int pos) const;
       void updateTerritoryMap(Go::TerritoryMap *tmap) const;
+      bool isAlive(Go::TerritoryMap *tmap, float threshold, int pos) const;
+      int territoryScore(Go::TerritoryMap *tmap, float threshold) const;
     
     private:
       const int size;
