@@ -98,6 +98,8 @@
 #define BOARDSIZE_MIN 2
 #define BOARDSIZE_MAX 25
 
+#define ZOBRIST_HASH_SEED 0x713df891
+
 #define MPI_STRING_MAX 255
 
 #include <config.h>

@@ -1776,11 +1776,11 @@ Go::ZobristHash Go::Board::getZobristHash(Go::ZobristTable *table) const
   return hash;
 }
 
-Go::ZobristTable::ZobristTable(Parameters *prms, int sz)
+Go::ZobristTable::ZobristTable(Parameters *prms, int sz, unsigned long seed)
   : params(prms),
     size(sz),
     sizedata(1+(sz+1)*(sz+2)),
-    rand(new Random()),
+    rand(new Random(seed)),
     blackhashes(new Go::ZobristHash[sizedata]),
     whitehashes(new Go::ZobristHash[sizedata])
 {

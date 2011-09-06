@@ -231,7 +231,7 @@ namespace Go
   class ZobristTable
   {
     public:
-      ZobristTable(Parameters *prms, int sz);
+      ZobristTable(Parameters *prms, int sz, unsigned long seed);
       ~ZobristTable();
       
       int getSize() const { return size; };

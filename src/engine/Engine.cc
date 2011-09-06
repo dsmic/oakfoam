@@ -34,7 +34,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   currentboard=new Go::Board(boardsize);
   komi=5.5;
   
-  zobristtable=new Go::ZobristTable(params,boardsize);
+  zobristtable=new Go::ZobristTable(params,boardsize,ZOBRIST_HASH_SEED);
   
   params->addParameter("other","rand_seed",&(params->rand_seed),Random::makeSeed(),&Engine::updateParameterWrapper,this);
   
@@ -2266,7 +2266,7 @@ void Engine::clearBoard()
   movehistory = new std::list<Go::Move>();
   hashtree=new Go::ZobristTree();
   if (newsize)
-    zobristtable=new Go::ZobristTable(params,boardsize);
+    zobristtable=new Go::ZobristTable(params,boardsize,ZOBRIST_HASH_SEED);
   if (!params->uct_symmetry_use)
     currentboard->turnSymmetryOff();
   this->clearMoveTree();
