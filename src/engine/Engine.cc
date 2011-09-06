@@ -766,6 +766,14 @@ void Engine::gtpLoadPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cm
   
   if (success)
   {
+    #ifdef HAVE_MPI
+      if (me->mpirank==0)
+      {
+        me->mpiBroadcastCommand(MPICMD_LOADPATTERNS);
+        me->mpiBroadcastString(patternfile);
+      }
+    #endif
+    
     gtpe->getOutput()->startResponse(cmd);
     gtpe->getOutput()->printf("loaded pattern file: %s",patternfile.c_str());
     gtpe->getOutput()->endResponse();
@@ -784,6 +792,11 @@ void Engine::gtpClearPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* c
   
   delete me->patterntable;
   me->patterntable=new Pattern::ThreeByThreeTable();
+  
+  #ifdef HAVE_MPI
+    if (me->mpirank==0)
+      me->mpiBroadcastCommand(MPICMD_CLEARPATTERNS);
+  #endif
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->endResponse();
@@ -1057,6 +1070,14 @@ void Engine::gtpLoadFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Comman
   
   if (success)
   {
+    #ifdef HAVE_MPI
+      if (me->mpirank==0)
+      {
+        me->mpiBroadcastCommand(MPICMD_LOADFEATUREGAMMAS);
+        me->mpiBroadcastString(filename);
+      }
+    #endif
+    
     gtpe->getOutput()->startResponse(cmd);
     gtpe->getOutput()->printf("loaded features gamma file: %s",filename.c_str());
     gtpe->getOutput()->endResponse();
@@ -1414,6 +1435,14 @@ void Engine::gtpBookAdd(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   
   me->book->add(me->boardsize,me->movehistory,move);
   
+  #ifdef HAVE_MPI
+    if (me->mpirank==0)
+    {
+      unsigned int arg=pos;
+      me->mpiBroadcastCommand(MPICMD_BOOKADD,&arg);
+    }
+  #endif
+  
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->endResponse();
 }
@@ -1445,6 +1474,14 @@ void Engine::gtpBookRemove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   
   me->book->remove(me->boardsize,me->movehistory,move);
   
+  #ifdef HAVE_MPI
+    if (me->mpirank==0)
+    {
+      unsigned int arg=pos;
+      me->mpiBroadcastCommand(MPICMD_BOOKREMOVE,&arg);
+    }
+  #endif
+  
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->endResponse();
 }
@@ -1454,6 +1491,11 @@ void Engine::gtpBookClear(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   Engine *me=(Engine*)instance;
   
   me->book->clear(me->boardsize);
+  
+  #ifdef HAVE_MPI
+    if (me->mpirank==0)
+      me->mpiBroadcastCommand(MPICMD_BOOKCLEAR);
+  #endif
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->endResponse();
@@ -1479,6 +1521,14 @@ void Engine::gtpBookLoad(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   
   if (success)
   {
+    #ifdef HAVE_MPI
+      if (me->mpirank==0)
+      {
+        me->mpiBroadcastCommand(MPICMD_BOOKLOAD);
+        me->mpiBroadcastString(filename);
+      }
+    #endif
+    
     gtpe->getOutput()->startResponse(cmd);
     gtpe->getOutput()->printf("loaded book: %s",filename.c_str());
     gtpe->getOutput()->endResponse();
@@ -1676,6 +1726,15 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     
     if (me->params->setParameter(param,cmd->getStringArg(1)))
     {
+      #ifdef HAVE_MPI
+        if (me->mpirank==0)
+        {
+          me->mpiBroadcastCommand(MPICMD_SETPARAM);
+          me->mpiBroadcastString(param);
+          me->mpiBroadcastString(cmd->getStringArg(1));
+        }
+      #endif
+      
       gtpe->getOutput()->startResponse(cmd);
       gtpe->getOutput()->endResponse();
     }
@@ -1694,6 +1753,15 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     
     if (me->params->setParameter(param,cmd->getStringArg(2)))
     {
+      #ifdef HAVE_MPI
+        if (me->mpirank==0)
+        {
+          me->mpiBroadcastCommand(MPICMD_SETPARAM);
+          me->mpiBroadcastString(param);
+          me->mpiBroadcastString(cmd->getStringArg(2));
+        }
+      #endif
+      
       gtpe->getOutput()->startResponse(cmd);
       gtpe->getOutput()->endResponse();
     }
@@ -1726,6 +1794,16 @@ void Engine::gtpTimeSettings(void *instance, Gtp::Engine* gtpe, Gtp::Command* cm
   
   delete me->time;
   me->time=new Time(me->params,cmd->getIntArg(0),cmd->getIntArg(1),cmd->getIntArg(2));
+  
+  #ifdef HAVE_MPI
+    if (me->mpirank==0)
+    {
+      unsigned int arg1=cmd->getIntArg(0);
+      unsigned int arg2=cmd->getIntArg(1);
+      unsigned int arg3=cmd->getIntArg(2);
+      me->mpiBroadcastCommand(MPICMD_TIMESETTINGS,&arg1,&arg2,&arg3);
+    }
+  #endif
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->endResponse();
@@ -1771,6 +1849,16 @@ void Engine::gtpTimeLeft(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     gtpe->getOutput()->printfDebug("[time_left]: diff:%.3f s:%d\n",newtime-oldtime,newstones);
   
   me->time->updateTimeLeft(col,newtime,newstones);
+  
+  #ifdef HAVE_MPI
+    if (me->mpirank==0)
+    {
+      unsigned int arg1=(unsigned int)col;
+      unsigned int arg2=(unsigned int)newtime;
+      unsigned int arg3=newstones;
+      me->mpiBroadcastCommand(MPICMD_TIMELEFT,&arg1,&arg2,&arg3);
+    }
+  #endif
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->endResponse();
@@ -2757,7 +2845,7 @@ void Engine::doThreadWork(Worker::Settings *settings)
 void Engine::mpiCommandHandler()
 {
   Engine::MPICommand cmd;
-  unsigned int tmp1,tmp2;
+  unsigned int tmp1,tmp2,tmp3;
   bool running=true;
   
   gtpe->getOutput()->printfDebug("mpi rank %d reporting for duty!\n",mpirank);
@@ -2786,6 +2874,59 @@ void Engine::mpiCommandHandler()
           Go::Move move = Go::Move((Go::Color)tmp1,(int)tmp2);
           this->makeMove(move);
         }
+        break;
+      case MPICMD_SETPARAM:
+        {
+          std::string param=this->mpiRecvBroadcastedString();
+          std::string val=this->mpiRecvBroadcastedString();
+          params->setParameter(param,val);
+          //gtpe->getOutput()->printfDebug("rank of %d set %s to %s\n",mpirank,param.c_str(),val.c_str());
+        }
+        break;
+      case MPICMD_TIMESETTINGS:
+        this->mpiRecvBroadcastedArgs(&tmp1,&tmp2,&tmp3);
+        delete time;
+        time=new Time(params,(int)tmp1,(int)tmp2,(int)tmp3);
+        break;
+      case MPICMD_TIMELEFT:
+        this->mpiRecvBroadcastedArgs(&tmp1,&tmp2,&tmp3);
+        time->updateTimeLeft((Go::Color)tmp1,(float)tmp2,(int)tmp3);
+        break;
+      case MPICMD_LOADPATTERNS:
+        delete patterntable;
+        patterntable=new Pattern::ThreeByThreeTable();
+        patterntable->loadPatternFile(this->mpiRecvBroadcastedString());
+        break;
+      case MPICMD_CLEARPATTERNS:
+        delete patterntable;
+        patterntable=new Pattern::ThreeByThreeTable();
+        break;
+      case MPICMD_LOADFEATUREGAMMAS:
+        delete features;
+        features=new Features(params);
+        features->loadGammaFile(this->mpiRecvBroadcastedString());
+        break;
+      case MPICMD_BOOKADD:
+        {
+          this->mpiRecvBroadcastedArgs(&tmp1);
+          Go::Move move = Go::Move(currentboard->nextToMove(),(int)tmp1);
+          book->add(boardsize,movehistory,move);
+        }
+        break;
+      case MPICMD_BOOKREMOVE:
+        {
+          this->mpiRecvBroadcastedArgs(&tmp1);
+          Go::Move move = Go::Move(currentboard->nextToMove(),(int)tmp1);
+          book->remove(boardsize,movehistory,move);
+        }
+        break;
+      case MPICMD_BOOKCLEAR:
+        book->clear(boardsize);
+        break;
+      case MPICMD_BOOKLOAD:
+        delete book;
+        book=new Book(params);
+        book->loadFile(this->mpiRecvBroadcastedString());
         break;
       case MPICMD_QUIT:
       default:
@@ -2818,6 +2959,36 @@ void Engine::mpiRecvBroadcastedArgs(unsigned int *arg1, unsigned int *arg2, unsi
   if (arg3!=NULL)
     MPI::COMM_WORLD.Bcast(arg3,1,MPI::UNSIGNED,0);
 }
+
+void Engine::mpiBroadcastString(std::string input)
+{
+  char buffer[MPI_STRING_MAX];
+  
+  if (input.length()>=MPI_STRING_MAX)
+  {
+    gtpe->getOutput()->printfDebug("string too long (%d>=%d)\n",input.length(),MPI_STRING_MAX);
+    return;
+  }
+  
+  for (int i=0;i<(int)input.length();i++)
+  {
+    buffer[i]=input.at(i);
+  }
+  for (int i=input.length();i<MPI_STRING_MAX;i++)
+  {
+    buffer[i]=0;
+  }
+  
+  MPI::COMM_WORLD.Bcast(buffer,MPI_STRING_MAX,MPI::CHAR,0);
+}
+
+std::string Engine::mpiRecvBroadcastedString()
+{
+  char buffer[MPI_STRING_MAX];
+  MPI::COMM_WORLD.Bcast(buffer,MPI_STRING_MAX,MPI::CHAR,0);
+  return std::string(buffer);
+}
+
 #endif
 
 

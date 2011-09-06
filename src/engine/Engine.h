@@ -98,6 +98,8 @@
 #define BOARDSIZE_MIN 2
 #define BOARDSIZE_MAX 25
 
+#define MPI_STRING_MAX 255
+
 #include <config.h>
 #include <string>
 #include <list>
@@ -246,12 +248,24 @@ class Engine
         MPICMD_MAKEMOVE,
         MPICMD_SETBOARDSIZE,
         MPICMD_SETKOMI,
-        MPICMD_CLEARBOARD
+        MPICMD_CLEARBOARD,
+        MPICMD_SETPARAM,
+        MPICMD_TIMESETTINGS,
+        MPICMD_TIMELEFT,
+        MPICMD_LOADPATTERNS,
+        MPICMD_CLEARPATTERNS,
+        MPICMD_LOADFEATUREGAMMAS,
+        MPICMD_BOOKADD,
+        MPICMD_BOOKREMOVE,
+        MPICMD_BOOKCLEAR,
+        MPICMD_BOOKLOAD
       };
       
       void mpiCommandHandler();
       void mpiBroadcastCommand(Engine::MPICommand cmd, unsigned int *arg1=NULL, unsigned int *arg2=NULL, unsigned int *arg3=NULL);
+      void mpiBroadcastString(std::string input);
       void mpiRecvBroadcastedArgs(unsigned int *arg1=NULL, unsigned int *arg2=NULL, unsigned int *arg3=NULL);
+      std::string mpiRecvBroadcastedString();
     #endif
     
     void addGtpCommands();
