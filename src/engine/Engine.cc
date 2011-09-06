@@ -2443,7 +2443,7 @@ void Engine::doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::
   
   float finalscore;
   playout->doPlayout(settings,playoutboard,finalscore,playouttree,playoutmoves,col,(params->rave_moves>0?firstlist:NULL),(params->rave_moves>0?secondlist:NULL));
-  if (playoutboard->getPassesPlayed()>=2 && !params->rules_all_stones_alive)
+  if (!params->rules_all_stones_alive && playoutboard->getPassesPlayed()>=2 && (playoutboard->getMovesMade()-currentboard->getMovesMade())<=2)
   {
     finalscore=playoutboard->territoryScore(territorymap,params->territory_threshold)-params->engine->getKomi();
   }
