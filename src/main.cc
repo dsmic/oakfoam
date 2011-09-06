@@ -39,20 +39,47 @@ int main(int argc, char* argv[])
     std::string arg = argv[i];
     if (arg=="-h" || arg=="--help" )
     {
-      printusage();
+      #ifdef HAVE_MPI
+        if (MPI::COMM_WORLD.Get_rank()==0)
+          printusage();
+      #else
+        printusage();
+      #endif
+      delete oakfoam;
+      #ifdef HAVE_MPI
+        MPI::Finalize();
+      #endif
       return 0;
     }
     else if (arg=="-V" || arg=="--version" )
     {
-      std::cout << PACKAGE_STRING << "\n";
+      #ifdef HAVE_MPI
+        if (MPI::COMM_WORLD.Get_rank()==0)
+          std::cout << PACKAGE_STRING << "\n";
+      #else
+        std::cout << PACKAGE_STRING << "\n";
+      #endif
+      delete oakfoam;
+      #ifdef HAVE_MPI
+        MPI::Finalize();
+      #endif
       return 0;
     }
     else if (arg=="-c" || arg=="--config" )
     {
       i++;
+      #ifdef HAVE_MPI
+        if (MPI::COMM_WORLD.Get_rank()!=0)
+          continue;
+      #endif
+      
       if (i>=argc)
       {
         std::cerr << "error missing file\n";
+        delete oakfoam;
+        #ifdef HAVE_MPI
+          MPI::Finalize();
+        #endif
         return 1;
       }
       std::ifstream fin(argv[i]);
@@ -60,6 +87,10 @@ int main(int argc, char* argv[])
       if (!fin)
       {
         std::cerr << "error opening file: " << argv[i] << "\n";
+        delete oakfoam;
+        #ifdef HAVE_MPI
+          MPI::Finalize();
+        #endif
         return 1;
       }
       
@@ -71,6 +102,10 @@ int main(int argc, char* argv[])
         if (!oakfoam->gtpe->executeCommand(line))
         {
           fin.close();
+          delete oakfoam;
+          #ifdef HAVE_MPI
+            MPI::Finalize();
+          #endif
           return 0;
         }
       }
@@ -86,6 +121,10 @@ int main(int argc, char* argv[])
       if (i>=argc)
       {
         std::cerr << "error missing file\n";
+        delete oakfoam;
+        #ifdef HAVE_MPI
+          MPI::Finalize();
+        #endif
         return 1;
       }
       
@@ -97,6 +136,10 @@ int main(int argc, char* argv[])
       if (!logfile)
       {
         std::cerr << "error opening file: " << argv[i] << "\n";
+        delete oakfoam;
+        #ifdef HAVE_MPI
+          MPI::Finalize();
+        #endif
         return 1;
       }
       
@@ -108,7 +151,16 @@ int main(int argc, char* argv[])
     }
     else
     {
-      std::cout << "Invalid argument: " << arg << "\n";
+      #ifdef HAVE_MPI
+        if (MPI::COMM_WORLD.Get_rank()==0)
+          std::cout << "Invalid argument: " << arg << "\n";
+      #else
+        std::cout << "Invalid argument: " << arg << "\n";
+      #endif
+      delete oakfoam;
+      #ifdef HAVE_MPI
+        MPI::Finalize();
+      #endif
       return 1;
     }
   }
