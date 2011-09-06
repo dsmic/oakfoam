@@ -1886,3 +1886,79 @@ Go::ZobristTree::Node *Go::ZobristTree::Node::find(Go::ZobristHash h) const
   }
 }
 
+Go::TerritoryMap::TerritoryMap(int sz)
+  : size(sz),
+    sizedata(1+(sz+1)*(sz+2))
+{
+  boards=0;
+  blackowns=new ObjectBoard<int>(sz);
+  whiteowns=new ObjectBoard<int>(sz);
+  blackowns->fill(0);
+  whiteowns->fill(0);
+}
+
+Go::TerritoryMap::~TerritoryMap()
+{
+  delete blackowns;
+  delete whiteowns;
+}
+
+void Go::TerritoryMap::addPositionOwner(int pos, Go::Color col)
+{
+  switch (col)
+  {
+    case Go::BLACK:
+      blackowns->set(pos,blackowns->get(pos)+1);
+      break;
+    case Go::WHITE:
+      whiteowns->set(pos,whiteowns->get(pos)+1);
+      break;
+    default:
+      break;
+  }
+}
+
+float Go::TerritoryMap::getPositionOwner(int pos) const
+{
+  int b=blackowns->get(pos);
+  int w=whiteowns->get(pos);
+  int hb=boards/2;
+  
+  if (b>w) // possibly more black
+  {
+    if (b>hb) // more black
+      return (float)(b-hb)/hb;
+    else
+      return 0;
+  }
+  else // possibly more white
+  {
+    if (w>hb) // more white
+      return -(float)(w-hb)/hb;
+    else
+      return 0;
+  }
+}
+
+void Go::Board::updateTerritoryMap(Go::TerritoryMap *tmap) const
+{
+  if (lastscoredata!=NULL)
+  {
+    for (int p=0;p<sizedata;p++)
+    {
+      tmap->addPositionOwner(p,lastscoredata[p].color);
+    }
+    tmap->incrementBoards();
+  }
+}
+
+void Go::TerritoryMap::decay(float factor)
+{
+  for (int p=0;p<sizedata;p++)
+  {
+    blackowns->set(p,(float)blackowns->get(p)*factor);
+    whiteowns->set(p,(float)whiteowns->get(p)*factor);
+  }
+  boards=(float)boards*factor;
+}
+

@@ -70,6 +70,8 @@
 #define PONDERING_ENABLED false
 #define PONDERING_PLAYOUTS_MAX 100000
 
+#define TERRITORY_DECAYFACTOR 0.5
+
 #define THREAD_COUNT 1
 
 #define INTERRUPTS_ENABLED false
@@ -240,6 +242,7 @@ class Engine
     volatile bool stopthinking;
     volatile bool stoppondering;
     Worker::Pool *threadpool;
+    Go::TerritoryMap *territorymap;
     
     #ifdef HAVE_MPI
       int mpiworldsize,mpirank;

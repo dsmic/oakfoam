@@ -121,6 +121,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("tree","resign_ratio_threshold",&(params->resign_ratio_threshold),RESIGN_RATIO_THRESHOLD);
   params->addParameter("tree","resign_move_factor_threshold",&(params->resign_move_factor_threshold),RESIGN_MOVE_FACTOR_THRESHOLD);
   
+  params->addParameter("tree","territory_decayfactor",&(params->territory_decayfactor),TERRITORY_DECAYFACTOR);
+  
   params->addParameter("rules","rules_positional_superko_enabled",&(params->rules_positional_superko_enabled),RULES_POSITIONAL_SUPERKO_ENABLED);
   params->addParameter("rules","rules_superko_top_ply",&(params->rules_superko_top_ply),RULES_SUPERKO_TOP_PLY);
   params->addParameter("rules","rules_superko_prune_after",&(params->rules_superko_prune_after),RULES_SUPERKO_PRUNE_AFTER);
@@ -168,6 +170,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   movehistory=new std::list<Go::Move>();
   hashtree=new Go::ZobristTree();
   
+  territorymap=new Go::TerritoryMap(boardsize);
+  
   this->addGtpCommands();
   
   movetree=NULL;
@@ -198,6 +202,7 @@ Engine::~Engine()
   delete book;
   delete zobristtable;
   delete playout;
+  delete territorymap;
 }
 
 void Engine::run()
@@ -1679,21 +1684,14 @@ void Engine::gtpShowTerritory(void *instance, Gtp::Engine* gtpe, Gtp::Command* c
 {
   Engine *me=(Engine*)instance;
   
-  Go::Board *board=me->currentboard;
-  Go::Color col=board->nextToMove();
-  
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printString("\n");
   for (int y=me->boardsize-1;y>=0;y--)
   {
     for (int x=0;x<me->boardsize;x++)
     {
-      Go::Move move=Go::Move(col,Go::Position::xy2pos(x,y,me->boardsize)); 
-      Tree *tree=me->movetree->getChild(move);
-      if (tree==NULL || !tree->isPrimary())
-        gtpe->getOutput()->printf("0 ");
-      else
-        gtpe->getOutput()->printf("%.2f ",tree->getTerritoryOwner());
+      int pos=Go::Position::xy2pos(x,y,me->boardsize);
+      gtpe->getOutput()->printf("%.2f ",me->territorymap->getPositionOwner(pos));
     }
     gtpe->getOutput()->printf("\n");
   }
@@ -2217,6 +2215,7 @@ void Engine::makeMove(Go::Move move)
     gtpe->getOutput()->printfDebug("WARNING! move is a superko violation\n");
   hashtree->addHash(hash);
   params->uct_slow_update_last=0;
+  territorymap->decay(params->territory_decayfactor);
   if (params->uct_keep_subtree)
     this->chooseSubTree(move);
   else
@@ -2260,11 +2259,13 @@ void Engine::clearBoard()
   delete currentboard;
   delete movehistory;
   delete hashtree;
+  delete territorymap;
   if (newsize)
     delete zobristtable;
   currentboard = new Go::Board(boardsize);
   movehistory = new std::list<Go::Move>();
   hashtree=new Go::ZobristTree();
+  territorymap=new Go::TerritoryMap(boardsize);
   if (newsize)
     zobristtable=new Go::ZobristTable(params,boardsize,ZOBRIST_HASH_SEED);
   if (!params->uct_symmetry_use)
@@ -2418,6 +2419,8 @@ void Engine::doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::
     playouttree->addWin();
   else
     playouttree->addLose();
+  
+  playoutboard->updateTerritoryMap(territorymap);
   
   if (!playoutjigo)
   {

@@ -274,6 +274,23 @@ namespace Go
       Go::ZobristTree::Node *const tree;
   };
   
+  class TerritoryMap
+  {
+    public:
+      TerritoryMap(int sz);
+      ~TerritoryMap();
+      
+      void incrementBoards() { boards++; };
+      void addPositionOwner(int pos, Go::Color col);
+      float getPositionOwner(int pos) const;
+      void decay(float factor);
+      
+    private:
+      const int size, sizedata;
+      int boards;
+      ObjectBoard<int> *blackowns,*whiteowns;
+  };
+  
   class Group;
   
   class Vertex
@@ -438,6 +455,7 @@ namespace Go
       Go::ZobristHash getZobristHash(Go::ZobristTable *table) const;
       
       Go::Color getScoredOwner(int pos) const;
+      void updateTerritoryMap(Go::TerritoryMap *tmap) const;
     
     private:
       const int size;
