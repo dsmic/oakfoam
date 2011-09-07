@@ -179,6 +179,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   movetree=NULL;
   this->clearMoveTree();
   
+  params->cleanup_in_progress=false;
+  
   params->uct_last_r2=0;
   
   params->thread_job=Parameters::TJ_GENMOVE;
@@ -320,7 +322,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("play",this,&Engine::gtpPlay);
   gtpe->addFunctionCommand("genmove",this,&Engine::gtpGenMove);
   gtpe->addFunctionCommand("reg_genmove",this,&Engine::gtpRegGenMove);
-  gtpe->addFunctionCommand("kgs-genmove_cleanup",this,&Engine::gtpGenMove);
+  gtpe->addFunctionCommand("kgs-genmove_cleanup",this,&Engine::gtpGenMoveCleanup);
   gtpe->addFunctionCommand("showboard",this,&Engine::gtpShowBoard);
   gtpe->addFunctionCommand("final_score",this,&Engine::gtpFinalScore);
   gtpe->addFunctionCommand("final_status_list",this,&Engine::gtpFinalStatusList);
@@ -539,6 +541,45 @@ void Engine::gtpGenMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     gtpe->getOutput()->printString("invalid color");
     gtpe->getOutput()->endResponse();
     return;
+  }
+  
+  Go::Move *move;
+  me->generateMove((gtpcol==Gtp::BLACK ? Go::BLACK : Go::WHITE),&move,true);
+  Gtp::Vertex vert={move->getX(me->boardsize),move->getY(me->boardsize)};
+  delete move;
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printVertex(vert);
+  gtpe->getOutput()->endResponse();
+}
+
+void Engine::gtpGenMoveCleanup(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("color is required");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  Gtp::Color gtpcol = cmd->getColorArg(0);
+  
+  if (gtpcol==Gtp::INVALID)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("invalid color");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  if (!me->params->cleanup_in_progress)
+  {
+    me->params->cleanup_in_progress=true;
+    if (!me->params->rules_all_stones_alive)
+      me->clearMoveTree();
   }
   
   Go::Move *move;
@@ -2306,6 +2347,7 @@ void Engine::clearBoard()
   this->clearMoveTree();
   params->surewin_expected=false;
   playout->resetLGRF();
+  params->cleanup_in_progress=false;
 }
 
 void Engine::clearMoveTree()
@@ -2443,7 +2485,7 @@ void Engine::doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::
   
   float finalscore;
   playout->doPlayout(settings,playoutboard,finalscore,playouttree,playoutmoves,col,(params->rave_moves>0?firstlist:NULL),(params->rave_moves>0?secondlist:NULL));
-  if (!params->rules_all_stones_alive && playoutboard->getPassesPlayed()>=2 && (playoutboard->getMovesMade()-currentboard->getMovesMade())<=2)
+  if (!params->rules_all_stones_alive && !params->cleanup_in_progress && playoutboard->getPassesPlayed()>=2 && (playoutboard->getMovesMade()-currentboard->getMovesMade())<=2)
   {
     finalscore=playoutboard->territoryScore(territorymap,params->territory_threshold)-params->engine->getKomi();
   }

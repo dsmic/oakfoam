@@ -104,6 +104,7 @@ class Parameters
     bool early_stop_occured;
     float uct_last_r2;
     int uct_initial_playouts;
+    bool cleanup_in_progress;
     
     float territory_decayfactor;
     float territory_threshold;
