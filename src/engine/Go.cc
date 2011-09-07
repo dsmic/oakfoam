@@ -1891,8 +1891,8 @@ Go::TerritoryMap::TerritoryMap(int sz)
     sizedata(1+(sz+1)*(sz+2))
 {
   boards=0;
-  blackowns=new ObjectBoard<int>(sz);
-  whiteowns=new ObjectBoard<int>(sz);
+  blackowns=new ObjectBoard<float>(sz);
+  whiteowns=new ObjectBoard<float>(sz);
   blackowns->fill(0);
   whiteowns->fill(0);
 }
@@ -1920,21 +1920,21 @@ void Go::TerritoryMap::addPositionOwner(int pos, Go::Color col)
 
 float Go::TerritoryMap::getPositionOwner(int pos) const
 {
-  int b=blackowns->get(pos);
-  int w=whiteowns->get(pos);
-  int hb=boards/2;
+  float b=blackowns->get(pos);
+  float w=whiteowns->get(pos);
+  float hb=boards/2;
   
   if (b>w) // possibly more black
   {
     if (b>hb) // more black
-      return (float)(b-hb)/hb;
+      return (b-hb)/hb;
     else
       return 0;
   }
   else // possibly more white
   {
     if (w>hb) // more white
-      return -(float)(w-hb)/hb;
+      return -(w-hb)/hb;
     else
       return 0;
   }
@@ -1956,17 +1956,17 @@ void Go::TerritoryMap::decay(float factor)
 {
   for (int p=0;p<sizedata;p++)
   {
-    blackowns->set(p,(float)blackowns->get(p)*factor);
-    whiteowns->set(p,(float)whiteowns->get(p)*factor);
+    blackowns->set(p,blackowns->get(p)*factor);
+    whiteowns->set(p,whiteowns->get(p)*factor);
   }
-  boards=(float)boards*factor;
+  boards=boards*factor;
 }
 
 bool Go::Board::isAlive(Go::TerritoryMap *tmap, float threshold, int pos) const
 {
   Go::Color col=this->getColor(pos);
   if (col==Go::BLACK)
-    return (1-tmap->getPositionOwner(pos))<threshold;
+    return (-tmap->getPositionOwner(pos))<threshold;
   else if (col==Go::WHITE)
     return (tmap->getPositionOwner(pos))<threshold;
   else

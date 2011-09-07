@@ -287,8 +287,8 @@ namespace Go
       
     private:
       const int size, sizedata;
-      int boards;
-      ObjectBoard<int> *blackowns,*whiteowns;
+      float boards;
+      ObjectBoard<float> *blackowns,*whiteowns;
   };
   
   class Group;
