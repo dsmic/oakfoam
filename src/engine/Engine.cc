@@ -117,6 +117,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("tree","surewin_threshold",&(params->surewin_threshold),SUREWIN_THRESHOLD);
   params->surewin_expected=false;
   params->addParameter("tree","surewin_pass_bonus",&(params->surewin_pass_bonus),SUREWIN_PASS_BONUS);
+  params->addParameter("tree","surewin_touchdead_bonus",&(params->surewin_touchdead_bonus),SUREWIN_TOUCHDEAD_BONUS);
+  params->addParameter("tree","surewin_oppoarea_penalty",&(params->surewin_oppoarea_penalty),SUREWIN_OPPOAREA_PENALTY);
   
   params->addParameter("tree","resign_ratio_threshold",&(params->resign_ratio_threshold),RESIGN_RATIO_THRESHOLD);
   params->addParameter("tree","resign_move_factor_threshold",&(params->resign_move_factor_threshold),RESIGN_MOVE_FACTOR_THRESHOLD);
@@ -2761,14 +2763,56 @@ void Engine::doSlowUpdate()
   {
     params->surewin_expected=(besttree->getRatio()>=params->surewin_threshold);
     
-    if (params->surewin_expected && params->surewin_pass_bonus>0)
+    if (params->surewin_expected && (params->surewin_pass_bonus>0 || params->surewin_touchdead_bonus>0 || params->surewin_oppoarea_penalty>0))
     {
       Tree *passtree=movetree->getChild(Go::Move(currentboard->nextToMove(),Go::Move::PASS));
       
       if (passtree->isPruned())
       {
         passtree->setPruned(false);
-        passtree->setProgressiveBiasBonus(params->surewin_pass_bonus);
+        if (params->surewin_pass_bonus>0)
+          passtree->setProgressiveBiasBonus(params->surewin_pass_bonus);
+        
+        if (params->surewin_touchdead_bonus>0)
+        {
+          int size=boardsize;
+          for(std::list<Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
+          {
+            int pos=(*iter)->getMove().getPosition();
+            Go::Color col=(*iter)->getMove().getColor();
+            Go::Color othercol=Go::otherColor(col);
+            
+            bool founddead=false;
+            foreach_adjacent(pos,p,{
+              if (currentboard->getColor(p)==othercol && !currentboard->isAlive(territorymap,params->territory_threshold,p))
+                founddead=true;
+            });
+            
+            if (founddead)
+            {
+              (*iter)->setPruned(false);
+              (*iter)->setProgressiveBiasBonus(params->surewin_touchdead_bonus);
+            }
+          }
+        }
+        
+        if (params->surewin_oppoarea_penalty>0)
+        {
+          for(std::list<Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
+          {
+            int pos=(*iter)->getMove().getPosition();
+            Go::Color col=(*iter)->getMove().getColor();
+            
+            bool oppoarea=false;
+            if (col==Go::BLACK)
+              oppoarea=(-territorymap->getPositionOwner(pos))>params->territory_threshold;
+            else
+              oppoarea=territorymap->getPositionOwner(pos)>params->territory_threshold;
+            
+            if (oppoarea)
+              (*iter)->setProgressiveBiasBonus(-params->surewin_oppoarea_penalty);
+          }
+        }
       }
     }
     
