@@ -641,7 +641,7 @@ void Engine::gtpFinalScore(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   Engine *me=(Engine*)instance;
   float score;
   
-  if (me->params->rules_all_stones_alive)
+  if (me->params->rules_all_stones_alive || me->params->cleanup_in_progress)
     score=me->currentboard->score()-me->komi;
   else
     score=me->currentboard->territoryScore(me->territorymap,me->params->territory_threshold)-me->komi;
@@ -671,7 +671,7 @@ void Engine::gtpFinalStatusList(void *instance, Gtp::Engine* gtpe, Gtp::Command*
   
   if (arg=="dead")
   {
-    if (me->params->rules_all_stones_alive)
+    if (me->params->rules_all_stones_alive || me->params->cleanup_in_progress)
     {
       gtpe->getOutput()->startResponse(cmd);
       gtpe->getOutput()->endResponse();
@@ -708,7 +708,7 @@ void Engine::gtpFinalStatusList(void *instance, Gtp::Engine* gtpe, Gtp::Command*
         int pos=Go::Position::xy2pos(x,y,me->boardsize);
         if (me->currentboard->boardData()[pos].color!=Go::EMPTY)
         {
-          if (me->params->rules_all_stones_alive || me->currentboard->isAlive(me->territorymap,me->params->territory_threshold,pos))
+          if (me->params->rules_all_stones_alive || me->params->cleanup_in_progress || me->currentboard->isAlive(me->territorymap,me->params->territory_threshold,pos))
           {
             Gtp::Vertex vert={x,y};
             gtpe->getOutput()->printVertex(vert);
@@ -2009,6 +2009,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     
     movetree->pruneSuperkoViolations();
     this->allowContinuedPlay();
+    this->updateTerritoryScoringInTree();
     params->uct_slow_update_last=0;
     params->uct_last_r2=-1;
     
@@ -2964,6 +2965,48 @@ void Engine::doThreadWork(Worker::Settings *settings)
     case Parameters::TJ_DONPLTS:
       this->doNPlayoutsThread(settings);
       break;
+  }
+}
+
+void Engine::updateTerritoryScoringInTree()
+{
+  if (!params->rules_all_stones_alive)
+  {
+    float scorenow;
+    if (params->cleanup_in_progress)
+      scorenow=currentboard->score()-params->engine->getKomi();
+    else
+      scorenow=currentboard->territoryScore(territorymap,params->territory_threshold)-params->engine->getKomi();
+    
+    Go::Color col=currentboard->nextToMove();
+    Go::Color othercol=Go::otherColor(col);
+    
+    bool winforcol=Go::Board::isWinForColor(col,scorenow);
+    bool jigonow=(scorenow==0);
+    
+    Tree *passtree=movetree->getChild(Go::Move(col,Go::Move::PASS));
+    if (passtree!=NULL)
+    {
+      passtree->resetNode();
+      if (jigonow)
+        passtree->addPartialResult(0.5,1,false);
+      else if (winforcol)
+        passtree->addWin();
+      else
+        passtree->addLose();
+      
+      Tree *pass2tree=passtree->getChild(Go::Move(othercol,Go::Move::PASS));
+      if (pass2tree!=NULL)
+      {
+        pass2tree->resetNode();
+        if (jigonow)
+          pass2tree->addPartialResult(0.5,1,false);
+        else if (!winforcol)
+          pass2tree->addWin();
+        else
+          pass2tree->addLose();
+      }
+    }
   }
 }
 

@@ -289,6 +289,7 @@ class Engine
     void doSlowUpdate();
     
     void allowContinuedPlay();
+    void updateTerritoryScoringInTree();
     
     boost::posix_time::ptime timeNow() { return boost::posix_time::microsec_clock::local_time(); };
     float timeSince(boost::posix_time::ptime past) { return (float)(boost::posix_time::microsec_clock::local_time()-past).total_milliseconds()/1000; };

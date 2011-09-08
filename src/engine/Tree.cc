@@ -1214,3 +1214,13 @@ void Tree::doSuperkoCheck()
   superkochecked=true;
 }
 
+void Tree::resetNode()
+{
+  playouts=0;
+  wins=0;
+  raveplayouts=0;
+  ravewins=0;
+  hasTerminalWinrate=false;
+  hasTerminalWin=false;
+}
+

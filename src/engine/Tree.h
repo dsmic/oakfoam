@@ -86,6 +86,7 @@ class Tree
     void updateRAVE(Go::Color wincol,Go::BitBoard *blacklist,Go::BitBoard *whitelist);
     void pruneSuperkoViolations();
     
+    void resetNode();
     void allowContinuedPlay();
     
     float secondBestPlayouts() const;
