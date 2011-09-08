@@ -1,6 +1,7 @@
 #ifndef DEF_OAKFOAM_PARAMETERS_H
 #define DEF_OAKFOAM_PARAMETERS_H
 
+#include <config.h>
 #include <string>
 #include <list>
 //from "Engine.h":
@@ -147,10 +148,16 @@ class Parameters
     bool features_output_competitions_mmstyle;
     bool features_ordered_comparison;
     
+    #ifdef HAVE_MPI
+      double mpi_update_period;
+      double mpi_last_update;
+    #endif
+    
     typedef void (*UpdateFunction)(void *instance, std::string id);
     
     void addParameter(std::string category, std::string id, int *ptr, int def, Parameters::UpdateFunction func=NULL, void *instance=NULL);
     void addParameter(std::string category, std::string id, float *ptr, float def, Parameters::UpdateFunction func=NULL, void *instance=NULL);
+    void addParameter(std::string category, std::string id, double *ptr, double def, Parameters::UpdateFunction func=NULL, void *instance=NULL);
     void addParameter(std::string category, std::string id, bool *ptr, bool def, Parameters::UpdateFunction func=NULL, void *instance=NULL);
     void addParameter(std::string category, std::string id, std::string *ptr, std::string def, Parameters::UpdateFunction func=NULL, void *instance=NULL);
     void addParameter(std::string category, std::string id, std::string *ptr, std::list<std::string> *options, std::string def, Parameters::UpdateFunction func=NULL, void *instance=NULL);
@@ -165,6 +172,7 @@ class Parameters
     {
       INTEGER,
       FLOAT,
+      DOUBLE,
       BOOLEAN,
       STRING,
       LIST,
@@ -186,6 +194,7 @@ class Parameters
     
     bool setParameterInteger(Parameters::Parameter *param, std::string val);
     bool setParameterFloat(Parameters::Parameter *param, std::string val);
+    bool setParameterDouble(Parameters::Parameter *param, std::string val);
     bool setParameterBoolean(Parameters::Parameter *param, std::string val);
     bool setParameterString(Parameters::Parameter *param, std::string val);
     bool setParameterList(Parameters::Parameter *param, std::string val);
@@ -194,6 +203,7 @@ class Parameters
     void printParameterForGTP(Gtp::Engine *gtpe, Parameters::Parameter *param);
     void printParameterIntegerForGTP(Gtp::Engine *gtpe, Parameters::Parameter *param);
     void printParameterFloatForGTP(Gtp::Engine *gtpe, Parameters::Parameter *param);
+    void printParameterDoubleForGTP(Gtp::Engine *gtpe, Parameters::Parameter *param);
     void printParameterBooleanForGTP(Gtp::Engine *gtpe, Parameters::Parameter *param);
     void printParameterStringForGTP(Gtp::Engine *gtpe, Parameters::Parameter *param);
     void printParameterListForGTP(Gtp::Engine *gtpe, Parameters::Parameter *param);
@@ -202,6 +212,7 @@ class Parameters
     void printParameterForDescription(Gtp::Engine *gtpe, Parameters::Parameter *param);
     void printParameterIntegerForDescription(Gtp::Engine *gtpe, Parameters::Parameter *param);
     void printParameterFloatForDescription(Gtp::Engine *gtpe, Parameters::Parameter *param);
+    void printParameterDoubleForDescription(Gtp::Engine *gtpe, Parameters::Parameter *param);
     void printParameterBooleanForDescription(Gtp::Engine *gtpe, Parameters::Parameter *param);
     void printParameterStringForDescription(Gtp::Engine *gtpe, Parameters::Parameter *param);
     void printParameterListForDescription(Gtp::Engine *gtpe, Parameters::Parameter *param);

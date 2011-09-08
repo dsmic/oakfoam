@@ -43,6 +43,19 @@ void Parameters::addParameter(std::string category, std::string id, float *ptr, 
   (*ptr)=def;
 }
 
+void Parameters::addParameter(std::string category, std::string id, double *ptr, double def, Parameters::UpdateFunction func, void *instance)
+{
+  Parameters::Parameter *param=new Parameters::Parameter();
+  param->category=category;
+  param->id=id;
+  param->ptr=ptr;
+  param->type=Parameters::DOUBLE;
+  param->func=func;
+  param->instance=instance;
+  paramlist.push_back(param);
+  (*ptr)=def;
+}
+
 void Parameters::addParameter(std::string category, std::string id, bool *ptr, bool def, Parameters::UpdateFunction func, void *instance)
 {
   Parameters::Parameter *param=new Parameters::Parameter();
@@ -111,6 +124,9 @@ bool Parameters::setParameter(std::string id, std::string val)
         case FLOAT:
           ret=this->setParameterFloat((*iter),val);
           break;
+        case DOUBLE:
+          ret=this->setParameterDouble((*iter),val);
+          break;
         case BOOLEAN:
           ret=this->setParameterBoolean((*iter),val);
           break;
@@ -155,6 +171,20 @@ bool Parameters::setParameterFloat(Parameters::Parameter *param, std::string val
   if (iss >> v)
   {
     (*(float*)(param->ptr))=v;
+    return true;
+  }
+  else
+    return false;
+}
+
+bool Parameters::setParameterDouble(Parameters::Parameter *param, std::string val)
+{
+  std::istringstream iss(val);
+  double v;
+  
+  if (iss >> v)
+  {
+    (*(double*)(param->ptr))=v;
     return true;
   }
   else
@@ -228,6 +258,9 @@ void Parameters::printParameterForGTP(Gtp::Engine *gtpe, Parameters::Parameter *
     case FLOAT:
       this->printParameterFloatForGTP(gtpe,param);
       break;
+    case DOUBLE:
+      this->printParameterDoubleForGTP(gtpe,param);
+      break;
     case BOOLEAN:
       this->printParameterBooleanForGTP(gtpe,param);
       break;
@@ -253,6 +286,12 @@ void Parameters::printParameterFloatForGTP(Gtp::Engine *gtpe, Parameters::Parame
 {
   float val=(*(float*)(param->ptr));
   gtpe->getOutput()->printf("[string] %s %.3f\n",param->id.c_str(),val);
+}
+
+void Parameters::printParameterDoubleForGTP(Gtp::Engine *gtpe, Parameters::Parameter *param)
+{
+  double val=(*(double*)(param->ptr));
+  gtpe->getOutput()->printf("[string] %s %.3lf\n",param->id.c_str(),val);
 }
 
 void Parameters::printParameterBooleanForGTP(Gtp::Engine *gtpe, Parameters::Parameter *param)
@@ -302,6 +341,9 @@ void Parameters::printParameterForDescription(Gtp::Engine *gtpe, Parameters::Par
     case FLOAT:
       this->printParameterFloatForDescription(gtpe,param);
       break;
+    case DOUBLE:
+      this->printParameterDoubleForDescription(gtpe,param);
+      break;
     case BOOLEAN:
       this->printParameterBooleanForDescription(gtpe,param);
       break;
@@ -327,6 +369,12 @@ void Parameters::printParameterFloatForDescription(Gtp::Engine *gtpe, Parameters
 {
   float val=(*(float*)(param->ptr));
   gtpe->getOutput()->printf("  %s %.3f\n",param->id.c_str(),val);
+}
+
+void Parameters::printParameterDoubleForDescription(Gtp::Engine *gtpe, Parameters::Parameter *param)
+{
+  double val=(*(double*)(param->ptr));
+  gtpe->getOutput()->printf("  %s %.3lf\n",param->id.c_str(),val);
 }
 
 void Parameters::printParameterBooleanForDescription(Gtp::Engine *gtpe, Parameters::Parameter *param)

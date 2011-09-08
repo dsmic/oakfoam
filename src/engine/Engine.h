@@ -107,6 +107,7 @@
 #define ZOBRIST_HASH_SEED 0x713df891
 
 #define MPI_STRING_MAX 255
+#define MPI_UPDATE_PERIOD 0.1
 
 #include <config.h>
 #include <string>
@@ -268,7 +269,9 @@ class Engine
         MPICMD_BOOKADD,
         MPICMD_BOOKREMOVE,
         MPICMD_BOOKCLEAR,
-        MPICMD_BOOKLOAD
+        MPICMD_BOOKLOAD,
+        MPICMD_CLEARTREE,
+        MPICMD_GENMOVE
       };
       
       void mpiCommandHandler();
@@ -276,6 +279,8 @@ class Engine
       void mpiBroadcastString(std::string input);
       void mpiRecvBroadcastedArgs(unsigned int *arg1=NULL, unsigned int *arg2=NULL, unsigned int *arg3=NULL);
       std::string mpiRecvBroadcastedString();
+      void mpiGenMove(Go::Color col);
+      bool mpiSyncUpdate(int count);
     #endif
     
     void addGtpCommands();

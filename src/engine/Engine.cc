@@ -155,6 +155,10 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("other","features_output_competitions_mmstyle",&(params->features_output_competitions_mmstyle),false);
   params->addParameter("other","features_ordered_comparison",&(params->features_ordered_comparison),false);
   
+  #ifdef HAVE_MPI
+    params->addParameter("mpi","mpi_update_period",&(params->mpi_update_period),MPI_UPDATE_PERIOD);
+  #endif
+  
   patterntable=new Pattern::ThreeByThreeTable();
   patterntable->loadPatternDefaults();
   
@@ -2007,6 +2011,13 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
       this->clearMoveTree();
     }
     
+    #ifdef HAVE_MPI
+      MPIRANK0_ONLY(
+        unsigned int tmp1=(unsigned int)col;
+        this->mpiBroadcastCommand(MPICMD_GENMOVE,&tmp1);
+      );
+    #endif
+    
     movetree->pruneSuperkoViolations();
     this->allowContinuedPlay();
     this->updateTerritoryScoringInTree();
@@ -2014,6 +2025,9 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     params->uct_last_r2=-1;
     
     int startplayouts=(int)movetree->getPlayouts();
+    #ifdef HAVE_MPI
+      params->mpi_last_update=MPI::Wtime();
+    #endif
     
     params->uct_initial_playouts=startplayouts;
     params->thread_job=Parameters::TJ_GENMOVE;
@@ -2355,6 +2369,10 @@ void Engine::clearBoard()
 
 void Engine::clearMoveTree()
 {
+  #ifdef HAVE_MPI
+    MPIRANK0_ONLY(this->mpiBroadcastCommand(MPICMD_CLEARTREE););
+  #endif
+  
   if (movetree!=NULL)
     delete movetree;
   
@@ -2828,6 +2846,12 @@ void Engine::generateThread(Worker::Settings *settings)
   int livegfxupdate=0;
   float time_allocated;
   long totalplayouts;
+  #ifdef HAVE_MPI
+    bool mpi_inform_others=false;
+    bool mpi_rank_other=(mpirank!=0);
+  #else
+    bool mpi_rank_other=false;
+  #endif
   
   if (!time->isNoTiming())
   {
@@ -2862,7 +2886,21 @@ void Engine::generateThread(Worker::Settings *settings)
     this->doPlayout(settings,firstlist,secondlist);
     totalplayouts+=1;
     
-    if (settings->thread->getID()==0 && params->uct_stop_early && params->uct_slow_update_last==0 && totalplayouts>=(params->playouts_per_move_min))
+    #ifdef HAVE_MPI
+      if (settings->thread->getID()==0 && MPI::Wtime()>(params->mpi_last_update+params->mpi_update_period))
+      {
+        fprintf(stderr,"wtime: %lf (%d)\n",MPI::Wtime(),mpirank);
+        
+        mpi_inform_others=this->mpiSyncUpdate(1);
+        
+        params->mpi_last_update=MPI::Wtime();
+        
+        if (!mpi_inform_others)
+          break;
+      }
+    #endif
+    
+    if (settings->thread->getID()==0 && !mpi_rank_other && params->uct_stop_early && params->uct_slow_update_last==0 && totalplayouts>=(params->playouts_per_move_min))
     {
       Tree *besttree=movetree->getRobustChild();
       if (besttree!=NULL)
@@ -2908,6 +2946,11 @@ void Engine::generateThread(Worker::Settings *settings)
   
   delete firstlist;
   delete secondlist;
+  
+  #ifdef HAVE_MPI
+  if (settings->thread->getID()==0 && mpi_inform_others)
+    this->mpiSyncUpdate(0);
+  #endif
   
   //stopthinking=true;
 }
@@ -3097,6 +3140,13 @@ void Engine::mpiCommandHandler()
         book=new Book(params);
         book->loadFile(this->mpiRecvBroadcastedString());
         break;
+      case MPICMD_CLEARTREE:
+        this->clearMoveTree();
+        break;
+      case MPICMD_GENMOVE:
+        this->mpiRecvBroadcastedArgs(&tmp1);
+        this->mpiGenMove((Go::Color)tmp1);
+        break;
       case MPICMD_QUIT:
       default:
         running=false;
@@ -3156,6 +3206,43 @@ std::string Engine::mpiRecvBroadcastedString()
   char buffer[MPI_STRING_MAX];
   MPI::COMM_WORLD.Bcast(buffer,MPI_STRING_MAX,MPI::CHAR,0);
   return std::string(buffer);
+}
+
+void Engine::mpiGenMove(Go::Color col)
+{
+  fprintf(stderr,"genmove on rank %d starting...\n",mpirank);
+  currentboard->setNextToMove(col);
+  
+  movetree->pruneSuperkoViolations();
+  this->allowContinuedPlay();
+  this->updateTerritoryScoringInTree();
+  params->uct_slow_update_last=0;
+  params->uct_last_r2=-1;
+  
+  int startplayouts=(int)movetree->getPlayouts();
+  params->mpi_last_update=MPI::Wtime();
+  
+  params->uct_initial_playouts=startplayouts;
+  params->thread_job=Parameters::TJ_GENMOVE;
+  threadpool->startAll();
+  threadpool->waitAll();
+  
+  fprintf(stderr,"genmove on rank %d done.\n",mpirank);
+}
+
+bool Engine::mpiSyncUpdate(int count)
+{
+  int totalcount;
+  
+  //TODO: should replace below 2 mpi cmds with 1
+  MPI::COMM_WORLD.Allreduce(&count,&totalcount,1,MPI::INT,MPI_MIN);
+  if (totalcount==0)
+    return false;
+  MPI::COMM_WORLD.Allreduce(&count,&totalcount,1,MPI::INT,MPI_SUM);
+  
+  fprintf(stderr,"total: %d\n",totalcount);
+  
+  return true;
 }
 
 #endif
