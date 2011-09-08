@@ -113,6 +113,9 @@
 #include <string>
 #include <list>
 #include <boost/date_time/posix_time/posix_time.hpp>
+#ifdef HAVE_MPI
+  #include <mpi.h>
+#endif
 #include "Go.h"
 #include "Tree.h"
 #include "Random.h"
@@ -274,13 +277,23 @@ class Engine
         MPICMD_GENMOVE
       };
       
+      typedef struct
+      {
+        int pos;
+        float playouts;
+        float wins;
+      } mpistruct_updatemsg;
+      MPI::Datatype mpitype_updatemsg;
+      
       void mpiCommandHandler();
       void mpiBroadcastCommand(Engine::MPICommand cmd, unsigned int *arg1=NULL, unsigned int *arg2=NULL, unsigned int *arg3=NULL);
       void mpiBroadcastString(std::string input);
       void mpiRecvBroadcastedArgs(unsigned int *arg1=NULL, unsigned int *arg2=NULL, unsigned int *arg3=NULL);
       std::string mpiRecvBroadcastedString();
       void mpiGenMove(Go::Color col);
-      bool mpiSyncUpdate(int count);
+      bool mpiSyncUpdate(bool stop=false);
+      void mpiBuildDerivedTypes();
+      void mpiFreeDerivedTypes();
     #endif
     
     void addGtpCommands();

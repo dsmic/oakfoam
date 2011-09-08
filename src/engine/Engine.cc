@@ -8,7 +8,6 @@
 #include <iomanip>
 #include <boost/timer.hpp>
 #ifdef HAVE_MPI
-  #include <mpi.h>
   #define MPIRANK0_ONLY(__body) {if (mpirank==0) { __body }}
 #else
   #define MPIRANK0_ONLY(__body) { __body }
@@ -189,6 +188,10 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   
   params->uct_last_r2=0;
   
+  #ifdef HAVE_MPI
+    this->mpiBuildDerivedTypes();
+  #endif
+  
   params->thread_job=Parameters::TJ_GENMOVE;
   threadpool = new Worker::Pool(params);
 }
@@ -197,6 +200,7 @@ Engine::~Engine()
 {
   #ifdef HAVE_MPI
     MPIRANK0_ONLY(this->mpiBroadcastCommand(Engine::MPICMD_QUIT););
+    this->mpiFreeDerivedTypes();
   #endif
   delete threadpool;
   delete circdict;
@@ -2889,9 +2893,9 @@ void Engine::generateThread(Worker::Settings *settings)
     #ifdef HAVE_MPI
       if (settings->thread->getID()==0 && MPI::Wtime()>(params->mpi_last_update+params->mpi_update_period))
       {
-        fprintf(stderr,"wtime: %lf (%d)\n",MPI::Wtime(),mpirank);
+        //fprintf(stderr,"wtime: %lf (%d)\n",MPI::Wtime(),mpirank);
         
-        mpi_inform_others=this->mpiSyncUpdate(1);
+        mpi_inform_others=this->mpiSyncUpdate();
         
         params->mpi_last_update=MPI::Wtime();
         
@@ -2949,7 +2953,7 @@ void Engine::generateThread(Worker::Settings *settings)
   
   #ifdef HAVE_MPI
   if (settings->thread->getID()==0 && mpi_inform_others)
-    this->mpiSyncUpdate(0);
+    this->mpiSyncUpdate(true);
   #endif
   
   //stopthinking=true;
@@ -3230,17 +3234,100 @@ void Engine::mpiGenMove(Go::Color col)
   fprintf(stderr,"genmove on rank %d done.\n",mpirank);
 }
 
-bool Engine::mpiSyncUpdate(int count)
+void Engine::mpiBuildDerivedTypes()
 {
-  int totalcount;
+  //mpistruct_updatemsg tmp;
+  int i=0,count=3;
+  int blocklengths[count];
+  MPI::Datatype types[count];
+  MPI::Aint displacements[count];
+  MPI::Aint extent,lowerbound;
   
-  //TODO: should replace below 2 mpi cmds with 1
-  MPI::COMM_WORLD.Allreduce(&count,&totalcount,1,MPI::INT,MPI_MIN);
-  if (totalcount==0)
+  blocklengths[i]=1;
+  types[i]=MPI::INT;
+  displacements[i]=0;
+  types[i].Get_extent(lowerbound,extent);
+  i++;
+  
+  blocklengths[i]=1;
+  types[i]=MPI::FLOAT;
+  displacements[i]=displacements[i-1]+extent;
+  types[i].Get_extent(lowerbound,extent);
+  i++;
+  
+  blocklengths[i]=1;
+  types[i]=MPI::FLOAT;
+  displacements[i]=displacements[i-1]+extent;
+  types[i].Get_extent(lowerbound,extent);
+  i++;
+  
+  //TODO: verify that above works if struct elements aren't contiguous (word boundaries)
+  
+  mpitype_updatemsg=MPI::Datatype::Create_struct(count,blocklengths,displacements,types);
+  mpitype_updatemsg.Commit();
+}
+
+void Engine::mpiFreeDerivedTypes()
+{
+  mpitype_updatemsg.Free();
+}
+
+bool Engine::mpiSyncUpdate(bool stop)
+{
+  int localcount=(stop?0:1);
+  int maxcount;
+  
+  //TODO: should consider replacing first 2 mpi cmds with 1
+  MPI::COMM_WORLD.Allreduce(&localcount,&maxcount,1,MPI::INT,MPI_MIN);
+  if (maxcount==0)
     return false;
-  MPI::COMM_WORLD.Allreduce(&count,&totalcount,1,MPI::INT,MPI_SUM);
   
-  fprintf(stderr,"total: %d\n",totalcount);
+  localcount=movetree->getChildren()->size(); // testing: sharing whole 1st ply
+  mpistruct_updatemsg localmsgs[localcount];
+  int i=0;
+  for(std::list<Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter)
+  {
+    mpistruct_updatemsg *msg=&localmsgs[i];
+    
+    msg->pos=(*iter)->getMove().getPosition();
+    (*iter)->fetchMpiDiff(msg->playouts,msg->wins);
+    i++;
+  }
+  
+  MPI::COMM_WORLD.Allreduce(&localcount,&maxcount,1,MPI::INT,MPI_MAX);
+  //if (mpirank==0)
+  //  fprintf(stderr,"max updates: %d\n",maxcount);
+  
+  mpistruct_updatemsg allmsgs[maxcount*mpiworldsize];
+  for (int i=0;i<maxcount*mpiworldsize;i++)
+  {
+    allmsgs[i].pos=0; // needed as maxcount is not necessarily mincount
+  }
+  MPI::COMM_WORLD.Allgather(localmsgs,localcount,mpitype_updatemsg,allmsgs,maxcount,mpitype_updatemsg);
+  
+  Go::Color col=currentboard->nextToMove();
+  for (int i=0;i<mpiworldsize;i++)
+  {
+    if (i==mpirank) //ignore own messages
+      continue;
+    
+    for (int j=0;j<maxcount;j++)
+    {
+      mpistruct_updatemsg *msg=&allmsgs[i*maxcount+j];
+      if (msg->pos==0)
+        break;
+      
+      //if (msg->playouts>0)
+      //  fprintf(stderr,"msg: %d %.1f\n",msg->pos,msg->playouts);
+      
+      Tree *thistree=movetree->getChild(Go::Move(col,msg->pos));
+      if (thistree!=NULL)
+      {
+        //fprintf(stderr,"add msg: %d %.1f %.1f\n",msg->pos,msg->playouts,msg->wins);
+        thistree->addMpiDiff(msg->playouts,msg->wins);
+      }
+    }
+  }
   
   return true;
 }

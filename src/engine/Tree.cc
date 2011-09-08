@@ -40,6 +40,10 @@ Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p) : params(
   superkochecked=false;
   superkochildrenviolations=0;
   
+  #ifdef HAVE_MPI
+    this->resetMpiDiff();
+  #endif
+  
   if (parent!=NULL)
   {
     Go::Move pmove=parent->getMove();
@@ -1222,5 +1226,35 @@ void Tree::resetNode()
   ravewins=0;
   hasTerminalWinrate=false;
   hasTerminalWin=false;
+  
+  #ifdef HAVE_MPI
+    this->resetMpiDiff();
+  #endif
 }
+
+#ifdef HAVE_MPI
+
+void Tree::resetMpiDiff()
+{
+  mpi_lastplayouts=playouts;
+  mpi_lastwins=wins;
+}
+
+void Tree::addMpiDiff(float plts, float wns)
+{
+  playouts+=plts;
+  wins+=wns;
+  this->resetMpiDiff();
+  if (!this->isRoot() && parent->isRoot())
+    parent->addMpiDiff(plts,plts-wns);
+}
+
+void Tree::fetchMpiDiff(float &plts, float &wns)
+{
+  plts=playouts-mpi_lastplayouts;
+  wns=wins-mpi_lastwins;
+  this->resetMpiDiff();
+}
+
+#endif
 

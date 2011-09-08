@@ -4,6 +4,7 @@
 #define TREE_TERMINAL_URGENCY 100
 // must be greater than 1+max(bias)
 
+#include <config.h>
 #include <list>
 #include <string>
 #include <boost/thread/mutex.hpp>
@@ -56,6 +57,7 @@ class Tree
     
     Tree *getChild(Go::Move move) const;
     float getPlayouts() const { return playouts; };
+    float getWins() const { return wins; };
     float getRAVEPlayouts() const { return raveplayouts; };
     float getPriorPlayouts() const { return priorplayouts; };
     float getRatio() const;
@@ -107,6 +109,12 @@ class Tree
     
     std::string toSGFString() const;
     
+    #ifdef HAVE_MPI
+      void fetchMpiDiff(float &plts, float &wns);
+      void addMpiDiff(float plts, float wns);
+      void resetMpiDiff();
+    #endif
+    
   private:
     Tree *parent;
     std::list<Tree*> *children;
@@ -130,6 +138,10 @@ class Tree
     int superkochildrenviolations;
     Go::ZobristHash hash;
     boost::mutex expandmutex,updatemutex,unprunemutex,superkomutex;
+    
+    #ifdef HAVE_MPI
+      float mpi_lastplayouts,mpi_lastwins;
+    #endif
     
     void passPlayoutUp(bool win, Tree *source);
     bool allChildrenTerminalLoses();
