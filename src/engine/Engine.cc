@@ -156,6 +156,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   
   #ifdef HAVE_MPI
     params->addParameter("mpi","mpi_update_period",&(params->mpi_update_period),MPI_UPDATE_PERIOD);
+    params->addParameter("mpi","mpi_update_depth",&(params->mpi_update_depth),MPI_UPDATE_DEPTH);
+    params->addParameter("mpi","mpi_update_threshold",&(params->mpi_update_threshold),MPI_UPDATE_THRESHOLD);
   #endif
   
   patterntable=new Pattern::ThreeByThreeTable();
@@ -3282,16 +3284,29 @@ bool Engine::mpiSyncUpdate(bool stop)
   if (maxcount==0)
     return false;
   
-  localcount=movetree->getChildren()->size(); // testing: sharing whole 1st ply
-  mpistruct_updatemsg localmsgs[localcount];
-  int i=0;
-  for(std::list<Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter)
+  //params->mpi_update_depth
+  std::list<mpistruct_updatemsg> locallist;
+  if (movetree->getPlayouts()>0)
   {
-    mpistruct_updatemsg *msg=&localmsgs[i];
-    
-    msg->pos=(*iter)->getMove().getPosition();
-    (*iter)->fetchMpiDiff(msg->playouts,msg->wins);
-    i++;
+    float threshold=params->mpi_update_threshold*movetree->getPlayouts();
+    for(std::list<Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter)
+    {
+      if ((*iter)->getPlayouts()>=threshold)
+      {
+        mpistruct_updatemsg msg;
+        msg.pos=(*iter)->getMove().getPosition();
+        (*iter)->fetchMpiDiff(msg.playouts,msg.wins);
+        locallist.push_back(msg);
+      }
+    }
+  }
+  
+  localcount=0;
+  mpistruct_updatemsg localmsgs[locallist.size()];
+  for(std::list<mpistruct_updatemsg>::iterator iter=locallist.begin();iter!=locallist.end();++iter)
+  {
+    localmsgs[localcount]=(*iter);
+    localcount++;
   }
   
   MPI::COMM_WORLD.Allreduce(&localcount,&maxcount,1,MPI::INT,MPI_MAX);

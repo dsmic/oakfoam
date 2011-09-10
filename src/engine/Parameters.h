@@ -151,6 +151,8 @@ class Parameters
     #ifdef HAVE_MPI
       double mpi_update_period;
       double mpi_last_update;
+      int mpi_update_depth;
+      float mpi_update_threshold;
     #endif
     
     typedef void (*UpdateFunction)(void *instance, std::string id);

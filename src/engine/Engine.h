@@ -108,6 +108,8 @@
 
 #define MPI_STRING_MAX 255
 #define MPI_UPDATE_PERIOD 0.1
+#define MPI_UPDATE_DEPTH 3
+#define MPI_UPDATE_THRESHOLD 0.05
 
 #include <config.h>
 #include <string>
