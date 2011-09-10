@@ -107,6 +107,7 @@
 #define ZOBRIST_HASH_SEED 0x713df891
 
 #define MPI_STRING_MAX 255
+#define MPI_HASHTABLE_SIZE 65536
 #define MPI_UPDATE_PERIOD 0.1
 #define MPI_UPDATE_DEPTH 3
 #define MPI_UPDATE_THRESHOLD 0.05
@@ -279,9 +280,31 @@ class Engine
         MPICMD_GENMOVE
       };
       
+      class MpiHashTable
+      {
+        public:
+          void clear();
+          std::list<Tree*> *lookup(Go::ZobristHash hash);
+          void add(Go::ZobristHash hash, Tree *node);
+        
+        private:
+          class TableEntry
+          {
+            public:
+              Go::ZobristHash hash;
+              std::list<Tree*> nodes;
+          };
+          
+          std::list<Engine::MpiHashTable::TableEntry> table[MPI_HASHTABLE_SIZE];
+          
+          Engine::MpiHashTable::TableEntry *lookupEntry(Go::ZobristHash hash);
+      };
+      
+      Engine::MpiHashTable mpihashtable;
+      
       typedef struct
       {
-        int pos;
+        Go::ZobristHash hash;
         float playouts;
         float wins;
       } mpistruct_updatemsg;
@@ -296,6 +319,7 @@ class Engine
       bool mpiSyncUpdate(bool stop=false);
       void mpiBuildDerivedTypes();
       void mpiFreeDerivedTypes();
+      void mpiFillList(std::list<mpistruct_updatemsg> &list, float threshold, int depthleft, Tree *tree);
     #endif
     
     void addGtpCommands();
