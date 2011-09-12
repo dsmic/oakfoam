@@ -3243,7 +3243,7 @@ void Engine::mpiGenMove(Go::Color col)
 void Engine::mpiBuildDerivedTypes()
 {
   //mpistruct_updatemsg tmp;
-  int i=0,count=3;
+  int i=0,count=4;
   int blocklengths[count];
   MPI::Datatype types[count];
   MPI::Aint displacements[count];
@@ -3252,6 +3252,14 @@ void Engine::mpiBuildDerivedTypes()
   blocklengths[i]=8;
   types[i]=MPI::BYTE;
   displacements[i]=0;
+  types[i].Get_extent(lowerbound,extent);
+  i++;
+  //if (mpirank==0)
+  //  fprintf(stderr,"lowerbound: %d, extent: %d\n",lowerbound,extent);
+  
+  blocklengths[i]=8;
+  types[i]=MPI::BYTE;
+  displacements[i]=displacements[i-1]+extent*blocklengths[i-1];
   types[i].Get_extent(lowerbound,extent);
   i++;
   //if (mpirank==0)
@@ -3370,7 +3378,6 @@ bool Engine::mpiSyncUpdate(bool stop)
   }
   MPI::COMM_WORLD.Allgather(localmsgs,localcount,mpitype_updatemsg,allmsgs,maxcount,mpitype_updatemsg);
   
-  //Go::Color col=currentboard->nextToMove();
   for (int i=0;i<mpiworldsize;i++)
   {
     if (i==mpirank) //ignore own messages
@@ -3382,10 +3389,7 @@ bool Engine::mpiSyncUpdate(bool stop)
       if (msg->hash==0)
         break;
       
-      //if (msg->playouts>0)
-      //  fprintf(stderr,"msg: %d %.1f\n",msg->pos,msg->playouts);
-      
-      //fprintf(stderr,"add msg: %d %.1f %.1f\n",msg->pos,msg->playouts,msg->wins);
+      //fprintf(stderr,"add msg: 0x%016Lx 0x%016Lx %.1f %.1f\n",msg->hash,msg->parenthash,msg->playouts,msg->wins);
       
       std::list<Tree*> *nodes=mpihashtable.lookup(msg->hash);
       if (nodes!=NULL)
@@ -3397,7 +3401,27 @@ bool Engine::mpiSyncUpdate(bool stop)
       }
       else
       {
-        //fprintf(stderr,"node not found! (0x%016Lx)\n",msg->hash);
+        bool foundnode=false;
+        std::list<Tree*> *parentnodes=mpihashtable.lookup(msg->parenthash);
+        if (parentnodes!=NULL)
+        {
+          for(std::list<Tree*>::iterator iter=parentnodes->begin();iter!=parentnodes->end();++iter)
+          {
+            for(std::list<Tree*>::iterator iter2=(*iter)->getChildren()->begin();iter2!=(*iter)->getChildren()->end();++iter2)
+            {
+              if (msg->hash==(*iter2)->getHash())
+              {
+                (*iter2)->addMpiDiff(msg->playouts,msg->wins);
+                mpihashtable.add(msg->hash,(*iter2));
+                foundnode=true;
+                //fprintf(stderr,"added hash: 0x%016Lx\n",msg->hash);
+              }
+            }
+          }
+        }
+        
+        //if (!foundnode)
+        //  fprintf(stderr,"node not found! (0x%016Lx)\n",msg->hash);
       }
     }
   }
@@ -3412,12 +3436,17 @@ void Engine::mpiFillList(std::list<mpistruct_updatemsg> &list, float threshold, 
   
   //fprintf(stderr,"adding nodes (%d)\n",depthleft);
   
+  Go::ZobristHash parenthash=tree->getHash();
+  if (tree->isRoot())
+    mpihashtable.add(parenthash,tree);
+  
   for(std::list<Tree*>::iterator iter=tree->getChildren()->begin();iter!=tree->getChildren()->end();++iter)
   {
     if ((*iter)->getPlayouts()>=threshold && (*iter)->getHash()!=0)
     {
       mpistruct_updatemsg msg;
       msg.hash=(*iter)->getHash();
+      msg.parenthash=parenthash;
       (*iter)->fetchMpiDiff(msg.playouts,msg.wins);
       list.push_back(msg);
       mpihashtable.add(msg.hash,(*iter));

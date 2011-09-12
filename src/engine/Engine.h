@@ -305,6 +305,7 @@ class Engine
       typedef struct
       {
         Go::ZobristHash hash;
+        Go::ZobristHash parenthash;
         float playouts;
         float wins;
       } mpistruct_updatemsg;
