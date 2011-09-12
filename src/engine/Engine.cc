@@ -3254,18 +3254,24 @@ void Engine::mpiBuildDerivedTypes()
   displacements[i]=0;
   types[i].Get_extent(lowerbound,extent);
   i++;
+  //if (mpirank==0)
+  //  fprintf(stderr,"lowerbound: %d, extent: %d\n",lowerbound,extent);
   
   blocklengths[i]=1;
   types[i]=MPI::FLOAT;
   displacements[i]=displacements[i-1]+extent*blocklengths[i-1];
   types[i].Get_extent(lowerbound,extent);
   i++;
+  //if (mpirank==0)
+  //  fprintf(stderr,"lowerbound: %d, extent: %d\n",lowerbound,extent);
   
   blocklengths[i]=1;
   types[i]=MPI::FLOAT;
   displacements[i]=displacements[i-1]+extent*blocklengths[i-1];
   types[i].Get_extent(lowerbound,extent);
   i++;
+  //if (mpirank==0)
+  //  fprintf(stderr,"lowerbound: %d, extent: %d\n",lowerbound,extent);
   
   //TODO: verify that above works if struct elements aren't contiguous (word boundaries)
   
