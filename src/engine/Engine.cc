@@ -3220,7 +3220,7 @@ std::string Engine::mpiRecvBroadcastedString()
 
 void Engine::mpiGenMove(Go::Color col)
 {
-  fprintf(stderr,"genmove on rank %d starting...\n",mpirank);
+  //fprintf(stderr,"genmove on rank %d starting...\n",mpirank);
   currentboard->setNextToMove(col);
   
   movetree->pruneSuperkoViolations();
@@ -3237,7 +3237,7 @@ void Engine::mpiGenMove(Go::Color col)
   threadpool->startAll();
   threadpool->waitAll();
   
-  fprintf(stderr,"genmove on rank %d done.\n",mpirank);
+  //fprintf(stderr,"genmove on rank %d done.\n",mpirank);
 }
 
 void Engine::mpiBuildDerivedTypes()
