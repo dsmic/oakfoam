@@ -2906,7 +2906,10 @@ void Engine::generateThread(Worker::Settings *settings)
         params->mpi_last_update=MPI::Wtime();
         
         if (!mpi_inform_others)
+        {
+          params->early_stop_occured=true;
           break;
+        }
       }
     #endif
     
