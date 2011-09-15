@@ -258,6 +258,7 @@ class Engine
     
     #ifdef HAVE_MPI
       int mpiworldsize,mpirank;
+      bool mpisynced;
       
       enum MPICommand
       {
@@ -316,6 +317,8 @@ class Engine
       void mpiBroadcastString(std::string input);
       void mpiRecvBroadcastedArgs(unsigned int *arg1=NULL, unsigned int *arg2=NULL, unsigned int *arg3=NULL);
       std::string mpiRecvBroadcastedString();
+      void mpiSendString(int destrank, std::string input);
+      std::string mpiRecvString(int srcrank);
       void mpiGenMove(Go::Color col);
       bool mpiSyncUpdate(bool stop=false);
       void mpiBuildDerivedTypes();

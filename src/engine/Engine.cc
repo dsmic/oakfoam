@@ -24,8 +24,6 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
     longname+=" (MPI)";
     mpiworldsize=MPI::COMM_WORLD.Get_size();
     mpirank=MPI::COMM_WORLD.Get_rank();
-    if (mpirank==0)
-      gtpe->getOutput()->printfDebug("mpi world size: %d\n",mpiworldsize);
     mpihashtable.clear();
   #endif
   
@@ -191,12 +189,35 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   
   params->uct_last_r2=0;
   
-  #ifdef HAVE_MPI
-    this->mpiBuildDerivedTypes();
-  #endif
-  
   params->thread_job=Parameters::TJ_GENMOVE;
   threadpool = new Worker::Pool(params);
+  
+  #ifdef HAVE_MPI
+    this->mpiBuildDerivedTypes();
+    
+    if (mpirank==0)
+    {
+      bool errorsyncing=false;
+      
+      for (int i=1;i<mpiworldsize;i++)
+      {
+        std::string data=this->mpiRecvString(i);
+        if (data!=VERSION)
+          errorsyncing=true;
+      }
+      
+      if (errorsyncing)
+        gtpe->getOutput()->printfDebug("FATAL ERROR! could not sync mpi\n");
+      else
+        gtpe->getOutput()->printfDebug("mpi synced world of size: %d\n",mpiworldsize);
+      mpisynced=!errorsyncing;
+    }
+    else
+    {
+      this->mpiSendString(0,VERSION);
+      mpisynced=true;
+    }
+  #endif
 }
 
 Engine::~Engine()
@@ -226,7 +247,10 @@ void Engine::run()
 {
   #ifdef HAVE_MPI
     if (mpirank==0)
-      gtpe->run();
+    {
+      if (mpisynced)
+        gtpe->run();
+    }
     else
       this->mpiCommandHandler();
   #else
@@ -1477,6 +1501,9 @@ void Engine::gtpDescribeEngine(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printf("%s\n",me->longname.c_str());
+  #ifdef HAVE_MPI
+    gtpe->getOutput()->printfDebug("mpi world size: %d\n",me->mpiworldsize);
+  #endif
   gtpe->getOutput()->printf("parameters:\n");
   me->params->printParametersForDescription(gtpe);
   gtpe->getOutput()->endResponse(true);
@@ -3073,7 +3100,7 @@ void Engine::mpiCommandHandler()
   unsigned int tmp1,tmp2,tmp3;
   bool running=true;
   
-  gtpe->getOutput()->printfDebug("mpi rank %d reporting for duty!\n",mpirank);
+  //gtpe->getOutput()->printfDebug("mpi rank %d reporting for duty!\n",mpirank);
   
   while (running)
   {
@@ -3218,6 +3245,35 @@ std::string Engine::mpiRecvBroadcastedString()
 {
   char buffer[MPI_STRING_MAX];
   MPI::COMM_WORLD.Bcast(buffer,MPI_STRING_MAX,MPI::CHAR,0);
+  return std::string(buffer);
+}
+
+void Engine::mpiSendString(int destrank, std::string input)
+{
+  char buffer[MPI_STRING_MAX];
+  
+  if (input.length()>=MPI_STRING_MAX)
+  {
+    gtpe->getOutput()->printfDebug("string too long (%d>=%d)\n",input.length(),MPI_STRING_MAX);
+    return;
+  }
+  
+  for (int i=0;i<(int)input.length();i++)
+  {
+    buffer[i]=input.at(i);
+  }
+  for (int i=input.length();i<MPI_STRING_MAX;i++)
+  {
+    buffer[i]=0;
+  }
+  
+  MPI::COMM_WORLD.Send(buffer,MPI_STRING_MAX,MPI::CHAR,destrank,0);
+}
+
+std::string Engine::mpiRecvString(int srcrank)
+{
+  char buffer[MPI_STRING_MAX];
+  MPI::COMM_WORLD.Recv(buffer,MPI_STRING_MAX,MPI::CHAR,srcrank,0);
   return std::string(buffer);
 }
 
