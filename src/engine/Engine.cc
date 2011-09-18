@@ -1502,7 +1502,7 @@ void Engine::gtpDescribeEngine(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printf("%s\n",me->longname.c_str());
   #ifdef HAVE_MPI
-    gtpe->getOutput()->printfDebug("mpi world size: %d\n",me->mpiworldsize);
+    gtpe->getOutput()->printf("mpi world size: %d\n",me->mpiworldsize);
   #endif
   gtpe->getOutput()->printf("parameters:\n");
   me->params->printParametersForDescription(gtpe);
