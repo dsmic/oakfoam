@@ -2884,8 +2884,9 @@ void Engine::generateThread(Worker::Settings *settings)
   float time_allocated;
   long totalplayouts;
   #ifdef HAVE_MPI
-    bool mpi_inform_others=false;
+    bool mpi_inform_others=true;
     bool mpi_rank_other=(mpirank!=0);
+    //int mpi_update_num=0;
   #else
     bool mpi_rank_other=false;
   #endif
@@ -2926,7 +2927,8 @@ void Engine::generateThread(Worker::Settings *settings)
     #ifdef HAVE_MPI
       if (settings->thread->getID()==0 && MPI::Wtime()>(params->mpi_last_update+params->mpi_update_period))
       {
-        //fprintf(stderr,"wtime: %lf (%d)\n",MPI::Wtime(),mpirank);
+        //mpi_update_num++;
+        //gtpe->getOutput()->printfDebug("update (%d) at %lf (rank: %d) start\n",mpi_update_num,MPI::Wtime(),mpirank);
         
         mpi_inform_others=this->mpiSyncUpdate();
         
@@ -2988,6 +2990,7 @@ void Engine::generateThread(Worker::Settings *settings)
   delete secondlist;
   
   #ifdef HAVE_MPI
+  //gtpe->getOutput()->printfDebug("genmove on rank %d stopping... (inform: %d)\n",mpirank,mpi_inform_others);
   if (settings->thread->getID()==0 && mpi_inform_others)
     this->mpiSyncUpdate(true);
   #endif
@@ -3279,7 +3282,7 @@ std::string Engine::mpiRecvString(int srcrank)
 
 void Engine::mpiGenMove(Go::Color col)
 {
-  //fprintf(stderr,"genmove on rank %d starting...\n",mpirank);
+  //gtpe->getOutput()->printfDebug("genmove on rank %d starting...\n",mpirank);
   currentboard->setNextToMove(col);
   
   movetree->pruneSuperkoViolations();
@@ -3296,7 +3299,7 @@ void Engine::mpiGenMove(Go::Color col)
   threadpool->startAll();
   threadpool->waitAll();
   
-  //fprintf(stderr,"genmove on rank %d done.\n",mpirank);
+  //gtpe->getOutput()->printfDebug("genmove on rank %d done.\n",mpirank);
 }
 
 void Engine::mpiBuildDerivedTypes()
@@ -3406,16 +3409,33 @@ bool Engine::mpiSyncUpdate(bool stop)
   int localcount=(stop?0:1);
   int maxcount;
   
+  //gtpe->getOutput()->printfDebug("sync (rank: %d) (stop:%d)!!!!!\n",mpirank,stop);
+  
   //TODO: should consider replacing first 2 mpi cmds with 1
   MPI::COMM_WORLD.Allreduce(&localcount,&maxcount,1,MPI::INT,MPI_MIN);
   if (maxcount==0)
+  {
+    //gtpe->getOutput()->printfDebug("sync (rank: %d) stopping\n",mpirank);
     return false;
+  }
+  //gtpe->getOutput()->printfDebug("sync (rank: %d) not stopping\n",mpirank);
   
   std::list<mpistruct_updatemsg> locallist;
   if (movetree->getPlayouts()>0)
   {
     float threshold=params->mpi_update_threshold*movetree->getPlayouts();
     this->mpiFillList(locallist,threshold,params->mpi_update_depth,movetree);
+  }
+  
+  if (locallist.size()==0) // add 1 empty msg, else MPI_Allgather() will stall
+  {
+    mpistruct_updatemsg msg;
+    msg.hash=0;
+    msg.parenthash=0;
+    msg.playouts=0;
+    msg.wins=0;
+    locallist.push_back(msg);
+    //gtpe->getOutput()->printfDebug("sync (rank: %d) added empty msg\n",mpirank);
   }
   
   localcount=0;
@@ -3429,6 +3449,7 @@ bool Engine::mpiSyncUpdate(bool stop)
   MPI::COMM_WORLD.Allreduce(&localcount,&maxcount,1,MPI::INT,MPI_MAX);
   //if (mpirank==0)
   //  fprintf(stderr,"max updates: %d\n",maxcount);
+  //gtpe->getOutput()->printfDebug("sync (rank: %d) (local:%d, max:%d)\n",mpirank,localcount,maxcount);
   
   mpistruct_updatemsg allmsgs[maxcount*mpiworldsize];
   for (int i=0;i<maxcount*mpiworldsize;i++)
@@ -3436,6 +3457,7 @@ bool Engine::mpiSyncUpdate(bool stop)
     allmsgs[i].hash=0; // needed as maxcount is not necessarily mincount
   }
   MPI::COMM_WORLD.Allgather(localmsgs,localcount,mpitype_updatemsg,allmsgs,maxcount,mpitype_updatemsg);
+  //gtpe->getOutput()->printfDebug("sync (rank: %d) gathered\n",mpirank);
   
   for (int i=0;i<mpiworldsize;i++)
   {
@@ -3484,6 +3506,8 @@ bool Engine::mpiSyncUpdate(bool stop)
       }
     }
   }
+  
+  //gtpe->getOutput()->printfDebug("sync (rank: %d) done\n",mpirank);
   
   return true;
 }
