@@ -48,7 +48,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   
   params->addParameter("general","thread_count",&(params->thread_count),THREAD_COUNT,&Engine::updateParameterWrapper,this);
   
-  params->addParameter("general","playouts_per_move",&(params->playouts_per_move),PLAYOUTS_PER_MOVE);
+  params->addParameter("general","playouts_per_move",&(params->playouts_per_move),PLAYOUTS_PER_MOVE,&Engine::updateParameterWrapper,this);
   params->addParameter("general","playouts_per_move_max",&(params->playouts_per_move_max),PLAYOUTS_PER_MOVE_MAX);
   params->addParameter("general","playouts_per_move_min",&(params->playouts_per_move_min),PLAYOUTS_PER_MOVE_MIN);
   
@@ -135,6 +135,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("time","time_buffer",&(params->time_buffer),TIME_BUFFER);
   params->addParameter("time","time_move_minimum",&(params->time_move_minimum),TIME_MOVE_MINIMUM);
   params->addParameter("time","time_ignore",&(params->time_ignore),false);
+  params->addParameter("time","time_move_max",&(params->time_move_max),TIME_MOVE_MAX);
   
   params->addParameter("general","pondering_enabled",&(params->pondering_enabled),PONDERING_ENABLED,&Engine::updateParameterWrapper,this);
   params->addParameter("general","pondering_playouts_max",&(params->pondering_playouts_max),PONDERING_PLAYOUTS_MAX);
@@ -349,6 +350,13 @@ void Engine::updateParameter(std::string id)
       delete threadpool;
       threadpool = new Worker::Pool(params);
     }
+  }
+  else if (id=="playouts_per_move")
+  {
+    if (params->playouts_per_move>params->playouts_per_move_max)
+      params->playouts_per_move_max=params->playouts_per_move;
+    if (params->playouts_per_move<params->playouts_per_move_min)
+      params->playouts_per_move_min=params->playouts_per_move;
   }
 }
 
@@ -2917,6 +2925,11 @@ void Engine::generateThread(Worker::Settings *settings)
       break;
     }
     else if (stopthinking)
+    {
+      params->early_stop_occured=true;
+      break;
+    }
+    else if (this->timeSince(time_start)>params->time_move_max)
     {
       params->early_stop_occured=true;
       break;

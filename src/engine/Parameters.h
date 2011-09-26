@@ -134,6 +134,7 @@ class Parameters
     float time_buffer;
     float time_move_minimum;
     bool time_ignore;
+    float time_move_max;
     
     bool livegfx_on;
     int livegfx_update_playouts;
