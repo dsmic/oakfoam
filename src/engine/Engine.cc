@@ -2939,7 +2939,7 @@ void Engine::generateThread(Worker::Settings *settings)
     totalplayouts+=1;
     
     #ifdef HAVE_MPI
-      if (settings->thread->getID()==0 && MPI::Wtime()>(params->mpi_last_update+params->mpi_update_period))
+      if (settings->thread->getID()==0 && mpiworldsize>1 && MPI::Wtime()>(params->mpi_last_update+params->mpi_update_period))
       {
         //mpi_update_num++;
         //gtpe->getOutput()->printfDebug("update (%d) at %lf (rank: %d) start\n",mpi_update_num,MPI::Wtime(),mpirank);
@@ -3005,7 +3005,7 @@ void Engine::generateThread(Worker::Settings *settings)
   
   #ifdef HAVE_MPI
   //gtpe->getOutput()->printfDebug("genmove on rank %d stopping... (inform: %d)\n",mpirank,mpi_inform_others);
-  if (settings->thread->getID()==0 && mpi_inform_others)
+  if (settings->thread->getID()==0 && mpiworldsize>1 && mpi_inform_others)
     this->mpiSyncUpdate(true);
   #endif
   
