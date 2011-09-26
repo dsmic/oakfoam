@@ -21,6 +21,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->engine=this;
   
   #ifdef HAVE_MPI
+    MPI::COMM_WORLD.Set_errhandler(MPI::ERRORS_ARE_FATAL);
     longname+=" (MPI)";
     mpiworldsize=MPI::COMM_WORLD.Get_size();
     mpirank=MPI::COMM_WORLD.Get_rank();
@@ -3412,7 +3413,7 @@ bool Engine::mpiSyncUpdate(bool stop)
   //gtpe->getOutput()->printfDebug("sync (rank: %d) (stop:%d)!!!!!\n",mpirank,stop);
   
   //TODO: should consider replacing first 2 mpi cmds with 1
-  MPI::COMM_WORLD.Allreduce(&localcount,&maxcount,1,MPI::INT,MPI_MIN);
+  MPI::COMM_WORLD.Allreduce(&localcount,&maxcount,1,MPI::INT,MPI::MIN);
   if (maxcount==0)
   {
     //gtpe->getOutput()->printfDebug("sync (rank: %d) stopping\n",mpirank);
@@ -3446,9 +3447,7 @@ bool Engine::mpiSyncUpdate(bool stop)
     localcount++;
   }
   
-  MPI::COMM_WORLD.Allreduce(&localcount,&maxcount,1,MPI::INT,MPI_MAX);
-  //if (mpirank==0)
-  //  fprintf(stderr,"max updates: %d\n",maxcount);
+  MPI::COMM_WORLD.Allreduce(&localcount,&maxcount,1,MPI::INT,MPI::MAX);
   //gtpe->getOutput()->printfDebug("sync (rank: %d) (local:%d, max:%d)\n",mpirank,localcount,maxcount);
   
   mpistruct_updatemsg allmsgs[maxcount*mpiworldsize];
