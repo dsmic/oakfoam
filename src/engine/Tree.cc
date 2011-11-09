@@ -16,8 +16,6 @@ Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p) : params(
   wins=0;
   raveplayouts=0;
   ravewins=0;
-  priorplayouts=0;
-  priorwins=0;
   symmetryprimary=NULL;
   hasTerminalWinrate=false;
   hasTerminalWin=false;
@@ -39,6 +37,8 @@ Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p) : params(
   superkoviolation=false;
   superkochecked=false;
   superkochildrenviolations=0;
+  decayedwins=0;
+  decayedplayouts=0;
   
   #ifdef HAVE_MPI
     this->resetMpiDiff();
@@ -79,7 +79,12 @@ float Tree::getRatio() const
   if (this->isTerminalResult())
     return (hasTerminalWin?1:0);
   else if (playouts>0)
-    return (float)wins/playouts;
+  {
+    if (params->uct_decay_alpha!=1 || params->uct_decay_k!=0)
+      return decayedwins/decayedplayouts;
+    else
+      return (float)wins/playouts;
+  }
   else
     return 0;
 }
@@ -92,24 +97,6 @@ float Tree::getRAVERatio() const
     return 0;
 }
 
-float Tree::getPriorRatio() const
-{
-  if (priorplayouts>0)
-    return (float)priorwins/priorplayouts;
-  else
-    return 0;
-}
-
-float Tree::getBasePriorRatio() const
-{
-  if (this->isTerminalResult())
-    return (hasTerminalWin?1:0);
-  else if (playouts>0 || priorplayouts>0)
-    return (float)(wins+priorwins)/(playouts+priorplayouts);
-  else
-    return 0;
-}
-
 void Tree::addWin(Tree *source)
 {
   boost::mutex::scoped_lock *lock=(params->uct_lock_free?NULL:new boost::mutex::scoped_lock(updatemutex));
@@ -118,8 +105,12 @@ void Tree::addWin(Tree *source)
     delete lock;
     return;
   }*/
+  
   wins++;
   playouts++;
+  if (params->uct_decay_alpha!=1 || params->uct_decay_k!=0)
+    this->addDecayResult(1);
+  
   if (lock!=NULL)
     delete lock;
   this->passPlayoutUp(true,source);
@@ -134,11 +125,33 @@ void Tree::addLose(Tree *source)
     delete lock;
     return;
   }*/
+  
   playouts++;
+  if (params->uct_decay_alpha!=1 || params->uct_decay_k!=0)
+    this->addDecayResult(0);
+  
   if (lock!=NULL)
     delete lock;
   this->passPlayoutUp(false,source);
   this->checkForUnPruning();
+}
+
+void Tree::addDecayResult(float result)
+{
+  if (params->uct_decay_alpha!=1)
+  {
+    decayedwins*=params->uct_decay_alpha;
+    decayedplayouts*=params->uct_decay_alpha;
+  }
+  if (params->uct_decay_k!=0 && playouts>0)
+  {
+    float decayfactor=pow((playouts+params->uct_decay_m-1)/(playouts+params->uct_decay_m),params->uct_decay_k);
+    //fprintf(stderr,"decayfactor: %.6f\n",decayfactor);
+    decayedwins*=decayfactor;
+    decayedplayouts*=decayfactor;
+  }
+  decayedwins+=result;
+  decayedplayouts++;
 }
 
 void Tree::addVirtualLoss()
@@ -161,13 +174,27 @@ void Tree::removeVirtualLoss()
 
 void Tree::addPriorWins(int n)
 {
-  priorwins+=n;
-  priorplayouts+=n;
+  wins+=n;
+  playouts+=n;
+  if (params->uct_decay_alpha!=1 || params->uct_decay_k!=0)
+  {
+    for (int i=0;i<n;i++)
+    {
+      this->addDecayResult(1);
+    }
+  }
 }
 
 void Tree::addPriorLoses(int n)
 {
-  priorplayouts+=n;
+  playouts+=n;
+  if (params->uct_decay_alpha!=1 || params->uct_decay_k!=0)
+  {
+    for (int i=0;i<n;i++)
+    {
+      this->addDecayResult(0);
+    }
+  }
 }
 
 void Tree::addRAVEWin()
@@ -305,7 +332,7 @@ float Tree::getVal() const
   else if (this->isTerminal())
     return 1;
   if (params->rave_moves==0 || raveplayouts==0)
-    return this->getBasePriorRatio();
+    return this->getRatio();
   else if (playouts==0)
     return this->getRAVERatio();
   else
@@ -315,12 +342,12 @@ float Tree::getVal() const
     float alpha=(float)raveplayouts/(raveplayouts + playouts + (float)(raveplayouts*playouts)/params->rave_moves);
     
     if (alpha<=0)
-      return this->getBasePriorRatio();
+      return this->getRatio();
     else if (alpha>=1)
       return this->getRAVERatio();
     else
       //return this->getRAVERatio()*alpha + this->getRatio()*(1-alpha);
-      return this->getRAVERatio()*alpha + this->getBasePriorRatio()*(1-alpha);
+      return this->getRAVERatio()*alpha + this->getRatio()*(1-alpha);
   }
 }
 
@@ -335,17 +362,15 @@ float Tree::getUrgency() const
       return -TREE_TERMINAL_URGENCY;
   }
   
-  if (playouts==0 && raveplayouts==0 && priorplayouts==0)
+  if (playouts==0 && raveplayouts==0)
     return params->ucb_init;
-  
-  float plts=playouts+priorplayouts;
   
   if (parent==NULL || params->ucb_c==0)
     uctbias=0;
   else
   {
-    if (parent->getPlayouts()>1 && plts>0)
-      uctbias=params->ucb_c*sqrt(log((float)parent->getPlayouts())/(plts));
+    if (parent->getPlayouts()>1 && playouts>0)
+      uctbias=params->ucb_c*sqrt(log((float)parent->getPlayouts())/(playouts));
     else if (parent->getPlayouts()>1)
       uctbias=params->ucb_c*sqrt(log((float)parent->getPlayouts())/(1));
     else
@@ -429,6 +454,8 @@ std::string Tree::toSGFString() const
     else
     {
       ss<<"Wins/Playouts: "<<wins<<"/"<<playouts<<"("<<this->getRatio()<<")\n";
+      if (params->uct_decay_alpha!=1 || params->uct_decay_k!=0)
+        ss<<"Decayed Playouts: "<<decayedplayouts<<"\n";
       ss<<"RAVE Wins/Playouts: "<<ravewins<<"/"<<raveplayouts<<"("<<this->getRAVERatio()<<")\n";
     }
     ss<<"Urgency: "<<this->getUrgency()<<"\n";
@@ -453,6 +480,8 @@ std::string Tree::toSGFString() const
     if (this->isSuperkoViolation())
       ss<<"Superko Violation!\n";
     ss<<"Wins/Playouts: "<<wins<<"/"<<playouts<<"("<<this->getRatio()<<")\n";
+    if (params->uct_decay_alpha!=1 || params->uct_decay_k!=0)
+        ss<<"Decayed Playouts: "<<decayedplayouts<<"\n";
     ss<<"]";
   }
   
@@ -662,13 +691,13 @@ Tree *Tree::getUrgentChild(Worker::Settings *settings)
     {
       float urgency;
       
-      if ((*iter)->getPlayouts()==0 && (*iter)->getRAVEPlayouts()==0 && (*iter)->getPriorPlayouts()==0)
+      if ((*iter)->getPlayouts()==0 && (*iter)->getRAVEPlayouts()==0)
         urgency=(*iter)->getUrgency()+(settings->rand->getRandomReal()/1000);
       else
       {
         urgency=(*iter)->getUrgency();
         if (params->debug_on)
-          fprintf(stderr,"[urg]:%s %.3f %.2f(%f) %.2f(%f) %.2f(%f)\n",(*iter)->getMove().toString(params->board_size).c_str(),urgency,(*iter)->getRatio(),(*iter)->getPlayouts(),(*iter)->getRAVERatio(),(*iter)->getRAVEPlayouts(),(*iter)->getPriorRatio(),(*iter)->getPriorPlayouts());
+          fprintf(stderr,"[urg]:%s %.3f %.2f(%f) %.2f(%f)\n",(*iter)->getMove().toString(params->board_size).c_str(),urgency,(*iter)->getRatio(),(*iter)->getPlayouts(),(*iter)->getRAVERatio(),(*iter)->getRAVEPlayouts());
       }
           
       if (urgency>besturgency || besttree==NULL)
@@ -1226,6 +1255,8 @@ void Tree::resetNode()
   ravewins=0;
   hasTerminalWinrate=false;
   hasTerminalWin=false;
+  decayedwins=0;
+  decayedplayouts=0;
   
   #ifdef HAVE_MPI
     this->resetMpiDiff();

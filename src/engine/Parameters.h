@@ -98,6 +98,10 @@ class Parameters
     bool uct_criticality_siblings;
     bool uct_terminal_handling;
     
+    float uct_decay_alpha;
+    float uct_decay_k;
+    float uct_decay_m;
+    
     int uct_slow_update_interval;
     int uct_slow_update_last;
     

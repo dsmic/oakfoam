@@ -125,6 +125,10 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("tree","territory_decayfactor",&(params->territory_decayfactor),TERRITORY_DECAYFACTOR);
   params->addParameter("tree","territory_threshold",&(params->territory_threshold),TERRITORY_THRESHOLD);
   
+  params->addParameter("tree","uct_decay_alpha",&(params->uct_decay_alpha),UCT_DECAY_ALPHA);
+  params->addParameter("tree","uct_decay_k",&(params->uct_decay_k),UCT_DECAY_K);
+  params->addParameter("tree","uct_decay_m",&(params->uct_decay_m),UCT_DECAY_M);
+  
   params->addParameter("rules","rules_positional_superko_enabled",&(params->rules_positional_superko_enabled),RULES_POSITIONAL_SUPERKO_ENABLED);
   params->addParameter("rules","rules_superko_top_ply",&(params->rules_superko_top_ply),RULES_SUPERKO_TOP_PLY);
   params->addParameter("rules","rules_superko_prune_after",&(params->rules_superko_prune_after),RULES_SUPERKO_PRUNE_AFTER);
