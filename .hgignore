@@ -4,6 +4,7 @@ syntax: glob
 */.dirstamp
 *.Po
 *.tmp
+*.swp
 
 syntax: regexp
 ^oakfoam$
