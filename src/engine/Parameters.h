@@ -97,6 +97,8 @@ class Parameters
     int uct_criticality_min_playouts;
     bool uct_criticality_siblings;
     bool uct_terminal_handling;
+    float uct_rave_unprune_factor;
+    bool uct_rave_unprune_multiply;
     
     float uct_decay_alpha;
     float uct_decay_k;

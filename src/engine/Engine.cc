@@ -107,6 +107,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("tree","uct_criticality_unprune_multiply",&(params->uct_criticality_unprune_multiply),UCT_CRITICALITY_UNPRUNE_MULTIPLY);
   params->addParameter("tree","uct_criticality_min_playouts",&(params->uct_criticality_min_playouts),UCT_CRITICALITY_MIN_PLAYOUTS);
   params->addParameter("tree","uct_criticality_siblings",&(params->uct_criticality_siblings),UCT_CRITICALITY_SIBLINGS);
+  params->addParameter("tree","uct_rave_unprune_factor",&(params->uct_rave_unprune_factor),UCT_RAVE_UNPRUNE_FACTOR);
+  params->addParameter("tree","uct_rave_unprune_multiply",&(params->uct_rave_unprune_multiply),UCT_RAVE_UNPRUNE_MULTIPLY);
   
   params->addParameter("tree","uct_slow_update_interval",&(params->uct_slow_update_interval),UCT_SLOW_UPDATE_INTERVAL);
   params->uct_slow_update_last=0;

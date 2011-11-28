@@ -635,15 +635,22 @@ void Tree::unPruneNow()
 
 float Tree::getUnPruneFactor() const
 {
+  float factor=gamma/parent->getChildrenTotalFeatureGamma();
   if (params->uct_criticality_unprune_factor>0 && (params->uct_criticality_siblings?parent->playouts:playouts)>(params->uct_criticality_min_playouts))
   {
     if (params->uct_criticality_unprune_multiply)
-      return gamma/parent->getChildrenTotalFeatureGamma()*(1+params->uct_criticality_unprune_factor*this->getCriticality());
+      factor*=(1+params->uct_criticality_unprune_factor*this->getCriticality());
     else
-      return gamma/parent->getChildrenTotalFeatureGamma() + params->uct_criticality_unprune_factor*this->getCriticality();
+      factor+=params->uct_criticality_unprune_factor*this->getCriticality();
   }
-  else
-    return gamma/parent->getChildrenTotalFeatureGamma();
+  if (params->uct_rave_unprune_factor>0)
+  {
+    if (params->uct_criticality_unprune_multiply)
+      factor*=(1+params->uct_rave_unprune_factor*this->getRAVERatio());
+    else
+      factor+=params->uct_rave_unprune_factor*this->getRAVERatio();
+  }
+  return factor;
 }
 
 void Tree::allowContinuedPlay()

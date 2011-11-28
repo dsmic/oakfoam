@@ -6,7 +6,6 @@ Now: (current focus)
   change uct_* params to tree_*
   option to output games to sgf with explanations (see gomill-savesgf)
   output best move at intervals
-  include RAVE in unpruning
 
 Soon: (before next major release)
   larger patterns
