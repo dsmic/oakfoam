@@ -6,6 +6,8 @@ Now: (current focus)
   change uct_* params to tree_*
   option to output games to sgf with explanations (see gomill-savesgf)
   output best move at intervals
+  add random chance of not using a playout heuristic (per heuristic)
+  weighted "random" ordering of playout heuristics
 
 Soon: (before next major release)
   larger patterns
@@ -29,6 +31,9 @@ Soon: (before next major release)
   look why bs=0 even when r2 is high (possibly fixed since stop_early)
   look at altering playout_random_chance with extreme winrate
   look at a reverse LGR-kinda thing in the tree and playouts
+  convert feature patterns to ASCII pics to aid visualisation
+  compare profiling data to that of other programs such as libEGO
+  try a "step-wise" RAVE (decay value at each capture)
 
 Later: (at some point)
   tune parameters
