@@ -2,6 +2,7 @@ TODO
 ------------------
 
 Now: (current focus)
+  add feature for 2-liberty heuristics
   add debug levels
   change uct_* params to tree_*
   option to output games to sgf with explanations (see gomill-savesgf)
