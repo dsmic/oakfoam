@@ -11,8 +11,15 @@
 #include <boost/thread/barrier.hpp>
 #include <boost/function.hpp>
 
+/** GTP Interface.
+ * Contains all the necessarly components to setup a GTP
+ * session.
+ */
 namespace Gtp
 {
+  /**
+   * GTP Color
+   */
   enum Color
   {
     BLACK,
@@ -20,25 +27,44 @@ namespace Gtp
     INVALID
   };
   
+  /**
+   * GTP Vertex
+   */
   struct Vertex
   {
     int x;
     int y;
   };
   
+  /** GTP Command.
+   * Contains a breakdown of a GTP command.
+   */
   class Command
   {
     public:
+      /** Create a Command object.
+       * @param i         ID of the command.
+       * @param cmdname   Name of the command.
+       * @param args      List of arguments.
+       */
       Command(int i, std::string cmdname, std::vector<std::string> args) { id=i; commandname=cmdname; arguments=args; };
       
+      /** The ID for this command. */
       int getId() const { return id; };
+      /** The name of this command. */
       std::string getCommandName() const { return commandname; };
       
+      /** The number of command arguments. */
       unsigned int numArgs() const;
+      /** Return the @p i'th argument, converted to a std::string. */
       std::string getStringArg(int i) const;
+      /** Return the @p i'th argument, converted to an int. */
       int getIntArg(int i) const;
+      /** Return the @p i'th argument, converted to a float. */
       float getFloatArg(int i) const;
+      /** Return the @p i'th argument, converted to a Gtp::Color. */
       Gtp::Color getColorArg(int i) const;
+      /** Return the @p i'th argument, converted to a Gtp::Vertex. */
       Gtp::Vertex getVertexArg(int i) const;
       
     private:
@@ -47,28 +73,44 @@ namespace Gtp
       std::vector<std::string> arguments;
   };
   
+  /** GTP Output.
+   * Provides a method to respond to a command.
+   */
   class Output
   {
     public:
       Output() { outputon=true; logfile=NULL; };
       ~Output() { if (logfile!=NULL) { fclose(logfile); }};
       
+      /** Will anything be written to stdout? */
       bool isOutputOn() const { return outputon; };
+      /** Set whether out is written to stdout. */
       void setOutputOn(bool outon) { outputon=outon; };
+      /** Set the log file. */
       void setLogFile(FILE *lf) { logfile=lf; };
       
+      /** Begin a response to a command. */
       void startResponse(Gtp::Command *cmd, bool success = true);
+      /** Finish a response to a command. */
       void endResponse(bool single = false);
       
+      /** Output a std::string. */
       void printString(std::string str);
+      /** Output a Gtp::Vertex. */
       void printVertex(Gtp::Vertex vert);
+      /** Output a formatted score. */
       void printScore(float score);
+      /** Output a formatted std::string. */
       void printf(std::string format,...);
       
+      /** Output a debug std::string. */
       void printDebugString(std::string str);
+      /** Output a formatted debug std::string. */
       void printfDebug(std::string format,...);
+      /** Output a debug vertex. */
       void printDebugVertex(Gtp::Vertex vert);
       
+      /** Output a formatted std::string to the log file only. */
       void printfLog(std::string format,...);
     
     private:
@@ -76,15 +118,23 @@ namespace Gtp
       FILE *logfile;
   };
   
+  /** GTP Engine.
+   * Engine for managing a GTP conenction.
+   */
   class Engine
   {
     public:
       Engine();
       ~Engine();
       
+      /** A function to be called when a specific GTP command is received. */
       typedef void (*CommandFunction)(void *instance, Gtp::Engine*, Gtp::Command*);
+      /** Function called when pondering can happen. */
       typedef void (*PonderFunction)(void *instance);
       
+      /** A list of CommandFunction's.
+       * Should be replaced with std::list<CommandFunction>.
+       */
       class FunctionList
       {
         public:
@@ -111,6 +161,9 @@ namespace Gtp
           Gtp::Engine::FunctionList *next;
       };
       
+      /** A list of GTP constants.
+       * Should be replace with std::list<std::string>.
+       */
       class ConstantList
       {
         public:
@@ -135,25 +188,40 @@ namespace Gtp
           Gtp::Engine::ConstantList *next;
       };
       
+      /** Manage a GTP connection. */
       void run();
       
+      /** Add a new command that always returns the same value. */
       void addConstantCommand(std::string cmd, std::string value);
+      /** Add a new command that is represented by a function. */
       void addFunctionCommand(std::string cmd, void *inst, Gtp::Engine::CommandFunction func);
+      /** Add a command to the list of GoGui analyse commands. */
       void addAnalyzeCommand(std::string cmd, std::string label, std::string type);
+      /** Set a pointer a flag for interrupting. */
       void setInterruptFlag(volatile bool *intr) { interrupt=intr; };
+      /** Set the pondering function. */
       void setPonderer(Gtp::Engine::PonderFunction f, void *i, volatile bool *s);
+      /** Set whether workers are used for commands (to allow interrupting). */
       void setWorkerEnabled(bool en) { workerenabled=en; };
+      /** Set whether pondering occurs. */
       void setPonderEnabled(bool en) { ponderenabled=en; };
       
+      /** Interprete a line as a GTP command and execute it. */
       bool executeCommand(std::string line);
+      /** Make sure the last command is finished. */
       void finishLastCommand();
+      /** Wrapper for pondering. */
       static void startPonderingWrapper(void *instance) { ((Gtp::Engine*)instance)->startPondering(); };
+      /** Start pondering. */
       void startPondering() { if (ponderenabled && ponderthread!=NULL) ponderthread->ponderStart(); };
+      /** Stop pondering. */
       void stopPondering() { if (ponderenabled && ponderthread!=NULL) ponderthread->ponderStop(); };
       
+      /** Return a pointer to a Gtp::Output object. */
       Gtp::Output *getOutput() const { return output; };
       
     private:
+      /** Worker thread container. */
       class WorkerThread
       {
         public:
@@ -164,6 +232,7 @@ namespace Gtp
           void run();
         
         private:
+          /** Worker thread functional. */
           class Worker
           {
             public:
@@ -186,6 +255,7 @@ namespace Gtp
           boost::thread thisthread;
       };
       
+      /** Ponder thread container. */
       class PonderThread
       {
         public:
@@ -197,6 +267,7 @@ namespace Gtp
           void run();
         
         private:
+          /** Ponder thread functional. */
           class Worker
           {
             public:
