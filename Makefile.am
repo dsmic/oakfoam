@@ -32,4 +32,8 @@ oakfoam-profiled:
 clean-profiled:
 	rm -f src/*.gcda src/gtp/*.gcda src/engine/*.gcda
 
+docs: docs/Doxyfile $(oakfoam_SOURCES)
+	cd docs; \
+	doxygen Doxyfile; \
+	cd ..
 
