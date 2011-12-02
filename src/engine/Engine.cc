@@ -423,12 +423,14 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("dobenchmark",this,&Engine::gtpDoBenchmark);
   gtpe->addFunctionCommand("showcriticality",this,&Engine::gtpShowCriticality);
   gtpe->addFunctionCommand("showterritory",this,&Engine::gtpShowTerritory);
+  gtpe->addFunctionCommand("showratios",this,&Engine::gtpShowRatios);
+  gtpe->addFunctionCommand("showraveratios",this,&Engine::gtpShowRAVERatios);
   
   //gtpe->addAnalyzeCommand("final_score","Final Score","string");
   //gtpe->addAnalyzeCommand("showboard","Show Board","string");
   gtpe->addAnalyzeCommand("boardstats","Board Stats","string");
   
-  gtpe->addAnalyzeCommand("showsymmetrytransforms","Show Symmetry Transforms","sboard");
+  //gtpe->addAnalyzeCommand("showsymmetrytransforms","Show Symmetry Transforms","sboard");
   //gtpe->addAnalyzeCommand("showliberties","Show Liberties","sboard");
   //gtpe->addAnalyzeCommand("showvalidmoves","Show Valid Moves","sboard");
   //gtpe->addAnalyzeCommand("showgroupsize","Show Group Size","sboard");
@@ -436,8 +438,10 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("showcircdistfrom %%p","Show Circular Distance From","sboard");
   gtpe->addAnalyzeCommand("listcircpatternsat %%p","List Circular Patterns At","string");
   gtpe->addAnalyzeCommand("listadjacentgroupsof %%p","List Adjacent Groups Of","string");
-  gtpe->addAnalyzeCommand("showsafepositions","Show Safe Positions","gfx");
+  //gtpe->addAnalyzeCommand("showsafepositions","Show Safe Positions","gfx");
   gtpe->addAnalyzeCommand("showpatternmatches","Show Pattern Matches","sboard");
+  gtpe->addAnalyzeCommand("showratios","Show Ratios","sboard");
+  gtpe->addAnalyzeCommand("showraveratios","Show RAVE Ratios","sboard");
   //gtpe->addAnalyzeCommand("shownakadecenters","Show Nakade Centers","sboard");
   gtpe->addAnalyzeCommand("featurematchesat %%p","Feature Matches At","string");
   gtpe->addAnalyzeCommand("featureprobdistribution","Feature Probability Distribution","cboard");
@@ -447,8 +451,8 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("showtreelivegfx","Show Tree Live Gfx","gfx");
   //gtpe->addAnalyzeCommand("loadpatterns %%r","Load Patterns","none");
   //gtpe->addAnalyzeCommand("clearpatterns","Clear Patterns","none");
-  gtpe->addAnalyzeCommand("doboardcopy","Do Board Copy","none");
-  gtpe->addAnalyzeCommand("showcurrenthash","Show Current Hash","string");
+  //gtpe->addAnalyzeCommand("doboardcopy","Do Board Copy","none");
+  //gtpe->addAnalyzeCommand("showcurrenthash","Show Current Hash","string");
   
   gtpe->addAnalyzeCommand("param general","Parameters (General)","param");
   gtpe->addAnalyzeCommand("param tree","Parameters (Tree)","param");
@@ -870,6 +874,62 @@ void Engine::gtpShowPatternMatches(void *instance, Gtp::Engine* gtpe, Gtp::Comma
       if (me->currentboard->validMove(Go::Move(Go::WHITE,pos)) && me->patterntable->isPattern(Pattern::ThreeByThree::invert(Pattern::ThreeByThree::makeHash(me->currentboard,pos))))
         gtpe->getOutput()->printf("W");
       gtpe->getOutput()->printf("\" ");
+    }
+    gtpe->getOutput()->printf("\n");
+  }
+
+  gtpe->getOutput()->endResponse(true);
+}
+
+void Engine::gtpShowRatios(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  Go::Color col=me->currentboard->nextToMove();
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("\n");
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      int pos=Go::Position::xy2pos(x,y,me->boardsize);
+      Go::Move move=Go::Move(col,pos);
+      Tree *tree=me->movetree->getChild(move);
+      if (tree!=NULL)
+      {
+        float ratio=tree->getRatio();
+        gtpe->getOutput()->printf("\"%.2f\"",ratio);
+      }
+      else
+        gtpe->getOutput()->printf("\"\"");
+    }
+    gtpe->getOutput()->printf("\n");
+  }
+
+  gtpe->getOutput()->endResponse(true);
+}
+
+void Engine::gtpShowRAVERatios(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  Go::Color col=me->currentboard->nextToMove();
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("\n");
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      int pos=Go::Position::xy2pos(x,y,me->boardsize);
+      Go::Move move=Go::Move(col,pos);
+      Tree *tree=me->movetree->getChild(move);
+      if (tree!=NULL)
+      {
+        float ratio=tree->getRAVERatio();
+        gtpe->getOutput()->printf("\"%.2f\"",ratio);
+      }
+      else
+        gtpe->getOutput()->printf("\"\"");
     }
     gtpe->getOutput()->printf("\n");
   }
