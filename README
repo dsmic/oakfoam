@@ -5,9 +5,23 @@
   <flash.slash@gmail.com>
 -------------------------------------------------
 
-This is a Computer Go research project.
+This is a Computer Go player.
 
 Please contact me if you have any questions.
+
+-- Build ----------------------------------------
+
+Running the commands "./configure" and "make"
+should guide you through the process of building
+Oakfoam. Refer to "INSTALL" for autotools generic
+instructions.
+
+-- Code Documentation ---------------------------
+
+Running "make docs" should compile the
+documentation for the source code, to "docs/".
+
+-- Support --------------------------------------
 
 This project is partially supported financially
 by the National Research Foundation of South
@@ -17,3 +31,4 @@ Africa.
 
 Oakfoam is distributed under the BSD License,
 included in the file "COPYING".
+
