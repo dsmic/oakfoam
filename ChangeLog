@@ -1,6 +1,8 @@
 
-version 0.0.10: xxxx-xx-xx
+version 0.1.0: 2011-12-06
   * multi-core parallelization
+	* cluster parallelization
+	* start of doxygen documentation
 
 version 0.0.9: 2011-07-18
   * handle Canadian overtime settings

@@ -9,6 +9,7 @@ Now: (current focus)
   output best move at intervals
   add random chance of not using a playout heuristic (per heuristic)
   weighted "random" ordering of playout heuristics
+  finish adding doxygen
 
 Soon: (before next major release)
   larger patterns
