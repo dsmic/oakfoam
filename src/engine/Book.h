@@ -7,20 +7,45 @@
 //from "Parameters.h":
 class Parameters;
 
+/** Opening Book.
+ * Management of opening books for various board sizes.
+ */
 class Book
 {
   public:
+    /** Create a new opening book.
+     * Use the provided paramenters when appropriate.
+     */
     Book(Parameters *p);
     ~Book();
     
+    /** Add a new variation to an opening book.
+     * The board size is @p size.
+     * The sequence of move leading up to the new variation is @p movehistory.
+     * The new variation move is @p move.
+     */
     void add(int size, std::list<Go::Move> *movehistory, Go::Move move);
+    /** Remove a variation from an opening book.
+     * @see Book::add().
+     */
     void remove(int size, std::list<Go::Move> *movehistory, Go::Move move);
+    /** Return a list of valid moves according to the opening book.
+     * @p movehistory decscibes the current situation.
+     * If @p good is true, only "good" variations are returned, otherwise all.
+     */
     std::list<Go::Move> getMoves(int size, std::list<Go::Move> *movehistory, bool good=true);
+    /** Clear the opening book for a specific size. */
     void clear(int size);
     
+    /** Display a piece of an opening book for GoGui analyse commands. */
     std::string show(int size, std::list<Go::Move> *movehistory);
+    /** Load the opening book(s) from a file.
+     * Use the Fuego opening book format.
+     */
     bool loadFile(std::string filename);
+    /** Load a line from an opening book file. */
     bool loadLine(std::string line);
+    /** Dump the opening books to a file. */
     bool saveFile(std::string filename);
   
   private:

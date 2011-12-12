@@ -4,13 +4,19 @@
 #include "Go.h"
 #include <list>
 
+/** Benson Algorithm.
+ * Check a board for pass-safe stones.
+ */
 class Benson
 {
-  public:
+public:
+    /** Create a Benson object. */
     Benson(Go::Board *bd);
     ~Benson();
     
+    /** Perform the Benson algorithm on the board. */
     void solve();
+    /** Return the board positions that are safe for each color. */
     Go::ObjectBoard<Go::Color> *getSafePositions() const { return safepositions; };
   
   private:
