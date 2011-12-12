@@ -642,9 +642,13 @@ namespace Pattern
   class ThreeByThreeGammas;
 };
 
+/** ELO Features.
+ * Class to manage extracting, learning, and using feature weights.
+ */
 class Features
 {
   public:
+    /** The different classes of features. */
     enum FeatureClass
     {
       PASS,
@@ -661,26 +665,47 @@ class Features
       INVALID
     };
     
+    /** Create a Features object with the global parameters. */
     Features(Parameters *prms);
     ~Features();
     
+    /** Check for a feature match and return the matched level.
+     * The @p move is check for a match against @p featclass on @p board.
+     * A return value of zero, means that the feature was not matched.
+     */
     unsigned int matchFeatureClass(Features::FeatureClass featclass, Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove=true) const;
+    /** Return the gamma weight for a specific feature and level. */
     float getFeatureGamma(Features::FeatureClass featclass, unsigned int level) const;
+    /** Return the weight for a move.
+     * The weight for a move is the product of matching feature weights for that move.
+     */
     float getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove=true) const;
+    /** Return the total of all gammas for the moves on a board. */
     float getBoardGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Color col) const;
+    /** Return the total of all gammas for the moves on a board and each move's weight in @p gammas. */
     float getBoardGammas(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Color col, Go::ObjectBoard<float> *gammas) const;
+    /** Return the human-readable name for a feature class. */
     std::string getFeatureClassName(Features::FeatureClass featclass) const;
+    /** Return the feature class, given a name. */
     Features::FeatureClass getFeatureClassFromName(std::string name) const;
+    /** Set the gamma value for a specific feature and level. */
     bool setFeatureGamma(Features::FeatureClass featclass, unsigned int level, float gamma);
     
+    /** Return a string of all the matching features for a move. */ 
     std::string getMatchingFeaturesString(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool pretty=true) const;
+    /** Return a list of all valid features and levels. */
     std::string getFeatureIdList() const;
     
+    /** Load a gamma value from a line. */
     bool loadGammaLine(std::string line);
+    /** Load a file of gamma values. */
     bool loadGammaFile(std::string filename);
+    /** Load a number of lines of gamma values. */
     bool loadGammaString(std::string lines);
+    /** Load the default gamma values. */
     void loadGammaDefaults() { this->loadGammaString(FEATURES_DEFAULT); };
     
+    /** Return the CFG distances for the last and second last moves on a board. */
     void computeCFGDist(Go::Board *board, Go::ObjectBoard<int> **cfglastdist, Go::ObjectBoard<int> **cfgsecondlastdist);
   
   private:
