@@ -1,0 +1,10 @@
+-------------------------------
+- Opening Book Script
+-------------------------------
+
+The 'book-fetch.sh' script downloads the current opening book of
+Fuego and places in the project root for Oakfoam to use. This is
+a temporary solution, hopefully Oakfoam will have its own
+opening book at some stage. Please refer to
+http://fuego.sourceforge.net/ for more info on Fuego.
+
