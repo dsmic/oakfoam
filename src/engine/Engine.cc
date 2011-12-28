@@ -17,6 +17,9 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
 {
   gtpe=ge;
   longname=ln;
+  #ifdef HAVE_WEB
+    web=NULL;
+  #endif
   
   params->engine=this;
   
@@ -251,19 +254,38 @@ Engine::~Engine()
   delete territorymap;
 }
 
-void Engine::run()
+void Engine::run(bool web_inf, int web_port)
 {
+  bool use_web=false;
+
   #ifdef HAVE_MPI
     if (mpirank==0)
     {
       if (mpisynced)
-        gtpe->run();
+      {
+        if (web_inf)
+          use_web=true;
+        else
+          gtpe->run();
+      }
     }
     else
       this->mpiCommandHandler();
   #else
-    gtpe->run();
+    if (web_inf)
+      use_web=true;
+    else
+      gtpe->run();
   #endif
+
+  if (use_web)
+  {
+    #ifdef HAVE_WEB
+      web=new Web(this,web_port);
+      web->run();
+      delete web;
+    #endif
+  }
 }
 
 void Engine::postCmdLineArgs(bool book_autoload)

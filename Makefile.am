@@ -16,6 +16,7 @@ oakfoam_SOURCES     = build.h \
                       src/engine/Playout.h src/engine/Playout.cc \
                       src/engine/Benson.h src/engine/Benson.cc \
                       src/engine/Worker.h src/engine/Worker.cc \
+                      src/web/Web.h src/web/Web.cc \
                       src/gtp/Gtp.h src/gtp/Gtp.cc
 oakfoam_CPPFLAGS    = $(BOOST_CPPFLAGS) $(MPI_CPPFLAGS)
 oakfoam_LDFLAGS     = $(BOOST_LDFLAGS) $(MPI_LDFLAGS)

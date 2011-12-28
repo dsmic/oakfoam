@@ -69,7 +69,7 @@ am_oakfoam_OBJECTS = src/oakfoam-Oakfoam.$(OBJEXT) \
 	src/engine/oakfoam-Playout.$(OBJEXT) \
 	src/engine/oakfoam-Benson.$(OBJEXT) \
 	src/engine/oakfoam-Worker.$(OBJEXT) \
-	src/gtp/oakfoam-Gtp.$(OBJEXT)
+	src/web/oakfoam-Web.$(OBJEXT) src/gtp/oakfoam-Gtp.$(OBJEXT)
 oakfoam_OBJECTS = $(am_oakfoam_OBJECTS)
 am__DEPENDENCIES_1 =
 oakfoam_DEPENDENCIES = $(am__DEPENDENCIES_1)
@@ -216,6 +216,7 @@ oakfoam_SOURCES = build.h \
                       src/engine/Playout.h src/engine/Playout.cc \
                       src/engine/Benson.h src/engine/Benson.cc \
                       src/engine/Worker.h src/engine/Worker.cc \
+                      src/web/Web.h src/web/Web.cc \
                       src/gtp/Gtp.h src/gtp/Gtp.cc
 
 oakfoam_CPPFLAGS = $(BOOST_CPPFLAGS) $(MPI_CPPFLAGS)
@@ -355,6 +356,14 @@ src/engine/oakfoam-Benson.$(OBJEXT): src/engine/$(am__dirstamp) \
 	src/engine/$(DEPDIR)/$(am__dirstamp)
 src/engine/oakfoam-Worker.$(OBJEXT): src/engine/$(am__dirstamp) \
 	src/engine/$(DEPDIR)/$(am__dirstamp)
+src/web/$(am__dirstamp):
+	@$(MKDIR_P) src/web
+	@: > src/web/$(am__dirstamp)
+src/web/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) src/web/$(DEPDIR)
+	@: > src/web/$(DEPDIR)/$(am__dirstamp)
+src/web/oakfoam-Web.$(OBJEXT): src/web/$(am__dirstamp) \
+	src/web/$(DEPDIR)/$(am__dirstamp)
 src/gtp/$(am__dirstamp):
 	@$(MKDIR_P) src/gtp
 	@: > src/gtp/$(am__dirstamp)
@@ -384,6 +393,7 @@ mostlyclean-compile:
 	-rm -f src/gtp/oakfoam-Gtp.$(OBJEXT)
 	-rm -f src/oakfoam-Oakfoam.$(OBJEXT)
 	-rm -f src/oakfoam-main.$(OBJEXT)
+	-rm -f src/web/oakfoam-Web.$(OBJEXT)
 
 distclean-compile:
 	-rm -f *.tab.c
@@ -403,6 +413,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/engine/$(DEPDIR)/oakfoam-Tree.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/engine/$(DEPDIR)/oakfoam-Worker.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/gtp/$(DEPDIR)/oakfoam-Gtp.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/web/$(DEPDIR)/oakfoam-Web.Po@am__quote@
 
 .cc.o:
 @am__fastdepCXX_TRUE@	depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
@@ -615,6 +626,20 @@ src/engine/oakfoam-Worker.obj: src/engine/Worker.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/engine/Worker.cc' object='src/engine/oakfoam-Worker.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o src/engine/oakfoam-Worker.obj `if test -f 'src/engine/Worker.cc'; then $(CYGPATH_W) 'src/engine/Worker.cc'; else $(CYGPATH_W) '$(srcdir)/src/engine/Worker.cc'; fi`
+
+src/web/oakfoam-Web.o: src/web/Web.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT src/web/oakfoam-Web.o -MD -MP -MF src/web/$(DEPDIR)/oakfoam-Web.Tpo -c -o src/web/oakfoam-Web.o `test -f 'src/web/Web.cc' || echo '$(srcdir)/'`src/web/Web.cc
+@am__fastdepCXX_TRUE@	$(am__mv) src/web/$(DEPDIR)/oakfoam-Web.Tpo src/web/$(DEPDIR)/oakfoam-Web.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/web/Web.cc' object='src/web/oakfoam-Web.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o src/web/oakfoam-Web.o `test -f 'src/web/Web.cc' || echo '$(srcdir)/'`src/web/Web.cc
+
+src/web/oakfoam-Web.obj: src/web/Web.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT src/web/oakfoam-Web.obj -MD -MP -MF src/web/$(DEPDIR)/oakfoam-Web.Tpo -c -o src/web/oakfoam-Web.obj `if test -f 'src/web/Web.cc'; then $(CYGPATH_W) 'src/web/Web.cc'; else $(CYGPATH_W) '$(srcdir)/src/web/Web.cc'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) src/web/$(DEPDIR)/oakfoam-Web.Tpo src/web/$(DEPDIR)/oakfoam-Web.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/web/Web.cc' object='src/web/oakfoam-Web.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o src/web/oakfoam-Web.obj `if test -f 'src/web/Web.cc'; then $(CYGPATH_W) 'src/web/Web.cc'; else $(CYGPATH_W) '$(srcdir)/src/web/Web.cc'; fi`
 
 src/gtp/oakfoam-Gtp.o: src/gtp/Gtp.cc
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT src/gtp/oakfoam-Gtp.o -MD -MP -MF src/gtp/$(DEPDIR)/oakfoam-Gtp.Tpo -c -o src/gtp/oakfoam-Gtp.o `test -f 'src/gtp/Gtp.cc' || echo '$(srcdir)/'`src/gtp/Gtp.cc
@@ -863,6 +888,8 @@ distclean-generic:
 	-rm -f src/engine/$(am__dirstamp)
 	-rm -f src/gtp/$(DEPDIR)/$(am__dirstamp)
 	-rm -f src/gtp/$(am__dirstamp)
+	-rm -f src/web/$(DEPDIR)/$(am__dirstamp)
+	-rm -f src/web/$(am__dirstamp)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
@@ -873,7 +900,7 @@ clean-am: clean-binPROGRAMS clean-generic mostlyclean-am
 
 distclean: distclean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
-	-rm -rf src/$(DEPDIR) src/engine/$(DEPDIR) src/gtp/$(DEPDIR)
+	-rm -rf src/$(DEPDIR) src/engine/$(DEPDIR) src/gtp/$(DEPDIR) src/web/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-hdr distclean-tags
@@ -921,7 +948,7 @@ installcheck-am:
 maintainer-clean: maintainer-clean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
 	-rm -rf $(top_srcdir)/autom4te.cache
-	-rm -rf src/$(DEPDIR) src/engine/$(DEPDIR) src/gtp/$(DEPDIR)
+	-rm -rf src/$(DEPDIR) src/engine/$(DEPDIR) src/gtp/$(DEPDIR) src/web/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

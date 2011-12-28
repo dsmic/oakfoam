@@ -12,6 +12,8 @@ Oakfoam::Oakfoam()
   gtpe->addConstantCommand("version",PACKAGE_VERSION);
   
   book_autoload=true;
+  web_interface=false;
+  web_port=8000;
 }
 
 Oakfoam::~Oakfoam()
@@ -23,6 +25,6 @@ Oakfoam::~Oakfoam()
 void Oakfoam::run()
 {
   engine->postCmdLineArgs(book_autoload);
-  engine->run();
+  engine->run(web_interface,web_port);
 }
 

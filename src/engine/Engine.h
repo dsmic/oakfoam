@@ -138,6 +138,9 @@
 #include "Benson.h"
 #include "Worker.h"
 #include "../gtp/Gtp.h"
+#ifdef HAVE_WEB
+  #include "../web/Web.h"
+#endif
 
 class Engine
 {
@@ -152,7 +155,7 @@ class Engine
       MP_UCT
     };
     
-    void run();
+    void run(bool web_inf, int web_port);
     void postCmdLineArgs(bool book_autoload);
     void generateMove(Go::Color col, Go::Move **move, bool playmove);
     bool isMoveAllowed(Go::Move move);
@@ -264,6 +267,10 @@ class Engine
     volatile bool stoppondering;
     Worker::Pool *threadpool;
     Go::TerritoryMap *territorymap;
+
+    #ifdef HAVE_WEB
+      Web *web;
+    #endif
     
     #ifdef HAVE_MPI
       int mpiworldsize,mpirank;

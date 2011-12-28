@@ -12,6 +12,9 @@
 /* Define if you have the MPI library. */
 #undef HAVE_MPI
 
+/* Define if you have web interface support. */
+#undef HAVE_WEB
+
 /* Name of package */
 #undef PACKAGE
 

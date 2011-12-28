@@ -21,7 +21,13 @@ void printusage()
   std::cout << "  -h, --help            display this help and exit\n";
   std::cout << "  -l, --log FILE        log everything to FILE\n";
   std::cout << "  --nobook              do not auto load the opening book\n";
+  #ifdef HAVE_WEB
+    std::cout << "  -p, --port PORT       port for web interface\n";
+  #endif
   std::cout << "  -V, --version         display version and exit\n";
+  #ifdef HAVE_WEB
+    std::cout << "  --web                 use the web interface\n";
+  #endif
   std::cout << "\n";
   std::cout << "Report bugs to: " << PACKAGE_BUGREPORT << "\n";
 }
@@ -37,7 +43,7 @@ int main(int argc, char* argv[])
   for(int i=1;i<argc;i++) 
   {
     std::string arg = argv[i];
-    if (arg=="-h" || arg=="--help" )
+    if (arg=="-h" || arg=="--help")
     {
       #ifdef HAVE_MPI
         if (MPI::COMM_WORLD.Get_rank()==0)
@@ -51,7 +57,7 @@ int main(int argc, char* argv[])
       #endif
       return 0;
     }
-    else if (arg=="-V" || arg=="--version" )
+    else if (arg=="-V" || arg=="--version")
     {
       #ifdef HAVE_MPI
         if (MPI::COMM_WORLD.Get_rank()==0)
@@ -65,7 +71,7 @@ int main(int argc, char* argv[])
       #endif
       return 0;
     }
-    else if (arg=="-c" || arg=="--config" )
+    else if (arg=="-c" || arg=="--config")
     {
       i++;
       #ifdef HAVE_MPI
@@ -115,7 +121,7 @@ int main(int argc, char* argv[])
       oakfoam->gtpe->finishLastCommand();
       oakfoam->gtpe->getOutput()->setOutputOn(true);
     }
-    else if (arg=="-l" || arg=="--log" )
+    else if (arg=="-l" || arg=="--log")
     {
       i++;
       if (i>=argc)
@@ -145,10 +151,44 @@ int main(int argc, char* argv[])
       
       oakfoam->gtpe->getOutput()->setLogFile(logfile);
     }
-    else if (arg=="--nobook" )
+    else if (arg=="--nobook")
     {
       oakfoam->book_autoload=false;
     }
+    #ifdef HAVE_WEB
+      else if (arg=="--web")
+      {
+        oakfoam->web_interface=true;
+      }
+      else if (arg=="-p" || arg=="--port")
+      {
+        i++;
+        if (i>=argc)
+        {
+          std::cerr << "missing port number\n";
+          delete oakfoam;
+          #ifdef HAVE_MPI
+            MPI::Finalize();
+          #endif
+          return 1;
+        }
+        
+        std::istringstream iss(argv[i]);
+        int port;
+        if (iss >> port)
+          oakfoam->web_port=port;
+        else
+        {
+          std::cerr << "invalid port number\n";
+          delete oakfoam;
+          #ifdef HAVE_MPI
+            MPI::Finalize();
+          #endif
+          return 1;
+        }
+
+      }
+    #endif
     else
     {
       #ifdef HAVE_MPI

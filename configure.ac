@@ -13,7 +13,16 @@ m4_include([m4/ax_boost_base.m4])
 m4_include([m4/ax_boost_thread.m4])
 m4_include([m4/ax_mpi.m4])
 
-AX_BOOST_BASE([1.33.1])
+AC_ARG_WITH(web, [AS_HELP_STRING([--with-web],
+   [compile with web interface support. Default: no])
+],,[with_web=no])
+
+if test x"$with_web" = xyes; then
+  AX_BOOST_BASE([1.35.0])
+  AC_DEFINE(HAVE_WEB,1,[Define if you have web interface support.])
+else
+  AX_BOOST_BASE([1.33.1])
+fi
 AX_BOOST_THREAD
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM(,[[
   #ifndef HAVE_BOOST_THREAD
