@@ -20,7 +20,7 @@ oakfoam_SOURCES     = build.h \
                       src/gtp/Gtp.h src/gtp/Gtp.cc
 oakfoam_CPPFLAGS    = $(BOOST_CPPFLAGS) $(MPI_CPPFLAGS)
 oakfoam_LDFLAGS     = $(BOOST_LDFLAGS) $(MPI_LDFLAGS)
-oakfoam_LDADD       = $(BOOST_THREAD_LIB)
+oakfoam_LDADD       = -lboost_system $(BOOST_THREAD_LIB)
 dist_noinst_SCRIPTS = autogen.sh
 
 .PHONY: oakfoam-profiled
