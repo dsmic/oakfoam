@@ -12,6 +12,10 @@
 #else
   #define MPIRANK0_ONLY(__body) { __body }
 #endif
+#ifdef HAVE_WEB
+  #include "../web/Web.h"
+#endif
+
 
 Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
 {
@@ -254,7 +258,7 @@ Engine::~Engine()
   delete territorymap;
 }
 
-void Engine::run(bool web_inf, int web_port)
+void Engine::run(bool web_inf, std::string web_addr, int web_port)
 {
   bool use_web=false;
 
@@ -281,7 +285,7 @@ void Engine::run(bool web_inf, int web_port)
   if (use_web)
   {
     #ifdef HAVE_WEB
-      web=new Web(this,web_port);
+      web=new Web(this,web_addr,web_port);
       web->run();
       delete web;
     #endif

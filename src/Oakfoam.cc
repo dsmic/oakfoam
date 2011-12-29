@@ -13,6 +13,7 @@ Oakfoam::Oakfoam()
   
   book_autoload=true;
   web_interface=false;
+  web_address="127.0.0.1";
   web_port=8000;
 }
 
@@ -25,6 +26,6 @@ Oakfoam::~Oakfoam()
 void Oakfoam::run()
 {
   engine->postCmdLineArgs(book_autoload);
-  engine->run(web_interface,web_port);
+  engine->run(web_interface,web_address,web_port);
 }
 

@@ -17,12 +17,15 @@ void printusage()
   std::cout << "Usage: oakfoam [OPTIONS]\n";
   std::cout << "\n";
   std::cout << "Options:\n";
+  #ifdef HAVE_WEB
+    std::cout << "  --addr IP             bind address for web interface (def: 127.0.0.1)\n";
+  #endif
   std::cout << "  -c, --config FILE     execute the GTP commands in FILE first (no output)\n";
   std::cout << "  -h, --help            display this help and exit\n";
   std::cout << "  -l, --log FILE        log everything to FILE\n";
   std::cout << "  --nobook              do not auto load the opening book\n";
   #ifdef HAVE_WEB
-    std::cout << "  -p, --port PORT       port for web interface\n";
+    std::cout << "  -p, --port PORT       port for web interface (def: 8000)\n";
   #endif
   std::cout << "  -V, --version         display version and exit\n";
   #ifdef HAVE_WEB
@@ -186,7 +189,21 @@ int main(int argc, char* argv[])
           #endif
           return 1;
         }
-
+      }
+      else if (arg=="--addr")
+      {
+        i++;
+        if (i>=argc)
+        {
+          std::cerr << "missing bind address\n";
+          delete oakfoam;
+          #ifdef HAVE_MPI
+            MPI::Finalize();
+          #endif
+          return 1;
+        }
+        
+        oakfoam->web_address=argv[i];
       }
     #endif
     else

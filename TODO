@@ -2,7 +2,6 @@ TODO
 ------------------
 
 Now: (current focus)
-  get web interface serving static content
   get web interface serving dynamic content
   make a usable UI for the web interface
   add feature for 2-liberty heuristics

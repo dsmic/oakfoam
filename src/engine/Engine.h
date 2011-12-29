@@ -139,7 +139,8 @@
 #include "Worker.h"
 #include "../gtp/Gtp.h"
 #ifdef HAVE_WEB
-  #include "../web/Web.h"
+  //from "../web/Web.h":
+  class Web;
 #endif
 
 class Engine
@@ -155,7 +156,7 @@ class Engine
       MP_UCT
     };
     
-    void run(bool web_inf, int web_port);
+    void run(bool web_inf, std::string web_addr, int web_port);
     void postCmdLineArgs(bool book_autoload);
     void generateMove(Go::Color col, Go::Move **move, bool playmove);
     bool isMoveAllowed(Go::Move move);

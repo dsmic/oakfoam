@@ -28,7 +28,8 @@ class Oakfoam
 
     /** Should the web interface be used? (versus the GTP interface) */
     bool web_interface;
-
+    /** Web interface bind address. */
+    std::string web_address;
     /** Web interface port number. */
     int web_port;
 };
