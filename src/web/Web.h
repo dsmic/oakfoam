@@ -11,6 +11,7 @@ typedef boost::shared_ptr<boost::asio::ip::tcp::socket> socket_ptr;
 class Engine;
 
 #define HTTP_VERSION "HTTP/1.1"
+#define DOC_ROOT "www"
 
 /** Web interface.
  * Alternative interface for engine.
@@ -42,6 +43,7 @@ class Web
     void handleRequest(socket_ptr sock, std::string request);
     void handleGet(socket_ptr sock, std::string request);
 
+    void respondBasic(socket_ptr sock, std::string status, std::string type, std::string body);
     void respondBasic(socket_ptr sock, std::string status, std::string body);
     void respondBasic(socket_ptr sock, std::string status);
     void respondStatic(socket_ptr sock, std::string uri);

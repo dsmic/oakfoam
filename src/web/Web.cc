@@ -69,8 +69,6 @@ void Web::handleConnection(socket_ptr sock)
         break;
       }
     }
-
-    //engine->getGtpEngine()->executeCommand(buffer);
   }
 
   //fprintf(stderr,"recv: ^%s$\n",request.c_str());
@@ -123,17 +121,54 @@ void Web::handleGet(socket_ptr sock, std::string request)
   getline(iss,httpver,'\n');
 
   fprintf(stderr,"GET %s\n",uri.c_str());
-  this->respondStatic(sock,uri);
+  if (uri.find(".gtpcmd")!=std::string::npos)
+  {
+    size_t startpos=uri.rfind("/");
+    size_t endpos=uri.rfind(".gtpcmd");
+    if (startpos==std::string::npos)
+      startpos=0;
+    std::string cmd=uri.substr(startpos+1,endpos-startpos-1);
+
+    size_t fieldpos=uri.find("?");
+    if (fieldpos!=std::string::npos)
+    {
+      std::string args=uri.substr(fieldpos+1);
+      cmd+=" ";
+      for (unsigned int i=0;i<args.length();i++)
+      {
+        if (args[i]=='&')
+          cmd+=" ";
+        else
+          cmd+=args[i];
+      }
+    }
+
+    fprintf(stderr,"GTP cmd :%s\n",cmd.c_str());
+
+    std::string output="";
+    engine->getGtpEngine()->getOutput()->setRedirectStrings(&output,NULL);
+    engine->getGtpEngine()->executeCommand(cmd);
+    engine->getGtpEngine()->getOutput()->setRedirectStrings(NULL,NULL);
+
+    this->respondBasic(sock,"200 Ok","text/plain",output);
+  }
+  else
+    this->respondStatic(sock,uri);
+}
+
+void Web::respondBasic(socket_ptr sock, std::string status, std::string type, std::string body)
+{
+  std::ostringstream ss;
+  ss<<HTTP_VERSION<<" "<<status<<"\r\n";
+  ss<<"Content-Type: "<<type<<"\r\n";
+  ss<<"Content-Length: "<<body.length()<<"\r\n";
+  ss<<"\r\n"<<body;
+  boost::asio::write(*sock, boost::asio::buffer(ss.str()));
 }
 
 void Web::respondBasic(socket_ptr sock, std::string status, std::string body)
 {
-  std::ostringstream ss;
-  ss<<HTTP_VERSION<<" "<<status<<"\r\n";
-  ss<<"Content-Type: text/html\r\n";
-  ss<<"Content-Length: "<<body.length()<<"\r\n";
-  ss<<"\r\n"<<body;
-  boost::asio::write(*sock, boost::asio::buffer(ss.str()));
+  this->respondBasic(sock,status,"text/html",body);
 }
 
 void Web::respondBasic(socket_ptr sock, std::string status)
@@ -146,7 +181,8 @@ void Web::respondStatic(socket_ptr sock, std::string uri)
 {
   namespace fs = boost::filesystem;
 
-  std::string path="."+uri;
+  size_t fieldpos=uri.find("?");
+  std::string path=DOC_ROOT+uri.substr(0,fieldpos);
   if (fs::is_directory(fs::path(path.c_str(),fs::native)) && path[path.length()-1]!='/')
     path+="/";
   if (path[path.length()-1]=='/')

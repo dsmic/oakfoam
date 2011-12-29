@@ -551,6 +551,15 @@ void Gtp::Output::printf(std::string format,...)
   
   if (logfile!=NULL)
     fflush(logfile);
+
+  if (sout!=NULL)
+  {
+    va_start (ap, format);
+    char buffer[4096];
+    vsprintf(buffer, format.c_str(), ap);
+    *sout+=buffer;
+    va_end (ap);
+  }
 }
 
 void Gtp::Output::printfDebug(std::string format,...)
@@ -570,6 +579,15 @@ void Gtp::Output::printfDebug(std::string format,...)
   
   if (logfile!=NULL)
     fflush(logfile);
+
+  if (serr!=NULL)
+  {
+    va_start (ap, format);
+    char buffer[4096];
+    vsprintf(buffer, format.c_str(), ap);
+    *serr+=buffer;
+    va_end (ap);
+  }
 }
 
 void Gtp::Output::printfLog(std::string format,...)

@@ -79,7 +79,7 @@ namespace Gtp
   class Output
   {
     public:
-      Output() { outputon=true; logfile=NULL; };
+      Output() { outputon=true; logfile=NULL; sout=serr=NULL; };
       ~Output() { if (logfile!=NULL) { fclose(logfile); }};
       
       /** Will anything be written to stdout? */
@@ -88,6 +88,11 @@ namespace Gtp
       void setOutputOn(bool outon) { outputon=outon; };
       /** Set the log file. */
       void setLogFile(FILE *lf) { logfile=lf; };
+      /** Set redirect string(s).
+       * All stdout is also appended to @p so and all stderr to @p se.
+       * Set either to NULL to disable.
+       */
+      void setRedirectStrings(std::string *so, std::string *se) { sout=so; serr=se; }
       
       /** Begin a response to a command. */
       void startResponse(Gtp::Command *cmd, bool success = true);
@@ -116,6 +121,7 @@ namespace Gtp
     private:
       bool outputon;
       FILE *logfile;
+      std::string *sout, *serr;
   };
   
   /** GTP Engine.
