@@ -8,6 +8,7 @@
 #include <boost/smart_ptr.hpp>
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
+#include <boost/filesystem.hpp>
 #include "../engine/Engine.h"
 
 Web::Web(Engine *eng, std::string a, int p)
@@ -61,8 +62,8 @@ void Web::handleConnection(socket_ptr sock)
     
     if (request.length()>=4) // look for end of request
     {
-      int pos=request.find("\r\n\r\n");
-      if (pos!=-1)
+      size_t pos=request.find("\r\n\r\n");
+      if (pos!=std::string::npos)
       {
         request=request.substr(0,pos); // strip out anything after headers
         break;
@@ -72,7 +73,7 @@ void Web::handleConnection(socket_ptr sock)
     //engine->getGtpEngine()->executeCommand(buffer);
   }
 
-  fprintf(stderr,"recv: ^%s$\n",request.c_str());
+  //fprintf(stderr,"recv: ^%s$\n",request.c_str());
   this->handleRequest(sock,request);
 }
 
@@ -121,7 +122,7 @@ void Web::handleGet(socket_ptr sock, std::string request)
   }
   getline(iss,httpver,'\n');
 
-  fprintf(stderr,"GET request for %s\n",uri.c_str());
+  fprintf(stderr,"GET %s\n",uri.c_str());
   this->respondStatic(sock,uri);
 }
 
@@ -129,6 +130,7 @@ void Web::respondBasic(socket_ptr sock, std::string status, std::string body)
 {
   std::ostringstream ss;
   ss<<HTTP_VERSION<<" "<<status<<"\r\n";
+  ss<<"Content-Type: text/html\r\n";
   ss<<"Content-Length: "<<body.length()<<"\r\n";
   ss<<"\r\n"<<body;
   boost::asio::write(*sock, boost::asio::buffer(ss.str()));
@@ -136,18 +138,33 @@ void Web::respondBasic(socket_ptr sock, std::string status, std::string body)
 
 void Web::respondBasic(socket_ptr sock, std::string status)
 {
-  std::string body="<html><head>\n<title>"+status+"</title>\n</head><body>\n"+status+"\n</body></html>";
+  std::string body="<html><head>\n<title>"+status+"</title>\n</head><body>\n<h1>"+status+"</h1>\n</body></html>";
   this->respondBasic(sock,status,body);
 }
 
 void Web::respondStatic(socket_ptr sock, std::string uri)
 {
+  namespace fs = boost::filesystem;
+
   std::string path="."+uri;
+  if (fs::is_directory(fs::path(path.c_str(),fs::native)) && path[path.length()-1]!='/')
+    path+="/";
+  if (path[path.length()-1]=='/')
+    path+="index.html";
+
   std::ifstream is(path.c_str(), std::ios::in | std::ios::binary);
   if (!is)
   {
     this->respondBasic(sock,"404 Not Found");
     return;
+  }
+
+  size_t last_slash_pos=path.find_last_of("/");
+  size_t last_dot_pos=path.find_last_of(".");
+  std::string extension;
+  if (last_dot_pos!=std::string::npos && last_dot_pos>last_slash_pos)
+  {
+    extension=path.substr(last_dot_pos+1);
   }
 
   std::ostringstream ss;
@@ -156,9 +173,28 @@ void Web::respondStatic(socket_ptr sock, std::string uri)
   char buf[512];
   while (is.read(buf, sizeof(buf)).gcount() > 0)
     content.append(buf, is.gcount());
+  ss<<"Content-Type: "<<this->getMimeType(extension)<<"\r\n";
   ss<<"Content-Length: "<<content.length()<<"\r\n";
   ss<<"\r\n"<<content;
   boost::asio::write(*sock, boost::asio::buffer(ss.str()));
+}
+
+std::string Web::getMimeType(std::string ext)
+{
+  if (ext=="htm"||ext=="html")
+    return "text/html";
+  else if (ext=="png")
+    return "image/png";
+  else if (ext=="jpg"||ext=="jpeg")
+    return "image/jpeg";
+  else if (ext=="gif")
+    return "image/gif";
+  else if (ext=="js")
+    return "application/javascript";
+  else if (ext=="css")
+    return "text/css";
+  else
+    return "text/plain";
 }
 
 #endif

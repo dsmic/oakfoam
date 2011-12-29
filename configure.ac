@@ -10,7 +10,9 @@ AC_PROG_INSTALL
 AC_LANG(C++)
 
 m4_include([m4/ax_boost_base.m4])
+m4_include([m4/ax_boost_system.m4])
 m4_include([m4/ax_boost_thread.m4])
+m4_include([m4/ax_boost_filesystem.m4])
 m4_include([m4/ax_mpi.m4])
 
 AC_ARG_WITH(web, [AS_HELP_STRING([--with-web],
@@ -23,7 +25,9 @@ if test x"$with_web" = xyes; then
 else
   AX_BOOST_BASE([1.33.1])
 fi
+AX_BOOST_SYSTEM
 AX_BOOST_THREAD
+AX_BOOST_FILESYSTEM
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM(,[[
   #ifndef HAVE_BOOST_THREAD
     error

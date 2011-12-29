@@ -45,6 +45,8 @@ class Web
     void respondBasic(socket_ptr sock, std::string status, std::string body);
     void respondBasic(socket_ptr sock, std::string status);
     void respondStatic(socket_ptr sock, std::string uri);
+
+    std::string getMimeType(std::string extension);
 };
 
 #endif
