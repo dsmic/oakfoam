@@ -38,7 +38,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   boardsize=9;
   params->board_size=boardsize;
   currentboard=new Go::Board(boardsize);
-  komi=5.5;
+  komi=7.5;
   
   zobristtable=new Go::ZobristTable(params,boardsize,ZOBRIST_HASH_SEED);
   
