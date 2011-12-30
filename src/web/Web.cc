@@ -122,36 +122,9 @@ void Web::handleGet(socket_ptr sock, std::string request)
 
   fprintf(stderr,"GET %s\n",uri.c_str());
   if (uri.find(".gtpcmd")!=std::string::npos)
-  {
-    size_t startpos=uri.rfind("/");
-    size_t endpos=uri.rfind(".gtpcmd");
-    if (startpos==std::string::npos)
-      startpos=0;
-    std::string cmd=uri.substr(startpos+1,endpos-startpos-1);
-
-    size_t fieldpos=uri.find("?");
-    if (fieldpos!=std::string::npos)
-    {
-      std::string args=uri.substr(fieldpos+1);
-      cmd+=" ";
-      for (unsigned int i=0;i<args.length();i++)
-      {
-        if (args[i]=='&')
-          cmd+=" ";
-        else
-          cmd+=args[i];
-      }
-    }
-
-    fprintf(stderr,"GTP cmd :%s\n",cmd.c_str());
-
-    std::string output="";
-    engine->getGtpEngine()->getOutput()->setRedirectStrings(&output,NULL);
-    engine->getGtpEngine()->executeCommand(cmd);
-    engine->getGtpEngine()->getOutput()->setRedirectStrings(NULL,NULL);
-
-    this->respondBasic(sock,"200 Ok","text/plain",output);
-  }
+    this->respondGtp(sock,uri);
+  else if (uri.find(".jsoncmd")!=std::string::npos)
+    this->respondJson(sock,uri);
   else
     this->respondStatic(sock,uri);
 }
@@ -215,6 +188,111 @@ void Web::respondStatic(socket_ptr sock, std::string uri)
   boost::asio::write(*sock, boost::asio::buffer(ss.str()));
 }
 
+void Web::respondGtp(socket_ptr sock, std::string uri)
+{
+  size_t startpos=uri.rfind("/");
+  size_t endpos=uri.rfind(".gtpcmd");
+  if (startpos==std::string::npos)
+    startpos=0;
+  std::string cmd=uri.substr(startpos+1,endpos-startpos-1);
+
+  size_t fieldpos=uri.find("?");
+  if (fieldpos!=std::string::npos)
+  {
+    std::string args=uri.substr(fieldpos+1);
+    cmd+=" ";
+    for (unsigned int i=0;i<args.length();i++)
+    {
+      if (args[i]=='&')
+        cmd+=" ";
+      else
+        cmd+=args[i];
+    }
+  }
+
+  fprintf(stderr,"GTP cmd: %s\n",cmd.c_str());
+
+  std::string output="";
+  engine->getGtpEngine()->getOutput()->setRedirectStrings(&output,NULL);
+  engine->getGtpEngine()->executeCommand(cmd);
+  engine->getGtpEngine()->getOutput()->setRedirectStrings(NULL,NULL);
+
+  this->respondBasic(sock,"200 Ok","text/plain",output);
+}
+
+void Web::respondJson(socket_ptr sock, std::string uri)
+{
+  size_t startpos=uri.rfind("/");
+  size_t endpos=uri.rfind(".jsoncmd");
+  if (startpos==std::string::npos)
+    startpos=0;
+  std::string cmd=uri.substr(startpos+1,endpos-startpos-1);
+
+  size_t fieldpos=uri.find("?");
+  std::vector<std::string> args;
+  if (fieldpos!=std::string::npos)
+  {
+    std::string argstring=uri.substr(fieldpos+1);
+    std::string arg="";
+    for (unsigned int i=0;i<argstring.length();i++)
+    {
+      if (argstring[i]=='&')
+      {
+        args.push_back(arg);
+        arg="";
+      }
+      else
+        arg+=argstring[i];
+    }
+    args.push_back(arg);
+  }
+
+  fprintf(stderr,"JSON cmd: %s\n",cmd.c_str());
+
+  std::ostringstream out;
+  out<<"{\n";
+  if (cmd=="engine_info")
+  {
+    out<<"\"name\": \""<<PACKAGE_NAME<<"\",\n";
+    out<<"\"version\": \""<<PACKAGE_VERSION<<"\",\n";
+  }
+  else if (cmd=="board_info")
+  {
+    int size=engine->getBoardSize();
+    out<<"\"size\": "<<size<<",\n";
+    out<<"\"komi\": "<<engine->getKomi()<<",\n";
+    out<<"\"moves\": "<<engine->getCurrentBoard()->getMovesMade()<<",\n";
+    out<<"\"last_move\": \""<<engine->getCurrentBoard()->getLastMove().toString(size)<<"\",\n";
+    out<<"\"next_color\": \""<<Go::colorToChar(engine->getCurrentBoard()->nextToMove())<<"\",\n";
+    out<<"\"simple_ko\": \""<<Go::Position::pos2string(engine->getCurrentBoard()->getSimpleKo(),size)<<"\",\n";
+  }
+  else if (cmd=="board_pos")
+  {
+    int size=engine->getBoardSize();
+    Go::Board *board=engine->getCurrentBoard();
+    for (int x=0;x<size;x++)
+    {
+      for (int y=0;y<size;y++)
+      {
+        int pos=Go::Position::xy2pos(x,y,size);
+        out<<"\""<<Go::Position::pos2string(pos,size)<<"\": \""<<Go::colorToChar(board->getColor(pos))<<"\",\n";
+      }
+    }
+  }
+  else
+  {
+    this->respondBasic(sock,"404 Not Found");
+    return;
+  }
+  //engine->getGtpEngine()->getOutput()->setRedirectStrings(&output,NULL);
+  //engine->getGtpEngine()->executeCommand(cmd);
+  //engine->getGtpEngine()->getOutput()->setRedirectStrings(NULL,NULL);
+  out<<"}\n";
+
+  this->respondBasic(sock,"200 Ok","application/json",out.str());
+}
+
+
 std::string Web::getMimeType(std::string ext)
 {
   if (ext=="htm"||ext=="html")
@@ -229,6 +307,8 @@ std::string Web::getMimeType(std::string ext)
     return "application/javascript";
   else if (ext=="css")
     return "text/css";
+  else if (ext=="json")
+    return "application/json";
   else
     return "text/plain";
 }
