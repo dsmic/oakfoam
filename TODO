@@ -2,7 +2,6 @@ TODO
 ------------------
 
 Now: (current focus)
-  make a usable UI for the web interface
   add feature for 2-liberty heuristics
   add debug levels
   change uct_* params to tree_*

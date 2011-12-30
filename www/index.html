@@ -1,116 +1,31 @@
 <html>
 <head>
-<title>Oakfoam Web Interface</title>
-<link type="text/css" href="css/smoothness/jquery-ui.css" rel="stylesheet"/>
-<script type="text/javascript" src="js/jquery.js"></script>
-<script type="text/javascript" src="js/jquery-ui.js"></script>
-<script type="text/javascript">
-  var board_size=0;
-
-  function xy2pos(x,y)
-  {
-    if (x>7) x++; // there is no I column
-    return String.fromCharCode('A'.charCodeAt()+x)+(y+1);
-  }
-
-  function drawBoard(data)
-  {
-    var board="Board:<br/>\n";
-    for (x=0;x<board_size;x++)
-    {
-      for (y=0;y<board_size;y++)
-      {
-        board+=data[xy2pos(x,y)];
-      }
-      board+="<br/>\n";
-    }
-    $("#board").html(board);
-  }
-
-  $(document).ready(function()
-  {
-    $.getJSON("engine_info.jsoncmd",function(data)
-    {
-      $("#ajax").append(data["name"]+" "+data["version"]);
-    });
-
-    $.getJSON("board_info.jsoncmd",function(data)
-    {
-      board_size=data["size"];
-    });
-
-    $.getJSON("board_pos.jsoncmd",function(data){drawBoard(data);});
-
-    $.getJSON("board_info.jsoncmd",function(data)
-    {
-      var items = [];
-
-      $.each(data, function(key, val) {
-        items.push('<li>' + key + ':' + val + '</li>');
-      });
-
-      $('<ul/>', {
-        html: items.join('')
-      }).appendTo('body');
-    });
-
-    /*for ( var i = 1; i <= 5; i++ ) {
-      $("#rating").append("<a href='#'>" + i + "</a> ");
-    }
-
-    // add markup to container and apply click handlers to anchors
-    $("#rating a").click(function(e) {
-      // stop normal link click
-      e.preventDefault();
-
-      // send request
-      $.post("rate.php", {rating: $(this).html()}, function(xml) {
-        // format and output result
-        $("#rating").html(
-          "Thanks for rating, current average: " +
-          $("average", xml).text() +
-          ", number of votes: " +
-          $("count", xml).text()
-        );
-      });
-    });*/
-
-    //$('#date').datepicker();
-
-    //$('.ui-widget').click(function(){$(this).slideUp();});
-
-  });
-
-</script>
-<style type="text/css">
-  body{
-    font: 10pt "Verdana", sans-serif;
-    margin: 20px;
-  }
-</style>
+  <title>Oakfoam Web Interface</title>
+  <link type="text/css" href="css/smoothness/jquery-ui.css" rel="stylesheet"/>
+  <link type="text/css" href="css/main.css" rel="stylesheet"/>
+  <script type="text/javascript" src="js/jquery.js"></script>
+  <script type="text/javascript" src="js/jquery-ui.js"></script>
+  <script type="text/javascript" src="js/main.js"></script>
 </head>
 <body>
-This is just a test page. <br/>
-<a href="version.gtpcmd">Get the current version of Oakfoam</a><br/>
-<span id="ajax"></span>
-<!--<input type="text" name="date" id="date" />-->
-<!--
-    <div class="ui-widget">
-			<div class="ui-state-highlight ui-corner-all" style="margin-top: 20px; padding: 0 .7em;"> 
-				<p><span class="ui-icon ui-icon-info" style="float: left; margin-right: .3em;"></span>
-				<strong>Hey!</strong> Sample ui-state-highlight style.</p>
-			</div>
 
-		</div>
-		<br/>
-		<div class="ui-widget">
-			<div class="ui-state-error ui-corner-all" style="padding: 0 .7em;"> 
-				<p><span class="ui-icon ui-icon-alert" style="float: left; margin-right: .3em;"></span> 
-				<strong>Alert:</strong> Sample ui-state-error style.</p>
-			</div>
-		</div>
--->
+<h1>Oakfoam Web Interface</h1>
+<h3><span id="engine"></span></h3>
+<button id="new">New</button>
+<button id="pass">Pass</button>
+<button id="genmove">Genmove</button>
 <div id="board"></div>
+<div id="status"></div>
+
+<div id="dialog-new" title="New Game">
+	<form>
+	<fieldset>
+		<label for="size">Size</label><input type="text" name="size" id="dialog-new-size" class="text ui-widget-content ui-corner-all"/><br/>
+		<label for="komi">Komi</label><input type="text" name="komi" id="dialog-new-komi" value="" class="text ui-widget-content ui-corner-all"/><br/>
+	</fieldset>
+	</form>
+</div>
+
 </body>
 </html>
 

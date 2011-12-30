@@ -214,7 +214,7 @@ void Web::respondGtp(socket_ptr sock, std::string uri)
 
   std::string output="";
   engine->getGtpEngine()->getOutput()->setRedirectStrings(&output,NULL);
-  engine->getGtpEngine()->executeCommand(cmd);
+  engine->getGtpEngine()->executeCommand(cmd); // TODO: should be making use of a mutex here
   engine->getGtpEngine()->getOutput()->setRedirectStrings(NULL,NULL);
 
   this->respondBasic(sock,"200 Ok","text/plain",output);
