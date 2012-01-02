@@ -10,18 +10,9 @@ function xy2pos(x,y)
   return String.fromCharCode('A'.charCodeAt()+x)+(y+1);
 }
 
-function playMove(col,pos)
-{
-  $.get('play.gtpcmd?'+col+'&'+pos,refreshBoard);
-}
-
-function doGtpCmdRefresh(cmd)
-{
-  $.get(cmd+'.gtpcmd',refreshBoard);
-}
-
 function doGtpCmdRefresh(cmd,args)
 {
+  $('#status').append('Thinking...<br/>\n');
   $.get(cmd+'.gtpcmd?'+args,refreshBoard);
 }
 
@@ -63,7 +54,7 @@ function drawBoard(data)
   $('#board img').click(function()
   {
     pos=$(this).attr('alt');
-    playMove(next_color,pos);
+    doGtpCmdRefresh('play',next_color+'&'+pos);
   });
 }
 
@@ -96,7 +87,7 @@ $(document).ready(function()
 {
   $.getJSON('engine_info.jsoncmd',function(data)
   {
-    $('#engine').html('Engine: '+data['name']+' '+data['version']);
+    $('#engine').html(data['name']+' '+data['version']);
   });
   
   refreshBoard();
@@ -120,10 +111,11 @@ $(document).ready(function()
     //height: 300,
     width: 250,
     modal: true,
+    resizable: false,
     buttons: {
       'OK': function()
       {
-        doGtpCmdRefresh('clear_board');
+        doGtpCmdRefresh('clear_board','');
         doGtpCmdRefresh('boardsize',$('#dialog-new-size').val());
         doGtpCmdRefresh('komi',$('#dialog-new-komi').val());
 
@@ -136,7 +128,6 @@ $(document).ready(function()
     }
   });
 
-
   $('button').button();
   $('#new').click(function()
   {
@@ -144,7 +135,7 @@ $(document).ready(function()
     $('#dialog-new-komi').val(komi);
     $('#dialog-new').dialog('open');
   });
-  $('#pass').click(function(){playMove(next_color,'pass');});
+  $('#pass').click(function(){doGtpCmdRefresh('play',next_color+'&pass');});
   $('#genmove').click(function(){doGtpCmdRefresh('genmove',next_color);});
 
 });

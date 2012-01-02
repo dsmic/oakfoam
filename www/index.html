@@ -9,21 +9,34 @@
 </head>
 <body>
 
-<h1>Oakfoam Web Interface</h1>
-<h3><span id="engine"></span></h3>
-<button id="new">New</button>
-<button id="pass">Pass</button>
-<button id="genmove">Genmove</button>
-<div id="board"></div>
-<div id="status"></div>
+<div id="page">
+  <div id="header">
+    <h1>Oakfoam Web Interface</h1>
+  </div>
+  <div id="menu" class="ui-widget-content">
+    <button id="new">New</button><br/>
+    <!--<hr/>-->
+    <button id="pass">Pass</button><br/>
+    <button id="genmove">Genmove</button><br/>
+  </div>
+
+  <div id="board-container">
+    <div id="board"></div>
+  </div>
+  <div id="status" class="ui-widget-content"></div>
+
+  <div id="footer">
+    Engine: <span id="engine"></span>
+  </div>
+</div>
 
 <div id="dialog-new" title="New Game">
-	<form>
-	<fieldset>
-		<label for="size">Size</label><input type="text" name="size" id="dialog-new-size" class="text ui-widget-content ui-corner-all"/><br/>
-		<label for="komi">Komi</label><input type="text" name="komi" id="dialog-new-komi" value="" class="text ui-widget-content ui-corner-all"/><br/>
-	</fieldset>
-	</form>
+  <form>
+  <fieldset>
+    <label for="size">Size</label><input type="text" name="size" id="dialog-new-size" class="text ui-widget-content ui-corner-all"/><br/>
+    <label for="komi">Komi</label><input type="text" name="komi" id="dialog-new-komi" class="text ui-widget-content ui-corner-all"/><br/>
+  </fieldset>
+  </form>
 </div>
 
 </body>

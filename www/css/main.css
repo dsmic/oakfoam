@@ -1,5 +1,57 @@
-body{
+body {
   font: 10pt "Verdana", sans-serif;
   margin: 20px;
+  text-align: center;
+}
+
+#page {
+  border: 1px solid red;
+  width: 680px;
+  margin: 20px auto 20px;
+  text-align: left;
+}
+
+#header {
+  text-align: center;
+}
+
+#header h1 {
+  float: left;
+  font-size: 180%;
+  font-weight: bold;
+  padding: 15px;
+  margin: 0;
+}
+
+#menu {
+  float: left;
+  clear: both;
+  width: 200px;
+}
+
+#menu button {
+  width: 195px;
+}
+
+#status {
+  float: left;
+  clear: left;
+  width: 200px;
+}
+
+#board-container {
+  float: right;
+  clear: right;
+  border: 1px solid blue;
+  width: 456px; /* 24*19 */
+  text-align: center;
+}
+
+#footer {
+  clear: both;
+  text-align: center;
+  font-size: 80%;
+  color: #7f7f7f;
+  padding: 10px;
 }
 
