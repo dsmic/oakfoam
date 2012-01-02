@@ -6,6 +6,7 @@
 
 #include <string>
 #include <boost/asio.hpp>
+#include <boost/thread/mutex.hpp>
 typedef boost::shared_ptr<boost::asio::ip::tcp::socket> socket_ptr;
 //from "../engine/Engine.h":
 class Engine;
@@ -38,6 +39,8 @@ class Web
 
     boost::asio::io_service io_service;
     boost::asio::ip::tcp::acceptor acceptor;
+    
+    boost::mutex enginemutex;
 
     void handleConnection(socket_ptr sock);
     void handleRequest(socket_ptr sock, std::string request);

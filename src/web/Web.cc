@@ -210,6 +210,7 @@ void Web::respondGtp(socket_ptr sock, std::string uri)
     }
   }
 
+  boost::mutex::scoped_lock lock(enginemutex);
   fprintf(stderr,"GTP cmd: %s\n",cmd.c_str());
 
   std::string output="";
@@ -247,6 +248,7 @@ void Web::respondJson(socket_ptr sock, std::string uri)
     args.push_back(arg);
   }
 
+  boost::mutex::scoped_lock lock(enginemutex);
   fprintf(stderr,"JSON cmd: %s\n",cmd.c_str());
 
   std::ostringstream out;
