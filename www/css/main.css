@@ -5,10 +5,11 @@ body {
 }
 
 #page {
-  border: 1px solid red;
+  border: 1px solid #7f7f7f;
   width: 680px;
   margin: 20px auto 20px;
   text-align: left;
+  padding: 10px;
 }
 
 #header {
@@ -19,30 +20,31 @@ body {
   float: left;
   font-size: 180%;
   font-weight: bold;
-  padding: 15px;
-  margin: 0;
+  padding: 5px;
+  margin: 0 0 10px;
 }
 
 #menu {
   float: left;
   clear: both;
-  width: 200px;
+  width: 195px;
 }
 
 #menu button {
-  width: 195px;
+  width: 190px;
 }
 
 #status {
   float: left;
   clear: left;
-  width: 200px;
+  width: 190px;
+  margin-top: 10px;
 }
 
 #board-container {
   float: right;
   clear: right;
-  border: 1px solid blue;
+  /*border: 1px solid blue;*/
   width: 456px; /* 24*19 */
   text-align: center;
 }
@@ -52,6 +54,14 @@ body {
   text-align: center;
   font-size: 80%;
   color: #7f7f7f;
-  padding: 10px;
+  padding-top: 10px;
+}
+
+#dialog-new {
+  text-align: left;
+}
+
+#dialog-new input {
+  width: 80px;
 }
 

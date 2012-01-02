@@ -24,9 +24,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="2.8"
-     inkscape:cx="284.71216"
-     inkscape:cy="497.95315"
+     inkscape:zoom="1.4"
+     inkscape:cx="280.53327"
+     inkscape:cy="616.32147"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -372,6 +372,74 @@
            id="path3759-1-7-2-7"
            inkscape:connector-curvature="0" />
       </g>
+    </g>
+    <path
+       sodipodi:type="arc"
+       style="fill:none;stroke:#ff0000;stroke-width:6.52120638;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       id="path3804"
+       sodipodi:cx="157.32143"
+       sodipodi:cy="407.36218"
+       sodipodi:rx="18.035715"
+       sodipodi:ry="18.928572"
+       d="m 175.35714,407.36218 a 18.035715,18.928572 0 1 1 -36.07143,0 18.035715,18.928572 0 1 1 36.07143,0 z"
+       transform="matrix(0.47128711,0,0,0.44905659,82.21358,222.36208)" />
+    <g
+       id="g3852"
+       inkscape:export-filename="/home/frank/Desktop/oakfoam/www/images/board/white_red.png"
+       inkscape:export-xdpi="43.316433"
+       inkscape:export-ydpi="43.316433">
+      <path
+         inkscape:export-ydpi="43.316433"
+         inkscape:export-xdpi="43.316433"
+         inkscape:export-filename="/home/frank/oakfoam/www/images/board/white.png"
+         transform="matrix(0.95454546,0,0,0.9,9.7565901,-31.747241)"
+         d="m 254.28571,363.07648 a 23.571428,25 0 1 1 -47.14286,0 23.571428,25 0 1 1 47.14286,0 z"
+         sodipodi:ry="25"
+         sodipodi:rx="23.571428"
+         sodipodi:cy="363.07648"
+         sodipodi:cx="230.71428"
+         id="path2985-8"
+         style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:5.39449072;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+         sodipodi:type="arc" />
+      <path
+         transform="matrix(0.47128711,0,0,0.44905659,155.8403,112.09292)"
+         d="m 175.35714,407.36218 a 18.035715,18.928572 0 1 1 -36.07143,0 18.035715,18.928572 0 1 1 36.07143,0 z"
+         sodipodi:ry="18.928572"
+         sodipodi:rx="18.035715"
+         sodipodi:cy="407.36218"
+         sodipodi:cx="157.32143"
+         id="path3804-8"
+         style="fill:none;stroke:#ff0000;stroke-width:6.52120638;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+         sodipodi:type="arc" />
+    </g>
+    <g
+       id="g3856"
+       inkscape:export-filename="/home/frank/Desktop/oakfoam/www/images/board/black_red.png"
+       inkscape:export-xdpi="43.31638"
+       inkscape:export-ydpi="43.31638">
+      <path
+         inkscape:export-ydpi="43.316433"
+         inkscape:export-xdpi="43.316433"
+         inkscape:export-filename="/home/frank/oakfoam/www/images/board/black.png"
+         transform="matrix(0.95454546,0,0,0.9,76.93174,-25.637481)"
+         d="m 254.28571,363.07648 a 23.571428,25 0 1 1 -47.14286,0 23.571428,25 0 1 1 47.14286,0 z"
+         sodipodi:ry="25"
+         sodipodi:rx="23.571428"
+         sodipodi:cy="363.07648"
+         sodipodi:cx="230.71428"
+         id="path2985-9-5"
+         style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:5.39449072;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+         sodipodi:type="arc" />
+      <path
+         transform="matrix(0.47128711,0,0,0.44905659,223.01545,118.20268)"
+         d="m 175.35714,407.36218 a 18.035715,18.928572 0 1 1 -36.07143,0 18.035715,18.928572 0 1 1 36.07143,0 z"
+         sodipodi:ry="18.928572"
+         sodipodi:rx="18.035715"
+         sodipodi:cy="407.36218"
+         sodipodi:cx="157.32143"
+         id="path3804-3"
+         style="fill:none;stroke:#ff0000;stroke-width:6.52120638;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+         sodipodi:type="arc" />
     </g>
   </g>
 </svg>

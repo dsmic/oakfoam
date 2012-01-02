@@ -3,6 +3,7 @@ var komi;
 var moves;
 var last_move;
 var next_color;
+var engine_color='none';
 
 function xy2pos(x,y)
 {
@@ -16,6 +17,55 @@ function doGtpCmdRefresh(cmd,args)
   $.get(cmd+'.gtpcmd?'+args,refreshBoard);
 }
 
+function isHoshi(x,y)
+{
+  size=board_size;
+  dx=x;
+  if (dx>(size/2))
+    dx=size-dx-1;
+  dy=y;
+  if (dy>(size/2))
+    dy=size-dy-1;
+  if (dx>dy)
+  {
+    t=dx;
+    dx=dy;
+    dy=t;
+  }
+
+  if (size==9)
+  {
+    if (dx==2 && dy==2)
+      return true;
+    else if (dx==4 && dy==4)
+      return true;
+    else
+      return false;
+  }
+  else if (size==13)
+  {
+    if (dx==3 && dy==3)
+      return true;
+    else if (dx==6 && dy==6)
+      return true;
+    else
+      return false;
+  }
+  else if (size==19)
+  {
+    if (dx==3 && dy==3)
+      return true;
+    else if (dx==9 && dy==9)
+      return true;
+    else if (dx==3 && dy==9)
+      return true;
+    else
+      return false;
+  }
+  else
+    return false;
+}
+
 function drawBoard(data)
 {
   var board='';
@@ -26,9 +76,19 @@ function drawBoard(data)
       pos=xy2pos(x,y)
       c=data[pos];
       if (c=='B')
-        board+='<img alt="'+pos+'" src="images/board/black.png"/>';
+      {
+        if ((c+":"+pos)==last_move)
+          board+='<img alt="'+pos+'" src="images/board/black-red.png"/>';
+        else
+          board+='<img alt="'+pos+'" src="images/board/black.png"/>';
+      }
       else if (c=='W')
-        board+='<img alt="'+pos+'" src="images/board/white.png"/>';
+      {
+        if ((c+":"+pos)==last_move)
+          board+='<img alt="'+pos+'" src="images/board/white-red.png"/>';
+        else
+          board+='<img alt="'+pos+'" src="images/board/white.png"/>';
+      }
       else if (x==0 && y==0)
         board+='<img alt="'+pos+'" src="images/board/top-left.png"/>';
       else if (x==0 && y==(board_size-1))
@@ -46,16 +106,28 @@ function drawBoard(data)
       else if (y==(board_size-1))
         board+='<img alt="'+pos+'" src="images/board/right.png"/>';
       else
-        board+='<img alt="'+pos+'" src="images/board/center.png"/>';
+      {
+        if (isHoshi(x,y))
+          board+='<img alt="'+pos+'" src="images/board/hoshi.png"/>';
+        else
+          board+='<img alt="'+pos+'" src="images/board/center.png"/>';
+      }
     }
     board+="<br/>\n";
   }
   $('#board').html(board);
-  $('#board img').click(function()
+  if (next_color=='B' && (engine_color=='black' || engine_color=='both'))
+    doGtpCmdRefresh('genmove',next_color);
+  else if (next_color=='W' && (engine_color=='white' || engine_color=='both'))
+    doGtpCmdRefresh('genmove',next_color);
+  else
   {
-    pos=$(this).attr('alt');
-    doGtpCmdRefresh('play',next_color+'&'+pos);
-  });
+    $('#board img').click(function()
+    {
+      pos=$(this).attr('alt');
+      doGtpCmdRefresh('play',next_color+'&'+pos);
+    });
+  }
 }
 
 function updateStatus()
@@ -118,6 +190,7 @@ $(document).ready(function()
         doGtpCmdRefresh('clear_board','');
         doGtpCmdRefresh('boardsize',$('#dialog-new-size').val());
         doGtpCmdRefresh('komi',$('#dialog-new-komi').val());
+        engine_color=$('#dialog-new-color').val();
 
         $(this).dialog('close');
       },
@@ -133,10 +206,11 @@ $(document).ready(function()
   {
     $('#dialog-new-size').val(board_size);
     $('#dialog-new-komi').val(komi);
+    $('#dialog-new-color').val(engine_color);
     $('#dialog-new').dialog('open');
   });
   $('#pass').click(function(){doGtpCmdRefresh('play',next_color+'&pass');});
-  $('#genmove').click(function(){doGtpCmdRefresh('genmove',next_color);});
+  //$('#genmove').click(function(){doGtpCmdRefresh('genmove',next_color);});
 
 });
 
