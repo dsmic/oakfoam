@@ -4,6 +4,8 @@ var moves;
 var last_move;
 var next_color;
 var engine_color='none';
+var passes;
+var game_over=false;
 
 function xy2pos(x,y)
 {
@@ -116,17 +118,20 @@ function drawBoard(data)
     board+="<br/>\n";
   }
   $('#board').html(board);
-  if (next_color=='B' && (engine_color=='black' || engine_color=='both'))
-    doGtpCmdRefresh('genmove',next_color);
-  else if (next_color=='W' && (engine_color=='white' || engine_color=='both'))
-    doGtpCmdRefresh('genmove',next_color);
-  else
+  if (!game_over)
   {
-    $('#board img').click(function()
+    if (next_color=='B' && (engine_color=='black' || engine_color=='both'))
+      doGtpCmdRefresh('genmove',next_color);
+    else if (next_color=='W' && (engine_color=='white' || engine_color=='both'))
+      doGtpCmdRefresh('genmove',next_color);
+    else
     {
-      pos=$(this).attr('alt');
-      doGtpCmdRefresh('play',next_color+'&'+pos);
-    });
+      $('#board img').click(function()
+      {
+        pos=$(this).attr('alt');
+        doGtpCmdRefresh('play',next_color+'&'+pos);
+      });
+    }
   }
 }
 
@@ -136,9 +141,29 @@ function updateStatus()
 
   stat+='Komi: '+komi+'<br/>\n';
   stat+='Moves: '+moves+'<br/>\n';
-  stat+='Next to Move: '+next_color+'<br/>\n';
-
+  //stat+='Last Move: '+last_move+'<br/>\n';
+  if (game_over)
+    stat+='Game finished<br/>\n';
+  else
+    stat+='Next to Move: '+next_color+'<br/>\n';
+  
   $('#status').html(stat);
+
+  if (game_over)
+  {
+    if (last_move=='RESIGN')
+      $('#status').append('Score: '+next_color+'+R<br/>\n');
+    else
+    {
+      $.get('final_score.gtpcmd',function(data)
+      {
+        score=data.substr(2);
+        if (score=='0')
+          score='Jigo';
+        $('#status').append('Score: '+score+'<br/>\n');
+      });
+    }
+  }
 }
 
 function refreshBoard()
@@ -150,6 +175,17 @@ function refreshBoard()
     moves=data['moves'];
     last_move=data['last_move'];
     next_color=data['next_color'];
+    passes=data['passes'];
+    if (passes>=2 || last_move=='RESIGN')
+    {
+      game_over=true;
+      $('#pass, #genmove').button({disabled:true});
+    }
+    else
+    {
+      game_over=false;
+      $('#pass, #genmove').button({disabled:false});
+    }
     updateStatus();
   });
   $.getJSON('board_pos.jsoncmd',function(data){drawBoard(data);});
@@ -210,7 +246,7 @@ $(document).ready(function()
     $('#dialog-new').dialog('open');
   });
   $('#pass').click(function(){doGtpCmdRefresh('play',next_color+'&pass');});
-  //$('#genmove').click(function(){doGtpCmdRefresh('genmove',next_color);});
+  $('#genmove').click(function(){doGtpCmdRefresh('genmove',next_color);});
 
 });
 

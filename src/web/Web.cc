@@ -267,6 +267,7 @@ void Web::respondJson(socket_ptr sock, std::string uri)
     out<<"\"last_move\": \""<<engine->getCurrentBoard()->getLastMove().toString(size)<<"\",\n";
     out<<"\"next_color\": \""<<Go::colorToChar(engine->getCurrentBoard()->nextToMove())<<"\",\n";
     out<<"\"simple_ko\": \""<<Go::Position::pos2string(engine->getCurrentBoard()->getSimpleKo(),size)<<"\",\n";
+    out<<"\"passes\": "<<engine->getCurrentBoard()->getPassesPlayed()<<",\n";
   }
   else if (cmd=="board_pos")
   {
