@@ -256,7 +256,7 @@ void Web::respondJson(socket_ptr sock, std::string uri)
   if (cmd=="engine_info")
   {
     out<<"\"name\": \""<<PACKAGE_NAME<<"\",\n";
-    out<<"\"version\": \""<<PACKAGE_VERSION<<"\",\n";
+    out<<"\"version\": \""<<PACKAGE_VERSION<<"\"\n"; // no 'trailing' comma
   }
   else if (cmd=="board_info")
   {
@@ -267,7 +267,7 @@ void Web::respondJson(socket_ptr sock, std::string uri)
     out<<"\"last_move\": \""<<engine->getCurrentBoard()->getLastMove().toString(size)<<"\",\n";
     out<<"\"next_color\": \""<<Go::colorToChar(engine->getCurrentBoard()->nextToMove())<<"\",\n";
     out<<"\"simple_ko\": \""<<Go::Position::pos2string(engine->getCurrentBoard()->getSimpleKo(),size)<<"\",\n";
-    out<<"\"passes\": "<<engine->getCurrentBoard()->getPassesPlayed()<<",\n";
+    out<<"\"passes\": "<<engine->getCurrentBoard()->getPassesPlayed()<<"\n"; // no 'trailing' comma
   }
   else if (cmd=="board_pos")
   {
@@ -278,7 +278,11 @@ void Web::respondJson(socket_ptr sock, std::string uri)
       for (int y=0;y<size;y++)
       {
         int pos=Go::Position::xy2pos(x,y,size);
-        out<<"\""<<Go::Position::pos2string(pos,size)<<"\": \""<<Go::colorToChar(board->getColor(pos))<<"\",\n";
+        out<<"\""<<Go::Position::pos2string(pos,size)<<"\": \""<<Go::colorToChar(board->getColor(pos))<<"\"";
+        if (x<(size-1)||y<(size-1)) // no 'trailing' comma
+          out<<",\n";
+        else
+          out<<"\n";
       }
     }
   }

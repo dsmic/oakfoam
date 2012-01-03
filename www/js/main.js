@@ -133,6 +133,7 @@ function drawBoard(data)
       });
     }
   }
+  $('#page').width(board_size*24+200); // dynamic size
 }
 
 function updateStatus()
