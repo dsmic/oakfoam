@@ -13,10 +13,15 @@ function xy2pos(x,y)
   return String.fromCharCode('A'.charCodeAt()+x)+(y+1);
 }
 
-function doGtpCmdRefresh(cmd,args)
+function doGtpCmdThink(cmd,args,func)
 {
   $('#status').append('Thinking...<br/>\n');
-  $.get(cmd+'.gtpcmd?'+args,refreshBoard);
+  doGtpCmd(cmd,args,func)
+}
+
+function doGtpCmd(cmd,args,func)
+{
+  $.get(cmd+'.gtpcmd?'+args,func);
 }
 
 function isHoshi(x,y)
@@ -121,15 +126,15 @@ function drawBoard(data)
   if (!game_over)
   {
     if (next_color=='B' && (engine_color=='black' || engine_color=='both'))
-      doGtpCmdRefresh('genmove',next_color);
+      doGtpCmdThink('genmove',next_color,refreshBoard);
     else if (next_color=='W' && (engine_color=='white' || engine_color=='both'))
-      doGtpCmdRefresh('genmove',next_color);
+      doGtpCmdThink('genmove',next_color,refreshBoard);
     else
     {
       $('#board img').click(function()
       {
         pos=$(this).attr('alt');
-        doGtpCmdRefresh('play',next_color+'&'+pos);
+        doGtpCmd('play',next_color+'&'+pos,refreshBoard);
       });
     }
   }
@@ -188,8 +193,8 @@ function refreshBoard()
       $('#pass, #genmove').button({disabled:false});
     }
     updateStatus();
+    $.getJSON('board_pos.jsoncmd',function(data){drawBoard(data);});
   });
-  $.getJSON('board_pos.jsoncmd',function(data){drawBoard(data);});
 }
 
 $(document).ready(function()
@@ -199,8 +204,6 @@ $(document).ready(function()
     $('#engine').html(data['name']+' '+data['version']);
   });
   
-  refreshBoard();
-
   /*$.getJSON('board_info.jsoncmd',function(data)
   {
     var items = [];
@@ -224,10 +227,12 @@ $(document).ready(function()
     buttons: {
       'OK': function()
       {
-        doGtpCmdRefresh('clear_board','');
-        doGtpCmdRefresh('boardsize',$('#dialog-new-size').val());
-        doGtpCmdRefresh('komi',$('#dialog-new-komi').val());
         engine_color=$('#dialog-new-color').val();
+        doGtpCmd('clear_board','',function(){
+          doGtpCmd('boardsize',$('#dialog-new-size').val(),function(){
+            doGtpCmd('komi',$('#dialog-new-komi').val(),refreshBoard);
+          });
+        });
 
         $(this).dialog('close');
       },
@@ -246,9 +251,10 @@ $(document).ready(function()
     $('#dialog-new-color').val(engine_color);
     $('#dialog-new').dialog('open');
   });
-  $('#pass').click(function(){doGtpCmdRefresh('play',next_color+'&pass');});
-  $('#genmove').click(function(){doGtpCmdRefresh('genmove',next_color);});
+  $('#pass').click(function(){doGtpCmd('play',next_color+'&pass',refreshBoard);});
+  $('#genmove').click(function(){doGtpCmdThink('genmove',next_color,refreshBoard);});
 
+  refreshBoard();
 });
 
 
