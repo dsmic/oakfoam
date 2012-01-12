@@ -32,8 +32,8 @@ namespace Gtp
    */
   struct Vertex
   {
-    int x;
-    int y;
+    int x; /**< The x coordinate. */
+    int y; /**< The y coordinate. */
   };
   
   /** GTP Command.
@@ -144,14 +144,22 @@ namespace Gtp
       class FunctionList
       {
         public:
+          /** Create a function command with given name, instance, and function. */
           FunctionList(std::string cmdname, void *inst, Gtp::Engine::CommandFunction func) { commandname=cmdname; instance=inst; function=func; next=NULL; };
           ~FunctionList() { if (next!=NULL) delete next; };
           
+          /** Get the command name. */
           std::string getCommandName() const { return commandname; };
+          /** Get the instance variable. */
           void *getInstance() const { return instance; };
+          /** Get the function. */
           Gtp::Engine::CommandFunction getFunction() const { return function; };
+
+          /** Set the next function command in the list. */
           void setNext(Gtp::Engine::FunctionList *n) { next=n; };
+          /** Get the next function command in the list. */
           Gtp::Engine::FunctionList *getNext() const { return next; };
+          /** Add a function command to the list. */
           void add(Gtp::Engine::FunctionList *newfunclist)
           {
             if (next==NULL)
@@ -173,13 +181,20 @@ namespace Gtp
       class ConstantList
       {
         public:
+          /** Create a constant command with given name and value. */
           ConstantList(std::string cmdname, std::string val) { commandname=cmdname; value=val; next=NULL; };
           ~ConstantList() { if (next!=NULL) delete next; };
           
+          /** Get the command name. */
           std::string getCommandName() const { return commandname; };
+          /** Get the constant command value. */
           std::string getValue() const { return value; };
+
+          /** Set the next command in the list. */
           void setNext(Gtp::Engine::ConstantList *n) { next=n; };
+          /** Get the next command in the list. */
           Gtp::Engine::ConstantList *getNext() const { return next; };
+          /** Add a command to the list. */
           void add(Gtp::Engine::ConstantList *newconstlist)
           {
             if (next==NULL)

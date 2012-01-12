@@ -44,6 +44,7 @@ Later: (at some point)
   add handicap settings
   add timestamp to log?
   replace FunctionList and ConstantList with std::list<>
+  replace the Gtp instance variable using boost::bind()
   rename/refactor Engine to better name?
   move Go:: objects into own files?
   move main() into Oakfoam.cc
