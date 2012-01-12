@@ -18,9 +18,12 @@ class Oakfoam
     Oakfoam();
     ~Oakfoam();
     
+    /** Run the engine. */
     void run();
     
+    /** The GTP engine to use. */
     Gtp::Engine *gtpe;
+    /** The core engine. */
     Engine *engine;
 
     /** Should we try and automatically load an opening book? */
