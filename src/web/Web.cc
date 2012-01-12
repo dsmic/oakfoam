@@ -42,7 +42,6 @@ void Web::run()
   }
 }
 
-
 void Web::handleConnection(socket_ptr sock)
 {
   //boost::asio::write(*sock, boost::asio::buffer("meh!\n\n"));
@@ -299,8 +298,7 @@ void Web::respondJson(socket_ptr sock, std::string uri)
   this->respondBasic(sock,"200 Ok","application/json",out.str());
 }
 
-
-std::string Web::getMimeType(std::string ext)
+std::string Web::getMimeType(std::string ext) const
 {
   if (ext=="htm"||ext=="html")
     return "text/html";

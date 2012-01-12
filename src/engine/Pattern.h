@@ -35,14 +35,22 @@
 #include <boost/cstdint.hpp>
 #include "Go.h"
 
+/** Patterns.
+ * Matching and manipulation of patterns.
+ */
 namespace Pattern
 {
   class ThreeByThreeTable;
   
+  /** Patterns of size 3x3.
+   * Pattern hashes are represented by unsigned int's.
+   */
   class ThreeByThree
   {
     public:
+      /** Make a hash given a set of colors. */
       static unsigned int makeHash(Go::Color colnw, Go::Color coln, Go::Color colne, Go::Color colw, Go::Color cole, Go::Color colsw, Go::Color cols, Go::Color colse);
+      /** Make a hash from an array of colors. */
       static unsigned int makeHash(Go::Color colors[])
       {
         return Pattern::ThreeByThree::makeHash(
@@ -51,6 +59,7 @@ namespace Pattern
           colors[5], colors[6], colors[7]
         );
       };
+      /** Make a hash from a board position. */
       static unsigned int makeHash(Go::Board *board, int pos)
       {
         int size=board->getSize();
@@ -61,16 +70,25 @@ namespace Pattern
         );
       };
       
+      /** Invert a hash.
+       * Make black stones white and vica versa.
+       */
       static unsigned int invert(unsigned int hash);
+      /** Rotate a hash 90 degrees to the right. */
       static unsigned int rotateRight(unsigned int hash);
+      /** Flip a hash horizontally. */
       static unsigned int flipHorizontal(unsigned int hash);
       
+      /** Compute the smallest equivalent hash.
+       * The smallest hash is the smallest of all the eight possible rotations and flips.
+       */
       static unsigned int smallestEquivalent(unsigned int hash);
     
     private:
       static int hashColor(Go::Color col);
   };
   
+  /** Table of 3x3 pattern hashes. */
   class ThreeByThreeTable
   {
     public:
@@ -81,15 +99,29 @@ namespace Pattern
       };
       ~ThreeByThreeTable() { free(table); };
       
+      /** Add a hash to the table. */
       inline void addPattern(unsigned int hash) { table[byteNum(hash)]|=(1<<bitNum(hash)); };
+      /** Remove a hash from the table. */
       inline void clearPattern(unsigned int hash) { table[byteNum(hash)]&=(~(1<<bitNum(hash))); };
+      /** Determine if a hash is in the table. */
       inline bool isPattern(unsigned int hash) const { return (table[byteNum(hash)]&(1<<bitNum(hash))); };
+      /** Add or remove a hash.
+       * @param add If set, add the hash, else remove it.
+       * @param hash The hash to add or remove.
+       */
       inline void updatePattern(bool add, unsigned int hash) { if (add) addPattern(hash); else clearPattern(hash); };
-      
+      /** Add or remove all possible rotations and flips of a pattern.
+       * @param addpattern If set, add the hash, else remove it.
+       * @param pattern The hash to add or remove.
+       * @param addinverted If set, also add the inverted hashes.
+       */
       void updatePatternTransformed(bool addpattern, unsigned int pattern, bool addinverted=true);
       
+      /** Load a file of patterns. */
       bool loadPatternFile(std::string patternfilename);
+      /** Load a single pattern line. */
       bool loadPatternString(std::string patternstring);
+      /** Load a the default patterns. */
       bool loadPatternDefaults() { return this->loadPatternString(PATTERN_3x3_DEFAULTS); };
     
     private:
@@ -148,6 +180,7 @@ namespace Pattern
       };
   };
   
+  /** Table of gamma values for 3x3 pattern hashes. */
   class ThreeByThreeGammas
   {
     public:
@@ -158,37 +191,54 @@ namespace Pattern
       };
       ~ThreeByThreeGammas() { free(gammas); };
       
+      /** Get the gamma value for a given hash.
+       * A gamma value of -1 implies one hasn't been set.
+       */
       float getGamma(unsigned int hash) const { return gammas[hash]; };
+      /** Set the gamma value for a given hash. */
       void setGamma(unsigned int hash, float g) { gammas[hash]=g; };
+      /** Determine whether a hash has an associated gamma value. */
       bool hasGamma(unsigned int hash) const { return (gammas[hash]!=-1); };
     
     private:
       float *const gammas;
   };
   
+  /** Dictionary used for circular pattern hashing. */
   class CircularDictionary
   {
     public:
       CircularDictionary();
       
-      boost::uint_fast32_t rot_r2[PATTERN_CIRC_32BITPARTS];
-      boost::uint_fast32_t rot_r4[PATTERN_CIRC_32BITPARTS];
-      boost::uint_fast32_t rot_l6[PATTERN_CIRC_32BITPARTS];
-      boost::uint_fast32_t rot_l12[PATTERN_CIRC_32BITPARTS];
-      boost::uint_fast32_t flip_0[PATTERN_CIRC_32BITPARTS];
-      boost::uint_fast32_t flip_r2[PATTERN_CIRC_32BITPARTS];
-      boost::uint_fast32_t flip_r4[PATTERN_CIRC_32BITPARTS];
-      boost::uint_fast32_t flip_r6[PATTERN_CIRC_32BITPARTS];
-      boost::uint_fast32_t flip_r10[PATTERN_CIRC_32BITPARTS];
-      boost::uint_fast32_t flip_r14[PATTERN_CIRC_32BITPARTS];
-      boost::uint_fast32_t flip_l2[PATTERN_CIRC_32BITPARTS];
-      boost::uint_fast32_t flip_l4[PATTERN_CIRC_32BITPARTS];
-      boost::uint_fast32_t flip_l6[PATTERN_CIRC_32BITPARTS];
-      boost::uint_fast32_t flip_l10[PATTERN_CIRC_32BITPARTS];
-      boost::uint_fast32_t flip_l14[PATTERN_CIRC_32BITPARTS];
+      /** @defgroup CircDictRotate Hash parts applicable when rotating.
+       * @{
+       */
+      boost::uint_fast32_t rot_r2[PATTERN_CIRC_32BITPARTS]; /**< Shift right by 2. */
+      boost::uint_fast32_t rot_r4[PATTERN_CIRC_32BITPARTS]; /**< Shift right by 4. */
+      boost::uint_fast32_t rot_l6[PATTERN_CIRC_32BITPARTS]; /**< Shift left by 6. */
+      boost::uint_fast32_t rot_l12[PATTERN_CIRC_32BITPARTS]; /**< Shift left by 12. */
+      /** @} */
+      /** @defgroup CircDictFlip Hash parts applicable when flipping.
+       * @{
+       */
+      boost::uint_fast32_t flip_0[PATTERN_CIRC_32BITPARTS]; /**< Remain the same. */
+      boost::uint_fast32_t flip_r2[PATTERN_CIRC_32BITPARTS]; /**< Shift right by 2. */
+      boost::uint_fast32_t flip_r4[PATTERN_CIRC_32BITPARTS]; /**< Shift right by 4. */
+      boost::uint_fast32_t flip_r6[PATTERN_CIRC_32BITPARTS]; /**< Shift right by 6. */
+      boost::uint_fast32_t flip_r10[PATTERN_CIRC_32BITPARTS]; /**< Shift right by 10. */
+      boost::uint_fast32_t flip_r14[PATTERN_CIRC_32BITPARTS]; /**< Shift right by 14. */
+      boost::uint_fast32_t flip_l2[PATTERN_CIRC_32BITPARTS]; /**< Shift left by 2. */
+      boost::uint_fast32_t flip_l4[PATTERN_CIRC_32BITPARTS]; /**< Shift left by 4. */
+      boost::uint_fast32_t flip_l6[PATTERN_CIRC_32BITPARTS]; /**< Shift left by 6. */
+      boost::uint_fast32_t flip_l10[PATTERN_CIRC_32BITPARTS]; /**< Shift left by 10. */
+      boost::uint_fast32_t flip_l14[PATTERN_CIRC_32BITPARTS]; /**< Shift left by 14. */
+      /** @} */
       
+      /** Get a list of the x offsets applicable for a pattern of given size. */
       std::list<int> *getXOffsetsForSize(int size) { return &(dictx[size]); }; // XXX: no bounds checking!
+      /** Get a list of the y offsets applicable for a pattern of given size. */
       std::list<int> *getYOffsetsForSize(int size) { return &(dicty[size]); }; // XXX: no bounds checking!
+      /** Get the offest in the hash for the start of data specific to the given size. */
       int getBaseOffset(int size) { return baseoffset[size]; };
     
     private:
@@ -199,28 +249,46 @@ namespace Pattern
       void setTrans(boost::uint_fast32_t data[PATTERN_CIRC_32BITPARTS], int offset);
   };
   
+  /** Circular Pattern. */
   class Circular
   {
     public:
+      /** Create a pattern from a given board position. */
       Circular(Pattern::CircularDictionary *dict, const Go::Board *board, int pos, int sz);
       
+      /** Get the size of this pattern. */
       int getSize() const { return size; };
+      /** Get the hash of this pattern. */
       boost::uint_fast32_t *getHash() const { return (boost::uint_fast32_t *)hash; };
       
+      /** Make a copy of this pattern. */
       Pattern::Circular copy() { return this->getSubPattern(NULL,size); };
+      /** Get a sub portion of this pattern. */
       Pattern::Circular getSubPattern(Pattern::CircularDictionary *dict, int newsize) const;
       
+      /** Get a string representation of this pattern. */
       std::string toString(Pattern::CircularDictionary *dict) const;
       
+      /** Determine if two patterns are equal. */
       bool operator==(const Pattern::Circular other) const;
+      /** Determine if two patterns are unequal. */
       bool operator!=(const Pattern::Circular other) const { return !(*this == other); };
+      /** Determine if a pattern is smaller than another. */
       bool operator<(const Pattern::Circular other) const;
+      /** Determine if a pattern is smaller than another. */
       bool operator<(const Pattern::Circular *other) const;
       
+      /** Invert this pattern.
+       * Black stones become white and vica versa. */
       void invert();
+      /** Rotate this pattern 90 degress to the right. */
       void rotateRight(Pattern::CircularDictionary *dict);
+      /** Flip this pattern horizontally. */
       void flipHorizontal(Pattern::CircularDictionary *dict);
       
+      /** Compute the smallest equivalent pattern.
+       * @see Pattern::ThreeByThree::smallestEquivalent()
+       */
       void convertToSmallestEquivalent(Pattern::CircularDictionary *dict);
     
     private:

@@ -2,6 +2,17 @@ body {
   font: 10pt "Verdana", sans-serif;
   margin: 20px;
   text-align: center;
+  color: #000000;
+}
+
+a {
+  text-decoration: none;
+  font-weight: bold;
+  color: #000000;
+}
+
+a:hover {
+  text-decoration: underline;
 }
 
 #page {
@@ -55,6 +66,10 @@ body {
   font-size: 80%;
   color: #7f7f7f;
   padding-top: 10px;
+}
+
+#footer a{
+  color: #7f7f7f;
 }
 
 #dialog-new {

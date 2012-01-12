@@ -53,7 +53,7 @@ class Web
     void respondGtp(socket_ptr sock, std::string uri);
     void respondJson(socket_ptr sock, std::string uri);
 
-    std::string getMimeType(std::string extension);
+    std::string getMimeType(std::string extension) const;
 };
 
 #endif
