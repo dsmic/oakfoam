@@ -13,15 +13,29 @@ namespace Worker
 };
 #include "../gtp/Gtp.h"
 
+/** Playouts. */
 class Playout
 {
   public:
+    /** Create a playout instance with given parameters. */
     Playout(Parameters *prms);
     ~Playout();
     
+    /** Perform a playout.
+     * @param[in] settings      Settings of this worker thread.
+     * @param[in] board         Board to perform the playout on.
+     * @param[out] finalscore   Final score of the playout.
+     * @param[in] playouttree   Tree leaf node that the playout is started from.
+     * @param[in] playoutmoves  List of moves leading up to the start of the playout.
+     * @param[in] colfirst      Color to move first.
+     * @param[out] firstlist    List of location where the first color played.
+     * @param[out] secondlist   List of location where the other color played.
+     */
     void doPlayout(Worker::Settings *settings, Go::Board *board, float &finalscore, Tree *playouttree, std::list<Go::Move> &playoutmoves, Go::Color colfirst, Go::BitBoard *firstlist, Go::BitBoard *secondlist);
+    /** Get a playout move for a given situation. */
     void getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move);
     
+    /** Reset LGRF values. */
     void resetLGRF();
   
   private:
