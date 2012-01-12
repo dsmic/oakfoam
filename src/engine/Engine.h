@@ -143,109 +143,66 @@
   class Web;
 #endif
 
+/** Core Engine. */
 class Engine
 {
   public:
+    /** Create an engine.
+     * @param ge GTP engine to use.
+     * @param ln The long name of the engine.
+     */
     Engine(Gtp::Engine *ge, std::string ln);
     ~Engine();
     
-    enum MovePolicy
-    {
-      MP_PLAYOUT,
-      MP_ONEPLY,
-      MP_UCT
-    };
-    
+    /** Run the engine.
+     * @param web_inf If set, rather use the web interface.
+     * @param web_addr The web address to bind to, if applicable.
+     * @param web_port The web port to bind to, if applicable.
+     */
     void run(bool web_inf, std::string web_addr, int web_port);
+    /** Finish initialising the engine.
+     * Should be called after any command line arguments are resolved.
+     */
     void postCmdLineArgs(bool book_autoload);
+    /** Generate a move using the current parameters. */
     void generateMove(Go::Color col, Go::Move **move, bool playmove);
+    /** Determine if a certain move is legal. */
     bool isMoveAllowed(Go::Move move);
+    /** Make a move on the current board. */
     void makeMove(Go::Move move);
+    /** Get the current board size. */
     int getBoardSize() const { return currentboard->getSize(); };
+    /** Set the current board size.
+     * This will also clear the board.
+     */
     void setBoardSize(int s);
+    /** Get a pointer to the current board. */
     Go::Board *getCurrentBoard() const { return currentboard; };
+    /** Clear the current board.
+     * The current MCTS tree is also cleared.
+     */
     void clearBoard();
+    /** Get the current komi. */
     float getKomi() const { return komi; };
+    /** Set the current komi. */
     void setKomi(float k);
+    /** Get the 3x3 pattern table in use. */
     Pattern::ThreeByThreeTable *getPatternTable() const { return patterntable; };
+    /** Get the features in use. */
     Features *getFeatures() const { return features; };
+    /** Get the Zobrist table is use. */
     Go::ZobristTable *getZobristTable() const { return zobristtable; };
+    /** Get the hash tree of Zobrist hashes that have occured in this game. */
     Go::ZobristTree *getZobristHashTree() const { return hashtree; };
+    /** Get the GTP engine. */
     Gtp::Engine *getGtpEngine() const { return gtpe; };
+    /** Stop any thinking, if applicable. */
     void stopThinking() { stopthinking=true; };
-    static void ponderWrapper(void *instance) { ((Engine*)instance)->ponder(); };
-    void ponder();
-    void generateThread(Worker::Settings *settings);
-    void ponderThread(Worker::Settings *settings);
-    void doNPlayoutsThread(Worker::Settings *settings);
+    /** Do work for a thread. */
     void doThreadWork(Worker::Settings *settings);
+    /** Output the current engine state to an SGF file. */
     bool writeSGF(std::string filename, Go::Board *board=NULL, Tree *tree=NULL);
     
-    static void updateParameterWrapper(void *instance, std::string id)
-    {
-      Engine *me=(Engine*)instance;
-      me->updateParameter(id);
-    };
-    void updateParameter(std::string id);
-    
-    static void gtpBoardSize(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpClearBoard(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpKomi(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpPlay(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpGenMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpGenMoveCleanup(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpRegGenMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpShowBoard(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpFinalScore(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpFinalStatusList(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    
-    static void gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpShowLiberties(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpShowValidMoves(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpShowGroupSize(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpShowPatternMatches(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpLoadPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpClearPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpDoBoardCopy(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpFeatureMatchesAt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpFeatureProbDistribution(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpListAllPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpLoadFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpListFeatureIds(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpShowCFGFrom(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpShowCircDistFrom(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpListCircularPatternsAt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpListAllCircularPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpListAdjacentGroupsOf(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    
-    static void gtpTimeSettings(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpTimeLeft(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    
-    static void gtpDoNPlayouts(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpOutputSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    
-    static void gtpExplainLastMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpBoardStats(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpShowSymmetryTransforms(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpShowNakadeCenters(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpShowTreeLiveGfx(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpDescribeEngine(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    
-    static void gtpBookShow(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpBookAdd(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpBookRemove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpBookClear(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpBookLoad(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpBookSave(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    
-    static void gtpShowCurrentHash(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpShowSafePositions(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpDoBenchmark(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpShowCriticality(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpShowTerritory(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpShowRatios(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpShowRAVERatios(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-  
   private:
     Gtp::Engine *gtpe;
     std::string longname;
@@ -269,6 +226,13 @@ class Engine
     Worker::Pool *threadpool;
     Go::TerritoryMap *territorymap;
 
+    enum MovePolicy
+    {
+      MP_PLAYOUT,
+      MP_ONEPLY,
+      MP_UCT
+    };
+    
     #ifdef HAVE_WEB
       Web *web;
     #endif
@@ -358,6 +322,78 @@ class Engine
     
     boost::posix_time::ptime timeNow() { return boost::posix_time::microsec_clock::local_time(); };
     float timeSince(boost::posix_time::ptime past) { return (float)(boost::posix_time::microsec_clock::local_time()-past).total_milliseconds()/1000; };
+
+    void generateThread(Worker::Settings *settings);
+    void ponderThread(Worker::Settings *settings);
+    void doNPlayoutsThread(Worker::Settings *settings);
+
+    static void ponderWrapper(void *instance) { ((Engine*)instance)->ponder(); };
+    void ponder();
+
+    static void updateParameterWrapper(void *instance, std::string id)
+    {
+      Engine *me=(Engine*)instance;
+      me->updateParameter(id);
+    };
+    void updateParameter(std::string id);
+    
+    static void gtpBoardSize(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpClearBoard(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpKomi(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpPlay(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpGenMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpGenMoveCleanup(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpRegGenMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpShowBoard(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpFinalScore(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpFinalStatusList(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    
+    static void gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpShowLiberties(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpShowValidMoves(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpShowGroupSize(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpShowPatternMatches(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpLoadPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpClearPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpDoBoardCopy(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpFeatureMatchesAt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpFeatureProbDistribution(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpListAllPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpLoadFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpListFeatureIds(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpShowCFGFrom(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpShowCircDistFrom(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpListCircularPatternsAt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpListAllCircularPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpListAdjacentGroupsOf(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    
+    static void gtpTimeSettings(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpTimeLeft(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    
+    static void gtpDoNPlayouts(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpOutputSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    
+    static void gtpExplainLastMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpBoardStats(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpShowSymmetryTransforms(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpShowNakadeCenters(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpShowTreeLiveGfx(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpDescribeEngine(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    
+    static void gtpBookShow(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpBookAdd(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpBookRemove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpBookClear(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpBookLoad(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpBookSave(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    
+    static void gtpShowCurrentHash(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpShowSafePositions(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpDoBenchmark(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpShowCriticality(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpShowTerritory(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpShowRatios(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpShowRAVERatios(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
 };
 
 #endif
