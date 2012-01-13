@@ -39,6 +39,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->board_size=boardsize;
   currentboard=new Go::Board(boardsize);
   komi=7.5;
+
+  params->tree_instances=0;
   
   zobristtable=new Go::ZobristTable(params,boardsize,ZOBRIST_HASH_SEED);
   
@@ -54,6 +56,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("general","book_use",&(params->book_use),BOOK_USE);
   
   params->addParameter("general","thread_count",&(params->thread_count),THREAD_COUNT,&Engine::updateParameterWrapper,this);
+  params->addParameter("general","memory_usage_max",&(params->memory_usage_max),MEMORY_USAGE_MAX);
   
   params->addParameter("general","playouts_per_move",&(params->playouts_per_move),PLAYOUTS_PER_MOVE,&Engine::updateParameterWrapper,this);
   params->addParameter("general","playouts_per_move_max",&(params->playouts_per_move_max),PLAYOUTS_PER_MOVE_MAX);
@@ -2644,6 +2647,11 @@ void Engine::doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::
   
   float finalscore;
   playout->doPlayout(settings,playoutboard,finalscore,playouttree,playoutmoves,col,(params->rave_moves>0?firstlist:NULL),(params->rave_moves>0?secondlist:NULL));
+  if (this->getTreeMemoryUsage()>(params->memory_usage_max*1024*1024) && !stopthinking)
+  {
+      gtpe->getOutput()->printfDebug("WARNING! Memory limit reached! Stopping search right now!\n");
+      this->stopThinking();
+  }
   if (!params->rules_all_stones_alive && !params->cleanup_in_progress && playoutboard->getPassesPlayed()>=2 && (playoutboard->getMovesMade()-currentboard->getMovesMade())<=2)
   {
     finalscore=playoutboard->territoryScore(territorymap,params->territory_threshold)-params->engine->getKomi();

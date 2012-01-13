@@ -8,6 +8,10 @@
 
 Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p) : params(prms)
 {
+  {
+    boost::mutex::scoped_lock lock(params->tree_instances_mutex);
+    params->tree_instances++;
+  }
   parent=p;
   children=new std::list<Tree*>();
   beenexpanded=false;
@@ -63,6 +67,10 @@ Tree::~Tree()
   }
   children->clear();
   delete children;
+  {
+    boost::mutex::scoped_lock lock(params->tree_instances_mutex);
+    params->tree_instances--;
+  }
 }
 
 void Tree::addChild(Tree *node)

@@ -4,6 +4,7 @@
 #include <config.h>
 #include <string>
 #include <list>
+#include <boost/thread/thread.hpp>
 //from "Engine.h":
 class Engine;
 //from "Random.h":
@@ -56,6 +57,16 @@ class Parameters
     };
     /** Current thread job. */
     Parameters::ThreadJob thread_job;
+
+    /** Number of Tree instances in memory, used to keep track of approximate memory usage. */
+    unsigned long tree_instances;
+    /** Mutex to prevent data loss when updating tree_instances. */
+    boost::mutex tree_instances_mutex;
+    /** Maximum amount of memory usage.
+     * This is compared to the number of Tree instances, so it is only approximate.
+     * Units are megabytes.
+     */
+    unsigned long memory_usage_max;
     
     /** Number of playouts per move to perform.
      * Not used if time setting are in use.

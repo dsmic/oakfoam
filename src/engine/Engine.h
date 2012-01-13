@@ -81,6 +81,7 @@
 #define TERRITORY_THRESHOLD 0.6
 
 #define THREAD_COUNT 1
+#define MEMORY_USAGE_MAX (2*1024)
 
 #define INTERRUPTS_ENABLED false
 
@@ -322,6 +323,8 @@ class Engine
     
     boost::posix_time::ptime timeNow() { return boost::posix_time::microsec_clock::local_time(); };
     float timeSince(boost::posix_time::ptime past) { return (float)(boost::posix_time::microsec_clock::local_time()-past).total_milliseconds()/1000; };
+
+    unsigned long getTreeMemoryUsage() { return (params->tree_instances)*sizeof(Tree); };
 
     void generateThread(Worker::Settings *settings);
     void ponderThread(Worker::Settings *settings);
