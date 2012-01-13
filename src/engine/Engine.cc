@@ -2874,9 +2874,13 @@ void Engine::ponder()
   
   if (params->move_policy==Parameters::MP_UCT || params->move_policy==Parameters::MP_ONEPLY)
   {
+    if (this->getTreeMemoryUsage()>(params->memory_usage_max*1024*1024))
+      return;
+
     //fprintf(stderr,"pondering starting!\n");
     this->allowContinuedPlay();
     params->uct_slow_update_last=0;
+    stopthinking=false;
     
     params->uct_initial_playouts=(int)movetree->getPlayouts();
     params->thread_job=Parameters::TJ_PONDER;
@@ -2903,7 +2907,7 @@ void Engine::ponderThread(Worker::Settings *settings)
     Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
     long playouts;
     
-    while (!stoppondering && (playouts=(long)movetree->getPlayouts())<(params->pondering_playouts_max))
+    while (!stoppondering && !stopthinking && (playouts=(long)movetree->getPlayouts())<(params->pondering_playouts_max))
     {
       if (movetree->isTerminalResult())
       {
