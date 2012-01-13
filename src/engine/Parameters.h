@@ -70,25 +70,78 @@ class Parameters
      */
     int playouts_per_move_max;
     
+    /** Whether to use the atari heuristic in playouts.
+     * If the last move is next to, or part of, a group now in atari, either capture that group or try to extend it.
+     * Don't extend if the group would remain in atari.
+     */
     bool playout_atari_enabled;
+    /** Whether to use the lastcapture heuristic in playouts.
+     * If the last move was an atari, try to capture an adjacent group.
+     */
     bool playout_lastcapture_enabled;
+    /** Whether to use the pattern heuristic in playouts.
+     * If any moves around the last two moves match a pattern, play one of them.
+     */
     bool playout_patterns_enabled;
+    /** Whether to use the features heuristic in playouts.
+     * The feature gamma of a move over the sum of the gammas is the probability of that move being played.
+     */
     bool playout_features_enabled;
+    /** Whether to try to update the feature gammas incrementally. */
     bool playout_features_incremental;
+    /** Whether to use the lastatari heuristic in playouts.
+     * If the last move was an atari, try to extend the group in atari.
+     */
     bool playout_lastatari_enabled;
+    /** Whether to skip using the lastatari heuristic if two or more groups are in atari, and the group causing the atari is in atari itself. */
     bool playout_lastatari_leavedouble;
+    /** Whether to use the nakade heuristic in playouts.
+     * If the last move created an eye of size 3, play in the center of that eye.
+     */
     bool playout_nakade_enabled;
+    /** Whether to use the fillboard heuristic in playouts.
+     * Randomly select a position on the board and play there if there are no surrounding stones.
+     */
     bool playout_fillboard_enabled;
+    /** Number of times to try the fillboard heuristic before continuing. */
     int playout_fillboard_n;
+    /** Whether to use the anycapture heuristic in playouts.
+     * If any groups are in atari, capture one at random.
+     */
     bool playout_anycapture_enabled;
+    /** Whether to use the lgrf1 heuristic in playouts.
+     * Play a move according to LGRF-1, if such a move is available and legal.
+     */
     bool playout_lgrf1_enabled;
+    /** Whether to use the lgrf2 heuristic in playouts.
+     * Play a move according to LGRF-2, if such a move is available and legal.
+     */
     bool playout_lgrf2_enabled;
+    /** Whether to use the mercy rule in playouts.
+     * The mercy rule stops playouts where one color has captured many more prisoners and declares the playout a win for that color.
+     */
     bool playout_mercy_rule_enabled;
+    /** Factor between prisoners' difference and the board area.
+     * @see playout_mercy_rule_enabled
+     */
     float playout_mercy_rule_factor;
+    /** Skip all playout heuristics with this probability.
+     * Set to zero to disable.
+     */
     float playout_random_chance;
+    /** Whether to use the last2libatari heuristic in playouts.
+     * When the last move reduced a group to 2 liberties, and is near one of those liberties, play on one of them.
+     */
     bool playout_last2libatari_enabled;
+    /** Whether to try and play on the best of the 2 liberties.
+     * @see playout_last2libatari_enabled
+     */
     bool playout_last2libatari_complex;
+    /** Whether to use the avoid self-atari in playouts.
+     * Avoid self-atari at almost all cost, like the eye-filling rule.
+     */
     bool playout_avoid_selfatari;
+    /** Only avoid self-atari of groups of this size or larger. */
     int playout_avoid_selfatari_size;
     
     /** UCB exploration constant. */
