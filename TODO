@@ -36,6 +36,8 @@ Soon: (before next major release)
   convert feature patterns to ASCII pics to aid visualisation
   compare profiling data to that of other programs such as libEGO
   try a "step-wise" RAVE (decay value at each capture)
+  add parameters to web interface
+  improve the overall web interface look and reduce flickering
 
 Later: (at some point)
   tune parameters
@@ -49,7 +51,6 @@ Later: (at some point)
   move main() into Oakfoam.cc
   add prefix to custom commands?
   do sanity checks on parameters
-  document parameters
   use rotational symmetry?
   copy all board data with a copy() (groups and liberties)
   extensive comparison of playouts with strength
