@@ -644,6 +644,38 @@ namespace Pattern
 
 /** ELO Features.
  * Class to manage extracting, learning, and using feature weights.
+ *
+ * Typically, a move's gamma value is determined using these features.
+ * This is done by checking if each of the feature classes match for the move.
+ * Feature classes can have multiple levels.
+ * When there are multiple feature levels that match, the largest level is used.
+ * The gamma value for the move is the multiple of the matching features' gamma values.
+ *
+ * Feature level descriptions:
+ *  - PASS
+ *    - 1: The move is a pass.
+ *    - 2: The move and previous move are passes.
+ *  - CAPTURE
+ *    - 1: The move is a capture.
+ *  - EXTENSION
+ *    - 1: The move extends a group in atari.
+ *  - SELFATARI
+ *    - 1: The move is a self-atari.
+ *  - ATARI
+ *    - 1: The move is an atari.
+ *    - 2: The move is an atari and there is an active ko.
+ *  - BORDERDIST
+ *    - x: The move is x away from the border.
+ *  - LASTDIST
+ *    - x: The move is x away from the last move (Manhattan distance).
+ *  - SECONDLASTDIST
+ *    - x: The move is x away from the second last move (Manhattan distance).
+ *  - CFGLASTDIST
+ *    - x: The move is x away from the last move (CFG distance).
+ *  - CFGSECONDLASTDIST
+ *    - x: The move is x away from the second last move (CFG distance).
+ *  - PATTERN3X3
+ *    - x: The move has a 3x3 pattern hash of x.
  */
 class Features
 {
