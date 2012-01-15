@@ -63,7 +63,34 @@ unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::B
     case Features::CAPTURE:
     {
       if (board->isCapture(move))
+      {
+        Go::Color col=move.getColor();
+        int pos=move.getPosition();
+        int size=board->getSize();
+
+        foreach_adjacent(pos,p,{
+          if (board->inGroup(p))
+          {
+            Go::Group *group=board->getGroup(p);
+            if (group->getColor()!=col && group->inAtari()) // captured group
+            {
+              Go::list_int *adjacentgroups=group->getAdjacentGroups();
+              for(Go::list_int::iterator iter=adjacentgroups->begin();iter!=adjacentgroups->end();++iter)
+              {
+                if (board->inGroup((*iter)) && board->getGroup((*iter))->inAtari())
+                {
+                  if (group->numOfStones()>=10)
+                    return 3;
+                  else
+                    return 2;
+                }
+              }
+            }
+          }
+        });
+
         return 1;
+      }
       else
         return 0;
     }
