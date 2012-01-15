@@ -10,6 +10,7 @@ Now: (current focus)
   add random chance of not using a playout heuristic (per heuristic)
   weighted "random" ordering of playout heuristics
   add an auto-tuning version, like Mogo now has
+  solve problem of LGRF hindering ladder-handling
 
 Soon: (before next major release)
   larger patterns
@@ -38,6 +39,7 @@ Soon: (before next major release)
   try a "step-wise" RAVE (decay value at each capture)
   add parameters to web interface
   improve the overall web interface look and reduce flickering
+  option to output SGFs for playouts
 
 Later: (at some point)
   tune parameters
