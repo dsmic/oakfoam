@@ -41,7 +41,6 @@ Soon: (before next major release)
 
 Later: (at some point)
   tune parameters
-  make sure install works and is described somewhere
   add handicap settings
   add timestamp to log?
   replace FunctionList and ConstantList with std::list<>

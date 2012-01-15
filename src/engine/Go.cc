@@ -1481,61 +1481,19 @@ bool Go::Board::isExtension(Go::Move move) const
 
 bool Go::Board::isSelfAtari(Go::Move move) const
 {
-  Go::Color col=move.getColor();
-  int pos=move.getPosition();
-  
-  if (this->touchingEmpty(pos)>1)
-    return false;
-  
-  bool foundgroupwith2libsorless=false;
-  int libpos=-1;
-  bool foundconnection=false;
-  //Go::Group *grp2libs=NULL;
-  foreach_adjacent(pos,p,{
-    if (this->inGroup(p))
-    {
-      Go::Group *group=this->getGroup(p);
-      if (col==group->getColor())
-      {
-        int otherlib=group->getOtherOneOfTwoLiberties(pos);
-        if (otherlib!=-1)
-        {
-          if (!foundgroupwith2libsorless)
-          {
-            foundgroupwith2libsorless=true;
-            //grp2libs=group;
-            libpos=otherlib;
-          }
-          else if (libpos!=otherlib)
-            foundconnection=true;
-        }
-        else if (!group->inAtari()) // more than 2 libs
-          foundconnection=true;
-      }
-    }
-  });
-  if (!foundconnection)
-    return true;
-  else
-    return false;
+  return this->isSelfAtariOfSize(move,0);
 }
 
 bool Go::Board::isSelfAtariOfSize(Go::Move move, int minsize) const
 {
-  if (minsize==0)
-    return this->isSelfAtari(move);
-  
   Go::Color col=move.getColor();
   int pos=move.getPosition();
   
   if (this->touchingEmpty(pos)>1)
     return false;
   
-  bool foundgroupwith2libsorless=false;
   int libpos=-1;
-  bool foundconnection=false;
   int groupsize=0;
-  //Go::Group *grp2libs=NULL;
   foreach_adjacent(pos,p,{
     if (this->inGroup(p))
     {
@@ -1545,22 +1503,27 @@ bool Go::Board::isSelfAtariOfSize(Go::Move move, int minsize) const
         int otherlib=group->getOtherOneOfTwoLiberties(pos);
         if (otherlib!=-1)
         {
-          if (!foundgroupwith2libsorless)
-          {
-            foundgroupwith2libsorless=true;
-            //grp2libs=group;
+          if (libpos==-1)
             libpos=otherlib;
-          }
           else if (libpos!=otherlib)
-            foundconnection=true;
+            return false; // at least 2 libs
           groupsize+=group->numOfStones();
         }
-        else if (!group->inAtari()) // more than 2 libs
-          foundconnection=true;
+        else if (!group->inAtari())
+          return false; // at least 2 libs
+        else // group in atari
+          groupsize+=group->numOfStones();
       }
     }
+    else if (this->getColor(p)==Go::EMPTY)
+    {
+      if (libpos==-1)
+        libpos=p;
+      else if (libpos!=p)
+        return false; // at least 2 libs
+    }
   });
-  if (!foundconnection && groupsize>minsize)
+  if (groupsize>minsize)
     return true;
   else
     return false;
