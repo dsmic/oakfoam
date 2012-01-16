@@ -160,6 +160,9 @@ class Parameters
     /** Initial UCB bias.
      * Used when no playouts have gone through a node.
      */
+
+	float detlef_c;
+
     float ucb_init;
     
     /** Number of moves it takes for RAVE to decay?

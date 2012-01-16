@@ -6,6 +6,7 @@
 #define PLAYOUTS_PER_MOVE_MIN 1000
 
 #define UCB_C 0.02
+#define DETLEF_C 0.0
 #define UCB_INIT 1.1
 
 #define RAVE_MOVES 3000
@@ -203,7 +204,11 @@ class Engine
     void doThreadWork(Worker::Settings *settings);
     /** Output the current engine state to an SGF file. */
     bool writeSGF(std::string filename, Go::Board *board=NULL, Tree *tree=NULL);
-    
+	bool writeSGF(std::string filename, Go::Board *board, std::list<Go::Move> playoutmoves);
+
+	std::list<Go::Move> playoutmoves;
+	float finalscore;
+  
   private:
     Gtp::Engine *gtpe;
     std::string longname;
@@ -375,7 +380,8 @@ class Engine
     
     static void gtpDoNPlayouts(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpOutputSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    
+    static void gtpPlayoutSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+
     static void gtpExplainLastMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpBoardStats(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowSymmetryTransforms(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
