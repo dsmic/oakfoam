@@ -2,7 +2,6 @@ TODO
 ------------------
 
 Now: (current focus)
-  add feature for 2-liberty heuristics
   add debug levels
   change uct_* params to tree_*
   option to output games to sgf with explanations (see gomill-savesgf)
@@ -11,6 +10,9 @@ Now: (current focus)
   weighted "random" ordering of playout heuristics
   add an auto-tuning version, like Mogo now has
   solve problem of LGRF hindering ladder-handling
+  reduce Engine.h includes, to optimize build process
+  move Parameter defaults and inits out of Engine
+  add playout reasons to playoutsgf cmd
 
 Soon: (before next major release)
   larger patterns

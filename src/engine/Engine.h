@@ -202,8 +202,9 @@ class Engine
     void stopThinking() { stopthinking=true; };
     /** Do work for a thread. */
     void doThreadWork(Worker::Settings *settings);
-    /** Output the current engine state to an SGF file. */
+    /** Output the current engine state to a SGF file. */
     bool writeSGF(std::string filename, Go::Board *board=NULL, Tree *tree=NULL);
+    /** Output a playout from the current position to a SGF file. */
     bool writeSGF(std::string filename, Go::Board *board, std::list<Go::Move> playoutmoves);
 
   private:

@@ -212,7 +212,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     if (!move.isPass())
     {
       if (params->debug_on)
-          gtpe->getOutput()->printfDebug("%s [playoutmove]: lgrf2\n",move.toString(board->getSize()).c_str());
+        gtpe->getOutput()->printfDebug("[playoutmove]: %s lgrf2\n",move.toString(board->getSize()).c_str());
       return;
     }
   }
@@ -223,7 +223,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     if (!move.isPass())
     {
       if (params->debug_on)
-          gtpe->getOutput()->printfDebug("%s [playoutmove]: lgrf1\n",move.toString(board->getSize()).c_str());
+        gtpe->getOutput()->printfDebug("[playoutmove]: %s lgrf1\n",move.toString(board->getSize()).c_str());
       return;
     }
   }
@@ -234,7 +234,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     if (!move.isPass())
     {
       if (params->debug_on)
-        gtpe->getOutput()->printfDebug("%s [playoutmove]: atari\n",move.toString(board->getSize()).c_str());
+        gtpe->getOutput()->printfDebug("[playoutmove]: %s atari\n",move.toString(board->getSize()).c_str());
       return;
     }
   }
@@ -245,7 +245,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     if (!move.isPass())
     {
       if (params->debug_on)
-        gtpe->getOutput()->printfDebug("%s [playoutmove]: lastatari\n",move.toString(board->getSize()).c_str());
+        gtpe->getOutput()->printfDebug("[playoutmove]: %s lastatari\n",move.toString(board->getSize()).c_str());
       return;
     }
   }
@@ -256,7 +256,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     if (!move.isPass())
     {
       if (params->debug_on)
-        gtpe->getOutput()->printfDebug("%s [playoutmove]: lastcapture\n",move.toString(board->getSize()).c_str());
+        gtpe->getOutput()->printfDebug("[playoutmove]: %s lastcapture\n",move.toString(board->getSize()).c_str());
       return;
     }
   }
@@ -267,7 +267,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     if (!move.isPass())
     {
       if (params->debug_on)
-        gtpe->getOutput()->printfDebug("%s [playoutmove]: last2libatari\n",move.toString(board->getSize()).c_str());
+        gtpe->getOutput()->printfDebug("[playoutmove]: %s last2libatari\n",move.toString(board->getSize()).c_str());
       return;
     }
   }
@@ -278,7 +278,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     if (!move.isPass())
     {
       if (params->debug_on)
-        gtpe->getOutput()->printfDebug("%s [playoutmove]: nakade\n",move.toString(board->getSize()).c_str());
+        gtpe->getOutput()->printfDebug("[playoutmove]: %s nakade\n",move.toString(board->getSize()).c_str());
       return;
     }
   }
@@ -289,7 +289,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     if (!move.isPass())
     {
       if (params->debug_on)
-        gtpe->getOutput()->printfDebug("%s [playoutmove]: fillboard\n",move.toString(board->getSize()).c_str());
+        gtpe->getOutput()->printfDebug("[playoutmove]: %s fillboard\n",move.toString(board->getSize()).c_str());
       return;
     }
   }
@@ -300,7 +300,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     if (!move.isPass())
     {
       if (params->debug_on)
-        gtpe->getOutput()->printfDebug("%s [playoutmove]: pattern\n",move.toString(board->getSize()).c_str());
+        gtpe->getOutput()->printfDebug("[playoutmove]: %s pattern\n",move.toString(board->getSize()).c_str());
       return;
     }
   }
@@ -311,7 +311,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     if (!move.isPass())
     {
       if (params->debug_on)
-        gtpe->getOutput()->printfDebug("%s [playoutmove]: anycapture\n",move.toString(board->getSize()).c_str());
+        gtpe->getOutput()->printfDebug("[playoutmove]: %s anycapture\n",move.toString(board->getSize()).c_str());
       return;
     }
   }
@@ -320,7 +320,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
   {
     this->getFeatureMove(settings,board,col,move);
     if (params->debug_on)
-        gtpe->getOutput()->printfDebug("%s [playoutmove]: features\n",move.toString(board->getSize()).c_str());
+      gtpe->getOutput()->printfDebug("[playoutmove]: %s features\n",move.toString(board->getSize()).c_str());
     return;
   }
   
@@ -333,7 +333,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     {
       move=Go::Move(col,p);
       if (params->debug_on)
-        gtpe->getOutput()->printfDebug("%s [playoutmove]: random quick-pick\n",move.toString(board->getSize()).c_str());
+        gtpe->getOutput()->printfDebug("[playoutmove]: %s random quick-pick\n",move.toString(board->getSize()).c_str());
       return;
     }
   }
@@ -372,7 +372,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     {
       move=Go::Move(col,rp);
       if (params->debug_on)
-        gtpe->getOutput()->printfDebug("%s [playoutmove]: random\n",move.toString(board->getSize()).c_str());
+        gtpe->getOutput()->printfDebug("[playoutmove]: %s random\n",move.toString(board->getSize()).c_str());
       return;
     }
   }

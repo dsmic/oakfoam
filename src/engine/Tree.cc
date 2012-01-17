@@ -385,11 +385,9 @@ float Tree::getUrgency() const
       uctbias=params->ucb_c/2;
   }
   
-    float val_tmp=this->getVal();
-//  val_tmp*=exp(parent->getPlayouts()*params->detlef_c*val_tmp)
-//	  	/exp(parent->getPlayouts()*params->detlef_c);
-
-  float val=val_tmp+uctbias;
+  float val=this->getVal();
+  //val*=exp(parent->getPlayouts()*params->detlef_c*val)/exp(parent->getPlayouts()*params->detlef_c);
+  val+=uctbias;
 
   if (params->uct_progressive_bias_enabled)
     val+=this->getProgressiveBias();

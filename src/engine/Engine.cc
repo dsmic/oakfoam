@@ -84,7 +84,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","playout_mercy_rule_factor",&(params->playout_mercy_rule_factor),PLAYOUT_MERCY_RULE_FACTOR);
   
   params->addParameter("tree","ucb_c",&(params->ucb_c),UCB_C);
-//  params->addParameter("tree","detlef_c",&(params->detlef_c),DETLEF_C);
+  //params->addParameter("tree","detlef_c",&(params->detlef_c),DETLEF_C);
   params->addParameter("tree","ucb_init",&(params->ucb_init),UCB_INIT);
   
   params->addParameter("tree","rave_moves",&(params->rave_moves),RAVE_MOVES);
@@ -1061,8 +1061,6 @@ void Engine::gtpPlayoutSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     win=1;
   if (who_wins=="W"||who_wins=="w")
     win=-1;
-
-	  
 
   bool success=false;
   bool foundwin=false;
