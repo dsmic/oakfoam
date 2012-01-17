@@ -386,8 +386,8 @@ float Tree::getUrgency() const
   }
   
     float val_tmp=this->getVal();
-  val_tmp*=exp(parent->getPlayouts()*params->detlef_c*val_tmp)
-	  	/exp(parent->getPlayouts()*params->detlef_c);
+//  val_tmp*=exp(parent->getPlayouts()*params->detlef_c*val_tmp)
+//	  	/exp(parent->getPlayouts()*params->detlef_c);
 
   float val=val_tmp+uctbias;
 

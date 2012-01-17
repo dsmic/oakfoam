@@ -84,7 +84,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","playout_mercy_rule_factor",&(params->playout_mercy_rule_factor),PLAYOUT_MERCY_RULE_FACTOR);
   
   params->addParameter("tree","ucb_c",&(params->ucb_c),UCB_C);
-  params->addParameter("tree","detlef_c",&(params->detlef_c),DETLEF_C);
+//  params->addParameter("tree","detlef_c",&(params->detlef_c),DETLEF_C);
   params->addParameter("tree","ucb_init",&(params->ucb_init),UCB_INIT);
   
   params->addParameter("tree","rave_moves",&(params->rave_moves),RAVE_MOVES);
@@ -498,7 +498,7 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("donplayouts 10000","Do 10k Playouts","none");
   gtpe->addAnalyzeCommand("donplayouts 100000","Do 100k Playouts","none");
   gtpe->addAnalyzeCommand("outputsgf %%w","Output SGF","none");
-  gtpe->addAnalyzeCommand("playoutsgf %%w %%s","Playout SGF","none");
+  gtpe->addAnalyzeCommand("playoutsgf %%w %%c","Playout to SGF (win of color)","none");
  
   gtpe->addAnalyzeCommand("bookshow","Book Show","gfx");
   gtpe->addAnalyzeCommand("bookadd %%p","Book Add","none");
@@ -1044,8 +1044,6 @@ void Engine::gtpPlayoutSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
 
-	
-	  
   if (cmd->numArgs()!=2)
   {
     gtpe->getOutput()->startResponse(cmd,false);
@@ -1056,18 +1054,40 @@ void Engine::gtpPlayoutSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   
   std::string sgffile=cmd->getStringArg(0);
   std::string who_wins=cmd->getStringArg(1);
-	int win=1;
-	if (who_wins=="W"||who_wins=="w")
+
+  //can be used to get any win of playout if win=0
+  int win=0;
+	if (who_wins=="B"||who_wins=="b")
+		win=1;
+  if (who_wins=="W"||who_wins=="w")
 		win=-1;
-	
-	for (int i=0;i<100;i++)
+
+	  
+
+  bool success=false;
+  bool foundwin=false;
+  for (int i=0;i<100;i++)
 	{
-		me->doNPlayouts(1);
-		if (me->finalscore*win>0)
-			i=100;
+		Go::Board *playoutboard=me->currentboard->copy();
+  	Go::Color col=me->currentboard->nextToMove();
+		float finalscore;
+	  std::list<Go::Move> playoutmoves;
+    me->playout->doPlayout(me->threadpool->getThreadZero()->getSettings(),playoutboard,finalscore,NULL,playoutmoves,col,NULL,NULL);
+		if (finalscore*win>=0)
+    {
+      foundwin=true;
+      success=me->writeSGF(sgffile,me->currentboard,playoutmoves);
+			break;
+    }
 	}
-	
-  bool success=me->writeSGF(sgffile,me->currentboard,me->playoutmoves);
+
+  if (!foundwin)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("No win found for %s",who_wins.c_str());
+    gtpe->getOutput()->endResponse();
+    return;
+  }
   
   if (success)
   {
@@ -2629,25 +2649,21 @@ bool Engine::writeSGF(std::string filename, Go::Board *board, std::list<Go::Move
     board=currentboard;
   sgffile<<board->toSGFString()<<"\n";
 
-  //sgffile<<"(;";
   for(std::list<Go::Move>::iterator iter=playoutmoves.begin();iter!=playoutmoves.end();++iter)
-
-	{
-		//sgffile<<tree->toSGFString()<<"\n)";
-		sgffile<<";"<<Go::colorToChar((*iter).getColor())<<"[";
-		if (!(*iter).isPass()&&!(*iter).isResign())
-    	{
-      		sgffile<<(char)((*iter).getX(params->board_size)+'a');
-      		sgffile<<(char)(params->board_size-(*iter).getY(params->board_size)+'a'-1);
-    	}
-    	else if ((*iter).isPass())
-      		sgffile<<"pass";
-		sgffile<<"]\n";
-	}
-
-	sgffile <<")\n";
-	sgffile.close();
-  
+  {
+    //sgffile<<tree->toSGFString()<<"\n)";
+    sgffile<<";"<<Go::colorToChar((*iter).getColor())<<"[";
+    if (!(*iter).isPass()&&!(*iter).isResign())
+    {
+      sgffile<<(char)((*iter).getX(params->board_size)+'a');
+      sgffile<<(char)(params->board_size-(*iter).getY(params->board_size)+'a'-1);
+    }
+    else if ((*iter).isPass())
+      sgffile<<"pass";
+    sgffile<<"]\n";
+  }
+  sgffile <<")\n";
+  sgffile.close();
   return true;
 }
 
@@ -2698,8 +2714,7 @@ void Engine::doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::
       gtpe->getOutput()->printfDebug("WARNING! No playout target found.\n");
     return;
   }
-  //std::list<Go::Move> 
-  playoutmoves=playouttree->getMovesFromRoot();
+  std::list<Go::Move> playoutmoves=playouttree->getMovesFromRoot();
   if (playoutmoves.size()==0)
   {
     if (params->debug_on)
@@ -2723,6 +2738,7 @@ void Engine::doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::
   }
   Go::Color playoutcol=playoutmoves.back().getColor();
   
+  float finalscore;
   playout->doPlayout(settings,playoutboard,finalscore,playouttree,playoutmoves,col,(params->rave_moves>0?firstlist:NULL),(params->rave_moves>0?secondlist:NULL));
   if (this->getTreeMemoryUsage()>(params->memory_usage_max*1024*1024) && !stopthinking)
   {

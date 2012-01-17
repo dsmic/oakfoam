@@ -161,9 +161,11 @@ class Parameters
      * Used when no playouts have gone through a node.
      */
 
-	float detlef_c;
-
     float ucb_init;
+
+    /** Bernolli distribution experiments */
+//	float detlef_c;
+
     
     /** Number of moves it takes for RAVE to decay?
      * Set to zero to disable RAVE.
