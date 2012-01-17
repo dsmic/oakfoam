@@ -388,7 +388,7 @@ void Playout::getLGRF2Move(Go::Board *board, Go::Color col, Go::Move &move)
     if (this->hasLGRF2(col,pos1,pos2))
     {
       int np=this->getLGRF2(col,pos1,pos2);
-      if (board->validMove(Go::Move(col,np)))
+      if (board->validMove(Go::Move(col,np)) && !board->weakEye(col,np))
         move=Go::Move(col,np);
     }
   }
@@ -402,7 +402,7 @@ void Playout::getLGRF1Move(Go::Board *board, Go::Color col, Go::Move &move)
     if (this->hasLGRF1(col,pos1))
     {
       int np=this->getLGRF1(col,pos1);
-      if (board->validMove(Go::Move(col,np)))
+      if (board->validMove(Go::Move(col,np)) && !board->weakEye(col,np))
         move=Go::Move(col,np);
     }
   }
