@@ -1057,29 +1057,29 @@ void Engine::gtpPlayoutSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 
   //can be used to get any win of playout if win=0
   int win=0;
-	if (who_wins=="B"||who_wins=="b")
-		win=1;
+  if (who_wins=="B"||who_wins=="b")
+    win=1;
   if (who_wins=="W"||who_wins=="w")
-		win=-1;
+    win=-1;
 
 	  
 
   bool success=false;
   bool foundwin=false;
   for (int i=0;i<100;i++)
-	{
-		Go::Board *playoutboard=me->currentboard->copy();
-  	Go::Color col=me->currentboard->nextToMove();
-		float finalscore;
-	  std::list<Go::Move> playoutmoves;
+  {
+    Go::Board *playoutboard=me->currentboard->copy();
+    Go::Color col=me->currentboard->nextToMove();
+    float finalscore;
+    std::list<Go::Move> playoutmoves;
     me->playout->doPlayout(me->threadpool->getThreadZero()->getSettings(),playoutboard,finalscore,NULL,playoutmoves,col,NULL,NULL);
-		if (finalscore*win>=0)
+    if (finalscore*win>=0)
     {
       foundwin=true;
       success=me->writeSGF(sgffile,me->currentboard,playoutmoves);
-			break;
+      break;
     }
-	}
+  }
 
   if (!foundwin)
   {
