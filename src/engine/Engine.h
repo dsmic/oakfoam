@@ -205,7 +205,7 @@ class Engine
     /** Output the current engine state to a SGF file. */
     bool writeSGF(std::string filename, Go::Board *board=NULL, Tree *tree=NULL);
     /** Output a playout from the current position to a SGF file. */
-    bool writeSGF(std::string filename, Go::Board *board, std::list<Go::Move> playoutmoves);
+    bool writeSGF(std::string filename, Go::Board *board, std::list<Go::Move> playoutmoves, std::list<std::string> *movereasons=NULL);
 
   private:
     Gtp::Engine *gtpe;

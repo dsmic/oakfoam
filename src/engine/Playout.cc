@@ -24,7 +24,7 @@ Playout::~Playout()
     delete[] lgrf2;
 }
 
-void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &finalscore, Tree *playouttree, std::list<Go::Move> &playoutmoves, Go::Color colfirst, Go::BitBoard *firstlist, Go::BitBoard *secondlist)
+void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &finalscore, Tree *playouttree, std::list<Go::Move> &playoutmoves, Go::Color colfirst, Go::BitBoard *firstlist, Go::BitBoard *secondlist, std::list<std::string> *movereasons)
 {
   if (board->getPassesPlayed()>=2)
   {
@@ -39,6 +39,8 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
   for(std::list<Go::Move>::iterator iter=playoutmoves.begin();iter!=playoutmoves.end();++iter)
   {
     board->makeMove((*iter));
+    if (movereasons!=NULL)
+      movereasons->push_back("given");
     if (params->debug_on)
       gtpe->getOutput()->printfDebug(" %s",(*iter).toString(board->getSize()).c_str());
     if (((*iter).getColor()==colfirst?firstlist:secondlist)!=NULL && !(*iter).isPass() && !(*iter).isResign())
@@ -71,13 +73,19 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
   int movesalready=board->getMovesMade();
   int *posarray = new int[board->getPositionMax()];
   bool mercywin=false;
+  std::string reason;
   board->resetCaptures(); // for mercy rule
   while (board->getPassesPlayed()<2)
   {
     bool resign;
-    this->getPlayoutMove(settings,board,coltomove,move,posarray);
+    if (movereasons!=NULL)
+      this->getPlayoutMove(settings,board,coltomove,move,posarray,&reason);
+    else
+      this->getPlayoutMove(settings,board,coltomove,move,posarray);
     board->makeMove(move);
     playoutmoves.push_back(move);
+    if (movereasons!=NULL)
+      movereasons->push_back(reason);
     if ((coltomove==colfirst?firstlist:secondlist)!=NULL && !move.isPass() && !move.isResign())
       (coltomove==colfirst?firstlist:secondlist)->set(move.getPosition());
     resign=move.isResign();
@@ -182,16 +190,16 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
   }
 }
 
-void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move)
+void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, std::string *reason)
 {
   int *posarray = new int[board->getPositionMax()];
   
-  this->getPlayoutMove(settings,board,col,move,posarray);
+  this->getPlayoutMove(settings,board,col,move,posarray,reason);
   
   delete[] posarray;
 }
 
-void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray)
+void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, std::string *reason)
 {
   Random *const rand=settings->rand;
   
@@ -213,6 +221,8 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     {
       if (params->debug_on)
         gtpe->getOutput()->printfDebug("[playoutmove]: %s lgrf2\n",move.toString(board->getSize()).c_str());
+      if (reason!=NULL)
+        *reason="lgrf2";
       return;
     }
   }
@@ -224,6 +234,8 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     {
       if (params->debug_on)
         gtpe->getOutput()->printfDebug("[playoutmove]: %s lgrf1\n",move.toString(board->getSize()).c_str());
+      if (reason!=NULL)
+        *reason="lgrf1";
       return;
     }
   }
@@ -235,6 +247,8 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     {
       if (params->debug_on)
         gtpe->getOutput()->printfDebug("[playoutmove]: %s atari\n",move.toString(board->getSize()).c_str());
+      if (reason!=NULL)
+        *reason="atari";
       return;
     }
   }
@@ -246,6 +260,8 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     {
       if (params->debug_on)
         gtpe->getOutput()->printfDebug("[playoutmove]: %s lastatari\n",move.toString(board->getSize()).c_str());
+      if (reason!=NULL)
+        *reason="lastatari";
       return;
     }
   }
@@ -257,6 +273,8 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     {
       if (params->debug_on)
         gtpe->getOutput()->printfDebug("[playoutmove]: %s lastcapture\n",move.toString(board->getSize()).c_str());
+      if (reason!=NULL)
+        *reason="lastcapture";
       return;
     }
   }
@@ -268,6 +286,8 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     {
       if (params->debug_on)
         gtpe->getOutput()->printfDebug("[playoutmove]: %s last2libatari\n",move.toString(board->getSize()).c_str());
+      if (reason!=NULL)
+        *reason="last2libatari";
       return;
     }
   }
@@ -279,6 +299,8 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     {
       if (params->debug_on)
         gtpe->getOutput()->printfDebug("[playoutmove]: %s nakade\n",move.toString(board->getSize()).c_str());
+      if (reason!=NULL)
+        *reason="nakade";
       return;
     }
   }
@@ -290,6 +312,8 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     {
       if (params->debug_on)
         gtpe->getOutput()->printfDebug("[playoutmove]: %s fillboard\n",move.toString(board->getSize()).c_str());
+      if (reason!=NULL)
+        *reason="fillboard";
       return;
     }
   }
@@ -301,6 +325,8 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     {
       if (params->debug_on)
         gtpe->getOutput()->printfDebug("[playoutmove]: %s pattern\n",move.toString(board->getSize()).c_str());
+      if (reason!=NULL)
+        *reason="pattern";
       return;
     }
   }
@@ -312,6 +338,8 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     {
       if (params->debug_on)
         gtpe->getOutput()->printfDebug("[playoutmove]: %s anycapture\n",move.toString(board->getSize()).c_str());
+      if (reason!=NULL)
+        *reason="anycapture";
       return;
     }
   }
@@ -321,6 +349,8 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     this->getFeatureMove(settings,board,col,move);
     if (params->debug_on)
       gtpe->getOutput()->printfDebug("[playoutmove]: %s features\n",move.toString(board->getSize()).c_str());
+    if (reason!=NULL)
+      *reason="features";
     return;
   }
   
@@ -334,6 +364,8 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
       move=Go::Move(col,p);
       if (params->debug_on)
         gtpe->getOutput()->printfDebug("[playoutmove]: %s random quick-pick\n",move.toString(board->getSize()).c_str());
+      if (reason!=NULL)
+        *reason="random quick-pick";
       return;
     }
   }
@@ -373,10 +405,17 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
       move=Go::Move(col,rp);
       if (params->debug_on)
         gtpe->getOutput()->printfDebug("[playoutmove]: %s random\n",move.toString(board->getSize()).c_str());
+      if (reason!=NULL)
+        *reason="random";
       return;
     }
   }
+
   move=Go::Move(col,Go::Move::PASS);
+  if (params->debug_on)
+    gtpe->getOutput()->printfDebug("[playoutmove]: %s pass\n",move.toString(board->getSize()).c_str());
+  if (reason!=NULL)
+    *reason="pass";
 }
 
 void Playout::getLGRF2Move(Go::Board *board, Go::Color col, Go::Move &move)

@@ -1070,11 +1070,12 @@ void Engine::gtpPlayoutSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     Go::Color col=me->currentboard->nextToMove();
     float finalscore;
     std::list<Go::Move> playoutmoves;
-    me->playout->doPlayout(me->threadpool->getThreadZero()->getSettings(),playoutboard,finalscore,NULL,playoutmoves,col,NULL,NULL);
+    std::list<std::string> movereasons;
+    me->playout->doPlayout(me->threadpool->getThreadZero()->getSettings(),playoutboard,finalscore,NULL,playoutmoves,col,NULL,NULL,&movereasons);
     if (finalscore*win>=0)
     {
       foundwin=true;
-      success=me->writeSGF(sgffile,me->currentboard,playoutmoves);
+      success=me->writeSGF(sgffile,me->currentboard,playoutmoves,&movereasons);
       break;
     }
   }
@@ -2638,7 +2639,8 @@ bool Engine::writeSGF(std::string filename, Go::Board *board, Tree *tree)
   
   return true;
 }
-bool Engine::writeSGF(std::string filename, Go::Board *board, std::list<Go::Move> playoutmoves)
+
+bool Engine::writeSGF(std::string filename, Go::Board *board, std::list<Go::Move> playoutmoves, std::list<std::string> *movereasons)
 {
   std::ofstream sgffile;
   sgffile.open(filename.c_str());
@@ -2647,6 +2649,9 @@ bool Engine::writeSGF(std::string filename, Go::Board *board, std::list<Go::Move
     board=currentboard;
   sgffile<<board->toSGFString()<<"\n";
 
+  std::list<std::string>::iterator reasoniter;
+  if (movereasons!=NULL)
+    reasoniter=movereasons->begin();
   for(std::list<Go::Move>::iterator iter=playoutmoves.begin();iter!=playoutmoves.end();++iter)
   {
     //sgffile<<tree->toSGFString()<<"\n)";
@@ -2658,7 +2663,16 @@ bool Engine::writeSGF(std::string filename, Go::Board *board, std::list<Go::Move
     }
     else if ((*iter).isPass())
       sgffile<<"pass";
-    sgffile<<"]\n";
+    sgffile<<"]";
+    if (movereasons!=NULL)
+      sgffile<<"C["<<(*reasoniter)<<"]";
+    sgffile<<"\n";
+    if (movereasons!=NULL)
+    {
+      ++reasoniter;
+      if (reasoniter==movereasons->end())
+        break;
+    }
   }
   sgffile <<")\n";
   sgffile.close();

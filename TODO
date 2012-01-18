@@ -12,7 +12,6 @@ Now: (current focus)
   solve problem of LGRF hindering ladder-handling
   reduce Engine.h includes, to optimize build process
   move Parameter defaults and inits out of Engine
-  add playout reasons to playoutsgf cmd
 
 Soon: (before next major release)
   larger patterns
