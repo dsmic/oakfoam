@@ -58,6 +58,7 @@ class Playout
     void getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray);
     void getAtariMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray);
 
+    bool isBadMove(Go::Board *board, Go::Color col, int pos);
     int getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group *group);
     
     int getLGRF1(Go::Color col, int pos1) const;

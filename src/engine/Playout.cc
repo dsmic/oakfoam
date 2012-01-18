@@ -359,7 +359,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
   for (int i=0;i<10;i++)
   {
     int p=rand->getRandomInt(board->getPositionMax());
-    if (board->validMove(Go::Move(col,p)) && !board->weakEye(col,p) && (!params->playout_avoid_selfatari || !board->isSelfAtariOfSize(Go::Move(col,p),params->playout_avoid_selfatari_size)))
+    if (board->validMove(Go::Move(col,p)) && !this->isBadMove(board,col,p))
     {
       move=Go::Move(col,p);
       if (params->debug_on)
@@ -376,7 +376,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
   
   for (int p=0;p<board->getPositionMax();p++)
   {
-    if (validmoves->get(p) && !board->weakEye(col,p) && (!params->playout_avoid_selfatari || !board->isSelfAtariOfSize(Go::Move(col,p),params->playout_avoid_selfatari_size)))
+    if (validmoves->get(p) && !this->isBadMove(board,col,p))
     {
       possiblemoves[possiblemovescount]=p;
       possiblemovescount++;
@@ -400,7 +400,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     int rp=(r+p*d);
     if (rp<0) rp+=board->getPositionMax();
     if (rp>=board->getPositionMax()) rp-=board->getPositionMax();
-    if (validmoves->get(rp) && !board->weakEye(col,rp) && (!params->playout_avoid_selfatari || !board->isSelfAtariOfSize(Go::Move(col,rp),params->playout_avoid_selfatari_size)))
+    if (validmoves->get(rp) && !this->isBadMove(board,col,rp))
     {
       move=Go::Move(col,rp);
       if (params->debug_on)
@@ -418,6 +418,11 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     *reason="pass";
 }
 
+bool Playout::isBadMove(Go::Board *board, Go::Color col, int pos)
+{
+  return (board->weakEye(col,pos) || (params->playout_avoid_selfatari && board->isSelfAtariOfSize(Go::Move(col,pos),params->playout_avoid_selfatari_size)));
+}
+
 void Playout::getLGRF2Move(Go::Board *board, Go::Color col, Go::Move &move)
 {
   if (board->getLastMove().isNormal() && board->getSecondLastMove().isNormal())
@@ -427,7 +432,7 @@ void Playout::getLGRF2Move(Go::Board *board, Go::Color col, Go::Move &move)
     if (this->hasLGRF2(col,pos1,pos2))
     {
       int np=this->getLGRF2(col,pos1,pos2);
-      if (board->validMove(Go::Move(col,np)) && !board->weakEye(col,np))
+      if (board->validMove(Go::Move(col,np)) && !this->isBadMove(board,col,np))
         move=Go::Move(col,np);
     }
   }
@@ -441,7 +446,7 @@ void Playout::getLGRF1Move(Go::Board *board, Go::Color col, Go::Move &move)
     if (this->hasLGRF1(col,pos1))
     {
       int np=this->getLGRF1(col,pos1);
-      if (board->validMove(Go::Move(col,np)) && !board->weakEye(col,np))
+      if (board->validMove(Go::Move(col,np)) && !this->isBadMove(board,col,np))
         move=Go::Move(col,np);
     }
   }
@@ -523,7 +528,7 @@ void Playout::getPatternMove(Worker::Settings *settings, Go::Board *board, Go::C
     int size=board->getSize();
     
     foreach_adjdiag(pos,p,{
-      if (board->validMove(Go::Move(col,p)) && !board->weakEye(col,p) && !board->isSelfAtari(Go::Move(col,p)))
+      if (board->validMove(Go::Move(col,p)) && !this->isBadMove(board,col,p))
       {
         unsigned int pattern=Pattern::ThreeByThree::makeHash(board,p);
         if (col==Go::WHITE)
@@ -544,7 +549,7 @@ void Playout::getPatternMove(Worker::Settings *settings, Go::Board *board, Go::C
     int size=board->getSize();
     
     foreach_adjdiag(pos,p,{
-      if (board->validMove(Go::Move(col,p)) && !board->weakEye(col,p) && !board->isSelfAtari(Go::Move(col,p)))
+      if (board->validMove(Go::Move(col,p)) && !this->isBadMove(board,col,p))
       {
         unsigned int pattern=Pattern::ThreeByThree::makeHash(board,p);
         if (col==Go::WHITE)
