@@ -9,6 +9,11 @@ This is a Computer Go player.
 
 Please contact me if you have any questions.
 
+-- Online ---------------------------------------
+
+Website: http://bitbucket.org/francoisvn/oakfoam
+Discuss: http://groups.google.com/group/oakfoam
+
 -- Build ----------------------------------------
 
 Running the commands "./configure" and "make"
@@ -16,7 +21,7 @@ should guide you through the process of building
 Oakfoam. Refer to "INSTALL" for autotools generic
 instructions.
 
--- Code Documentation ---------------------------
+-- Documentation --------------------------------
 
 Running "make docs" should compile the
 documentation for the source code, to "docs/".
