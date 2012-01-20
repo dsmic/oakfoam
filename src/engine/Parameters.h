@@ -338,8 +338,11 @@ class Parameters
     bool rules_superko_at_playout;
     /** Whether all stones are treated as alive.
      * Turning this off means that the territory map is used to determine alive and dead stones.
+     * @see rules_all_stones_alive_playouts
      */
     bool rules_all_stones_alive;
+    /** Minimum number of playouts for considering alive and dead stones. */
+    int rules_all_stones_alive_playouts;
     
     /** Threshold at which to assume that we have a "sure win." */
     float surewin_threshold;

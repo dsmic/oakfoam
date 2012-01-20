@@ -147,6 +147,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("rules","rules_superko_prune_after",&(params->rules_superko_prune_after),RULES_SUPERKO_PRUNE_AFTER);
   params->addParameter("rules","rules_superko_at_playout",&(params->rules_superko_at_playout),RULES_SUPERKO_AT_PLAYOUT);
   params->addParameter("rules","rules_all_stones_alive",&(params->rules_all_stones_alive),RULES_ALL_STONES_ALIVE);
+  params->addParameter("rules","rules_all_stones_alive_playouts",&(params->rules_all_stones_alive_playouts),RULES_ALL_STONES_ALIVE_PLAYOUTS);
   
   params->addParameter("time","time_k",&(params->time_k),TIME_K);
   params->addParameter("time","time_buffer",&(params->time_buffer),TIME_BUFFER);
@@ -727,6 +728,13 @@ void Engine::gtpFinalScore(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   Engine *me=(Engine*)instance;
   float score;
   
+  if (!me->params->rules_all_stones_alive)
+  {
+    int plts=me->params->rules_all_stones_alive_playouts-me->movetree->getPlayouts();
+    if (plts>0)
+      me->doNPlayouts(plts);
+  }
+  
   if (me->params->rules_all_stones_alive || me->params->cleanup_in_progress)
     score=me->currentboard->score()-me->komi;
   else
@@ -754,6 +762,13 @@ void Engine::gtpFinalStatusList(void *instance, Gtp::Engine* gtpe, Gtp::Command*
   
   std::string arg = cmd->getStringArg(0);
   std::transform(arg.begin(),arg.end(),arg.begin(),::tolower);
+
+  if (!me->params->rules_all_stones_alive)
+  {
+    int plts=me->params->rules_all_stones_alive_playouts-me->movetree->getPlayouts();
+    if (plts>0)
+      me->doNPlayouts(plts);
+  }
   
   if (arg=="dead")
   {
