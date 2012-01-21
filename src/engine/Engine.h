@@ -380,6 +380,7 @@ class Engine
     static void gtpDoNPlayouts(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpOutputSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpPlayoutSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpPlayoutSGF_pos(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
 
     static void gtpExplainLastMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpBoardStats(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);

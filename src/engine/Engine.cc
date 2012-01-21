@@ -435,6 +435,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("donplayouts",this,&Engine::gtpDoNPlayouts);
   gtpe->addFunctionCommand("outputsgf",this,&Engine::gtpOutputSGF);
   gtpe->addFunctionCommand("playoutsgf",this,&Engine::gtpPlayoutSGF);
+  gtpe->addFunctionCommand("playoutsgf_pos",this,&Engine::gtpPlayoutSGF_pos);
   
   gtpe->addFunctionCommand("explainlastmove",this,&Engine::gtpExplainLastMove);
   gtpe->addFunctionCommand("boardstats",this,&Engine::gtpBoardStats);
@@ -500,6 +501,7 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("donplayouts 100000","Do 100k Playouts","none");
   gtpe->addAnalyzeCommand("outputsgf %%w","Output SGF","none");
   gtpe->addAnalyzeCommand("playoutsgf %%w %%c","Playout to SGF (win of color)","none");
+  gtpe->addAnalyzeCommand("playoutsgf_pos %%w %%c %%p","Playout to SGF (win of color at pos)","none");
  
   gtpe->addAnalyzeCommand("bookshow","Book Show","gfx");
   gtpe->addAnalyzeCommand("bookadd %%p","Book Add","none");
@@ -759,7 +761,7 @@ void Engine::gtpFinalStatusList(void *instance, Gtp::Engine* gtpe, Gtp::Command*
     gtpe->getOutput()->endResponse();
     return;
   }
-  
+
   std::string arg = cmd->getStringArg(0);
   std::transform(arg.begin(),arg.end(),arg.begin(),::tolower);
 
@@ -1117,6 +1119,71 @@ void Engine::gtpPlayoutSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   }
 }
 
+void Engine::gtpPlayoutSGF_pos(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+
+  if (cmd->numArgs()!=3)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("need 3 arg");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  std::string sgffile=cmd->getStringArg(0);
+  std::string who_wins=cmd->getStringArg(1);
+  std::string where_wins=cmd->getStringArg(2);
+
+  int where=Go::Position::string2pos(where_wins,me->boardsize);
+
+  int win=0;
+  if (who_wins=="B"||who_wins=="b")
+    win=1;
+  if (who_wins=="W"||who_wins=="w")
+    win=-1;
+
+  bool success=false;
+  bool foundwin=false;
+  for (int i=0;i<100;i++)
+  {
+    Go::Board *playoutboard=me->currentboard->copy();
+    Go::Color col=me->currentboard->nextToMove();
+    float finalscore;
+    std::list<Go::Move> playoutmoves;
+    std::list<std::string> movereasons;
+    me->playout->doPlayout(me->threadpool->getThreadZero()->getSettings(),playoutboard,finalscore,NULL,playoutmoves,col,NULL,NULL,&movereasons);
+    if ((win==1  && playoutboard->getScoredOwner(where)==Go::BLACK) ||
+        (win==-1 && playoutboard->getScoredOwner(where)==Go::WHITE)
+        )
+    {
+      foundwin=true;
+      success=me->writeSGF(sgffile,me->currentboard,playoutmoves,&movereasons);
+      break;
+    }
+  }
+
+  if (!foundwin)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("No win found for %s",who_wins.c_str());
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  if (success)
+  {
+    gtpe->getOutput()->startResponse(cmd);
+    gtpe->getOutput()->printf("wrote sgf file: %s",sgffile.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+  else
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("error writing sgf file: %s",sgffile.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+}
 
 void Engine::gtpOutputSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
