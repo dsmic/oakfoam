@@ -1145,7 +1145,8 @@ void Engine::gtpPlayoutSGF_pos(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
 
   bool success=false;
   bool foundwin=false;
-  for (int i=0;i<100;i++)
+  int how_often=0;
+  for (int i=0;i<200;i++)
   {
     Go::Board *playoutboard=me->currentboard->copy();
     Go::Color col=me->currentboard->nextToMove();
@@ -1153,15 +1154,20 @@ void Engine::gtpPlayoutSGF_pos(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
     std::list<Go::Move> playoutmoves;
     std::list<std::string> movereasons;
     me->playout->doPlayout(me->threadpool->getThreadZero()->getSettings(),playoutboard,finalscore,NULL,playoutmoves,col,NULL,NULL,&movereasons);
-    if ((win==1  && playoutboard->getScoredOwner(where)==Go::BLACK) ||
-        (win==-1 && playoutboard->getScoredOwner(where)==Go::WHITE)
-        )
-    {
-      foundwin=true;
-      success=me->writeSGF(sgffile,me->currentboard,playoutmoves,&movereasons);
-      break;
+      if ((win==1  && playoutboard->getScoredOwner(where)==Go::BLACK) ||
+          (win==-1 && playoutboard->getScoredOwner(where)==Go::WHITE)
+          )
+      {
+        if (i<100)
+          how_often++;
+        else
+        {
+          foundwin=true;
+          success=me->writeSGF(sgffile,me->currentboard,playoutmoves,&movereasons);
+          break;
+        }
+      }
     }
-  }
 
   if (!foundwin)
   {
@@ -1174,7 +1180,7 @@ void Engine::gtpPlayoutSGF_pos(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
   if (success)
   {
     gtpe->getOutput()->startResponse(cmd);
-    gtpe->getOutput()->printf("wrote sgf file: %s",sgffile.c_str());
+    gtpe->getOutput()->printf("wrote sgf file: %s  found within the first 100 playouts: %d",sgffile.c_str(),how_often);
     gtpe->getOutput()->endResponse();
   }
   else
