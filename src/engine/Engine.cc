@@ -1146,7 +1146,7 @@ void Engine::gtpPlayoutSGF_pos(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
   bool success=false;
   bool foundwin=false;
   int how_often=0;
-  for (int i=0;i<200;i++)
+  for (int i=0;i<100+100;i++)
   {
     Go::Board *playoutboard=me->currentboard->copy();
     Go::Color col=me->currentboard->nextToMove();
@@ -2058,16 +2058,28 @@ void Engine::gtpShowTerritory(void *instance, Gtp::Engine* gtpe, Gtp::Command* c
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printString("\n");
+  float territorycount=0;
   for (int y=me->boardsize-1;y>=0;y--)
   {
     for (int x=0;x<me->boardsize;x++)
     {
       int pos=Go::Position::xy2pos(x,y,me->boardsize);
+      float tmp=me->territorymap->getPositionOwner(pos);
+      //if (tmp>0.2) territorycount++;
+      //if (tmp<-0.2) territorycount--;
+      territorycount+=tmp;
       gtpe->getOutput()->printf("%.2f ",me->territorymap->getPositionOwner(pos));
     }
     gtpe->getOutput()->printf("\n");
   }
 
+  if (territorycount-me->getKomi()>0)
+    gtpe->getOutput()->printf("Territory %.1f Komi %.1f B+%.1f\n",
+      territorycount,me->getKomi(),territorycount-me->getKomi());
+  else
+    gtpe->getOutput()->printf("Territory %.1f Komi %.1f W+%.1f\n",
+      territorycount,me->getKomi(),-(territorycount-me->getKomi()));
+    
   gtpe->getOutput()->endResponse(true);
 }
 
