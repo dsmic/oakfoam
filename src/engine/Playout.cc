@@ -79,9 +79,16 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
   {
     bool resign;
     if (movereasons!=NULL)
+    {
       this->getPlayoutMove(settings,board,coltomove,move,posarray,&reason);
+      this->checkUselessMove(settings,board,coltomove,move,posarray,&reason);
+    }
     else
+    {
       this->getPlayoutMove(settings,board,coltomove,move,posarray);
+      this->checkUselessMove(settings,board,coltomove,move,posarray,NULL);
+    }
+    
     board->makeMove(move);
     playoutmoves.push_back(move);
     if (movereasons!=NULL)
@@ -199,6 +206,29 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
   delete[] posarray;
 }
 
+void Playout::checkUselessMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, std::string *reason)
+{
+  int *posarray = new int[board->getPositionMax()];
+  
+  this->checkUselessMove(settings,board,col,move,posarray,reason);
+  
+  delete[] posarray;
+}
+
+
+void Playout::checkUselessMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, std::string *reason)
+{
+  Go::Move replacemove;
+  this->checkEyeMove(settings,board,col,move,posarray,replacemove);
+  if (reason!=NULL && replacemove.isNormal())
+  {
+    (*reason).append(" UselessEye");
+    fprintf(stderr," UselessEye\n");
+  }
+  if (!replacemove.isPass())
+    move=replacemove;
+}
+
 void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, std::string *reason)
 {
   Random *const rand=settings->rand;
@@ -278,20 +308,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
       return;
     }
   }
-  
-  if (params->playout_last2libatari_enabled)
-  {
-    this->getLast2LibAtariMove(settings,board,col,move,posarray);
-    if (!move.isPass())
-    {
-      if (params->debug_on)
-        gtpe->getOutput()->printfDebug("[playoutmove]: %s last2libatari\n",move.toString(board->getSize()).c_str());
-      if (reason!=NULL)
-        *reason="last2libatari";
-      return;
-    }
-  }
-  
+    
   if (params->playout_nakade_enabled)
   {
     this->getNakadeMove(settings,board,col,move,posarray);
@@ -305,6 +322,20 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     }
   }
   
+
+  if (params->playout_last2libatari_enabled)
+  {
+    this->getLast2LibAtariMove(settings,board,col,move,posarray);
+    if (!move.isPass())
+    {
+      if (params->debug_on)
+        gtpe->getOutput()->printfDebug("[playoutmove]: %s last2libatari\n",move.toString(board->getSize()).c_str());
+      if (reason!=NULL)
+        *reason="last2libatari";
+      return;
+    }
+  }
+
   if (params->playout_fillboard_enabled)
   {
     this->getFillBoardMove(settings,board,col,move);
@@ -787,6 +818,51 @@ void Playout::getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go:
     //gtpe->getOutput()->printfDebug("[playoutmove]: last atari %d %d %d\n",board->isCapture(move),board->isExtension(move),board->isSelfAtari(move));
   }
 }
+
+void Playout::checkEyeMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray,Go::Move &replacemove)
+{
+  Go::Move tmp_move=Go::Move(col,Go::Move::PASS);
+  replacemove=Go::Move(col,Go::Move::PASS);
+  if (move.isPass())
+    return;
+  int size=board->getSize();
+  Go::Group *group=NULL;
+
+  int count_empty=0;
+  foreach_adjacent(move.getPosition(),p,{
+    if (board->getColor (p)==Go::otherColor(col))
+      return;  //has the other color
+    if (board->getColor(p)==Go::EMPTY)
+    {
+      count_empty++;
+      if (count_empty>1) return; //more than 1 empty surounded
+      tmp_move=Go::Move(col,p);
+    }
+    if (group)
+    {
+      if (board->inGroup(p) && group!=board->getGroup(p))
+        return;
+    }
+    else
+    {
+      if (board->inGroup(p))
+        group=board->getGroup(p);
+    }        
+  });
+  
+  if (!tmp_move.isPass())
+  {
+    foreach_adjacent(tmp_move.getPosition(),p,{
+      if (board->inGroup(p) && group==board->getGroup(p))
+      {
+        replacemove=tmp_move;
+        return; //the replaceMove is continous with the surounding string
+      }
+    });
+  }
+}
+
+
 
 void Playout::getAtariMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray)
 {

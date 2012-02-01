@@ -84,9 +84,11 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","playout_mercy_rule_factor",&(params->playout_mercy_rule_factor),PLAYOUT_MERCY_RULE_FACTOR);
   
   params->addParameter("tree","ucb_c",&(params->ucb_c),UCB_C);
-  //params->addParameter("tree","detlef_c",&(params->detlef_c),DETLEF_C);
   params->addParameter("tree","ucb_init",&(params->ucb_init),UCB_INIT);
-  
+
+  params->addParameter("tree","bernoulli_a",&(params->bernoulli_a),BERNOULLI_A);
+  params->addParameter("tree","bernoulli_b",&(params->bernoulli_b),BERNOULLI_B);
+
   params->addParameter("tree","rave_moves",&(params->rave_moves),RAVE_MOVES);
   params->addParameter("tree","rave_init_wins",&(params->rave_init_wins),RAVE_INIT_WINS);
   

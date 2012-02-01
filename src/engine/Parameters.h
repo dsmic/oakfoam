@@ -164,7 +164,8 @@ class Parameters
 
     // Bernolli distribution experiments.
     // Under Construction
-    //float detlef_c;
+    float bernoulli_a;
+    float bernoulli_b;
     
     /** Number of moves it takes for RAVE to decay?
      * Set to zero to disable RAVE.

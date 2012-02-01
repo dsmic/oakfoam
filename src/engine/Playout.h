@@ -34,6 +34,8 @@ class Playout
     void doPlayout(Worker::Settings *settings, Go::Board *board, float &finalscore, Tree *playouttree, std::list<Go::Move> &playoutmoves, Go::Color colfirst, Go::BitBoard *firstlist, Go::BitBoard *secondlist, std::list<std::string> *movereasons=NULL);
     /** Get a playout move for a given situation. */
     void getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, std::string *reason=NULL);
+
+    void checkUselessMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, std::string *reason=NULL);
     
     /** Reset LGRF values. */
     void resetLGRF();
@@ -46,6 +48,7 @@ class Playout
     int lgrfpositionmax;
     
     void getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, std::string *reason=NULL);
+    void checkUselessMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, std::string *reason=NULL);
     void getLGRF2Move(Go::Board *board, Go::Color col, Go::Move &move);
     void getLGRF1Move(Go::Board *board, Go::Color col, Go::Move &move);
     void getFeatureMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move);
@@ -57,6 +60,8 @@ class Playout
     void getLastCaptureMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray);
     void getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray);
     void getAtariMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray);
+
+    void checkEyeMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, Go::Move &replacemove);
 
     bool isBadMove(Go::Board *board, Go::Color col, int pos);
     int getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group *group);
