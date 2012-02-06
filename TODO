@@ -12,6 +12,8 @@ Now: (current focus)
   solve problem of LGRF hindering ladder-handling
   reduce Engine.h includes, to optimize build process
   move Parameter defaults and inits out of Engine
+  make time_k boardsize independant
+  add kgs chat command with winrate
 
 Soon: (before next major release)
   larger patterns

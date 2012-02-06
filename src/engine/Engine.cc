@@ -102,6 +102,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("tree","uct_atari_prior",&(params->uct_atari_prior),UCT_ATARI_PRIOR);
   params->addParameter("tree","uct_pattern_prior",&(params->uct_pattern_prior),UCT_PATTERN_PRIOR);
   params->addParameter("tree","uct_progressive_widening_enabled",&(params->uct_progressive_widening_enabled),UCT_PROGRESSIVE_WIDENING_ENABLED);
+  params->addParameter("tree","uct_progressive_widening_init",&(params->uct_progressive_widening_init),UCT_PROGRESSIVE_WIDENING_INIT);
   params->addParameter("tree","uct_progressive_widening_a",&(params->uct_progressive_widening_a),UCT_PROGRESSIVE_WIDENING_A);
   params->addParameter("tree","uct_progressive_widening_b",&(params->uct_progressive_widening_b),UCT_PROGRESSIVE_WIDENING_B);
   params->addParameter("tree","uct_progressive_widening_c",&(params->uct_progressive_widening_c),UCT_PROGRESSIVE_WIDENING_C);
