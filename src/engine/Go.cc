@@ -1491,36 +1491,52 @@ bool Go::Board::isSelfAtariOfSize(Go::Move move, int minsize) const
   
   if (this->touchingEmpty(pos)>1)
     return false;
-  
   int libpos=-1;
   int groupsize=0;
+  Go::Group *groups_used[4];
+  int groups_used_num=0;
   foreach_adjacent(pos,p,{
     if (this->inGroup(p))
     {
       Go::Group *group=this->getGroup(p);
-      if (col==group->getColor())
+      bool found=false;
+      for (int i=0;i<groups_used_num;i++)
       {
-        int otherlib=group->getOtherOneOfTwoLiberties(pos);
-        if (otherlib!=-1)
+        if (groups_used[i]==group)
         {
-          if (libpos==-1)
-            libpos=otherlib;
-          else if (libpos!=otherlib)
-            return false; // at least 2 libs
-          groupsize+=group->numOfStones();
+          found=true;
+        }
+      }
+      groups_used[groups_used_num]=group;
+      groups_used_num++;
+      if (!found)
+      {
+        if (col==group->getColor())
+        {
+          int otherlib=group->getOtherOneOfTwoLiberties(pos);
+          if (otherlib!=-1)
+          {
+            if (libpos==-1)
+              libpos=otherlib;
+            else if (libpos!=otherlib)
+              return false; // at least 2 libs
+            groupsize+=group->numOfStones();
+          }
         }
         else if (!group->inAtari())
           return false; // at least 2 libs
         else // group in atari
+        {
           groupsize+=group->numOfStones();
+        }
       }
-    }
-    else if (this->getColor(p)==Go::EMPTY)
-    {
-      if (libpos==-1)
-        libpos=p;
-      else if (libpos!=p)
-        return false; // at least 2 libs
+      else if (this->getColor(p)==Go::EMPTY)
+      {
+        if (libpos==-1)
+          libpos=p;
+        else if (libpos!=p)
+          return false; // at least 2 libs
+      }
     }
   });
   if (groupsize>minsize)
@@ -1732,7 +1748,6 @@ Go::ZobristHash Go::Board::getZobristHash(Go::ZobristTable *table) const
     if (this->getColor(p)!=Go::EMPTY && this->getColor(p)!=Go::OFFBOARD)
     {
       hash^=table->getHash(this->getColor(p),p);
-      //fprintf(stderr,"0x%016llx\n",hash);
     }
   }
   

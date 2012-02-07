@@ -380,6 +380,7 @@ class Engine
     static void gtpTimeLeft(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     
     static void gtpDoNPlayouts(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+
     static void gtpOutputSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpPlayoutSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpPlayoutSGF_pos(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);

@@ -125,8 +125,6 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
   //bool playoutwin=Go::Board::isWinForColor(playoutcol,finalscore);
   bool playoutjigo=(finalscore==0);
   
-  //fprintf(stderr,"plt: %d %d %.1f\n%s\n",mercywin,board->getMovesMade(),finalscore,board->toString().c_str());
-  
   if (params->playout_lgrf1_enabled)
   {
     if (!playoutjigo) // ignore jigos
@@ -223,7 +221,6 @@ void Playout::checkUselessMove(Worker::Settings *settings, Go::Board *board, Go:
   if (reason!=NULL && replacemove.isNormal())
   {
     (*reason).append(" UselessEye");
-    fprintf(stderr," UselessEye\n");
   }
   if (!replacemove.isPass())
     move=replacemove;
@@ -243,7 +240,20 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     if (f<params->playout_random_chance)
       goto random;
   }
-  
+
+    if (params->playout_lastcapture_enabled)
+  {
+    this->getLastCaptureMove(settings,board,col,move,posarray);
+    if (!move.isPass())
+    {
+      if (params->debug_on)
+        gtpe->getOutput()->printfDebug("[playoutmove]: %s lastcapture\n",move.toString(board->getSize()).c_str());
+      if (reason!=NULL)
+        *reason="lastcapture";
+      return;
+    }
+  }
+    
   if (params->playout_lgrf2_enabled)
   {
     this->getLGRF2Move(board,col,move);
@@ -296,19 +306,6 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     }
   }
   
-  if (params->playout_lastcapture_enabled)
-  {
-    this->getLastCaptureMove(settings,board,col,move,posarray);
-    if (!move.isPass())
-    {
-      if (params->debug_on)
-        gtpe->getOutput()->printfDebug("[playoutmove]: %s lastcapture\n",move.toString(board->getSize()).c_str());
-      if (reason!=NULL)
-        *reason="lastcapture";
-      return;
-    }
-  }
-    
   if (params->playout_nakade_enabled)
   {
     this->getNakadeMove(settings,board,col,move,posarray);
@@ -799,7 +796,6 @@ void Playout::getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go:
           {
             int liberty=group->getAtariPosition();
             bool iscaptureorconnect=board->isCapture(Go::Move(col,liberty)) || board->isExtension(Go::Move(col,liberty));
-            //fprintf(stderr,"la: %s %s %d %d %d\n",Go::Position::pos2string(p,size).c_str(),Go::Position::pos2string(liberty,size).c_str(),board->isCapture(Go::Move(col,liberty)),board->isExtension(Go::Move(col,liberty)),board->isSelfAtari(Go::Move(col,liberty)));
             if (board->validMove(Go::Move(col,liberty)) && iscaptureorconnect)
             {
               possiblemoves[possiblemovescount]=liberty;
@@ -882,7 +878,6 @@ void Playout::getAtariMove(Worker::Settings *settings, Go::Board *board, Go::Col
         {
           int liberty=group->getAtariPosition();
           bool iscaptureorconnect=board->isCapture(Go::Move(col,liberty)) || board->isExtension(Go::Move(col,liberty));
-          //fprintf(stderr,"a: %s %s %d",Go::Position::pos2string(p,size).c_str(),Go::Position::pos2string(liberty,size).c_str(),iscaptureorconnect);
           if (board->validMove(Go::Move(col,liberty)) && iscaptureorconnect)
           {
             atarimoves[atarimovescount]=liberty;

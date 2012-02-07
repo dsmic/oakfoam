@@ -1083,7 +1083,8 @@ void Engine::gtpPlayoutSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 
   bool success=false;
   bool foundwin=false;
-  for (int i=0;i<100;i++)
+  int i;
+  for (i=0;i<1000;i++)
   {
     Go::Board *playoutboard=me->currentboard->copy();
     Go::Color col=me->currentboard->nextToMove();
@@ -1110,7 +1111,7 @@ void Engine::gtpPlayoutSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   if (success)
   {
     gtpe->getOutput()->startResponse(cmd);
-    gtpe->getOutput()->printf("wrote sgf file: %s",sgffile.c_str());
+    gtpe->getOutput()->printf("wrote sgf file: %s (i was %d)",sgffile.c_str(),i);
     gtpe->getOutput()->endResponse();
   }
   else
@@ -1148,7 +1149,7 @@ void Engine::gtpPlayoutSGF_pos(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
   bool success=false;
   bool foundwin=false;
   int how_often=0;
-  for (int i=0;i<100+100;i++)
+  for (int i=0;i<1000+1000;i++)
   {
     Go::Board *playoutboard=me->currentboard->copy();
     Go::Color col=me->currentboard->nextToMove();
@@ -1160,7 +1161,7 @@ void Engine::gtpPlayoutSGF_pos(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
           (win==-1 && playoutboard->getScoredOwner(where)==Go::WHITE)
           )
       {
-        if (i<100)
+        if (i<1000)
           how_often++;
         else
         {
@@ -1182,7 +1183,7 @@ void Engine::gtpPlayoutSGF_pos(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
   if (success)
   {
     gtpe->getOutput()->startResponse(cmd);
-    gtpe->getOutput()->printf("wrote sgf file: %s  found within the first 100 playouts: %d",sgffile.c_str(),how_often);
+    gtpe->getOutput()->printf("wrote sgf file: %s  found within the first 1000 playouts: %d",sgffile.c_str(),how_often);
     gtpe->getOutput()->endResponse();
   }
   else
@@ -2069,7 +2070,10 @@ void Engine::gtpShowTerritory(void *instance, Gtp::Engine* gtpe, Gtp::Command* c
       float tmp=me->territorymap->getPositionOwner(pos);
       //if (tmp>0.2) territorycount++;
       //if (tmp<-0.2) territorycount--;
-      territorycount+=tmp;
+      if (tmp<0)
+        territorycount-=pow(-tmp,1.0/2.0);
+      else
+        territorycount+=pow( tmp,1.0/2.0);
       gtpe->getOutput()->printf("%.2f ",me->territorymap->getPositionOwner(pos));
     }
     gtpe->getOutput()->printf("\n");
