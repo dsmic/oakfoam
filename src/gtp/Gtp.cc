@@ -135,8 +135,36 @@ void Gtp::Engine::parseInput(std::string in, Gtp::Command **cmd)
   
   std::transform(cmdname.begin(),cmdname.end(),cmdname.begin(),::tolower);
   
-  while (getline(iss,token,' '))
-    tokens.push_back(token);
+  std::string args;
+  if (getline(iss,args))
+  {
+    bool instring=false;
+    std::string arg="";
+    char prevc='\0';
+    for (int i=0;i<(int)args.length();i++)
+    {
+      char c=args.at(i);
+      if (c==' ' && !instring)
+      {
+        tokens.push_back(arg);
+        arg="";
+      }
+      else if (c=='"' && instring)
+      {
+        if (prevc!='\\')
+          instring=false;
+        else
+          arg[arg.length()-1]='"';
+      }
+      else if (c=='"' && (prevc==' ' || prevc=='\0'))
+        instring=true;
+      else if (c=='\n' || ((int)c>=32 && (int)c<127))
+        arg+=c;
+      prevc=c;
+    }
+    if (arg.length()>0)
+      tokens.push_back(arg);
+  }
   
   *cmd=new Gtp::Command(id,cmdname,tokens);
 }

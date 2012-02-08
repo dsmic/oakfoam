@@ -915,7 +915,10 @@ void Tree::expandLeaf()
     if (params->uct_progressive_widening_enabled)
     {
       this->pruneChildren();
-      this->unPruneNow(); //unprune first child
+      for (int i=0;i<params->uct_progressive_widening_init;i++)
+      {
+        this->unPruneNow(); //unprune a child
+      }
       while (this->hasPrunedChildren() && !this->hasOneUnprunedChildNotTerminalLoss())
         this->unPruneNow(); //unprune a non-terminal loss
     }

@@ -197,6 +197,10 @@ class Parameters
      * @todo Include relevant formula.
      */
     bool uct_progressive_widening_enabled;
+    /** Number of nodes to unprune when a node is expanded.
+     * @see uct_progressive_widening_enabled
+     */
+    int uct_progressive_widening_init;
     /** Constant for progressive widening.
      * @see uct_progressive_widening_enabled
      */
