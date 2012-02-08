@@ -779,8 +779,10 @@ void Playout::getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go:
   
   if (board->getLastMove().isNormal())
   {
-    foreach_onandadj(board->getLastMove().getPosition(),p,{
-      if (!doubleatari && board->inGroup(p))
+   // try connect to an outside group
+   foreach_adjacent(board->getLastMove().getPosition(),p,{
+
+   if (!doubleatari && board->inGroup(p))
       {
         Go::Group *group=board->getGroup(p);
         if (group!=NULL && group->inAtari())
@@ -795,7 +797,7 @@ void Playout::getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go:
           if (!doubleatari)
           {
             int liberty=group->getAtariPosition();
-            bool iscaptureorconnect=board->isCapture(Go::Move(col,liberty)) || board->isExtension(Go::Move(col,liberty));
+            bool iscaptureorconnect=board->isCapture(Go::Move(col,liberty)) || board->isExtension(Go::Move(col,liberty)); // Why is the check for capture here?
             if (board->validMove(Go::Move(col,liberty)) && iscaptureorconnect)
             {
               possiblemoves[possiblemovescount]=liberty;
@@ -805,6 +807,20 @@ void Playout::getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go:
         }
       }
     });
+    // try capture the stone that was just placed
+    if (!doubleatari)
+    {
+      Go::Group *group=board->getGroup(board->getLastMove().getPosition());
+      if (group!=NULL && group->inAtari())
+      {
+        int liberty=group->getAtariPosition();
+        if (board->validMove(Go::Move(col,liberty)))
+        {
+          possiblemoves[possiblemovescount]=liberty;
+          possiblemovescount++;
+        }
+      }
+    }
   }
   
   if (possiblemovescount>0 && !doubleatari)
