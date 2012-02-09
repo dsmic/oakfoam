@@ -752,7 +752,7 @@ void Playout::getLastCaptureMove(Worker::Settings *settings, Go::Board *board, G
               if (othergroup->inAtari())
               {
                 int liberty=othergroup->getAtariPosition();
-                bool iscaptureorconnect=board->isCapture(Go::Move(col,liberty)) || board->isExtension(Go::Move(col,liberty));
+                bool iscaptureorconnect=board->isCapture(Go::Move(col,liberty)) || board->isExtension(Go::Move(col,liberty)); // Why is the check for capture here?
                 if (board->validMove(Go::Move(col,liberty)) && iscaptureorconnect)
                 {
                   if (possiblemovescount<board->getPositionMax())
