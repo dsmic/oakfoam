@@ -385,7 +385,8 @@ float Tree::getUrgency() const
       uctbias=params->ucb_c/2;
   }
 
-  uctbias+=params->bernoulli_a*exp(-params->bernoulli_b*playouts);
+  if (params->bernoulli_a>0)
+    uctbias+=params->bernoulli_a*exp(-params->bernoulli_b*playouts);
 
   float val=this->getVal()+uctbias;
 

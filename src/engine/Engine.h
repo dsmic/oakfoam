@@ -78,6 +78,8 @@
 #define PLAYOUT_LAST2LIBATARI_COMPLEX true
 #define PLAYOUT_AVOID_SELFATARI true
 #define PLAYOUT_AVOID_SELFATARI_SIZE 5 // biggest killing shape is 6 stones
+#define PLAYOUT_USELESS_MOVE false
+#define PLAYOUT_ORDER 0 //numbers to test different playout orders
 
 #define PONDERING_ENABLED false
 #define PONDERING_PLAYOUTS_MAX 1000000

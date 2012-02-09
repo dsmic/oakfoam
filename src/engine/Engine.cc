@@ -80,6 +80,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","playout_random_chance",&(params->playout_random_chance),PLAYOUT_RANDOM_CHANCE);
   params->addParameter("playout","playout_avoid_selfatari",&(params->playout_avoid_selfatari),PLAYOUT_AVOID_SELFATARI);
   params->addParameter("playout","playout_avoid_selfatari_size",&(params->playout_avoid_selfatari_size),PLAYOUT_AVOID_SELFATARI_SIZE);
+  params->addParameter("playout","playout_useless_move",&(params->playout_useless_move),PLAYOUT_USELESS_MOVE);
+  params->addParameter("playout","playout_order",&(params->playout_order),PLAYOUT_ORDER);
   params->addParameter("playout","playout_mercy_rule_enabled",&(params->playout_mercy_rule_enabled),PLAYOUT_MERCY_RULE_ENABLED);
   params->addParameter("playout","playout_mercy_rule_factor",&(params->playout_mercy_rule_factor),PLAYOUT_MERCY_RULE_FACTOR);
   
@@ -2075,7 +2077,7 @@ void Engine::gtpShowTerritory(void *instance, Gtp::Engine* gtpe, Gtp::Command* c
         territorycount-=pow(-tmp,1.0/2.0);
       else
         territorycount+=pow( tmp,1.0/2.0);
-      gtpe->getOutput()->printf("%.2f ",me->territorymap->getPositionOwner(pos));
+      gtpe->getOutput()->printf("%.2f ",tmp);
     }
     gtpe->getOutput()->printf("\n");
   }

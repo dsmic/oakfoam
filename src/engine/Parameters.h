@@ -154,6 +154,11 @@ class Parameters
     bool playout_avoid_selfatari;
     /** Only avoid self-atari of groups of this size or larger. */
     int playout_avoid_selfatari_size;
+
+    /** The useless move from the crazy stone paper */
+    bool playout_useless_move;
+    /** Interger which allows different playout orders to be tested */
+    int playout_order;
     
     /** UCB exploration constant. */
     float ucb_c;

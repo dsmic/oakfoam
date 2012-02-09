@@ -81,12 +81,14 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
     if (movereasons!=NULL)
     {
       this->getPlayoutMove(settings,board,coltomove,move,posarray,&reason);
-      this->checkUselessMove(settings,board,coltomove,move,posarray,&reason);
+      if (params->playout_useless_move)
+        this->checkUselessMove(settings,board,coltomove,move,posarray,&reason);
     }
     else
     {
       this->getPlayoutMove(settings,board,coltomove,move,posarray);
-      this->checkUselessMove(settings,board,coltomove,move,posarray,NULL);
+      if (params->playout_useless_move)
+        this->checkUselessMove(settings,board,coltomove,move,posarray,NULL);
     }
     
     board->makeMove(move);
@@ -241,7 +243,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
       goto random;
   }
 
-    if (params->playout_lastcapture_enabled)
+  if (params->playout_order==1 && params->playout_lastcapture_enabled)
   {
     this->getLastCaptureMove(settings,board,col,move,posarray);
     if (!move.isPass())
@@ -318,7 +320,20 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
       return;
     }
   }
-  
+
+  if (params->playout_order!=1 && params->playout_lastcapture_enabled)
+  {
+    this->getLastCaptureMove(settings,board,col,move,posarray);
+    if (!move.isPass())
+    {
+      if (params->debug_on)
+        gtpe->getOutput()->printfDebug("[playoutmove]: %s lastcapture\n",move.toString(board->getSize()).c_str());
+      if (reason!=NULL)
+        *reason="lastcapture";
+      return;
+    }
+  }
+
 
   if (params->playout_last2libatari_enabled)
   {
@@ -779,7 +794,8 @@ void Playout::getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go:
   
   if (board->getLastMove().isNormal())
   {
-    foreach_onandadj(board->getLastMove().getPosition(),p,{
+    // try connect to an outside group
+    foreach_adjacent(board->getLastMove().getPosition(),p,{
       if (!doubleatari && board->inGroup(p))
       {
         Go::Group *group=board->getGroup(p);
