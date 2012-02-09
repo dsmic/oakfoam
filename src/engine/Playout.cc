@@ -308,19 +308,6 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     }
   }
   
-  if (params->playout_nakade_enabled)
-  {
-    this->getNakadeMove(settings,board,col,move,posarray);
-    if (!move.isPass())
-    {
-      if (params->debug_on)
-        gtpe->getOutput()->printfDebug("[playoutmove]: %s nakade\n",move.toString(board->getSize()).c_str());
-      if (reason!=NULL)
-        *reason="nakade";
-      return;
-    }
-  }
-
   if (params->playout_order!=1 && params->playout_lastcapture_enabled)
   {
     this->getLastCaptureMove(settings,board,col,move,posarray);
@@ -344,6 +331,19 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
         gtpe->getOutput()->printfDebug("[playoutmove]: %s last2libatari\n",move.toString(board->getSize()).c_str());
       if (reason!=NULL)
         *reason="last2libatari";
+      return;
+    }
+  }
+
+  if (params->playout_nakade_enabled)
+  {
+    this->getNakadeMove(settings,board,col,move,posarray);
+    if (!move.isPass())
+    {
+      if (params->debug_on)
+        gtpe->getOutput()->printfDebug("[playoutmove]: %s nakade\n",move.toString(board->getSize()).c_str());
+      if (reason!=NULL)
+        *reason="nakade";
       return;
     }
   }
