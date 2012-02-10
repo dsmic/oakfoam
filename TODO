@@ -14,6 +14,7 @@ Now: (current focus)
   move Parameter defaults and inits out of Engine
   make time_k boardsize independant
   add kgs chat command with winrate
+  don't check for opening book moves once we are out of the book
 
 Soon: (before next major release)
   larger patterns

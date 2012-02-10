@@ -155,9 +155,11 @@ class Parameters
     /** Only avoid self-atari of groups of this size or larger. */
     int playout_avoid_selfatari_size;
 
-    /** The useless move from the crazy stone paper */
+    /** The useless move heuristic from the Crazy Stone paper. */
     bool playout_useless_move;
-    /** Interger which allows different playout orders to be tested */
+    /** Integer which allows different playout orders to be tested.
+     * Currently under constuction.
+     */
     int playout_order;
     
     /** UCB exploration constant. */

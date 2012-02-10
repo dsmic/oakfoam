@@ -321,7 +321,6 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     }
   }
 
-
   if (params->playout_last2libatari_enabled)
   {
     this->getLast2LibAtariMove(settings,board,col,move,posarray);
@@ -811,7 +810,7 @@ void Playout::getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go:
           if (!doubleatari)
           {
             int liberty=group->getAtariPosition();
-            bool iscaptureorconnect=board->isCapture(Go::Move(col,liberty)) || board->isExtension(Go::Move(col,liberty));
+            bool iscaptureorconnect=board->isCapture(Go::Move(col,liberty)) || board->isExtension(Go::Move(col,liberty)); // Why is the check for capture here?
             //fprintf(stderr,"la: %s %s %d %d %d\n",Go::Position::pos2string(p,size).c_str(),Go::Position::pos2string(liberty,size).c_str(),board->isCapture(Go::Move(col,liberty)),board->isExtension(Go::Move(col,liberty)),board->isSelfAtari(Go::Move(col,liberty)));
             if (board->validMove(Go::Move(col,liberty)) && iscaptureorconnect)
             {
@@ -888,8 +887,6 @@ void Playout::checkEyeMove(Worker::Settings *settings, Go::Board *board, Go::Col
     });
   }
 }
-
-
 
 void Playout::getAtariMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray)
 {
