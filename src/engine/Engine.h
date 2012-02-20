@@ -13,6 +13,7 @@
 
 #define RAVE_MOVES 3000
 #define RAVE_INIT_WINS 5
+#define RAVE_SKIP 0.00
 
 #define UCT_EXPAND_AFTER 10
 #define UCT_KEEP_SUBTREE true

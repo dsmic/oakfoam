@@ -93,6 +93,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
 
   params->addParameter("tree","rave_moves",&(params->rave_moves),RAVE_MOVES);
   params->addParameter("tree","rave_init_wins",&(params->rave_init_wins),RAVE_INIT_WINS);
+  params->addParameter("tree","rave_skip",&(params->rave_skip),RAVE_SKIP);
   
   params->addParameter("tree","uct_expand_after",&(params->uct_expand_after),UCT_EXPAND_AFTER);
   params->addParameter("tree","uct_keep_subtree",&(params->uct_keep_subtree),UCT_KEEP_SUBTREE,&Engine::updateParameterWrapper,this);

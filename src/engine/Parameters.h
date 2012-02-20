@@ -180,6 +180,10 @@ class Parameters
     int rave_moves;
     /** Number of wins added to the RAVE statistics initially. */
     int rave_init_wins;
+    /** Probability that the RAVE heuristic is ignored.
+     * If triggered, RAVE is ignored for the selection of an urgent child.
+     */
+    float rave_skip;
     
     /** After this many playouts through a node, it will be expanded. */
     int uct_expand_after;

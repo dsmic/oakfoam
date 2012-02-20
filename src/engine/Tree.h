@@ -116,12 +116,12 @@ class Tree
     /** Get the value for this node.
      * This is a combination of normal and RAVE values.
      */
-    float getVal() const;
+    float getVal(bool skiprave=false) const;
     /** Get the urgency for this node.
      * This is the node value combined with a biases.
      * Biases can be from UCB, progressive bias or criticality bias.
      */
-    float getUrgency() const;
+    float getUrgency(bool skiprave=false) const;
     
     /** Add a child to this node. */
     void addChild(Tree *node);

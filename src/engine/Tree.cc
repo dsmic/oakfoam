@@ -333,13 +333,13 @@ void Tree::passPlayoutUp(bool win, Tree *source)
   }
 }
 
-float Tree::getVal() const
+float Tree::getVal(bool skiprave) const
 {
   if (this->isTerminalResult())
     return (hasTerminalWin?1:0);
   else if (this->isTerminal())
     return 1;
-  if (params->rave_moves==0 || raveplayouts==0)
+  if (params->rave_moves==0 || raveplayouts==0 || skiprave)
     return this->getRatio();
   else if (playouts==0)
     return this->getRAVERatio();
@@ -359,7 +359,7 @@ float Tree::getVal() const
   }
 }
 
-float Tree::getUrgency() const
+float Tree::getUrgency(bool skiprave) const
 {
   float uctbias;
   if (this->isTerminal())
@@ -388,7 +388,7 @@ float Tree::getUrgency() const
   if (params->bernoulli_a>0)
     uctbias+=params->bernoulli_a*exp(-params->bernoulli_b*playouts);
 
-  float val=this->getVal()+uctbias;
+  float val=this->getVal(skiprave)+uctbias;
 
   if (params->uct_progressive_bias_enabled)
     val+=this->getProgressiveBias();
@@ -699,6 +699,10 @@ Tree *Tree::getUrgentChild(Worker::Settings *settings)
 {
   float besturgency=0;
   Tree *besttree=NULL;
+
+  bool skiprave=false;
+  if (params->rave_skip>0 && (params->rave_skip)>(settings->rand->getRandomReal()))
+    skiprave=true;
   
   if (!superkoprunedchildren && playouts>(params->rules_superko_prune_after))
     this->pruneSuperkoViolations();
@@ -710,10 +714,10 @@ Tree *Tree::getUrgentChild(Worker::Settings *settings)
       float urgency;
       
       if ((*iter)->getPlayouts()==0 && (*iter)->getRAVEPlayouts()==0)
-        urgency=(*iter)->getUrgency()+(settings->rand->getRandomReal()/1000);
+        urgency=(*iter)->getUrgency(skiprave)+(settings->rand->getRandomReal()/1000);
       else
       {
-        urgency=(*iter)->getUrgency();
+        urgency=(*iter)->getUrgency(skiprave);
         if (params->debug_on)
           fprintf(stderr,"[urg]:%s %.3f %.2f(%f) %.2f(%f)\n",(*iter)->getMove().toString(params->board_size).c_str(),urgency,(*iter)->getRatio(),(*iter)->getPlayouts(),(*iter)->getRAVERatio(),(*iter)->getRAVEPlayouts());
       }
