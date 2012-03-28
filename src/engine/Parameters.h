@@ -146,6 +146,20 @@ class Parameters
      * @see playout_last2libatari_enabled
      */
     bool playout_last2libatari_complex;
+    /** Whether to use the poolRAVE modification. */
+    bool playout_poolrave_enabled;
+    /** Chance of using poolRAVE.
+     * @see playout_poolrave_enabled
+     */
+    float playout_poolrave_p;
+    /** Pool size of poolRAVE.
+     * @see playout_poolrave_enabled
+     */
+    int playout_poolrave_k;
+    /** Minimum playouts for poolRAVE.
+     * @see playout_poolrave_enabled
+     */
+    int playout_poolrave_min_playouts;
     /** Whether to use the avoid self-atari in playouts.
      * Avoid self-atari at almost all cost, like the eye-filling rule.
      */

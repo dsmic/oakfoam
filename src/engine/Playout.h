@@ -33,7 +33,7 @@ class Playout
      */
     void doPlayout(Worker::Settings *settings, Go::Board *board, float &finalscore, Tree *playouttree, std::list<Go::Move> &playoutmoves, Go::Color colfirst, Go::BitBoard *firstlist, Go::BitBoard *secondlist, std::list<std::string> *movereasons=NULL);
     /** Get a playout move for a given situation. */
-    void getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, std::string *reason=NULL);
+    void getPlayoutMove(Worker::Settings *settings, Tree *playouttree, Go::Board *board, Go::Color col, Go::Move &move, std::string *reason=NULL);
     /** Check for a useless move accoridng to the Crazy Stone heuristic.
      * @todo Consider incorporating this into getPlayoutMove()
      */
@@ -49,8 +49,9 @@ class Playout
     int *lgrf1,*lgrf2;
     int lgrfpositionmax;
     
-    void getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, std::string *reason=NULL);
+    void getPlayoutMove(Worker::Settings *settings, Tree *playouttree, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, std::string *reason=NULL);
     void checkUselessMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, std::string *reason=NULL);
+    void getPoolRAVEMove(Worker::Settings *settings, Tree *playouttree, Go::Board *board, Go::Color col, Go::Move &move);
     void getLGRF2Move(Go::Board *board, Go::Color col, Go::Move &move);
     void getLGRF1Move(Go::Board *board, Go::Color col, Go::Move &move);
     void getFeatureMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move);
