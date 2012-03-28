@@ -60,8 +60,6 @@ class Parameters
 
     /** Number of Tree instances in memory, used to keep track of approximate memory usage. */
     unsigned long tree_instances;
-    /** Mutex to prevent data loss when updating tree_instances. */
-    boost::mutex tree_instances_mutex;
     /** Maximum amount of memory usage.
      * This is compared to the number of Tree instances, so it is only approximate.
      * Units are megabytes.

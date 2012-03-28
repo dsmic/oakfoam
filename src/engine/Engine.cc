@@ -2699,6 +2699,7 @@ void Engine::clearMoveTree()
     movetree=new Tree(params,0);
   
   params->uct_slow_update_last=0;
+  params->tree_instances=0; // reset as lock free implementation could be slightly off
 }
 
 void Engine::chooseSubTree(Go::Move move)
