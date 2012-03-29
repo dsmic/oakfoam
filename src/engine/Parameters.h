@@ -59,7 +59,7 @@ class Parameters
     Parameters::ThreadJob thread_job;
 
     /** Number of Tree instances in memory, used to keep track of approximate memory usage. */
-    unsigned long tree_instances;
+    long tree_instances;
     /** Maximum amount of memory usage.
      * This is compared to the number of Tree instances, so it is only approximate.
      * Units are megabytes.

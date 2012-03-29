@@ -338,7 +338,7 @@ class Engine
     boost::posix_time::ptime timeNow() { return boost::posix_time::microsec_clock::local_time(); };
     float timeSince(boost::posix_time::ptime past) { return (float)(boost::posix_time::microsec_clock::local_time()-past).total_milliseconds()/1000; };
 
-    unsigned long getTreeMemoryUsage() { return (params->tree_instances)*sizeof(Tree); };
+    unsigned long getTreeMemoryUsage() { if (params->tree_instances>0) {return (unsigned long)(params->tree_instances)*sizeof(Tree);} else {return 0;}};
 
     void generateThread(Worker::Settings *settings);
     void ponderThread(Worker::Settings *settings);
