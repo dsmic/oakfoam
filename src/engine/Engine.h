@@ -10,6 +10,8 @@
 
 #define BERNOULLI_A 0.0
 #define BERNOULLI_B 0.0
+#define WEIGHT_SCORE 0.0
+#define RANDOM_F 0.0
 
 #define RAVE_MOVES 3000
 #define RAVE_INIT_WINS 5
@@ -71,6 +73,8 @@
 #define PLAYOUT_FILLBOARD_N 5
 #define PLAYOUT_ANYCAPTURE_ENABLED true
 #define PLAYOUT_LGRF1_ENABLED true
+#define PLAYOUT_AVOID_LBRF1_P 0.9
+#define PLAYOUT_LGRF1O_ENABLED true
 #define PLAYOUT_LGRF2_ENABLED true
 #define PLAYOUT_MERCY_RULE_ENABLED true
 #define PLAYOUT_MERCY_RULE_FACTOR 0.40
@@ -81,6 +85,7 @@
 #define PLAYOUT_AVOID_SELFATARI_SIZE 5 // biggest killing shape is 6 stones
 #define PLAYOUT_USELESS_MOVE false
 #define PLAYOUT_ORDER 0 //numbers to test different playout orders
+#define PLAYOUT_NEARBY_ENABLED false
 
 #define PONDERING_ENABLED false
 #define PONDERING_PLAYOUTS_MAX 1000000
@@ -334,7 +339,7 @@ class Engine
     boost::posix_time::ptime timeNow() { return boost::posix_time::microsec_clock::local_time(); };
     float timeSince(boost::posix_time::ptime past) { return (float)(boost::posix_time::microsec_clock::local_time()-past).total_milliseconds()/1000; };
 
-    unsigned long getTreeMemoryUsage() { return (params->tree_instances)*sizeof(Tree); };
+    unsigned long getTreeMemoryUsage() { if (params->tree_instances>0) {return (unsigned long)(params->tree_instances)*sizeof(Tree);} else {return 0;}};
 
     void generateThread(Worker::Settings *settings);
     void ponderThread(Worker::Settings *settings);

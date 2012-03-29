@@ -46,13 +46,16 @@ class Playout
     Parameters *const params;
     Gtp::Engine *gtpe;
     
-    int *lgrf1,*lgrf2;
+    int *lgrf1,*lgrf1n,*lgrf1o,*lgrf2;
+    bool *bad_pass_answer;
+    
     int lgrfpositionmax;
     
     void getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, std::string *reason=NULL);
     void checkUselessMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, std::string *reason=NULL);
-    void getLGRF2Move(Go::Board *board, Go::Color col, Go::Move &move);
-    void getLGRF1Move(Go::Board *board, Go::Color col, Go::Move &move);
+    void getLGRF2Move(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move);
+    void getLGRF1Move(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move);
+    void getLGRF1oMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move);
     void getFeatureMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move);
     void getAnyCaptureMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray);
     void getPatternMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray);
@@ -62,19 +65,34 @@ class Playout
     void getLastCaptureMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray);
     void getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray);
     void getAtariMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray);
+    void getNearbyMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move);
 
     void checkEyeMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, Go::Move &replacemove);
 
-    bool isBadMove(Go::Board *board, Go::Color col, int pos);
+    bool isBadMove(Worker::Settings *settings, Go::Board *board, Go::Color col, int pos);
+    bool isEyeFillMove(Go::Board *board, Go::Color col, int pos);
     int getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group *group);
     
     int getLGRF1(Go::Color col, int pos1) const;
+    int getLGRF1n(Go::Color col, int pos1) const;
+    int getLGRF1o(Go::Color col, int pos1) const;
     int getLGRF2(Go::Color col, int pos1, int pos2) const;
     void setLGRF1(Go::Color col, int pos1, int val);
+    void setLGRF1n(Go::Color col, int pos1, int val);
+    void setLGRF1o(Go::Color col, int pos1, int val);
     void setLGRF2(Go::Color col, int pos1, int pos2, int val);
     bool hasLGRF1(Go::Color col, int pos1) const;
+    bool hasLGRF1n(Go::Color col, int pos1) const;
+    bool hasLGRF1o(Go::Color col, int pos1) const;
     bool hasLGRF2(Go::Color col, int pos1, int pos2) const;
     void clearLGRF1(Go::Color col, int pos1);
+    void clearLGRF1n(Go::Color col, int pos1);
+    void clearLGRF1o(Go::Color col, int pos1);
     void clearLGRF2(Go::Color col, int pos1, int pos2);
+
+    void clear_bad_pass_answer(Go::Color col, int pos1);
+    void set_bad_pass_answer(Go::Color col, int pos1);
+    bool is_bad_pass_answer(Go::Color col, int pos1);
+    
 };
 #endif
