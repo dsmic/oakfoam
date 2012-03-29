@@ -2446,7 +2446,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     playoutboard->turnSymmetryOff();
     if (params->playout_features_enabled)
       playoutboard->setFeatures(features,params->playout_features_incremental);
-    playout->getPlayoutMove(threadpool->getThreadZero()->getSettings(),NULL,playoutboard,col,**move);
+    playout->getPlayoutMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,**move);
     delete playoutboard;
     this->makeMove(**move);
   }

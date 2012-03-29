@@ -67,6 +67,50 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
       return;
     }
   }
+
+  std::vector<int> pool;
+  if (params->playout_poolrave_enabled)
+  {
+    Tree *pooltree=NULL;
+    if (playouttree->getRAVEPlayouts()>params->playout_poolrave_min_playouts && !playouttree->isLeaf())
+      pooltree=playouttree;
+    else if (!playouttree->isRoot() && playouttree->getParent()->getRAVEPlayouts()>params->playout_poolrave_min_playouts)
+      pooltree=playouttree->getParent();
+    // color of tree nodes isn't taken into account
+
+    if (pooltree!=NULL)
+    {
+      int k;
+      if ((int)pooltree->getChildren()->size()<params->playout_poolrave_k)
+        k=pooltree->getChildren()->size();
+      else
+        k=params->playout_poolrave_k;
+
+      // below method is simple but probably inefficient
+      int totalused=0;
+      Go::BitBoard *used=new Go::BitBoard(board->getSize());
+      while (totalused<k)
+      {
+        float bestval=-1;
+        int bestpos;
+        for(std::list<Tree*>::iterator iter=pooltree->getChildren()->begin();iter!=pooltree->getChildren()->end();++iter) 
+        {
+          if (!(*iter)->getMove().isPass() && !used->get((*iter)->getMove().getPosition()) && (*iter)->getRAVERatio()>bestval)
+          {
+            bestpos=(*iter)->getMove().getPosition();
+            bestval=(*iter)->getRAVERatio();
+          }
+        }
+        if (bestpos!=-1)
+        {
+          pool.push_back(bestpos);
+          used->set(bestpos);
+        }
+        totalused++;
+      }
+      delete used;
+    }
+  }
   
   Go::Color coltomove=board->nextToMove();
   Go::Move move=Go::Move(coltomove,Go::Move::PASS);
@@ -80,13 +124,13 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
     bool resign;
     if (movereasons!=NULL)
     {
-      this->getPlayoutMove(settings,playouttree,board,coltomove,move,posarray,&reason);
+      this->getPlayoutMove(settings,board,coltomove,move,posarray,&pool,&reason);
       if (params->playout_useless_move)
         this->checkUselessMove(settings,board,coltomove,move,posarray,&reason);
     }
     else
     {
-      this->getPlayoutMove(settings,playouttree,board,coltomove,move,posarray);
+      this->getPlayoutMove(settings,board,coltomove,move,posarray,&pool);
       if (params->playout_useless_move)
         this->checkUselessMove(settings,board,coltomove,move,posarray,NULL);
     }
@@ -197,11 +241,11 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
   }
 }
 
-void Playout::getPlayoutMove(Worker::Settings *settings, Tree *playouttree, Go::Board *board, Go::Color col, Go::Move &move, std::string *reason)
+void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, std::vector<int> *pool, std::string *reason)
 {
   int *posarray = new int[board->getPositionMax()];
   
-  this->getPlayoutMove(settings,playouttree,board,col,move,posarray,reason);
+  this->getPlayoutMove(settings,board,col,move,posarray,pool,reason);
   
   delete[] posarray;
 }
@@ -228,7 +272,7 @@ void Playout::checkUselessMove(Worker::Settings *settings, Go::Board *board, Go:
     move=replacemove;
 }
 
-void Playout::getPlayoutMove(Worker::Settings *settings, Tree *playouttree, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, std::string *reason)
+void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, std::vector<int> *pool, std::string *reason)
 {
   Random *const rand=settings->rand;
   
@@ -258,7 +302,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Tree *playouttree, Go::
     
   if (params->playout_poolrave_enabled)
   {
-    this->getPoolRAVEMove(settings,playouttree,board,col,move);
+    this->getPoolRAVEMove(settings,board,col,move,pool);
     if (!move.isPass())
     {
       if (params->debug_on)
@@ -478,53 +522,16 @@ bool Playout::isBadMove(Go::Board *board, Go::Color col, int pos)
   return (board->weakEye(col,pos) || (params->playout_avoid_selfatari && board->isSelfAtariOfSize(Go::Move(col,pos),params->playout_avoid_selfatari_size)));
 }
 
-void Playout::getPoolRAVEMove(Worker::Settings *settings, Tree *playouttree, Go::Board *board, Go::Color col, Go::Move &move)
+void Playout::getPoolRAVEMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, std::vector<int> *pool)
 {
-  if (playouttree==NULL)
+  if (pool==NULL || pool->size()<=0)
     return;
 
   Random *const rand=settings->rand;
   if (rand->getRandomReal()>params->playout_poolrave_p)
     return;
 
-  Tree *tree;
-  if (playouttree->getRAVEPlayouts()>params->playout_poolrave_min_playouts && !playouttree->isLeaf())
-    tree=playouttree;
-  else if (!playouttree->isRoot() && playouttree->getParent()->getRAVEPlayouts()>params->playout_poolrave_min_playouts)
-    tree=playouttree->getParent();
-  else
-    return;
-  // color of tree nodes isn't taken into account
-
-  int selected;
-  int selectedpos=-1;
-  if ((int)tree->getChildren()->size()<params->playout_poolrave_k)
-    selected=rand->getRandomInt(tree->getChildren()->size())+1;
-  else
-    selected=rand->getRandomInt(params->playout_poolrave_k)+1;
-
-  // below method is simple but probably inefficient
-  int totalused=0;
-  Go::BitBoard *used=new Go::BitBoard(board->getSize());
-  while (totalused<selected)
-  {
-    float bestval=-1;
-    Go::Move bestmove;
-    for(std::list<Tree*>::iterator iter=tree->getChildren()->begin();iter!=tree->getChildren()->end();++iter) 
-    {
-      if (!used->get((*iter)->getMove().getPosition()) && (*iter)->getRAVERatio()>bestval)
-      {
-        bestmove=(*iter)->getMove();
-        bestval=(*iter)->getRAVERatio();
-      }
-    }
-    selectedpos=bestmove.getPosition();
-    if (selectedpos!=-1)
-      used->set(selectedpos);
-    totalused++;
-  }
-  delete used;
-
+  int selectedpos=pool->at(rand->getRandomInt(pool->size()));
   if (selectedpos!=-1 && board->validMove(Go::Move(col,selectedpos)) && !this->isBadMove(board,col,selectedpos))
     move=Go::Move(col,selectedpos);
 }
