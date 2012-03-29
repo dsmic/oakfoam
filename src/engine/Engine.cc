@@ -64,6 +64,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   
   params->addParameter("playout","playout_lgrf2_enabled",&(params->playout_lgrf2_enabled),PLAYOUT_LGRF2_ENABLED);
   params->addParameter("playout","playout_lgrf1_enabled",&(params->playout_lgrf1_enabled),PLAYOUT_LGRF1_ENABLED);
+  params->addParameter("playout","playout_lgrf1o_enabled",&(params->playout_lgrf1o_enabled),PLAYOUT_LGRF1O_ENABLED);
+  params->addParameter("playout","playout_avoid_lbrf1_p",&(params->playout_avoid_lbrf1_p),PLAYOUT_AVOID_LBRF1_P);
   params->addParameter("playout","playout_atari_enabled",&(params->playout_atari_enabled),PLAYOUT_ATARI_ENABLED);
   params->addParameter("playout","playout_lastatari_enabled",&(params->playout_lastatari_enabled),PLAYOUT_LASTATARI_ENABLED);
   params->addParameter("playout","playout_lastatari_leavedouble",&(params->playout_lastatari_leavedouble),PLAYOUT_LASTATARI_LEAVEDOUBLE);
@@ -71,6 +73,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","playout_last2libatari_enabled",&(params->playout_last2libatari_enabled),PLAYOUT_LAST2LIBATARI_ENABLED);
   params->addParameter("playout","playout_last2libatari_complex",&(params->playout_last2libatari_complex),PLAYOUT_LAST2LIBATARI_COMPLEX);
   params->addParameter("playout","playout_nakade_enabled",&(params->playout_nakade_enabled),PLAYOUT_NAKADE_ENABLED);
+  params->addParameter("playout","playout_nearby_enabled",&(params->playout_nearby_enabled),PLAYOUT_NEARBY_ENABLED);
   params->addParameter("playout","playout_fillboard_enabled",&(params->playout_fillboard_enabled),PLAYOUT_FILLBOARD_ENABLED);
   params->addParameter("playout","playout_fillboard_n",&(params->playout_fillboard_n),PLAYOUT_FILLBOARD_N);
   params->addParameter("playout","playout_patterns_enabled",&(params->playout_patterns_enabled),PLAYOUT_PATTERNS_ENABLED);
@@ -90,6 +93,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
 
   params->addParameter("tree","bernoulli_a",&(params->bernoulli_a),BERNOULLI_A);
   params->addParameter("tree","bernoulli_b",&(params->bernoulli_b),BERNOULLI_B);
+  params->addParameter("tree","weight_score",&(params->weight_score),WEIGHT_SCORE);
+  params->addParameter("tree","random_f",&(params->random_f),RANDOM_F);
 
   params->addParameter("tree","rave_moves",&(params->rave_moves),RAVE_MOVES);
   params->addParameter("tree","rave_init_wins",&(params->rave_init_wins),RAVE_INIT_WINS);
@@ -488,8 +493,8 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("showcriticality","Show Criticality","cboard");
   gtpe->addAnalyzeCommand("showterritory","Show Territory","dboard");
   gtpe->addAnalyzeCommand("showtreelivegfx","Show Tree Live Gfx","gfx");
-  //gtpe->addAnalyzeCommand("loadpatterns %%r","Load Patterns","none");
-  //gtpe->addAnalyzeCommand("clearpatterns","Clear Patterns","none");
+  gtpe->addAnalyzeCommand("loadpatterns %%r","Load Patterns","none");
+  gtpe->addAnalyzeCommand("clearpatterns","Clear Patterns","none");
   //gtpe->addAnalyzeCommand("doboardcopy","Do Board Copy","none");
   //gtpe->addAnalyzeCommand("showcurrenthash","Show Current Hash","string");
   
@@ -2059,6 +2064,9 @@ void Engine::gtpShowCriticality(void *instance, Gtp::Engine* gtpe, Gtp::Command*
   gtpe->getOutput()->endResponse(true);
 }
 
+//#define wf(A)   ((A-0.5>0)?(sqrt(2*(A-0.5))+1)/2.0:(1.0-sqrt(-2*(A-0.5)))/2.0)
+//#define wf(A)   A
+#define wf(A) pow(A,0.5)
 void Engine::gtpShowTerritory(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
@@ -2075,10 +2083,13 @@ void Engine::gtpShowTerritory(void *instance, Gtp::Engine* gtpe, Gtp::Command* c
       //if (tmp>0.2) territorycount++;
       //if (tmp<-0.2) territorycount--;
       if (tmp<0)
-        territorycount-=pow(-tmp,1.0/2.0);
+        territorycount-=wf(-tmp);
       else
-        territorycount+=pow( tmp,1.0/2.0);
-      gtpe->getOutput()->printf("%.2f ",tmp);
+        territorycount+=wf(tmp);
+      if (tmp<0)
+        gtpe->getOutput()->printf("%.2f ",-wf(-tmp));
+      else
+        gtpe->getOutput()->printf("%.2f ",wf(tmp));  
     }
     gtpe->getOutput()->printf("\n");
   }
@@ -2403,7 +2414,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     
     std::ostringstream ss;
     ss << std::fixed;
-    ss << "r:"<<std::setprecision(2)<<bestratio;
+    ss << "r:"<<std::setprecision(2)<<bestratio*100;
     if (!time->isNoTiming())
     {
       ss << " tl:"<<std::setprecision(3)<<time->timeLeft(col);
@@ -2413,8 +2424,10 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     if (!time->isNoTiming() || params->early_stop_occured)
       ss << " plts:"<<totalplayouts;
     ss << " ppms:"<<std::setprecision(2)<<playouts_per_milli;
-    ss << " rd:"<<std::setprecision(2)<<ratiodelta;
+    ss << " rd:"<<std::setprecision(2)<<ratiodelta*100.0;
     ss << " r2:"<<std::setprecision(2)<<params->uct_last_r2;
+    ss << " fs:"<<std::setprecision(2)<<besttree->getFSRatio();
+    ss << " fstd:"<<std::setprecision(2)<<besttree->getFSStd();
     ss << " bs:"<<bestsame;
     Tree *pvtree=movetree->getRobustChild(true);
     if (pvtree!=NULL)
@@ -2699,6 +2712,7 @@ void Engine::clearMoveTree()
     movetree=new Tree(params,0);
   
   params->uct_slow_update_last=0;
+  params->tree_instances=0; // reset as lock free implementation could be slightly off
 }
 
 void Engine::chooseSubTree(Go::Move move)
@@ -2877,9 +2891,9 @@ void Engine::doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::
   if (playoutjigo)
     playouttree->addPartialResult(0.5,1,false);
   else if (playoutwin)
-    playouttree->addWin();
+    playouttree->addWin(finalscore);
   else
-    playouttree->addLose();
+    playouttree->addLose(finalscore);
   
   playoutboard->updateTerritoryMap(territorymap);
   
@@ -3410,9 +3424,9 @@ void Engine::updateTerritoryScoringInTree()
       if (jigonow)
         passtree->addPartialResult(0.5,1,false);
       else if (winforcol)
-        passtree->addWin();
+        passtree->addWin(scorenow);
       else
-        passtree->addLose();
+        passtree->addLose(scorenow);
       
       Tree *pass2tree=passtree->getChild(Go::Move(othercol,Go::Move::PASS));
       if (pass2tree!=NULL)
@@ -3421,9 +3435,9 @@ void Engine::updateTerritoryScoringInTree()
         if (jigonow)
           pass2tree->addPartialResult(0.5,1,false);
         else if (!winforcol)
-          pass2tree->addWin();
+          pass2tree->addWin(scorenow);
         else
-          pass2tree->addLose();
+          pass2tree->addLose(scorenow);
       }
     }
   }
