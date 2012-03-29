@@ -74,7 +74,48 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
       return;
     }
   }
-  
+  std::vector<int> pool;
+  if (params->playout_poolrave_enabled)
+  {
+    Tree *pooltree=NULL;
+    if (playouttree->getRAVEPlayouts()>params->playout_poolrave_min_playouts && !playouttree->isLeaf())
+      pooltree=playouttree;
+    else if (!playouttree->isRoot() && playouttree->getParent()->getRAVEPlayouts()>params->playout_poolrave_min_playouts)
+      pooltree=playouttree->getParent();
+    // color of tree nodes isn't taken into account
+    if (pooltree!=NULL)
+    {
+      int k;
+      if ((int)pooltree->getChildren()->size()<params->playout_poolrave_k)
+        k=pooltree->getChildren()->size();
+      else
+        k=params->playout_poolrave_k;
+      // below method is simple but probably inefficient
+      int totalused=0;
+      Go::BitBoard *used=new Go::BitBoard(board->getSize());
+      while (totalused<k)
+      {
+        float bestval=-1;
+        int bestpos;
+        for(std::list<Tree*>::iterator iter=pooltree->getChildren()->begin();iter!=pooltree->getChildren()->end();++iter) 
+        {
+          if (!(*iter)->getMove().isPass() && !used->get((*iter)->getMove().getPosition()) && (*iter)->getRAVERatio()>bestval)
+          {
+            bestpos=(*iter)->getMove().getPosition();
+            bestval=(*iter)->getRAVERatio();
+          }
+        }
+        if (bestpos!=-1)
+        {
+          pool.push_back(bestpos);
+          used->set(bestpos);
+        }
+        totalused++;
+      }
+      delete used;
+    }
+  }
+
   Go::Color coltomove=board->nextToMove();
   Go::Move move=Go::Move(coltomove,Go::Move::PASS);
   int movesalready=board->getMovesMade();
@@ -87,13 +128,13 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
     bool resign;
     if (movereasons!=NULL)
     {
-      this->getPlayoutMove(settings,board,coltomove,move,posarray,&reason);
+      this->getPlayoutMove(settings,board,coltomove,move,posarray,&pool,&reason);
       if (params->playout_useless_move)
         this->checkUselessMove(settings,board,coltomove,move,posarray,&reason);
     }
     else
     {
-      this->getPlayoutMove(settings,board,coltomove,move,posarray);
+      this->getPlayoutMove(settings,board,coltomove,move,posarray,&pool);
       if (params->playout_useless_move)
         this->checkUselessMove(settings,board,coltomove,move,posarray,NULL);
     }
@@ -224,11 +265,11 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
   }
 }
 
-void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, std::string *reason)
+void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, std::vector<int> *pool, std::string *reason)
 {
   int *posarray = new int[board->getPositionMax()];
   
-  this->getPlayoutMove(settings,board,col,move,posarray,reason);
+  this->getPlayoutMove(settings,board,col,move,posarray,pool,reason);
   
   delete[] posarray;
 }
@@ -255,7 +296,7 @@ void Playout::checkUselessMove(Worker::Settings *settings, Go::Board *board, Go:
     move=replacemove;
 }
 
-void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, std::string *reason)
+void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, std::vector<int> *pool, std::string *reason)
 {
   Random *const rand=settings->rand;
   
@@ -283,6 +324,19 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     }
   }
     
+  if (params->playout_poolrave_enabled)
+  {
+    this->getPoolRAVEMove(settings,board,col,move,pool);
+    if (!move.isPass())
+    {
+      if (params->debug_on)
+        gtpe->getOutput()->printfDebug("[playoutmove]: %s poolrave\n",move.toString(board->getSize()).c_str());
+      if (reason!=NULL)
+        *reason="poolrave";
+      return;
+    }
+  }
+  
   if (params->playout_lgrf2_enabled)
   {
     this->getLGRF2Move(settings, board,col,move);
@@ -568,6 +622,22 @@ bool Playout::isEyeFillMove(Go::Board *board, Go::Color col, int pos)
       || board->isSelfAtariOfSize(Go::Move(col,pos),2)      
       );
 }
+
+
+void Playout::getPoolRAVEMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, std::vector<int> *pool)
+{
+  if (pool==NULL || pool->size()<=0)
+    return;
+
+  Random *const rand=settings->rand;
+  if (rand->getRandomReal()>params->playout_poolrave_p)
+    return;
+
+  int selectedpos=pool->at(rand->getRandomInt(pool->size()));
+  if (selectedpos!=-1 && board->validMove(Go::Move(col,selectedpos)) && !this->isBadMove(settings,board,col,selectedpos))
+    move=Go::Move(col,selectedpos);
+}
+
 
 
 void Playout::getLGRF2Move(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move)
