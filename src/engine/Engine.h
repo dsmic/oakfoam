@@ -81,6 +81,10 @@
 #define PLAYOUT_RANDOM_CHANCE 0.00
 #define PLAYOUT_LAST2LIBATARI_ENABLED true
 #define PLAYOUT_LAST2LIBATARI_COMPLEX true
+#define PLAYOUT_POOLRAVE_ENABLED false
+#define PLAYOUT_POOLRAVE_P 0.5
+#define PLAYOUT_POOLRAVE_K 20
+#define PLAYOUT_POOLRAVE_MIN_PLAYOUTS 50
 #define PLAYOUT_AVOID_SELFATARI true
 #define PLAYOUT_AVOID_SELFATARI_SIZE 5 // biggest killing shape is 6 stones
 #define PLAYOUT_USELESS_MOVE false
@@ -339,7 +343,7 @@ class Engine
     boost::posix_time::ptime timeNow() { return boost::posix_time::microsec_clock::local_time(); };
     float timeSince(boost::posix_time::ptime past) { return (float)(boost::posix_time::microsec_clock::local_time()-past).total_milliseconds()/1000; };
 
-    unsigned long getTreeMemoryUsage() { return (params->tree_instances)*sizeof(Tree); };
+    unsigned long getTreeMemoryUsage() { if (params->tree_instances>0) {return (unsigned long)(params->tree_instances)*sizeof(Tree);} else {return 0;}};
 
     void generateThread(Worker::Settings *settings);
     void ponderThread(Worker::Settings *settings);

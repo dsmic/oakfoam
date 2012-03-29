@@ -158,9 +158,10 @@ class Tree
     void addPartialResult(float win, float playout, bool invertwin=true);
     /** Add a decaying result. */
     void addDecayResult(float result);
-    
-    /** Expand this leaf node. */
-    void expandLeaf();
+    /** Expand this leaf node.
+    * Returns true if the node has been expanded or false otherwise (only applicable in multi-core situations).
+     */
+    bool expandLeaf();
     /** Get this robust child of this node.
      * The robust child is the child with the most playouts through it.
      * @param descend If set, descend down the tree to a leaf node, picking the robust child at each node.

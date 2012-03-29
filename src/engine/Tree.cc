@@ -662,18 +662,24 @@ void Tree::checkForUnPruning()
   this->updateUnPruneAt();
   if (this->unPruneMetric()>=unprunenextchildat)
   {
-    boost::mutex::scoped_lock lock(unprunemutex);
+    //boost::mutex::scoped_lock lock(unprunemutex);
+    //unprunemutex.lock();
+    if (!unprunemutex.try_lock())
+      return;
     if (this->unPruneMetric()>=unprunenextchildat)
       this->unPruneNextChild();
+    unprunemutex.unlock();
   }
 }
 
 void Tree::unPruneNow()
 {
   float tmp=unprunenextchildat=this->unPruneMetric();
-  boost::mutex::scoped_lock lock(unprunemutex);
+  //boost::mutex::scoped_lock lock(unprunemutex);
+  unprunemutex.lock();
   if (tmp==unprunenextchildat)
     this->unPruneNextChild();
+  unprunemutex.unlock();
 }
 
 float Tree::getUnPruneFactor() const
@@ -782,33 +788,40 @@ Tree *Tree::getUrgentChild(Worker::Settings *settings)
   if (besttree==NULL)
     return NULL;
   
+  bool busyexpanding=false;
   if (params->move_policy==Parameters::MP_UCT && besttree->isLeaf() && !besttree->isTerminal())
   {
     if (besttree->getPlayouts()>params->uct_expand_after)
-      besttree->expandLeaf();
+      busyexpanding=!besttree->expandLeaf();
   }
   
   if (params->uct_virtual_loss)
     besttree->addVirtualLoss();
   
-  if (besttree->isLeaf())
+  if (besttree->isLeaf() || busyexpanding)
     return besttree;
   else
     return besttree->getUrgentChild(settings);
 }
 
-void Tree::expandLeaf()
+bool Tree::expandLeaf()
 {
   if (!this->isLeaf())
-    return;
+    return true;
   else if (this->isTerminal())
     fprintf(stderr,"WARNING! Trying to expand a terminal node!\n");
   
-  boost::mutex::scoped_lock lock(expandmutex);
+  //boost::mutex::scoped_try_lock lock(expandmutex);
+  //expandmutex.lock();
+  if (!expandmutex.try_lock())
+    return false;
+
   if (!this->isLeaf())
   {
     //fprintf(stderr,"Node was already expanded!\n");
-    return;
+    expandmutex.unlock();
+    return true;
+
   }
   
   std::list<Go::Move> startmoves=this->getMovesFromRoot();
@@ -823,7 +836,9 @@ void Tree::expandLeaf()
     {
       delete startboard;
       fprintf(stderr,"WARNING! Trying to expand a terminal node? (passes:%d)\n",startboard->getPassesPlayed());
-      return;
+      expandmutex.unlock();
+      return true;
+
     }
   }
   //gtpe->getOutput()->printfDebug("\n"); //!!!
@@ -1273,9 +1288,14 @@ float Tree::getTerritoryOwner() const
 
 void Tree::doSuperkoCheck()
 {
-  boost::mutex::scoped_lock lock(superkomutex);
-  if (superkochecked)
+  //boost::mutex::scoped_lock lock(superkomutex);
+  //superkomutex.lock();
+  if (!superkomutex.try_lock())
+    {
+    superkomutex.unlock();
     return;
+    }
+
   superkoviolation=false;
   if (move.isNormal())
   {
@@ -1304,6 +1324,7 @@ void Tree::doSuperkoCheck()
     }
   }
   superkochecked=true;
+  superkomutex.unlock();
 }
 
 void Tree::resetNode()

@@ -62,6 +62,10 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("general","playouts_per_move_max",&(params->playouts_per_move_max),PLAYOUTS_PER_MOVE_MAX);
   params->addParameter("general","playouts_per_move_min",&(params->playouts_per_move_min),PLAYOUTS_PER_MOVE_MIN);
   
+  params->addParameter("playout","playout_poolrave_enabled",&(params->playout_poolrave_enabled),PLAYOUT_POOLRAVE_ENABLED);
+  params->addParameter("playout","playout_poolrave_p",&(params->playout_poolrave_p),PLAYOUT_POOLRAVE_P);
+  params->addParameter("playout","playout_poolrave_k",&(params->playout_poolrave_k),PLAYOUT_POOLRAVE_K);
+  params->addParameter("playout","playout_poolrave_min_playouts",&(params->playout_poolrave_min_playouts),PLAYOUT_POOLRAVE_MIN_PLAYOUTS);
   params->addParameter("playout","playout_lgrf2_enabled",&(params->playout_lgrf2_enabled),PLAYOUT_LGRF2_ENABLED);
   params->addParameter("playout","playout_lgrf1_enabled",&(params->playout_lgrf1_enabled),PLAYOUT_LGRF1_ENABLED);
   params->addParameter("playout","playout_lgrf1o_enabled",&(params->playout_lgrf1o_enabled),PLAYOUT_LGRF1O_ENABLED);
@@ -2414,7 +2418,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     
     std::ostringstream ss;
     ss << std::fixed;
-    ss << "r:"<<std::setprecision(2)<<bestratio*100;
+    ss << "r:"<<std::setprecision(2)<<bestratio*100<<"%";
     if (!time->isNoTiming())
     {
       ss << " tl:"<<std::setprecision(3)<<time->timeLeft(col);
@@ -2424,7 +2428,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     if (!time->isNoTiming() || params->early_stop_occured)
       ss << " plts:"<<totalplayouts;
     ss << " ppms:"<<std::setprecision(2)<<playouts_per_milli;
-    ss << " rd:"<<std::setprecision(2)<<ratiodelta;
+    ss << " rd:"<<std::setprecision(2)<<ratiodelta*100<<"%";
     ss << " r2:"<<std::setprecision(2)<<params->uct_last_r2;
     ss << " fs:"<<std::setprecision(2)<<besttree->getFSRatio();
     ss << " fstd:"<<std::setprecision(2)<<besttree->getFSStd();
