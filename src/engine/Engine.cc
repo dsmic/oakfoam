@@ -2424,7 +2424,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     if (!time->isNoTiming() || params->early_stop_occured)
       ss << " plts:"<<totalplayouts;
     ss << " ppms:"<<std::setprecision(2)<<playouts_per_milli;
-    ss << " rd:"<<std::setprecision(2)<<ratiodelta*100.0;
+    ss << " rd:"<<std::setprecision(2)<<ratiodelta;
     ss << " r2:"<<std::setprecision(2)<<params->uct_last_r2;
     ss << " fs:"<<std::setprecision(2)<<besttree->getFSRatio();
     ss << " fstd:"<<std::setprecision(2)<<besttree->getFSStd();

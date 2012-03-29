@@ -1101,6 +1101,7 @@ void Playout::getAtariMove(Worker::Settings *settings, Go::Board *board, Go::Col
 
 void Playout::resetLGRF()
 {
+  fprintf(stderr,"resetLGRF\n");
   if (lgrf1!=NULL)
     delete[] lgrf1;
   if (lgrf1n!=NULL)
