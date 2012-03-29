@@ -880,33 +880,6 @@ bool Go::Board::weakEye(Go::Color col, int pos) const
   }
 }
 
-bool Go::Board::strongEye(Go::Color col, int pos) const
-{
-  if (col==Go::EMPTY || col==Go::OFFBOARD || this->getColor(pos)!=Go::EMPTY)
-    return false;
-  else
-  {
-    bool onside=false;
-    Go::Group *group=NULL;
-    
-    foreach_adjacent(pos,p,{
-      if (this->getColor(p)==Go::OFFBOARD)
-        onside=true;
-      else if (this->getColor(p)!=col)
-        return false;
-      else if (group)
-      {
-        if (group!=this->getGroup(p))
-            return false;
-      }
-      else group=this->getGroup(p);
-    });
-    
-    return true;
-  }
-}
-      
-
 bool Go::Board::isWinForColor(Go::Color col, float score)
 {
   float k=0;
@@ -1515,7 +1488,7 @@ bool Go::Board::isSelfAtariOfSize(Go::Move move, int minsize) const
 {
   Go::Color col=move.getColor();
   int pos=move.getPosition();
-
+  
   if (this->touchingEmpty(pos)>1)
     return false;
   int libpos=-1;
@@ -1526,23 +1499,19 @@ bool Go::Board::isSelfAtariOfSize(Go::Move move, int minsize) const
     if (this->inGroup(p))
     {
       Go::Group *group=this->getGroup(p);
-      if (col==group->getColor())
+      bool found=false;
+      for (int i=0;i<groups_used_num;i++)
       {
-        if (!(group->inAtari() || group->isOneOfTwoLiberties(pos)))
+        if (groups_used[i]==group)
         {
-          return false; //attached group has more than two libs
+          found=true;
         }
-        bool found=false;
-        for (int i=0;i<groups_used_num;i++)
-        {
-          if (groups_used[i]==group)
-          {
-            found=true;
-          }
-        }
-        groups_used[groups_used_num]=group;
-        groups_used_num++;
-        if (!found)
+      }
+      groups_used[groups_used_num]=group;
+      groups_used_num++;
+      if (!found)
+      {
+        if (col==group->getColor())
         {
           int otherlib=group->getOtherOneOfTwoLiberties(pos);
           if (otherlib!=-1)
@@ -1550,21 +1519,23 @@ bool Go::Board::isSelfAtariOfSize(Go::Move move, int minsize) const
             if (libpos==-1)
               libpos=otherlib;
             else if (libpos!=otherlib)
-            {
               return false; // at least 2 libs
-            }
             groupsize+=group->numOfStones();
           }
         }
+        else if (!group->inAtari())
+          return false; // at least 2 libs
+        else // group in atari
+        {
+          groupsize+=group->numOfStones();
+        }
       }
-    }
-    else if (this->getColor(p)==Go::EMPTY)
-    {
-      if (libpos==-1)
-        libpos=p;
-      else if (libpos!=p)
+      else if (this->getColor(p)==Go::EMPTY)
       {
-        return false; // at least 2 libs
+        if (libpos==-1)
+          libpos=p;
+        else if (libpos!=p)
+          return false; // at least 2 libs
       }
     }
   });

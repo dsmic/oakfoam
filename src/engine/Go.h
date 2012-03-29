@@ -560,7 +560,6 @@ namespace Go
       int score();
       /** Determine is the given position is a weak eye for the given color. */
       bool weakEye(Go::Color col, int pos) const;
-      bool strongEye(Go::Color col, int pos) const;
       /** Get the number of empty positions orthogonally adjacent to the given position. */
       int touchingEmpty(int pos) const;
       /** Get the number of empty positions in the eight positions surrounding the given position. */

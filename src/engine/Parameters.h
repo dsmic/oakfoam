@@ -60,6 +60,8 @@ class Parameters
 
     /** Number of Tree instances in memory, used to keep track of approximate memory usage. */
     unsigned long tree_instances;
+    /** Mutex to prevent data loss when updating tree_instances. */
+    boost::mutex tree_instances_mutex;
     /** Maximum amount of memory usage.
      * This is compared to the number of Tree instances, so it is only approximate.
      * Units are megabytes.
@@ -122,12 +124,6 @@ class Parameters
      * Play a move according to LGRF-1, if such a move is available and legal.
      */
     bool playout_lgrf1_enabled;
-
-    float playout_avoid_lbrf1_p;
-
-    //own followup moves, independent of the inbetween move of opponent
-    bool playout_lgrf1o_enabled;
-    
     /** Whether to use the lgrf2 heuristic in playouts.
      * Play a move according to LGRF-2, if such a move is available and legal.
      */
@@ -165,10 +161,6 @@ class Parameters
      * Currently under constuction.
      */
     int playout_order;
-
-    /** generate a move within +-3 of the last move
-     */
-    bool playout_nearby_enabled;
     
     /** UCB exploration constant. */
     float ucb_c;
@@ -181,8 +173,6 @@ class Parameters
     // Under Construction
     float bernoulli_a;
     float bernoulli_b;
-    float weight_score;
-    float random_f;
     
     /** Number of moves it takes for RAVE to decay?
      * Set to zero to disable RAVE.

@@ -480,13 +480,7 @@ bool Book::loadLine(std::string line)
   std::list<Go::Move> movehistory=std::list<Go::Move>();
   bool founddivider=false;
   Go::Color col=Go::BLACK;
-
-  int ro;
-  while ((ro=line.find('\r'))>=0)
-  {
-    line.erase(ro,1);
-  }
-
+  
   std::transform(line.begin(),line.end(),line.begin(),::tolower);
   
   std::istringstream issline(line);

@@ -111,9 +111,6 @@ class Tree
     float getRAVEPlayouts() const { return raveplayouts; };
     /** Get the ratio of wins to playouts. */
     float getRatio() const;
-    float getFSRatio() const;
-    float getFSStd() const;
-
     /** Get the ratio of RAVE wins to playouts. */
     float getRAVERatio() const;
     /** Get the value for this node.
@@ -131,11 +128,11 @@ class Tree
     /** Add a win to this node.
      * @param source The child that this result is coming from.
      */
-    void addWin(int fscroe, Tree *source=NULL);
+    void addWin(Tree *source=NULL);
     /** Add a loss to this node.
      * @param source The child that this result is coming from.
      */
-    void addLose(int fscore, Tree *source=NULL);
+    void addLose(Tree *source=NULL);
     /** Add a virtual loss. */
     void addVirtualLoss();
     /** Remove a virtual loss from this node and the path up to the root. */
@@ -241,7 +238,6 @@ class Tree
     Go::Move move;
     float playouts,raveplayouts;
     float wins,ravewins;
-    float fscoreSUM,fscoreSUM2;
     float decayedwins,decayedplayouts;
     Parameters *const params;
     bool hasTerminalWinrate,hasTerminalWin;
@@ -262,7 +258,7 @@ class Tree
       float mpi_lastplayouts,mpi_lastwins;
     #endif
     
-    void passPlayoutUp(int fscore, bool win, Tree *source);
+    void passPlayoutUp(bool win, Tree *source);
     bool allChildrenTerminalLoses();
     bool hasOneUnprunedChildNotTerminalLoss();
     
