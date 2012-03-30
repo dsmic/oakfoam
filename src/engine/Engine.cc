@@ -1104,7 +1104,8 @@ void Engine::gtpPlayoutSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     float finalscore;
     std::list<Go::Move> playoutmoves;
     std::list<std::string> movereasons;
-    me->playout->doPlayout(me->threadpool->getThreadZero()->getSettings(),playoutboard,finalscore,NULL,playoutmoves,col,NULL,NULL,&movereasons);
+    Tree *playouttree = me->movetree->getUrgentChild(me->threadpool->getThreadZero()->getSettings());
+    me->playout->doPlayout(me->threadpool->getThreadZero()->getSettings(),playoutboard,finalscore,playouttree,playoutmoves,col,NULL,NULL,&movereasons);
     if (finalscore*win>=0)
     {
       foundwin=true;
@@ -1169,7 +1170,8 @@ void Engine::gtpPlayoutSGF_pos(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
     float finalscore;
     std::list<Go::Move> playoutmoves;
     std::list<std::string> movereasons;
-    me->playout->doPlayout(me->threadpool->getThreadZero()->getSettings(),playoutboard,finalscore,NULL,playoutmoves,col,NULL,NULL,&movereasons);
+    Tree *playouttree = me->movetree->getUrgentChild(me->threadpool->getThreadZero()->getSettings());
+    me->playout->doPlayout(me->threadpool->getThreadZero()->getSettings(),playoutboard,finalscore,playouttree,playoutmoves,col,NULL,NULL,&movereasons);
       if ((win==1  && playoutboard->getScoredOwner(where)==Go::BLACK) ||
           (win==-1 && playoutboard->getScoredOwner(where)==Go::WHITE)
           )
@@ -2418,7 +2420,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     
     std::ostringstream ss;
     ss << std::fixed;
-    ss << "r:"<<std::setprecision(2)<<bestratio*100;
+    ss << "r:"<<std::setprecision(2)<<bestratio*100<<"%";
     if (!time->isNoTiming())
     {
       ss << " tl:"<<std::setprecision(3)<<time->timeLeft(col);
@@ -2428,7 +2430,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     if (!time->isNoTiming() || params->early_stop_occured)
       ss << " plts:"<<totalplayouts;
     ss << " ppms:"<<std::setprecision(2)<<playouts_per_milli;
-    ss << " rd:"<<std::setprecision(2)<<ratiodelta*100;
+    ss << " rd:"<<std::setprecision(2)<<ratiodelta*100<<"%";
     ss << " r2:"<<std::setprecision(2)<<params->uct_last_r2;
     ss << " fs:"<<std::setprecision(2)<<besttree->getFSRatio();
     ss << " fstd:"<<std::setprecision(2)<<besttree->getFSStd();
