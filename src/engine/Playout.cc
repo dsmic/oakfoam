@@ -92,7 +92,7 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
       while (totalused<k)
       {
         float bestval=-1;
-        int bestpos;
+        int bestpos=-1;
         for(std::list<Tree*>::iterator iter=pooltree->getChildren()->begin();iter!=pooltree->getChildren()->end();++iter) 
         {
           if (!(*iter)->getMove().isPass() && !used->get((*iter)->getMove().getPosition()) && (*iter)->getRAVERatio()>bestval)
