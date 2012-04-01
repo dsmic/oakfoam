@@ -126,6 +126,14 @@ float Tree::getRAVERatio() const
     return 0;
 }
 
+float Tree::getRAVERatioOC() const
+{
+  if (raveplayoutsOC>0)
+    return (float)ravewinsOC/raveplayoutsOC;
+  else
+    return 0;
+}
+
 void Tree::addWin(int fscore, Tree *source)
 {
   boost::mutex::scoped_lock *lock=(params->uct_lock_free?NULL:new boost::mutex::scoped_lock(updatemutex));
@@ -243,11 +251,29 @@ void Tree::addRAVELose()
   raveplayouts++;
 }
 
+void Tree::addRAVEWinOC()
+{
+  //boost::mutex::scoped_lock lock(updatemutex);
+  ravewinsOC++;
+  raveplayoutsOC++;
+}
+
+void Tree::addRAVELoseOC()
+{
+  //boost::mutex::scoped_lock lock(updatemutex);
+  raveplayoutsOC++;
+}
+
 void Tree::addRAVEWins(int n)
 {
   ravewins+=n;
   raveplayouts+=n;
-}
+
+  //only used for initialization, therefore both can be done in this function
+  ravewinsOC+=n;
+  raveplayoutsOC+=n;
+}  
+
 
 void Tree::addRAVELoses(int n)
 {
@@ -371,9 +397,9 @@ float Tree::getVal(bool skiprave) const
   else
   {
     //float alpha=(float)(ravemoves-playouts)/params->rave_moves;
-    
+
     float alpha=(float)raveplayouts/(raveplayouts + playouts + (float)(raveplayouts*playouts)/params->rave_moves);
-    
+
     if (alpha<=0)
       return this->getRatio();
     else if (alpha>=1)
@@ -397,7 +423,7 @@ float Tree::getUrgency(bool skiprave) const
   
   if (playouts==0 && raveplayouts==0)
     return params->ucb_init;
-  
+
   if (parent==NULL || params->ucb_c==0)
     uctbias=0;
   else
@@ -1013,7 +1039,6 @@ void Tree::updateRAVE(Go::Color wincol,Go::BitBoard *blacklist,Go::BitBoard *whi
         int pos=(*iter)->getMove().getPosition();
         
         bool movemade=(col==Go::BLACK?blacklist:whitelist)->get(pos);
-        
         if (movemade)
         {
           if ((*iter)->isPrimary())
@@ -1030,6 +1055,26 @@ void Tree::updateRAVE(Go::Color wincol,Go::BitBoard *blacklist,Go::BitBoard *whi
               primary->addRAVEWin();
             else
               primary->addRAVELose();
+          }
+        }
+        //check for the other color!
+        movemade=(col==Go::WHITE?blacklist:whitelist)->get(pos);
+        if (movemade)
+        {
+          if ((*iter)->isPrimary())
+          {
+            if (Go::otherColor(col)==wincol)
+              (*iter)->addRAVEWinOC();
+            else
+              (*iter)->addRAVELoseOC();
+          }
+          else
+          {
+            Tree *primary=(*iter)->getPrimary();
+            if (Go::otherColor(col)==wincol)
+              primary->addRAVEWinOC();
+            else
+              primary->addRAVELoseOC();
           }
         }
       }

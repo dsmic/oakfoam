@@ -419,6 +419,7 @@ class Engine
     static void gtpShowTerritory(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowRatios(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowRAVERatios(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpShowRAVERatiosOC(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
 };
 
 #endif

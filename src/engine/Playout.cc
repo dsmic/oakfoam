@@ -75,6 +75,8 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
     }
   }
   std::vector<int> pool;
+  std::vector<int> poolOC;
+  Go::Color poolColor=Go::EMPTY;
   if (params->playout_poolrave_enabled)
   {
     Tree *pooltree=NULL;
@@ -96,19 +98,32 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
       while (totalused<k)
       {
         float bestval=-1;
-        int bestpos;
+        int bestpos=-1;
+        float bestvalOC=-1;
+        int bestposOC=-1;
         for(std::list<Tree*>::iterator iter=pooltree->getChildren()->begin();iter!=pooltree->getChildren()->end();++iter) 
         {
           if (!(*iter)->getMove().isPass() && !used->get((*iter)->getMove().getPosition()) && (*iter)->getRAVERatio()>bestval)
           {
             bestpos=(*iter)->getMove().getPosition();
             bestval=(*iter)->getRAVERatio();
+            poolColor=(*iter)->getMove().getColor();
+          }
+          if (!(*iter)->getMove().isPass() && !used->get((*iter)->getMove().getPosition()) && (*iter)->getRAVERatioOC()>bestval)
+          {
+            bestposOC=(*iter)->getMove().getPosition();
+            bestvalOC=(*iter)->getRAVERatioOC();
           }
         }
         if (bestpos!=-1)
         {
           pool.push_back(bestpos);
           used->set(bestpos);
+        }
+        if (bestposOC!=-1)
+        {
+          poolOC.push_back(bestposOC);
+          used->set(bestposOC);
         }
         totalused++;
       }
@@ -128,13 +143,19 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
     bool resign;
     if (movereasons!=NULL)
     {
-      this->getPlayoutMove(settings,board,coltomove,move,posarray,&pool,&reason);
+      if (coltomove==poolColor)
+        this->getPlayoutMove(settings,board,coltomove,move,posarray,&pool,&reason);
+      else
+        this->getPlayoutMove(settings,board,coltomove,move,posarray,&poolOC,&reason);
       if (params->playout_useless_move)
         this->checkUselessMove(settings,board,coltomove,move,posarray,&reason);
     }
     else
     {
-      this->getPlayoutMove(settings,board,coltomove,move,posarray,&pool);
+      if (coltomove==poolColor)
+        this->getPlayoutMove(settings,board,coltomove,move,posarray,&pool,&reason);
+      else
+        this->getPlayoutMove(settings,board,coltomove,move,posarray,&poolOC,&reason);
       if (params->playout_useless_move)
         this->checkUselessMove(settings,board,coltomove,move,posarray,NULL);
     }

@@ -473,6 +473,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("showterritory",this,&Engine::gtpShowTerritory);
   gtpe->addFunctionCommand("showratios",this,&Engine::gtpShowRatios);
   gtpe->addFunctionCommand("showraveratios",this,&Engine::gtpShowRAVERatios);
+  gtpe->addFunctionCommand("showraveratiosOC",this,&Engine::gtpShowRAVERatiosOC);
   
   //gtpe->addAnalyzeCommand("final_score","Final Score","string");
   //gtpe->addAnalyzeCommand("showboard","Show Board","string");
@@ -490,6 +491,7 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("showpatternmatches","Show Pattern Matches","sboard");
   gtpe->addAnalyzeCommand("showratios","Show Ratios","sboard");
   gtpe->addAnalyzeCommand("showraveratios","Show RAVE Ratios","sboard");
+  gtpe->addAnalyzeCommand("showraveratiosOC","Show RAVE Ratios (other color)","sboard");
   //gtpe->addAnalyzeCommand("shownakadecenters","Show Nakade Centers","sboard");
   gtpe->addAnalyzeCommand("featurematchesat %%p","Feature Matches At","string");
   gtpe->addAnalyzeCommand("featureprobdistribution","Feature Probability Distribution","cboard");
@@ -1001,6 +1003,34 @@ void Engine::gtpShowRAVERatios(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
   gtpe->getOutput()->endResponse(true);
 }
 
+void Engine::gtpShowRAVERatiosOC(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  Go::Color col=me->currentboard->nextToMove();
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("\n");
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      int pos=Go::Position::xy2pos(x,y,me->boardsize);
+      Go::Move move=Go::Move(col,pos);
+      Tree *tree=me->movetree->getChild(move);
+      if (tree!=NULL)
+      {
+        float ratio=tree->getRAVERatioOC();
+        gtpe->getOutput()->printf("\"%.2f\"",ratio);
+      }
+      else
+        gtpe->getOutput()->printf("\"\"");
+    }
+    gtpe->getOutput()->printf("\n");
+  }
+
+  gtpe->getOutput()->endResponse(true);
+}
+
 void Engine::gtpLoadPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
@@ -1097,11 +1127,11 @@ void Engine::gtpPlayoutSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   bool success=false;
   bool foundwin=false;
   int i;
+  float finalscore=0;
   for (i=0;i<1000;i++)
   {
     Go::Board *playoutboard=me->currentboard->copy();
     Go::Color col=me->currentboard->nextToMove();
-    float finalscore;
     std::list<Go::Move> playoutmoves;
     std::list<std::string> movereasons;
     Tree *playouttree = me->movetree->getUrgentChild(me->threadpool->getThreadZero()->getSettings());
@@ -1125,7 +1155,7 @@ void Engine::gtpPlayoutSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   if (success)
   {
     gtpe->getOutput()->startResponse(cmd);
-    gtpe->getOutput()->printf("wrote sgf file: %s (i was %d)",sgffile.c_str(),i);
+    gtpe->getOutput()->printf("wrote sgf file: %s (i was %d) finalscore %d",sgffile.c_str(),i,finalscore);
     gtpe->getOutput()->endResponse();
   }
   else

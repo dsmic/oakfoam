@@ -109,6 +109,7 @@ class Tree
     float getWins() const { return wins; };
     /** Get the number of RAVE playouts through this node. */
     float getRAVEPlayouts() const { return raveplayouts; };
+    float getRAVEPlayoutsOC() const { return raveplayoutsOC; };
     /** Get the ratio of wins to playouts. */
     float getRatio() const;
     float getFSRatio() const;
@@ -116,6 +117,7 @@ class Tree
 
     /** Get the ratio of RAVE wins to playouts. */
     float getRAVERatio() const;
+    float getRAVERatioOC() const;
     /** Get the value for this node.
      * This is a combination of normal and RAVE values.
      */
@@ -148,6 +150,10 @@ class Tree
     void addRAVEWin();
     /** Add a RAVE loss to this node. */
     void addRAVELose();
+
+    void addRAVEWinOC();
+    void addRAVELoseOC();
+    
     /** Add a number of RAVE wins to this node. */
     void addRAVEWins(int n);
     /** Add a number of RAVE losses to this node. */
@@ -243,6 +249,8 @@ class Tree
     Go::Move move;
     float playouts,raveplayouts;
     float wins,ravewins;
+    float raveplayoutsOC;
+    float ravewinsOC;
     float fscoreSUM,fscoreSUM2;
     float decayedwins,decayedplayouts;
     Parameters *const params;

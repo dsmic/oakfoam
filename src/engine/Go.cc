@@ -1540,10 +1540,10 @@ bool Go::Board::isSelfAtariOfSize(Go::Move move, int minsize) const
             found=true;
           }
         }
-        groups_used[groups_used_num]=group;
-        groups_used_num++;
         if (!found)
         {
+          groups_used[groups_used_num]=group;
+          groups_used_num++;
           int otherlib=group->getOtherOneOfTwoLiberties(pos);
           if (otherlib!=-1)
           {
