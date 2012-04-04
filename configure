@@ -566,6 +566,7 @@ MPILIBS
 MPICXX
 BOOST_FILESYSTEM_LIB
 BOOST_THREAD_LIB
+BOOST_ASIO_LIB
 BOOST_SYSTEM_LIB
 build_os
 build_vendor
@@ -2466,7 +2467,7 @@ am__tar='${AMTAR} chof - "$$tardir"'; am__untar='${AMTAR} xf -'
 
 ac_config_headers="$ac_config_headers config.h"
 
-CXXFLAGS="-Wall -g -O3 -DTOPSRCDIR=\\\"`pwd`\\\""
+CXXFLAGS="-Wall -g -O3 -DTOPSRCDIR=\\\"`pwd`\\\" -fno-strict-aliasing"
 
 ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
@@ -4965,6 +4966,15 @@ fi
 			if test "x$link_system" = "xno"; then
 				as_fn_error "Could not link against $ax_lib !" "$LINENO" 5
 			fi
+
+      BOOST_ASIO_LIB=""
+      case "x$build_os$host" in
+        *mingw32* )
+          BOOST_ASIO_LIB="-lws2_32"
+          break;
+          ;;
+      esac
+
 		fi
 
 		CPPFLAGS="$CPPFLAGS_SAVED"
@@ -5016,11 +5026,11 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 			 CXXFLAGS_SAVE=$CXXFLAGS
 
-			 case "x$build_os" in
+			 case "x$build_os$host" in
          *solaris* )
   				 CXXFLAGS="-pthreads $CXXFLAGS"
   				 ;;
-			   *ming32* )
+			   *mingw32* )
 				   CXXFLAGS="-mthreads $CXXFLAGS"
 				   ;;
 			   * )
@@ -5057,11 +5067,11 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_boost_thread" >&5
 $as_echo "$ax_cv_boost_thread" >&6; }
 		if test "x$ax_cv_boost_thread" = "xyes"; then
-       case "x$build_os" in
+       case "x$build_os$host" in
          *solaris* )
 			     BOOST_CPPFLAGS="-pthreads $BOOST_CPPFLAGS"
 			     ;;
-		     *ming32* )
+		     *mingw32* )
 			     BOOST_CPPFLAGS="-mthreads $BOOST_CPPFLAGS"
 			     ;;
 		     * )
@@ -5077,7 +5087,7 @@ $as_echo "#define HAVE_BOOST_THREAD /**/" >>confdefs.h
             BOOSTLIBDIR=`echo $BOOST_LDFLAGS | sed -e 's/[^\/]*//'`
 
 			LDFLAGS_SAVE=$LDFLAGS
-                        case "x$build_os" in
+                        case "x$build_os$host" in
                           *bsd* )
                                LDFLAGS="-pthread $LDFLAGS"
                           break;
@@ -5236,7 +5246,7 @@ fi
 			if test "x$link_thread" = "xno"; then
 				as_fn_error "Could not link against $ax_lib !" "$LINENO" 5
                         else
-                           case "x$build_os" in
+                           case "x$build_os$host" in
                               *bsd* )
 			        BOOST_LDFLAGS="-pthread $BOOST_LDFLAGS"
                               break;

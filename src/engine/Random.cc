@@ -1,5 +1,6 @@
 #include "Random.h"
 
+#include <unistd.h> // for windows
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>

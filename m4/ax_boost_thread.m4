@@ -69,11 +69,11 @@ AC_DEFUN([AX_BOOST_THREAD],
         [AC_LANG_PUSH([C++])
 			 CXXFLAGS_SAVE=$CXXFLAGS
 
-			 case "x$build_os" in
+			 case "x$build_os$host" in
          *solaris* )
   				 CXXFLAGS="-pthreads $CXXFLAGS"
   				 ;;
-			   *ming32* )
+			   *mingw32* )
 				   CXXFLAGS="-mthreads $CXXFLAGS"
 				   ;;
 			   * )
@@ -88,11 +88,11 @@ AC_DEFUN([AX_BOOST_THREAD],
              AC_LANG_POP([C++])
 		])
 		if test "x$ax_cv_boost_thread" = "xyes"; then
-       case "x$build_os" in
+       case "x$build_os$host" in
          *solaris* )
 			     BOOST_CPPFLAGS="-pthreads $BOOST_CPPFLAGS"
 			     ;;
-		     *ming32* )
+		     *mingw32* )
 			     BOOST_CPPFLAGS="-mthreads $BOOST_CPPFLAGS"
 			     ;;
 		     * )
@@ -106,7 +106,7 @@ AC_DEFUN([AX_BOOST_THREAD],
             BOOSTLIBDIR=`echo $BOOST_LDFLAGS | sed -e 's/@<:@^\/@:>@*//'`
 
 			LDFLAGS_SAVE=$LDFLAGS
-                        case "x$build_os" in
+                        case "x$build_os$host" in
                           *bsd* )
                                LDFLAGS="-pthread $LDFLAGS"
                           break;
@@ -139,7 +139,7 @@ AC_DEFUN([AX_BOOST_THREAD],
 			if test "x$link_thread" = "xno"; then
 				AC_MSG_ERROR(Could not link against $ax_lib !)
                         else
-                           case "x$build_os" in
+                           case "x$build_os$host" in
                               *bsd* )
 			        BOOST_LDFLAGS="-pthread $BOOST_LDFLAGS"
                               break;

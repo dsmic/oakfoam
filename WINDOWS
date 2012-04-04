@@ -1,0 +1,24 @@
+-------------------------------------------------
+ Cross Compiling for Windows
+-------------------------------------------------
+
+Cross compiling Oakfoam on Linux for Windows is
+possible. The following instructions can be used.
+
+-- Setup ----------------------------------------
+
+Install the necessary packages:
+  sudo apt-get install mingw32
+
+Download the Boost libraries and build them for
+Windows:
+  ./bootstrap.sh
+  echo 'using gcc : mingw : i586-mingw32msvc-g++ : <rc>i586-mingw32msvc-windres <archiver>i586-mingw32msvc-ar <compileflags>-mthreads <linkflags>-mthreads ;' > user-config.jam
+  ./bjam -a --user-config=user-config.jam --layout=system variant=release toolset=gcc target-os=windows threadapi=win32 link=static stage
+
+-- Building -------------------------------------
+
+BOOST_ROOT=/path/to/boost/for/windows ./configure --host=i586-mingw32msvc --build=`./config.guess`
+make clean
+make
+

@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <list>
+#define BOOST_THREAD_USE_LIB
 #include <boost/thread/thread.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/barrier.hpp>

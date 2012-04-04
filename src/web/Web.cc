@@ -155,8 +155,9 @@ void Web::respondStatic(socket_ptr sock, std::string uri)
 
   size_t fieldpos=uri.find("?");
   std::string path=DOC_ROOT+uri.substr(0,fieldpos);
-  if (fs::is_directory(fs::path(path.c_str(),fs::native)) && path[path.length()-1]!='/')
-    path+="/";
+  // below piece doesn't work in windows build as-is
+  //if (fs::is_directory(fs::path(path.c_str(),fs::native)) && path[path.length()-1]!='/')
+  //  path+="/";
   if (path[path.length()-1]=='/')
     path+="index.html";
 

@@ -8,6 +8,7 @@ syntax: glob
 
 syntax: regexp
 ^oakfoam$
+^oakfoam.exe$
 ^Makefile$
 ^config\..*$
 ^stamp-h1$

@@ -19,7 +19,8 @@ Discuss: http://groups.google.com/group/oakfoam
 Running the commands "./configure" and "make"
 should guide you through the process of building
 Oakfoam. Refer to "INSTALL" for autotools generic
-instructions.
+instructions. Refer to "WINDOWS" for cross
+compiling instructions.
 
 -- Documentation --------------------------------
 

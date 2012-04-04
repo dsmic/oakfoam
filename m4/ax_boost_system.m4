@@ -112,6 +112,15 @@ AC_DEFUN([AX_BOOST_SYSTEM],
 			if test "x$link_system" = "xno"; then
 				AC_MSG_ERROR(Could not link against $ax_lib !)
 			fi
+      
+      BOOST_ASIO_LIB=""
+      case "x$build_os$host" in
+        *mingw32* )
+          BOOST_ASIO_LIB="-lws2_32"
+          break;
+          ;;
+      esac
+      AC_SUBST(BOOST_ASIO_LIB)
 		fi
 
 		CPPFLAGS="$CPPFLAGS_SAVED"

@@ -5,6 +5,10 @@
 #ifdef HAVE_WEB
 
 #include <string>
+#define BOOST_THREAD_USE_LIB
+#define BOOST_FILESYSTEM_USE_LIB
+#define BOOST_SYSTEM_USE_LIB
+#define BOOST_ASIO_USE_LIB
 #include <boost/asio.hpp>
 #include <boost/thread/mutex.hpp>
 typedef boost::shared_ptr<boost::asio::ip::tcp::socket> socket_ptr;
