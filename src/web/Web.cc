@@ -32,7 +32,7 @@ Web::Web(Engine *eng, std::string a, int p)
 
 void Web::run()
 {
-  fprintf(stderr,"running web interface on %s:%d...\n",addr.c_str(),port);
+  fprintf(stderr,"running web interface on http://%s:%d\n",addr.c_str(),port);
 
   while(true)
   {
