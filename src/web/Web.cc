@@ -210,15 +210,23 @@ void Web::respondGtp(socket_ptr sock, std::string uri)
     }
   }
 
-  boost::mutex::scoped_lock lock(enginemutex);
-  fprintf(stderr,"GTP cmd: %s\n",cmd.c_str());
+  if (cmd.substr(0,4)=="stop")
+  {
+    engine->stopThinking();
+    this->respondBasic(sock,"200 Ok","text/plain");
+  }
+  else
+  {
+    boost::mutex::scoped_lock lock(enginemutex);
+    fprintf(stderr,"GTP cmd: '%s'\n",cmd.c_str());
 
-  std::string output="";
-  engine->getGtpEngine()->getOutput()->setRedirectStrings(&output,NULL);
-  engine->getGtpEngine()->executeCommand(cmd); // TODO: should be making use of a mutex here
-  engine->getGtpEngine()->getOutput()->setRedirectStrings(NULL,NULL);
+    std::string output="";
+    engine->getGtpEngine()->getOutput()->setRedirectStrings(&output,NULL);
+    engine->getGtpEngine()->executeCommand(cmd); // TODO: should be making use of a mutex here
+    engine->getGtpEngine()->getOutput()->setRedirectStrings(NULL,NULL);
 
-  this->respondBasic(sock,"200 Ok","text/plain",output);
+    this->respondBasic(sock,"200 Ok","text/plain",output);
+  }
 }
 
 void Web::respondJson(socket_ptr sock, std::string uri)

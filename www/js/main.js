@@ -33,6 +33,9 @@ function doGtpCmdThink(cmd,args,func)
   }
   drawBoard();
   $('#pass, #genmove').button({disabled:true});
+  $('#genmove').hide();
+  $('#stop').button({disabled:false});
+  $('#stop').show();
   $('#status').append('Thinking...<br/>\n');
   doGtpCmd(cmd,args,func)
 }
@@ -262,6 +265,9 @@ function moveDone()
     {
       thinking=false;
       $('#pass, #genmove').button({disabled:false});
+      $('#genmove').show();
+      $('#stop').button({disabled:true});
+      $('#stop').hide();
       drawBoard();
     }
   }
@@ -341,6 +347,19 @@ function refreshBoard()
       $('#pass, #genmove').button({disabled:true});
     else
       $('#pass, #genmove').button({disabled:false});
+    
+    if (thinking)
+    {
+      $('#genmove').hide();
+      $('#stop').button({disabled:false});
+      $('#stop').show();
+    }
+    else
+    {
+      $('#genmove').show();
+      $('#stop').button({disabled:true});
+      $('#stop').hide();
+    }
 
     updateStatus();
     $.getJSON('board_pos.jsoncmd',function(data)
@@ -409,6 +428,16 @@ $(document).ready(function()
   });
   $('#pass').click(function(){doGtpCmd('play',next_color+'&pass',refreshBoard);});
   $('#genmove').click(function(){doGtpCmdThink('genmove',next_color,refreshBoard);});
+  $('#stop').click(function()
+  {
+    $('#stop').button({disabled:true});
+    doGtpCmd('stop','',function()
+    {
+      engine_color='none'
+      refreshBoard();
+    });
+  });
+  $('#stop').hide();
 
   refreshBoard();
 });
