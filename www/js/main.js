@@ -1,3 +1,4 @@
+
 var board_size;
 var komi;
 var moves;
@@ -9,6 +10,13 @@ var game_over=false;
 var paper=null;
 var size_chg=true;
 var thinking=false;
+var board_data=null;
+var board_scored=null;
+var spinners=null;
+var spinnercount=12;
+var spinnerp=2000;
+var spinneri=0;
+var spinnertick=null;
 
 function xy2pos(x,y)
 {
@@ -18,7 +26,12 @@ function xy2pos(x,y)
 
 function doGtpCmdThink(cmd,args,func)
 {
-  thinking=true;
+  if (!thinking)
+  {
+    thinking=true;
+    spinnersStart();
+  }
+  drawBoard();
   $('#pass, #genmove').button({disabled:true});
   $('#status').append('Thinking...<br/>\n');
   doGtpCmd(cmd,args,func)
@@ -78,20 +91,58 @@ function isHoshi(x,y)
     return false;
 }
 
-function drawBoard(data)
+function spinnersStart()
 {
+  (function ticker() {
+    if (!thinking)
+      return;
+    n=spinnercount;
+    for (i=0;i<n;i++) {
+      j=(spinneri+i)%n;
+      spinners[j].attr('opacity',i/n);
+    }
+    spinneri=(spinneri+1)%n;
+    spinnertick=setTimeout(ticker,spinnerp/n);
+  })();
+}
+
+function drawBoard()
+{
+  var data=board_data;
   var sz=board_size*24;
-  var lw=2;
+  var lw=1.5;
   var crad=11;
   var bdr=4;
   if (size_chg)
   {
     if (paper!=null)
+    {
       paper.remove();
+      for (i=0;i<n;i++)
+      {
+        spinners[i].remove();
+      }
+    }
+    $('#page').width(board_size*24+200+2*bdr); // dynamic size
     paper=Raphael('board',sz+2*bdr,sz+2*bdr);
+
+    n=spinnercount;
+    csz=sz/(n*2.5);
+    cxy=sz/2+bdr;
+    spinners=[];
+    for (i=0;i<spinnercount;i++)
+    {
+      alpha=i*Math.PI*2/n;
+      x=0.15*sz*Math.cos(alpha);
+      y=0.15*sz*Math.sin(alpha);
+      spinners[i]=paper.circle(cxy+x,cxy+y,csz).attr({fill:'#fff',stroke:'none',opacity:0});
+    }
+
+    spinnersStart();
     size_chg=false;
   }
-  paper.rect(1,1,sz-2+2*bdr,sz-2+2*bdr).attr({fill:'#c4a055', stroke:'#352b17', 'stroke-width':1});
+
+  paper.rect(1,1,sz-2+2*bdr,sz-2+2*bdr).attr({fill:'#c8a567', stroke:'#352b17', 'stroke-width':1});
   for (i=0;i<board_size;i++)
   {
     paper.rect(i*24+12-lw/2+bdr,12-lw/2+bdr,lw,sz-24+lw).attr({fill:'#000000', stroke:'none'});
@@ -115,9 +166,9 @@ function drawBoard(data)
       if (c=='B' || c=='W')
       {
         if (c=='B')
-          paper.circle(x*24+12+bdr,y*24+12+bdr,crad).attr({fill:'#000000'});
+          paper.circle(x*24+12+bdr,y*24+12+bdr,crad).attr({fill:'r(.3,.2)#555-#000'});
         else if (c=='W')
-          paper.circle(x*24+12+bdr,y*24+12+bdr,crad).attr({fill:'#ffffff',stroke:'#333333'});
+          paper.circle(x*24+12+bdr,y*24+12+bdr,crad).attr({fill:'r(.3,.2)#fff-#aaa',stroke:'#777'});
 
         if ((c+":"+pos)==last_move)
           paper.circle(x*24+12+bdr,y*24+12+bdr,4).attr({fill:'#7f7f7f',stroke:'none'});
@@ -146,7 +197,7 @@ function drawBoard(data)
           {
             x=this.data('hvx');
             y=this.data('hvy');
-            hvo=paper.circle(x,y,crad).attr({opacity:0.5});
+            hvo=paper.circle(x,y,crad).attr({stroke:'none',opacity:0.5});
             if (next_color=='B')
               hvo.attr({fill:'#000000'});
             else
@@ -164,7 +215,43 @@ function drawBoard(data)
       }
     }
   }
+  
+  if (game_over && board_scored!=null)
+  {
+    for (x=0;x<board_size;x++)
+    {
+      for (y=0;y<board_size;y++)
+      {
+        pos=xy2pos(x,y)
+        c=board_scored[pos];
+        if (c=='B')
+          paper.rect(x*24+bdr,y*24+bdr,24,24).attr({fill:'#000',stroke:'none',opacity:0.4});
+        else if (c=='W')
+          paper.rect(x*24+bdr,y*24+bdr,24,24).attr({fill:'#fff',stroke:'none',opacity:0.4});
+      }
+    }
+  }
 
+
+  if (thinking)
+  {
+    paper.rect(1,1,sz-2+2*bdr,sz-2+2*bdr).attr({fill:'#777',stroke:'none',opacity:0.4});
+    for (i=0;i<spinnercount;i++)
+    {
+      spinners[i].toFront();
+    }
+  }
+  else
+  {
+    for (i=0;i<spinnercount;i++)
+    {
+      spinners[i].toBack();
+    }
+  }
+}
+
+function moveDone()
+{
   if (!game_over)
   {
     if (next_color=='B' && (engine_color=='black' || engine_color=='both'))
@@ -175,9 +262,14 @@ function drawBoard(data)
     {
       thinking=false;
       $('#pass, #genmove').button({disabled:false});
+      drawBoard();
     }
   }
-  $('#page').width(board_size*24+200+2*bdr); // dynamic size
+  else
+  {
+    thinking=false;
+    drawBoard();
+  }
 }
 
 function updateStatus()
@@ -187,6 +279,14 @@ function updateStatus()
   stat+='Komi: '+komi+'<br/>\n';
   stat+='Moves: '+moves+'<br/>\n';
   //stat+='Last Move: '+last_move+'<br/>\n';
+  if (moves>0 && last_move.split(':')[1]=='PASS')
+  {
+    if (last_move.split(':')[0]=='B')
+      stat+='Black';
+    else
+      stat+='White';
+    stat+=' passed<br/>\n';
+  }
   if (game_over)
     stat+='Game finished<br/>\n';
   else
@@ -206,6 +306,11 @@ function updateStatus()
         if (score=='0')
           score='Jigo';
         $('#status').append('Score: '+score+'<br/>\n');
+        $.getJSON('board_scored.jsoncmd',function(data)
+        {
+          board_scored=data;
+          drawBoard();
+        });
       });
     }
   }
@@ -227,7 +332,10 @@ function refreshBoard()
     if (passes>=2 || last_move=='RESIGN')
       game_over=true;
     else
+    {
       game_over=false;
+      board_scored=null;
+    }
 
     if (thinking || game_over)
       $('#pass, #genmove').button({disabled:true});
@@ -235,7 +343,12 @@ function refreshBoard()
       $('#pass, #genmove').button({disabled:false});
 
     updateStatus();
-    $.getJSON('board_pos.jsoncmd',function(data){drawBoard(data);});
+    $.getJSON('board_pos.jsoncmd',function(data)
+    {
+      board_data=data;
+      drawBoard();
+      moveDone();
+    });
   });
 }
 
@@ -269,6 +382,7 @@ $(document).ready(function()
     buttons: {
       'OK': function()
       {
+        size_chg=true;
         engine_color=$('#dialog-new-color').val();
         doGtpCmd('clear_board','',function(){
           doGtpCmd('boardsize',$('#dialog-new-size').val(),function(){

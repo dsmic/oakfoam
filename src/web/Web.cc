@@ -286,6 +286,24 @@ void Web::respondJson(socket_ptr sock, std::string uri)
       }
     }
   }
+  else if (cmd=="board_scored")
+  {
+    int size=engine->getBoardSize();
+    Go::Board *board=engine->getCurrentBoard();
+    // assumed scoring is done
+    for (int x=0;x<size;x++)
+    {
+      for (int y=0;y<size;y++)
+      {
+        int pos=Go::Position::xy2pos(x,y,size);
+        out<<"\""<<Go::Position::pos2string(pos,size)<<"\": \""<<Go::colorToChar(board->getScoredOwner(pos))<<"\"";
+        if (x<(size-1)||y<(size-1)) // no 'trailing' comma
+          out<<",\n";
+        else
+          out<<"\n";
+      }
+    }
+  }
   else
   {
     this->respondBasic(sock,"404 Not Found");
