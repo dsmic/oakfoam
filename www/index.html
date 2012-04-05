@@ -12,19 +12,23 @@
 
 <div id="page">
   <div id="header">
-    <h1>Oakfoam Web Interface</h1>
+    <h1>Oakfoam</h1>
   </div>
   <div id="menu">
-    <button id="new">New</button>
-    <button id="pass">Pass</button>
-    <button id="genmove">Make Engine Play</button>
-    <button id="stop" disabled="disabled">Stop Thinking</button>
+    <span id="new" title="New Game"></span><br/>
+    <span id="info" title="Game Info"></span><br/>
+    <span id="pass" title="Pass"></span><br/>
+    <span id="genmove" title="Make Engine Play"></span><br/>
+    <span id="stop" title="Stop Thinking"></span><br/>
   </div>
 
   <div id="board-container">
     <div id="board"></div>
   </div>
-  <div id="status" class="ui-widget-content"></div>
+
+  <div id="status-container">
+    <div id="status" class="ui-widget-content"></div>
+  </div>
 
   <div id="footer">
     Engine: <span id="engine"></span><br/>
@@ -53,6 +57,10 @@
 
   </fieldset>
   </form>
+</div>
+
+<div id="dialog-info" title="Game Info">
+  <div id="dialog-info-status"></div>
 </div>
 
 </body>

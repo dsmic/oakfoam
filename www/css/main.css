@@ -3,6 +3,7 @@ body {
   margin: 20px;
   text-align: center;
   color: #000000;
+  background: #dddddd;
 }
 
 a {
@@ -16,6 +17,7 @@ a:hover {
 }
 
 #page {
+  background: #ffffff;
   border: 1px solid #7f7f7f;
   width: 680px;
   margin: 20px auto 20px;
@@ -28,7 +30,7 @@ a:hover {
 }
 
 #header h1 {
-  float: left;
+  /*float: left;*/
   font-size: 180%;
   font-weight: bold;
   padding: 5px;
@@ -38,18 +40,19 @@ a:hover {
 #menu {
   float: left;
   clear: both;
-  width: 195px;
+  width: 40px;
 }
 
-#menu button {
-  width: 190px;
+#menu span {
+}
+
+#status-container {
+  clear: both;
+  padding-top: 10px;
 }
 
 #status {
-  float: left;
-  clear: left;
-  width: 190px;
-  margin-top: 10px;
+  margin: 0 auto 0;
 }
 
 #board-container {
@@ -78,5 +81,9 @@ a:hover {
 
 #dialog-new input {
   width: 80px;
+}
+
+#dialog-info {
+  text-align: left;
 }
 

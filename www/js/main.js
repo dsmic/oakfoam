@@ -17,6 +17,18 @@ var spinnercount=12;
 var spinnerp=2000;
 var spinneri=0;
 var spinnertick=null;
+var buttons={};
+var buttons_enabled={};
+var info='';
+
+var icons=
+{
+  'new':'M23.024,5.673c-1.744-1.694-3.625-3.051-5.168-3.236c-0.084-0.012-0.171-0.019-0.263-0.021H7.438c-0.162,0-0.322,0.063-0.436,0.18C6.889,2.71,6.822,2.87,6.822,3.033v25.75c0,0.162,0.063,0.317,0.18,0.435c0.117,0.116,0.271,0.179,0.436,0.179h18.364c0.162,0,0.317-0.062,0.434-0.179c0.117-0.117,0.182-0.272,0.182-0.435V11.648C26.382,9.659,24.824,7.49,23.024,5.673zM25.184,28.164H8.052V3.646h9.542v0.002c0.416-0.025,0.775,0.386,1.05,1.326c0.25,0.895,0.313,2.062,0.312,2.871c0.002,0.593-0.027,0.991-0.027,0.991l-0.049,0.652l0.656,0.007c0.003,0,1.516,0.018,3,0.355c1.426,0.308,2.541,0.922,2.645,1.617c0.004,0.062,0.005,0.124,0.004,0.182V28.164z',
+  'pass':'M29.342,15.5l-7.556-4.363v2.614H18.75c-1.441-0.004-2.423,1.002-2.875,1.784c-0.735,1.222-1.056,2.561-1.441,3.522c-0.135,0.361-0.278,0.655-0.376,0.817c-1.626,0-0.998,0-2.768,0c-0.213-0.398-0.571-1.557-0.923-2.692c-0.237-0.676-0.5-1.381-1.013-2.071C8.878,14.43,7.89,13.726,6.75,13.75H2.812v3.499c0,0,0.358,0,1.031,0h2.741c0.008,0.013,0.018,0.028,0.029,0.046c0.291,0.401,0.634,1.663,1.031,2.888c0.218,0.623,0.455,1.262,0.92,1.897c0.417,0.614,1.319,1.293,2.383,1.293H11c2.25,0,1.249,0,3.374,0c0.696,0.01,1.371-0.286,1.809-0.657c1.439-1.338,1.608-2.886,2.13-4.127c0.218-0.608,0.453-1.115,0.605-1.314c0.006-0.01,0.012-0.018,0.018-0.025h2.85v2.614L29.342,15.5zM10.173,14.539c0.568,0.76,0.874,1.559,1.137,2.311c0.04,0.128,0.082,0.264,0.125,0.399h2.58c0.246-0.697,0.553-1.479,1.005-2.228c0.252-0.438,0.621-0.887,1.08-1.272H9.43C9.735,14.003,9.99,14.277,10.173,14.539z',
+  'genmove':'M6.684,25.682L24.316,15.5L6.684,5.318V25.682z',
+  'stop':'M5.5,5.5h20v20h-20z',
+  'info':'M16,1.466C7.973,1.466,1.466,7.973,1.466,16c0,8.027,6.507,14.534,14.534,14.534c8.027,0,14.534-6.507,14.534-14.534C30.534,7.973,24.027,1.466,16,1.466z M14.757,8h2.42v2.574h-2.42V8z M18.762,23.622H16.1c-1.034,0-1.475-0.44-1.475-1.496v-6.865c0-0.33-0.176-0.484-0.484-0.484h-0.88V12.4h2.662c1.035,0,1.474,0.462,1.474,1.496v6.887c0,0.309,0.176,0.484,0.484,0.484h0.88V23.622z',
+};
 
 function xy2pos(x,y)
 {
@@ -32,11 +44,10 @@ function doGtpCmdThink(cmd,args,func)
     spinnersStart();
   }
   drawBoard();
-  $('#pass, #genmove').button({disabled:true});
-  $('#genmove').hide();
-  $('#stop').button({disabled:false});
-  $('#stop').show();
-  $('#status').append('Thinking...<br/>\n');
+  disableButton('pass');
+  disableButton('genmove');
+  enableButton('stop');
+  $('#status').html('Engine is thinking...');
   doGtpCmd(cmd,args,func)
 }
 
@@ -126,7 +137,9 @@ function drawBoard()
         spinners[i].remove();
       }
     }
-    $('#page').width(board_size*24+200+2*bdr); // dynamic size
+    width=board_size*24+45+2*bdr;
+    $('#page').width(width); // dynamic size
+    $('#status').width(width-5);
     paper=Raphael('board',sz+2*bdr,sz+2*bdr);
 
     n=spinnercount;
@@ -239,9 +252,12 @@ function drawBoard()
   if (thinking)
   {
     paper.rect(1,1,sz-2+2*bdr,sz-2+2*bdr).attr({fill:'#777',stroke:'none',opacity:0.4});
-    for (i=0;i<spinnercount;i++)
+    if (thinking)
     {
-      spinners[i].toFront();
+      for (i=0;i<spinnercount;i++)
+      {
+        spinners[i].toFront();
+      }
     }
   }
   else
@@ -264,10 +280,9 @@ function moveDone()
     else
     {
       thinking=false;
-      $('#pass, #genmove').button({disabled:false});
-      $('#genmove').show();
-      $('#stop').button({disabled:true});
-      $('#stop').hide();
+      enableButton('pass');
+      enableButton('genmove');
+      disableButton('stop');
       drawBoard();
     }
   }
@@ -280,30 +295,35 @@ function moveDone()
 
 function updateStatus()
 {
-  var stat='';
-
-  stat+='Komi: '+komi+'<br/>\n';
-  stat+='Moves: '+moves+'<br/>\n';
-  //stat+='Last Move: '+last_move+'<br/>\n';
-  if (moves>0 && last_move.split(':')[1]=='PASS')
+  info='';
+  info+='Komi: '+komi+'<br/>\n';
+  info+='Moves: '+moves+'<br/>\n';
+  //info+='Last Move: '+last_move+'<br/>\n';
+  /*if (moves>0 && last_move.split(':')[1]=='PASS')
   {
     if (last_move.split(':')[0]=='B')
-      stat+='Black';
+      info+='Black';
     else
-      stat+='White';
-    stat+=' passed<br/>\n';
-  }
+      info+='White';
+    info+=' passed<br/>\n';
+  }*/
   if (game_over)
-    stat+='Game finished<br/>\n';
+    info+='Game finished<br/>\n';
   else
-    stat+='Next to Move: '+next_color+'<br/>\n';
+    info+='Next to Move: '+next_color+'<br/>\n';
   
+  stat=moves+': ';
+  if (moves>0)
+    stat+=last_move.split(':')[1];
   $('#status').html(stat);
 
   if (game_over)
   {
     if (last_move=='RESIGN')
-      $('#status').append('Score: '+next_color+'+R<br/>\n');
+    {
+      info+='Result: '+next_color+'+R<br/>\n';
+      $('#status').append(' Result: '+next_color+'+R');
+    }
     else
     {
       $.get('final_score.gtpcmd',function(data)
@@ -311,7 +331,8 @@ function updateStatus()
         score=data.substr(2);
         if (score=='0')
           score='Jigo';
-        $('#status').append('Score: '+score+'<br/>\n');
+        info+='Result: '+score+'<br/>\n';
+        $('#status').append(' Result: '+score);
         $.getJSON('board_scored.jsoncmd',function(data)
         {
           board_scored=data;
@@ -344,22 +365,20 @@ function refreshBoard()
     }
 
     if (thinking || game_over)
-      $('#pass, #genmove').button({disabled:true});
+    {
+      disableButton('pass');
+      disableButton('genmove');
+    }
     else
-      $('#pass, #genmove').button({disabled:false});
+    {
+      enableButton('pass');
+      enableButton('genmove');
+    }
     
     if (thinking)
-    {
-      $('#genmove').hide();
-      $('#stop').button({disabled:false});
-      $('#stop').show();
-    }
+      enableButton('stop');
     else
-    {
-      $('#genmove').show();
-      $('#stop').button({disabled:true});
-      $('#stop').hide();
-    }
+      disableButton('stop');
 
     updateStatus();
     $.getJSON('board_pos.jsoncmd',function(data)
@@ -369,6 +388,28 @@ function refreshBoard()
       moveDone();
     });
   });
+}
+
+function initButton(name)
+{
+  r=Raphael(name,32,32);
+  buttons[name]=r.path(icons[name]).attr({fill:'#000',stroke:'none',transform:'s0.8'});
+  hvo=r.rect(0,0,32,32).attr({'fill':'#000','opacity':0});
+  hvo.mouseover(function(){if (buttons_enabled[name]) buttons[name].attr('fill','#333');});
+  hvo.mouseout(function(){if (buttons_enabled[name]) buttons[name].attr('fill','#000');});
+  buttons_enabled[name]=true;
+}
+
+function disableButton(name)
+{
+  buttons[name].attr('fill','#777');
+  buttons_enabled[name]=false;
+}
+
+function enableButton(name)
+{
+  buttons[name].attr('fill','#000');
+  buttons_enabled[name]=true;
 }
 
 $(document).ready(function()
@@ -390,6 +431,13 @@ $(document).ready(function()
       html: items.join('')
     }).appendTo('body');
   });*/
+  
+  initButton('new');
+  initButton('pass');
+  initButton('genmove');
+  initButton('stop');
+  initButton('info');
+  $('#menu').tooltip();
 
   $('#dialog-new').dialog(
   {
@@ -403,6 +451,9 @@ $(document).ready(function()
       {
         size_chg=true;
         engine_color=$('#dialog-new-color').val();
+        
+        enableButton('info');
+
         doGtpCmd('clear_board','',function(){
           doGtpCmd('boardsize',$('#dialog-new-size').val(),function(){
             doGtpCmd('komi',$('#dialog-new-komi').val(),refreshBoard);
@@ -417,8 +468,20 @@ $(document).ready(function()
       }
     }
   });
+  $('#dialog-info').dialog(
+  {
+    autoOpen: false,
+    width: 250,
+    modal: true,
+    resizable: false,
+    buttons: {
+      'OK': function()
+      {
+        $(this).dialog('close');
+      }
+    }
+  });
 
-  $('button').button();
   $('#new').click(function()
   {
     $('#dialog-new-size').val(board_size);
@@ -426,18 +489,24 @@ $(document).ready(function()
     $('#dialog-new-color').val(engine_color);
     $('#dialog-new').dialog('open');
   });
-  $('#pass').click(function(){doGtpCmd('play',next_color+'&pass',refreshBoard);});
-  $('#genmove').click(function(){doGtpCmdThink('genmove',next_color,refreshBoard);});
+  $('#pass').click(function(){if (!buttons_enabled['pass']) return; doGtpCmd('play',next_color+'&pass',refreshBoard);});
+  $('#genmove').click(function(){if (!buttons_enabled['genmove']) return; doGtpCmdThink('genmove',next_color,refreshBoard);});
   $('#stop').click(function()
   {
-    $('#stop').button({disabled:true});
+    if (!buttons_enabled['stop']) return;
+    disableButton('stop');
     doGtpCmd('stop','',function()
     {
       engine_color='none'
       refreshBoard();
     });
   });
-  $('#stop').hide();
+  $('#info').click(function()
+  {
+    if (!buttons_enabled['info']) return;
+    $('#dialog-info-status').html(info);
+    $('#dialog-info').dialog('open');
+  });
 
   refreshBoard();
 });
