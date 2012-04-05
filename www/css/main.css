@@ -27,6 +27,8 @@ a:hover {
 
 #header {
   text-align: center;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #7f7f7f;
 }
 
 #header h1 {
@@ -66,7 +68,7 @@ a:hover {
 #footer {
   clear: both;
   text-align: center;
-  font-size: 80%;
+  font-size: 70%;
   color: #7f7f7f;
   padding-top: 10px;
 }
