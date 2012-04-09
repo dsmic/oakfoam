@@ -48,6 +48,7 @@ function doGtpCmdThink(cmd,args,func)
     spinnersStart();
   }
   drawBoard();
+  disableButton('new');
   disableButton('pass');
   disableButton('genmove');
   enableButton('stop');
@@ -284,6 +285,7 @@ function moveDone()
     else
     {
       thinking=false;
+      enableButton('new');
       enableButton('pass');
       enableButton('genmove');
       disableButton('stop');
@@ -380,9 +382,15 @@ function refreshBoard()
     }
     
     if (thinking)
+    {
+      disableButton('new');
       enableButton('stop');
+    }
     else
+    {
+      enableButton('new');
       disableButton('stop');
+    }
 
     updateStatus();
     $.getJSON('board_pos.jsoncmd',function(data)
