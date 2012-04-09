@@ -298,6 +298,9 @@ function moveDone()
   else
   {
     thinking=false;
+    enableButton('new');
+    if (moves>0)
+      enableButton('undo');
     drawBoard();
   }
 }
