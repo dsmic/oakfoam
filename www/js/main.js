@@ -412,6 +412,16 @@ function initButton(name)
   buttons_enabled[name]=true;
 }
 
+function initSmallButton(name)
+{
+  r=Raphael(name,16,16);
+  buttons[name]=r.path(icons[name]).attr({fill:'#222',stroke:'none',transform:'s0.4t-16,-16'});
+  hvo=r.rect(0,0,16,16).attr({'fill':'#000','opacity':0});
+  hvo.mouseover(function(){if (buttons_enabled[name]) buttons[name].attr('fill','#444');});
+  hvo.mouseout(function(){if (buttons_enabled[name]) buttons[name].attr('fill','#222');});
+  buttons_enabled[name]=true;
+}
+
 function disableButton(name)
 {
   buttons[name].attr('fill','#777');
@@ -452,8 +462,8 @@ $(document).ready(function()
   initButton('genmove');
   initButton('stop');
   initButton('info');
-  initButton('help');
-  //initButton('undo');
+  initSmallButton('help');
+  initButton('undo');
   initButton('settings');
   $('#menu').tooltip();
 
@@ -465,6 +475,10 @@ $(document).ready(function()
     modal: true,
     resizable: false,
     buttons: {
+      'Cancel': function()
+      {
+        $(this).dialog('close');
+      },
       'OK': function()
       {
         size_chg=true;
@@ -478,10 +492,6 @@ $(document).ready(function()
           });
         });
 
-        $(this).dialog('close');
-      },
-      'Cancel': function()
-      {
         $(this).dialog('close');
       }
     }
@@ -551,6 +561,7 @@ $(document).ready(function()
   });
   $('#help').click(function(){$('#dialog-help').dialog('open');});
   $('#settings').click(function(){if (!buttons_enabled['settings']) return; alert('Under construction!');});
+  $('#undo').click(function(){if (!buttons_enabled['undo']) return; alert('Under construction!');});
 
   refreshBoard();
 });

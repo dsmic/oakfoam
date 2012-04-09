@@ -12,18 +12,19 @@
 <body>
 
 <div id="page">
+  <div id="help" title="Help"></div>
+
   <div id="header">
     <!--<h1>Oakfoam</h1>-->
   </div>
   <div id="menu">
     <span id="new" title="New Game"></span><br/>
     <span id="info" title="Game Info"></span><br/>
+    <span id="undo" title="Undo Last Move"></span><br/>
     <span id="pass" title="Pass"></span><br/>
     <span id="genmove" title="Make Engine Play"></span><br/>
     <span id="stop" title="Stop Thinking"></span><br/>
     <span id="settings" title="Adjust Settings"></span><br/>
-    <span id="help" title="Help"></span><br/>
-    <!--<span id="undo" title="Undo Last Move"></span><br/>-->
   </div>
 
   <div id="board-container">
@@ -68,6 +69,7 @@
 </div>
 
 <div id="dialog-help" title="Help">
+  <p>This is the web interface for Oakfoam. It consists of a small web server and that served this page. It is designed to be a simplicitic and easy to use interface.</p>
   <p>Click on the board to place a stone or select one of the menu buttons on the left. If you are unsure what a button does, hovering over it should display an informative tooltip.</p>
   <p>For learning the rules of Go, try <a href="http://playgo.to/iwtg">the Interactive Way to Go</a>.
   <p>For a more advanced interface, try <a href="http://gogui.sourceforge.net/">GoGui</a>.</p>
@@ -75,6 +77,7 @@
   <p>
     Engine: <span id="engine"></span><br/> 
     Website: <a href="http://bitbucket.org/francoisvn/oakfoam">http://bitbucket.org/francoisvn/oakfoam</a><br/>
+    Bugs and Feedback: <a href="mailto:oakfoam@gmail.com">oakfoam@gmail.com</a>.<br/>
   </p>
 </div>
 

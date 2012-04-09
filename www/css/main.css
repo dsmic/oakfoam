@@ -39,6 +39,10 @@ a:hover {
   margin: 0 0 10px;
 }
 
+#help {
+  float: right;
+}
+
 #menu {
   float: left;
   clear: both;
