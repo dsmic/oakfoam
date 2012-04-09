@@ -491,6 +491,19 @@ $(document).ready(function()
       }
     }
   });
+  $('#dialog-help').dialog(
+  {
+    autoOpen: false,
+    width: 500,
+    modal: true,
+    resizable: false,
+    buttons: {
+      'OK': function()
+      {
+        $(this).dialog('close');
+      }
+    }
+  });
 
   $('#new').click(function()
   {
@@ -528,7 +541,7 @@ $(document).ready(function()
     $('#dialog-info-status').html(info);
     $('#dialog-info').dialog('open');
   });
-  $('#help').click(function(){if (!buttons_enabled['help']) return; alert('Under construction!');});
+  $('#help').click(function(){$('#dialog-help').dialog('open');});
   $('#settings').click(function(){if (!buttons_enabled['settings']) return; alert('Under construction!');});
 
   refreshBoard();
