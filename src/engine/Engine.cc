@@ -419,6 +419,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("showboard",this,&Engine::gtpShowBoard);
   gtpe->addFunctionCommand("final_score",this,&Engine::gtpFinalScore);
   gtpe->addFunctionCommand("final_status_list",this,&Engine::gtpFinalStatusList);
+  gtpe->addFunctionCommand("undo",this,&Engine::gtpUndo);
   
   gtpe->addFunctionCommand("param",this,&Engine::gtpParam);
   gtpe->addFunctionCommand("showliberties",this,&Engine::gtpShowLiberties);
@@ -733,6 +734,22 @@ void Engine::gtpShowBoard(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   gtpe->getOutput()->printString("\n");
   gtpe->getOutput()->printString(me->currentboard->toString());
   gtpe->getOutput()->endResponse(true);
+}
+
+void Engine::gtpUndo(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  if (me->undo())
+  {
+    gtpe->getOutput()->startResponse(cmd);
+    gtpe->getOutput()->endResponse();
+  }
+  else
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("cannot undo");
+    gtpe->getOutput()->endResponse();
+  }
 }
 
 void Engine::gtpFinalScore(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
@@ -2704,6 +2721,23 @@ void Engine::clearMoveTree()
   
   params->uct_slow_update_last=0;
   params->tree_instances=0; // reset as lock free implementation could be slightly off
+}
+
+bool Engine::undo()
+{
+  if (currentboard->getMovesMade()<=0)
+    return false;
+
+  std::list<Go::Move> oldhistory = *movehistory;
+  oldhistory.pop_back();
+  this->clearBoard();
+
+  for(std::list<Go::Move>::iterator iter=oldhistory.begin();iter!=oldhistory.end();++iter)
+  {
+    this->makeMove((*iter));
+  }
+
+  return true;
 }
 
 void Engine::chooseSubTree(Go::Move move)

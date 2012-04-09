@@ -51,6 +51,7 @@ function doGtpCmdThink(cmd,args,func)
   disableButton('new');
   disableButton('pass');
   disableButton('genmove');
+  disableButton('undo');
   enableButton('stop');
   $('#status').html('Engine is thinking...');
   doGtpCmd(cmd,args,func)
@@ -288,6 +289,8 @@ function moveDone()
       enableButton('new');
       enableButton('pass');
       enableButton('genmove');
+      if (moves>0)
+        enableButton('undo');
       disableButton('stop');
       drawBoard();
     }
@@ -374,11 +377,16 @@ function refreshBoard()
     {
       disableButton('pass');
       disableButton('genmove');
+      disableButton('undo');
     }
     else
     {
       enableButton('pass');
       enableButton('genmove');
+      if (moves>0)
+        enableButton('undo');
+      else
+        disableButton('undo');
     }
     
     if (thinking)
@@ -525,6 +533,7 @@ $(document).ready(function()
 
   $('#new').click(function()
   {
+    if (!buttons_enabled['new']) return;
     $('#dialog-new-size').val(board_size);
     $('#dialog-new-komi').val(komi);
     $('#dialog-new-color').val(engine_color);
@@ -534,7 +543,7 @@ $(document).ready(function()
   $('#genmove').click(function()
   {
     if (!buttons_enabled['genmove']) return;
-    if (engine_color=='none')
+    if (engine_color!='both')
     {
       if (next_color=='B')
         engine_color='black';
@@ -561,7 +570,7 @@ $(document).ready(function()
   });
   $('#help').click(function(){$('#dialog-help').dialog('open');});
   $('#settings').click(function(){if (!buttons_enabled['settings']) return; alert('Under construction!');});
-  $('#undo').click(function(){if (!buttons_enabled['undo']) return; alert('Under construction!');});
+  $('#undo').click(function(){if (!buttons_enabled['undo']) return; doGtpCmd('undo','',refreshBoard);});
 
   refreshBoard();
 });

@@ -199,6 +199,10 @@ class Engine
     float getKomi() const { return komi; };
     /** Set the current komi. */
     void setKomi(float k);
+    /** Undo the last move made.
+     * Return true if successful.
+     */
+    bool undo();
     /** Get the 3x3 pattern table in use. */
     Pattern::ThreeByThreeTable *getPatternTable() const { return patterntable; };
     /** Get the features in use. */
@@ -364,6 +368,7 @@ class Engine
     static void gtpShowBoard(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpFinalScore(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpFinalStatusList(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpUndo(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     
     static void gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowLiberties(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
