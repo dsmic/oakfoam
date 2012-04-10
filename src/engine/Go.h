@@ -640,7 +640,7 @@ namespace Go
       /** Determine if a stone is alive, according to the given territory map and threshold. */
       bool isAlive(Go::TerritoryMap *tmap, float threshold, int pos) const;
       /** Get the territory score using the given territory map and threshold. */
-      int territoryScore(Go::TerritoryMap *tmap, float threshold) const;
+      int territoryScore(Go::TerritoryMap *tmap, float threshold);
     
     private:
       const int size;

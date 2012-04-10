@@ -94,7 +94,7 @@
     <td><input type="text" name="komi" id="dialog-settings-komi" class="text ui-widget-content ui-corner-all"/></td></tr>
 
     <tr><td>Engine Color</td>
-    <td><select name="color" id="dialog-settings-color" class="text ui-widget-content ui-corner-all">
+    <td><select name="color" id="dialog-settings-color" class="text ui-widget-content ui-corner-all" title="color engine should play for">
       <option value="black">Black</option>
       <option value="white">White</option>
       <option value="both">Both</option>
@@ -106,11 +106,11 @@
 
     <tr><td>Playouts/Move</td>
     <td><input type="checkbox" name="playouts-en" id="dialog-settings-playouts-en" class="text ui-widget-content ui-corner-all checkbox"/>
-    <input type="text" name="playouts" id="dialog-settings-playouts" class="text ui-widget-content ui-corner-all withcheckbox"/></td></tr>
+    <input type="text" name="playouts" id="dialog-settings-playouts" class="text ui-widget-content ui-corner-all withcheckbox" title="Monte-Carlo simulations"/></td></tr>
 
     <tr><td>Time/Move</td>
     <td><input type="checkbox" name="time-en" id="dialog-settings-time-en" class="text ui-widget-content ui-corner-all checkbox"/>
-    <input type="text" name="time" id="dialog-settings-time" class="text ui-widget-content ui-corner-all withcheckbox" title="(seconds)"/></td></tr>
+    <input type="text" name="time" id="dialog-settings-time" class="text ui-widget-content ui-corner-all withcheckbox" title="in seconds"/></td></tr>
   </table>
   </form>
   <span class="info">Changing the board size or komi will cause the board to be cleared. For more advanced settings, please edit the included "settings.gtp" file, or use a more advanced interface, like <a href="http://gogui.sourceforge.net/">GoGui</a>.</span>

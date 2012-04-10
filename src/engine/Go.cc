@@ -1951,7 +1951,7 @@ bool Go::Board::isAlive(Go::TerritoryMap *tmap, float threshold, int pos) const
     return false;
 }
 
-int Go::Board::territoryScore(Go::TerritoryMap *tmap, float threshold) const
+int Go::Board::territoryScore(Go::TerritoryMap *tmap, float threshold)
 {
   int score;
   Go::Board *tmpboard=this->copy();
@@ -1963,6 +1963,10 @@ int Go::Board::territoryScore(Go::TerritoryMap *tmap, float threshold) const
   }
   
   score=tmpboard->score();
+  if (lastscoredata!=NULL)
+    delete [] lastscoredata;
+  lastscoredata=tmpboard->lastscoredata;
+  tmpboard->lastscoredata=NULL;
   
   delete tmpboard;
   return score;

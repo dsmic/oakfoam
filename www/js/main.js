@@ -389,7 +389,7 @@ function refreshBoard()
     playouts=data['playouts'];
     time=data['time'];
 
-    if (passes>=2 || last_move=='RESIGN')
+    if (passes>=2 || last_move=='RESIGN' || (passes==0 && moves>=2 && last_move.split(':')[1]=='PASS'))
       game_over=true;
     else
     {
