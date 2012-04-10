@@ -4,6 +4,7 @@ var komi;
 var moves;
 var last_move;
 var next_color;
+var simple_ko;
 var engine_color='none';
 var passes;
 var threads;
@@ -199,6 +200,10 @@ function drawBoard()
         if ((c+":"+pos)==last_move)
           paper.circle(x*24+12+bdr,y*24+12+bdr,4).attr({fill:'#7f7f7f',stroke:'none'});
       }
+      else if (pos==simple_ko)
+      {
+        paper.rect(x*24+6+bdr,y*24+6+bdr,12,12);
+      }
       else
       {
         itt=paper.rect(x*24+bdr,y*24+bdr,24,24).attr({fill:'#000',opacity:0});
@@ -378,6 +383,7 @@ function refreshBoard()
     moves=data['moves'];
     last_move=data['last_move'];
     next_color=data['next_color'];
+    simple_ko=data['simple_ko'];
     passes=data['passes'];
     threads=data['threads'];
     playouts=data['playouts'];
