@@ -6,6 +6,9 @@ var last_move;
 var next_color;
 var engine_color='none';
 var passes;
+var threads;
+var playouts;
+var time;
 var game_over=false;
 var paper=null;
 var size_chg=true;
@@ -52,6 +55,7 @@ function doGtpCmdThink(cmd,args,func)
   disableButton('pass');
   disableButton('genmove');
   disableButton('undo');
+  disableButton('settings');
   enableButton('stop');
   $('#status').html('Engine is thinking...');
   doGtpCmd(cmd,args,func)
@@ -273,6 +277,8 @@ function drawBoard()
       spinners[i].toBack();
     }
   }
+
+  $('#page').show();
 }
 
 function moveDone()
@@ -291,6 +297,7 @@ function moveDone()
       enableButton('genmove');
       if (moves>0)
         enableButton('undo');
+      enableButton('settings');
       disableButton('stop');
       drawBoard();
     }
@@ -301,6 +308,7 @@ function moveDone()
     enableButton('new');
     if (moves>0)
       enableButton('undo');
+    enableButton('settings');
     drawBoard();
   }
 }
@@ -324,9 +332,13 @@ function updateStatus()
   else
     info+='Next to Move: '+next_color+'<br/>\n';
   
-  stat=moves+': ';
   if (moves>0)
+  {
+    stat=moves+': ';
     stat+=last_move.split(':')[1];
+  }
+  else
+    stat="Place a stone or click play to start";
   $('#status').html(stat);
 
   if (game_over)
@@ -367,6 +379,9 @@ function refreshBoard()
     last_move=data['last_move'];
     next_color=data['next_color'];
     passes=data['passes'];
+    threads=data['threads'];
+    playouts=data['playouts'];
+    time=data['time'];
 
     if (passes>=2 || last_move=='RESIGN')
       game_over=true;
@@ -395,11 +410,13 @@ function refreshBoard()
     if (thinking)
     {
       disableButton('new');
+      disableButton('settings');
       enableButton('stop');
     }
     else
     {
       enableButton('new');
+      enableButton('settings');
       disableButton('stop');
     }
 
@@ -409,6 +426,15 @@ function refreshBoard()
       board_data=data;
       drawBoard();
       moveDone();
+    });
+  });
+}
+
+function updateParams()
+{
+  doGtpCmd('param','thread_count&'+threads,function(){
+    doGtpCmd('param','playouts_per_move&'+playouts,function(){
+      doGtpCmd('param','time_move_max&'+time,refreshBoard);
     });
   });
 }
@@ -447,6 +473,7 @@ function enableButton(name)
 
 $(document).ready(function()
 {
+  $('#page').hide(); // hide the content until the board has been drawn at least once
   r=Raphael('header',250,50);
   r.path(header).attr({fill:'#222',stroke:'none',transform:'s0.8t25,0'});
 
@@ -476,7 +503,10 @@ $(document).ready(function()
   initSmallButton('help');
   initButton('undo');
   initButton('settings');
-  $('#menu').tooltip();
+  $('#page').tooltip();
+  
+  //$('#dialog-settings > tr').find('td:eq(1)').append('zzz');
+  $('#dialog-settings tr').find('td:eq(0)').css('text-align','right');
 
   $('#dialog-new').dialog(
   {
@@ -533,14 +563,66 @@ $(document).ready(function()
       }
     }
   });
+  $('#dialog-settings').dialog(
+  {
+    autoOpen: false,
+    width: 300,
+    modal: true,
+    resizable: false,
+    buttons: {
+      'Cancel': function()
+      {
+        $(this).dialog('close');
+      },
+      'OK': function()
+      {
+        clearboard=false;
+        if ($('#dialog-settings-size').val()!=size)
+        {
+          size=$('#dialog-settings-size').val();
+          clearboard=true;
+          size_chg=true;
+        }
+        if ($('#dialog-settings-komi').val()!=komi)
+        {
+          komi=$('#dialog-settings-komi').val();
+          clearboard=true;
+        }
+        engine_color=$('#dialog-settings-color').val();
+        threads=$('#dialog-settings-threads').val();
+        if ($('#dialog-settings-playouts-en').attr('checked'))
+          playouts=$('#dialog-settings-playouts').val();
+        else
+          playouts=10000000;
+        if ($('#dialog-settings-time-en').attr('checked'))
+          time=$('#dialog-settings-time').val();
+        else
+          time=3600;
+        
+        if (clearboard)
+        {
+          doGtpCmd('clear_board','',function(){
+            doGtpCmd('boardsize',size,function(){
+              doGtpCmd('komi',komi,updateParams);
+            });
+          });
+        }
+        else
+          updateParams();
+
+        $(this).dialog('close');
+      }
+    }
+  });
 
   $('#new').click(function()
   {
     if (!buttons_enabled['new']) return;
-    $('#dialog-new-size').val(board_size);
+    /*$('#dialog-new-size').val(board_size);
     $('#dialog-new-komi').val(komi);
     $('#dialog-new-color').val(engine_color);
-    $('#dialog-new').dialog('open');
+    $('#dialog-new').dialog('open');*/
+    doGtpCmd('clear_board','',refreshBoard);
   });
   $('#pass').click(function(){if (!buttons_enabled['pass']) return; doGtpCmd('play',next_color+'&pass',refreshBoard);});
   $('#genmove').click(function()
@@ -572,7 +654,74 @@ $(document).ready(function()
     $('#dialog-info').dialog('open');
   });
   $('#help').click(function(){$('#dialog-help').dialog('open');});
-  $('#settings').click(function(){if (!buttons_enabled['settings']) return; alert('Under construction!');});
+  $('#settings').click(function()
+  {
+    if (!buttons_enabled['settings']) return;
+    $('#dialog-settings-size').val(board_size);
+    $('#dialog-settings-komi').val(komi);
+    $('#dialog-settings-color').val(engine_color);
+    $('#dialog-settings-threads').val(threads);
+    if (playouts>=10000000)
+    {
+      $('#dialog-settings-playouts-en').attr('checked',false);
+      $('#dialog-settings-playouts').val('unlimited');
+      $('#dialog-settings-playouts').disabled=true;
+      $('#dialog-settings-playouts').addClass('disabled');
+    }
+    else
+    {
+      $('#dialog-settings-playouts-en').attr('checked',true);
+      $('#dialog-settings-playouts').val(playouts);
+      $('#dialog-settings-playouts').disabled=false;
+      $('#dialog-settings-playouts').removeClass('disabled');
+    }
+    if (time>=3600)
+    {
+      $('#dialog-settings-time-en').attr('checked',false);
+      $('#dialog-settings-time').val('unlimited');
+      $('#dialog-settings-time').disabled=true;
+      $('#dialog-settings-time').addClass('disabled');
+    }
+    else
+    {
+      $('#dialog-settings-time-en').attr('checked',true);
+      $('#dialog-settings-time').val(time);
+      $('#dialog-settings-time').disabled=false;
+      $('#dialog-settings-time').removeClass('disabled');
+    }
+    $('#dialog-settings-time').val(time);
+    $('#dialog-settings').dialog('open');
+  });
+  $('#dialog-settings-playouts-en').change(function(){
+    if (!$('#dialog-settings-playouts-en').attr('checked'))
+    {
+      $('#dialog-settings-playouts').val('unlimited');
+      $('#dialog-settings-playouts').disabled=true;
+      $('#dialog-settings-playouts').addClass('disabled');
+    }
+    else
+    {
+      $('#dialog-settings-playouts').val(playouts);
+      $('#dialog-settings-playouts').disabled=false;
+      $('#dialog-settings-playouts').removeClass('disabled');
+    }
+    return true;
+  });
+  $('#dialog-settings-time-en').change(function(){
+    if (!$('#dialog-settings-time-en').attr('checked'))
+    {
+      $('#dialog-settings-time').val('unlimited');
+      $('#dialog-settings-time').disabled=true;
+      $('#dialog-settings-time').addClass('disabled');
+    }
+    else
+    {
+      $('#dialog-settings-time').val(time);
+      $('#dialog-settings-time').disabled=false;
+      $('#dialog-settings-time').removeClass('disabled');
+    }
+    return true;
+  });
   $('#undo').click(function(){if (!buttons_enabled['undo']) return; doGtpCmd('undo','',refreshBoard);});
 
   refreshBoard();

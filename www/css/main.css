@@ -91,10 +91,43 @@ a:hover {
 
 #dialog-info {
   text-align: left;
+  font-size: 10pt;
 }
 
 #dialog-help {
   text-align: left;
   font-size: 10pt;
+}
+
+#dialog-settings {
+  text-align: left;
+  font-size: 10pt;
+}
+
+#dialog-settings table{
+  text-align: left;
+  font-size: 10pt;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+#dialog-settings input,select {
+  width: 100px;
+}
+
+#dialog-settings input.checkbox {
+  width: 20px;
+}
+
+#dialog-settings input.withcheckbox {
+  width: 75px;
+}
+
+#dialog-settings input.disabled {
+  color: #7f7f7f;
+}
+
+.info {
+  font-size: 8pt;
 }
 

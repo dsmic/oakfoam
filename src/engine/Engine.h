@@ -213,6 +213,8 @@ class Engine
     Go::ZobristTree *getZobristHashTree() const { return hashtree; };
     /** Get the GTP engine. */
     Gtp::Engine *getGtpEngine() const { return gtpe; };
+    /** Get the engine parameters. */
+    Parameters *getParams() const { return params; };
     /** Stop any thinking, if applicable. */
     void stopThinking() { stopthinking=true; };
     /** Do work for a thread. */

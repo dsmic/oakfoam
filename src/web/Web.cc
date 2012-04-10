@@ -275,7 +275,10 @@ void Web::respondJson(socket_ptr sock, std::string uri)
     out<<"\"last_move\": \""<<engine->getCurrentBoard()->getLastMove().toString(size)<<"\",\n";
     out<<"\"next_color\": \""<<Go::colorToChar(engine->getCurrentBoard()->nextToMove())<<"\",\n";
     out<<"\"simple_ko\": \""<<Go::Position::pos2string(engine->getCurrentBoard()->getSimpleKo(),size)<<"\",\n";
-    out<<"\"passes\": "<<engine->getCurrentBoard()->getPassesPlayed()<<"\n"; // no 'trailing' comma
+    out<<"\"passes\": "<<engine->getCurrentBoard()->getPassesPlayed()<<",\n";
+    out<<"\"threads\": "<<engine->getParams()->thread_count<<",\n";
+    out<<"\"playouts\": "<<engine->getParams()->playouts_per_move<<",\n";
+    out<<"\"time\": "<<engine->getParams()->time_move_max<<"\n"; // no 'trailing' comma
   }
   else if (cmd=="board_pos")
   {
