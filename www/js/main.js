@@ -695,7 +695,6 @@ $(document).ready(function()
       $('#dialog-settings-time').disabled=false;
       $('#dialog-settings-time').removeClass('disabled');
     }
-    $('#dialog-settings-time').val(time);
     $('#dialog-settings').dialog('open');
   });
   $('#dialog-settings-playouts-en').change(function(){
