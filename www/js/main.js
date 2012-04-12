@@ -348,7 +348,10 @@ function updateStatus()
   if (moves>0)
   {
     stat=moves+': ';
-    stat+=last_move.split(':')[1];
+    if (last_move=='RESIGN')
+      stat+=last_move;
+    else
+      stat+=last_move.split(':')[1];
   }
   else
     stat="Place a stone or click play to start";
@@ -359,7 +362,7 @@ function updateStatus()
     if (last_move=='RESIGN')
     {
       info+='Result: '+next_color+'+R<br/>\n';
-      $('#status').append(' Result: '+next_color+'+R');
+      $('#status').append(' - Result: '+next_color+'+R');
     }
     else
     {
@@ -369,7 +372,7 @@ function updateStatus()
         if (score=='0')
           score='Jigo';
         info+='Result: '+score+'<br/>\n';
-        $('#status').append(' Result: '+score);
+        $('#status').append(' - Result: '+score);
         $.getJSON('board_scored.jsoncmd',function(data)
         {
           board_scored=data;
