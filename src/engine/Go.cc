@@ -1995,6 +1995,8 @@ bool Go::Board::isProbableWorkingLadderAfter(Go::Group *group, Go::Move move) co
   int posA=group->getOtherOneOfTwoLiberties(move.getPosition());
   if (posA==-1 || move.getColor()==group->getColor())
     return false;
+  else if (this->isSelfAtari(move))
+    return false;
   else
     return this->isProbableWorkingLadder(group,posA);
 }
@@ -2031,6 +2033,20 @@ bool Go::Board::isProbableWorkingLadder(Go::Group *group, int posA) const
 
   if (dir==0)
     return false;
+
+  //check for stones in atari
+  Go::list_int *adjacentgroups=group->getAdjacentGroups();
+  if (adjacentgroups->size()>(unsigned int)this->getPositionMax())
+  {
+    adjacentgroups->sort();
+    adjacentgroups->unique();
+  }
+  for(Go::list_int::iterator iter=adjacentgroups->begin();iter!=adjacentgroups->end();++iter)
+  {
+    if (this->inGroup((*iter)) && this->getGroup((*iter))->inAtari())
+      return false;
+  }
+
 
   //fprintf(stderr,"dir: %d\n",dir);
 
