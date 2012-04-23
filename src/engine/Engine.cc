@@ -1317,9 +1317,12 @@ void Engine::gtpBoardStats(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
       {
         Go::Color col=Go::otherColor(group->getColor());
         foreach_adjacent(p,q,{
-          Go::Move move=Go::Move(col,q);
-          if (board->isLadderAfter(group,move))
-            gtpe->getOutput()->printf("ladder at %s after %s works: %d\n",Go::Position::pos2string(p,size).c_str(),move.toString(size).c_str(),board->isProbableWorkingLadderAfter(group,move));
+          if (board->onBoard(q))
+          {
+            Go::Move move=Go::Move(col,q);
+            if (board->validMove(move) && board->isLadderAfter(group,move))
+              gtpe->getOutput()->printf("ladder at %s after %s works: %d\n",Go::Position::pos2string(p,size).c_str(),move.toString(size).c_str(),board->isProbableWorkingLadderAfter(group,move));
+          }
         });
       }
     }
