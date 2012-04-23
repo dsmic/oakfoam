@@ -2045,7 +2045,7 @@ bool Go::Board::isProbableWorkingLadder(Go::Group *group, int posA, int movepos)
     }
   });
 
-  fprintf(stderr,"dir: %d\n",dir);
+  //fprintf(stderr,"dir: %d\n",dir);
   if (dir==0)
     return false;
 
