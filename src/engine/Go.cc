@@ -1987,7 +1987,16 @@ bool Go::Board::isLadderAfter(Go::Group *group, Go::Move move) const
   if (libpos==-1 || move.getColor()==group->getColor())
     return false;
 
-  return (this->touchingEmpty(libpos)<=2);
+  int liberties=0;
+  foreach_adjacent(libpos,p,{
+      if (this->getColor(p)==Go::EMPTY && p!=move.getPosition())
+      {
+        liberties++;
+        if (liberties>2)
+          return false;
+      }
+  });
+  return true;
 }
 
 bool Go::Board::isProbableWorkingLadderAfter(Go::Group *group, Go::Move move) const
@@ -1998,7 +2007,7 @@ bool Go::Board::isProbableWorkingLadderAfter(Go::Group *group, Go::Move move) co
   else if (this->isSelfAtari(move))
     return false;
   else
-    return this->isProbableWorkingLadder(group,posA);
+    return this->isProbableWorkingLadder(group,posA,move.getPosition());
 }
 
 bool Go::Board::isProbableWorkingLadder(Go::Group *group) const
@@ -2010,7 +2019,7 @@ bool Go::Board::isProbableWorkingLadder(Go::Group *group) const
     return this->isProbableWorkingLadder(group,posA);
 }
 
-bool Go::Board::isProbableWorkingLadder(Go::Group *group, int posA) const
+bool Go::Board::isProbableWorkingLadder(Go::Group *group, int posA, int movepos) const
 {
   int dir=0,dir1=0,dir2=0;
 
@@ -2020,7 +2029,7 @@ bool Go::Board::isProbableWorkingLadder(Go::Group *group, int posA) const
   });
 
   foreach_adjacent(posA,p,{
-    if (this->getColor(p)==Go::EMPTY)
+    if (this->getColor(p)==Go::EMPTY && p!=movepos)
     {
       int dir2tmp=p-posA;
       if (dir1!=dir2tmp)
@@ -2047,7 +2056,6 @@ bool Go::Board::isProbableWorkingLadder(Go::Group *group, int posA) const
       return false;
   }
 
-
   //fprintf(stderr,"dir: %d\n",dir);
 
   Go::Color col=group->getColor();
@@ -2072,9 +2080,7 @@ bool Go::Board::isProbableWorkingLadder(Go::Group *group, int posA) const
       Go::Color colD=this->getColor(posA-dir2-dir2);
       Go::Color colE=this->getColor(posA+dir1-dir2);
       //fprintf(stderr,"posA 2: %s %c %c\n",Go::Position::pos2string(posA,size).c_str(),Go::colorToChar(colD),Go::colorToChar(colE));
-      if (colD==col)
-        return false;
-      else if (colE==col)
+      if (colD!=othercol && colE!=othercol && (colD==col || colE==col))
         return false;
     }
 

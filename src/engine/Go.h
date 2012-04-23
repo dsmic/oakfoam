@@ -713,7 +713,7 @@ namespace Go
       int doSymmetryTransformPrimitive(Go::Board::Symmetry sym, int pos) const;
       
       void spreadScore(Go::Board::ScoreVertex *scoredata, int pos, Go::Color col);
-      bool isProbableWorkingLadder(Go::Group *group, int posA) const;
+      bool isProbableWorkingLadder(Go::Group *group, int posA, int movepos=-1) const;
       
       void refreshFeatureGammas();
       void updateFeatureGammas();
