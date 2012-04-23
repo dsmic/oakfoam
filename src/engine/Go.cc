@@ -2028,7 +2028,7 @@ bool Go::Board::isProbableWorkingLadder(Go::Group *group, int posA, int movepos)
     {
       if (this->getGroup(p)==group)
         dir1=posA-p;
-      else
+      else if (this->getColor(p)==group->getColor())
         return false;
     }
   });
@@ -2045,6 +2045,7 @@ bool Go::Board::isProbableWorkingLadder(Go::Group *group, int posA, int movepos)
     }
   });
 
+  fprintf(stderr,"dir: %d\n",dir);
   if (dir==0)
     return false;
 
@@ -2061,15 +2062,23 @@ bool Go::Board::isProbableWorkingLadder(Go::Group *group, int posA, int movepos)
       return false;
   }
 
-  //fprintf(stderr,"dir: %d\n",dir);
-
   Go::Color col=group->getColor();
   Go::Color othercol=Go::otherColor(col);
 
   while (true)
   {
-    Go::Color colB=this->getColor(posA+dir1);
-    Go::Color colC=this->getColor(posA+dir2);
+    Go::Color colB;
+    Go::Color colC;
+    if (this->getDistanceToBorder(posA)>2) // in middle
+    {
+      colB=this->getColor(posA+dir1);
+      colC=this->getColor(posA+dir2);
+    }
+    else // near edge
+    {
+      colB=this->getColor(posA+dir2);
+      colC=this->getColor(posA+dir1);
+    }
     //fprintf(stderr,"ladder?: %s %s %c %c\n",Go::Position::pos2string(group->getPosition(),size).c_str(),Go::Position::pos2string(posA,size).c_str(),Go::colorToChar(colB),Go::colorToChar(colC));
 
     if (colB==Go::OFFBOARD)
@@ -2090,9 +2099,12 @@ bool Go::Board::isProbableWorkingLadder(Go::Group *group, int posA, int movepos)
     }
 
     posA+=dir2;
-    int dirtmp=dir1;
-    dir1=dir2;
-    dir2=dirtmp;
+    if (this->getDistanceToBorder(posA)>2) // in middle
+    {
+      int dirtmp=dir1;
+      dir1=dir2;
+      dir2=dirtmp;
+    }
   }
 
   return true;
