@@ -1972,3 +1972,102 @@ int Go::Board::territoryScore(Go::TerritoryMap *tmap, float threshold)
   return score;
 }
 
+bool Go::Board::isLadder(Go::Group *group) const
+{
+  int libpos=group->getAtariPosition();
+  if (libpos==-1)
+    return false;
+
+  return (this->touchingEmpty(libpos)<=2);
+}
+
+bool Go::Board::isLadderAfter(Go::Group *group, Go::Move move) const
+{
+  int libpos=group->getOtherOneOfTwoLiberties(move.getPosition());
+  if (libpos==-1 || move.getColor()==group->getColor())
+    return false;
+
+  return (this->touchingEmpty(libpos)<=2);
+}
+
+bool Go::Board::isProbableWorkingLadderAfter(Go::Group *group, Go::Move move) const
+{
+  int posA=group->getOtherOneOfTwoLiberties(move.getPosition());
+  if (posA==-1 || move.getColor()==group->getColor())
+    return false;
+  else
+    return this->isProbableWorkingLadder(group,posA);
+}
+
+bool Go::Board::isProbableWorkingLadder(Go::Group *group) const
+{
+  int posA=group->getAtariPosition();
+  if (posA==-1)
+    return false;
+  else
+    return this->isProbableWorkingLadder(group,posA);
+}
+
+bool Go::Board::isProbableWorkingLadder(Go::Group *group, int posA) const
+{
+  int dir=0,dir1=0,dir2=0;
+
+  foreach_adjacent(posA,p,{
+    if (this->inGroup(p) && this->getGroup(p)==group)
+      dir1=posA-p;
+  });
+
+  foreach_adjacent(posA,p,{
+    if (this->getColor(p)==Go::EMPTY)
+    {
+      int dir2tmp=p-posA;
+      if (dir1!=dir2tmp)
+      {
+        dir2=dir2tmp;
+        dir=dir1+dir2;
+      }
+    }
+  });
+
+  if (dir==0)
+    return false;
+
+  //fprintf(stderr,"dir: %d\n",dir);
+
+  Go::Color col=group->getColor();
+  Go::Color othercol=Go::otherColor(col);
+
+  while (true)
+  {
+    Go::Color colB=this->getColor(posA+dir1);
+    Go::Color colC=this->getColor(posA+dir2);
+    //fprintf(stderr,"posA: %s %c %c\n",Go::Position::pos2string(posA,size).c_str(),Go::colorToChar(colB),Go::colorToChar(colC));
+
+    if (colB==Go::OFFBOARD)
+      return (colC!=othercol);
+    else if (colB!=Go::EMPTY)
+      return (colB==othercol);
+    else if (colC==Go::OFFBOARD)
+      return true;
+    else if (colC!=Go::EMPTY)
+      return (colC==othercol);
+    else
+    {
+      Go::Color colD=this->getColor(posA-dir2-dir2);
+      Go::Color colE=this->getColor(posA+dir1-dir2);
+      //fprintf(stderr,"posA 2: %s %c %c\n",Go::Position::pos2string(posA,size).c_str(),Go::colorToChar(colD),Go::colorToChar(colE));
+      if (colD==col)
+        return false;
+      else if (colE==col)
+        return false;
+    }
+
+    posA+=dir2;
+    int dirtmp=dir1;
+    dir1=dir2;
+    dir2=dirtmp;
+  }
+
+  return true;
+}
+

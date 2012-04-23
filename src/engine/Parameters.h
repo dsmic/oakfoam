@@ -443,6 +443,8 @@ class Parameters
      * Used to measure feature accuracy.
      */
     bool features_ordered_comparison;
+    /** Whether to try take ladders into account with features. */
+    bool features_ladders;
     
     #ifdef HAVE_MPI
       /** Period between MPI syncs.

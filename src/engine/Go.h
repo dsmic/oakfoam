@@ -641,6 +641,17 @@ namespace Go
       bool isAlive(Go::TerritoryMap *tmap, float threshold, int pos) const;
       /** Get the territory score using the given territory map and threshold. */
       int territoryScore(Go::TerritoryMap *tmap, float threshold);
+
+      /** Determine if there is a ladder for the group.
+       * A ladder is only detected if the group in question is currently in atari.
+       */
+      bool isLadder(Go::Group *group) const;
+      /** Determine if there is a ladder for the group after the move is made. */
+      bool isLadderAfter(Go::Group *group, Go::Move move) const;
+      /** Determine if the ladder works or is broken in most cases. */
+      bool isProbableWorkingLadder(Go::Group *group) const;
+      /** Determine if the ladder that exists after the move is made works or is broken in most cases. */
+      bool isProbableWorkingLadderAfter(Go::Group *group, Go::Move move) const;
     
     private:
       const int size;
@@ -702,6 +713,7 @@ namespace Go
       int doSymmetryTransformPrimitive(Go::Board::Symmetry sym, int pos) const;
       
       void spreadScore(Go::Board::ScoreVertex *scoredata, int pos, Go::Color col);
+      bool isProbableWorkingLadder(Go::Group *group, int posA) const;
       
       void refreshFeatureGammas();
       void updateFeatureGammas();

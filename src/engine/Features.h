@@ -3,9 +3,9 @@
 
 #define PASS_LEVELS 2
 #define CAPTURE_LEVELS 3
-#define EXTENSION_LEVELS 1
+#define EXTENSION_LEVELS 2
 #define SELFATARI_LEVELS 1
-#define ATARI_LEVELS 2
+#define ATARI_LEVELS 3
 #define BORDERDIST_LEVELS 4
 #define LASTDIST_LEVELS 10
 #define SECONDLASTDIST_LEVELS 10
@@ -21,9 +21,11 @@ const std::string FEATURES_DEFAULT=
   "capture:2 50.0 \n" // hand-picked, after adding level
   "capture:3 1000.0 \n" // hand-picked, after adding level
   "extension:1 4.03331 \n"
+  "extension:2 0.1 \n" // hand-picked, after adding level
   "selfatari:1 0.05 \n" // hand-picked, after fixing bug
   "atari:1 1.66722 \n"
   "atari:2 2.99897 \n"
+  "atari:3 0.5 \n" // hand-picked, after adding level
   "borderdist:1 1.29595 \n"
   "borderdist:2 1.06265 \n"
   "borderdist:3 1.82725 \n"
@@ -663,11 +665,13 @@ namespace Pattern
  *    - 3: The move is a capture of a group, of 10 or more stones, adjacent to another group in atari.
  *  - EXTENSION
  *    - 1: The move extends a group in atari.
+ *    - 2: The move extends a group in atari and a working ladder.
  *  - SELFATARI
  *    - 1: The move is a self-atari.
  *  - ATARI
  *    - 1: The move is an atari.
  *    - 2: The move is an atari and there is an active ko.
+ *    - 3: The move is an atari on a group in a broken ladder.
  *  - BORDERDIST
  *    - x: The move is x away from the border.
  *  - LASTDIST

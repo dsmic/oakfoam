@@ -151,6 +151,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("tree","uct_decay_alpha",&(params->uct_decay_alpha),UCT_DECAY_ALPHA);
   params->addParameter("tree","uct_decay_k",&(params->uct_decay_k),UCT_DECAY_K);
   params->addParameter("tree","uct_decay_m",&(params->uct_decay_m),UCT_DECAY_M);
+
+  params->addParameter("tree","features_ladders",&(params->features_ladders),FEATURES_LADDERS);
   
   params->addParameter("rules","rules_positional_superko_enabled",&(params->rules_positional_superko_enabled),RULES_POSITIONAL_SUPERKO_ENABLED);
   params->addParameter("rules","rules_superko_top_ply",&(params->rules_superko_top_ply),RULES_SUPERKO_TOP_PLY);
@@ -1279,29 +1281,49 @@ void Engine::gtpExplainLastMove(void *instance, Gtp::Engine* gtpe, Gtp::Command*
 void Engine::gtpBoardStats(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
+  Go::Board *board=me->currentboard;
+  int size=me->boardsize;
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printf("board stats:\n");
   gtpe->getOutput()->printf("komi: %.1f\n",me->komi);
-  gtpe->getOutput()->printf("moves: %d\n",me->currentboard->getMovesMade());
-  gtpe->getOutput()->printf("next to move: %c\n",(me->currentboard->nextToMove()==Go::BLACK?'B':'W'));
-  gtpe->getOutput()->printf("passes: %d\n",me->currentboard->getPassesPlayed());
+  gtpe->getOutput()->printf("moves: %d\n",board->getMovesMade());
+  gtpe->getOutput()->printf("next to move: %c\n",(board->nextToMove()==Go::BLACK?'B':'W'));
+  gtpe->getOutput()->printf("passes: %d\n",board->getPassesPlayed());
   gtpe->getOutput()->printf("simple ko: ");
-  int simpleko=me->currentboard->getSimpleKo();
+  int simpleko=board->getSimpleKo();
   if (simpleko==-1)
     gtpe->getOutput()->printf("NONE");
   else
   {
-    Gtp::Vertex vert={Go::Position::pos2x(simpleko,me->boardsize),Go::Position::pos2y(simpleko,me->boardsize)};
+    Gtp::Vertex vert={Go::Position::pos2x(simpleko,me->boardsize),Go::Position::pos2y(simpleko,size)};
     gtpe->getOutput()->printVertex(vert);
   }
   gtpe->getOutput()->printf("\n");
   #if SYMMETRY_ONLYDEGRAGE
-    gtpe->getOutput()->printf("stored symmetry: %s (degraded)\n",me->currentboard->getSymmetryString(me->currentboard->getSymmetry()).c_str());
+    gtpe->getOutput()->printf("stored symmetry: %s (degraded)\n",board->getSymmetryString(board->getSymmetry()).c_str());
   #else
-    gtpe->getOutput()->printf("stored symmetry: %s\n",me->currentboard->getSymmetryString(me->currentboard->getSymmetry()).c_str());
+    gtpe->getOutput()->printf("stored symmetry: %s\n",board->getSymmetryString(board->getSymmetry()).c_str());
   #endif
-  gtpe->getOutput()->printf("computed symmetry: %s\n",me->currentboard->getSymmetryString(me->currentboard->computeSymmetry()).c_str());
+  gtpe->getOutput()->printf("computed symmetry: %s\n",board->getSymmetryString(board->computeSymmetry()).c_str());
+  for (int p=0;p<board->getPositionMax();p++)
+  {
+    if (board->inGroup(p) && board->touchingEmpty(p)>0)
+    {
+      Go::Group *group=board->getGroup(p);
+      if (board->isLadder(group))
+        gtpe->getOutput()->printf("ladder at %s works: %d\n",Go::Position::pos2string(p,size).c_str(),board->isProbableWorkingLadder(group));
+      else
+      {
+        Go::Color col=Go::otherColor(group->getColor());
+        foreach_adjacent(p,q,{
+          Go::Move move=Go::Move(col,q);
+          if (board->isLadderAfter(group,move))
+            gtpe->getOutput()->printf("ladder at %s after %s works: %d\n",Go::Position::pos2string(p,size).c_str(),move.toString(size).c_str(),board->isProbableWorkingLadderAfter(group,move));
+        });
+      }
+    }
+  }
   gtpe->getOutput()->endResponse(true);
 }
 

@@ -97,7 +97,23 @@ unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::B
     case Features::EXTENSION:
     {
       if (board->isExtension(move))
+      {
+        if (params->features_ladders)
+        {
+          Go::Color col=move.getColor();
+          int pos=move.getPosition();
+          int size=board->getSize();
+          foreach_adjacent(pos,p,{
+            if (board->inGroup(p) && board->getColor(p)==col)
+            {
+              Go::Group *group=board->getGroup(p);
+              if (board->isLadder(group) && board->isProbableWorkingLadder(group))
+                return 2;
+            }
+          });
+        }
         return 1;
+      }
       else
         return 0;
     }
@@ -112,6 +128,20 @@ unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::B
     {
       if (board->isAtari(move))
       {
+        if (params->features_ladders)
+        {
+          Go::Color col=move.getColor();
+          int pos=move.getPosition();
+          int size=board->getSize();
+          foreach_adjacent(pos,p,{
+            if (board->inGroup(p) && board->getColor(p)!=col)
+            {
+              Go::Group *group=board->getGroup(p);
+              if (board->isLadderAfter(group,move) && !board->isProbableWorkingLadderAfter(group,move))
+                return 3;
+            }
+          });
+        }
         if (board->isCurrentSimpleKo())
           return 2;
         else
