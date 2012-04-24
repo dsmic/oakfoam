@@ -63,13 +63,17 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("general","playouts_per_move_min",&(params->playouts_per_move_min),PLAYOUTS_PER_MOVE_MIN);
   
   params->addParameter("playout","playout_poolrave_enabled",&(params->playout_poolrave_enabled),PLAYOUT_POOLRAVE_ENABLED);
+  params->addParameter("playout","playout_poolrave_criticality",&(params->playout_poolrave_criticality),PLAYOUT_POOLRAVE_CRITICALITY);
   params->addParameter("playout","playout_poolrave_p",&(params->playout_poolrave_p),PLAYOUT_POOLRAVE_P);
   params->addParameter("playout","playout_poolrave_k",&(params->playout_poolrave_k),PLAYOUT_POOLRAVE_K);
   params->addParameter("playout","playout_poolrave_min_playouts",&(params->playout_poolrave_min_playouts),PLAYOUT_POOLRAVE_MIN_PLAYOUTS);
   params->addParameter("playout","playout_lgrf2_enabled",&(params->playout_lgrf2_enabled),PLAYOUT_LGRF2_ENABLED);
   params->addParameter("playout","playout_lgrf1_enabled",&(params->playout_lgrf1_enabled),PLAYOUT_LGRF1_ENABLED);
+  params->addParameter("playout","playout_lgrf2_safe_enabled",&(params->playout_lgrf2_safe_enabled),PLAYOUT_LGRF2_SAFE_ENABLED);
+  params->addParameter("playout","playout_lgrf1_safe_enabled",&(params->playout_lgrf1_safe_enabled),PLAYOUT_LGRF1_SAFE_ENABLED);
   params->addParameter("playout","playout_lgrf1o_enabled",&(params->playout_lgrf1o_enabled),PLAYOUT_LGRF1O_ENABLED);
   params->addParameter("playout","playout_avoid_lbrf1_p",&(params->playout_avoid_lbrf1_p),PLAYOUT_AVOID_LBRF1_P);
+  params->addParameter("playout","playout_lgpf_enabled",&(params->playout_lgpf_enabled),PLAYOUT_LGPF_ENABLED);
   params->addParameter("playout","playout_atari_enabled",&(params->playout_atari_enabled),PLAYOUT_ATARI_ENABLED);
   params->addParameter("playout","playout_lastatari_enabled",&(params->playout_lastatari_enabled),PLAYOUT_LASTATARI_ENABLED);
   params->addParameter("playout","playout_lastatari_leavedouble",&(params->playout_lastatari_leavedouble),PLAYOUT_LASTATARI_LEAVEDOUBLE);
@@ -103,6 +107,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("tree","rave_moves",&(params->rave_moves),RAVE_MOVES);
   params->addParameter("tree","rave_init_wins",&(params->rave_init_wins),RAVE_INIT_WINS);
   params->addParameter("tree","rave_skip",&(params->rave_skip),RAVE_SKIP);
+  params->addParameter("tree","rave_moves_use",&(params->rave_moves_use),RAVE_MOVES_USE);
   
   params->addParameter("tree","uct_expand_after",&(params->uct_expand_after),UCT_EXPAND_AFTER);
   params->addParameter("tree","uct_keep_subtree",&(params->uct_keep_subtree),UCT_KEEP_SUBTREE,&Engine::updateParameterWrapper,this);
@@ -472,8 +477,9 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("showcriticality",this,&Engine::gtpShowCriticality);
   gtpe->addFunctionCommand("showterritory",this,&Engine::gtpShowTerritory);
   gtpe->addFunctionCommand("showratios",this,&Engine::gtpShowRatios);
+  gtpe->addFunctionCommand("showunprune",this,&Engine::gtpShowUnPrune);
   gtpe->addFunctionCommand("showraveratios",this,&Engine::gtpShowRAVERatios);
-  gtpe->addFunctionCommand("showraveratiosOC",this,&Engine::gtpShowRAVERatiosOC);
+  gtpe->addFunctionCommand("showraveratiosoc",this,&Engine::gtpShowRAVERatiosOC);
   
   //gtpe->addAnalyzeCommand("final_score","Final Score","string");
   //gtpe->addAnalyzeCommand("showboard","Show Board","string");
@@ -490,8 +496,9 @@ void Engine::addGtpCommands()
   //gtpe->addAnalyzeCommand("showsafepositions","Show Safe Positions","gfx");
   gtpe->addAnalyzeCommand("showpatternmatches","Show Pattern Matches","sboard");
   gtpe->addAnalyzeCommand("showratios","Show Ratios","sboard");
+  gtpe->addAnalyzeCommand("showunprune","Show UnpruneFactor","sboard");
   gtpe->addAnalyzeCommand("showraveratios","Show RAVE Ratios","sboard");
-  gtpe->addAnalyzeCommand("showraveratiosOC","Show RAVE Ratios (other color)","sboard");
+  gtpe->addAnalyzeCommand("showraveratiosoc","Show RAVE Ratios (other color)","sboard");
   //gtpe->addAnalyzeCommand("shownakadecenters","Show Nakade Centers","sboard");
   gtpe->addAnalyzeCommand("featurematchesat %%p","Feature Matches At","string");
   gtpe->addAnalyzeCommand("featureprobdistribution","Feature Probability Distribution","cboard");
@@ -975,6 +982,34 @@ void Engine::gtpShowRatios(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   gtpe->getOutput()->endResponse(true);
 }
 
+void Engine::gtpShowUnPrune(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  Go::Color col=me->currentboard->nextToMove();
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("\n");
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      int pos=Go::Position::xy2pos(x,y,me->boardsize);
+      Go::Move move=Go::Move(col,pos);
+      Tree *tree=me->movetree->getChild(move);
+      if (tree!=NULL)
+      {
+        float ratio=tree->getUnPruneFactor();
+        gtpe->getOutput()->printf("\"%.0f\"",ratio);
+      }
+      else
+        gtpe->getOutput()->printf("\"\"");
+    }
+    gtpe->getOutput()->printf("\n");
+  }
+
+  gtpe->getOutput()->endResponse(true);
+}
+
 void Engine::gtpShowRAVERatios(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
@@ -1177,7 +1212,7 @@ void Engine::gtpPlayoutSGF_pos(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
     gtpe->getOutput()->endResponse();
     return;
   }
-  
+
   std::string sgffile=cmd->getStringArg(0);
   std::string who_wins=cmd->getStringArg(1);
   std::string where_wins=cmd->getStringArg(2);
@@ -1192,7 +1227,7 @@ void Engine::gtpPlayoutSGF_pos(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
 
   bool success=false;
   bool foundwin=false;
-  int how_often=0;
+  int how_often=0,from_often=0;;
   for (int i=0;i<1000+1000;i++)
   {
     Go::Board *playoutboard=me->currentboard->copy();
@@ -1202,20 +1237,23 @@ void Engine::gtpPlayoutSGF_pos(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
     std::list<std::string> movereasons;
     Tree *playouttree = me->movetree->getUrgentChild(me->threadpool->getThreadZero()->getSettings());
     me->playout->doPlayout(me->threadpool->getThreadZero()->getSettings(),playoutboard,finalscore,playouttree,playoutmoves,col,NULL,NULL,&movereasons);
-      if ((win==1  && playoutboard->getScoredOwner(where)==Go::BLACK) ||
-          (win==-1 && playoutboard->getScoredOwner(where)==Go::WHITE)
-          )
+    if (finalscore!=0 && i<1000) from_often++;
+    playoutboard->score();
+    //fprintf(stderr,"playoutres %d %d finalscore: %f\n",i,playoutboard->getScoredOwner(where),finalscore);
+    if ((win==1  && playoutboard->getScoredOwner(where)==Go::BLACK) ||
+        (win==-1 && playoutboard->getScoredOwner(where)==Go::WHITE)
+        )
+    {
+      if (i<1000)
+        how_often++;
+      else
       {
-        if (i<1000)
-          how_often++;
-        else
-        {
-          foundwin=true;
-          success=me->writeSGF(sgffile,me->currentboard,playoutmoves,&movereasons);
-          break;
-        }
+        foundwin=true;
+        success=me->writeSGF(sgffile,me->currentboard,playoutmoves,&movereasons);
+        break;
       }
     }
+  }
 
   if (!foundwin)
   {
@@ -1224,11 +1262,11 @@ void Engine::gtpPlayoutSGF_pos(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
     gtpe->getOutput()->endResponse();
     return;
   }
-  
+
   if (success)
   {
     gtpe->getOutput()->startResponse(cmd);
-    gtpe->getOutput()->printf("wrote sgf file: %s  found within the first 1000 playouts: %d",sgffile.c_str(),how_often);
+    gtpe->getOutput()->printf("wrote sgf file: %s  found within the first %d playouts: %d",sgffile.c_str(),from_often,how_often);
     gtpe->getOutput()->endResponse();
   }
   else
@@ -2101,8 +2139,8 @@ void Engine::gtpShowCriticality(void *instance, Gtp::Engine* gtpe, Gtp::Command*
 }
 
 //#define wf(A)   ((A-0.5>0)?(sqrt(2*(A-0.5))+1)/2.0:(1.0-sqrt(-2*(A-0.5)))/2.0)
-//#define wf(A)   A
-#define wf(A) pow(A,0.5)
+#define wf(A)   A
+//#define wf(A) pow(A,0.5)
 void Engine::gtpShowTerritory(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;

@@ -725,7 +725,7 @@ float Tree::getUnPruneFactor() const
     else
       factor+=params->uct_rave_unprune_factor*this->getRAVERatio();
   }
-  return factor/parent->getChildrenTotalFeatureGamma();
+  return factor;
 }
 
 void Tree::allowContinuedPlay()
@@ -1245,7 +1245,8 @@ Tree *Tree::getBestRatioChild(float playoutthreshold) const
 
 void Tree::updateCriticality(Go::Board *board, Go::Color wincol)
 {
-  if (params->uct_criticality_unprune_factor==0 && params->uct_criticality_urgency_factor==0)
+  if (params->uct_criticality_unprune_factor==0 && params->uct_criticality_urgency_factor==0
+      && params->playout_poolrave_criticality==0)
     return;
   //fprintf(stderr,"[crit_up]: %d %d\n",this->isRoot(),params->uct_criticality_siblings);
   

@@ -112,6 +112,7 @@ class Tree
     float getRAVEPlayoutsOC() const { return raveplayoutsOC; };
     /** Get the ratio of wins to playouts. */
     float getRatio() const;
+    float getUnPruneFactor() const;
     float getFSRatio() const;
     float getFSStd() const;
 
@@ -279,7 +280,6 @@ class Tree
     void unPruneNextChild();
     float unPruneMetric() const;
     void updateUnPruneAt();
-    float getUnPruneFactor() const;
     
     void addCriticalityStats(bool winner, bool black, bool white);
     

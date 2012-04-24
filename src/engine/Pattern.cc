@@ -41,6 +41,94 @@ int Pattern::ThreeByThree::hashColor(Go::Color col)
   }
 }
 
+unsigned long int Pattern::FiveByFiveBorder::makeHash(Go::Board *board, int pos)
+{
+  unsigned long int hash=0;
+  int size=board->getSize();
+  if (board->getColor(pos+P_NW)!=Go::OFFBOARD)
+    hash|=(Pattern::FiveByFiveBorder::hashColor(board->getColor(pos+P_NW+P_NW)) << 30);
+  else
+    hash|=(Pattern::FiveByFiveBorder::hashColor(Go::OFFBOARD) << 30);
+  if (board->getColor(pos+P_N)!=Go::OFFBOARD)
+  {
+    hash|=(Pattern::FiveByFiveBorder::hashColor(board->getColor(pos+P_N+P_NW)) << 28);
+    hash|=(Pattern::FiveByFiveBorder::hashColor(board->getColor(pos+P_N+P_N)) << 26);
+    hash|=(Pattern::FiveByFiveBorder::hashColor(board->getColor(pos+P_N+P_NE)) << 24);
+  }
+  else
+  {
+    hash|=(Pattern::FiveByFiveBorder::hashColor(Go::OFFBOARD) << 28);
+    hash|=(Pattern::FiveByFiveBorder::hashColor(Go::OFFBOARD) << 26);
+    hash|=(Pattern::FiveByFiveBorder::hashColor(Go::OFFBOARD) << 24);
+  }
+  if (board->getColor(pos+P_NE)!=Go::OFFBOARD)
+    hash|=(Pattern::FiveByFiveBorder::hashColor(board->getColor(pos+P_NE+P_NE)) << 22);
+  else
+    hash|=(Pattern::FiveByFiveBorder::hashColor(Go::OFFBOARD) << 22);
+  if (board->getColor(pos+P_W)!=Go::OFFBOARD)
+  {
+    hash|=(Pattern::FiveByFiveBorder::hashColor(board->getColor(pos+P_W+P_NW)) << 20);
+    hash|=(Pattern::FiveByFiveBorder::hashColor(board->getColor(pos+P_W+P_W)) << 18);
+    hash|=(Pattern::FiveByFiveBorder::hashColor(board->getColor(pos+P_W+P_SW)) << 16);
+  }
+  else
+  {
+    hash|=(Pattern::FiveByFiveBorder::hashColor(Go::OFFBOARD) << 20);
+    hash|=(Pattern::FiveByFiveBorder::hashColor(Go::OFFBOARD) << 18);
+    hash|=(Pattern::FiveByFiveBorder::hashColor(Go::OFFBOARD) << 16);
+  }
+  if (board->getColor(pos+P_E)!=Go::OFFBOARD)
+  {
+    hash|=(Pattern::FiveByFiveBorder::hashColor(board->getColor(pos+P_E+P_NE)) << 14);
+    hash|=(Pattern::FiveByFiveBorder::hashColor(board->getColor(pos+P_E+P_E)) << 12);
+    hash|=(Pattern::FiveByFiveBorder::hashColor(board->getColor(pos+P_E+P_SE)) << 10);
+  }
+  else
+  {
+    hash|=(Pattern::FiveByFiveBorder::hashColor(Go::OFFBOARD) << 14);
+    hash|=(Pattern::FiveByFiveBorder::hashColor(Go::OFFBOARD) << 12);
+    hash|=(Pattern::FiveByFiveBorder::hashColor(Go::OFFBOARD) << 10);
+  }
+  if (board->getColor(pos+P_SW)!=Go::OFFBOARD)
+    hash|=(Pattern::FiveByFiveBorder::hashColor(board->getColor(pos+P_SW+P_SW)) << 8);
+  else
+    hash|=(Pattern::FiveByFiveBorder::hashColor(Go::OFFBOARD) << 8);
+  if (board->getColor(pos+P_S)!=Go::OFFBOARD)
+  {
+    hash|=(Pattern::FiveByFiveBorder::hashColor(board->getColor(pos+P_S+P_SW)) << 6);
+    hash|=(Pattern::FiveByFiveBorder::hashColor(board->getColor(pos+P_S+P_S)) << 4);
+    hash|=(Pattern::FiveByFiveBorder::hashColor(board->getColor(pos+P_S+P_SE)) << 2);
+  }
+  else
+  {
+    hash|=(Pattern::FiveByFiveBorder::hashColor(Go::OFFBOARD) << 6);
+    hash|=(Pattern::FiveByFiveBorder::hashColor(Go::OFFBOARD) << 4);
+    hash|=(Pattern::FiveByFiveBorder::hashColor(Go::OFFBOARD) << 2);
+  }
+  if (board->getColor(pos+P_SE)!=Go::OFFBOARD)
+    hash|=(Pattern::FiveByFiveBorder::hashColor(board->getColor(pos+P_SE+P_SE)) << 0);
+  else
+    hash|=(Pattern::FiveByFiveBorder::hashColor(Go::OFFBOARD) << 0);
+  return hash;
+}
+
+int Pattern::FiveByFiveBorder::hashColor(Go::Color col)
+{
+  switch (col)
+  {
+    case Go::EMPTY:
+      return 0;
+    case Go::BLACK:
+      return 1;
+    case Go::WHITE:
+      return 2;
+    case Go::OFFBOARD:
+      return 3;
+    default:
+      return 3;
+  }
+}
+
 unsigned int Pattern::ThreeByThree::invert(unsigned int hash)
 {
  unsigned int oddbits=  hash&(0x5555);
