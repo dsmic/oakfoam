@@ -244,7 +244,7 @@ class Tree
     void setUnprunedNum(int num) {unpruned_num=num;};
     int getUnprunedNum() {return unpruned_num;}
     int getNumUnprunedChilds();
-    
+    std::list<Tree*> *getChildren() {return children;};
   private:
     Tree *parent;
     std::list<Tree*> *children;

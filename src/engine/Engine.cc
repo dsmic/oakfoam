@@ -2517,6 +2517,19 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
       }
       ss<<")";
     }
+    ss<<"\nun:(";
+    for (int nn=1;nn<=num_unpruned;nn++)
+    {
+      for(std::list<Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
+      {
+        if ((*iter)->getUnprunedNum()==nn && (*iter)->isPrimary() && !(*iter)->isPruned())
+        {
+          ss<<(nn!=1?",":"")<<Go::Position::pos2string((*iter)->getMove().getPosition(),boardsize);
+        }
+      }
+    }
+    ss<<")";
+
     if (params->surewin_expected)
       ss << " surewin!";
     lastexplanation=ss.str();

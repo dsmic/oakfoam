@@ -19,6 +19,7 @@ Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p) : params(
   fscoreSUM2=0;
   raveplayouts=0;
   ravewins=0;
+  
   symmetryprimary=NULL;
   hasTerminalWinrate=false;
   hasTerminalWin=false;
@@ -42,6 +43,7 @@ Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p) : params(
   superkochildrenviolations=0;
   decayedwins=0;
   decayedplayouts=0;
+  unpruned_num=0;
   
   #ifdef HAVE_MPI
     this->resetMpiDiff();
