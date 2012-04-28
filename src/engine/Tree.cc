@@ -1398,7 +1398,7 @@ int Tree::getNumUnprunedChilds()
   int num=0;
   for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
   {
-    if (!(*iter)->isPruned())
+    if ((*iter)->isPrimary() && !(*iter)->isPruned())
       num++;;
   }
   return num;
