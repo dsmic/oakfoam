@@ -2440,6 +2440,24 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
       gtpe->getOutput()->printfDebug("SOLVED! found 100%% sure result after %d plts!\n",totalplayouts);
 
     int num_unpruned=movetree->getNumUnprunedChilds();
+
+    std::ostringstream ss;
+    ss << std::fixed;
+    ss<<"un:(";
+    for (int nn=1;nn<=num_unpruned;nn++)
+    {
+      for(std::list<Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
+      {
+        if ((*iter)->getUnprunedNum()==nn && 
+            (*iter)->isPrimary() && !(*iter)->isPruned())
+        {
+          ss<<(nn!=1?",":"")<<Go::Position::pos2string((*iter)->getMove().getPosition(),boardsize);
+        }
+      }
+    }
+    ss<<")\n";
+
+
     Tree *besttree=movetree->getRobustChild();
     float bestratio=0;
     float ratiodelta=-1;
@@ -2487,8 +2505,6 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     if (!time->isNoTiming())
       time->useTime(col,time_used);
     
-    std::ostringstream ss;
-    ss << std::fixed;
     ss << "r:"<<std::setprecision(2)<<bestratio*100<<"%";
     if (!time->isNoTiming())
     {
@@ -2517,18 +2533,6 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
       }
       ss<<")";
     }
-    ss<<"\nun:(";
-    for (int nn=1;nn<=num_unpruned;nn++)
-    {
-      for(std::list<Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
-      {
-        if ((*iter)->getUnprunedNum()==nn && (*iter)->isPrimary() && !(*iter)->isPruned())
-        {
-          ss<<(nn!=1?",":"")<<Go::Position::pos2string((*iter)->getMove().getPosition(),boardsize);
-        }
-      }
-    }
-    ss<<")";
 
     if (params->surewin_expected)
       ss << " surewin!";
