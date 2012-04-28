@@ -240,6 +240,10 @@ class Tree
       /** Reset and accumulated MPI-shared stats difference. */
       void resetMpiDiff();
     #endif
+
+    void setUnprunedNum(int num) {unpruned_num=num;};
+    int getUnprunedNum() {return unpruned_num;}
+    int getNumUnprunedChilds();
     
   private:
     Tree *parent;
@@ -258,6 +262,7 @@ class Tree
     bool hasTerminalWinrate,hasTerminalWin;
     bool terminaloverride;
     bool pruned;
+    int unpruned_num;
     unsigned int prunedchildren;
     float gamma,childrentotalgamma,maxchildgamma;
     float lastunprune,unprunenextchildat;

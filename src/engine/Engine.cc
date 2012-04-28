@@ -2438,7 +2438,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     
     if (movetree->isTerminalResult())
       gtpe->getOutput()->printfDebug("SOLVED! found 100%% sure result after %d plts!\n",totalplayouts);
-    
+
+    int num_unpruned=movetree->getNumUnprunedChilds();
     Tree *besttree=movetree->getRobustChild();
     float bestratio=0;
     float ratiodelta=-1;
@@ -2502,12 +2503,14 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     ss << " r2:"<<std::setprecision(2)<<params->uct_last_r2;
     ss << " fs:"<<std::setprecision(2)<<besttree->getFSRatio();
     ss << " fstd:"<<std::setprecision(2)<<besttree->getFSStd();
+    ss << " UN:"<<besttree->getUnprunedNum()<<"/"<<num_unpruned;
     ss << " bs:"<<bestsame;
+    
     Tree *pvtree=movetree->getRobustChild(true);
     if (pvtree!=NULL)
     {
       std::list<Go::Move> pvmoves=pvtree->getMovesFromRoot();
-      ss<<" pv:(";
+      ss<<"\npv:(";
       for(std::list<Go::Move>::iterator iter=pvmoves.begin();iter!=pvmoves.end();++iter) 
       {
         ss<<(iter!=pvmoves.begin()?",":"")<<Go::Position::pos2string((*iter).getPosition(),boardsize);

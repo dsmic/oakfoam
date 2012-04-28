@@ -657,6 +657,7 @@ void Tree::unPruneNextChild()
     {
       //fprintf(stderr,"\n[unpruning]: (%d) %s %f %f -- %f\n\n",unpruned,bestchild->getMove().toString(params->board_size).c_str(),bestfactor,bestchild->getRAVERatio (),bestchild->getUnPruneFactor ());
       bestchild->setPruned(false);
+      bestchild->setUnprunedNum(unpruned+1);
       unprunebase=params->uct_progressive_widening_a*pow(params->uct_progressive_widening_b,unpruned);
       lastunprune=this->unPruneMetric();
       this->updateUnPruneAt();
@@ -1392,6 +1393,17 @@ void Tree::resetNode()
   #endif
 }
 
+int Tree::getNumUnprunedChilds()
+{
+  int num=0;
+  for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
+  {
+    if (!(*iter)->isPruned())
+      num++;;
+  }
+  return num;
+}
+
 #ifdef HAVE_MPI
 
 void Tree::resetMpiDiff()
@@ -1415,6 +1427,5 @@ void Tree::fetchMpiDiff(float &plts, float &wns)
   wns=wins-mpi_lastwins;
   this->resetMpiDiff();
 }
-
 #endif
 
