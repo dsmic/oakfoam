@@ -713,7 +713,7 @@ void Tree::unPruneNow()
 
 float Tree::getUnPruneFactor() const
 {
-  float factor=gamma;
+  float factor=log(gamma+1);
   if (params->uct_criticality_unprune_factor>0 && (params->uct_criticality_siblings?parent->playouts:playouts)>(params->uct_criticality_min_playouts))
   {
     if (params->uct_criticality_unprune_multiply)

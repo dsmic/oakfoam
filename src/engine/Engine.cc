@@ -478,7 +478,9 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("showterritory",this,&Engine::gtpShowTerritory);
   gtpe->addFunctionCommand("showratios",this,&Engine::gtpShowRatios);
   gtpe->addFunctionCommand("showunprune",this,&Engine::gtpShowUnPrune);
+  gtpe->addFunctionCommand("showunprunecd",this,&Engine::gtpShowUnPruneCD);
   gtpe->addFunctionCommand("showraveratios",this,&Engine::gtpShowRAVERatios);
+  gtpe->addFunctionCommand("showraveratioscd",this,&Engine::gtpShowRAVERatiosCD);
   gtpe->addFunctionCommand("showraveratiosoc",this,&Engine::gtpShowRAVERatiosOC);
   
   //gtpe->addAnalyzeCommand("final_score","Final Score","string");
@@ -497,7 +499,9 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("showpatternmatches","Show Pattern Matches","sboard");
   gtpe->addAnalyzeCommand("showratios","Show Ratios","sboard");
   gtpe->addAnalyzeCommand("showunprune","Show UnpruneFactor","sboard");
+  gtpe->addAnalyzeCommand("showunprunecd","Show UnpruneFactor (color display)","cboard");
   gtpe->addAnalyzeCommand("showraveratios","Show RAVE Ratios","sboard");
+  gtpe->addAnalyzeCommand("showraveratioscd","Show RAVE Ratios (color display)","cboard");
   gtpe->addAnalyzeCommand("showraveratiosoc","Show RAVE Ratios (other color)","sboard");
   //gtpe->addAnalyzeCommand("shownakadecenters","Show Nakade Centers","sboard");
   gtpe->addAnalyzeCommand("featurematchesat %%p","Feature Matches At","string");
@@ -1038,6 +1042,144 @@ void Engine::gtpShowRAVERatios(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
   gtpe->getOutput()->endResponse(true);
 }
 
+void Engine::gtpShowRAVERatiosCD(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  Go::Color col=me->currentboard->nextToMove();
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("\n");
+  float min=1000000;
+  float max=0;
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      int pos=Go::Position::xy2pos(x,y,me->boardsize);
+      Go::Move move=Go::Move(col,pos);
+      Tree *tree=me->movetree->getChild(move);
+      if (tree!=NULL)
+      {
+        float ratio=tree->getRAVERatio();
+        if (ratio<min) min=ratio;
+        if (ratio>max) max=ratio;
+      }
+    }
+  }
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      int pos=Go::Position::xy2pos(x,y,me->boardsize);
+      Go::Move move=Go::Move(col,pos);
+      Tree *tree=me->movetree->getChild(move);
+      float ratio;
+      float crit=0;
+      if (tree!=NULL)
+      {
+        ratio=tree->getRAVERatio();
+        crit=(ratio-min)/(max-min);
+        //fprintf(stderr,"%f %f %f %f\n",min,max,ratio,crit);
+      }
+      if (crit==0 && (!move.isNormal()))
+          gtpe->getOutput()->printf("\"\" ");
+        else
+      {
+          float r,g,b;
+          float x=crit;
+          
+          // scale from blue-red
+          r=x;
+          if (r>1)
+            r=1;
+          g=0;
+          b=1-r;
+          
+          if (r<0)
+            r=0;
+          if (g<0)
+            g=0;
+          if (b<0)
+            b=0;
+          gtpe->getOutput()->printf("#%02x%02x%02x ",(int)(r*255),(int)(g*255),(int)(b*255));
+          //gtpe->getOutput()->printf("#%06x ",(int)(prob*(1<<24)));
+        }
+    }
+    gtpe->getOutput()->printf("\n");
+  }
+
+  gtpe->getOutput()->endResponse(true);
+}
+
+void Engine::gtpShowUnPruneCD(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  Go::Color col=me->currentboard->nextToMove();
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("\n");
+  float min=1000000;
+  float max=-1000000;
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      int pos=Go::Position::xy2pos(x,y,me->boardsize);
+      Go::Move move=Go::Move(col,pos);
+      Tree *tree=me->movetree->getChild(move);
+      if (tree!=NULL)
+      {
+        float ratio=(tree->getUnPruneFactor());
+        if (ratio<min) min=ratio;
+        if (ratio>max) max=ratio;
+      }
+    }
+  }
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      int pos=Go::Position::xy2pos(x,y,me->boardsize);
+      Go::Move move=Go::Move(col,pos);
+      Tree *tree=me->movetree->getChild(move);
+      float ratio;
+      float crit=0;
+      if (tree!=NULL)
+      {
+        ratio=(tree->getUnPruneFactor());
+        crit=(ratio-min)/(max-min);
+        //fprintf(stderr,"%f %f %f %f\n",min,max,ratio,crit);
+      }
+      if (crit==0 && (!move.isNormal()))
+          gtpe->getOutput()->printf("\"\" ");
+        else
+      {
+          float r,g,b;
+          float x=crit;
+          
+          // scale from blue-red
+          r=x;
+          if (r>1)
+            r=1;
+          g=0;
+          b=1-r;
+          
+          if (r<0)
+            r=0;
+          if (g<0)
+            g=0;
+          if (b<0)
+            b=0;
+          gtpe->getOutput()->printf("#%02x%02x%02x ",(int)(r*255),(int)(g*255),(int)(b*255));
+          //gtpe->getOutput()->printf("#%06x ",(int)(prob*(1<<24)));
+        }
+    }
+    gtpe->getOutput()->printf("\n");
+  }
+
+  gtpe->getOutput()->endResponse(true);
+}
+        
 void Engine::gtpShowRAVERatiosOC(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
@@ -2095,6 +2237,23 @@ void Engine::gtpShowCriticality(void *instance, Gtp::Engine* gtpe, Gtp::Command*
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printString("\n");
+  float min=1000000;
+  float max=0;
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      int pos=Go::Position::xy2pos(x,y,me->boardsize);
+      Go::Move move=Go::Move(col,pos);
+      Tree *tree=me->movetree->getChild(move);
+      if (tree!=NULL)
+      {
+        float ratio=tree->getCriticality();
+        if (ratio<min) min=ratio;
+        if (ratio>max) max=ratio;
+      }
+    }
+  }
   for (int y=me->boardsize-1;y>=0;y--)
   {
     for (int x=0;x<me->boardsize;x++)
@@ -2107,15 +2266,17 @@ void Engine::gtpShowCriticality(void *instance, Gtp::Engine* gtpe, Gtp::Command*
       {
         float crit=tree->getCriticality();
         float plts=(me->params->uct_criticality_siblings?me->movetree->getPlayouts():tree->getPlayouts());
+        //fprintf(stderr,"%f\n",crit);
         if (crit==0 && (!move.isNormal() || plts==0))
           gtpe->getOutput()->printf("\"\" ");
         else
         {
+          crit=(crit-min)/(max-min);
           float r,g,b;
-          float x=crit*2;
+          float x=crit;
           
           // scale from blue-red
-          r=x*2;
+          r=x;
           if (r>1)
             r=1;
           g=0;
