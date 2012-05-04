@@ -2300,8 +2300,8 @@ void Engine::gtpShowCriticality(void *instance, Gtp::Engine* gtpe, Gtp::Command*
 }
 
 //#define wf(A)   ((A-0.5>0)?(sqrt(2*(A-0.5))+1)/2.0:(1.0-sqrt(-2*(A-0.5)))/2.0)
-#define wf(A)   A
-//#define wf(A) pow(A,0.5)
+//#define wf(A)   A
+#define wf(A) pow(A,0.5)
 void Engine::gtpShowTerritory(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;

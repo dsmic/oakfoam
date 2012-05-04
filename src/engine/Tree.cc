@@ -713,7 +713,8 @@ void Tree::unPruneNow()
 
 float Tree::getUnPruneFactor() const
 {
-  float factor=log(gamma+1);
+  float factor=log((1000.0*gamma)/(parent->raveplayouts+1)+1);
+  //fprintf(stderr,"unprunefactore %f %f %f\n",gamma,parent->raveplayouts,factor);
   if (params->uct_criticality_unprune_factor>0 && (params->uct_criticality_siblings?parent->playouts:playouts)>(params->uct_criticality_min_playouts))
   {
     if (params->uct_criticality_unprune_multiply)
