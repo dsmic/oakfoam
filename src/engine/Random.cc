@@ -16,6 +16,7 @@ Random::Random(unsigned long s, int threadid)
     seed=Random::makeSeed(threadid);
   else
     seed=s^((unsigned long)threadid);
+  srand(seed);
 }
 
 unsigned long Random::getRandomInt()
@@ -31,7 +32,7 @@ unsigned long Random::getRandomInt()
   lo+= hi >> 15;
   
   if (lo >= 0x7FFFFFFF) lo-=0x7FFFFFFF;
-  
+
   return (seed=lo);
 }
 

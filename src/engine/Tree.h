@@ -109,10 +109,16 @@ class Tree
     float getWins() const { return wins; };
     /** Get the number of RAVE playouts through this node. */
     float getRAVEPlayouts() const { return raveplayouts; };
+    float getRAVEPlayoutsOC() const { return raveplayoutsOC; };
     /** Get the ratio of wins to playouts. */
     float getRatio() const;
+    float getUnPruneFactor() const;
+    float getFSRatio() const;
+    float getFSStd() const;
+
     /** Get the ratio of RAVE wins to playouts. */
     float getRAVERatio() const;
+    float getRAVERatioOC() const;
     /** Get the value for this node.
      * This is a combination of normal and RAVE values.
      */
@@ -128,11 +134,11 @@ class Tree
     /** Add a win to this node.
      * @param source The child that this result is coming from.
      */
-    void addWin(Tree *source=NULL);
+    void addWin(int fscroe, Tree *source=NULL);
     /** Add a loss to this node.
      * @param source The child that this result is coming from.
      */
-    void addLose(Tree *source=NULL);
+    void addLose(int fscore, Tree *source=NULL);
     /** Add a virtual loss. */
     void addVirtualLoss();
     /** Remove a virtual loss from this node and the path up to the root. */
@@ -145,6 +151,10 @@ class Tree
     void addRAVEWin();
     /** Add a RAVE loss to this node. */
     void addRAVELose();
+
+    void addRAVEWinOC();
+    void addRAVELoseOC();
+    
     /** Add a number of RAVE wins to this node. */
     void addRAVEWins(int n);
     /** Add a number of RAVE losses to this node. */
@@ -230,7 +240,11 @@ class Tree
       /** Reset and accumulated MPI-shared stats difference. */
       void resetMpiDiff();
     #endif
-    
+
+    void setUnprunedNum(int num) {unpruned_num=num;};
+    int getUnprunedNum() {return unpruned_num;}
+    int getNumUnprunedChilds();
+    std::list<Tree*> *getChildren() {return children;};
   private:
     Tree *parent;
     std::list<Tree*> *children;
@@ -240,11 +254,15 @@ class Tree
     Go::Move move;
     float playouts,raveplayouts;
     float wins,ravewins;
+    float raveplayoutsOC;
+    float ravewinsOC;
+    float fscoreSUM,fscoreSUM2;
     float decayedwins,decayedplayouts;
     Parameters *const params;
     bool hasTerminalWinrate,hasTerminalWin;
     bool terminaloverride;
     bool pruned;
+    int unpruned_num;
     unsigned int prunedchildren;
     float gamma,childrentotalgamma,maxchildgamma;
     float lastunprune,unprunenextchildat;
@@ -260,14 +278,13 @@ class Tree
       float mpi_lastplayouts,mpi_lastwins;
     #endif
     
-    void passPlayoutUp(bool win, Tree *source);
+    void passPlayoutUp(int fscore, bool win, Tree *source);
     bool allChildrenTerminalLoses();
     bool hasOneUnprunedChildNotTerminalLoss();
     
     void unPruneNextChild();
     float unPruneMetric() const;
     void updateUnPruneAt();
-    float getUnPruneFactor() const;
     
     void addCriticalityStats(bool winner, bool black, bool white);
     

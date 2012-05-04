@@ -486,7 +486,7 @@ bool Book::loadLine(std::string line)
   {
     line.erase(ro,1);
   }
-  
+
   std::transform(line.begin(),line.end(),line.begin(),::tolower);
   
   std::istringstream issline(line);

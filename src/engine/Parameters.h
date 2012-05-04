@@ -122,10 +122,21 @@ class Parameters
      * Play a move according to LGRF-1, if such a move is available and legal.
      */
     bool playout_lgrf1_enabled;
+    bool playout_lgrf1_safe_enabled;
+
+    float playout_avoid_lbrf1_p;
+
+    //own followup moves, independent of the inbetween move of opponent
+    bool playout_lgrf1o_enabled;
+    
     /** Whether to use the lgrf2 heuristic in playouts.
      * Play a move according to LGRF-2, if such a move is available and legal.
      */
     bool playout_lgrf2_enabled;
+    bool playout_lgrf2_safe_enabled;
+
+    bool playout_lgpf_enabled;
+    
     /** Whether to use the mercy rule in playouts.
      * The mercy rule stops playouts where one color has captured many more prisoners and declares the playout a win for that color.
      */
@@ -148,6 +159,7 @@ class Parameters
     bool playout_last2libatari_complex;
     /** Whether to use the poolRAVE modification. */
     bool playout_poolrave_enabled;
+    bool playout_poolrave_criticality;
     /** Chance of using poolRAVE.
      * @see playout_poolrave_enabled
      */
@@ -173,6 +185,10 @@ class Parameters
      * Currently under constuction.
      */
     int playout_order;
+
+    /** generate a move within +-3 of the last move
+     */
+    bool playout_nearby_enabled;
     
     /** UCB exploration constant. */
     float ucb_c;
@@ -185,6 +201,8 @@ class Parameters
     // Under Construction
     float bernoulli_a;
     float bernoulli_b;
+    float weight_score;
+    float random_f;
     
     /** Number of moves it takes for RAVE to decay?
      * Set to zero to disable RAVE.
@@ -196,6 +214,7 @@ class Parameters
      * If triggered, RAVE is ignored for the selection of an urgent child.
      */
     float rave_skip;
+    float rave_moves_use;
     
     /** After this many playouts through a node, it will be expanded. */
     int uct_expand_after;

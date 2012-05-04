@@ -10,11 +10,13 @@
 
 #define BERNOULLI_A 0.0
 #define BERNOULLI_B 0.0
+#define WEIGHT_SCORE 0.0
+#define RANDOM_F 0.0
 
 #define RAVE_MOVES 3000
 #define RAVE_INIT_WINS 5
 #define RAVE_SKIP 0.00
-
+#define RAVE_MOVES_USE 0.00
 #define UCT_EXPAND_AFTER 10
 #define UCT_KEEP_SUBTREE true
 #define UCT_SYMMETRY_USE true
@@ -73,13 +75,19 @@
 #define PLAYOUT_FILLBOARD_N 5
 #define PLAYOUT_ANYCAPTURE_ENABLED true
 #define PLAYOUT_LGRF1_ENABLED true
+#define PLAYOUT_LGRF1_SAFE_ENABLED true
+#define PLAYOUT_AVOID_LBRF1_P 0.9
+#define PLAYOUT_LGRF1O_ENABLED true
 #define PLAYOUT_LGRF2_ENABLED true
+#define PLAYOUT_LGRF2_SAFE_ENABLED true
+#define PLAYOUT_LGPF_ENABLED false
 #define PLAYOUT_MERCY_RULE_ENABLED true
 #define PLAYOUT_MERCY_RULE_FACTOR 0.40
 #define PLAYOUT_RANDOM_CHANCE 0.00
 #define PLAYOUT_LAST2LIBATARI_ENABLED true
 #define PLAYOUT_LAST2LIBATARI_COMPLEX true
 #define PLAYOUT_POOLRAVE_ENABLED false
+#define PLAYOUT_POOLRAVE_CRITICALITY false
 #define PLAYOUT_POOLRAVE_P 0.5
 #define PLAYOUT_POOLRAVE_K 20
 #define PLAYOUT_POOLRAVE_MIN_PLAYOUTS 50
@@ -87,6 +95,7 @@
 #define PLAYOUT_AVOID_SELFATARI_SIZE 5 // biggest killing shape is 6 stones
 #define PLAYOUT_USELESS_MOVE false
 #define PLAYOUT_ORDER 0 //numbers to test different playout orders
+#define PLAYOUT_NEARBY_ENABLED false
 
 #define PONDERING_ENABLED false
 #define PONDERING_PLAYOUTS_MAX 1000000
@@ -422,7 +431,11 @@ class Engine
     static void gtpShowCriticality(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowTerritory(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowRatios(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpShowUnPrune(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpShowUnPruneCD(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowRAVERatios(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpShowRAVERatiosCD(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpShowRAVERatiosOC(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
 };
 
 #endif

@@ -87,6 +87,15 @@ namespace Pattern
     private:
       static int hashColor(Go::Color col);
   };
+
+  class FiveByFiveBorder
+  {
+    public:
+      /** Make a hash from a board position. */
+      static unsigned long int makeHash(Go::Board *board, int pos);
+    private:
+      static int hashColor(Go::Color col);
+  };      
   
   /** Table of 3x3 pattern hashes. */
   class ThreeByThreeTable
@@ -123,7 +132,7 @@ namespace Pattern
       bool loadPatternString(std::string patternstring);
       /** Load a the default patterns. */
       bool loadPatternDefaults() { return this->loadPatternString(PATTERN_3x3_DEFAULTS); };
-    
+
     private:
       unsigned char *const table; //assume sizeof(char)==1
       
