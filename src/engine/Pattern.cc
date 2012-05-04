@@ -258,7 +258,6 @@ bool Pattern::ThreeByThreeTable::loadPatternString(std::string patternstring)
     
     this->processFilePattern(filtered);
   }
-  
   return true;
 }
 
