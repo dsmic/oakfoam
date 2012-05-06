@@ -62,6 +62,7 @@ namespace Pattern
       /** Make a hash from a board position. */
       static unsigned int makeHash(Go::Board *board, int pos)
       {
+        if (pos<0) return 0;
         int size=board->getSize();
         return Pattern::ThreeByThree::makeHash(
           board->getColor(pos+P_NW), board->getColor(pos+P_N), board->getColor(pos+P_NE),

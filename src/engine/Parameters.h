@@ -316,6 +316,7 @@ class Parameters
      * @todo Include relevant formula.
      */
     float uct_rave_unprune_factor;
+    float uct_rave_unprune_decay;
     /** Parameter for RAVE unpruning.
      * @see uct_rave_unprune_factor
      */

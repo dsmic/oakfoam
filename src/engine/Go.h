@@ -189,7 +189,10 @@ namespace Go
       inline void fill(bool val) { for (int i=0;i<sizedata;i++) data[i]=val; };
       /** Clear the whole board. */
       inline void clear() { this->fill(false); };
-    
+
+      /** Create a copy of this board. */
+      Go::BitBoard *copy() const;
+      
     private:
       const int size,sizesq,sizedata;
       bool *const data;

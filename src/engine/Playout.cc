@@ -175,6 +175,10 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
   std::string reason;
   board->resetCaptures(); // for mercy rule
   int count_playout_moves=0;
+
+  //Go::BitBoard *bvalid=board->getValidMoves(Go::BLACK)->copy();
+  //Go::BitBoard *wvalid=board->getValidMoves(Go::WHITE)->copy();
+  //Go::Board *tmpboard=board->copy();
   while (board->getPassesPlayed()<3)
   {
     bool resign;
@@ -209,14 +213,20 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
     playoutmoves.push_back(move);
     if (movereasons!=NULL)
       movereasons->push_back(reason);
+    int p=move.getPosition();
     if ((coltomove==colfirst?firstlist:secondlist)!=NULL && !move.isPass() && !move.isResign()
         //limit rave to the first moves in playout
         &&(params->rave_moves_use==0 || 
             count_playout_moves < board->getSize()*board->getSize()*params->rave_moves_use)
         //if this pos is already played by the other color it makes no sense to put it into rave now
-        &&!(coltomove==colfirst?secondlist:firstlist)->get(move.getPosition())
+        &&!(coltomove==colfirst?secondlist:firstlist)->get(p)
+        //use only moves valid in after tree played
+        //&&(coltomove==Go::BLACK?bvalid:wvalid)->get(p)
+        //check if pattern the same as after tree played
+        //Problem the probability of different patterns in the playouts is different
+        //&&(Pattern::ThreeByThree::makeHash(board,p)==Pattern::ThreeByThree::makeHash(tmpboard,p))
         )
-      (coltomove==colfirst?firstlist:secondlist)->set(move.getPosition());
+      (coltomove==colfirst?firstlist:secondlist)->set(p);
     resign=move.isResign();
     coltomove=Go::otherColor(coltomove);
     if (resign)
@@ -240,7 +250,10 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
       break;
   }
   delete[] posarray;
-  
+  //delete wvalid;
+  //delete bvalid;
+  //delete tmpboard;
+    
   if (!mercywin)
     finalscore=board->score()-params->engine->getKomi();
   //Go::Color playoutcol=playoutmoves.back().getColor();
@@ -468,37 +481,43 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
   if (params->playout_lgrf2_enabled && params->playout_lgrf2_safe_enabled)
   {
     this->getLGRF2Move(settings, board,col,move);
-    int p=move.getPosition();
-    int pos1=board->getSecondLastMove().getPosition();
-    int pos2=board->getLastMove().getPosition();
-    unsigned int hash3x3=Pattern::ThreeByThree::makeHash(board,p);
-    if (!move.isPass()&& hash3x3==this->getLGRF2hash(col,pos1,pos2))
+    if (!move.isPass())
     {
-      if (params->debug_on)
-        gtpe->getOutput()->printfDebug("[playoutmove]: %s lgrf2\n",move.toString(board->getSize()).c_str());
-      if (reason!=NULL)
-        *reason="save lgrf2";
-      return;
+      int p=move.getPosition();
+      int pos1=board->getSecondLastMove().getPosition();
+      int pos2=board->getLastMove().getPosition();
+      unsigned int hash3x3=Pattern::ThreeByThree::makeHash(board,p);
+      if ( hash3x3==this->getLGRF2hash(col,pos1,pos2))
+      {
+        if (params->debug_on)
+          gtpe->getOutput()->printfDebug("[playoutmove]: %s lgrf2\n",move.toString(board->getSize()).c_str());
+        if (reason!=NULL)
+          *reason="save lgrf2";
+        return;
+      }
+      move=Go::Move(col,Go::Move::PASS);
     }
-    move=Go::Move(col,Go::Move::PASS);
   }
 
   if (params->playout_lgrf1_enabled && params->playout_lgrf1_safe_enabled)
   {
     //safe LGRF1 move
     this->getLGRF1Move(settings, board,col,move);
-    int p=move.getPosition();
-    unsigned int hash3x3=Pattern::ThreeByThree::makeHash(board,p);
-    int pos1=board->getLastMove().getPosition();
-    if (!move.isPass() && hash3x3!=0 && this->getLGRF1hash(col,pos1)==hash3x3) //,Pattern::FiveByFiveBorder::makeHash(board,p)))
+    if (!move.isPass())
     {
-      if (params->debug_on)
-        gtpe->getOutput()->printfDebug("[playoutmove]: %s safe lgrf1\n",move.toString(board->getSize()).c_str());
-      if (reason!=NULL)
-        *reason="safe lgrf1";
-      return;
+      int p=move.getPosition();
+      unsigned int hash3x3=Pattern::ThreeByThree::makeHash(board,p);
+      int pos1=board->getLastMove().getPosition();
+      if (hash3x3!=0 && this->getLGRF1hash(col,pos1)==hash3x3) //,Pattern::FiveByFiveBorder::makeHash(board,p)))
+      {
+        if (params->debug_on)
+          gtpe->getOutput()->printfDebug("[playoutmove]: %s safe lgrf1\n",move.toString(board->getSize()).c_str());
+        if (reason!=NULL)
+          *reason="safe lgrf1";
+        return;
+      }
+      move=Go::Move(col,Go::Move::PASS);
     }
-    move=Go::Move(col,Go::Move::PASS);
   }
 
   if (params->playout_lgrf1_enabled && !params->playout_lgrf1_safe_enabled)

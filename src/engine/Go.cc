@@ -17,6 +17,16 @@ Go::BitBoard::BitBoard(int s)
     data[i]=false;
 }
 
+Go::BitBoard *Go::BitBoard::copy() const
+{
+  Go::BitBoard *copyboard;
+  copyboard=new Go::BitBoard(size);
+  
+  for (int i=0;i<sizedata;i++)
+    copyboard->set(i,data[i]);  
+  return copyboard;
+}
+
 Go::BitBoard::~BitBoard()
 {
   delete[] data;
