@@ -2130,8 +2130,10 @@ bool Go::Board::isProbableWorkingLadder(Go::Group *group, int posA, int movepos)
       return (colC==othercol);
     else
     {
-      Go::Color colD=this->getColor(posA-dir2-dir2);
-      Go::Color colE=this->getColor(posA+dir1-dir2);
+      Go::Color colD=this->getColor(posA-dir2);
+      if (colD!=Go::OFFBOARD) colD=this->getColor(posA-dir2-dir2);
+      Go::Color colE=this->getColor(posA+dir1);
+      if (colE!=Go::OFFBOARD) colE=this->getColor(posA+dir1-dir2);
       //fprintf(stderr,"ladder? 2: %s %c %c\n",Go::Position::pos2string(posA,size).c_str(),Go::colorToChar(colD),Go::colorToChar(colE));
       if (colD!=othercol && colE!=othercol && (colD==col || colE==col))
         return false;
