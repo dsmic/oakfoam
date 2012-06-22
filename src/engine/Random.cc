@@ -40,6 +40,12 @@ unsigned long Random::getRandomInt(unsigned long max)
 {
   return this->getRandomInt() % max; //XXX: not uniform, but good enough
 }
+unsigned long Random::getRandomInt(unsigned long max, float a)
+{
+  float r=getRandomInt(max);
+  r=pow(r,a)/pow(max,a)*max;
+  return r;
+}
 
 float Random::getRandomReal()
 {

@@ -69,14 +69,19 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","playout_poolrave_min_playouts",&(params->playout_poolrave_min_playouts),PLAYOUT_POOLRAVE_MIN_PLAYOUTS);
   params->addParameter("playout","playout_lgrf2_enabled",&(params->playout_lgrf2_enabled),PLAYOUT_LGRF2_ENABLED);
   params->addParameter("playout","playout_lgrf1_enabled",&(params->playout_lgrf1_enabled),PLAYOUT_LGRF1_ENABLED);
+  params->addParameter("playout","playout_lgrf_local",&(params->playout_lgrf_local),PLAYOUT_LGRF_LOCAL);
   params->addParameter("playout","playout_lgrf2_safe_enabled",&(params->playout_lgrf2_safe_enabled),PLAYOUT_LGRF2_SAFE_ENABLED);
   params->addParameter("playout","playout_lgrf1_safe_enabled",&(params->playout_lgrf1_safe_enabled),PLAYOUT_LGRF1_SAFE_ENABLED);
   params->addParameter("playout","playout_lgrf1o_enabled",&(params->playout_lgrf1o_enabled),PLAYOUT_LGRF1O_ENABLED);
   params->addParameter("playout","playout_avoid_lbrf1_p",&(params->playout_avoid_lbrf1_p),PLAYOUT_AVOID_LBRF1_P);
+  params->addParameter("playout","playout_avoid_lbmf_p",&(params->playout_avoid_lbmf_p),PLAYOUT_AVOID_LBMF_P);
+  params->addParameter("playout","playout_avoid_lbrf1_p2",&(params->playout_avoid_lbrf1_p2),PLAYOUT_AVOID_LBRF1_P2);
+  params->addParameter("playout","playout_avoid_lbmf_p2",&(params->playout_avoid_lbmf_p2),PLAYOUT_AVOID_LBMF_P2);
   params->addParameter("playout","playout_lgpf_enabled",&(params->playout_lgpf_enabled),PLAYOUT_LGPF_ENABLED);
   params->addParameter("playout","playout_atari_enabled",&(params->playout_atari_enabled),PLAYOUT_ATARI_ENABLED);
   params->addParameter("playout","playout_lastatari_enabled",&(params->playout_lastatari_enabled),PLAYOUT_LASTATARI_ENABLED);
   params->addParameter("playout","playout_lastatari_leavedouble",&(params->playout_lastatari_leavedouble),PLAYOUT_LASTATARI_LEAVEDOUBLE);
+  params->addParameter("playout","playout_lastatari_leavedouble",&(params->playout_lastatari_captureattached),PLAYOUT_LASTATARI_CAPTUREATTACHED);
   params->addParameter("playout","playout_lastcapture_enabled",&(params->playout_lastcapture_enabled),PLAYOUT_LASTCAPTURE_ENABLED);
   params->addParameter("playout","playout_last2libatari_enabled",&(params->playout_last2libatari_enabled),PLAYOUT_LAST2LIBATARI_ENABLED);
   params->addParameter("playout","playout_last2libatari_complex",&(params->playout_last2libatari_complex),PLAYOUT_LAST2LIBATARI_COMPLEX);
@@ -96,6 +101,19 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","playout_mercy_rule_enabled",&(params->playout_mercy_rule_enabled),PLAYOUT_MERCY_RULE_ENABLED);
   params->addParameter("playout","playout_mercy_rule_factor",&(params->playout_mercy_rule_factor),PLAYOUT_MERCY_RULE_FACTOR);
   
+/*
+  params->addParameter("playout","test_p1",&(params->test_p1),1.0);
+  params->addParameter("playout","test_p2",&(params->test_p2),0.0);
+  params->addParameter("playout","test_p3",&(params->test_p3),0.0);
+  params->addParameter("playout","test_p4",&(params->test_p4),1.0);
+  params->addParameter("playout","test_p5",&(params->test_p5),1.0);
+  params->addParameter("playout","test_p6",&(params->test_p6),1.0);
+  params->addParameter("playout","test_p7",&(params->test_p7),1.0);
+  params->addParameter("playout","test_p8",&(params->test_p8),1.0);
+  params->addParameter("playout","test_p9",&(params->test_p9),0.0);
+  params->addParameter("playout","test_p10",&(params->test_p10),1.0);
+*/
+
   params->addParameter("tree","ucb_c",&(params->ucb_c),UCB_C);
   params->addParameter("tree","ucb_init",&(params->ucb_init),UCB_INIT);
 

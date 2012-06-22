@@ -46,14 +46,22 @@ class Playout
     Parameters *const params;
     Gtp::Engine *gtpe;
 
-    int *lgrf1,*lgrf1n,*lgrf1o,*lgrf2;
+    int *lgrf1,*lgrf1o,*lgrf2;
+    bool *lbm; //last bad move
+    unsigned char *lgrf1n;
+    
     unsigned int *lgrf1hash,*lgrf2hash;
-
+#define lgrfcount1 1
+#define lgrfcount2 1
+    int *lgrf1count,*lgrf2count;
+    
 #define lgpf_empty 0xFFFF
     unsigned int *lgpf;
     unsigned long int *lgpf_b;
     
     bool *bad_pass_answer;
+    int bpasses;
+    int wpasses;
     
     int lgrfpositionmax;
     
@@ -77,13 +85,15 @@ class Playout
 
     void checkEyeMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, Go::Move &replacemove);
 
-    bool isBadMove(Worker::Settings *settings, Go::Board *board, Go::Color col, int pos);
+    bool isBadMove(Worker::Settings *settings, Go::Board *board, Go::Color col, int pos, float p=0.0, float p2=0.0);
+    int  Passes(Go::Color col);
+
     bool isEyeFillMove(Go::Board *board, Go::Color col, int pos);
     int getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group *group);
     
     int getLGRF1(Go::Color col, int pos1) const;
     unsigned int getLGRF1hash(Go::Color col, int pos1) const;
-    int getLGRF1n(Go::Color col, int pos1) const;
+//    int getLGRF1n_l(Go::Color col, int pos1) const;
     int getLGRF1o(Go::Color col, int pos1) const;
     int getLGRF2(Go::Color col, int pos1, int pos2) const;
     unsigned int getLGRF2hash(Go::Color col, int pos1, int pos2) const;
@@ -96,13 +106,15 @@ class Playout
     void setLGPF(Go::Color col, int pos1, unsigned int val);
     void setLGPF(Go::Color col, int pos1, unsigned int val, unsigned long int val_b);
     bool hasLGRF1(Go::Color col, int pos1) const;
-    bool hasLGRF1n(Go::Color col, int pos1) const;
+    bool hasLGRF1n(Go::Color col, int pos1, int pos) const;
+    bool hasLBM(Go::Color col, int val) const;
     bool hasLGRF1o(Go::Color col, int pos1) const;
     bool hasLGRF2(Go::Color col, int pos1, int pos2) const;
     bool hasLGPF(Go::Color col, int pos1,unsigned int hash) const;
     bool hasLGPF(Go::Color col, int pos1,unsigned int hash,unsigned long int hash_b) const;
     void clearLGRF1(Go::Color col, int pos1);
-    void clearLGRF1n(Go::Color col, int pos1);
+    //void clearLGRF1n(Go::Color col, int pos1);
+    void clearLGRF1n(Go::Color col, int pos1, int val);
     void clearLGRF1o(Go::Color col, int pos1);
     void clearLGRF2(Go::Color col, int pos1, int pos2);
     void clearLGPF(Go::Color col, int pos1);

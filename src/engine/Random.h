@@ -16,6 +16,8 @@ class Random
     unsigned long getRandomInt();
     /** Generate a random integer in a range. */
     unsigned long getRandomInt(unsigned long max);
+    /** Generate with distribution function. */
+    unsigned long getRandomInt(unsigned long max, float a);
     /** Generate a random float in the range (0,1). */
     float getRandomReal();
     

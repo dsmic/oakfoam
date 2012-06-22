@@ -19,6 +19,7 @@ Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p) : params(
   fscoreSUM2=0;
   raveplayouts=0;
   ravewins=0;
+  raveinitwins=params->rave_init_wins;
   
   symmetryprimary=NULL;
   hasTerminalWinrate=false;
@@ -135,6 +136,23 @@ float Tree::getRAVERatioOC() const
   else
     return 0;
 }
+
+float Tree::getRAVERatio_pool() const
+{
+  if (raveplayouts>0)
+    return (float)(ravewins-raveinitwins)/(raveplayouts-raveinitwins+10);
+  else
+    return 0;
+}
+
+float Tree::getRAVERatioOC_pool() const
+{
+  if (raveplayoutsOC>0)
+    return (float)(ravewinsOC-raveinitwins)/(raveplayoutsOC-raveinitwins+10);
+  else
+    return 0;
+}
+
 
 void Tree::addWin(int fscore, Tree *source)
 {

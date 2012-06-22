@@ -119,6 +119,8 @@ class Tree
     /** Get the ratio of RAVE wins to playouts. */
     float getRAVERatio() const;
     float getRAVERatioOC() const;
+    float getRAVERatio_pool() const;
+    float getRAVERatioOC_pool() const;
     /** Get the value for this node.
      * This is a combination of normal and RAVE values.
      */
@@ -254,6 +256,7 @@ class Tree
     Go::Move move;
     float playouts,raveplayouts;
     float wins,ravewins;
+    float raveinitwins;
     float raveplayoutsOC;
     float ravewinsOC;
     float fscoreSUM,fscoreSUM2;

@@ -1529,7 +1529,7 @@ bool Go::Board::isSelfAtariOfSize(Go::Move move, int minsize) const
   if (this->touchingEmpty(pos)>1)
     return false;
   int libpos=-1;
-  int groupsize=0;
+  int groupsize=1;
   Go::Group *groups_used[4];
   int groups_used_num=0;
   foreach_adjacent(pos,p,{
@@ -1540,6 +1540,7 @@ bool Go::Board::isSelfAtariOfSize(Go::Move move, int minsize) const
       {
         if (!(group->inAtari() || group->isOneOfTwoLiberties(pos)))
         {
+          //fprintf(stderr,"attached group has more than two libs\n");
           return false; //attached group has more than two libs
         }
         bool found=false;
@@ -1561,6 +1562,7 @@ bool Go::Board::isSelfAtariOfSize(Go::Move move, int minsize) const
               libpos=otherlib;
             else if (libpos!=otherlib)
             {
+              //fprintf(stderr,"at least 2 libs\n");
               return false; // at least 2 libs
             }
             groupsize+=group->numOfStones();
@@ -1574,10 +1576,12 @@ bool Go::Board::isSelfAtariOfSize(Go::Move move, int minsize) const
         libpos=p;
       else if (libpos!=p)
       {
+        //fprintf(stderr,"at least 2 libs\n");
         return false; // at least 2 libs
       }
     }
   });
+  //fprintf(stderr,"gs %d ms %d\n",groupsize,minsize);
   if (groupsize>minsize)
     return true;
   else

@@ -91,7 +91,7 @@ class Parameters
     /** Whether to use the pattern heuristic in playouts.
      * If any moves around the last two moves match a pattern, play one of them.
      */
-    bool playout_patterns_enabled;
+    float playout_patterns_enabled;
     /** Whether to use the features heuristic in playouts.
      * The feature gamma of a move over the sum of the gammas is the probability of that move being played.
      */
@@ -101,9 +101,10 @@ class Parameters
     /** Whether to use the lastatari heuristic in playouts.
      * If the last move was an atari, try to extend the group in atari.
      */
-    bool playout_lastatari_enabled;
+    float playout_lastatari_enabled;
     /** Whether to skip using the lastatari heuristic if two or more groups are in atari, and the group causing the atari is in atari itself. */
     bool playout_lastatari_leavedouble;
+    float playout_lastatari_captureattached;
     /** Whether to use the nakade heuristic in playouts.
      * If the last move created an eye of size 3, play in the center of that eye.
      */
@@ -117,14 +118,18 @@ class Parameters
     /** Whether to use the anycapture heuristic in playouts.
      * If any groups are in atari, capture one at random.
      */
-    bool playout_anycapture_enabled;
+    float playout_anycapture_enabled;
     /** Whether to use the lgrf1 heuristic in playouts.
      * Play a move according to LGRF-1, if such a move is available and legal.
      */
     bool playout_lgrf1_enabled;
+    bool playout_lgrf_local;
     bool playout_lgrf1_safe_enabled;
 
     float playout_avoid_lbrf1_p;
+    float playout_avoid_lbmf_p;
+    float playout_avoid_lbrf1_p2;
+    float playout_avoid_lbmf_p2;
 
     //own followup moves, independent of the inbetween move of opponent
     bool playout_lgrf1o_enabled;
@@ -148,6 +153,20 @@ class Parameters
     /** Skip all playout heuristics with this probability.
      * Set to zero to disable.
      */
+
+ /*   
+    float test_p1;
+    float test_p2;
+    float test_p3;
+    float test_p4;
+    float test_p5;
+    float test_p6;
+    float test_p7;
+    float test_p8;
+    float test_p9;
+    float test_p10;
+ */
+        
     float playout_random_chance;
     /** Whether to use the last2libatari heuristic in playouts.
      * When the last move reduced a group to 2 liberties, and is near one of those liberties, play on one of them.
