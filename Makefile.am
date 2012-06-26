@@ -19,8 +19,8 @@ oakfoam_SOURCES     = build.h \
                       src/web/Web.h src/web/Web.cc \
                       src/gtp/Gtp.h src/gtp/Gtp.cc
 oakfoam_CPPFLAGS    = $(BOOST_CPPFLAGS) $(MPI_CPPFLAGS)
-oakfoam_LDFLAGS     = $(BOOST_LDFLAGS) $(MPI_LDFLAGS)
-oakfoam_LDADD       = $(BOOST_SYSTEM_LIB) $(BOOST_THREAD_LIB) $(BOOST_FILESYSTEM_LIB) $(BOOST_ASIO_LIB)
+oakfoam_LDFLAGS     = $(BOOST_LDFLAGS) $(MPI_LDFLAGS) $(HOARD_LDFLAGS)
+oakfoam_LDADD       = $(BOOST_SYSTEM_LIB) $(BOOST_THREAD_LIB) $(BOOST_FILESYSTEM_LIB) $(BOOST_ASIO_LIB) $(HOARD_LIB)
 dist_noinst_SCRIPTS = autogen.sh
 
 .PHONY: oakfoam-profiled
