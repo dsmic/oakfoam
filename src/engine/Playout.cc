@@ -7,7 +7,12 @@
 #include "Random.h"
 #include "Worker.h"
 
-#define lgpf_num 10
+#define LGRFCOUNT1 1
+#define LGRFCOUNT2 1
+#define LGPF_EMPTY 0xFFFF
+#define LGPF_NUM 10
+
+#define WITH_P(A) (A>=1.0 || (A>0 && rand->getRandomReal()<A))
 
 Playout::Playout(Parameters *prms) : params(prms)
 {
@@ -74,7 +79,7 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
     {
       movehashes.push_back(Pattern::ThreeByThree::makeHash(board,(*iter).getPosition()));
       if (params->playout_lgpf_enabled)
-                movehashes_b.push_back(Pattern::FiveByFiveBorder::makeHash(board,(*iter).getPosition()));
+        movehashes_b.push_back(Pattern::FiveByFiveBorder::makeHash(board,(*iter).getPosition()));
     }
     board->makeMove((*iter));
     if (movereasons!=NULL)
@@ -110,7 +115,7 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
   std::vector<int> poolOC;
   std::vector<int> poolCR;
   Go::Color poolColor=Go::EMPTY;
-  if (params->playout_poolrave_enabled||params->playout_poolrave_criticality)
+  if (params->playout_poolrave_enabled || params->playout_poolrave_criticality)
   {
     Tree *pooltree=playouttree;
     while (playouttree!=NULL && !pooltree->isRoot() && pooltree->getRAVEPlayouts()<params->playout_poolrave_min_playouts)
@@ -219,20 +224,20 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
     }
     count_playout_moves++;
     
-    if ((params->playout_lgpf_enabled||params->playout_lgrf1_safe_enabled||params->playout_lgrf2_safe_enabled) && move.isNormal())
+    if ((params->playout_lgpf_enabled || params->playout_lgrf1_safe_enabled || params->playout_lgrf2_safe_enabled) && move.isNormal())
     {
       movehashes.push_back(Pattern::ThreeByThree::makeHash(board,move.getPosition()));
       if (params->playout_lgpf_enabled)
         movehashes_b.push_back(Pattern::FiveByFiveBorder::makeHash(board,move.getPosition()));
     }
     
-    if (move.isPass ())
-      {
-          if (move.getColor()==Go::BLACK)
-              bpasses++;
-          else
-              wpasses++;
-      }
+    if (move.isPass())
+    {
+        if (move.getColor()==Go::BLACK)
+            bpasses++;
+        else
+            wpasses++;
+    }
     board->makeMove(move);
     playoutmoves.push_back(move);
     if (movereasons!=NULL)
@@ -426,7 +431,7 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
           {
             if (params->debug_on)
               fprintf(stderr,"adding LGRP: %s %x\n",(*iter).toString(board->getSize()).c_str(),p1);
-            this->setLGPF(c,mp,p1,p1_b);
+            this->setLGPF(settings,c,mp,p1,p1_b);
           }
           else
           {
@@ -466,14 +471,11 @@ void Playout::checkUselessMove(Worker::Settings *settings, Go::Board *board, Go:
   Go::Move replacemove;
   this->checkEyeMove(settings,board,col,move,posarray,replacemove);
   if (reason!=NULL && replacemove.isNormal())
-  {
     (*reason).append(" UselessEye");
-  }
   if (!replacemove.isPass())
     move=replacemove;
 }
 
-#define with_p(A) (rand->getRandomReal()<A)
 void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, std::vector<int> *pool, std::vector<int> *poolCR,std::string *reason)
 {
   /**
@@ -519,7 +521,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
       int pos1=board->getSecondLastMove().getPosition();
       int pos2=board->getLastMove().getPosition();
       unsigned int hash3x3=Pattern::ThreeByThree::makeHash(board,p);
-      if ( hash3x3==this->getLGRF2hash(col,pos1,pos2))
+      if (hash3x3==this->getLGRF2hash(col,pos1,pos2))
       {
         if (params->debug_on)
           gtpe->getOutput()->printfDebug("[playoutmove]: %s lgrf2\n",move.toString(board->getSize()).c_str());
@@ -565,7 +567,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     }
   }
 
-  if (params->playout_lastatari_enabled>0.0)
+  if (WITH_P(params->playout_lastatari_p))
   {
     this->getLastAtariMove(settings,board,col,move,posarray);
       if (!move.isPass())
@@ -656,7 +658,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     }
   }
   
-  if (params->playout_patterns_enabled>0.0 && with_p(params->playout_patterns_enabled))
+  if (WITH_P(params->playout_patterns_p))
   {
     this->getPatternMove(settings,board,col,move,posarray);
     if (!move.isPass())
@@ -682,7 +684,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     }
   }
 
-  if (params->playout_anycapture_enabled>0.0 && with_p(params->playout_anycapture_enabled))
+  if (WITH_P(params->playout_anycapture_p))
   {
     this->getAnyCaptureMove(settings,board,col,move,posarray);
     if (!move.isPass())
@@ -865,7 +867,6 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     }
   }
 
-  
   move=Go::Move(col,Go::Move::PASS);
   if (params->debug_on)
     gtpe->getOutput()->printfDebug("[playoutmove]: %s pass\n",move.toString(board->getSize()).c_str());
@@ -873,7 +874,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     *reason="pass";
 }
 
-bool Playout::isBadMove(Worker::Settings *settings,Go::Board *board, Go::Color col, int pos, float p, float p2)
+bool Playout::isBadMove(Worker::Settings *settings, Go::Board *board, Go::Color col, int pos, float p, float p2)
 {
   if (pos<0) return false;
   Random *const rand=settings->rand;
@@ -882,13 +883,13 @@ bool Playout::isBadMove(Worker::Settings *settings,Go::Board *board, Go::Color c
       || (params->playout_avoid_selfatari && board->isSelfAtariOfSize(Go::Move(col,pos),params->playout_avoid_selfatari_size))
       || (p > 0.0 && rand->getRandomReal() < p  && 
           (board->getLastMove().isNormal() && this->hasLGRF1n(col,board->getLastMove().getPosition(),pos)))
-      || (p > 0.0 && (rand->getRandomReal() < p || Passes(col)>1) &&
+      || (p > 0.0 && (rand->getRandomReal() < p || getPasses(col)>1) &&
           (board->getLastMove().isPass() && this->is_bad_pass_answer(col,pos)))
       || (p2 > 0.0 && (rand->getRandomReal() < p2) && this->hasLBM (col,pos))
           );
 }
 
-int Playout::Passes(Go::Color col)
+int Playout::getPasses(Go::Color col)
 {
     if (col==Go::BLACK)
         return wpasses;
@@ -928,8 +929,6 @@ void Playout::getPoolRAVEMove(Worker::Settings *settings, Go::Board *board, Go::
     }
   }
 }
-
-
 
 void Playout::getLGRF2Move(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move)
 {
@@ -1230,7 +1229,7 @@ void Playout::getLast2LibAtariMove(Worker::Settings *settings, Go::Board *board,
                       possiblemovescount=0;
                     }
                     possiblemoves[possiblemovescount]=p;
-					          possiblegroupsize[possiblemovescount]=group->numOfStones();
+                    possiblegroupsize[possiblemovescount]=group->numOfStones();
                     possiblemovescount++;
                   }
                 }
@@ -1380,7 +1379,7 @@ void Playout::getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go:
                   {
                     int liberty=othergroup->getAtariPosition();
                     bool iscaptureorconnect=board->isCapture(Go::Move(col,liberty)) || board->isExtension(Go::Move(col,liberty)); // Why is the check for capture here?
-                    if (board->validMove(Go::Move(col,liberty)) && iscaptureorconnect && with_p(pow(params->playout_lastatari_captureattached,1/group->numOfStones ())))
+                    if (board->validMove(Go::Move(col,liberty)) && iscaptureorconnect && WITH_P(pow(params->playout_lastatari_captureattached,1/group->numOfStones ())))
                     {
                       if (possiblemovescount<board->getPositionMax())
                       {
@@ -1402,8 +1401,7 @@ void Playout::getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go:
             int liberty=group->getAtariPosition();
             bool iscaptureorconnect=board->isCapture(Go::Move(col,liberty)) || board->isExtension(Go::Move(col,liberty)); // Why is the check for capture here?
             //fprintf(stderr,"la: %s %s %d %d %d\n",Go::Position::pos2string(p,size).c_str(),Go::Position::pos2string(liberty,size).c_str(),board->isCapture(Go::Move(col,liberty)),board->isExtension(Go::Move(col,liberty)),board->isSelfAtari(Go::Move(col,liberty)));
-            if (!atarigroupfound && 
-                board->validMove(Go::Move(col,liberty)) && iscaptureorconnect && with_p(pow(params->playout_lastatari_enabled,1/group->numOfStones ())))
+            if (!atarigroupfound && board->validMove(Go::Move(col,liberty)) && iscaptureorconnect && WITH_P(pow(params->playout_lastatari_p,1/group->numOfStones ())))
             {
               if (possiblemovescount<board->getPositionMax())
                 {
@@ -1430,10 +1428,10 @@ void Playout::getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go:
       }
     }
   }
-  int i=-1;
+
   if (possiblemovescount>0 && !doubleatari)
   {
-    i=rand->getRandomInt(possiblemovescount);
+    int i=rand->getRandomInt(possiblemovescount);
     move=Go::Move(col,possiblemoves[i]);
     //gtpe->getOutput()->printfDebug("[playoutmove]: last atari %d %d %d\n",board->isCapture(move),board->isExtension(move),board->isSelfAtari(move));
     //if (board->getLastMove().getPosition()==Go::Position::string2pos(std::string("A16"),19))
@@ -1562,22 +1560,25 @@ void Playout::resetLGRF()
   lgrf2=new int[2*lgrfpositionmax*lgrfpositionmax];
   lbm=new bool[2*lgrfpositionmax];
   bad_pass_answer=new bool[2*lgrfpositionmax];
-  lgpf=new unsigned int[lgpf_num*2*lgrfpositionmax];
-  lgpf_b=new unsigned long int[lgpf_num*2*lgrfpositionmax];
+  lgpf=new unsigned int[LGPF_NUM*2*lgrfpositionmax];
+  lgpf_b=new unsigned long int[LGPF_NUM*2*lgrfpositionmax];
   lgrf1hash=new unsigned int[2*lgrfpositionmax];
   lgrf2hash=new unsigned int[2*lgrfpositionmax*lgrfpositionmax];
-  if (lgrfcount1!=1)
+  #if (LGRFCOUNT1!=1)
     lgrf1count=new int[2*lgrfpositionmax];
-  if (lgrfcount2!=1)
+  #endif
+  #if (LGRFCOUNT2!=1)
     lgrf2count=new int[2*lgrfpositionmax*lgrfpositionmax];
+  #endif
   
   for (int c=0;c<2;c++)
   {
     Go::Color col=(c==0?Go::BLACK:Go::WHITE);
     for (int p1=0;p1<lgrfpositionmax;p1++)
     {
-      if (lgrfcount1!=1)
+      #if (LGRFCOUNT1!=1)
         lgrf1count[c*lgrfpositionmax+p1]=0;
+      #endif
       this->clearLGRF1(col,p1);
       //this->clearLGRF1n(col,p1);
       this->clearLGRF1o(col,p1);
@@ -1585,8 +1586,9 @@ void Playout::resetLGRF()
       this->clearLGPF(col,p1);
       for (int p2=0;p2<lgrfpositionmax;p2++)
       {
-        if (lgrfcount2!=1)
+        #if (LGRFCOUNT2!=1)
           lgrf2count[(c*lgrfpositionmax+p1)*lgrfpositionmax+p2]=0;
+        #endif
         this->clearLGRF2(col,p1,p2);
         this->clearLGRF1n(col,p1,p2);
       }
@@ -1634,8 +1636,9 @@ void Playout::setLGRF1(Go::Color col, int pos1, int val)
 {
   int c=(col==Go::BLACK?0:1);
   lgrf1[c*lgrfpositionmax+pos1]=val;
-  if (lgrfcount1!=1)
+  #if (LGRFCOUNT1!=1)
     lgrf1count[c*lgrfpositionmax+pos1]=lgrfcount1;
+  #endif
 }
 
 void Playout::setLGRF1(Go::Color col, int pos1, int val, unsigned int hash)
@@ -1643,8 +1646,9 @@ void Playout::setLGRF1(Go::Color col, int pos1, int val, unsigned int hash)
   int c=(col==Go::BLACK?0:1);
   lgrf1[c*lgrfpositionmax+pos1]=val;
   lgrf1hash[c*lgrfpositionmax+pos1]=hash;
-  if (lgrfcount1!=1)
+  #if (LGRFCOUNT1!=1)
     lgrf1count[c*lgrfpositionmax+pos1]=lgrfcount1;
+  #endif
 }
 
 void Playout::set_bad_pass_answer(Go::Color col, int pos1)
@@ -1652,7 +1656,6 @@ void Playout::set_bad_pass_answer(Go::Color col, int pos1)
   int c=(col==Go::BLACK?0:1);
   bad_pass_answer[c*lgrfpositionmax+pos1]=true;
 }
-
 
 bool Playout::is_bad_pass_answer(Go::Color col, int pos1)
 {
@@ -1668,7 +1671,6 @@ void Playout::clear_bad_pass_answer(Go::Color col, int pos1)
   bad_pass_answer[c*lgrfpositionmax+pos1]=false;
 }
 
-
 void Playout::setLGRF1o(Go::Color col, int pos1, int val)
 {
   int c=(col==Go::BLACK?0:1);
@@ -1679,8 +1681,9 @@ void Playout::setLGRF2(Go::Color col, int pos1, int pos2, int val)
 {
   int c=(col==Go::BLACK?0:1);
   lgrf2[(c*lgrfpositionmax+pos1)*lgrfpositionmax+pos2]=val;
-  if (lgrfcount2!=1)
+  #if (LGRFCOUNT2!=1)
     lgrf2count[(c*lgrfpositionmax+pos1)*lgrfpositionmax+pos2]=lgrfcount2;
+  #endif
 }
 
 void Playout::setLGRF2(Go::Color col, int pos1, int pos2, int val, unsigned int hash)
@@ -1688,8 +1691,9 @@ void Playout::setLGRF2(Go::Color col, int pos1, int pos2, int val, unsigned int 
   int c=(col==Go::BLACK?0:1);
   lgrf2[(c*lgrfpositionmax+pos1)*lgrfpositionmax+pos2]=val;
   lgrf2hash[(c*lgrfpositionmax+pos1)*lgrfpositionmax+pos2]=hash;
-  if (lgrfcount2!=1)
+  #if (LGRFCOUNT2!=1)
     lgrf2count[(c*lgrfpositionmax+pos1)*lgrfpositionmax+pos2]=lgrfcount2;
+  #endif
 }
 
 bool Playout::hasLGRF1(Go::Color col, int pos1) const
@@ -1733,8 +1737,6 @@ bool Playout::hasLBM(Go::Color col, int val) const
   return lbm[c*lgrfpositionmax+val];
 }
 
-
-
 bool Playout::hasLGRF1o(Go::Color col, int pos1) const
 {
   return (this->getLGRF1o(col,pos1)!=-1);
@@ -1747,15 +1749,14 @@ bool Playout::hasLGRF2(Go::Color col, int pos1, int pos2) const
 
 void Playout::clearLGRF1(Go::Color col, int pos1)
 {
-  if (lgrfcount1!=1)
-  {
+  #if (LGRFCOUNT1!=1)
     int c=(col==Go::BLACK?0:1);
     if  (lgrf1count[c*lgrfpositionmax+pos1]>0) lgrf1count[c*lgrfpositionmax+pos1]--;
     if  (lgrf1count[c*lgrfpositionmax+pos1]==0) 
       this->setLGRF1(col,pos1,-1);
-  }
-  else
+  #else
     this->setLGRF1(col,pos1,-1);
+  #endif
 }
 
 void Playout::clearLGRF1o(Go::Color col, int pos1)
@@ -1766,42 +1767,45 @@ void Playout::clearLGRF1o(Go::Color col, int pos1)
 void Playout::clearLGRF2(Go::Color col, int pos1, int pos2)
 {
   
-  if (lgrfcount2!=1)
-  {
+  #if (LGRFCOUNT2!=1)
     int c=(col==Go::BLACK?0:1);
     if  (lgrf2count[(c*lgrfpositionmax+pos1)*lgrfpositionmax+pos2]>0) 
         lgrf2count[(c*lgrfpositionmax+pos1)*lgrfpositionmax+pos2]--;
     if  (lgrf2count[(c*lgrfpositionmax+pos1)*lgrfpositionmax+pos2]==0) 
         this->setLGRF2(col,pos1,pos2,-1);
-  }
-  else
+  #else
     this->setLGRF2(col,pos1,pos2,-1);
+  #endif
 }
 
-void Playout::setLGPF(Go::Color col, int pos1, unsigned int val)
+void Playout::setLGPF(Worker::Settings *settings, Go::Color col, int pos1, unsigned int val)
 {
+  Random *const rand=settings->rand;
+
   //if (val==0) return;
   if (hasLGPF(col,pos1,val)) return;
   int c=(col==Go::BLACK?0:1);
-  for (int i=0;i<lgpf_num;i++)
-    if (lgpf[(2*i+c)*lgrfpositionmax+pos1]==lgpf_empty)
+  for (int i=0;i<LGPF_NUM;i++)
+    if (lgpf[(2*i+c)*lgrfpositionmax+pos1]==LGPF_EMPTY)
     {
       lgpf[(2*i+c)*lgrfpositionmax+pos1]=val;
       return;
     }
   //fprintlgpf
   //fprintf(stderr,"full at %-6s\n",Go::Move::Move(col,pos1).toString(19).c_str());
-  int i=rand()%lgpf_num;
+  int i=(int)rand->getRandomReal()%LGPF_NUM;
   lgpf[(2*i+c)*lgrfpositionmax+pos1]=val;
 }
 
-void Playout::setLGPF(Go::Color col, int pos1, unsigned int val, unsigned long int val_b)
+void Playout::setLGPF(Worker::Settings *settings, Go::Color col, int pos1, unsigned int val, unsigned long int val_b)
 {
+  Random *const rand=settings->rand;
+
   if (val==0 && val_b==0) return;
   if (hasLGPF(col,pos1,val,val_b)) return;
   int c=(col==Go::BLACK?0:1);
-  for (int i=0;i<lgpf_num;i++)
-    if (lgpf[(2*i+c)*lgrfpositionmax+pos1]==lgpf_empty)
+  for (int i=0;i<LGPF_NUM;i++)
+    if (lgpf[(2*i+c)*lgrfpositionmax+pos1]==LGPF_EMPTY)
     {
       lgpf[(2*i+c)*lgrfpositionmax+pos1]=val;
       lgpf_b[(2*i+c)*lgrfpositionmax+pos1]=val_b;
@@ -1809,7 +1813,7 @@ void Playout::setLGPF(Go::Color col, int pos1, unsigned int val, unsigned long i
     }
   //fprintlgpf
   //fprintf(stderr,"full at %-6s\n",Go::Move::Move(col,pos1).toString(19).c_str());
-  int i=rand()%lgpf_num;
+  int i=(int)rand->getRandomReal()%LGPF_NUM;
   lgpf[(2*i+c)*lgrfpositionmax+pos1]=val;
   lgpf_b[(2*i+c)*lgrfpositionmax+pos1]=val_b;
 }
@@ -1818,7 +1822,7 @@ bool Playout::hasLGPF(Go::Color col, int pos1,unsigned int hash) const
 {
   //if (hash==0) return true; //if the sourounding is empty, we do not recognize
   int c=(col==Go::BLACK?0:1);
-  for (int i=0;i<lgpf_num;i++)
+  for (int i=0;i<LGPF_NUM;i++)
     if (lgpf[(2*i+c)*lgrfpositionmax+pos1]==hash) return true;
   return false;
 }
@@ -1827,7 +1831,7 @@ bool Playout::hasLGPF(Go::Color col, int pos1,unsigned int hash, unsigned long i
 {
   if (hash==0 && hash_b==0) return false; //if the sourounding is empty, we do not recognize
   int c=(col==Go::BLACK?0:1);
-  for (int i=0;i<lgpf_num;i++)
+  for (int i=0;i<LGPF_NUM;i++)
     if (lgpf[(2*i+c)*lgrfpositionmax+pos1]==hash
         &&
         lgpf_b[(2*i+c)*lgrfpositionmax+pos1]==hash_b
@@ -1839,8 +1843,8 @@ void Playout::clearLGPF(Go::Color col, int pos1)
 {
   //clears all
   int c=(col==Go::BLACK?0:1);
-  for (int i=0;i<lgpf_num;i++)
-    lgpf[(2*i+c)*lgrfpositionmax+pos1]=lgpf_empty;  
+  for (int i=0;i<LGPF_NUM;i++)
+    lgpf[(2*i+c)*lgrfpositionmax+pos1]=LGPF_EMPTY;  
 }
 
 void Playout::clearLGPF(Go::Color col, int pos1, unsigned int hash)
@@ -1848,12 +1852,12 @@ void Playout::clearLGPF(Go::Color col, int pos1, unsigned int hash)
   //should only clear the hash one
   if (hash==0) return;
   int c=(col==Go::BLACK?0:1);
-  for (int i=0;i<lgpf_num;i++)
+  for (int i=0;i<LGPF_NUM;i++)
     if (lgpf[(2*i+c)*lgrfpositionmax+pos1]==hash)
     {
       //fprintlgpf
       //fprintf(stderr,"deleted (fixed boardsize 19 here) %s\n",Go::Move::Move(col,pos1).toString(19).c_str());
-      lgpf[(2*i+c)*lgrfpositionmax+pos1]=lgpf_empty;
+      lgpf[(2*i+c)*lgrfpositionmax+pos1]=LGPF_EMPTY;
       return;
     }
  }
@@ -1863,7 +1867,7 @@ void Playout::clearLGPF(Go::Color col, int pos1, unsigned int hash, unsigned lon
   //should only clear the hash one
   if (hash==0) return;
   int c=(col==Go::BLACK?0:1);
-  for (int i=0;i<lgpf_num;i++)
+  for (int i=0;i<LGPF_NUM;i++)
     if (lgpf[(2*i+c)*lgrfpositionmax+pos1]==hash
         &&
         lgpf_b[(2*i+c)*lgrfpositionmax+pos1]==hash_b
@@ -1871,7 +1875,7 @@ void Playout::clearLGPF(Go::Color col, int pos1, unsigned int hash, unsigned lon
     {
       //fprintlgpf
       //fprintf(stderr,"deleted (fixed boardsize 19 here) %s\n",Go::Move::Move(col,pos1).toString(19).c_str());
-      lgpf[(2*i+c)*lgrfpositionmax+pos1]=lgpf_empty;
+      lgpf[(2*i+c)*lgrfpositionmax+pos1]=LGPF_EMPTY;
       return;
     }
  }

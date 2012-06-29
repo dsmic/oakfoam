@@ -907,15 +907,15 @@ bool Go::Board::strongEye(Go::Color col, int pos) const
       else if (group)
       {
         if (group!=this->getGroup(p))
-            return false;
+          return false;
       }
-      else group=this->getGroup(p);
+      else
+        group=this->getGroup(p);
     });
     
     return true;
   }
 }
-      
 
 bool Go::Board::isWinForColor(Go::Color col, float score)
 {

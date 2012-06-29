@@ -88,20 +88,20 @@ class Parameters
      * If the last move was an atari, try to capture an adjacent group.
      */
     bool playout_lastcapture_enabled;
-    /** Whether to use the pattern heuristic in playouts.
+    /** The probablity of using the pattern heuristic in playouts.
      * If any moves around the last two moves match a pattern, play one of them.
      */
-    float playout_patterns_enabled;
+    float playout_patterns_p;
     /** Whether to use the features heuristic in playouts.
      * The feature gamma of a move over the sum of the gammas is the probability of that move being played.
      */
     bool playout_features_enabled;
     /** Whether to try to update the feature gammas incrementally. */
     bool playout_features_incremental;
-    /** Whether to use the lastatari heuristic in playouts.
+    /** The probability of using the lastatari heuristic in playouts.
      * If the last move was an atari, try to extend the group in atari.
      */
-    float playout_lastatari_enabled;
+    float playout_lastatari_p;
     /** Whether to skip using the lastatari heuristic if two or more groups are in atari, and the group causing the atari is in atari itself. */
     bool playout_lastatari_leavedouble;
     float playout_lastatari_captureattached;
@@ -115,10 +115,10 @@ class Parameters
     bool playout_fillboard_enabled;
     /** Number of times to try the fillboard heuristic before continuing. */
     int playout_fillboard_n;
-    /** Whether to use the anycapture heuristic in playouts.
+    /** The probability of using the anycapture heuristic in playouts.
      * If any groups are in atari, capture one at random.
      */
-    float playout_anycapture_enabled;
+    float playout_anycapture_p;
     /** Whether to use the lgrf1 heuristic in playouts.
      * Play a move according to LGRF-1, if such a move is available and legal.
      */
@@ -178,6 +178,9 @@ class Parameters
     bool playout_last2libatari_complex;
     /** Whether to use the poolRAVE modification. */
     bool playout_poolrave_enabled;
+    /** Whether to use the poolCriticality modification.
+     * Similar to poolRAVE, but using criticality.
+     */
     bool playout_poolrave_criticality;
     /** Chance of using poolRAVE.
      * @see playout_poolrave_enabled
@@ -205,7 +208,7 @@ class Parameters
      */
     int playout_order;
 
-    /** generate a move within +-3 of the last move
+    /** Generate a move only within ~3 intersections of the last move.
      */
     bool playout_nearby_enabled;
     
