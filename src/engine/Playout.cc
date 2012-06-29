@@ -903,7 +903,8 @@ bool Playout::isEyeFillMove(Go::Board *board, Go::Color col, int pos)
 //  fprintf(stderr,"[isEyeFillingMove]: %s strongeye %d selfatari%d\n",Go::Move(col,pos).toString(board->getSize()).c_str(),
 //        board->strongEye(col,pos),board->isSelfAtariOfSize(Go::Move(col,pos),2) );
   return (board->strongEye(col,pos) 
-      || board->isSelfAtariOfSize(Go::Move(col,pos),2)      
+      || board->isSelfAtariOfSize(Go::Move(col,pos),2) 
+      || board->twoGroupEye(col,pos)
       );
 }
 

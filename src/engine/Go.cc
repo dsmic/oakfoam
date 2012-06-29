@@ -890,6 +890,84 @@ bool Go::Board::weakEye(Go::Color col, int pos) const
   }
 }
 
+
+//find eye where two weak eyes are shared from two groups 
+bool Go::Board::twoGroupEye(Go::Color col, int pos) const
+{
+  Go::Group *groups_used[4];
+  int groups_used_num=0;
+  foreach_adjacent(pos,p,{
+    if (this->inGroup(p))
+    {
+      Go::Group *group=this->getGroup(p);
+      if (col==group->getColor())
+      {
+        bool found=false;
+        for (int i=0;i<groups_used_num;i++)
+        {
+          if (groups_used[i]==group)
+          {
+            found=true;
+          }
+        }
+        if (!found)
+          {
+            groups_used[groups_used_num]=group;
+            groups_used_num++;
+          }
+      }
+    }
+  });
+  //now all groups attached to pos are in groups_used[]
+
+  if (groups_used_num<2) return false; //can not be a two group eye
+
+  for (int i=0;i<groups_used_num;i++)
+    {
+      Go::Group *group=groups_used[i];
+      if (group->isOneOfTwoLiberties (pos))
+        {
+          //possible group attaching
+          int otherlib=group->getOtherOneOfTwoLiberties(pos);
+          //if otherlib has more than two libs together with first lib
+          //it is shared!
+          int found=0;
+          Go::Group *groups_used_ol[4];
+          int groups_used_num_ol=0;
+          foreach_adjacent(otherlib,p2,{
+            if (this->inGroup(p2))
+            {
+              Go::Group *group=this->getGroup(p2);
+              bool found_ol=false;
+              for (int i=0;i<groups_used_num_ol;i++)
+              {
+                  if (groups_used_ol[i]==group)
+                      found_ol=true;
+              }
+              if (!found_ol)
+              {
+                groups_used_ol[groups_used_num_ol]=group;
+                groups_used_num_ol++;
+                if (col==group->getColor())
+                {
+                  for (int j=0;j<groups_used_num;j++)
+                  {
+                    if (groups_used[j]==group)
+                    {
+                      found++;
+                      if (found>1) return true;
+                    }
+                  }
+                }
+              }
+            }
+        });
+        }
+    }
+        
+  
+  return false;
+}
 bool Go::Board::strongEye(Go::Color col, int pos) const
 {
   if (col==Go::EMPTY || col==Go::OFFBOARD || this->getColor(pos)!=Go::EMPTY)
