@@ -79,7 +79,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","playout_avoid_lbmf_p2",&(params->playout_avoid_lbmf_p2),PLAYOUT_AVOID_LBMF_P2);
   params->addParameter("playout","playout_lgpf_enabled",&(params->playout_lgpf_enabled),PLAYOUT_LGPF_ENABLED);
   params->addParameter("playout","playout_atari_enabled",&(params->playout_atari_enabled),PLAYOUT_ATARI_ENABLED);
-  params->addParameter("playout","playout_lastatari_enabled",&(params->playout_lastatari_enabled),PLAYOUT_LASTATARI_ENABLED);
+  params->addParameter("playout","playout_lastatari_p",&(params->playout_lastatari_p),PLAYOUT_LASTATARI_P);
   params->addParameter("playout","playout_lastatari_leavedouble",&(params->playout_lastatari_leavedouble),PLAYOUT_LASTATARI_LEAVEDOUBLE);
   params->addParameter("playout","playout_lastatari_leavedouble",&(params->playout_lastatari_captureattached),PLAYOUT_LASTATARI_CAPTUREATTACHED);
   params->addParameter("playout","playout_lastcapture_enabled",&(params->playout_lastcapture_enabled),PLAYOUT_LASTCAPTURE_ENABLED);
@@ -89,8 +89,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","playout_nearby_enabled",&(params->playout_nearby_enabled),PLAYOUT_NEARBY_ENABLED);
   params->addParameter("playout","playout_fillboard_enabled",&(params->playout_fillboard_enabled),PLAYOUT_FILLBOARD_ENABLED);
   params->addParameter("playout","playout_fillboard_n",&(params->playout_fillboard_n),PLAYOUT_FILLBOARD_N);
-  params->addParameter("playout","playout_patterns_enabled",&(params->playout_patterns_enabled),PLAYOUT_PATTERNS_ENABLED);
-  params->addParameter("playout","playout_anycapture_enabled",&(params->playout_anycapture_enabled),PLAYOUT_ANYCAPTURE_ENABLED);
+  params->addParameter("playout","playout_patterns_p",&(params->playout_patterns_p),PLAYOUT_PATTERNS_P);
+  params->addParameter("playout","playout_anycapture_p",&(params->playout_anycapture_p),PLAYOUT_ANYCAPTURE_P);
   params->addParameter("playout","playout_features_enabled",&(params->playout_features_enabled),PLAYOUT_FEATURES_ENABLED);
   params->addParameter("playout","playout_features_incremental",&(params->playout_features_incremental),PLAYOUT_FEATURES_INCREMENTAL);
   params->addParameter("playout","playout_random_chance",&(params->playout_random_chance),PLAYOUT_RANDOM_CHANCE);
@@ -1121,7 +1121,7 @@ void Engine::gtpShowRAVERatiosCD(void *instance, Gtp::Engine* gtpe, Gtp::Command
       }
       if (crit==0 && (!move.isNormal()))
           gtpe->getOutput()->printf("\"\" ");
-        else
+      else
       {
           float r,g,b;
           float x=crit;
@@ -1190,7 +1190,7 @@ void Engine::gtpShowUnPruneCD(void *instance, Gtp::Engine* gtpe, Gtp::Command* c
       }
       if (crit==0 && (!move.isNormal()))
           gtpe->getOutput()->printf("\"\" ");
-        else
+      else
       {
           float r,g,b;
           float x=crit;
@@ -1370,7 +1370,7 @@ void Engine::gtpPlayoutSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   if (success)
   {
     gtpe->getOutput()->startResponse(cmd);
-    gtpe->getOutput()->printf("wrote sgf file: %s (i was %d) finalscore %d",sgffile.c_str(),i,finalscore);
+    gtpe->getOutput()->printf("wrote sgf file: %s (i was %d) finalscore %f",sgffile.c_str(),i,finalscore);
     gtpe->getOutput()->endResponse();
   }
   else
@@ -1420,9 +1420,7 @@ void Engine::gtpPlayoutSGF_pos(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
     if (finalscore!=0 && i<1000) from_often++;
     playoutboard->score();
     //fprintf(stderr,"playoutres %d %d finalscore: %f\n",i,playoutboard->getScoredOwner(where),finalscore);
-    if ((win==1  && playoutboard->getScoredOwner(where)==Go::BLACK) ||
-        (win==-1 && playoutboard->getScoredOwner(where)==Go::WHITE)
-        )
+    if ((win==1  && playoutboard->getScoredOwner(where)==Go::BLACK) || (win==-1 && playoutboard->getScoredOwner(where)==Go::WHITE))
     {
       if (i<1000)
         how_often++;
@@ -2661,24 +2659,21 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     if (movetree->isTerminalResult())
       gtpe->getOutput()->printfDebug("SOLVED! found 100%% sure result after %d plts!\n",totalplayouts);
 
-    int num_unpruned=movetree->getNumUnprunedChilds();
+    int num_unpruned=movetree->getNumUnprunedChildren();
 
-    std::ostringstream ss;
-    ss << std::fixed;
-    ss<<"un:(";
+    std::ostringstream ssun;
+    ssun<<"un:(";
     for (int nn=1;nn<=num_unpruned;nn++)
     {
       for(std::list<Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
       {
-        if ((*iter)->getUnprunedNum()==nn && 
-            (*iter)->isPrimary() && !(*iter)->isPruned())
+        if ((*iter)->getUnprunedNum()==nn && (*iter)->isPrimary() && !(*iter)->isPruned())
         {
-          ss<<(nn!=1?",":"")<<Go::Position::pos2string((*iter)->getMove().getPosition(),boardsize);
+          ssun<<(nn!=1?",":"")<<Go::Position::pos2string((*iter)->getMove().getPosition(),boardsize);
         }
       }
     }
-    ss<<")\n";
-
+    ssun<<")";
 
     Tree *besttree=movetree->getRobustChild();
     float bestratio=0;
@@ -2727,6 +2722,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     if (!time->isNoTiming())
       time->useTime(col,time_used);
     
+    std::ostringstream ss;
+    ss << std::fixed;
     ss << "r:"<<std::setprecision(2)<<bestratio*100<<"%";
     if (!time->isNoTiming())
     {
@@ -2739,22 +2736,24 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     ss << " ppms:"<<std::setprecision(2)<<playouts_per_milli;
     ss << " rd:"<<std::setprecision(2)<<ratiodelta*100<<"%";
     ss << " r2:"<<std::setprecision(2)<<params->uct_last_r2;
-    ss << " fs:"<<std::setprecision(2)<<besttree->getFSRatio();
-    ss << " fstd:"<<std::setprecision(2)<<besttree->getFSStd();
-    ss << " UN:"<<besttree->getUnprunedNum()<<"/"<<num_unpruned;
+    ss << " fs:"<<std::setprecision(2)<<besttree->getScoreMean();
+    ss << " fsd:"<<std::setprecision(2)<<besttree->getScoreSD();
+    ss << " un:"<<besttree->getUnprunedNum()<<"/"<<num_unpruned;
     ss << " bs:"<<bestsame;
     
     Tree *pvtree=movetree->getRobustChild(true);
     if (pvtree!=NULL)
     {
       std::list<Go::Move> pvmoves=pvtree->getMovesFromRoot();
-      ss<<"\npv:(";
+      ss<<" pv:(";
       for(std::list<Go::Move>::iterator iter=pvmoves.begin();iter!=pvmoves.end();++iter) 
       {
         ss<<(iter!=pvmoves.begin()?",":"")<<Go::Position::pos2string((*iter).getPosition(),boardsize);
       }
       ss<<")";
     }
+
+    ss << " " << ssun.str();
 
     if (params->surewin_expected)
       ss << " surewin!";

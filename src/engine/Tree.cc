@@ -19,7 +19,8 @@ Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p) : params(
   fscoreSUM2=0;
   raveplayouts=0;
   ravewins=0;
-  raveinitwins=params->rave_init_wins;
+  raveplayoutsOC=0;
+  ravewinsOC=0;
   
   symmetryprimary=NULL;
   hasTerminalWinrate=false;
@@ -81,9 +82,8 @@ void Tree::addChild(Tree *node)
   node->parent=this;
 }
 
-float Tree::getFSRatio() const
+float Tree::getScoreMean() const
 {
-  
   if (playouts>0)
   {
     if (move.getColor()==Go::BLACK)
@@ -95,13 +95,10 @@ float Tree::getFSRatio() const
     return 0;
 }
 
-float Tree::getFSStd() const
+float Tree::getScoreSD() const
 {
-  
   if (playouts>0)
-  {
     return sqrt((fscoreSUM2/playouts-pow(fscoreSUM/playouts,2))/playouts);
-  }
   else
     return 0;
 }
@@ -140,7 +137,7 @@ float Tree::getRAVERatioOC() const
 float Tree::getRAVERatio_pool() const
 {
   if (raveplayouts>0)
-    return (float)(ravewins-raveinitwins)/(raveplayouts-raveinitwins+10);
+    return (float)(ravewins-params->rave_init_wins)/(raveplayouts-params->rave_init_wins+10);
   else
     return 0;
 }
@@ -148,7 +145,7 @@ float Tree::getRAVERatio_pool() const
 float Tree::getRAVERatioOC_pool() const
 {
   if (raveplayoutsOC>0)
-    return (float)(ravewinsOC-raveinitwins)/(raveplayoutsOC-raveinitwins+10);
+    return (float)(ravewinsOC-params->rave_init_wins)/(raveplayoutsOC-params->rave_init_wins+10);
   else
     return 0;
 }
@@ -461,7 +458,7 @@ float Tree::getUrgency(bool skiprave) const
 
   float val=this->getVal(skiprave)+uctbias;
   if (params->weight_score>0)
-    val+=params->weight_score*this->getFSRatio();
+    val+=params->weight_score*this->getScoreMean();
 
   if (params->uct_progressive_bias_enabled)
     val+=this->getProgressiveBias();
@@ -541,8 +538,8 @@ std::string Tree::toSGFString() const
       if (params->uct_decay_alpha!=1 || params->uct_decay_k!=0)
         ss<<"Decayed Playouts: "<<decayedplayouts<<"\n";
       ss<<"RAVE Wins/Playouts: "<<ravewins<<"/"<<raveplayouts<<"("<<this->getRAVERatio()<<")\n";
-      ss<<"finalscore/Playouts: "<<fscoreSUM<<"/"<<playouts<<"("<<this->getFSRatio()<<")\n";
-      ss<<"fscore stdabw: "<<"("<<this->getFSStd()<<")\n";
+      ss<<"Score Mean: "<<fscoreSUM<<"/"<<playouts<<"("<<this->getScoreMean()<<")\n";
+      ss<<"Score SD: "<<this->getScoreSD()<<"\n";
     }
     ss<<"Urgency: "<<this->getUrgency()<<"\n";
     if (!this->isLeaf())
@@ -566,8 +563,8 @@ std::string Tree::toSGFString() const
     if (this->isSuperkoViolation())
       ss<<"Superko Violation!\n";
     ss<<"Wins/Playouts: "<<wins<<"/"<<playouts<<"("<<this->getRatio()<<")\n";
-    ss<<"finalscore/Playouts: "<<fscoreSUM<<"/"<<playouts<<"("<<this->fscoreSUM/this->playouts<<")\n";
-    ss<<"fscore stdabw: "<<"("<<this->getFSStd()<<")\n";
+    ss<<"Score Mean: "<<fscoreSUM<<"/"<<playouts<<"("<<this->getScoreMean()<<")\n";
+    ss<<"Score SD: "<<"("<<this->getScoreSD()<<")\n";
     if (params->uct_decay_alpha!=1 || params->uct_decay_k!=0)
         ss<<"Decayed Playouts: "<<decayedplayouts<<"\n";
     ss<<"]";
@@ -731,6 +728,7 @@ void Tree::unPruneNow()
 
 float Tree::getUnPruneFactor() const
 {
+  //float factor=gamma/parent->getChildrenTotalFeatureGamma();
   float factor=log((1000.0*gamma*params->uct_rave_unprune_decay)/(parent->raveplayouts+params->uct_rave_unprune_decay)+1);
   //fprintf(stderr,"unprunefactore %f %f %f\n",gamma,parent->raveplayouts,factor);
   if (params->uct_criticality_unprune_factor>0 && (params->uct_criticality_siblings?parent->playouts:playouts)>(params->uct_criticality_min_playouts))
@@ -1267,8 +1265,7 @@ Tree *Tree::getBestRatioChild(float playoutthreshold) const
 
 void Tree::updateCriticality(Go::Board *board, Go::Color wincol)
 {
-  if (params->uct_criticality_unprune_factor==0 && params->uct_criticality_urgency_factor==0
-      && params->playout_poolrave_criticality==0)
+  if (params->uct_criticality_unprune_factor==0 && params->uct_criticality_urgency_factor==0 && params->playout_poolrave_criticality==0)
     return;
   //fprintf(stderr,"[crit_up]: %d %d\n",this->isRoot(),params->uct_criticality_siblings);
   
@@ -1404,6 +1401,8 @@ void Tree::resetNode()
   fscoreSUM2=0;
   raveplayouts=0;
   ravewins=0;
+  raveplayoutsOC=0;
+  ravewinsOC=0;
   hasTerminalWinrate=false;
   hasTerminalWin=false;
   decayedwins=0;
@@ -1414,7 +1413,7 @@ void Tree::resetNode()
   #endif
 }
 
-int Tree::getNumUnprunedChilds()
+int Tree::getNumUnprunedChildren()
 {
   int num=0;
   for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 

@@ -561,9 +561,10 @@ namespace Go
       
       /** Compute the current score. */
       int score();
-      /** Determine is the given position is a weak eye for the given color. */
+      /** Determine if the given position is a weak eye for the given color. */
       bool weakEye(Go::Color col, int pos) const;
       bool twoGroupEye(Go::Color col, int pos) const;
+      /** Determine if the given position is surrounded by a single group of the given color. */
       bool strongEye(Go::Color col, int pos) const;
       /** Get the number of empty positions orthogonally adjacent to the given position. */
       int touchingEmpty(int pos) const;

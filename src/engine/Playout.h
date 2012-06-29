@@ -51,12 +51,9 @@ class Playout
     unsigned char *lgrf1n;
     
     unsigned int *lgrf1hash,*lgrf2hash;
-#define lgrfcount1 1
-#define lgrfcount2 1
     int *lgrf1count,*lgrf2count;
     
-#define lgpf_empty 0xFFFF
-    unsigned int *lgpf;
+    unsigned int *lgpf; // last good play with forgetting
     unsigned long int *lgpf_b;
     
     bool *bad_pass_answer;
@@ -86,14 +83,14 @@ class Playout
     void checkEyeMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, Go::Move &replacemove);
 
     bool isBadMove(Worker::Settings *settings, Go::Board *board, Go::Color col, int pos, float p=0.0, float p2=0.0);
-    int  Passes(Go::Color col);
+    int getPasses(Go::Color col);
 
     bool isEyeFillMove(Go::Board *board, Go::Color col, int pos);
     int getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group *group);
     
     int getLGRF1(Go::Color col, int pos1) const;
     unsigned int getLGRF1hash(Go::Color col, int pos1) const;
-//    int getLGRF1n_l(Go::Color col, int pos1) const;
+    //int getLGRF1n_l(Go::Color col, int pos1) const;
     int getLGRF1o(Go::Color col, int pos1) const;
     int getLGRF2(Go::Color col, int pos1, int pos2) const;
     unsigned int getLGRF2hash(Go::Color col, int pos1, int pos2) const;
@@ -103,8 +100,8 @@ class Playout
     void setLGRF1o(Go::Color col, int pos1, int val);
     void setLGRF2(Go::Color col, int pos1, int pos2, int val);
     void setLGRF2(Go::Color col, int pos1, int pos2, int val, unsigned int hash);
-    void setLGPF(Go::Color col, int pos1, unsigned int val);
-    void setLGPF(Go::Color col, int pos1, unsigned int val, unsigned long int val_b);
+    void setLGPF(Worker::Settings *settings, Go::Color col, int pos1, unsigned int val);
+    void setLGPF(Worker::Settings *settings, Go::Color col, int pos1, unsigned int val, unsigned long int val_b);
     bool hasLGRF1(Go::Color col, int pos1) const;
     bool hasLGRF1n(Go::Color col, int pos1, int pos) const;
     bool hasLBM(Go::Color col, int val) const;

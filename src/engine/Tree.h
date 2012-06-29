@@ -109,15 +109,20 @@ class Tree
     float getWins() const { return wins; };
     /** Get the number of RAVE playouts through this node. */
     float getRAVEPlayouts() const { return raveplayouts; };
+    /** Get the number of RAVE playouts for the other color through this node. */
     float getRAVEPlayoutsOC() const { return raveplayoutsOC; };
     /** Get the ratio of wins to playouts. */
     float getRatio() const;
+    /** Get the unprune factor, used for determining the order to unprune nodes in. */
     float getUnPruneFactor() const;
-    float getFSRatio() const;
-    float getFSStd() const;
+    /** Get the score mean. */
+    float getScoreMean() const;
+    /** Get the score standard deviation. */
+    float getScoreSD() const;
 
     /** Get the ratio of RAVE wins to playouts. */
     float getRAVERatio() const;
+    /** Get the ratio of RAVE wins to playouts for the other color. */
     float getRAVERatioOC() const;
     float getRAVERatio_pool() const;
     float getRAVERatioOC_pool() const;
@@ -136,7 +141,7 @@ class Tree
     /** Add a win to this node.
      * @param source The child that this result is coming from.
      */
-    void addWin(int fscroe, Tree *source=NULL);
+    void addWin(int fscore, Tree *source=NULL);
     /** Add a loss to this node.
      * @param source The child that this result is coming from.
      */
@@ -153,8 +158,9 @@ class Tree
     void addRAVEWin();
     /** Add a RAVE loss to this node. */
     void addRAVELose();
-
+    /** Add a RAVE win for the other color to this node. */
     void addRAVEWinOC();
+    /** Add a RAVE loss for the other color to this node. */
     void addRAVELoseOC();
     
     /** Add a number of RAVE wins to this node. */
@@ -234,6 +240,10 @@ class Tree
     /** Get a string representation for this node. */
     std::string toSGFString() const;
     
+    void setUnprunedNum(int num) {unpruned_num=num;};
+    int getUnprunedNum() {return unpruned_num;}
+    int getNumUnprunedChildren();
+
     #ifdef HAVE_MPI
       /** Get the difference between now and the last sync for MPI-shared stats. */
       void fetchMpiDiff(float &plts, float &wns);
@@ -243,10 +253,6 @@ class Tree
       void resetMpiDiff();
     #endif
 
-    void setUnprunedNum(int num) {unpruned_num=num;};
-    int getUnprunedNum() {return unpruned_num;}
-    int getNumUnprunedChilds();
-    std::list<Tree*> *getChildren() {return children;};
   private:
     Tree *parent;
     std::list<Tree*> *children;
@@ -256,7 +262,6 @@ class Tree
     Go::Move move;
     float playouts,raveplayouts;
     float wins,ravewins;
-    float raveinitwins;
     float raveplayoutsOC;
     float ravewinsOC;
     float fscoreSUM,fscoreSUM2;

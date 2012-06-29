@@ -16,7 +16,6 @@ Random::Random(unsigned long s, int threadid)
     seed=Random::makeSeed(threadid);
   else
     seed=s^((unsigned long)threadid);
-  srand(seed);
 }
 
 unsigned long Random::getRandomInt()
@@ -40,6 +39,7 @@ unsigned long Random::getRandomInt(unsigned long max)
 {
   return this->getRandomInt() % max; //XXX: not uniform, but good enough
 }
+
 unsigned long Random::getRandomInt(unsigned long max, float a)
 {
   float r=getRandomInt(max);
