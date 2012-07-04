@@ -44,6 +44,7 @@ namespace Pattern
   
   /** Patterns of size 3x3.
    * Pattern hashes are represented by unsigned int's.
+   * Assumes int is at least 16 bits.
    */
   class ThreeByThree
   {
@@ -89,11 +90,15 @@ namespace Pattern
       static int hashColor(Go::Color col);
   };
 
+  /** Patterns of a 5x5 area not covered by the 3x3 patterns.
+   * Pattern hashes are represented by unsigned long's.
+   * Assumes long is at least 32 bits.
+   */
   class FiveByFiveBorder
   {
     public:
       /** Make a hash from a board position. */
-      static unsigned long int makeHash(Go::Board *board, int pos);
+      static unsigned long makeHash(Go::Board *board, int pos);
     private:
       static int hashColor(Go::Color col);
   };      

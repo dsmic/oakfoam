@@ -41,9 +41,9 @@ int Pattern::ThreeByThree::hashColor(Go::Color col)
   }
 }
 
-unsigned long int Pattern::FiveByFiveBorder::makeHash(Go::Board *board, int pos)
+unsigned long Pattern::FiveByFiveBorder::makeHash(Go::Board *board, int pos)
 {
-  unsigned long int hash=0;
+  unsigned long hash=0;
   int size=board->getSize();
   if (board->getColor(pos+P_NW)!=Go::OFFBOARD)
     hash|=(Pattern::FiveByFiveBorder::hashColor(board->getColor(pos+P_NW+P_NW)) << 30);

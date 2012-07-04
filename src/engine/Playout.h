@@ -30,11 +30,12 @@ class Playout
      * @param[in] colfirst      Color to move first.
      * @param[out] firstlist    List of location where the first color played.
      * @param[out] secondlist   List of location where the other color played.
+     * @param[out] movereasons  List of reasons for making moves.
      */
     void doPlayout(Worker::Settings *settings, Go::Board *board, float &finalscore, Tree *playouttree, std::list<Go::Move> &playoutmoves, Go::Color colfirst, Go::BitBoard *firstlist, Go::BitBoard *secondlist, std::list<std::string> *movereasons=NULL);
     /** Get a playout move for a given situation. */
     void getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, std::vector<int> *pool=NULL, std::vector<int> *poolCR=NULL, std::string *reason=NULL);
-    /** Check for a useless move accoridng to the Crazy Stone heuristic.
+    /** Check for a useless move according to the Crazy Stone heuristic.
      * @todo Consider incorporating this into getPlayoutMove()
      */
     void checkUselessMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, std::string *reason=NULL);
