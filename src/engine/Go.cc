@@ -974,21 +974,9 @@ bool Go::Board::strongEye(Go::Color col, int pos) const
     return false;
   else
   {
-    bool onside=false;
-    Go::Group *group=NULL;
-    
     foreach_adjacent(pos,p,{
-      if (this->getColor(p)==Go::OFFBOARD)
-        onside=true;
-      else if (this->getColor(p)!=col)
+      if (this->getColor(p)!=col || this->getColor(p)==Go::EMPTY)
         return false;
-      else if (group)
-      {
-        if (group!=this->getGroup(p))
-          return false;
-      }
-      else
-        group=this->getGroup(p);
     });
     
     return true;
@@ -1606,6 +1594,7 @@ bool Go::Board::isSelfAtariOfSize(Go::Move move, int minsize) const
 
   if (this->touchingEmpty(pos)>1)
     return false;
+
   int libpos=-1;
   int groupsize=1;
   Go::Group *groups_used[4];
@@ -1617,16 +1606,14 @@ bool Go::Board::isSelfAtariOfSize(Go::Move move, int minsize) const
       if (col==group->getColor())
       {
         if (!(group->inAtari() || group->isOneOfTwoLiberties(pos)))
-        {
-          //fprintf(stderr,"attached group has more than two libs\n");
-          return false; //attached group has more than two libs
-        }
+          return false; // attached group has more than two libs
         bool found=false;
         for (int i=0;i<groups_used_num;i++)
         {
           if (groups_used[i]==group)
           {
             found=true;
+            break;
           }
         }
         if (!found)
@@ -1639,10 +1626,7 @@ bool Go::Board::isSelfAtariOfSize(Go::Move move, int minsize) const
             if (libpos==-1)
               libpos=otherlib;
             else if (libpos!=otherlib)
-            {
-              //fprintf(stderr,"at least 2 libs\n");
               return false; // at least 2 libs
-            }
             groupsize+=group->numOfStones();
           }
         }
@@ -1653,13 +1637,10 @@ bool Go::Board::isSelfAtariOfSize(Go::Move move, int minsize) const
       if (libpos==-1)
         libpos=p;
       else if (libpos!=p)
-      {
-        //fprintf(stderr,"at least 2 libs\n");
         return false; // at least 2 libs
-      }
     }
   });
-  //fprintf(stderr,"gs %d ms %d\n",groupsize,minsize);
+  
   if (groupsize>minsize)
     return true;
   else
