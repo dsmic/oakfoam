@@ -110,7 +110,7 @@ class Tree
     /** Get the number of RAVE playouts through this node. */
     float getRAVEPlayouts() const { return raveplayouts; };
     /** Get the number of RAVE playouts for the other color through this node. */
-    float getRAVEPlayoutsOC() const { return raveplayoutsOC; };
+    float getRAVEPlayoutsOther() const { return raveplayoutsother; };
     /** Get the ratio of wins to playouts. */
     float getRatio() const;
     /** Get the unprune factor, used for determining the order to unprune nodes in. */
@@ -123,9 +123,11 @@ class Tree
     /** Get the ratio of RAVE wins to playouts. */
     float getRAVERatio() const;
     /** Get the ratio of RAVE wins to playouts for the other color. */
-    float getRAVERatioOC() const;
-    float getRAVERatio_pool() const;
-    float getRAVERatioOC_pool() const;
+    float getRAVERatioOther() const;
+    /** Get the ratio of RAVE wins to playouts used for poolRAVE (excluding any initial wins). */
+    float getRAVERatioForPool() const;
+    /** Get the ratio of RAVE wins to playouts for the other color used for poolRAVE (excluding any initial wins). */
+    float getRAVERatioOtherForPool() const;
     /** Get the value for this node.
      * This is a combination of normal and RAVE values.
      */
@@ -139,10 +141,12 @@ class Tree
     /** Add a child to this node. */
     void addChild(Tree *node);
     /** Add a win to this node.
+     * @param fscore The final score of the playout.
      * @param source The child that this result is coming from.
      */
     void addWin(int fscore, Tree *source=NULL);
     /** Add a loss to this node.
+     * @param fscore The final score of the playout.
      * @param source The child that this result is coming from.
      */
     void addLose(int fscore, Tree *source=NULL);
@@ -159,9 +163,9 @@ class Tree
     /** Add a RAVE loss to this node. */
     void addRAVELose();
     /** Add a RAVE win for the other color to this node. */
-    void addRAVEWinOC();
+    void addRAVEWinOther();
     /** Add a RAVE loss for the other color to this node. */
-    void addRAVELoseOC();
+    void addRAVELoseOther();
     
     /** Add a number of RAVE wins to this node. */
     void addRAVEWins(int n);
@@ -240,9 +244,17 @@ class Tree
     /** Get a string representation for this node. */
     std::string toSGFString() const;
     
-    void setUnprunedNum(int num) {unpruned_num=num;};
-    int getUnprunedNum() {return unpruned_num;}
-    int getNumUnprunedChildren();
+    /** The order in which this node was unpruned.
+     * A zero signifies that this node has not yet been unpruned.
+     * The first node to be unpruned will return a value of one.
+     */
+    int getUnprunedNum() const { return unprunednum; };
+    /** Set the unprune order for this node.
+     * @see Tree::getUnprunedNum()
+     */
+    void setUnprunedNum(int num) { unprunednum=num; };
+    /** Get the number of unpruned children. */
+    unsigned int getNumUnprunedChildren() const { return unprunedchildren; };
 
     #ifdef HAVE_MPI
       /** Get the difference between now and the last sync for MPI-shared stats. */
@@ -262,16 +274,17 @@ class Tree
     Go::Move move;
     float playouts,raveplayouts;
     float wins,ravewins;
-    float raveplayoutsOC;
-    float ravewinsOC;
-    float fscoreSUM,fscoreSUM2;
+    float raveplayoutsother;
+    float ravewinsother;
+    float scoresum,scoresumsq;
     float decayedwins,decayedplayouts;
     Parameters *const params;
     bool hasTerminalWinrate,hasTerminalWin;
     bool terminaloverride;
     bool pruned;
-    int unpruned_num;
+    int unprunednum;
     unsigned int prunedchildren;
+    unsigned int unprunedchildren;
     float gamma,childrentotalgamma,maxchildgamma;
     float lastunprune,unprunenextchildat;
     float unprunebase;

@@ -500,10 +500,10 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("showterritory",this,&Engine::gtpShowTerritory);
   gtpe->addFunctionCommand("showratios",this,&Engine::gtpShowRatios);
   gtpe->addFunctionCommand("showunprune",this,&Engine::gtpShowUnPrune);
-  gtpe->addFunctionCommand("showunprunecd",this,&Engine::gtpShowUnPruneCD);
+  gtpe->addFunctionCommand("showunprunecolor",this,&Engine::gtpShowUnPruneColor);
   gtpe->addFunctionCommand("showraveratios",this,&Engine::gtpShowRAVERatios);
-  gtpe->addFunctionCommand("showraveratioscd",this,&Engine::gtpShowRAVERatiosCD);
-  gtpe->addFunctionCommand("showraveratiosoc",this,&Engine::gtpShowRAVERatiosOC);
+  gtpe->addFunctionCommand("showraveratioscolor",this,&Engine::gtpShowRAVERatiosColor);
+  gtpe->addFunctionCommand("showraveratiosother",this,&Engine::gtpShowRAVERatiosOther);
   
   //gtpe->addAnalyzeCommand("final_score","Final Score","string");
   //gtpe->addAnalyzeCommand("showboard","Show Board","string");
@@ -1080,7 +1080,7 @@ void Engine::gtpShowRAVERatios(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
   gtpe->getOutput()->endResponse(true);
 }
 
-void Engine::gtpShowRAVERatiosCD(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+void Engine::gtpShowRAVERatiosColor(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
   Go::Color col=me->currentboard->nextToMove();
@@ -1149,7 +1149,7 @@ void Engine::gtpShowRAVERatiosCD(void *instance, Gtp::Engine* gtpe, Gtp::Command
   gtpe->getOutput()->endResponse(true);
 }
 
-void Engine::gtpShowUnPruneCD(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+void Engine::gtpShowUnPruneColor(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
   Go::Color col=me->currentboard->nextToMove();
@@ -1218,7 +1218,7 @@ void Engine::gtpShowUnPruneCD(void *instance, Gtp::Engine* gtpe, Gtp::Command* c
   gtpe->getOutput()->endResponse(true);
 }
         
-void Engine::gtpShowRAVERatiosOC(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+void Engine::gtpShowRAVERatiosOther(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
   Go::Color col=me->currentboard->nextToMove();
@@ -1234,7 +1234,7 @@ void Engine::gtpShowRAVERatiosOC(void *instance, Gtp::Engine* gtpe, Gtp::Command
       Tree *tree=me->movetree->getChild(move);
       if (tree!=NULL)
       {
-        float ratio=tree->getRAVERatioOC();
+        float ratio=tree->getRAVERatioOther();
         gtpe->getOutput()->printf("\"%.2f\"",ratio);
       }
       else

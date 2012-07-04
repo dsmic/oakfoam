@@ -146,16 +146,16 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
         int bestposCR=-1;
         for(std::list<Tree*>::iterator iter=pooltree->getChildren()->begin();iter!=pooltree->getChildren()->end();++iter) 
         {
-          if (!(*iter)->getMove().isPass() && !used->get((*iter)->getMove().getPosition()) && (*iter)->getRAVERatio_pool()>bestval)
+          if (!(*iter)->getMove().isPass() && !used->get((*iter)->getMove().getPosition()) && (*iter)->getRAVERatioForPool()>bestval)
           {
             bestpos=(*iter)->getMove().getPosition();
-            bestval=(*iter)->getRAVERatio_pool();
+            bestval=(*iter)->getRAVERatioForPool();
             poolColor=(*iter)->getMove().getColor();
           }
-          if (!(*iter)->getMove().isPass() && !usedOC->get((*iter)->getMove().getPosition()) && (*iter)->getRAVERatioOC_pool()>bestvalOC)
+          if (!(*iter)->getMove().isPass() && !usedOC->get((*iter)->getMove().getPosition()) && (*iter)->getRAVERatioOtherForPool()>bestvalOC)
           {
             bestposOC=(*iter)->getMove().getPosition();
-            bestvalOC=(*iter)->getRAVERatioOC_pool();
+            bestvalOC=(*iter)->getRAVERatioOtherForPool();
           }
           if (!(*iter)->getMove().isPass() && !usedCR->get((*iter)->getMove().getPosition()) && (*iter)->getCriticality()>bestvalCR)
           {

@@ -15,12 +15,12 @@ Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p) : params(
   move=mov;
   playouts=0;
   wins=0;
-  fscoreSUM=0;
-  fscoreSUM2=0;
+  scoresum=0;
+  scoresumsq=0;
   raveplayouts=0;
   ravewins=0;
-  raveplayoutsOC=0;
-  ravewinsOC=0;
+  raveplayoutsother=0;
+  ravewinsother=0;
   
   symmetryprimary=NULL;
   hasTerminalWinrate=false;
@@ -34,6 +34,7 @@ Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p) : params(
   unprunenextchildat=0;
   lastunprune=0;
   unprunebase=0;
+  unprunedchildren=0;
   hash=h;
   ownedblack=0;
   ownedwhite=0;
@@ -45,7 +46,7 @@ Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p) : params(
   superkochildrenviolations=0;
   decayedwins=0;
   decayedplayouts=0;
-  unpruned_num=0;
+  unprunednum=0;
   
   #ifdef HAVE_MPI
     this->resetMpiDiff();
@@ -87,9 +88,9 @@ float Tree::getScoreMean() const
   if (playouts>0)
   {
     if (move.getColor()==Go::BLACK)
-      return fscoreSUM/playouts;
+      return scoresum/playouts;
     else
-      return -fscoreSUM/playouts;
+      return -scoresum/playouts;
   }
   else
     return 0;
@@ -98,7 +99,7 @@ float Tree::getScoreMean() const
 float Tree::getScoreSD() const
 {
   if (playouts>0)
-    return sqrt((fscoreSUM2/playouts-pow(fscoreSUM/playouts,2))/playouts);
+    return sqrt((scoresumsq/playouts-pow(scoresum/playouts,2))/playouts);
   else
     return 0;
 }
@@ -126,30 +127,29 @@ float Tree::getRAVERatio() const
     return 0;
 }
 
-float Tree::getRAVERatioOC() const
+float Tree::getRAVERatioOther() const
 {
-  if (raveplayoutsOC>0)
-    return (float)ravewinsOC/raveplayoutsOC;
+  if (raveplayoutsother>0)
+    return (float)ravewinsother/raveplayoutsother;
   else
     return 0;
 }
 
-float Tree::getRAVERatio_pool() const
+float Tree::getRAVERatioForPool() const
 {
   if (raveplayouts>0)
-    return (float)(ravewins-params->rave_init_wins)/(raveplayouts-params->rave_init_wins+10);
+    return (float)(ravewins-params->rave_init_wins)/(raveplayouts-params->rave_init_wins+1);
   else
     return 0;
 }
 
-float Tree::getRAVERatioOC_pool() const
+float Tree::getRAVERatioOtherForPool() const
 {
-  if (raveplayoutsOC>0)
-    return (float)(ravewinsOC-params->rave_init_wins)/(raveplayoutsOC-params->rave_init_wins+10);
+  if (raveplayoutsother>0)
+    return (float)(ravewinsother-params->rave_init_wins)/(raveplayoutsother-params->rave_init_wins+1);
   else
     return 0;
 }
-
 
 void Tree::addWin(int fscore, Tree *source)
 {
@@ -161,15 +161,15 @@ void Tree::addWin(int fscore, Tree *source)
   }*/
   
   wins++;
-  fscoreSUM+=fscore;
-  fscoreSUM2+=fscore*fscore;
   playouts++;
+  scoresum+=fscore;
+  scoresumsq+=fscore*fscore;
   if (params->uct_decay_alpha!=1 || params->uct_decay_k!=0)
     this->addDecayResult(1);
   
   if (lock!=NULL)
     delete lock;
-  this->passPlayoutUp(fscore, true,source);
+  this->passPlayoutUp(fscore,true,source);
   this->checkForUnPruning();
 }
 
@@ -182,15 +182,15 @@ void Tree::addLose(int fscore, Tree *source)
     return;
   }*/
 
-  fscoreSUM+=fscore;
-  fscoreSUM2+=fscore*fscore;
   playouts++;
+  scoresum+=fscore;
+  scoresumsq+=fscore*fscore;
   if (params->uct_decay_alpha!=1 || params->uct_decay_k!=0)
     this->addDecayResult(0);
   
   if (lock!=NULL)
     delete lock;
-  this->passPlayoutUp(fscore, false,source);
+  this->passPlayoutUp(fscore,false,source);
   this->checkForUnPruning();
 }
 
@@ -268,17 +268,17 @@ void Tree::addRAVELose()
   raveplayouts++;
 }
 
-void Tree::addRAVEWinOC()
+void Tree::addRAVEWinOther()
 {
   //boost::mutex::scoped_lock lock(updatemutex);
-  ravewinsOC++;
-  raveplayoutsOC++;
+  ravewinsother++;
+  raveplayoutsother++;
 }
 
-void Tree::addRAVELoseOC()
+void Tree::addRAVELoseOther()
 {
   //boost::mutex::scoped_lock lock(updatemutex);
-  raveplayoutsOC++;
+  raveplayoutsother++;
 }
 
 void Tree::addRAVEWins(int n)
@@ -287,8 +287,8 @@ void Tree::addRAVEWins(int n)
   raveplayouts+=n;
 
   //only used for initialization, therefore both can be done in this function
-  ravewinsOC+=n;
-  raveplayoutsOC+=n;
+  ravewinsother+=n;
+  raveplayoutsother+=n;
 }  
 
 
@@ -538,7 +538,7 @@ std::string Tree::toSGFString() const
       if (params->uct_decay_alpha!=1 || params->uct_decay_k!=0)
         ss<<"Decayed Playouts: "<<decayedplayouts<<"\n";
       ss<<"RAVE Wins/Playouts: "<<ravewins<<"/"<<raveplayouts<<"("<<this->getRAVERatio()<<")\n";
-      ss<<"Score Mean: "<<fscoreSUM<<"/"<<playouts<<"("<<this->getScoreMean()<<")\n";
+      ss<<"Score Mean: "<<scoresum<<"/"<<playouts<<"("<<this->getScoreMean()<<")\n";
       ss<<"Score SD: "<<this->getScoreSD()<<"\n";
     }
     ss<<"Urgency: "<<this->getUrgency()<<"\n";
@@ -563,7 +563,7 @@ std::string Tree::toSGFString() const
     if (this->isSuperkoViolation())
       ss<<"Superko Violation!\n";
     ss<<"Wins/Playouts: "<<wins<<"/"<<playouts<<"("<<this->getRatio()<<")\n";
-    ss<<"Score Mean: "<<fscoreSUM<<"/"<<playouts<<"("<<this->getScoreMean()<<")\n";
+    ss<<"Score Mean: "<<scoresum<<"/"<<playouts<<"("<<this->getScoreMean()<<")\n";
     ss<<"Score SD: "<<"("<<this->getScoreSD()<<")\n";
     if (params->uct_decay_alpha!=1 || params->uct_decay_k!=0)
         ss<<"Decayed Playouts: "<<decayedplayouts<<"\n";
@@ -642,6 +642,7 @@ void Tree::pruneChildren()
       prunedchildren++;
     }
   }
+  unprunedchildren=0;
 }
 
 void Tree::unPruneNextChild()
@@ -650,7 +651,7 @@ void Tree::unPruneNextChild()
   {
     Tree *bestchild=NULL;
     float bestfactor=-1;
-    int unpruned=0;
+    unsigned int unpruned=0;
     
     for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
     {
@@ -674,7 +675,10 @@ void Tree::unPruneNextChild()
     {
       //fprintf(stderr,"\n[unpruning]: (%d) %s %f %f -- %f\n\n",unpruned,bestchild->getMove().toString(params->board_size).c_str(),bestfactor,bestchild->getRAVERatio (),bestchild->getUnPruneFactor ());
       bestchild->setPruned(false);
+      if (unpruned!=unprunedchildren)
+        fprintf(stderr,"WARNING! unpruned running total doesn't match (%u:%u)",unpruned,unprunedchildren);
       bestchild->setUnprunedNum(unpruned+1);
+      unprunedchildren++;
       unprunebase=params->uct_progressive_widening_a*pow(params->uct_progressive_widening_b,unpruned);
       lastunprune=this->unPruneMetric();
       this->updateUnPruneAt();
@@ -1058,8 +1062,7 @@ void Tree::updateRAVE(Go::Color wincol,Go::BitBoard *blacklist,Go::BitBoard *whi
         Go::Color col=(*iter)->getMove().getColor();
         int pos=(*iter)->getMove().getPosition();
         
-        bool movemade=(col==Go::BLACK?blacklist:whitelist)->get(pos);
-        if (movemade)
+        if ((col==Go::BLACK?blacklist:whitelist)->get(pos))
         {
           if ((*iter)->isPrimary())
           {
@@ -1077,24 +1080,23 @@ void Tree::updateRAVE(Go::Color wincol,Go::BitBoard *blacklist,Go::BitBoard *whi
               primary->addRAVELose();
           }
         }
-        //check for the other color!
-        movemade=(col==Go::WHITE?blacklist:whitelist)->get(pos);
-        if (movemade)
+        //check for the other color
+        if ((col==Go::WHITE?blacklist:whitelist)->get(pos))
         {
           if ((*iter)->isPrimary())
           {
             if (Go::otherColor(col)==wincol)
-              (*iter)->addRAVEWinOC();
+              (*iter)->addRAVEWinOther();
             else
-              (*iter)->addRAVELoseOC();
+              (*iter)->addRAVELoseOther();
           }
           else
           {
             Tree *primary=(*iter)->getPrimary();
             if (Go::otherColor(col)==wincol)
-              primary->addRAVEWinOC();
+              primary->addRAVEWinOther();
             else
-              primary->addRAVELoseOC();
+              primary->addRAVELoseOther();
           }
         }
       }
@@ -1397,12 +1399,12 @@ void Tree::resetNode()
 {
   playouts=0;
   wins=0;
-  fscoreSUM=0;
-  fscoreSUM2=0;
+  scoresum=0;
+  scoresumsq=0;
   raveplayouts=0;
   ravewins=0;
-  raveplayoutsOC=0;
-  ravewinsOC=0;
+  raveplayoutsother=0;
+  ravewinsother=0;
   hasTerminalWinrate=false;
   hasTerminalWin=false;
   decayedwins=0;
@@ -1411,17 +1413,6 @@ void Tree::resetNode()
   #ifdef HAVE_MPI
     this->resetMpiDiff();
   #endif
-}
-
-int Tree::getNumUnprunedChildren()
-{
-  int num=0;
-  for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
-  {
-    if ((*iter)->isPrimary() && !(*iter)->isPruned())
-      num++;;
-  }
-  return num;
 }
 
 #ifdef HAVE_MPI
