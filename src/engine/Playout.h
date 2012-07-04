@@ -34,7 +34,7 @@ class Playout
      */
     void doPlayout(Worker::Settings *settings, Go::Board *board, float &finalscore, Tree *playouttree, std::list<Go::Move> &playoutmoves, Go::Color colfirst, Go::BitBoard *firstlist, Go::BitBoard *secondlist, std::list<std::string> *movereasons=NULL);
     /** Get a playout move for a given situation. */
-    void getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, std::vector<int> *pool=NULL, std::vector<int> *poolCR=NULL, std::string *reason=NULL);
+    void getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int passes=0, std::vector<int> *pool=NULL, std::vector<int> *poolcrit=NULL, std::string *reason=NULL);
     /** Check for a useless move according to the Crazy Stone heuristic.
      * @todo Consider incorporating this into getPlayoutMove()
      */
@@ -57,13 +57,11 @@ class Playout
     unsigned int *lgpf; // last good play with forgetting
     unsigned long int *lgpf_b;
     
-    bool *bad_pass_answer;
-    int bpasses;
-    int wpasses;
+    bool *badpassanswer;
     
     int lgrfpositionmax;
     
-    void getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, std::vector<int> *pool=NULL, std::vector<int> *poolCR=NULL,std::string *reason=NULL);
+    void getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, int passes=0, std::vector<int> *pool=NULL, std::vector<int> *poolcrit=NULL, std::string *reason=NULL);
     void checkUselessMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, std::string *reason=NULL);
     void getPoolRAVEMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, std::vector<int> *pool=NULL);
     void getLGRF2Move(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move);
@@ -72,7 +70,7 @@ class Playout
     void getLGPFMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray);
     void getFeatureMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move);
     void getAnyCaptureMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray);
-    void getPatternMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray);
+    void getPatternMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, int passes);
     void getFillBoardMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move);
     void getNakadeMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray);
     void getLast2LibAtariMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray);
@@ -83,9 +81,7 @@ class Playout
 
     void checkEyeMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, Go::Move &replacemove);
 
-    bool isBadMove(Worker::Settings *settings, Go::Board *board, Go::Color col, int pos, float p=0.0, float p2=0.0);
-    int getPasses(Go::Color col);
-
+    bool isBadMove(Worker::Settings *settings, Go::Board *board, Go::Color col, int pos, float p=0.0, float p2=0.0, int passes=0);
     bool isEyeFillMove(Go::Board *board, Go::Color col, int pos);
     int getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group *group);
     
@@ -108,8 +104,8 @@ class Playout
     bool hasLBM(Go::Color col, int val) const;
     bool hasLGRF1o(Go::Color col, int pos1) const;
     bool hasLGRF2(Go::Color col, int pos1, int pos2) const;
-    bool hasLGPF(Go::Color col, int pos1,unsigned int hash) const;
-    bool hasLGPF(Go::Color col, int pos1,unsigned int hash,unsigned long int hash_b) const;
+    bool hasLGPF(Go::Color col, int pos1, unsigned int hash) const;
+    bool hasLGPF(Go::Color col, int pos1, unsigned int hash, unsigned long int hash_b) const;
     void clearLGRF1(Go::Color col, int pos1);
     //void clearLGRF1n(Go::Color col, int pos1);
     void clearLGRF1n(Go::Color col, int pos1, int val);
@@ -117,11 +113,11 @@ class Playout
     void clearLGRF2(Go::Color col, int pos1, int pos2);
     void clearLGPF(Go::Color col, int pos1);
     void clearLGPF(Go::Color col, int pos1, unsigned int hash);
-    void clearLGPF(Go::Color col, int pos1, unsigned int hash,unsigned long int hash_b);
+    void clearLGPF(Go::Color col, int pos1, unsigned int hash, unsigned long int hash_b);
     
-    void clear_bad_pass_answer(Go::Color col, int pos1);
-    void set_bad_pass_answer(Go::Color col, int pos1);
-    bool is_bad_pass_answer(Go::Color col, int pos1);
+    void clearBadPassAnswer(Go::Color col, int pos1);
+    void setBadPassAnswer(Go::Color col, int pos1);
+    bool isBadPassAnswer(Go::Color col, int pos1);
     
 };
 #endif

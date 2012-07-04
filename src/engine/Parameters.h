@@ -236,6 +236,10 @@ class Parameters
      * If triggered, RAVE is ignored for the selection of an urgent child.
      */
     float rave_skip;
+    /** Adjust the number of moves to be used for RAVE.
+     * Only the first x moves are used where x = rave_moves_use*board_size^2.
+     * Set to zero to disable.
+     */
     float rave_moves_use;
     
     /** After this many playouts through a node, it will be expanded. */
