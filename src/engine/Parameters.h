@@ -104,6 +104,7 @@ class Parameters
     float playout_lastatari_p;
     /** Whether to skip using the lastatari heuristic if two or more groups are in atari, and the group causing the atari is in atari itself. */
     bool playout_lastatari_leavedouble;
+    /** The probability of capturing an attached group instead of extending. */
     float playout_lastatari_captureattached;
     /** Whether to use the nakade heuristic in playouts.
      * If the last move created an eye of size 3, play in the center of that eye.
@@ -150,9 +151,6 @@ class Parameters
      * @see playout_mercy_rule_enabled
      */
     float playout_mercy_rule_factor;
-    /** Skip all playout heuristics with this probability.
-     * Set to zero to disable.
-     */
 
  /*   
     float test_p1;
@@ -167,6 +165,9 @@ class Parameters
     float test_p10;
  */
         
+    /** Skip all playout heuristics with this probability.
+     * Set to zero to disable.
+     */
     float playout_random_chance;
     /** Whether to use the last2libatari heuristic in playouts.
      * When the last move reduced a group to 2 liberties, and is near one of those liberties, play on one of them.

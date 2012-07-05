@@ -516,6 +516,19 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
       move=Go::Move(col,Go::Move::PASS);
     }
   }
+  
+  if (params->playout_lgrf2_enabled)
+  {
+    this->getLGRF2Move(settings, board,col,move);
+    if (!move.isPass())
+    {
+      if (params->debug_on)
+        gtpe->getOutput()->printfDebug("[playoutmove]: %s lgrf2\n",move.toString(board->getSize()).c_str());
+      if (reason!=NULL)
+        *reason="lgrf2";
+      return;
+    }
+  }
 
   if (params->playout_lgrf1_enabled && params->playout_lgrf1_safe_enabled)
   {
@@ -538,6 +551,19 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     }
   }
 
+  if (params->playout_lgrf1_enabled)
+  {
+    this->getLGRF1Move(settings, board,col,move);
+    if (!move.isPass())
+    {
+      if (params->debug_on)
+        gtpe->getOutput()->printfDebug("[playoutmove]: %s lgrf1\n",move.toString(board->getSize()).c_str());
+      if (reason!=NULL)
+        *reason="lgrf1";
+      return;
+    }
+  }
+  
   if (params->playout_atari_enabled)
   {
     this->getAtariMove(settings,board,col,move,posarray);
@@ -655,19 +681,6 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     }
   }
   
-  if (params->playout_lgrf2_enabled)
-  {
-    this->getLGRF2Move(settings, board,col,move);
-    if (!move.isPass())
-    {
-      if (params->debug_on)
-        gtpe->getOutput()->printfDebug("[playoutmove]: %s lgrf2\n",move.toString(board->getSize()).c_str());
-      if (reason!=NULL)
-        *reason="lgrf2";
-      return;
-    }
-  }
-
   if (WITH_P(params->playout_anycapture_p))
   {
     this->getAnyCaptureMove(settings,board,col,move,posarray);
@@ -711,19 +724,6 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
         for (unsigned int i=0;i<poolcrit->size();i++)
           *reason+=" "+Go::Position::pos2string(poolcrit->at(i),board->getSize());
       }
-      return;
-    }
-  }
-  
-  if (params->playout_lgrf1_enabled)
-  {
-    this->getLGRF1Move(settings, board,col,move);
-    if (!move.isPass())
-    {
-      if (params->debug_on)
-        gtpe->getOutput()->printfDebug("[playoutmove]: %s lgrf1\n",move.toString(board->getSize()).c_str());
-      if (reason!=NULL)
-        *reason="lgrf1";
       return;
     }
   }
@@ -863,27 +863,17 @@ bool Playout::isBadMove(Worker::Settings *settings, Go::Board *board, Go::Color 
   if (pos<0) return false;
   Random *const rand=settings->rand;
 
-  return (board->weakEye(col,pos) 
-      || (params->playout_avoid_selfatari && board->isSelfAtariOfSize(Go::Move(col,pos),params->playout_avoid_selfatari_size))
-      || (p > 0.0 && rand->getRandomReal() < p && 
-          (board->getLastMove().isNormal() && this->hasLGRF1n(col,board->getLastMove().getPosition(),pos)))
-      || (p > 0.0 && (rand->getRandomReal() < p || passes>1) &&
-          (board->getLastMove().isPass() && this->isBadPassAnswer(col,pos))) // param to disable?
-      || (p2 > 0.0 && (rand->getRandomReal() < p2) && this->hasLBM (col,pos))
-          );
+  // below lines are a bit ridiculous and should rather be rewritten in a more readable manner
+  return (board->weakEye(col,pos) || (params->playout_avoid_selfatari && board->isSelfAtariOfSize(Go::Move(col,pos),params->playout_avoid_selfatari_size))
+      || (p > 0.0 && rand->getRandomReal() < p && (board->getLastMove().isNormal() && this->hasLGRF1n(col,board->getLastMove().getPosition(),pos)))
+      || (p > 0.0 && (passes>1 || rand->getRandomReal() < p) && (board->getLastMove().isPass() && this->isBadPassAnswer(col,pos)))
+      || (p2 > 0.0 && (rand->getRandomReal() < p2) && this->hasLBM (col,pos)));
 }
 
 bool Playout::isEyeFillMove(Go::Board *board, Go::Color col, int pos)
 {
-  //Random *const rand=settings->rand;
-//  fprintf(stderr,"[isEyeFillingMove]: %s strongeye %d selfatari%d\n",Go::Move(col,pos).toString(board->getSize()).c_str(),
-//        board->strongEye(col,pos),board->isSelfAtariOfSize(Go::Move(col,pos),2) );
-  return (board->strongEye(col,pos) 
-      || board->isSelfAtariOfSize(Go::Move(col,pos),2) 
-      || board->twoGroupEye(col,pos)
-      );
+  return (board->strongEye(col,pos) || board->isSelfAtariOfSize(Go::Move(col,pos),2) || board->twoGroupEye(col,pos));
 }
-
 
 void Playout::getPoolRAVEMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, std::vector<int> *pool)
 {
@@ -894,8 +884,9 @@ void Playout::getPoolRAVEMove(Worker::Settings *settings, Go::Board *board, Go::
   if (rand->getRandomReal()>params->playout_poolrave_p)
     return;
 
-  for (int i=0;i<10;i++) {
-    //make sure the playout_poolrave_p is at least approximatly ok:)
+  // try a few times in case there are many invalid moves in the pool
+  for (int i=0;i<10;i++)
+  {
     int selectedpos=pool->at(rand->getRandomInt(pool->size()));
     if (selectedpos!=-1 && board->validMove(Go::Move(col,selectedpos)))
     {
@@ -957,7 +948,6 @@ void Playout::getLGPFMove(Worker::Settings *settings, Go::Board *board, Go::Colo
   {
     int i=rand->getRandomInt(patternmovescount);
     move=Go::Move(col,patternmoves[i]);
-    //fprintlgpf
     //fprintf(stderr,"used lgpf move at %-6s of %d lgpf moves\n",move.toString(board->getSize()).c_str(),patternmovescount);
   }
 }
@@ -1130,9 +1120,7 @@ void Playout::getNearbyMove(Worker::Settings *settings, Go::Board *board, Go::Co
       if (x>=0 && x<size && y>=0 && y<size)
       {
         int p=Go::Position::xy2pos(x,y,size);
-        if (board->getColor(p)==Go::EMPTY 
-            && board->validMove(Go::Move(col,p)) 
-            && !this->isBadMove(settings,board,col,p))
+        if (board->getColor(p)==Go::EMPTY && board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p))
         {
           move=Go::Move(col,p);
           return;
@@ -1236,13 +1224,13 @@ void Playout::getLast2LibAtariMove(Worker::Settings *settings, Go::Board *board,
   if (possiblemovescount>0)
   {
     int i=rand->getRandomInt(possiblemovescount);
-    if (!this->isBadMove(settings, board,col,possiblemoves[i]))
+    if (!this->isBadMove(settings,board,col,possiblemoves[i]))
     {
       if (!board->isSelfAtari(Go::Move(col,possiblemoves[i])))
         move=Go::Move(col,possiblemoves[i]);
       
-//      fprintf(stderr,"2libok %s\n",move.toString(size).c_str());
-//      board->isSelfAtariOfSize(Go::Move(col,possiblemoves[i]),params->playout_avoid_selfatari_size);
+      //fprintf(stderr,"2libok %s\n",move.toString(size).c_str());
+      //board->isSelfAtariOfSize(Go::Move(col,possiblemoves[i]),params->playout_avoid_selfatari_size);
     }
   }
 }
@@ -1339,7 +1327,7 @@ void Playout::getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go:
           {
             bool atarigroupfound=false;
             Go::list_int *adjacentgroups=group->getAdjacentGroups();
-            if (params->playout_lastatari_captureattached>0.0)
+            if (params->playout_lastatari_captureattached>0)
             {
               if (adjacentgroups->size()>(unsigned int)board->getPositionMax())
               {
@@ -1380,10 +1368,10 @@ void Playout::getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go:
             if (!atarigroupfound && board->validMove(Go::Move(col,liberty)) && iscaptureorconnect && WITH_P(pow(params->playout_lastatari_p,1/group->numOfStones ())))
             {
               if (possiblemovescount<board->getPositionMax())
-                {
-                  possiblemoves[possiblemovescount]=liberty;
-                  possiblemovescount++;
-                }
+              {
+                possiblemoves[possiblemovescount]=liberty;
+                possiblemovescount++;
+              }
             }
           }
         }
@@ -1648,8 +1636,7 @@ void Playout::setBadPassAnswer(Go::Color col, int pos1)
 bool Playout::isBadPassAnswer(Go::Color col, int pos1)
 {
   int c=(col==Go::BLACK?0:1);
-  //fprintf(stderr,"bad pass answer %s %d\n",
-  //                  Go::Move(col,pos1).toString(9).c_str(),badpassanswer[c*lgrfpositionmax+pos1]);
+  //fprintf(stderr,"bad pass answer %s %d\n", Go::Move(col,pos1).toString(9).c_str(),badpassanswer[c*lgrfpositionmax+pos1]);
   return badpassanswer[c*lgrfpositionmax+pos1];
 }
 
@@ -1735,8 +1722,9 @@ void Playout::clearLGRF1(Go::Color col, int pos1)
 {
   #if (LGRFCOUNT1!=1)
     int c=(col==Go::BLACK?0:1);
-    if  (lgrf1count[c*lgrfpositionmax+pos1]>0) lgrf1count[c*lgrfpositionmax+pos1]--;
-    if  (lgrf1count[c*lgrfpositionmax+pos1]==0) 
+    if (lgrf1count[c*lgrfpositionmax+pos1]>0)
+      lgrf1count[c*lgrfpositionmax+pos1]--;
+    if (lgrf1count[c*lgrfpositionmax+pos1]==0) 
       this->setLGRF1(col,pos1,-1);
   #else
     this->setLGRF1(col,pos1,-1);
@@ -1750,13 +1738,12 @@ void Playout::clearLGRF1o(Go::Color col, int pos1)
 
 void Playout::clearLGRF2(Go::Color col, int pos1, int pos2)
 {
-  
   #if (LGRFCOUNT2!=1)
     int c=(col==Go::BLACK?0:1);
-    if  (lgrf2count[(c*lgrfpositionmax+pos1)*lgrfpositionmax+pos2]>0) 
-        lgrf2count[(c*lgrfpositionmax+pos1)*lgrfpositionmax+pos2]--;
-    if  (lgrf2count[(c*lgrfpositionmax+pos1)*lgrfpositionmax+pos2]==0) 
-        this->setLGRF2(col,pos1,pos2,-1);
+    if (lgrf2count[(c*lgrfpositionmax+pos1)*lgrfpositionmax+pos2]>0) 
+      lgrf2count[(c*lgrfpositionmax+pos1)*lgrfpositionmax+pos2]--;
+    if (lgrf2count[(c*lgrfpositionmax+pos1)*lgrfpositionmax+pos2]==0) 
+      this->setLGRF2(col,pos1,pos2,-1);
   #else
     this->setLGRF2(col,pos1,pos2,-1);
   #endif
@@ -1770,11 +1757,13 @@ void Playout::setLGPF(Worker::Settings *settings, Go::Color col, int pos1, unsig
   if (hasLGPF(col,pos1,val)) return;
   int c=(col==Go::BLACK?0:1);
   for (int i=0;i<LGPF_NUM;i++)
+  {
     if (lgpf[(2*i+c)*lgrfpositionmax+pos1]==LGPF_EMPTY)
     {
       lgpf[(2*i+c)*lgrfpositionmax+pos1]=val;
       return;
     }
+  }
   //fprintlgpf
   //fprintf(stderr,"full at %-6s\n",Go::Move::Move(col,pos1).toString(19).c_str());
   int i=(int)rand->getRandomReal()%LGPF_NUM;
@@ -1789,12 +1778,14 @@ void Playout::setLGPF(Worker::Settings *settings, Go::Color col, int pos1, unsig
   if (hasLGPF(col,pos1,val,val_b)) return;
   int c=(col==Go::BLACK?0:1);
   for (int i=0;i<LGPF_NUM;i++)
+  {
     if (lgpf[(2*i+c)*lgrfpositionmax+pos1]==LGPF_EMPTY)
     {
       lgpf[(2*i+c)*lgrfpositionmax+pos1]=val;
       lgpf_b[(2*i+c)*lgrfpositionmax+pos1]=val_b;
       return;
     }
+  }
   //fprintlgpf
   //fprintf(stderr,"full at %-6s\n",Go::Move::Move(col,pos1).toString(19).c_str());
   int i=(int)rand->getRandomReal()%LGPF_NUM;
@@ -1807,7 +1798,10 @@ bool Playout::hasLGPF(Go::Color col, int pos1,unsigned int hash) const
   //if (hash==0) return true; //if the sourounding is empty, we do not recognize
   int c=(col==Go::BLACK?0:1);
   for (int i=0;i<LGPF_NUM;i++)
-    if (lgpf[(2*i+c)*lgrfpositionmax+pos1]==hash) return true;
+  {
+    if (lgpf[(2*i+c)*lgrfpositionmax+pos1]==hash)
+      return true;
+  }
   return false;
 }
 
@@ -1816,10 +1810,10 @@ bool Playout::hasLGPF(Go::Color col, int pos1,unsigned int hash, unsigned long i
   if (hash==0 && hash_b==0) return false; //if the sourounding is empty, we do not recognize
   int c=(col==Go::BLACK?0:1);
   for (int i=0;i<LGPF_NUM;i++)
-    if (lgpf[(2*i+c)*lgrfpositionmax+pos1]==hash
-        &&
-        lgpf_b[(2*i+c)*lgrfpositionmax+pos1]==hash_b
-        ) return true;
+  {
+    if (lgpf[(2*i+c)*lgrfpositionmax+pos1]==hash && lgpf_b[(2*i+c)*lgrfpositionmax+pos1]==hash_b)
+      return true;
+  }
   return false;
 }
 
@@ -1828,7 +1822,9 @@ void Playout::clearLGPF(Go::Color col, int pos1)
   //clears all
   int c=(col==Go::BLACK?0:1);
   for (int i=0;i<LGPF_NUM;i++)
-    lgpf[(2*i+c)*lgrfpositionmax+pos1]=LGPF_EMPTY;  
+  {
+    lgpf[(2*i+c)*lgrfpositionmax+pos1]=LGPF_EMPTY;
+  }
 }
 
 void Playout::clearLGPF(Go::Color col, int pos1, unsigned int hash)
@@ -1837,6 +1833,7 @@ void Playout::clearLGPF(Go::Color col, int pos1, unsigned int hash)
   if (hash==0) return;
   int c=(col==Go::BLACK?0:1);
   for (int i=0;i<LGPF_NUM;i++)
+  {
     if (lgpf[(2*i+c)*lgrfpositionmax+pos1]==hash)
     {
       //fprintlgpf
@@ -1844,6 +1841,7 @@ void Playout::clearLGPF(Go::Color col, int pos1, unsigned int hash)
       lgpf[(2*i+c)*lgrfpositionmax+pos1]=LGPF_EMPTY;
       return;
     }
+  }
  }
 
 void Playout::clearLGPF(Go::Color col, int pos1, unsigned int hash, unsigned long int hash_b)
@@ -1852,16 +1850,15 @@ void Playout::clearLGPF(Go::Color col, int pos1, unsigned int hash, unsigned lon
   if (hash==0) return;
   int c=(col==Go::BLACK?0:1);
   for (int i=0;i<LGPF_NUM;i++)
-    if (lgpf[(2*i+c)*lgrfpositionmax+pos1]==hash
-        &&
-        lgpf_b[(2*i+c)*lgrfpositionmax+pos1]==hash_b
-        )
+  {
+    if (lgpf[(2*i+c)*lgrfpositionmax+pos1]==hash && lgpf_b[(2*i+c)*lgrfpositionmax+pos1]==hash_b)
     {
       //fprintlgpf
       //fprintf(stderr,"deleted (fixed boardsize 19 here) %s\n",Go::Move::Move(col,pos1).toString(19).c_str());
       lgpf[(2*i+c)*lgrfpositionmax+pos1]=LGPF_EMPTY;
       return;
     }
+  }
  }
 
 int Playout::getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group *group)
