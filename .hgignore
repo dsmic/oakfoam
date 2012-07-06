@@ -23,4 +23,5 @@ syntax: regexp
 ^scripts/features/.*\.gamma$
 ^docs/html/.*$
 ^docs/latex/.*$
+^.*\/tags$
 
