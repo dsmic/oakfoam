@@ -66,7 +66,7 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
   std::list<unsigned int> movehashes3x3;
   std::list<unsigned long> movehashes5x5;
 
-  if (board->getPassesPlayed()>2)
+  if (board->getPassesPlayed()>=2)
   {
     finalscore=board->score()-params->engine->getKomi();
     return;
@@ -91,7 +91,7 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
       gtpe->getOutput()->printfDebug(" %s",(*iter).toString(board->getSize()).c_str());
     if (((*iter).getColor()==colfirst?firstlist:secondlist)!=NULL && !(*iter).isPass() && !(*iter).isResign())
       ((*iter).getColor()==colfirst?firstlist:secondlist)->set((*iter).getPosition());
-    if (board->getPassesPlayed()>2 || (*iter).isResign())
+    if (board->getPassesPlayed()>=2 || (*iter).isResign())
     {
       if (params->debug_on)
         gtpe->getOutput()->printfDebug("\n");
