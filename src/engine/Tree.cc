@@ -675,8 +675,8 @@ void Tree::unPruneNextChild()
     {
       //fprintf(stderr,"\n[unpruning]: (%d) %s %f %f -- %f\n\n",unpruned,bestchild->getMove().toString(params->board_size).c_str(),bestfactor,bestchild->getRAVERatio (),bestchild->getUnPruneFactor ());
       bestchild->setPruned(false);
-      if (unpruned!=unprunedchildren)
-        fprintf(stderr,"WARNING! unpruned running total doesn't match (%u:%u)",unpruned,unprunedchildren);
+      if ((unpruned+superkochildrenviolations)!=unprunedchildren)
+        fprintf(stderr,"WARNING! unpruned running total doesn't match (%u:%u)\n",unpruned,unprunedchildren);
       bestchild->setUnprunedNum(unpruned+1);
       unprunedchildren++;
       unprunebase=params->uct_progressive_widening_a*pow(params->uct_progressive_widening_b,unpruned);
