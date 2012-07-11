@@ -206,8 +206,9 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
   int playoutmovescount=0;
   int bpasses=0;
   int wpasses=0;
+  int kodelay=(board->isCurrentSimpleKo()?3:0); // if a ko occurs near the end of a playout, carry on for a bit
 
-  while (board->getPassesPlayed()<3)
+  while (board->getPassesPlayed()<2 || kodelay>0)
   {
     bool resign;
     if (movereasons!=NULL)
@@ -264,6 +265,11 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
     }
     if (board->getMovesMade()>(board->getSize()*board->getSize()*PLAYOUT_MAX_MOVE_FACTOR+movesalready))
       break;
+
+    if (board->isCurrentSimpleKo())
+      kodelay=3;
+    else if (kodelay>0)
+      kodelay--;
   }
   delete[] posarray;
   
