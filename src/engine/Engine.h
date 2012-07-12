@@ -102,6 +102,7 @@
 #define PLAYOUT_USELESS_MOVE false
 #define PLAYOUT_ORDER 0 //numbers to test different playout orders
 #define PLAYOUT_NEARBY_ENABLED false
+#define PLAYOUT_FILL_WEAK_EYES false
 
 #define PONDERING_ENABLED false
 #define PONDERING_PLAYOUTS_MAX 1000000

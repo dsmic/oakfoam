@@ -840,20 +840,23 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     }
   }
 
-  //filling weak eyes, if not selfatari and no other move was possible
-  for (int p=0;p<board->getPositionMax();p++)
+  if (params->playout_fill_weak_eyes)
   {
-    int rp=(r+p*d);
-    if (rp<0) rp+=board->getPositionMax();
-    if (rp>=board->getPositionMax()) rp-=board->getPositionMax();
-    if (validmoves->get(rp) && !this->isEyeFillMove(board,col,rp))
+    //filling weak eyes, if not selfatari and no other move was possible
+    for (int p=0;p<board->getPositionMax();p++)
     {
-      move=Go::Move(col,rp);
-      if (params->debug_on)
-        gtpe->getOutput()->printfDebug("[playoutmove]: %s fill weak eye\n",move.toString(board->getSize()).c_str());
-      if (reason!=NULL)
-        *reason="fill weak eye";
-      return;
+      int rp=(r+p*d);
+      if (rp<0) rp+=board->getPositionMax();
+      if (rp>=board->getPositionMax()) rp-=board->getPositionMax();
+      if (validmoves->get(rp) && !this->isEyeFillMove(board,col,rp))
+      {
+        move=Go::Move(col,rp);
+        if (params->debug_on)
+          gtpe->getOutput()->printfDebug("[playoutmove]: %s fill weak eye\n",move.toString(board->getSize()).c_str());
+        if (reason!=NULL)
+          *reason="fill weak eye";
+        return;
+      }
     }
   }
 

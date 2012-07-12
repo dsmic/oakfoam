@@ -212,6 +212,8 @@ class Parameters
     /** Generate a move only within ~3 intersections of the last move.
      */
     bool playout_nearby_enabled;
+    /** Fill weak eyes if there are no other moves (besides passing). */
+    bool playout_fill_weak_eyes;
     
     /** UCB exploration constant. */
     float ucb_c;

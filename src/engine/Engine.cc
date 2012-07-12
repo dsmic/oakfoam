@@ -100,6 +100,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","playout_order",&(params->playout_order),PLAYOUT_ORDER);
   params->addParameter("playout","playout_mercy_rule_enabled",&(params->playout_mercy_rule_enabled),PLAYOUT_MERCY_RULE_ENABLED);
   params->addParameter("playout","playout_mercy_rule_factor",&(params->playout_mercy_rule_factor),PLAYOUT_MERCY_RULE_FACTOR);
+  params->addParameter("playout","playout_fill_weak_eyes",&(params->playout_fill_weak_eyes),PLAYOUT_FILL_WEAK_EYES);
   
 /*
   params->addParameter("playout","test_p1",&(params->test_p1),1.0);
