@@ -119,5 +119,6 @@ class Playout
     void setBadPassAnswer(Go::Color col, int pos1);
     bool isBadPassAnswer(Go::Color col, int pos1);
     
+    void replaceWithApproachMove(Worker::Settings *settings, Go::Board *board, Go::Color col, int &pos);
 };
 #endif

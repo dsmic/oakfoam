@@ -736,7 +736,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
   
   if (params->playout_lgrf1o_enabled)
   {
-    this->getLGRF1oMove(settings, board,col,move);
+    this->getLGRF1oMove(settings,board,col,move);
     if (!move.isPass())
     {
       if (params->debug_on)
@@ -749,7 +749,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
   
   if (params->playout_lgpf_enabled)
   {
-    this->getLGPFMove(settings, board,col,move,posarray);
+    this->getLGPFMove(settings,board,col,move,posarray);
     if (!move.isPass())
     {
       if (params->debug_on)
@@ -785,10 +785,14 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
 
   random: // for playout_random_chance
   
+  bool doapproachmoves=(rand->getRandomReal()<params->playout_random_approach_p);
+
   for (int i=0;i<10;i++)
   {
     int p=rand->getRandomInt(board->getPositionMax());
-    if (board->validMove(Go::Move(col,p)) && !this->isBadMove(settings, board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p,passes))
+    if (doapproachmoves)
+      this->replaceWithApproachMove(settings,board,col,p);
+    if (board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p,passes))
     {
       move=Go::Move(col,p);
       if (params->debug_on)
@@ -829,7 +833,9 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     int rp=(r+p*d);
     if (rp<0) rp+=board->getPositionMax();
     if (rp>=board->getPositionMax()) rp-=board->getPositionMax();
-    if (validmoves->get(rp) && !this->isBadMove(settings, board,col,rp,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p,passes))
+    if (doapproachmoves)
+      this->replaceWithApproachMove(settings,board,col,rp);
+    if (validmoves->get(rp) && !this->isBadMove(settings,board,col,rp,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p,passes))
     {
       move=Go::Move(col,rp);
       if (params->debug_on)
@@ -1926,5 +1932,40 @@ int Playout::getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group *
   }
   else
     return 1;
+}
+
+void Playout::replaceWithApproachMove(Worker::Settings *settings, Go::Board *board, Go::Color col, int &pos)
+{
+  if (board->validMove(Go::Move(col,pos)) && board->isSelfAtari(Go::Move(col,pos)))
+  {
+    int size=board->getSize();
+    int approaches[4];
+    int approachescount=0;
+
+    foreach_adjacent(pos,p,{
+      if (board->getColor(p)==col)
+      {
+        Go::Group *group=board->getGroup(p);
+        int lib=group->getOtherOneOfTwoLiberties(pos);
+        if (lib!=-1)
+        {
+          approaches[approachescount]=lib;
+          approachescount++;
+        }
+      }
+    });
+
+    if (approachescount>0)
+    {
+      if (approachescount==1)
+        pos=approaches[0];
+      else
+      {
+        Random *const rand=settings->rand;
+        int i=rand->getRandomInt(approachescount);
+        pos=approaches[i];
+      }
+    }
+  }
 }
 

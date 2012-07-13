@@ -169,6 +169,8 @@ class Parameters
      * Set to zero to disable.
      */
     float playout_random_chance;
+    /** Probability of replacing a random  self-atari move with an approach move. */
+    float playout_random_approach_p;
     /** Whether to use the last2libatari heuristic in playouts.
      * When the last move reduced a group to 2 liberties, and is near one of those liberties, play on one of them.
      */
