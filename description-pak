@@ -1,3 +1,4 @@
 Computer Go player
-Run oakfoam-web for the web interface.
 Run oakfoam for the GTP interface.
+Run oakfoam-web for the web interface.
+There should be a menu entry for the web interface.
