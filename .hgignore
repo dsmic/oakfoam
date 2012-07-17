@@ -24,4 +24,5 @@ syntax: regexp
 ^docs/html/.*$
 ^docs/latex/.*$
 ^.*\/tags$
+^backup-.*-pre-oakfoam\.tgz$
 
