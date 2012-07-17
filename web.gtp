@@ -1,0 +1,4 @@
+param playouts_per_move 10000000
+param time_move_max 5.00
+param rules_all_stones_alive 0
+

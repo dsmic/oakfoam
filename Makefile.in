@@ -16,6 +16,7 @@
 @SET_MAKE@
 
 
+
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
@@ -37,10 +38,10 @@ build_triplet = @build@
 bin_PROGRAMS = oakfoam$(EXEEXT)
 subdir = .
 DIST_COMMON = README $(am__configure_deps) $(dist_noinst_SCRIPTS) \
-	$(srcdir)/Makefile.am $(srcdir)/Makefile.in \
-	$(srcdir)/config.h.in $(top_srcdir)/configure AUTHORS COPYING \
-	ChangeLog INSTALL NEWS TODO config.guess config.sub depcomp \
-	install-sh missing
+	$(dist_pkgdata_DATA) $(srcdir)/Makefile.am \
+	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
+	$(top_srcdir)/configure AUTHORS COPYING ChangeLog INSTALL NEWS \
+	TODO config.guess config.sub depcomp install-sh missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_boost_base.m4 \
 	$(top_srcdir)/m4/ax_boost_system.m4 \
@@ -55,7 +56,7 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-am__installdirs = "$(DESTDIR)$(bindir)"
+am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(pkgdatadir)"
 PROGRAMS = $(bin_PROGRAMS)
 am__dirstamp = $(am__leading_dot)dirstamp
 am_oakfoam_OBJECTS = src/oakfoam-Oakfoam.$(OBJEXT) \
@@ -95,6 +96,28 @@ CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 SOURCES = $(oakfoam_SOURCES)
 DIST_SOURCES = $(oakfoam_SOURCES)
+am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
+am__vpath_adj = case $$p in \
+    $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
+    *) f=$$p;; \
+  esac;
+am__strip_dir = f=`echo $$p | sed -e 's|^.*/||'`;
+am__install_max = 40
+am__nobase_strip_setup = \
+  srcdirstrip=`echo "$(srcdir)" | sed 's/[].[^$$\\*|]/\\\\&/g'`
+am__nobase_strip = \
+  for p in $$list; do echo "$$p"; done | sed -e "s|$$srcdirstrip/||"
+am__nobase_list = $(am__nobase_strip_setup); \
+  for p in $$list; do echo "$$p $$p"; done | \
+  sed "s| $$srcdirstrip/| |;"' / .*\//!s/ .*/ ./; s,\( .*\)/[^/]*$$,\1,' | \
+  $(AWK) 'BEGIN { files["."] = "" } { files[$$2] = files[$$2] " " $$1; \
+    if (++n[$$2] == $(am__install_max)) \
+      { print $$2, files[$$2]; n[$$2] = 0; files[$$2] = "" } } \
+    END { for (dir in files) print dir, files[dir] }'
+am__base_list = \
+  sed '$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;s/\n/ /g' | \
+  sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
+DATA = $(dist_pkgdata_DATA)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -232,6 +255,11 @@ oakfoam_CPPFLAGS = $(BOOST_CPPFLAGS) $(MPI_CPPFLAGS)
 oakfoam_LDFLAGS = $(BOOST_LDFLAGS) $(MPI_LDFLAGS) $(HOARD_LDFLAGS)
 oakfoam_LDADD = $(BOOST_SYSTEM_LIB) $(BOOST_THREAD_LIB) $(BOOST_FILESYSTEM_LIB) $(BOOST_ASIO_LIB) $(HOARD_LIB)
 dist_noinst_SCRIPTS = autogen.sh
+EXTRA_DIST = regression/sgf regression/*.sh regression/*.suite regression/*.tst \
+                      scripts/*/README scripts/*/*.sh scripts/*/*.awk scripts/*/*.sed scripts/*/*.pl \
+                      docs/Doxyfile www
+
+dist_pkgdata_DATA = web.gtp
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
@@ -663,6 +691,26 @@ src/gtp/oakfoam-Gtp.obj: src/gtp/Gtp.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/gtp/Gtp.cc' object='src/gtp/oakfoam-Gtp.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(oakfoam_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o src/gtp/oakfoam-Gtp.obj `if test -f 'src/gtp/Gtp.cc'; then $(CYGPATH_W) 'src/gtp/Gtp.cc'; else $(CYGPATH_W) '$(srcdir)/src/gtp/Gtp.cc'; fi`
+install-dist_pkgdataDATA: $(dist_pkgdata_DATA)
+	@$(NORMAL_INSTALL)
+	test -z "$(pkgdatadir)" || $(MKDIR_P) "$(DESTDIR)$(pkgdatadir)"
+	@list='$(dist_pkgdata_DATA)'; test -n "$(pkgdatadir)" || list=; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(pkgdatadir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(pkgdatadir)" || exit $$?; \
+	done
+
+uninstall-dist_pkgdataDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(dist_pkgdata_DATA)'; test -n "$(pkgdatadir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	test -n "$$files" || exit 0; \
+	echo " ( cd '$(DESTDIR)$(pkgdatadir)' && rm -f" $$files ")"; \
+	cd "$(DESTDIR)$(pkgdatadir)" && rm -f $$files
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
@@ -865,9 +913,9 @@ distcleancheck: distclean
 	       exit 1; } >&2
 check-am: all-am
 check: check-am
-all-am: Makefile $(PROGRAMS) $(SCRIPTS) config.h
+all-am: Makefile $(PROGRAMS) $(SCRIPTS) $(DATA) config.h
 installdirs:
-	for dir in "$(DESTDIR)$(bindir)"; do \
+	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(pkgdatadir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -926,8 +974,9 @@ info: info-am
 
 info-am:
 
-install-data-am:
-
+install-data-am: install-dist_pkgdataDATA
+	@$(NORMAL_INSTALL)
+	$(MAKE) $(AM_MAKEFLAGS) install-data-hook
 install-dvi: install-dvi-am
 
 install-dvi-am:
@@ -973,9 +1022,10 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-binPROGRAMS
+uninstall-am: uninstall-binPROGRAMS uninstall-dist_pkgdataDATA \
+	uninstall-local
 
-.MAKE: all install-am install-strip
+.MAKE: all install-am install-data-am install-strip
 
 .PHONY: CTAGS GTAGS all all-am am--refresh check check-am clean \
 	clean-binPROGRAMS clean-generic ctags dist dist-all dist-bzip2 \
@@ -984,16 +1034,33 @@ uninstall-am: uninstall-binPROGRAMS
 	distclean-hdr distclean-tags distcleancheck distdir \
 	distuninstallcheck dvi dvi-am html html-am info info-am \
 	install install-am install-binPROGRAMS install-data \
-	install-data-am install-dvi install-dvi-am install-exec \
-	install-exec-am install-html install-html-am install-info \
-	install-info-am install-man install-pdf install-pdf-am \
-	install-ps install-ps-am install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic pdf pdf-am ps ps-am tags uninstall \
-	uninstall-am uninstall-binPROGRAMS
+	install-data-am install-data-hook install-dist_pkgdataDATA \
+	install-dvi install-dvi-am install-exec install-exec-am \
+	install-html install-html-am install-info install-info-am \
+	install-man install-pdf install-pdf-am install-ps \
+	install-ps-am install-strip installcheck installcheck-am \
+	installdirs maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-compile mostlyclean-generic pdf pdf-am \
+	ps ps-am tags uninstall uninstall-am uninstall-binPROGRAMS \
+	uninstall-dist_pkgdataDATA uninstall-local
 
 .PHONY: build.h
+install-data-hook:
+	mkdir -p $(DESTDIR)$(pkgdatadir)
+	cp -R $(srcdir)/www $(DESTDIR)$(pkgdatadir)
+	echo "#!/bin/bash" > $(DESTDIR)$(bindir)/oakfoam-web
+	echo "cd \`dirname \"\$$0\"\`" >> $(DESTDIR)$(bindir)/oakfoam-web
+	echo "cd `echo $(bindir) | sed 's|^/||;s|[^/]*|\.\.|g'`$(pkgdatadir)" >> $(DESTDIR)$(bindir)/oakfoam-web
+	echo "bin=\"`echo $(pkgdatadir) | sed 's|^/||;s|[^/]*|\.\.|g'`$(bindir)\"" >> $(DESTDIR)$(bindir)/oakfoam-web
+	echo "\$$(sleep 3; xdg-open http://localhost:8000)&" >> $(DESTDIR)$(bindir)/oakfoam-web
+	echo "\$$bin/oakfoam --web -c web.gtp" >> $(DESTDIR)$(bindir)/oakfoam-web
+	echo "wait" >> $(DESTDIR)$(bindir)/oakfoam-web
+	echo "echo 'Press any key to continue...'" >> $(DESTDIR)$(bindir)/oakfoam-web
+	echo "read -sn1" >> $(DESTDIR)$(bindir)/oakfoam-web
+	chmod +x $(DESTDIR)$(bindir)/oakfoam-web
+uninstall-local:
+	rm -f $(DESTDIR)$(bindir)/oakfoam-web
+	rm -rf $(DESTDIR)$(pkgdatadir)
 
 .PHONY: oakfoam-profiled
 oakfoam-profiled:

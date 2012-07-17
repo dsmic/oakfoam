@@ -22,6 +22,26 @@ oakfoam_CPPFLAGS    = $(BOOST_CPPFLAGS) $(MPI_CPPFLAGS)
 oakfoam_LDFLAGS     = $(BOOST_LDFLAGS) $(MPI_LDFLAGS) $(HOARD_LDFLAGS)
 oakfoam_LDADD       = $(BOOST_SYSTEM_LIB) $(BOOST_THREAD_LIB) $(BOOST_FILESYSTEM_LIB) $(BOOST_ASIO_LIB) $(HOARD_LIB)
 dist_noinst_SCRIPTS = autogen.sh
+EXTRA_DIST          = regression/sgf regression/*.sh regression/*.suite regression/*.tst \
+                      scripts/*/README scripts/*/*.sh scripts/*/*.awk scripts/*/*.sed scripts/*/*.pl \
+                      docs/Doxyfile www
+dist_pkgdata_DATA   = web.gtp
+install-data-hook:
+	mkdir -p $(DESTDIR)$(pkgdatadir)
+	cp -R $(srcdir)/www $(DESTDIR)$(pkgdatadir)
+	echo "#!/bin/bash" > $(DESTDIR)$(bindir)/oakfoam-web
+	echo "cd \`dirname \"\$$0\"\`" >> $(DESTDIR)$(bindir)/oakfoam-web
+	echo "cd `echo $(bindir) | sed 's|^/||;s|[^/]*|\.\.|g'`$(pkgdatadir)" >> $(DESTDIR)$(bindir)/oakfoam-web
+	echo "bin=\"`echo $(pkgdatadir) | sed 's|^/||;s|[^/]*|\.\.|g'`$(bindir)\"" >> $(DESTDIR)$(bindir)/oakfoam-web
+	echo "\$$(sleep 3; xdg-open http://localhost:8000)&" >> $(DESTDIR)$(bindir)/oakfoam-web
+	echo "\$$bin/oakfoam --web -c web.gtp" >> $(DESTDIR)$(bindir)/oakfoam-web
+	echo "wait" >> $(DESTDIR)$(bindir)/oakfoam-web
+	echo "echo 'Press any key to continue...'" >> $(DESTDIR)$(bindir)/oakfoam-web
+	echo "read -sn1" >> $(DESTDIR)$(bindir)/oakfoam-web
+	chmod +x $(DESTDIR)$(bindir)/oakfoam-web
+uninstall-local:
+	rm -f $(DESTDIR)$(bindir)/oakfoam-web
+	rm -rf $(DESTDIR)$(pkgdatadir)
 
 .PHONY: oakfoam-profiled
 oakfoam-profiled:
