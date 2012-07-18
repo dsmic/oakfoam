@@ -5,6 +5,7 @@ version 0.1.1: 2012-07-18
   * large number of bugs fixes
   * new playout heuristics
   * improve multi-core parallelisation
+  * build scripts for linux and windows
 
 version 0.1.0: 2011-12-06
   * multi-core parallelization
