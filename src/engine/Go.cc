@@ -970,9 +970,18 @@ bool Go::Board::strongEye(Go::Color col, int pos) const
     return false;
   else
   {
+    Go::Group *group=NULL;
     foreach_adjacent(pos,p,{
       if (this->getColor(p)!=col || this->getColor(p)==Go::EMPTY)
         return false;
+      //if stones are not from the same group the eye is not strong?!
+      else if (group)
+      {
+        if (group!=this->getGroup(p))
+          return false;
+      }
+      else
+        group=this->getGroup(p);
     });
     
     return true;

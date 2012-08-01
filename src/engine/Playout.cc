@@ -523,7 +523,8 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     }
   }
   
-  if (params->playout_lgrf2_enabled)
+  // if both were active this must be ordered lower!
+  if (params->playout_lgrf2_enabled && !params->playout_lgrf2_safe_enabled)
   {
     this->getLGRF2Move(settings, board,col,move);
     if (!move.isPass())
@@ -557,7 +558,8 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     }
   }
 
-  if (params->playout_lgrf1_enabled)
+  // if both were active this must be ordered lower!
+  if (params->playout_lgrf1_enabled  && params->playout_lgrf1_safe_enabled)
   {
     this->getLGRF1Move(settings, board,col,move);
     if (!move.isPass())
@@ -1781,7 +1783,7 @@ void Playout::setLGPF(Worker::Settings *settings, Go::Color col, int pos1, unsig
   }
   //fprintlgpf
   //fprintf(stderr,"full at %-6s\n",Go::Move::Move(col,pos1).toString(19).c_str());
-  int i=(int)rand->getRandomReal()%LGPF_NUM;
+  int i=(int)rand->getRandomInt(LGPF_NUM);
   lgpf[(2*i+c)*lgrfpositionmax+pos1]=val;
 }
 
@@ -1803,7 +1805,7 @@ void Playout::setLGPF(Worker::Settings *settings, Go::Color col, int pos1, unsig
   }
   //fprintlgpf
   //fprintf(stderr,"full at %-6s\n",Go::Move::Move(col,pos1).toString(19).c_str());
-  int i=(int)rand->getRandomReal()%LGPF_NUM;
+  int i=(int)rand->getRandomInt(LGPF_NUM);
   lgpf[(2*i+c)*lgrfpositionmax+pos1]=val;
   lgpf_b[(2*i+c)*lgrfpositionmax+pos1]=val_b;
 }
