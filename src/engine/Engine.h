@@ -75,6 +75,7 @@
 #define PLAYOUT_NAKADE_ENABLED true
 #define PLAYOUT_FILLBOARD_ENABLED true
 #define PLAYOUT_FILLBOARD_N 5
+#define PLAYOUT_CIRCPATTERN_N 0
 #define PLAYOUT_ANYCAPTURE_P 1.0
 #define PLAYOUT_LGRF1_ENABLED true
 #define PLAYOUT_LGRF_LOCAL false
@@ -243,6 +244,9 @@ class Engine
     /** Output a playout from the current position to a SGF file. */
     bool writeSGF(std::string filename, Go::Board *board, std::list<Go::Move> playoutmoves, std::list<std::string> *movereasons=NULL);
 
+    Pattern::CircularDictionary *getCircDict() {return circdict;}
+    int getCircSize() {return features->circpatternsize;}
+    
   private:
     Gtp::Engine *gtpe;
     std::string longname;
@@ -403,10 +407,12 @@ class Engine
     static void gtpFeatureProbDistribution(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpListAllPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpLoadFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpLoadCircPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpListFeatureIds(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowCFGFrom(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowCircDistFrom(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpListCircularPatternsAt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpListCircularPatternsAtSize(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpListAllCircularPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpListAdjacentGroupsOf(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     

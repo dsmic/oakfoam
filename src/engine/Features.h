@@ -13,6 +13,7 @@
 #define CFGSECONDLASTDIST_LEVELS 10
 
 #include <string>
+#include <set>
 
 const std::string FEATURES_DEFAULT=
   "pass:1 0.950848 \n"
@@ -740,6 +741,7 @@ class Features
     bool loadGammaLine(std::string line);
     /** Load a file of gamma values. */
     bool loadGammaFile(std::string filename);
+    bool loadCircFile(std::string filename,int numlines);
     /** Load a number of lines of gamma values. */
     bool loadGammaString(std::string lines);
     /** Load the default gamma values. */
@@ -747,7 +749,9 @@ class Features
     
     /** Return the CFG distances for the last and second last moves on a board. */
     void computeCFGDist(Go::Board *board, Go::ObjectBoard<int> **cfglastdist, Go::ObjectBoard<int> **cfgsecondlastdist);
-  
+
+    std::set<std::string> circpatterns;
+    int circpatternsize;
   private:
     Parameters *const params;
     Pattern::ThreeByThreeGammas *patterngammas;
@@ -765,7 +769,7 @@ class Features
     
     float *getStandardGamma(Features::FeatureClass featclass) const;
     void updatePatternIds();
-  
+
 };
 
 #endif

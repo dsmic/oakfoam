@@ -116,6 +116,8 @@ class Parameters
     bool playout_fillboard_enabled;
     /** Number of times to try the fillboard heuristic before continuing. */
     int playout_fillboard_n;
+    /** Number of times to try the circpattern heuristic before continuing. */
+    int playout_circpattern_n;
     /** The probability of using the anycapture heuristic in playouts.
      * If any groups are in atari, capture one at random.
      */

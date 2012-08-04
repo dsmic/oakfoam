@@ -33,6 +33,7 @@ Features::Features(Parameters *prms) : params(prms)
     gammas_cfglastdist[i]=1.0;
   for (int i=0;i<CFGSECONDLASTDIST_LEVELS;i++)
     gammas_cfgsecondlastdist[i]=1.0;
+  circpatternsize=0;
 }
 
 Features::~Features()
@@ -415,6 +416,31 @@ bool Features::loadGammaFile(std::string filename)
   return true;
 }
 
+bool Features::loadCircFile(std::string filename,int numlines)
+{
+  std::ifstream fin(filename.c_str());
+  
+  if (!fin)
+    return false;
+  
+  std::string line;
+  circpatterns.clear();
+  circpatternsize=0;
+  int n=0;
+  while (std::getline(fin,line)&&(numlines==0||n<numlines))
+  {
+    int strpos = line.find(":");
+    int numpos = line.find(" ");
+    circpatternsize=atoi(line.substr(numpos,strpos).c_str());
+    circpatterns.insert(line.substr(strpos+1));
+    n++;
+    fprintf(stderr,"%d %s %d\n",n,line.substr(strpos+1).c_str(),circpatternsize);
+  }
+  
+  fin.close();
+  
+  return true;
+}
 bool Features::loadGammaString(std::string lines)
 {
   std::istringstream iss(lines);

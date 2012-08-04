@@ -89,6 +89,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","playout_nearby_enabled",&(params->playout_nearby_enabled),PLAYOUT_NEARBY_ENABLED);
   params->addParameter("playout","playout_fillboard_enabled",&(params->playout_fillboard_enabled),PLAYOUT_FILLBOARD_ENABLED);
   params->addParameter("playout","playout_fillboard_n",&(params->playout_fillboard_n),PLAYOUT_FILLBOARD_N);
+  params->addParameter("playout","playout_circpattern_n",&(params->playout_circpattern_n),PLAYOUT_CIRCPATTERN_N);
   params->addParameter("playout","playout_patterns_p",&(params->playout_patterns_p),PLAYOUT_PATTERNS_P);
   params->addParameter("playout","playout_anycapture_p",&(params->playout_anycapture_p),PLAYOUT_ANYCAPTURE_P);
   params->addParameter("playout","playout_features_enabled",&(params->playout_features_enabled),PLAYOUT_FEATURES_ENABLED);
@@ -466,10 +467,12 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("featureprobdistribution",this,&Engine::gtpFeatureProbDistribution);
   gtpe->addFunctionCommand("listallpatterns",this,&Engine::gtpListAllPatterns);
   gtpe->addFunctionCommand("loadfeaturegammas",this,&Engine::gtpLoadFeatureGammas);
+  gtpe->addFunctionCommand("loadcircpatterns",this,&Engine::gtpLoadCircPatterns);
   gtpe->addFunctionCommand("listfeatureids",this,&Engine::gtpListFeatureIds);
   gtpe->addFunctionCommand("showcfgfrom",this,&Engine::gtpShowCFGFrom);
   gtpe->addFunctionCommand("showcircdistfrom",this,&Engine::gtpShowCircDistFrom);
   gtpe->addFunctionCommand("listcircpatternsat",this,&Engine::gtpListCircularPatternsAt);
+  gtpe->addFunctionCommand("listcircpatternsatsize",this,&Engine::gtpListCircularPatternsAtSize);
   gtpe->addFunctionCommand("listallcircularpatterns",this,&Engine::gtpListAllCircularPatterns);
   gtpe->addFunctionCommand("listadjacentgroupsof",this,&Engine::gtpListAdjacentGroupsOf);
   
@@ -1753,6 +1756,47 @@ void Engine::gtpLoadFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Comman
   }
 }
 
+void Engine::gtpLoadCircPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=2)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("need 2 arg (filename and number of lines)");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  std::string filename=cmd->getStringArg(0);
+  int numlines=cmd->getIntArg(1);
+  
+  if (me->features==NULL)
+    me->features=new Features(me->params);
+  bool success=me->features->loadCircFile(filename,numlines);
+  
+  if (success)
+  {
+    #ifdef HAVE_MPI
+      if (me->mpirank==0)
+      {
+        me->mpiBroadcastCommand(MPICMD_LOADFEATUREGAMMAS);
+        me->mpiBroadcastString(filename);
+      }
+    #endif
+    
+    gtpe->getOutput()->startResponse(cmd);
+    gtpe->getOutput()->printf("loaded circpatterns file: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+  else
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("error loading circpatterns file: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+}
+
 void Engine::gtpListFeatureIds(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
@@ -1888,6 +1932,58 @@ void Engine::gtpListCircularPatternsAt(void *instance, Gtp::Engine* gtpe, Gtp::C
   gtpe->getOutput()->printf("Smallest Equivalent:\n");
   pattcirc.convertToSmallestEquivalent(me->circdict);
   gtpe->getOutput()->printf(" %s\n",pattcirc.toString(me->circdict).c_str());
+  gtpe->getOutput()->endResponse(true);
+}
+
+void Engine::gtpListCircularPatternsAtSize(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=3)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("vertex size and color is required");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  Gtp::Vertex vert = cmd->getVertexArg(0);
+  Gtp::Color gtpcol = cmd->getColorArg(2);
+  
+  if (vert.x==-3 && vert.y==-3)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("invalid vertex");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  int pos=Go::Position::xy2pos(vert.x,vert.y,me->boardsize);
+  Pattern::Circular pattcirc=Pattern::Circular(me->circdict,me->currentboard,pos,PATTERN_CIRC_MAXSIZE);
+  pattcirc.convertToSmallestEquivalent(me->circdict);
+  if (gtpcol==Gtp::WHITE)
+    pattcirc.invert();
+  
+  gtpe->getOutput()->startResponse(cmd);
+  //gtpe->getOutput()->printf("Circular Patterns at %s:\n",Go::Position::pos2string(pos,me->boardsize).c_str());
+  //for (int s=2;s<=PATTERN_CIRC_MAXSIZE;s++)
+  int s=cmd->getIntArg(1);
+  
+  {
+    gtpe->getOutput()->printf(" %s\n",pattcirc.getSubPattern(me->circdict,s).toString(me->circdict).c_str());
+  }
+  /*pattcirc.rotateRight(me->circdict);
+  gtpe->getOutput()->printf(" %s\n",pattcirc.toString(me->circdict).c_str());
+  pattcirc.rotateRight(me->circdict);
+  gtpe->getOutput()->printf(" %s\n",pattcirc.toString(me->circdict).c_str());
+  pattcirc.rotateRight(me->circdict);
+  gtpe->getOutput()->printf(" %s\n",pattcirc.toString(me->circdict).c_str());
+  pattcirc.rotateRight(me->circdict);*/
+  //pattcirc.rotateRight(me->circdict);
+  //pattcirc.flipHorizontal(me->circdict);
+  //gtpe->getOutput()->printf("Smallest Equivalent:\n");
+  //pattcirc.convertToSmallestEquivalent(me->circdict);
+  //gtpe->getOutput()->printf(" %s\n",pattcirc.toString(me->circdict).c_str());
   gtpe->getOutput()->endResponse(true);
 }
 

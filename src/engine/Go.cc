@@ -2219,3 +2219,9 @@ bool Go::Board::isProbableWorkingLadder(Go::Group *group, int posA, int movepos)
   return true;
 }
 
+bool Go::Board::isCircPattern(std::string circpattern)
+{
+  return features->circpatterns.count(circpattern);
+}
+
+

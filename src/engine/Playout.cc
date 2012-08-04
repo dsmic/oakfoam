@@ -477,7 +477,8 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
    5. Non local moves as random ...
    */
   Random *const rand=settings->rand;
-  
+  int ncirc=0;
+
   move=Go::Move(col,Go::Move::PASS);
   if (board->numOfValidMoves(col)==0)
     return;
@@ -662,7 +663,28 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
       return;
     }
   }
-  
+
+  while (ncirc<params->playout_circpattern_n)
+  {
+    int p=rand->getRandomInt(board->getPositionMax());
+    if (board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p,passes))
+    {
+      Pattern::Circular pattcirc=Pattern::Circular(params->engine->getCircDict(),board,p,params->engine->getCircSize());
+      pattcirc.convertToSmallestEquivalent(params->engine->getCircDict());
+      if (col==Go::WHITE)
+        pattcirc.invert();
+      if (board->isCircPattern(pattcirc.toString(params->engine->getCircDict())))
+      {
+        move=Go::Move(col,p);
+        if (params->debug_on)
+          gtpe->getOutput()->printfDebug("[playoutmove]: %s circpattern quick-pick\n",move.toString(board->getSize()).c_str());
+        if (reason!=NULL)
+          *reason="circpattern quick-pick";
+        return;
+      }
+    }
+  }
+
   if (params->playout_order!=4 && params->playout_fillboard_enabled)
   {
     this->getFillBoardMove(settings,board,col,move);
