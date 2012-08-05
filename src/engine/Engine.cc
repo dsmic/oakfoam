@@ -670,6 +670,7 @@ void Engine::gtpPlay(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 void Engine::gtpGenMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
+  me->ClearStatistics();
   
   if (cmd->numArgs()!=1)
   {
@@ -2772,7 +2773,13 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
       }
     }
     ssun<<")";
-
+    ssun<<"st:(";
+    for (int nn=0;nn<StatisticsNum;nn++)
+    {
+      ssun<<(nn!=0?",":"");
+      ssun<<GetStatistics (nn);
+    }
+    ssun<<")";
     Tree *besttree=movetree->getRobustChild();
     float bestratio=0;
     float ratiodelta=-1;

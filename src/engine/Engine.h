@@ -146,6 +146,8 @@
 
 #define ZOBRIST_HASH_SEED 0x713df891
 
+#define StatisticsNum 12
+
 #define MPI_STRING_MAX 255
 #define MPI_HASHTABLE_SIZE 65536
 #define MPI_UPDATE_PERIOD 0.1
@@ -248,6 +250,10 @@ class Engine
 
     Pattern::CircularDictionary *getCircDict() {return circdict;}
     int getCircSize() {return features->circpatternsize;}
+    void StatisticsPlus(int i) {statistics[i]++;}
+    void ClearStatistics() {int i; for (i=0;i<StatisticsNum;i++) statistics[i]=0;}
+    long StatisticsSum() {int i; long sum=0; for (i=0;i<StatisticsNum;i++) sum+=statistics[i]; return sum;}
+    long GetStatistics(int i) {return statistics[i]*1000/StatisticsSum();}
     
   private:
     Gtp::Engine *gtpe;
@@ -271,6 +277,7 @@ class Engine
     volatile bool stoppondering;
     Worker::Pool *threadpool;
     Go::TerritoryMap *territorymap;
+    long statistics[StatisticsNum];
 
     enum MovePolicy
     {
