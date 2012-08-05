@@ -277,7 +277,7 @@ namespace Pattern
       boost::uint_fast32_t *getHash() const { return (boost::uint_fast32_t *)hash; };
       
       /** Make a copy of this pattern. */
-      Pattern::Circular copy() { return this->getSubPattern(NULL,size); };
+      Pattern::Circular copy() { return this->getSubPattern(ldict,size); };
       /** Get a sub portion of this pattern. */
       Pattern::Circular getSubPattern(Pattern::CircularDictionary *dict, int newsize) const;
       
@@ -315,6 +315,7 @@ namespace Pattern
       static int hashColor(Go::Color col);
       void initColor(int offset, Go::Color col);
       void resetColor(int offset);
+      Pattern::CircularDictionary *ldict; //needed for copy?!
   };
 };
 #endif

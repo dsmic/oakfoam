@@ -244,6 +244,8 @@ class Engine
     /** Output a playout from the current position to a SGF file. */
     bool writeSGF(std::string filename, Go::Board *board, std::list<Go::Move> playoutmoves, std::list<std::string> *movereasons=NULL);
 
+    bool isCircPattern(std::string circpattern);
+
     Pattern::CircularDictionary *getCircDict() {return circdict;}
     int getCircSize() {return features->circpatternsize;}
     

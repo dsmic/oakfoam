@@ -3873,6 +3873,13 @@ void Engine::updateTerritoryScoringInTree()
   }
 }
 
+
+bool Engine::isCircPattern(std::string circpattern)
+{
+  return features->circpatterns.count(circpattern);
+}
+
+
 #ifdef HAVE_MPI
 void Engine::mpiCommandHandler()
 {

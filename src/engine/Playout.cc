@@ -666,6 +666,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
 
   while (ncirc<params->playout_circpattern_n)
   {
+    ncirc++;
     int p=rand->getRandomInt(board->getPositionMax());
     if (board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p,passes))
     {
@@ -673,7 +674,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
       pattcirc.convertToSmallestEquivalent(params->engine->getCircDict());
       if (col==Go::WHITE)
         pattcirc.invert();
-      if (board->isCircPattern(pattcirc.toString(params->engine->getCircDict())))
+      if (params->engine->isCircPattern(pattcirc.toString(params->engine->getCircDict())))
       {
         move=Go::Move(col,p);
         if (params->debug_on)

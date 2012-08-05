@@ -659,9 +659,7 @@ namespace Go
       bool isProbableWorkingLadder(Go::Group *group) const;
       /** Determine if the ladder that exists after the move is made works or is broken in most cases. */
       bool isProbableWorkingLadderAfter(Go::Group *group, Go::Move move) const;
-
-      bool isCircPattern(std::string circpattern);
-     
+   
     private:
       const int size;
       const int sizesq;

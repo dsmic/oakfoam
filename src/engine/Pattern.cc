@@ -670,6 +670,7 @@ void Pattern::Circular::flipHorizontal(Pattern::CircularDictionary *dict)
 
 void Pattern::Circular::convertToSmallestEquivalent(Pattern::CircularDictionary *dict)
 {
+  ldict=dict;
   Pattern::Circular alternative=this->copy();
   
   //fprintf(stderr,"comparing: %s\n",this->toString(dict).c_str());
