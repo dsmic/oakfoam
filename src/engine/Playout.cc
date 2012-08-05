@@ -678,7 +678,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
       {
         move=Go::Move(col,p);
         if (params->debug_on)
-          gtpe->getOutput()->printfDebug("[playoutmove]: %s circpattern quick-pick\n",move.toString(board->getSize()).c_str());
+          gtpe->getOutput()->printfDebug("[playoutmove]: %s circpattern quick-pick %s\n",move.toString(board->getSize()).c_str(),pattcirc.toString(params->engine->getCircDict()).c_str());
         if (reason!=NULL)
           *reason="circpattern quick-pick";
         return;

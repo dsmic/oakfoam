@@ -3876,7 +3876,11 @@ void Engine::updateTerritoryScoringInTree()
 
 bool Engine::isCircPattern(std::string circpattern)
 {
-  return features->circpatterns.count(circpattern);
+  //strip the patternsize
+  int strpos = circpattern.find(":");
+    
+// fprintf(stderr,"%s %d %d\n",circpattern.substr(strpos+1).c_str(),features->circpatterns.size(),features->circpatterns.count(circpattern.substr(strpos+1)));
+  return features->circpatterns.count(circpattern.substr(strpos+1));
 }
 
 
