@@ -310,7 +310,7 @@ namespace Pattern
       Circular(int sz=0) : size(sz) {};
       
       const int size;
-      boost::uint_fast32_t hash[PATTERN_CIRC_32BITPARTS];
+      uint32_t hash[PATTERN_CIRC_32BITPARTS];  //the fast_uint_32_t can be 64 bit makeing toString not work
       
       static int hashColor(Go::Color col);
       void initColor(int offset, Go::Color col);

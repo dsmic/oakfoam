@@ -668,29 +668,6 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     }
   }
 
-  while (ncirc<params->playout_circpattern_n)
-  {
-    ncirc++;
-    int p=rand->getRandomInt(board->getPositionMax());
-    if (board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p,passes))
-    {
-      Pattern::Circular pattcirc=Pattern::Circular(params->engine->getCircDict(),board,p,params->engine->getCircSize());
-      pattcirc.convertToSmallestEquivalent(params->engine->getCircDict());
-      if (col==Go::WHITE)
-        pattcirc.invert();
-      if (params->engine->isCircPattern(pattcirc.toString(params->engine->getCircDict())))
-      {
-        move=Go::Move(col,p);
-        if (params->debug_on)
-          gtpe->getOutput()->printfDebug("[playoutmove]: %s circpattern quick-pick %s\n",move.toString(board->getSize()).c_str(),pattcirc.toString(params->engine->getCircDict()).c_str());
-        if (reason!=NULL)
-          *reason="circpattern quick-pick";
-        params->engine->StatisticsPlus(4);
-        return;
-      }
-    }
-  }
-
   if (params->playout_order!=4 && params->playout_fillboard_enabled)
   {
     this->getFillBoardMove(settings,board,col,move);
@@ -713,7 +690,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
         gtpe->getOutput()->printfDebug("[playoutmove]: %s pattern\n",move.toString(board->getSize()).c_str());
       if (reason!=NULL)
       	*reason="pattern";
-      params->engine->StatisticsPlus(5);
+      params->engine->StatisticsPlus(4);
       return;
     }
   }
@@ -727,11 +704,34 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
         gtpe->getOutput()->printfDebug("[playoutmove]: %s anycapture\n",move.toString(board->getSize()).c_str());
       if (reason!=NULL)
         *reason="anycapture";
-      params->engine->StatisticsPlus(6);
+      params->engine->StatisticsPlus(5);
       return;
     }
   }
   
+  while (ncirc<params->playout_circpattern_n)
+  {
+    ncirc++;
+    int p=rand->getRandomInt(board->getPositionMax());
+    if (board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p,passes))
+    {
+      Pattern::Circular pattcirc=Pattern::Circular(params->engine->getCircDict(),board,p,params->engine->getCircSize());
+      pattcirc.convertToSmallestEquivalent(params->engine->getCircDict());
+      if (col==Go::WHITE)
+        pattcirc.invert();
+      if (params->engine->isCircPattern(pattcirc.toString(params->engine->getCircDict())))
+      {
+        move=Go::Move(col,p);
+        if (params->debug_on)
+          gtpe->getOutput()->printfDebug("[playoutmove]: %s circpattern quick-pick %s\n",move.toString(board->getSize()).c_str(),pattcirc.toString(params->engine->getCircDict()).c_str());
+        if (reason!=NULL)
+          *reason="circpattern quick-pick";
+        params->engine->StatisticsPlus(6);
+        return;
+      }
+    }
+  }
+
   if (params->playout_poolrave_enabled)
   {
     this->getPoolRAVEMove(settings,board,col,move,pool);
@@ -1109,7 +1109,7 @@ void Playout::getPatternMove(Worker::Settings *settings, Go::Board *board, Go::C
       }
     });
   }
-  
+
   if (board->getSecondLastMove().isNormal())
   {
     int pos=board->getSecondLastMove().getPosition();
