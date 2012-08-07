@@ -801,7 +801,6 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
         gtpe->getOutput()->printfDebug("[playoutmove]: %s fillboard\n",move.toString(board->getSize()).c_str());
       if (reason!=NULL)
         *reason="fillboard";
-      params->engine->StatisticsPlus(7);
       return;
     }
   }
@@ -1163,16 +1162,16 @@ void Playout::getFillBoardMove(Worker::Settings *settings, Go::Board *board, Go:
             {
               move=Go::Move(col,p);
               if (params->debug_on)
-                gtpe->getOutput()->printfDebug("[playoutmove]: %s circpattern quick-pick %s\n",move.toString(board->getSize()).c_str(),pattcirc.toString(params->engine->getCircDict()).c_str());
+                gtpe->getOutput()->printfDebug("[playoutmove]: %s circpattern replace fillboard %s\n",move.toString(board->getSize()).c_str(),pattcirc.toString(params->engine->getCircDict()).c_str());
               if (reason!=NULL)
-                *reason="circpattern quick-pick";
+                *reason="circpattern replace fillboard";
               params->engine->StatisticsPlus(12);
               return;
             }
           }
         });
-                        
       }
+      params->engine->StatisticsPlus(7);
       return;
     }
   }
