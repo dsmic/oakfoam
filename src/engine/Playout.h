@@ -71,7 +71,7 @@ class Playout
     void getFeatureMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move);
     void getAnyCaptureMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray);
     void getPatternMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, int passes);
-    void getFillBoardMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int passes, std::string *reason);
+    void getFillBoardMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, int passes, std::string *reason);
     void getNakadeMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray);
     void getLast2LibAtariMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray);
     void getLastCaptureMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray);

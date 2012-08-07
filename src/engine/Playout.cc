@@ -670,7 +670,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
 
   if (params->playout_order!=4 && params->playout_fillboard_enabled)
   {
-    this->getFillBoardMove(settings,board,col,move,passes,reason);
+    this->getFillBoardMove(settings,board,col,move,posarray,passes,reason);
     if (!move.isPass())
     {
       if (params->debug_on)
@@ -794,7 +794,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
   
  if (params->playout_order==4 && params->playout_fillboard_enabled)
   {
-    this->getFillBoardMove(settings,board,col,move,passes, reason);
+    this->getFillBoardMove(settings,board,col,move,posarray,passes,reason);
     if (!move.isPass())
     {
       if (params->debug_on)
@@ -1137,9 +1137,11 @@ void Playout::getPatternMove(Worker::Settings *settings, Go::Board *board, Go::C
   }
 }
 
-void Playout::getFillBoardMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int passes, std::string *reason)
+void Playout::getFillBoardMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, int passes, std::string *reason)
 {
   Random *const rand=settings->rand;
+  int *patternmoves=posarray;
+  int patternmovescount=0;
 
   for (int i=0;i<params->playout_fillboard_n;i++)
   {
@@ -1147,6 +1149,15 @@ void Playout::getFillBoardMove(Worker::Settings *settings, Go::Board *board, Go:
     if (board->getColor(p)==Go::EMPTY && board->surroundingEmpty(p)==8 && board->validMove(Go::Move(col,p)))
     {
       move=Go::Move(col,p);
+      Pattern::Circular pattcirc=Pattern::Circular(params->engine->getCircDict(),board,p,params->engine->getCircSize());
+      pattcirc.convertToSmallestEquivalent(params->engine->getCircDict());
+      if (col==Go::WHITE)
+        pattcirc.invert();
+      if (params->engine->isCircPattern(pattcirc.toString(params->engine->getCircDict())))
+      {
+        patternmoves[patternmovescount]=p;
+        patternmovescount++;
+      }
       if (params->playout_circreplace_enabled)
       {
         int pos=move.getPosition();
@@ -1161,15 +1172,22 @@ void Playout::getFillBoardMove(Worker::Settings *settings, Go::Board *board, Go:
             if (params->engine->isCircPattern(pattcirc.toString(params->engine->getCircDict())))
             {
               move=Go::Move(col,p);
-              if (params->debug_on)
-                gtpe->getOutput()->printfDebug("[playoutmove]: %s circpattern replace fillboard %s\n",move.toString(board->getSize()).c_str(),pattcirc.toString(params->engine->getCircDict()).c_str());
-              if (reason!=NULL)
-                *reason="circpattern replace fillboard";
-              params->engine->StatisticsPlus(12);
-              return;
+              patternmoves[patternmovescount]=p;
+              patternmovescount++;
             }
           }
         });
+      }
+      if (patternmovescount>0)
+      {
+        int i=rand->getRandomInt(patternmovescount);
+        move=Go::Move(col,patternmoves[i]);
+        if (params->debug_on)
+          gtpe->getOutput()->printfDebug("[playoutmove]: %s circpattern replace fillboard %s\n",move.toString(board->getSize()).c_str(),pattcirc.toString(params->engine->getCircDict()).c_str());
+        if (reason!=NULL)
+          *reason="circpattern replace fillboard";
+        params->engine->StatisticsPlus(12);
+        return;        
       }
       params->engine->StatisticsPlus(7);
       return;
