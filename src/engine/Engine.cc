@@ -89,6 +89,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","playout_nearby_enabled",&(params->playout_nearby_enabled),PLAYOUT_NEARBY_ENABLED);
   params->addParameter("playout","playout_fillboard_enabled",&(params->playout_fillboard_enabled),PLAYOUT_FILLBOARD_ENABLED);
   params->addParameter("playout","playout_fillboard_n",&(params->playout_fillboard_n),PLAYOUT_FILLBOARD_N);
+  params->addParameter("playout","playout_circreplace_enabled",&(params->playout_circreplace_enabled),PLAYOUT_CIRCREPLACE_ENABLED);
   params->addParameter("playout","playout_circpattern_n",&(params->playout_circpattern_n),PLAYOUT_CIRCPATTERN_N);
   params->addParameter("playout","playout_patterns_p",&(params->playout_patterns_p),PLAYOUT_PATTERNS_P);
   params->addParameter("playout","playout_anycapture_p",&(params->playout_anycapture_p),PLAYOUT_ANYCAPTURE_P);
@@ -1949,6 +1950,7 @@ void Engine::gtpListCircularPatternsAtSize(void *instance, Gtp::Engine* gtpe, Gt
   }
   
   Gtp::Vertex vert = cmd->getVertexArg(0);
+  int s=cmd->getIntArg(1);
   Gtp::Color gtpcol = cmd->getColorArg(2);
   
   if (vert.x==-3 && vert.y==-3)
@@ -1966,25 +1968,7 @@ void Engine::gtpListCircularPatternsAtSize(void *instance, Gtp::Engine* gtpe, Gt
     pattcirc.invert();
   
   gtpe->getOutput()->startResponse(cmd);
-  //gtpe->getOutput()->printf("Circular Patterns at %s:\n",Go::Position::pos2string(pos,me->boardsize).c_str());
-  //for (int s=2;s<=PATTERN_CIRC_MAXSIZE;s++)
-  int s=cmd->getIntArg(1);
-  
-  {
-    gtpe->getOutput()->printf(" %s\n",pattcirc.getSubPattern(me->circdict,s).toString(me->circdict).c_str());
-  }
-  /*pattcirc.rotateRight(me->circdict);
-  gtpe->getOutput()->printf(" %s\n",pattcirc.toString(me->circdict).c_str());
-  pattcirc.rotateRight(me->circdict);
-  gtpe->getOutput()->printf(" %s\n",pattcirc.toString(me->circdict).c_str());
-  pattcirc.rotateRight(me->circdict);
-  gtpe->getOutput()->printf(" %s\n",pattcirc.toString(me->circdict).c_str());
-  pattcirc.rotateRight(me->circdict);*/
-  //pattcirc.rotateRight(me->circdict);
-  //pattcirc.flipHorizontal(me->circdict);
-  //gtpe->getOutput()->printf("Smallest Equivalent:\n");
-  //pattcirc.convertToSmallestEquivalent(me->circdict);
-  //gtpe->getOutput()->printf(" %s\n",pattcirc.toString(me->circdict).c_str());
+  gtpe->getOutput()->printf(" %s\n",pattcirc.getSubPattern(me->circdict,s).toString(me->circdict).c_str());
   gtpe->getOutput()->endResponse(true);
 }
 

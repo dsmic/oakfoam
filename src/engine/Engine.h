@@ -75,6 +75,7 @@
 #define PLAYOUT_NAKADE_ENABLED true
 #define PLAYOUT_FILLBOARD_ENABLED true
 #define PLAYOUT_FILLBOARD_N 5
+#define PLAYOUT_CIRCREPLACE_ENABLED false
 #define PLAYOUT_CIRCPATTERN_N 0
 #define PLAYOUT_ANYCAPTURE_P 1.0
 #define PLAYOUT_LGRF1_ENABLED true
@@ -146,7 +147,7 @@
 
 #define ZOBRIST_HASH_SEED 0x713df891
 
-#define StatisticsNum 12
+#define StatisticsNum 13
 
 #define MPI_STRING_MAX 255
 #define MPI_HASHTABLE_SIZE 65536

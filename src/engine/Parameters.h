@@ -116,6 +116,8 @@ class Parameters
     bool playout_fillboard_enabled;
     /** Number of times to try the fillboard heuristic before continuing. */
     int playout_fillboard_n;
+    /** replace a fillboard move with a neighbouring circpattern move*/
+    bool playout_circreplace_enabled;
     /** Number of times to try the circpattern heuristic before continuing. */
     int playout_circpattern_n;
     /** The probability of using the anycapture heuristic in playouts.
