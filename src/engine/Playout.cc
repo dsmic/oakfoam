@@ -1149,17 +1149,17 @@ void Playout::getFillBoardMove(Worker::Settings *settings, Go::Board *board, Go:
     if (board->getColor(p)==Go::EMPTY && board->surroundingEmpty(p)==8 && board->validMove(Go::Move(col,p)))
     {
       move=Go::Move(col,p);
-      Pattern::Circular pattcirc=Pattern::Circular(params->engine->getCircDict(),board,p,params->engine->getCircSize());
-      pattcirc.convertToSmallestEquivalent(params->engine->getCircDict());
-      if (col==Go::WHITE)
-        pattcirc.invert();
-      if (params->engine->isCircPattern(pattcirc.toString(params->engine->getCircDict())))
-      {
-        patternmoves[patternmovescount]=p;
-        patternmovescount++;
-      }
       if (params->playout_circreplace_enabled)
       {
+        Pattern::Circular pattcirc=Pattern::Circular(params->engine->getCircDict(),board,p,params->engine->getCircSize());
+        pattcirc.convertToSmallestEquivalent(params->engine->getCircDict());
+        if (col==Go::WHITE)
+          pattcirc.invert();
+        if (params->engine->isCircPattern(pattcirc.toString(params->engine->getCircDict())))
+        {
+          patternmoves[patternmovescount]=p;
+          patternmovescount++;
+        }
         int pos=move.getPosition();
         int size=board->getSize ();
         foreach_adjdiag(pos,p,{
@@ -1183,7 +1183,7 @@ void Playout::getFillBoardMove(Worker::Settings *settings, Go::Board *board, Go:
         int i=rand->getRandomInt(patternmovescount);
         move=Go::Move(col,patternmoves[i]);
         if (params->debug_on)
-          gtpe->getOutput()->printfDebug("[playoutmove]: %s circpattern replace fillboard %s\n",move.toString(board->getSize()).c_str(),pattcirc.toString(params->engine->getCircDict()).c_str());
+          gtpe->getOutput()->printfDebug("[playoutmove]: %s circpattern replace fillboard \n");
         if (reason!=NULL)
           *reason="circpattern replace fillboard";
         params->engine->StatisticsPlus(12);
@@ -1421,7 +1421,7 @@ void Playout::getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go:
           {
             bool atarigroupfound=false;
             Go::list_int *adjacentgroups=group->getAdjacentGroups();
-            if (params->playout_lastatari_captureattached>0)
+            if (params->playout_lastatari_captureattached_p>0.0)
             {
               if (adjacentgroups->size()>(unsigned int)board->getPositionMax())
               {
@@ -1437,7 +1437,7 @@ void Playout::getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go:
                   {
                     int liberty=othergroup->getAtariPosition();
                     bool iscaptureorconnect=board->isCapture(Go::Move(col,liberty)) || board->isExtension(Go::Move(col,liberty)); // Why is the check for capture here?
-                    if (board->validMove(Go::Move(col,liberty)) && iscaptureorconnect && WITH_P(pow(params->playout_lastatari_captureattached,1/group->numOfStones ())))
+                    if (board->validMove(Go::Move(col,liberty)) && iscaptureorconnect && WITH_P(pow(params->playout_lastatari_captureattached_p,1/group->numOfStones ())))
                     {
                       if (possiblemovescount<board->getPositionMax())
                       {

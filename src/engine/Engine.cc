@@ -81,7 +81,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","playout_atari_enabled",&(params->playout_atari_enabled),PLAYOUT_ATARI_ENABLED);
   params->addParameter("playout","playout_lastatari_p",&(params->playout_lastatari_p),PLAYOUT_LASTATARI_P);
   params->addParameter("playout","playout_lastatari_leavedouble",&(params->playout_lastatari_leavedouble),PLAYOUT_LASTATARI_LEAVEDOUBLE);
-  params->addParameter("playout","playout_lastatari_leavedouble",&(params->playout_lastatari_captureattached),PLAYOUT_LASTATARI_CAPTUREATTACHED);
+  params->addParameter("playout","playout_lastatari_captureattached_p",&(params->playout_lastatari_captureattached_p),PLAYOUT_LASTATARI_CAPTUREATTACHED);
   params->addParameter("playout","playout_lastcapture_enabled",&(params->playout_lastcapture_enabled),PLAYOUT_LASTCAPTURE_ENABLED);
   params->addParameter("playout","playout_last2libatari_enabled",&(params->playout_last2libatari_enabled),PLAYOUT_LAST2LIBATARI_ENABLED);
   params->addParameter("playout","playout_last2libatari_complex",&(params->playout_last2libatari_complex),PLAYOUT_LAST2LIBATARI_COMPLEX);

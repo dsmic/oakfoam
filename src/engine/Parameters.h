@@ -105,7 +105,7 @@ class Parameters
     /** Whether to skip using the lastatari heuristic if two or more groups are in atari, and the group causing the atari is in atari itself. */
     bool playout_lastatari_leavedouble;
     /** The probability of capturing an attached group instead of extending. */
-    float playout_lastatari_captureattached;
+    float playout_lastatari_captureattached_p;
     /** Whether to use the nakade heuristic in playouts.
      * If the last move created an eye of size 3, play in the center of that eye.
      */
