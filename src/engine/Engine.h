@@ -247,14 +247,14 @@ class Engine
     /** Output a playout from the current position to a SGF file. */
     bool writeSGF(std::string filename, Go::Board *board, std::list<Go::Move> playoutmoves, std::list<std::string> *movereasons=NULL);
 
-    bool isCircPattern(std::string circpattern);
+    bool isCircPattern(std::string circpattern) {return features->isCircPattern(circpattern);}
 
-    Pattern::CircularDictionary *getCircDict() {return circdict;}
+    Pattern::CircularDictionary *getCircDict() {return features->circdict;}
     int getCircSize() {return features->circpatternsize;}
     void StatisticsPlus(int i) {statistics[i]++;}
     void ClearStatistics() {int i; for (i=0;i<StatisticsNum;i++) statistics[i]=0;}
     long StatisticsSum() {int i; long sum=0; for (i=0;i<StatisticsNum;i++) sum+=statistics[i]; return sum;}
-    long GetStatistics(int i) {return statistics[i]*1000/StatisticsSum();}
+    long GetStatistics(int i) {return statistics[i]*1000/(StatisticsSum()+1);} //+1 avoid crash
     
   private:
     Gtp::Engine *gtpe;
@@ -268,7 +268,6 @@ class Engine
     std::string lastexplanation;
     Parameters *const params;
     Features *features;
-    Pattern::CircularDictionary *circdict;
     Book *book;
     std::list<Go::Move> *movehistory;
     Go::ZobristTable *zobristtable;

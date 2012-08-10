@@ -98,7 +98,7 @@ float Tree::getScoreMean() const
 
 float Tree::getScoreSD() const
 {
-  if (playouts>0)
+  if (playouts>0 && (scoresumsq/playouts-pow(scoresum/playouts,2))>0)
     return sqrt((scoresumsq/playouts-pow(scoresum/playouts,2))/playouts);
   else
     return 0;
@@ -732,12 +732,11 @@ void Tree::unPruneNow()
 
 float Tree::getUnPruneFactor() const
 {
-  float factor;
+  float factor=1;
   if (params->uct_rave_unprune_decay>0)
     factor=log((1000.0*gamma*params->uct_rave_unprune_decay)/(parent->raveplayouts+params->uct_rave_unprune_decay)+1);
   else
     factor=gamma/parent->getChildrenTotalFeatureGamma();
-
   //fprintf(stderr,"unprunefactore %f %f %f\n",gamma,parent->raveplayouts,factor);
   if (params->uct_criticality_unprune_factor>0 && (params->uct_criticality_siblings?parent->playouts:playouts)>(params->uct_criticality_min_playouts))
   {
@@ -846,7 +845,7 @@ Tree *Tree::getUrgentChild(Worker::Settings *settings)
   if (params->move_policy==Parameters::MP_UCT && besttree->isLeaf() && !besttree->isTerminal())
   {
     if (besttree->getPlayouts()>params->uct_expand_after)
-      busyexpanding=!besttree->expandLeaf();
+      busyexpanding=!besttree->expandLeaf(settings);
   }
   
   if (params->uct_virtual_loss)
@@ -858,7 +857,7 @@ Tree *Tree::getUrgentChild(Worker::Settings *settings)
     return besttree->getUrgentChild(settings);
 }
 
-bool Tree::expandLeaf()
+bool Tree::expandLeaf(Worker::Settings *settings)
 {
   if (!this->isLeaf())
     return true;
@@ -954,8 +953,8 @@ bool Tree::expandLeaf()
     
     if (params->uct_atari_prior>0)
     {
-      std::list<Go::Group*,Go::allocator_groupptr> *groups=startboard->getGroups();
-      for(std::list<Go::Group*,Go::allocator_groupptr>::iterator iter=groups->begin();iter!=groups->end();++iter) 
+      std::set<Go::Group*> *groups=startboard->getGroups();
+      for(std::set<Go::Group*>::iterator iter=groups->begin();iter!=groups->end();++iter) 
       {
         if ((*iter)->inAtari())
         {

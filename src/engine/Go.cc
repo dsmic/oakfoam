@@ -245,7 +245,7 @@ Go::Board::~Board()
   {
     pool_group.destroy((*iter));
   }*/
-  groups.resize(0);
+  groups.clear();
   
   if (lastscoredata!=NULL)
     delete[] lastscoredata;
@@ -561,7 +561,7 @@ void Go::Board::makeMove(Go::Move move)
   
   Go::Group *thisgroup=pool_group.construct(this,pos);
   this->setGroup(pos,thisgroup);
-  groups.push_back(thisgroup);
+  groups.insert(thisgroup);
   
   thisgroup->addTouchingEmpties();
   
@@ -733,7 +733,7 @@ void Go::Board::refreshGroups()
   //{
   //  pool_group.destroy((*iter));
   //}
-  groups.resize(0);
+  groups.clear();
   
   for (int p=0;p<sizedata;p++)
   {
@@ -746,7 +746,7 @@ void Go::Board::refreshGroups()
       foreach_adjacent(p,q,{
         this->spreadGroup(q,newgroup);
       });
-      groups.push_back(newgroup);
+      groups.insert(newgroup);
     }
   }
   
@@ -776,7 +776,7 @@ void Go::Board::spreadGroup(int pos, Go::Group *group)
   {
     Go::Group *thisgroup=pool_group.construct(this,pos);
     this->setGroup(pos,thisgroup);
-    groups.push_back(thisgroup);
+    groups.insert(thisgroup);
     thisgroup->addTouchingEmpties();
     this->mergeGroups(group,thisgroup);
     
@@ -793,7 +793,7 @@ int Go::Board::removeGroup(Go::Group *group)
   int s=group->numOfStones();
   Go::Color groupcol=group->getColor();
   
-  groups.remove(group);
+  groups.erase(group);
   
   std::list<int,Go::allocator_int> *possiblesuicides = new std::list<int,Go::allocator_int>();
   
@@ -851,7 +851,7 @@ void Go::Board::mergeGroups(Go::Group *first, Go::Group *second)
   if (first==second)
     return;
   
-  groups.remove(second);
+  groups.erase(second);
   first->unionWith(second);
 }
 

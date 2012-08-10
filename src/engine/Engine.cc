@@ -105,18 +105,16 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","playout_mercy_rule_factor",&(params->playout_mercy_rule_factor),PLAYOUT_MERCY_RULE_FACTOR);
   params->addParameter("playout","playout_fill_weak_eyes",&(params->playout_fill_weak_eyes),PLAYOUT_FILL_WEAK_EYES);
   
-/*
-  params->addParameter("playout","test_p1",&(params->test_p1),1.0);
+  params->addParameter("playout","test_p1",&(params->test_p1),0.0);
   params->addParameter("playout","test_p2",&(params->test_p2),0.0);
   params->addParameter("playout","test_p3",&(params->test_p3),0.0);
-  params->addParameter("playout","test_p4",&(params->test_p4),1.0);
-  params->addParameter("playout","test_p5",&(params->test_p5),1.0);
-  params->addParameter("playout","test_p6",&(params->test_p6),1.0);
-  params->addParameter("playout","test_p7",&(params->test_p7),1.0);
-  params->addParameter("playout","test_p8",&(params->test_p8),1.0);
+  params->addParameter("playout","test_p4",&(params->test_p4),0.0);
+  params->addParameter("playout","test_p5",&(params->test_p5),0.0);
+  params->addParameter("playout","test_p6",&(params->test_p6),0.0);
+  params->addParameter("playout","test_p7",&(params->test_p7),0.0);
+  params->addParameter("playout","test_p8",&(params->test_p8),0.0);
   params->addParameter("playout","test_p9",&(params->test_p9),0.0);
-  params->addParameter("playout","test_p10",&(params->test_p10),1.0);
-*/
+  params->addParameter("playout","test_p10",&(params->test_p10),0.0);
 
   params->addParameter("tree","ucb_c",&(params->ucb_c),UCB_C);
   params->addParameter("tree","ucb_init",&(params->ucb_init),UCB_INIT);
@@ -230,8 +228,6 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   features=new Features(params);
   features->loadGammaDefaults();
   
-  circdict=new Pattern::CircularDictionary();
-  
   book=new Book(params);
   
   time=new Time(params,0);
@@ -292,7 +288,6 @@ Engine::~Engine()
     this->mpiFreeDerivedTypes();
   #endif
   delete threadpool;
-  delete circdict;
   delete features;
   delete patterntable;
   if (movetree!=NULL)
@@ -527,7 +522,7 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("showpatternmatches","Show Pattern Matches","sboard");
   gtpe->addAnalyzeCommand("showratios","Show Ratios","sboard");
   gtpe->addAnalyzeCommand("showunprune","Show UnpruneFactor","sboard");
-  gtpe->addAnalyzeCommand("showunprunecd","Show UnpruneFactor (color display)","cboard");
+  gtpe->addAnalyzeCommand("showunprunecolor","Show UnpruneFactor (color display)","cboard");
   gtpe->addAnalyzeCommand("showraveratios","Show RAVE Ratios","sboard");
   gtpe->addAnalyzeCommand("showraveratioscd","Show RAVE Ratios (color display)","cboard");
   gtpe->addAnalyzeCommand("showraveratiosoc","Show RAVE Ratios (other color)","sboard");
@@ -1914,26 +1909,18 @@ void Engine::gtpListCircularPatternsAt(void *instance, Gtp::Engine* gtpe, Gtp::C
   }
   
   int pos=Go::Position::xy2pos(vert.x,vert.y,me->boardsize);
-  Pattern::Circular pattcirc=Pattern::Circular(me->circdict,me->currentboard,pos,PATTERN_CIRC_MAXSIZE);
+  Pattern::Circular pattcirc=Pattern::Circular(me->getCircDict(),me->currentboard,pos,PATTERN_CIRC_MAXSIZE);
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printf("Circular Patterns at %s:\n",Go::Position::pos2string(pos,me->boardsize).c_str());
   for (int s=2;s<=PATTERN_CIRC_MAXSIZE;s++)
   {
-    gtpe->getOutput()->printf(" %s\n",pattcirc.getSubPattern(me->circdict,s).toString(me->circdict).c_str());
+    gtpe->getOutput()->printf(" %s\n",pattcirc.getSubPattern(me->getCircDict(),s).toString(me->getCircDict()).c_str());
   }
-  /*pattcirc.rotateRight(me->circdict);
-  gtpe->getOutput()->printf(" %s\n",pattcirc.toString(me->circdict).c_str());
-  pattcirc.rotateRight(me->circdict);
-  gtpe->getOutput()->printf(" %s\n",pattcirc.toString(me->circdict).c_str());
-  pattcirc.rotateRight(me->circdict);
-  gtpe->getOutput()->printf(" %s\n",pattcirc.toString(me->circdict).c_str());
-  pattcirc.rotateRight(me->circdict);*/
-  //pattcirc.rotateRight(me->circdict);
-  //pattcirc.flipHorizontal(me->circdict);
+
   gtpe->getOutput()->printf("Smallest Equivalent:\n");
-  pattcirc.convertToSmallestEquivalent(me->circdict);
-  gtpe->getOutput()->printf(" %s\n",pattcirc.toString(me->circdict).c_str());
+  pattcirc.convertToSmallestEquivalent(me->getCircDict());
+  gtpe->getOutput()->printf(" %s\n",pattcirc.toString(me->getCircDict()).c_str());
   gtpe->getOutput()->endResponse(true);
 }
 
@@ -1962,13 +1949,13 @@ void Engine::gtpListCircularPatternsAtSize(void *instance, Gtp::Engine* gtpe, Gt
   }
   
   int pos=Go::Position::xy2pos(vert.x,vert.y,me->boardsize);
-  Pattern::Circular pattcirc=Pattern::Circular(me->circdict,me->currentboard,pos,PATTERN_CIRC_MAXSIZE);
-  pattcirc.convertToSmallestEquivalent(me->circdict);
+  Pattern::Circular pattcirc=Pattern::Circular(me->getCircDict(),me->currentboard,pos,PATTERN_CIRC_MAXSIZE);
+  pattcirc.convertToSmallestEquivalent(me->getCircDict());
   if (gtpcol==Gtp::WHITE)
     pattcirc.invert();
   
   gtpe->getOutput()->startResponse(cmd);
-  gtpe->getOutput()->printf(" %s\n",pattcirc.getSubPattern(me->circdict,s).toString(me->circdict).c_str());
+  gtpe->getOutput()->printf(" %s\n",pattcirc.getSubPattern(me->getCircDict(),s).toString(me->getCircDict()).c_str());
   gtpe->getOutput()->endResponse(true);
 }
 
@@ -1990,19 +1977,19 @@ void Engine::gtpListAllCircularPatterns(void *instance, Gtp::Engine* gtpe, Gtp::
   {
     if (me->currentboard->validMove(Go::Move(col,p)))
     {
-      Pattern::Circular pattcirc=Pattern::Circular(me->circdict,board,p,PATTERN_CIRC_MAXSIZE);
+      Pattern::Circular pattcirc=Pattern::Circular(me->getCircDict(),board,p,PATTERN_CIRC_MAXSIZE);
       if (col==Go::WHITE)
         pattcirc.invert();
-      pattcirc.convertToSmallestEquivalent(me->circdict);
+      pattcirc.convertToSmallestEquivalent(me->getCircDict());
       if (size==0)
       {
         for (int s=4;s<=PATTERN_CIRC_MAXSIZE;s++)
         {
-          gtpe->getOutput()->printf(" %s",pattcirc.getSubPattern(me->circdict,s).toString(me->circdict).c_str());
+          gtpe->getOutput()->printf(" %s",pattcirc.getSubPattern(me->getCircDict(),s).toString(me->getCircDict()).c_str());
         }
       }
       else
-        gtpe->getOutput()->printf(" %s",pattcirc.getSubPattern(me->circdict,size).toString(me->circdict).c_str());
+        gtpe->getOutput()->printf(" %s",pattcirc.getSubPattern(me->getCircDict(),size).toString(me->getCircDict()).c_str());
     }
   }
 
@@ -2743,7 +2730,6 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
       gtpe->getOutput()->printfDebug("SOLVED! found 100%% sure result after %d plts!\n",totalplayouts);
 
     int num_unpruned=movetree->getNumUnprunedChildren();
-
     std::ostringstream ssun;
     ssun<<"un:(";
     for (int nn=1;nn<=num_unpruned;nn++)
@@ -2765,7 +2751,10 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     }
     ssun<<")";
     Tree *besttree=movetree->getRobustChild();
+    float scoresd=0;
+    float scoremean=0;
     float bestratio=0;
+    int   best_unpruned=0;
     float ratiodelta=-1;
     bool bestsame=false;
     if (besttree==NULL)
@@ -2782,6 +2771,9 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     {
       *move=new Go::Move(col,besttree->getMove().getPosition());
       bestratio=besttree->getRatio();
+      scoresd=besttree->getScoreSD();
+      scoremean=besttree->getScoreMean();
+      best_unpruned=besttree->getUnprunedNum();
       
       ratiodelta=besttree->bestChildRatioDiff();
       bestsame=(besttree==(movetree->getBestRatioChild(10)));
@@ -2820,14 +2812,15 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
       if (time->stonesLeft(col)>0)
         ss << " s:"<<time->stonesLeft(col);
     }
+    fprintf(stderr,"debug %f\n",scoresd);
     if (!time->isNoTiming() || params->early_stop_occured)
       ss << " plts:"<<totalplayouts;
     ss << " ppms:"<<std::setprecision(2)<<playouts_per_milli;
     ss << " rd:"<<std::setprecision(2)<<ratiodelta*100<<"%";
     ss << " r2:"<<std::setprecision(2)<<params->uct_last_r2;
-    ss << " fs:"<<std::setprecision(2)<<besttree->getScoreMean();
-    ss << " fsd:"<<std::setprecision(2)<<besttree->getScoreSD();
-    ss << " un:"<<besttree->getUnprunedNum()<<"/"<<num_unpruned;
+    ss << " fs:"<<std::setprecision(2)<<scoremean;
+    ss << " fsd:"<<std::setprecision(2)<<scoresd;
+    ss << " un:"<<best_unpruned<<"/"<<num_unpruned;
     ss << " bs:"<<bestsame;
     
     Tree *pvtree=movetree->getRobustChild(true);
@@ -3257,7 +3250,7 @@ void Engine::doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::
   if (movetree->isLeaf())
   {
     this->allowContinuedPlay();
-    movetree->expandLeaf();
+    movetree->expandLeaf(settings);
     movetree->pruneSuperkoViolations();
   }
   
@@ -3863,17 +3856,6 @@ void Engine::updateTerritoryScoringInTree()
     }
   }
 }
-
-
-bool Engine::isCircPattern(std::string circpattern)
-{
-  //strip the patternsize
-  int strpos = circpattern.find(":");
-    
-// fprintf(stderr,"%s %d %d\n",circpattern.substr(strpos+1).c_str(),features->circpatterns.size(),features->circpatterns.count(circpattern.substr(strpos+1)));
-  return features->circpatterns.count(circpattern.substr(strpos+1));
-}
-
 
 #ifdef HAVE_MPI
 void Engine::mpiCommandHandler()

@@ -645,6 +645,7 @@ class Parameters;
 namespace Pattern
 {
   class ThreeByThreeGammas;
+  class CircularDictionary;
 };
 
 /** ELO Features.
@@ -752,6 +753,9 @@ class Features
 
     std::set<std::string> circpatterns;
     int circpatternsize;
+    Pattern::CircularDictionary *circdict; 
+    bool isCircPattern(std::string circpattern) const;
+    
   private:
     Parameters *const params;
     Pattern::ThreeByThreeGammas *patterngammas;

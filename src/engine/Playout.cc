@@ -1059,8 +1059,8 @@ void Playout::getAnyCaptureMove(Worker::Settings *settings, Go::Board *board, Go
   int *possiblemoves=posarray;
   int possiblemovescount=0;
   
-  std::list<Go::Group*,Go::allocator_groupptr> *groups=board->getGroups();
-  for(std::list<Go::Group*,Go::allocator_groupptr>::iterator iter=groups->begin();iter!=groups->end();++iter) 
+  std::set<Go::Group*> *groups=board->getGroups();
+  for(std::set<Go::Group*>::iterator iter=groups->begin();iter!=groups->end();++iter) 
   {
     if ((*iter)->getColor()!=col && (*iter)->inAtari())
     {

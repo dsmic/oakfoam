@@ -14,6 +14,7 @@ class Parameters;
 //from "Random.h":
 class Random;
 
+#include <set>
 #define SYMMETRY_ONLYDEGRAGE false
 
 #define P_N (-size-1)
@@ -503,7 +504,7 @@ namespace Go
        */
       const Go::Vertex *boardData() const { return data; };
       /** Get a list of the groups on this board. */
-      std::list<Go::Group*,Go::allocator_groupptr> *getGroups() { return &groups; };
+      std::set<Go::Group*> *getGroups() { return &groups; };
       
       /** Get the size of this board. */
       int getSize() const { return size; };
@@ -665,7 +666,7 @@ namespace Go
       const int sizesq;
       const int sizedata;
       Go::Vertex *const data;
-      std::list<Go::Group*,Go::allocator_groupptr> groups;
+      std::set<Go::Group*> groups;
       int movesmade,passesplayed;
       Go::Color nexttomove;
       int simpleko;

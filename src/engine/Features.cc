@@ -34,12 +34,15 @@ Features::Features(Parameters *prms) : params(prms)
   for (int i=0;i<CFGSECONDLASTDIST_LEVELS;i++)
     gammas_cfgsecondlastdist[i]=1.0;
   circpatternsize=0;
+  circdict=new Pattern::CircularDictionary();
+  
 }
 
 Features::~Features()
 {
   delete patterngammas;
   delete patternids;
+  delete circdict;
 }
 
 unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove) const
@@ -289,7 +292,18 @@ float Features::getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist
   g*=this->getFeatureGamma(Features::CFGLASTDIST,this->matchFeatureClass(Features::CFGLASTDIST,board,cfglastdist,cfgsecondlastdist,move,false));
   g*=this->getFeatureGamma(Features::CFGSECONDLASTDIST,this->matchFeatureClass(Features::CFGSECONDLASTDIST,board,cfglastdist,cfgsecondlastdist,move,false));
   g*=this->getFeatureGamma(Features::PATTERN3X3,this->matchFeatureClass(Features::PATTERN3X3,board,cfglastdist,cfgsecondlastdist,move,false));
-  
+
+  if (params->test_p1>0.0)
+  {
+    Pattern::Circular pattcirc=Pattern::Circular(circdict,board,move.getPosition(),circpatternsize);
+    if (move.getColor()==Go::WHITE)
+            pattcirc.invert();
+    if (this->isCircPattern(pattcirc.toString(circdict)))
+    {
+      //fprintf(stderr,"found pattern %f\n",params->test_p1);
+      g+=params->test_p1;
+    }
+  }
   return g;
 }
 
@@ -740,3 +754,12 @@ void Features::computeCFGDist(Go::Board *board, Go::ObjectBoard<int> **cfglastdi
     *cfgsecondlastdist=board->getCFGFrom(board->getSecondLastMove().getPosition(),CFGSECONDLASTDIST_LEVELS);
 }
 
+
+bool Features::isCircPattern(std::string circpattern) const
+{
+  //strip the patternsize
+  int strpos = circpattern.find(":");
+    
+// fprintf(stderr,"%s %d %d\n",circpattern.substr(strpos+1).c_str(),features->circpatterns.size(),features->circpatterns.count(circpattern.substr(strpos+1)));
+  return circpatterns.count(circpattern.substr(strpos+1));
+}

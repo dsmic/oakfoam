@@ -156,7 +156,6 @@ class Parameters
      */
     float playout_mercy_rule_factor;
 
- /*   
     float test_p1;
     float test_p2;
     float test_p3;
@@ -167,7 +166,6 @@ class Parameters
     float test_p8;
     float test_p9;
     float test_p10;
- */
         
     /** Skip all playout heuristics with this probability.
      * Set to zero to disable.
