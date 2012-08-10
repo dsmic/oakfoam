@@ -490,6 +490,22 @@ Pattern::Circular::Circular(Pattern::CircularDictionary *dict, const Go::Board *
   }
 }
 
+int Pattern::Circular::countStones(Pattern::CircularDictionary *dict)
+{
+  int numStones=0;
+  int base=0;
+  int l=dict->getBaseOffset(size+1);
+     
+  for (int i=0;i<l;i++)
+  {
+    if (this->getColor(base)==Go::WHITE) numStones++;
+    if (this->getColor(base)==Go::BLACK) numStones++;
+    base++;
+  }
+return numStones;
+}
+
+      
 int Pattern::Circular::hashColor(Go::Color col)
 {
   switch (col)
@@ -507,6 +523,23 @@ int Pattern::Circular::hashColor(Go::Color col)
   }
 }
 
+Go::Color Pattern::Circular::hash2Color(int hash)
+{
+  switch (hash)
+  {
+    case 0:
+      return Go::EMPTY;
+    case 1:
+      return Go::BLACK;
+    case 2:
+      return Go::WHITE;
+    case 3:
+      return Go::OFFBOARD;
+    default:
+      return Go::OFFBOARD;
+  }
+
+}
 void Pattern::Circular::initColor(int offset, Go::Color col)
 {
   int part=offset/(32/2);
@@ -514,6 +547,18 @@ void Pattern::Circular::initColor(int offset, Go::Color col)
   
   hash[part]|=Pattern::Circular::hashColor(col)<<(32-bitoffset-2);
 }
+
+Go::Color Pattern::Circular::getColor(int offset)
+{
+  int part=offset/(32/2);
+  int bitoffset=(offset%(32/2))*2;
+  
+  uint32_t tmp=hash[part]>>(32-bitoffset-2);
+//  fprintf(stderr,"%x %x\n",hash[part],tmp & 0x0003);
+  return this->hash2Color(tmp & 0x0003);
+}
+
+
 
 void Pattern::Circular::resetColor(int offset)
 {

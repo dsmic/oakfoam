@@ -524,8 +524,8 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("showunprune","Show UnpruneFactor","sboard");
   gtpe->addAnalyzeCommand("showunprunecolor","Show UnpruneFactor (color display)","cboard");
   gtpe->addAnalyzeCommand("showraveratios","Show RAVE Ratios","sboard");
-  gtpe->addAnalyzeCommand("showraveratioscd","Show RAVE Ratios (color display)","cboard");
-  gtpe->addAnalyzeCommand("showraveratiosoc","Show RAVE Ratios (other color)","sboard");
+  gtpe->addAnalyzeCommand("showraveratioscolor","Show RAVE Ratios (color display)","cboard");
+  gtpe->addAnalyzeCommand("showraveratiosother","Show RAVE Ratios (other color)","sboard");
   //gtpe->addAnalyzeCommand("shownakadecenters","Show Nakade Centers","sboard");
   gtpe->addAnalyzeCommand("featurematchesat %%p","Feature Matches At","string");
   gtpe->addAnalyzeCommand("featureprobdistribution","Feature Probability Distribution","cboard");
@@ -1043,7 +1043,7 @@ void Engine::gtpShowUnPrune(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd
       if (tree!=NULL)
       {
         float ratio=tree->getUnPruneFactor();
-        gtpe->getOutput()->printf("\"%.0f\"",ratio);
+        gtpe->getOutput()->printf("\"%.1f\"",ratio);
       }
       else
         gtpe->getOutput()->printf("\"\"");

@@ -283,6 +283,9 @@ namespace Pattern
       
       /** Get a string representation of this pattern. */
       std::string toString(Pattern::CircularDictionary *dict) const;
+
+      /** Count the number of stones to get an idea of the uniqunes of the pattern */
+      int countStones(Pattern::CircularDictionary *dict);
       
       /** Determine if two patterns are equal. */
       bool operator==(const Pattern::Circular other) const;
@@ -313,7 +316,9 @@ namespace Pattern
       uint32_t hash[PATTERN_CIRC_32BITPARTS];  //the fast_uint_32_t can be 64 bit makeing toString not work
       
       static int hashColor(Go::Color col);
+      static Go::Color hash2Color(int hash);
       void initColor(int offset, Go::Color col);
+      Go::Color getColor(int offset);
       void resetColor(int offset);
       Pattern::CircularDictionary *ldict; //needed for copy?!
   };
