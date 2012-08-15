@@ -68,7 +68,7 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
 
   if (board->getPassesPlayed()>=2)
   {
-    finalscore=board->score()-params->engine->getKomi();
+    finalscore=board->score(params)-params->engine->getKomi();
     return;
   }
   
@@ -95,7 +95,7 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
     {
       if (params->debug_on)
         gtpe->getOutput()->printfDebug("\n");
-      finalscore=board->score()-(params->engine->getKomi());
+      finalscore=board->score(params)-(params->engine->getKomi());
       return;
     }
   }
@@ -274,7 +274,7 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
   delete[] posarray;
   
   if (!mercywin)
-    finalscore=board->score()-params->engine->getKomi();
+    finalscore=board->score(params)-params->engine->getKomi();
   //Go::Color playoutcol=playoutmoves.back().getColor();
   //bool playoutwin=Go::Board::isWinForColor(playoutcol,finalscore);
   bool playoutjigo=(finalscore==0);

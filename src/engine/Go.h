@@ -561,7 +561,7 @@ namespace Go
       Go::BitBoard *getValidMoves(Go::Color col) const { return (col==Go::BLACK?blackvalidmoves:whitevalidmoves); };
       
       /** Compute the current score. */
-      int score();
+      float score(Parameters* params=NULL);
       /** Determine if the given position is a weak eye for the given color. */
       bool weakEye(Go::Color col, int pos) const;
       /** Determine if the given position has an eye where two weak eyes are shared from two groups. */

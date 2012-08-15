@@ -255,6 +255,7 @@ class Engine
     void ClearStatistics() {int i; for (i=0;i<StatisticsNum;i++) statistics[i]=0;}
     long StatisticsSum() {int i; long sum=0; for (i=0;i<StatisticsNum;i++) sum+=statistics[i]; return sum;}
     long GetStatistics(int i) {return statistics[i]*1000/(StatisticsSum()+1);} //+1 avoid crash
+    Go::TerritoryMap *getTerritoryMap() {return territorymap;}
     
   private:
     Gtp::Engine *gtpe;

@@ -345,7 +345,7 @@ std::string Go::Board::toSGFString() const
   return ss.str();
 }
 
-int Go::Board::score()
+float Go::Board::score(Parameters* params)
 {
   Go::Board::ScoreVertex *scoredata;
   
@@ -372,15 +372,18 @@ int Go::Board::score()
     }
   }
   
-  int s=0;
+  float s=0;
   
   for (int p=0;p<sizedata;p++)
   {
     Go::Color col=scoredata[p].color;
+    float v=1.0;
+    if (params!=NULL && params->test_p3!=0.0)
+      v=(1.0-params->test_p3)+params->test_p3*pow(params->engine->getTerritoryMap()->getPositionOwner(p),2);
     if (col==Go::BLACK)
-      s++;
+      s+=v;
     else if (col==Go::WHITE)
-      s--;
+      s-=v;
   }
   
   if (lastscoredata!=NULL)

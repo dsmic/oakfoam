@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TEMPOUTPUT="patterns_circ_`date +%F_%T`.tmp"
+TEMPOUTPUT="patterns_circ_`date +%F_%T`$RANDOM$RANDOM.tmp"
 OAKFOAM="../../oakfoam"
 OAKFOAMLOG="../../oakfoam --log $TEMPOUTPUT"
 PROGRAM="gogui-adapter \"$OAKFOAM\""
@@ -18,6 +18,7 @@ fi
 
 GAME=$1
 SIZE=$2
+echo "game: $GAME" >&2
 
 echo -e "loadsgf \"$GAME\"" | gogui-adapter "$OAKFOAMLOG" > /dev/null
 MOVES=`cat $TEMPOUTPUT | grep "^play " | wc -l`

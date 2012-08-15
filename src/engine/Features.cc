@@ -298,10 +298,10 @@ float Features::getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist
     Pattern::Circular pattcirc=Pattern::Circular(circdict,board,move.getPosition(),circpatternsize);
     if (move.getColor()==Go::WHITE)
             pattcirc.invert();
-    if (this->isCircPattern(pattcirc.toString(circdict)) && pattcirc.countStones (circdict)>=params->test_p2)
+    if (this->isCircPattern(pattcirc.toString(circdict)))
     {
-     fprintf(stderr,"found pattern %f %s (stones %d)\n",params->test_p1,pattcirc.toString(circdict).c_str(),pattcirc.countStones(circdict));
-      g+=params->test_p1;
+     //fprintf(stderr,"found pattern %f %s (stones %d)\n",params->test_p1,pattcirc.toString(circdict).c_str(),pattcirc.countStones(circdict));
+     g*=1+params->test_p1*pow(1.0+pattcirc.countStones (circdict),params->test_p2);
     }
   }
   return g;
