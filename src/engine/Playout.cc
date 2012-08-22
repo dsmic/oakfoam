@@ -670,13 +670,14 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
 
   if (params->playout_order!=4 && params->playout_fillboard_enabled)
   {
-    this->getFillBoardMove(settings,board,col,move,posarray,passes,reason);
+    std::string tmpreason="fillboard";
+    this->getFillBoardMove(settings,board,col,move,posarray,passes,&tmpreason);
     if (!move.isPass())
     {
       if (params->debug_on)
         gtpe->getOutput()->printfDebug("[playoutmove]: %s fillboard\n",move.toString(board->getSize()).c_str());
       if (reason!=NULL)
-        *reason="fillboard";
+        *reason=tmpreason;
       return;
     }
   }
@@ -794,13 +795,14 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
   
  if (params->playout_order==4 && params->playout_fillboard_enabled)
   {
-    this->getFillBoardMove(settings,board,col,move,posarray,passes,reason);
+    std::string tmpreason="fillboard";
+    this->getFillBoardMove(settings,board,col,move,posarray,passes,&tmpreason);
     if (!move.isPass())
     {
       if (params->debug_on)
         gtpe->getOutput()->printfDebug("[playoutmove]: %s fillboard\n",move.toString(board->getSize()).c_str());
       if (reason!=NULL)
-        *reason="fillboard";
+        *reason=tmpreason;
       return;
     }
   }

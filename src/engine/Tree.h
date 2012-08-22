@@ -78,6 +78,7 @@ class Tree
     void setPruned(bool p) { pruned=p; };
     /** Prune all the children of this node. */
     void pruneChildren();
+    Tree *getWorstChild();
     /** Check if a child node should be unpruned, due to progressive widening. */
     void checkForUnPruning();
     /** Unprune a new node now, irrespective of the progrssive widening status. */
@@ -304,6 +305,7 @@ class Tree
     bool hasOneUnprunedChildNotTerminalLoss();
     
     void unPruneNextChild();
+    void unPruneNextChildNew();
     float unPruneMetric() const;
     void updateUnPruneAt();
     

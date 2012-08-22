@@ -645,8 +645,50 @@ void Tree::pruneChildren()
   unprunedchildren=0;
 }
 
+Tree *Tree::getWorstChild()
+{
+  //fprintf(stderr,"+");
+  Tree *worstchild=NULL;
+  int unprunedn=0;
+  for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
+  {
+    //fprintf(stderr,".");
+    if ((*iter)->isPrimary() && !(*iter)->isPruned())
+    {
+      if (worstchild==NULL || (*iter)->getPlayouts()<worstchild->getPlayouts())
+        worstchild=(*iter);
+      unprunedn++;
+    }
+  }
+  if (unprunedn<2)
+    return NULL;
+  return worstchild;
+}
+
+void Tree::unPruneNextChildNew()
+{
+  if (params->uct_reprune_factor>0.0)
+  {
+    Tree* worstChild=NULL;
+    worstChild=getWorstChild();
+    if (worstChild)
+    {
+      if (this->isRoot())
+      {
+        Gtp::Engine *gtpe=params->engine->getGtpEngine();
+        gtpe->getOutput()->printfDebug("wc:%s %5.3f %5.3f (%5.0f) %5.3f\n",worstChild->getMove().toString(params->board_size).c_str(),worstChild->getUnPruneFactor(),worstChild->getRAVERatio(),worstChild->getRAVEPlayouts(),worstChild->getFeatureGamma());
+      }
+      worstChild->setPruned(true);
+      unprunedchildren--;
+      unPruneNextChild();
+    }
+  }
+  unPruneNextChild();
+}
+
 void Tree::unPruneNextChild()
 {
+  Gtp::Engine *gtpe=params->engine->getGtpEngine();
   if (this->hasPrunedChildren())
   {
     Tree *bestchild=NULL;
@@ -659,7 +701,7 @@ void Tree::unPruneNextChild()
       {
         if ((*iter)->isPruned())
         {
-          //fprintf(stderr,"%s %5.3f %5.3f (%5.0f) %5.3f ",(*iter)->getMove().toString(params->board_size).c_str(),(*iter)->getUnPruneFactor(),(*iter)->getRAVERatio(),(*iter)->getRAVEPlayouts(),(*iter)->getFeatureGamma());
+          //  fprintf(stderr,"%s %5.3f %5.3f (%5.0f) %5.3f",(*iter)->getMove().toString(params->board_size).c_str(),(*iter)->getUnPruneFactor(),(*iter)->getRAVERatio(),(*iter)->getRAVEPlayouts(),(*iter)->getFeatureGamma());
           if ((*iter)->getUnPruneFactor()>bestfactor || bestchild==NULL)
           {
             bestfactor=(*iter)->getUnPruneFactor();
@@ -667,14 +709,22 @@ void Tree::unPruneNextChild()
           }
         }
         else
+        {
           unpruned++;
+          //if (this->isRoot())
+          //  fprintf(stderr,"%s %5.3f %5.3f (%5.0f) %5.3f ",(*iter)->getMove().toString(params->board_size).c_str(),(*iter)->getUnPruneFactor(),(*iter)->getRAVERatio(),(*iter)->getRAVEPlayouts(),(*iter)->getFeatureGamma());
+        }
       }
     }
+    //if (this->isRoot())
+    //  fprintf(stderr,"\n");
     
     if (bestchild!=NULL)
     {
       //fprintf(stderr,"\n[unpruning]: (%d) %s %f %f -- %f\n\n",unpruned,bestchild->getMove().toString(params->board_size).c_str(),bestfactor,bestchild->getRAVERatio (),bestchild->getUnPruneFactor ());
       bestchild->setPruned(false);
+      if (this->isRoot() && params->uct_reprune_factor>0.0)
+            gtpe->getOutput()->printfDebug("nc:%s %5.3f %5.3f (%5.0f) %5.3f\n",bestchild->getMove().toString(params->board_size).c_str(),bestchild->getUnPruneFactor(),bestchild->getRAVERatio(),bestchild->getRAVEPlayouts(),bestchild->getFeatureGamma());
       if ((unpruned+superkochildrenviolations)!=unprunedchildren)
         fprintf(stderr,"WARNING! unpruned running total doesn't match (%u:%u)\n",unpruned,unprunedchildren);
       bestchild->setUnprunedNum(unpruned+1);
@@ -715,7 +765,7 @@ void Tree::checkForUnPruning()
     if (!unprunemutex.try_lock())
       return;
     if (this->unPruneMetric()>=unprunenextchildat)
-      this->unPruneNextChild();
+      this->unPruneNextChildNew();
     unprunemutex.unlock();
   }
 }
@@ -726,7 +776,7 @@ void Tree::unPruneNow()
   //boost::mutex::scoped_lock lock(unprunemutex);
   unprunemutex.lock();
   if (tmp==unprunenextchildat)
-    this->unPruneNextChild();
+    this->unPruneNextChildNew();
   unprunemutex.unlock();
 }
 
@@ -752,6 +802,8 @@ float Tree::getUnPruneFactor() const
     else
       factor+=params->uct_rave_unprune_factor*this->getRAVERatio();
   }
+  if (params->uct_reprune_factor>0.0)
+    factor*=1.0/(1.0+log(1+params->uct_reprune_factor*playouts));
   return factor;
 }
 

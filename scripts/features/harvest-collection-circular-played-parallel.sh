@@ -21,6 +21,6 @@ cat ${TEMPOUTPUT} | ./harvest-combine-gawk.sh | sort -rn > ${TEMPCOMBINED}
 cat $TEMPCOMBINED
 ./count.pl $TEMPCOMBINED
 
-rm -f $TEMPOUTPUT
+#rm -f $TEMPOUTPUT
 #rm -f $TEMPCOMBINED
 

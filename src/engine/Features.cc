@@ -760,6 +760,6 @@ bool Features::isCircPattern(std::string circpattern) const
   //strip the patternsize
   int strpos = circpattern.find(":");
     
-// fprintf(stderr,"%s %d %d\n",circpattern.substr(strpos+1).c_str(),features->circpatterns.size(),features->circpatterns.count(circpattern.substr(strpos+1)));
+// fprintf(stderr,"%s %d\n",circpattern.substr(strpos+1).c_str(),circpatterns.count(circpattern.substr(strpos+1)));
   return circpatterns.count(circpattern.substr(strpos+1));
 }

@@ -353,6 +353,9 @@ class Parameters
     /** Parameter for RAVE unpruning.
      * @see uct_rave_unprune_factor
      */
+    float uct_reprune_factor;
+
+   
     bool uct_rave_unprune_multiply;
     
     /** Constant for decaying tree statistics.
