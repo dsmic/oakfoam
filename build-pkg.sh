@@ -10,4 +10,5 @@ games
 libboost-system-dev, libboost-filesystem-dev, libboost-thread-dev
 "
 echo "$INPUT" | sudo checkinstall --nodoc --install=no make install
+chmod a+rw oakfoam oakfoam_*.deb
 
