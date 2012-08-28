@@ -372,7 +372,7 @@ function updateStatus()
         if (score=='0')
           score='Jigo';
         info+='Result: '+score+'<br/>\n';
-        $('#status').append(' - Result: '+score);
+        $('#status').append(' - Result: '+score+' (Komi: '+komi+')');
         $.getJSON('board_scored.jsoncmd',function(data)
         {
           board_scored=data;
