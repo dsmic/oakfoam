@@ -585,7 +585,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     }
   }
 
-  if (WITH_P(params->playout_lastatari_p))
+  if (params->playout_lastatari_p>0.0) //p is used in the getLastAtariMove function
   {
     this->getLastAtariMove(settings,board,col,move,posarray);
       if (!move.isPass())
