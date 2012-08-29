@@ -26,7 +26,7 @@ mv ${NAME}/share/oakfoam/* ${NAME}/
 rm -r ${NAME}/share/
 mkdir ${NAME}/lib
 ldd oakfoam | grep boost | sed 's/^.*=> //;s/ (.*$//' | xargs -Izz cp zz ${NAME}/lib/
-sed -i '/^cd \.\./d;s/^bin=".*/LD_LIBRARY_PATH=\.\/lib/;s/$bin/\./' ${NAME}/oakfoam-web
+sed -i '/^cd \.\./d;/^bin=".*/d;s/$bin/LD_LIBRARY_PATH=\.\/lib \./' ${NAME}/oakfoam-web
 mv ${NAME}/oakfoam-web ${NAME}/run.sh
 tar -czf ${NAME}.tar.gz ${NAME}/
 rm -r ${NAME}/
