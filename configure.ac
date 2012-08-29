@@ -1,4 +1,4 @@
-AC_INIT([Oakfoam], [0.1.2], [oakfoam@gmail.com], [oakfoam])
+AC_INIT([Oakfoam], [0.1.3-dev], [oakfoam@gmail.com], [oakfoam])
 AM_INIT_AUTOMAKE([-Wall subdir-objects])
 
 AM_CONFIG_HEADER([config.h])
