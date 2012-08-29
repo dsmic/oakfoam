@@ -1,14 +1,18 @@
 #!/bin/bash
 
+function boost-static
+{
+  sed -i 's/^\(oakfoam_LDADD =\) \(.*\) \($(HOARD_LIB).*\)$/\1 -Wl,-Bstatic \2 -Wl,-Bdynamic -pthread \3/' Makefile
+}
+
 INPUT="0
 oakfoam@gmail.com
 5
 BSD
 6
 games
-10
-libboost-system-dev, libboost-filesystem-dev, libboost-thread-dev
 "
+boost-static
 echo "$INPUT" | sudo checkinstall --nodoc --install=no make install
 sudo chmod a+rw oakfoam oakfoam_*.deb
 
@@ -19,14 +23,13 @@ NAME=oakfoam_${VER}_i386
 rm -f ${NAME}.tar.gz
 mkdir ${NAME}
 $PREV_CONFIGURE --prefix=`pwd`/${NAME}
+boost-static
 make install
 mv ${NAME}/bin/* ${NAME}/
 rm -r ${NAME}/bin/
 mv ${NAME}/share/oakfoam/* ${NAME}/
 rm -r ${NAME}/share/
-mkdir ${NAME}/lib
-ldd oakfoam | grep boost | sed 's/^.*=> //;s/ (.*$//' | xargs -Izz cp zz ${NAME}/lib/
-sed -i '/^cd \.\./d;/^bin=".*/d;s/$bin/LD_LIBRARY_PATH=\.\/lib \./' ${NAME}/oakfoam-web
+sed -i '/^cd \.\./d;/^bin=".*/d;s/$bin/\./' ${NAME}/oakfoam-web
 mv ${NAME}/oakfoam-web ${NAME}/run.sh
 tar -czf ${NAME}.tar.gz ${NAME}/
 rm -r ${NAME}/
