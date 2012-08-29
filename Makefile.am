@@ -29,6 +29,7 @@ dist_pkgdata_DATA   = web.gtp other/icon.png
 install-data-hook:
 	mkdir -p $(DESTDIR)$(pkgdatadir)
 	cp -R $(srcdir)/www $(DESTDIR)$(pkgdatadir)
+	if [ -f book.dat ]; then cp book.dat $(DESTDIR)$(pkgdatadir); fi
 	echo "#!/bin/bash" > $(DESTDIR)$(bindir)/oakfoam-web
 	echo "cd \`dirname \"\$$0\"\`" >> $(DESTDIR)$(bindir)/oakfoam-web
 	echo "cd `echo $(bindir) | sed 's|^/||;s|[^/]*|\.\.|g'`$(pkgdatadir)" >> $(DESTDIR)$(bindir)/oakfoam-web
