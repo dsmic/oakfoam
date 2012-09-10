@@ -10,6 +10,8 @@ var passes;
 var threads;
 var playouts;
 var time;
+var black_captures;
+var white_captures;
 var game_over=false;
 var paper=null;
 var size_chg=true;
@@ -345,7 +347,12 @@ function updateStatus()
     info+='Game finished<br/>\n';
   else
     info+='Next to Move: '+next_color+'<br/>\n';
+
+  info+='Black prisoners: '+white_captures+'<br/>\n';
+  info+='White prisoners: '+black_captures+'<br/>\n';
+  info+='<span class="info">Note: Only area scoring is supported</span>';
   
+  var drawcaptured=false;
   if (moves>0)
   {
     stat=moves+': ';
@@ -353,10 +360,27 @@ function updateStatus()
       stat+=last_move;
     else
       stat+=last_move.split(':')[1];
+
+    if (!game_over)
+    {
+      stat+=' <span class="pullright">';
+      stat+=black_captures+'<span id="blackcaps" class="singlestone" title="Black stones captured by white"></span> ';
+      stat+=white_captures+'<span id="whitecaps" class="singlestone" title="White stones captured by black"></span>';
+      stat+='</span>';
+      drawcaptured=true;
+    }
   }
   else
     stat="Place a stone or click play to start";
   $('#status').html(stat);
+
+  if (drawcaptured)
+  {
+    bc=Raphael('blackcaps',16,16);
+    bc.circle(8,9,6).attr({fill:'r(.3,.2)#555-#000'});
+    wc=Raphael('whitecaps',16,16);
+    wc.circle(8,9,6).attr({fill:'r(.3,.2)#fff-#aaa',stroke:'#777'});
+  }
 
   if (game_over)
   {
@@ -400,6 +424,8 @@ function refreshBoard()
     threads=data['threads'];
     playouts=data['playouts'];
     time=data['time'];
+    black_captures=data['black_captures'];
+    white_captures=data['white_captures'];
 
     if (justundid)
     {

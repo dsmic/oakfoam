@@ -59,6 +59,8 @@ a:hover {
 
 #status {
   margin: 0 auto 0;
+  height: 20px;
+  line-height: 18px;
 }
 
 #board-container {
@@ -129,5 +131,14 @@ a:hover {
 
 .info {
   font-size: 8pt;
+}
+
+.singlestone {
+  vertical-align: middle;
+  padding-top: 2px;
+}
+
+.pullright {
+  float: right;
 }
 
