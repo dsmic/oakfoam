@@ -675,8 +675,8 @@ void Tree::unPruneNextChildNew()
     {
       if (this->isRoot())
       {
-        Gtp::Engine *gtpe=params->engine->getGtpEngine();
-        gtpe->getOutput()->printfDebug("wc:%s %5.3f %5.3f (%5.0f) %5.3f\n",worstChild->getMove().toString(params->board_size).c_str(),worstChild->getUnPruneFactor(),worstChild->getRAVERatio(),worstChild->getRAVEPlayouts(),worstChild->getFeatureGamma());
+      //  Gtp::Engine *gtpe=params->engine->getGtpEngine();
+      //  gtpe->getOutput()->printfDebug("wc:%s %5.3f %5.3f (%5.0f) %5.3f\n",worstChild->getMove().toString(params->board_size).c_str(),worstChild->getUnPruneFactor(),worstChild->getRAVERatio(),worstChild->getRAVEPlayouts(),worstChild->getFeatureGamma());
       }
       worstChild->setPruned(true);
       unprunedchildren--;
@@ -688,7 +688,7 @@ void Tree::unPruneNextChildNew()
 
 void Tree::unPruneNextChild()
 {
-  Gtp::Engine *gtpe=params->engine->getGtpEngine();
+//  Gtp::Engine *gtpe=params->engine->getGtpEngine();
   if (this->hasPrunedChildren())
   {
     Tree *bestchild=NULL;
@@ -723,8 +723,8 @@ void Tree::unPruneNextChild()
     {
       //fprintf(stderr,"\n[unpruning]: (%d) %s %f %f -- %f\n\n",unpruned,bestchild->getMove().toString(params->board_size).c_str(),bestfactor,bestchild->getRAVERatio (),bestchild->getUnPruneFactor ());
       bestchild->setPruned(false);
-      if (this->isRoot() && params->uct_reprune_factor>0.0)
-            gtpe->getOutput()->printfDebug("nc:%s %5.3f %5.3f (%5.0f) %5.3f\n",bestchild->getMove().toString(params->board_size).c_str(),bestchild->getUnPruneFactor(),bestchild->getRAVERatio(),bestchild->getRAVEPlayouts(),bestchild->getFeatureGamma());
+      //if (this->isRoot() && params->uct_reprune_factor>0.0)
+      //      gtpe->getOutput()->printfDebug("nc:%s %5.3f %5.3f (%5.0f) %5.3f\n",bestchild->getMove().toString(params->board_size).c_str(),bestchild->getUnPruneFactor(),bestchild->getRAVERatio(),bestchild->getRAVEPlayouts(),bestchild->getFeatureGamma());
       if ((unpruned+superkochildrenviolations)!=unprunedchildren)
         fprintf(stderr,"WARNING! unpruned running total doesn't match (%u:%u)\n",unpruned,unprunedchildren);
       bestchild->setUnprunedNum(unpruned+1);

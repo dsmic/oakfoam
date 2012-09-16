@@ -2915,6 +2915,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
       if (time->stonesLeft(col)>0)
         ss << " s:"<<time->stonesLeft(col);
     }
+    //this was added because of a strange bug crashing some times in the following lines
+    //I did not really found the problem?!
     fprintf(stderr,"debug %f\n",scoresd);
     if (!time->isNoTiming() || params->early_stop_occured)
       ss << " plts:"<<totalplayouts;
