@@ -35,7 +35,8 @@ Features::Features(Parameters *prms) : params(prms)
     gammas_cfgsecondlastdist[i]=1.0;
   circpatternsize=0;
   circdict=new Pattern::CircularDictionary();
-  
+  num_circmoves=0;
+  num_circmoves_not=0;
 }
 
 Features::~Features()
@@ -293,15 +294,16 @@ float Features::getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist
   g*=this->getFeatureGamma(Features::CFGSECONDLASTDIST,this->matchFeatureClass(Features::CFGSECONDLASTDIST,board,cfglastdist,cfgsecondlastdist,move,false));
   g*=this->getFeatureGamma(Features::PATTERN3X3,this->matchFeatureClass(Features::PATTERN3X3,board,cfglastdist,cfgsecondlastdist,move,false));
 
-  if (params->test_p1>0.0)
+  if (params->uct_factor_circpattern>0.0)
   {
     Pattern::Circular pattcirc=Pattern::Circular(circdict,board,move.getPosition(),circpatternsize);
     if (move.getColor()==Go::WHITE)
             pattcirc.invert();
-    if (this->isCircPattern(pattcirc.toString(circdict)))
+    pattcirc.convertToSmallestEquivalent(circdict);
+    if (this->valueCircPattern(pattcirc.toString(circdict))>0.0)
     {
      //fprintf(stderr,"found pattern %f %s (stones %d)\n",params->test_p1,pattcirc.toString(circdict).c_str(),pattcirc.countStones(circdict));
-     g*=1+params->test_p1*pow(1.0+pattcirc.countStones (circdict),params->test_p2);
+     g*=1+params->uct_factor_circpattern*this->valueCircPattern(pattcirc.toString(circdict));
     }
   }
   return g;
@@ -436,7 +438,7 @@ bool Features::loadCircFile(std::string filename,int numlines)
   
   if (!fin)
     return false;
-  
+  num_circmoves=0;
   std::string line;
   circpatterns.clear();
   circpatternsize=0;
@@ -445,16 +447,47 @@ bool Features::loadCircFile(std::string filename,int numlines)
   {
     int strpos = line.find(":");
     int numpos = line.find(" ");
+    long int timesfound = atol(line.substr(0,numpos).c_str());
     circpatternsize=atoi(line.substr(numpos,strpos).c_str());
-    circpatterns.insert(line.substr(strpos+1));
+    circpatterns.insert(std::make_pair(line.substr(strpos+1),timesfound));
     n++;
-    fprintf(stderr,"%d %s %d\n",n,line.substr(strpos+1).c_str(),circpatternsize);
+    num_circmoves+=timesfound;
+    fprintf(stderr,"%d %s %d %ld\n",n,line.substr(strpos+1).c_str(),circpatternsize,timesfound);
   }
   
   fin.close();
   
   return true;
 }
+
+bool Features::loadCircFileNot(std::string filename,int numlines)
+{
+  std::ifstream fin(filename.c_str());
+  
+  if (!fin)
+    return false;
+  num_circmoves_not=0;
+  std::string line;
+  circpatterns.clear();
+  circpatternsize=0;
+  int n=0;
+  while (std::getline(fin,line)&&(numlines==0||n<numlines))
+  {
+    int strpos = line.find(":");
+    int numpos = line.find(" ");
+    long int timesfound = atol(line.substr(0,numpos).c_str());
+    circpatternsize=atoi(line.substr(numpos,strpos).c_str());
+    circpatternsnot.insert(std::make_pair(line.substr(strpos+1),timesfound));
+    n++;
+    num_circmoves_not+=timesfound;
+    fprintf(stderr,"%d %s %d %ld\n",n,line.substr(strpos+1).c_str(),circpatternsize,timesfound);
+  }
+  
+  fin.close();
+  
+  return true;
+}
+
 bool Features::loadGammaString(std::string lines)
 {
   std::istringstream iss(lines);
@@ -754,6 +787,26 @@ void Features::computeCFGDist(Go::Board *board, Go::ObjectBoard<int> **cfglastdi
     *cfgsecondlastdist=board->getCFGFrom(board->getSecondLastMove().getPosition(),CFGSECONDLASTDIST_LEVELS);
 }
 
+
+float Features::valueCircPattern(std::string circpattern) const
+{
+  //strip the patternsize
+  int strpos = circpattern.find(":");
+    
+// fprintf(stderr,"%s %d\n",circpattern.substr(strpos+1).c_str(),circpatterns.count(circpattern.substr(strpos+1)));
+  //in the not played database the circ pattern is not contained, therefore if it is played
+  //it is set to factor 1 (count allways gives 1 or 0 in map)
+  if (!circpatternsnot.count(circpattern.substr(strpos+1)))
+    return circpatterns.count(circpattern.substr(strpos+1));
+  if (!circpatterns.count(circpattern.substr(strpos+1)))
+    return 0;
+  //both exist
+  long int num_played=circpatterns.find(circpattern.substr(strpos+1))->second;
+  long int num_not_played=circpatternsnot.find(circpattern.substr(strpos+1))->second;
+  float ratio=float(num_played)/num_not_played;
+  if (ratio>1.0) ratio=1.0;
+  return ratio;
+}
 
 bool Features::isCircPattern(std::string circpattern) const
 {

@@ -156,6 +156,7 @@ class Parameters
      */
     float playout_mercy_rule_factor;
 
+    /*
     float test_p1;
     float test_p2;
     float test_p3;
@@ -166,7 +167,9 @@ class Parameters
     float test_p8;
     float test_p9;
     float test_p10;
-        
+    */
+
+    
     /** Skip all playout heuristics with this probability.
      * Set to zero to disable.
      */
@@ -354,6 +357,7 @@ class Parameters
      * @see uct_rave_unprune_factor
      */
     float uct_reprune_factor;
+    float uct_factor_circpattern;
 
    
     bool uct_rave_unprune_multiply;
@@ -490,7 +494,7 @@ class Parameters
     /** Whether to output feature competitions after each move.
      * Used for training feature gammas.
      */
-    bool features_output_competitions;
+    float features_output_competitions;
     /** Whether to output feature competitions in a form for the MM tool.
      * @see features_output_competitions
      */

@@ -717,9 +717,9 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     if (board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p,passes))
     {
       Pattern::Circular pattcirc=Pattern::Circular(params->engine->getCircDict(),board,p,params->engine->getCircSize());
-      pattcirc.convertToSmallestEquivalent(params->engine->getCircDict());
       if (col==Go::WHITE)
         pattcirc.invert();
+      pattcirc.convertToSmallestEquivalent(params->engine->getCircDict());
       if (params->engine->isCircPattern(pattcirc.toString(params->engine->getCircDict())))
       {
         move=Go::Move(col,p);
@@ -1154,9 +1154,9 @@ void Playout::getFillBoardMove(Worker::Settings *settings, Go::Board *board, Go:
       if (params->playout_circreplace_enabled)
       {
         Pattern::Circular pattcirc=Pattern::Circular(params->engine->getCircDict(),board,p,params->engine->getCircSize());
-        pattcirc.convertToSmallestEquivalent(params->engine->getCircDict());
         if (col==Go::WHITE)
           pattcirc.invert();
+        pattcirc.convertToSmallestEquivalent(params->engine->getCircDict());
         if (params->engine->isCircPattern(pattcirc.toString(params->engine->getCircDict())))
         {
           patternmoves[patternmovescount]=p;
@@ -1168,9 +1168,9 @@ void Playout::getFillBoardMove(Worker::Settings *settings, Go::Board *board, Go:
           if (board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p,passes))
           {
             Pattern::Circular pattcirc=Pattern::Circular(params->engine->getCircDict(),board,p,params->engine->getCircSize());
-            pattcirc.convertToSmallestEquivalent(params->engine->getCircDict());
             if (col==Go::WHITE)
               pattcirc.invert();
+            pattcirc.convertToSmallestEquivalent(params->engine->getCircDict());
             if (params->engine->isCircPattern(pattcirc.toString(params->engine->getCircDict())))
             {
               move=Go::Move(col,p);

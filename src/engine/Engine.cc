@@ -105,6 +105,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","playout_mercy_rule_factor",&(params->playout_mercy_rule_factor),PLAYOUT_MERCY_RULE_FACTOR);
   params->addParameter("playout","playout_fill_weak_eyes",&(params->playout_fill_weak_eyes),PLAYOUT_FILL_WEAK_EYES);
   
+  /*
   params->addParameter("playout","test_p1",&(params->test_p1),0.0);
   params->addParameter("playout","test_p2",&(params->test_p2),0.0);
   params->addParameter("playout","test_p3",&(params->test_p3),0.0);
@@ -115,7 +116,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","test_p8",&(params->test_p8),0.0);
   params->addParameter("playout","test_p9",&(params->test_p9),0.0);
   params->addParameter("playout","test_p10",&(params->test_p10),0.0);
-
+  */
+  
   params->addParameter("tree","ucb_c",&(params->ucb_c),UCB_C);
   params->addParameter("tree","ucb_init",&(params->ucb_init),UCB_INIT);
 
@@ -162,6 +164,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("tree","uct_rave_unprune_decay",&(params->uct_rave_unprune_decay),UCT_RAVE_UNPRUNE_DECAY);
   params->addParameter("tree","uct_rave_unprune_multiply",&(params->uct_rave_unprune_multiply),UCT_RAVE_UNPRUNE_MULTIPLY);
   params->addParameter("tree","uct_reprune_factor",&(params->uct_reprune_factor),UCT_REPRUNE_FACTOR);
+  params->addParameter("tree","uct_factor_circpattern",&(params->uct_factor_circpattern),UCT_FACTOR_CIRCPATTERN);
   
   params->addParameter("tree","uct_slow_update_interval",&(params->uct_slow_update_interval),UCT_SLOW_UPDATE_INTERVAL);
   params->uct_slow_update_last=0;
@@ -213,7 +216,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("other","interrupts_enabled",&(params->interrupts_enabled),INTERRUPTS_ENABLED,&Engine::updateParameterWrapper,this);
   
   params->addParameter("other","features_only_small",&(params->features_only_small),false);
-  params->addParameter("other","features_output_competitions",&(params->features_output_competitions),false);
+  params->addParameter("other","features_output_competitions",&(params->features_output_competitions),0.0);
   params->addParameter("other","features_output_competitions_mmstyle",&(params->features_output_competitions_mmstyle),false);
   params->addParameter("other","features_ordered_comparison",&(params->features_ordered_comparison),false);
   
@@ -465,11 +468,13 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("listallpatterns",this,&Engine::gtpListAllPatterns);
   gtpe->addFunctionCommand("loadfeaturegammas",this,&Engine::gtpLoadFeatureGammas);
   gtpe->addFunctionCommand("loadcircpatterns",this,&Engine::gtpLoadCircPatterns);
+  gtpe->addFunctionCommand("loadcircpatternsnot",this,&Engine::gtpLoadCircPatternsNot);
   gtpe->addFunctionCommand("listfeatureids",this,&Engine::gtpListFeatureIds);
   gtpe->addFunctionCommand("showcfgfrom",this,&Engine::gtpShowCFGFrom);
   gtpe->addFunctionCommand("showcircdistfrom",this,&Engine::gtpShowCircDistFrom);
   gtpe->addFunctionCommand("listcircpatternsat",this,&Engine::gtpListCircularPatternsAt);
   gtpe->addFunctionCommand("listcircpatternsatsize",this,&Engine::gtpListCircularPatternsAtSize);
+  gtpe->addFunctionCommand("listcircpatternsatsizenot",this,&Engine::gtpListCircularPatternsAtSizeNot);
   gtpe->addFunctionCommand("listallcircularpatterns",this,&Engine::gtpListAllCircularPatterns);
   gtpe->addFunctionCommand("listadjacentgroupsof",this,&Engine::gtpListAdjacentGroupsOf);
   
@@ -1795,6 +1800,47 @@ void Engine::gtpLoadCircPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command
   }
 }
 
+void Engine::gtpLoadCircPatternsNot(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=2)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("need 2 arg (filename and number of lines)");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  std::string filename=cmd->getStringArg(0);
+  int numlines=cmd->getIntArg(1);
+  
+  if (me->features==NULL)
+    me->features=new Features(me->params);
+  bool success=me->features->loadCircFileNot(filename,numlines);
+  
+  if (success)
+  {
+    #ifdef HAVE_MPI
+      if (me->mpirank==0)
+      {
+        me->mpiBroadcastCommand(MPICMD_LOADFEATUREGAMMAS);
+        me->mpiBroadcastString(filename);
+      }
+    #endif
+    
+    gtpe->getOutput()->startResponse(cmd);
+    gtpe->getOutput()->printf("loaded circpatterns file: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+  else
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("error loading circpatterns file: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+}
+
 void Engine::gtpListFeatureIds(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
@@ -1951,9 +1997,65 @@ void Engine::gtpListCircularPatternsAtSize(void *instance, Gtp::Engine* gtpe, Gt
   
   int pos=Go::Position::xy2pos(vert.x,vert.y,me->boardsize);
   Pattern::Circular pattcirc=Pattern::Circular(me->getCircDict(),me->currentboard,pos,PATTERN_CIRC_MAXSIZE);
-  pattcirc.convertToSmallestEquivalent(me->getCircDict());
   if (gtpcol==Gtp::WHITE)
     pattcirc.invert();
+  pattcirc.convertToSmallestEquivalent(me->getCircDict());
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printf(" %s\n",pattcirc.getSubPattern(me->getCircDict(),s).toString(me->getCircDict()).c_str());
+  gtpe->getOutput()->endResponse(true);
+}
+
+void Engine::gtpListCircularPatternsAtSizeNot(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=3)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("vertex size and color is required");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  Gtp::Vertex vert = cmd->getVertexArg(0);
+  int s=cmd->getIntArg(1);
+  Gtp::Color gtpcol = cmd->getColorArg(2);
+  
+  if (vert.x==-3 && vert.y==-3)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("invalid vertex");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  int pos=Go::Position::xy2pos(vert.x,vert.y,me->boardsize);
+  fprintf(stderr,"played at %s\n",Go::Position::pos2string(pos,me->boardsize).c_str());
+  
+  Go::BitBoard *validmoves=me->currentboard->getValidMoves(gtpcol==Gtp::BLACK?Go::BLACK:Go::WHITE);
+  Random rand;
+  rand.makeSeed ();
+  int r=rand.getRandomInt(me->currentboard->getPositionMax());
+  int d=rand.getRandomInt(1)*2-1;
+  for (int p=0;p<me->currentboard->getPositionMax();p++)
+  {
+    int rp=(r+p*d);
+    if (rp<0) rp+=me->currentboard->getPositionMax();
+    if (rp>=me->currentboard->getPositionMax()) rp-=me->currentboard->getPositionMax();
+    if (pos!=rp && validmoves->get(rp))
+    {
+      pos=rp;
+      break;
+    }
+  }
+
+  fprintf(stderr,"circ pattern at %s\n",Go::Position::pos2string(pos,me->boardsize).c_str());
+          
+  Pattern::Circular pattcirc=Pattern::Circular(me->getCircDict(),me->currentboard,pos,PATTERN_CIRC_MAXSIZE);
+  if (gtpcol==Gtp::WHITE)
+    pattcirc.invert();
+  pattcirc.convertToSmallestEquivalent(me->getCircDict());
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printf(" %s\n",pattcirc.getSubPattern(me->getCircDict(),s).toString(me->getCircDict()).c_str());
@@ -2873,8 +2975,8 @@ void Engine::makeMove(Go::Move move)
       this->mpiBroadcastCommand(MPICMD_MAKEMOVE,&tmp1,&tmp2);
     );
   #endif
-  
-  if (params->features_output_competitions)
+#define WITH_P(A) (A>=1.0 || (A>0 && threadpool->getThreadZero()->getSettings()->rand->getRandomReal()<A))  
+  if (WITH_P(params->features_output_competitions))
   {
     bool isawinner=true;
     Go::ObjectBoard<int> *cfglastdist=NULL;

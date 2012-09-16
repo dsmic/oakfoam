@@ -1,0 +1,22 @@
+--------------------------------------
+- Scripts for Features
+--------------------------------------
+
+requirements:
+  GoGui (http://gogui.sourceforge.net)
+  MM tool by Remi Coulom (see mm-fetch.sh)
+
+example usage:
+  1. Harvest circ patterns (played) with example size of 13 from a collection of games:
+    $ ls sgfs/*.sgf | harvest-collection-circular-played-parallel.sh 13 > patt.dat
+  2. Harvest circ patterns (not played) with example size of 13 from a collection of games:
+    $ ls sgfs/*.sgf | harvest-collection-circular-not-played-parallel.sh 13 > patt.dat
+
+(tmp files may stay in the directory!)
+
+this pattern databases have to be loaded into oakfoam using
+loadcircpatterns /home/detlef/oakfoam-hg/oakfoam/scripts/features/pattern9_100000games_not_played 30000
+
+loadcircpatternsnot /home/detlef/oakfoam-hg/oakfoam/scripts/features/pattern9_100000games_not_played 100000
+
+where 30000 and 100000 give the number of lines used from the database.

@@ -49,6 +49,7 @@
 #define UCT_RAVE_UNPRUNE_FACTOR 0.00
 #define UCT_RAVE_UNPRUNE_DECAY 0.00
 #define UCT_REPRUNE_FACTOR 0.00
+#define UCT_FACTOR_CIRCPATTERN 0.00
 #define UCT_RAVE_UNPRUNE_MULTIPLY false
 
 #define UCT_DECAY_ALPHA 1
@@ -248,10 +249,12 @@ class Engine
     /** Output a playout from the current position to a SGF file. */
     bool writeSGF(std::string filename, Go::Board *board, std::list<Go::Move> playoutmoves, std::list<std::string> *movereasons=NULL);
 
+    float valueCircPattern(std::string circpattern) {return features->valueCircPattern(circpattern);}
+
     bool isCircPattern(std::string circpattern) {return features->isCircPattern(circpattern);}
 
     Pattern::CircularDictionary *getCircDict() {return features->circdict;}
-    int getCircSize() {return features->circpatternsize;}
+    int getCircSize() {return features->getCircSize();}
     void StatisticsPlus(int i) {statistics[i]++;}
     void ClearStatistics() {int i; for (i=0;i<StatisticsNum;i++) statistics[i]=0;}
     long StatisticsSum() {int i; long sum=0; for (i=0;i<StatisticsNum;i++) sum+=statistics[i]; return sum;}
@@ -280,7 +283,7 @@ class Engine
     Worker::Pool *threadpool;
     Go::TerritoryMap *territorymap;
     long statistics[StatisticsNum];
-
+    
     enum MovePolicy
     {
       MP_PLAYOUT,
@@ -419,11 +422,13 @@ class Engine
     static void gtpListAllPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpLoadFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpLoadCircPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpLoadCircPatternsNot(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpListFeatureIds(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowCFGFrom(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowCircDistFrom(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpListCircularPatternsAt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpListCircularPatternsAtSize(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpListCircularPatternsAtSizeNot(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpListAllCircularPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpListAdjacentGroupsOf(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     

@@ -743,6 +743,7 @@ class Features
     /** Load a file of gamma values. */
     bool loadGammaFile(std::string filename);
     bool loadCircFile(std::string filename,int numlines);
+    bool loadCircFileNot(std::string filename,int numlines);
     /** Load a number of lines of gamma values. */
     bool loadGammaString(std::string lines);
     /** Load the default gamma values. */
@@ -751,10 +752,10 @@ class Features
     /** Return the CFG distances for the last and second last moves on a board. */
     void computeCFGDist(Go::Board *board, Go::ObjectBoard<int> **cfglastdist, Go::ObjectBoard<int> **cfgsecondlastdist);
 
-    std::set<std::string> circpatterns;
-    int circpatternsize;
     Pattern::CircularDictionary *circdict; 
     bool isCircPattern(std::string circpattern) const;
+    float valueCircPattern(std::string circpattern) const;
+    int getCircSize () {return circpatternsize;}
     
   private:
     Parameters *const params;
@@ -774,6 +775,11 @@ class Features
     float *getStandardGamma(Features::FeatureClass featclass) const;
     void updatePatternIds();
 
+    std::map<std::string,long int> circpatterns;
+    std::map<std::string,long int> circpatternsnot;
+    int circpatternsize;
+    long int num_circmoves;
+    long int num_circmoves_not;
 };
 
 #endif
