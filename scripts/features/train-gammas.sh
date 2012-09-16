@@ -43,7 +43,8 @@ ${MMFEATURES}
 
 echo "$MMHEADER" > $TEMPMM
 
-echo -e "loadfeaturegammas ${INITIALPATTERNGAMMAS}\nparam features_output_competitions 0.1\nparam features_output_competitions_mmstyle 1\n${SMALLONLY}" > $TEMPGTP
+#here is a probability to introduce (1.0) it says with which probability a move is taken for the data base. set to 1 for original behaviour
+echo -e "loadfeaturegammas ${INITIALPATTERNGAMMAS}\nparam features_output_competitions 1.0\nparam features_output_competitions_mmstyle 1\n${SMALLONLY}" > $TEMPGTP
 
 echo "[`date +%F_%T`] extracting game names..." >&2
 i=0
