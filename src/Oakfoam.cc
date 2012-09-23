@@ -1,7 +1,7 @@
 #include "Oakfoam.h"
 
-#include <config.h>
-#include <build.h>
+#include "config.h"
+#include "build.h"
 
 Oakfoam::Oakfoam()
 {

@@ -1,7 +1,7 @@
 #ifndef DEF_OAKFOAM_PARAMETERS_H
 #define DEF_OAKFOAM_PARAMETERS_H
 
-#include <config.h>
+#include "config.h"
 #include <string>
 #include <list>
 #include <boost/thread/thread.hpp>

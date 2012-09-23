@@ -4,7 +4,7 @@
 #define TREE_TERMINAL_URGENCY 100
 // must be greater than 1+max(bias)
 
-#include <config.h>
+#include "config.h"
 #include <list>
 #include <string>
 #include <boost/thread/mutex.hpp>

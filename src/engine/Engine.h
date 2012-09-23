@@ -157,7 +157,7 @@
 #define MPI_UPDATE_DEPTH 3
 #define MPI_UPDATE_THRESHOLD 0.05
 
-#include <config.h>
+#include "config.h"
 #include <string>
 #include <list>
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -259,7 +259,7 @@ class Engine
     void ClearStatistics() {int i; for (i=0;i<StatisticsNum;i++) statistics[i]=0;}
     long StatisticsSum() {int i; long sum=0; for (i=0;i<StatisticsNum;i++) sum+=statistics[i]; return sum;}
     long GetStatistics(int i) {return statistics[i]*1000/(StatisticsSum()+1);} //+1 avoid crash
-    Go::TerritoryMap *getTerritoryMap() {return territorymap;}
+    Go::TerritoryMap *getTerritoryMap() const {return territorymap;}
     
   private:
     Gtp::Engine *gtpe;
