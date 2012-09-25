@@ -9,6 +9,7 @@ syntax: glob
 syntax: regexp
 ^oakfoam$
 ^oakfoam.exe$
+^oakfoam_.*\.(tar\.gz|zip|exe|deb)$
 ^Makefile$
 ^config\..*$
 ^stamp-h1$

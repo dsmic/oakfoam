@@ -254,7 +254,7 @@ oakfoam_SOURCES = build.h \
 oakfoam_CPPFLAGS = $(BOOST_CPPFLAGS) $(MPI_CPPFLAGS)
 oakfoam_LDFLAGS = $(BOOST_LDFLAGS) $(MPI_LDFLAGS) $(HOARD_LDFLAGS)
 oakfoam_LDADD = $(BOOST_SYSTEM_LIB) $(BOOST_THREAD_LIB) $(BOOST_FILESYSTEM_LIB) $(BOOST_ASIO_LIB) $(HOARD_LIB)
-dist_noinst_SCRIPTS = autogen.sh build-pkg.sh
+dist_noinst_SCRIPTS = autogen.sh build-linux.sh
 EXTRA_DIST = regression/sgf regression/*.sh regression/*.suite regression/*.tst \
                       scripts/*/README scripts/*/*.sh scripts/*/*.awk scripts/*/*.sed scripts/*/*.pl \
                       docs/Doxyfile www
@@ -1048,6 +1048,7 @@ uninstall-am: uninstall-binPROGRAMS uninstall-dist_pkgdataDATA \
 install-data-hook:
 	mkdir -p $(DESTDIR)$(pkgdatadir)
 	cp -R $(srcdir)/www $(DESTDIR)$(pkgdatadir)
+	if [ -f book.dat ]; then cp book.dat $(DESTDIR)$(pkgdatadir); fi
 	echo "#!/bin/bash" > $(DESTDIR)$(bindir)/oakfoam-web
 	echo "cd \`dirname \"\$$0\"\`" >> $(DESTDIR)$(bindir)/oakfoam-web
 	echo "cd `echo $(bindir) | sed 's|^/||;s|[^/]*|\.\.|g'`$(pkgdatadir)" >> $(DESTDIR)$(bindir)/oakfoam-web

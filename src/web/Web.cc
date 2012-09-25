@@ -278,7 +278,9 @@ void Web::respondJson(socket_ptr sock, std::string uri)
     out<<"\"passes\": "<<engine->getCurrentBoard()->getPassesPlayed()<<",\n";
     out<<"\"threads\": "<<engine->getParams()->thread_count<<",\n";
     out<<"\"playouts\": "<<engine->getParams()->playouts_per_move<<",\n";
-    out<<"\"time\": "<<engine->getParams()->time_move_max<<"\n"; // no 'trailing' comma
+    out<<"\"time\": "<<engine->getParams()->time_move_max<<",\n";
+    out<<"\"black_captures\": "<<engine->getCurrentBoard()->getStoneCapturesOf(Go::BLACK)<<",\n";
+    out<<"\"white_captures\": "<<engine->getCurrentBoard()->getStoneCapturesOf(Go::WHITE)<<"\n"; // no 'trailing' comma
   }
   else if (cmd=="board_pos")
   {
