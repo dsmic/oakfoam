@@ -14,6 +14,7 @@
 
 #include <string>
 #include <set>
+#include <map>
 
 const std::string FEATURES_DEFAULT=
   "pass:1 0.950848 \n"

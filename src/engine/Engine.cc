@@ -672,7 +672,6 @@ void Engine::gtpPlay(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 void Engine::gtpGenMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
-  me->ClearStatistics();
   
   if (cmd->numArgs()!=1)
   {
@@ -2736,6 +2735,8 @@ void Engine::gtpTimeLeft(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 
 void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
 {
+  clearStatistics();
+
   if (params->book_use)
   {
     std::list<Go::Move> bookmoves=book->getMoves(boardsize,movehistory);
@@ -2847,10 +2848,10 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     }
     ssun<<")";
     ssun<<"st:(";
-    for (int nn=0;nn<StatisticsNum;nn++)
+    for (int nn=0;nn<STATISTICS_NUM;nn++)
     {
       ssun<<(nn!=0?",":"");
-      ssun<<GetStatistics (nn);
+      ssun<<getStatistics (nn);
     }
     ssun<<")";
     Tree *besttree=movetree->getRobustChild();
@@ -2917,7 +2918,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     }
     //this was added because of a strange bug crashing some times in the following lines
     //I did not really found the problem?!
-    fprintf(stderr,"debug %f\n",scoresd);
+    //fprintf(stderr,"debug %f\n",scoresd);
     if (!time->isNoTiming() || params->early_stop_occured)
       ss << " plts:"<<totalplayouts;
     ss << " ppms:"<<std::setprecision(2)<<playouts_per_milli;

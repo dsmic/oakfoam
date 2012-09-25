@@ -493,18 +493,16 @@ Pattern::Circular::Circular(Pattern::CircularDictionary *dict, const Go::Board *
 int Pattern::Circular::countStones(Pattern::CircularDictionary *dict)
 {
   int numStones=0;
-  int base=0;
   int l=dict->getBaseOffset(size+1);
      
   for (int i=0;i<l;i++)
   {
-    if (this->getColor(base)==Go::WHITE) numStones++;
-    if (this->getColor(base)==Go::BLACK) numStones++;
-    base++;
+    if (this->getColor(i)==Go::WHITE) numStones++;
+    if (this->getColor(i)==Go::BLACK) numStones++;
   }
-return numStones;
-}
 
+  return numStones;
+}
       
 int Pattern::Circular::hashColor(Go::Color col)
 {
@@ -540,6 +538,7 @@ Go::Color Pattern::Circular::hash2Color(int hash)
   }
 
 }
+
 void Pattern::Circular::initColor(int offset, Go::Color col)
 {
   int part=offset/(32/2);
@@ -557,8 +556,6 @@ Go::Color Pattern::Circular::getColor(int offset)
 //  fprintf(stderr,"%x %x\n",hash[part],tmp & 0x0003);
   return this->hash2Color(tmp & 0x0003);
 }
-
-
 
 void Pattern::Circular::resetColor(int offset)
 {
