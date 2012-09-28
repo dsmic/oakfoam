@@ -186,26 +186,6 @@
 class Engine
 {
   public:
-
-    //contains the order of the statistics printed after the move
-    //with usefull names
-    enum StatNames
-    {
-      LASTATARI,    //must start with 0, should be standard conform
-      LASTCAPTURE,
-      LAST2LIBATARI,
-      NAKED,
-      PATTERN,
-      ANYCAPTURE,
-      CIRCPATTERN_QUICK,
-      FILL_BOARD,
-      RANDOM_QUICK,
-      RANDOM,
-      FILL_WEAK_EYE,
-      PASS,
-      REPLACE_WITH_CIRC,
-      STATISTICS_NUM     //is set to the number of entries !!
-    };
     /** Create an engine.
      * @param ge GTP engine to use.
      * @param ln The long name of the engine.
@@ -273,6 +253,25 @@ class Engine
     float valueCircPattern(std::string circpattern) {return features->valueCircPattern(circpattern);}
 
     bool isCircPattern(std::string circpattern) {return features->isCircPattern(circpattern);}
+
+    /** Names for playout move statistics. */
+    enum StatNames
+    {
+      LASTATARI,
+      LASTCAPTURE,
+      LAST2LIBATARI,
+      NAKED,
+      PATTERN,
+      ANYCAPTURE,
+      CIRCPATTERN_QUICK,
+      FILL_BOARD,
+      RANDOM_QUICK,
+      RANDOM,
+      FILL_WEAK_EYE,
+      PASS,
+      REPLACE_WITH_CIRC,
+      STATISTICS_NUM // number of entries
+    };
 
     Pattern::CircularDictionary *getCircDict() {return features->circdict;}
     int getCircSize() {return features->getCircSize();}
