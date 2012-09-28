@@ -595,7 +595,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
         gtpe->getOutput()->printfDebug("[playoutmove]: %s lastatari\n",move.toString(board->getSize()).c_str());
       if (reason!=NULL)
         *reason="lastatari";
-      params->engine->statisticsPlus(0);
+      params->engine->statisticsPlus(Engine::LASTATARI);
       return;
     }
   }
@@ -609,7 +609,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
         gtpe->getOutput()->printfDebug("[playoutmove]: %s lastcapture\n",move.toString(board->getSize()).c_str());
       if (reason!=NULL)
         *reason="lastcapture";
-      params->engine->statisticsPlus(1);
+      params->engine->statisticsPlus(Engine::LASTCAPTURE);
       return;
     }
   }
@@ -623,7 +623,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
         gtpe->getOutput()->printfDebug("[playoutmove]: %s last2libatari\n",move.toString(board->getSize()).c_str());
       if (reason!=NULL)
         *reason="last2libatari";
-      params->engine->statisticsPlus(2);
+      params->engine->statisticsPlus(Engine::LAST2LIBATARI);
       return;
     }
   }
@@ -650,7 +650,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
         gtpe->getOutput()->printfDebug("[playoutmove]: %s nakade\n",move.toString(board->getSize()).c_str());
       if (reason!=NULL)
         *reason="nakade";
-      params->engine->statisticsPlus(3);
+      params->engine->statisticsPlus(Engine::NAKED);
       return;
     }
   }
@@ -691,7 +691,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
         gtpe->getOutput()->printfDebug("[playoutmove]: %s pattern\n",move.toString(board->getSize()).c_str());
       if (reason!=NULL)
       	*reason="pattern";
-      params->engine->statisticsPlus(4);
+      params->engine->statisticsPlus(Engine::PATTERN);
       return;
     }
   }
@@ -705,7 +705,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
         gtpe->getOutput()->printfDebug("[playoutmove]: %s anycapture\n",move.toString(board->getSize()).c_str());
       if (reason!=NULL)
         *reason="anycapture";
-      params->engine->statisticsPlus(5);
+      params->engine->statisticsPlus(Engine::ANYCAPTURE);
       return;
     }
   }
@@ -727,7 +727,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
           gtpe->getOutput()->printfDebug("[playoutmove]: %s circpattern quick-pick %s\n",move.toString(board->getSize()).c_str(),pattcirc.toString(params->engine->getCircDict()).c_str());
         if (reason!=NULL)
           *reason="circpattern quick-pick";
-        params->engine->statisticsPlus(6);
+        params->engine->statisticsPlus(Engine::CIRCPATTERN_QUICK);
         return;
       }
     }
@@ -833,7 +833,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
         gtpe->getOutput()->printfDebug("[playoutmove]: %s random quick-pick\n",move.toString(board->getSize()).c_str());
       if (reason!=NULL)
         *reason="random quick-pick";
-      params->engine->statisticsPlus(8);
+      params->engine->statisticsPlus(Engine::RANDOM_QUICK);
       return;
     }
   }
@@ -877,7 +877,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
         gtpe->getOutput()->printfDebug("[playoutmove]: %s random\n",move.toString(board->getSize()).c_str());
       if (reason!=NULL)
         *reason="random";
-      params->engine->statisticsPlus(9);
+      params->engine->statisticsPlus(Engine::RANDOM);
       return;
     }
   }
@@ -897,13 +897,13 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
           gtpe->getOutput()->printfDebug("[playoutmove]: %s fill weak eye\n",move.toString(board->getSize()).c_str());
         if (reason!=NULL)
           *reason="fill weak eye";
-        params->engine->statisticsPlus(10);
+        params->engine->statisticsPlus(Engine::FILL_WEAK_EYE);
         return;
       }
     }
   }
 
-  params->engine->statisticsPlus(11);
+  params->engine->statisticsPlus(Engine::PASS);
   move=Go::Move(col,Go::Move::PASS);
   if (params->debug_on)
     gtpe->getOutput()->printfDebug("[playoutmove]: %s pass\n",move.toString(board->getSize()).c_str());
@@ -1188,10 +1188,10 @@ void Playout::getFillBoardMove(Worker::Settings *settings, Go::Board *board, Go:
           gtpe->getOutput()->printfDebug("[playoutmove]: %s circpattern replace fillboard \n");
         if (reason!=NULL)
           *reason="circpattern replace fillboard";
-        params->engine->statisticsPlus(12);
+        params->engine->statisticsPlus(Engine::REPLACE_WITH_CIRC);
         return;        
       }
-      params->engine->statisticsPlus(7);
+      params->engine->statisticsPlus(Engine::FILL_BOARD);
       return;
     }
   }

@@ -149,8 +149,6 @@
 
 #define ZOBRIST_HASH_SEED 0x713df891
 
-#define STATISTICS_NUM 13
-
 #define MPI_STRING_MAX 255
 #define MPI_HASHTABLE_SIZE 65536
 #define MPI_UPDATE_PERIOD 0.1
@@ -181,10 +179,33 @@
   class Web;
 #endif
 
+
+  
+
 /** Core Engine. */
 class Engine
 {
   public:
+
+    //contains the order of the statistics printed after the move
+    //with usefull names
+    enum StatNames
+    {
+      LASTATARI,    //must start with 0, should be standard conform
+      LASTCAPTURE,
+      LAST2LIBATARI,
+      NAKED,
+      PATTERN,
+      ANYCAPTURE,
+      CIRCPATTERN_QUICK,
+      FILL_BOARD,
+      RANDOM_QUICK,
+      RANDOM,
+      FILL_WEAK_EYE,
+      PASS,
+      REPLACE_WITH_CIRC,
+      STATISTICS_NUM     //is set to the number of entries !!
+    };
     /** Create an engine.
      * @param ge GTP engine to use.
      * @param ln The long name of the engine.
@@ -255,7 +276,7 @@ class Engine
 
     Pattern::CircularDictionary *getCircDict() {return features->circdict;}
     int getCircSize() {return features->getCircSize();}
-    void statisticsPlus(int i) {statistics[i]++;}
+    void statisticsPlus(StatNames i) {statistics[i]++;}
     void clearStatistics() {int i; for (i=0;i<STATISTICS_NUM;i++) statistics[i]=0;}
     long statisticsSum() {int i; long sum=0; for (i=0;i<STATISTICS_NUM;i++) sum+=statistics[i]; return sum;}
     long getStatistics(int i) {return statistics[i]*1000/(statisticsSum()+1);} //+1 avoid crash
