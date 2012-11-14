@@ -45,10 +45,10 @@ scp oakfoam-dev.tar.gz ${HOST}: 2>&1 >> deploy.log
 check $?
 
 init "Building"
-ssh ${HOST} "tar xzf oakfoam-dev.tar.gz && cd oakfoam-dev/ && (make || (./configure && make)) && cd .. && ln -sf oakfoam-dev/oakfoam" 2>&1 >> deploy.log
+ssh ${HOST} "tar xzf oakfoam-dev.tar.gz && cd oakfoam-dev/ && (make || (./configure && make)) && cd .. && (ln -s oakfoam-dev/oakfoam 2>/dev/null || true)" 2>&1 >> deploy.log
 check $?
 
-init "Checking version"
+init "Checking default version"
 VERSION=`ssh ${HOST} "echo 'describeengine' | ./oakfoam --nobook" 2>> deploy.log | head -n1 | sed 's/[^:]*: //'`
 check $?
 echo -en "Version:"
