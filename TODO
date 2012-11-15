@@ -5,7 +5,6 @@ Now: (current focus)
   add debug levels
   change uct_* params to tree_*
   option to output games to sgf with explanations (see gomill-savesgf)
-  output best move at intervals
   add random chance of not using a playout heuristic (per heuristic)
   weighted "random" ordering of playout heuristics
   add an auto-tuning version, like Mogo now has

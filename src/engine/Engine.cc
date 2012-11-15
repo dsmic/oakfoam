@@ -168,6 +168,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   
   params->addParameter("tree","uct_slow_update_interval",&(params->uct_slow_update_interval),UCT_SLOW_UPDATE_INTERVAL);
   params->uct_slow_update_last=0;
+  params->addParameter("tree","uct_slow_debug_interval",&(params->uct_slow_debug_interval),UCT_SLOW_DEBUG_INTERVAL);
+  params->uct_slow_debug_last=0;
   params->addParameter("tree","uct_stop_early",&(params->uct_stop_early),UCT_STOP_EARLY);
   params->addParameter("tree","uct_terminal_handling",&(params->uct_terminal_handling),UCT_TERMINAL_HANDLING);
   
@@ -3136,6 +3138,7 @@ void Engine::makeMove(Go::Move move)
     gtpe->getOutput()->printfDebug("WARNING! move is a superko violation\n");
   hashtree->addHash(hash);
   params->uct_slow_update_last=0;
+  params->uct_slow_debug_last=0;
   territorymap->decay(params->territory_decayfactor);
   if (params->uct_keep_subtree)
     this->chooseSubTree(move);
@@ -3215,6 +3218,7 @@ void Engine::clearMoveTree()
     movetree=new Tree(params,0);
   
   params->uct_slow_update_last=0;
+  params->uct_slow_debug_last=0;
   params->tree_instances=0; // reset as lock free implementation could be slightly off
 }
 
@@ -3482,6 +3486,37 @@ void Engine::doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::
       
       this->doSlowUpdate();
     }
+    if (params->uct_slow_debug_interval>0)
+    {
+      params->uct_slow_debug_last++;
+      if (params->uct_slow_debug_last>=params->uct_slow_debug_interval)
+      {
+        params->uct_slow_debug_last=0;
+        
+        if (!movetree->isLeaf())
+        {
+          std::ostringstream ss;
+          ss << std::fixed;
+          ss << "[dbg|" << std::setprecision(0)<<movetree->getPlayouts() << "]";
+          Tree *robustmove=movetree->getRobustChild();
+          ss << " (rm:" << Go::Position::pos2string(robustmove->getMove().getPosition(),boardsize);
+          ss << " r:" << std::setprecision(2)<<robustmove->getRatio();
+          ss << " r2:" << std::setprecision(2)<<robustmove->secondBestPlayoutRatio();
+          ss << ")";
+          Tree *bestratio=movetree->getBestRatioChild();
+          if (robustmove==bestratio)
+            ss << " (same)";
+          else
+          {
+            ss << " (br:" << Go::Position::pos2string(bestratio->getMove().getPosition(),boardsize);
+            ss << " r:" << std::setprecision(2)<<bestratio->getRatio();
+            ss << ")";
+          }
+          ss << "\n";
+          gtpe->getOutput()->printfDebug(ss.str());
+        }
+      }
+    }
   }
   
   delete playoutboard;
@@ -3664,6 +3699,7 @@ void Engine::ponderThread(Worker::Settings *settings)
         break;
       }
       
+      params->uct_slow_debug_last=0; // don't print out debug info when pondering
       this->doPlayout(settings,firstlist,secondlist);
       playouts++;
     }
@@ -4156,6 +4192,7 @@ void Engine::mpiGenMove(Go::Color col)
   this->allowContinuedPlay();
   this->updateTerritoryScoringInTree();
   params->uct_slow_update_last=0;
+  params->uct_slow_debug_last=0;
   params->uct_last_r2=-1;
   
   int startplayouts=(int)movetree->getPlayouts();

@@ -383,6 +383,12 @@ class Parameters
     int uct_slow_update_interval;
     /** When the last slow update occured. */
     int uct_slow_update_last;
+
+    /** Number of playouts between debug info.
+     * Set to zero to disable. */
+    int uct_slow_debug_interval;
+    /** When the last slow debug occured. */
+    int uct_slow_debug_last;
     
     /** Whether to stop early if the best move cannot change. */
     bool uct_stop_early;
