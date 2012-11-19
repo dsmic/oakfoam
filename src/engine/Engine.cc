@@ -456,6 +456,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("final_score",this,&Engine::gtpFinalScore);
   gtpe->addFunctionCommand("final_status_list",this,&Engine::gtpFinalStatusList);
   gtpe->addFunctionCommand("undo",this,&Engine::gtpUndo);
+  gtpe->addFunctionCommand("kgs-chat",this,&Engine::gtpChat);
   
   gtpe->addFunctionCommand("param",this,&Engine::gtpParam);
   gtpe->addFunctionCommand("showliberties",this,&Engine::gtpShowLiberties);
@@ -2766,6 +2767,31 @@ void Engine::gtpTimeLeft(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   gtpe->getOutput()->endResponse();
 }
 
+void Engine::gtpChat(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()<3)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("missing arguments");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  bool pm = (cmd->getStringArg(0)=="private");
+  std::string name = cmd->getStringArg(1);
+  std::string msg = cmd->getStringArg(2);
+  for (unsigned int i=3;i<cmd->numArgs();i++)
+  {
+    msg+=" "+cmd->getStringArg(i);
+  }
+
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printf(me->chat(pm,name,msg));
+  gtpe->getOutput()->endResponse();
+}
+
 void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
 {
   clearStatistics();
@@ -4064,6 +4090,19 @@ void Engine::updateTerritoryScoringInTree()
       }
     }
   }
+}
+
+std::string Engine::chat(bool pm,std::string name,std::string msg)
+{
+  if (msg=="stat")
+  {
+    if (moveexplanations->size()>0)
+      return moveexplanations->back();
+    else
+      return "";
+  }
+  else
+    return ("Unknown command '"+msg+"'. Try 'stat'.");
 }
 
 #ifdef HAVE_MPI

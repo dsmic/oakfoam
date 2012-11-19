@@ -410,6 +410,8 @@ class Engine
     void ponderThread(Worker::Settings *settings);
     void doNPlayoutsThread(Worker::Settings *settings);
 
+    std::string chat(bool pm,std::string name,std::string msg);
+
     static void ponderWrapper(void *instance) { ((Engine*)instance)->ponder(); };
     void ponder();
 
@@ -431,6 +433,7 @@ class Engine
     static void gtpFinalScore(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpFinalStatusList(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpUndo(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpChat(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     
     static void gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowLiberties(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
