@@ -240,9 +240,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   
   playout=new Playout(params);
   
-  lastexplanation="";
-  
   movehistory=new std::list<Go::Move>();
+  moveexplanations=new std::list<std::string>();
   hashtree=new Go::ZobristTree();
   
   territorymap=new Go::TerritoryMap(boardsize);
@@ -300,6 +299,7 @@ Engine::~Engine()
     delete movetree;
   delete currentboard;
   delete movehistory;
+  delete moveexplanations;
   delete hashtree;
   delete params;
   delete time;
@@ -487,6 +487,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("outputsgf",this,&Engine::gtpOutputSGF);
   gtpe->addFunctionCommand("playoutsgf",this,&Engine::gtpPlayoutSGF);
   gtpe->addFunctionCommand("playoutsgf_pos",this,&Engine::gtpPlayoutSGF_pos);
+  gtpe->addFunctionCommand("gamesgf",this,&Engine::gtpGameSGF);
   
   gtpe->addFunctionCommand("explainlastmove",this,&Engine::gtpExplainLastMove);
   gtpe->addFunctionCommand("boardstats",this,&Engine::gtpBoardStats);
@@ -1493,6 +1494,35 @@ void Engine::gtpOutputSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   }
 }
 
+void Engine::gtpGameSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("need 1 arg");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  std::string sgffile=cmd->getStringArg(0);
+  bool success=me->writeGameSGF(sgffile);
+  
+  if (success)
+  {
+    gtpe->getOutput()->startResponse(cmd);
+    gtpe->getOutput()->printf("wrote sgf file: %s",sgffile.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+  else
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("error writing sgf file: %s",sgffile.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+}
+
 void Engine::gtpDoNPlayouts(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
@@ -1517,7 +1547,8 @@ void Engine::gtpExplainLastMove(void *instance, Gtp::Engine* gtpe, Gtp::Command*
   Engine *me=(Engine*)instance;
   
   gtpe->getOutput()->startResponse(cmd);
-  gtpe->getOutput()->printString(me->lastexplanation);
+  if (me->moveexplanations->size()>0)
+    gtpe->getOutput()->printString(me->moveexplanations->back());
   gtpe->getOutput()->endResponse();
 }
 
@@ -2756,7 +2787,9 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
           if (playmove)
             this->makeMove(**move);
             
-          lastexplanation="selected move from book";
+          std::string lastexplanation="selected move from book";
+          if (playmove)
+            moveexplanations->back()=lastexplanation;
           
           gtpe->getOutput()->printfDebug("[genmove]: %s\n",lastexplanation.c_str());
           if (params->livegfx_on)
@@ -2947,7 +2980,10 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
 
     if (params->surewin_expected)
       ss << " surewin!";
-    lastexplanation=ss.str();
+    std::string lastexplanation=ss.str();
+
+    if (playmove)
+      moveexplanations->back()=lastexplanation;
     
     gtpe->getOutput()->printfDebug("[genmove]: %s\n",lastexplanation.c_str());
     if (params->livegfx_on)
@@ -3133,6 +3169,7 @@ void Engine::makeMove(Go::Move move)
   
   currentboard->makeMove(move);
   movehistory->push_back(move);
+  moveexplanations->push_back("");
   Go::ZobristHash hash=currentboard->getZobristHash(zobristtable);
   if (move.isNormal() && hashtree->hasHash(hash))
     gtpe->getOutput()->printfDebug("WARNING! move is a superko violation\n");
@@ -3185,12 +3222,14 @@ void Engine::clearBoard()
   bool newsize=(zobristtable->getSize()!=boardsize);
   delete currentboard;
   delete movehistory;
+  delete moveexplanations;
   delete hashtree;
   delete territorymap;
   if (newsize)
     delete zobristtable;
   currentboard = new Go::Board(boardsize);
   movehistory = new std::list<Go::Move>();
+  moveexplanations = new std::list<std::string>();
   hashtree=new Go::ZobristTree();
   territorymap=new Go::TerritoryMap(boardsize);
   if (newsize)
@@ -3321,6 +3360,34 @@ bool Engine::writeSGF(std::string filename, Go::Board *board, std::list<Go::Move
       if (reasoniter==movereasons->end())
         break;
     }
+  }
+  sgffile <<")\n";
+  sgffile.close();
+  return true;
+}
+
+bool Engine::writeGameSGF(std::string filename)
+{
+  std::ofstream sgffile;
+  sgffile.open(filename.c_str());
+  sgffile<<"(;\nFF[4]SZ["<<boardsize<<"]KM["<<komi<<"]\n";
+
+  std::list<std::string>::iterator expiter = moveexplanations->begin();
+  for(std::list<Go::Move>::iterator iter=movehistory->begin();iter!=movehistory->end();++iter)
+  {
+    sgffile<<";"<<Go::colorToChar((*iter).getColor())<<"[";
+    if (!(*iter).isPass()&&!(*iter).isResign())
+    {
+      sgffile<<(char)((*iter).getX(params->board_size)+'a');
+      sgffile<<(char)(params->board_size-(*iter).getY(params->board_size)+'a'-1);
+    }
+    else if ((*iter).isPass())
+      sgffile<<"pass";
+    sgffile<<"]C["<<(*expiter)<<"]\n";
+
+    ++expiter;
+    if (expiter==moveexplanations->end())
+      break;
   }
   sgffile <<")\n";
   sgffile.close();

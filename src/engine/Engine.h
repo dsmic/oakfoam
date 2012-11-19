@@ -250,6 +250,8 @@ class Engine
     bool writeSGF(std::string filename, Go::Board *board=NULL, Tree *tree=NULL);
     /** Output a playout from the current position to a SGF file. */
     bool writeSGF(std::string filename, Go::Board *board, std::list<Go::Move> playoutmoves, std::list<std::string> *movereasons=NULL);
+    /** Output the current game to a SGF file. */
+    bool writeGameSGF(std::string filename);
 
     float valueCircPattern(std::string circpattern) {return features->valueCircPattern(circpattern);}
 
@@ -291,11 +293,11 @@ class Engine
     Time *time;
     Tree *movetree;
     Pattern::ThreeByThreeTable *patterntable;
-    std::string lastexplanation;
     Parameters *const params;
     Features *features;
     Book *book;
     std::list<Go::Move> *movehistory;
+    std::list<std::string> *moveexplanations;
     Go::ZobristTable *zobristtable;
     Go::ZobristTree *hashtree;
     Playout *playout;
@@ -461,6 +463,7 @@ class Engine
     static void gtpOutputSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpPlayoutSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpPlayoutSGF_pos(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpGameSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
 
     static void gtpExplainLastMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpBoardStats(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
