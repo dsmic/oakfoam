@@ -2970,7 +2970,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     
     std::ostringstream ss;
     ss << std::fixed;
-    ss << "r:"<<std::setprecision(2)<<bestratio*100<<"%";
+    ss << "r:"<<std::setprecision(3)<<bestratio;
     if (!time->isNoTiming())
     {
       ss << " tl:"<<std::setprecision(3)<<time->timeLeft(col);
@@ -2983,7 +2983,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     if (!time->isNoTiming() || params->early_stop_occured)
       ss << " plts:"<<totalplayouts;
     ss << " ppms:"<<std::setprecision(2)<<playouts_per_milli;
-    ss << " rd:"<<std::setprecision(2)<<ratiodelta*100<<"%";
+    ss << " rd:"<<std::setprecision(3)<<ratiodelta;
     ss << " r2:"<<std::setprecision(2)<<params->uct_last_r2;
     ss << " fs:"<<std::setprecision(2)<<scoremean;
     ss << " fsd:"<<std::setprecision(2)<<scoresd;
