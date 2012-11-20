@@ -511,6 +511,11 @@ class Parameters
     bool features_ordered_comparison;
     /** Whether to try take ladders into account with features. */
     bool features_ladders;
+
+    /** Whether to automatically output an SGF when a game finishes. */
+    bool auto_save_sgf;
+    /** The filename prefix for the outputted SGFs. */
+    std::string auto_save_sgf_prefix;
     
     #ifdef HAVE_MPI
       /** Period between MPI syncs.

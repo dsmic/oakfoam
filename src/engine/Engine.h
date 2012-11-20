@@ -160,6 +160,7 @@
 #include <string>
 #include <list>
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/date_time/posix_time/posix_time_io.hpp>
 #ifdef HAVE_MPI
   #include <mpi.h>
 #endif
@@ -306,6 +307,7 @@ class Engine
     Worker::Pool *threadpool;
     Go::TerritoryMap *territorymap;
     long statistics[STATISTICS_NUM];
+    bool isgamefinished;
     
     enum MovePolicy
     {
@@ -412,6 +414,8 @@ class Engine
 
     std::string chat(bool pm,std::string name,std::string msg);
 
+    void gameFinished();
+
     static void ponderWrapper(void *instance) { ((Engine*)instance)->ponder(); };
     void ponder();
 
@@ -434,6 +438,7 @@ class Engine
     static void gtpFinalStatusList(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpUndo(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpChat(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpGameOver(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     
     static void gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowLiberties(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);

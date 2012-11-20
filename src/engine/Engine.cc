@@ -222,6 +222,9 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("other","features_output_competitions_mmstyle",&(params->features_output_competitions_mmstyle),false);
   params->addParameter("other","features_ordered_comparison",&(params->features_ordered_comparison),false);
   
+  params->addParameter("other","auto_save_sgf",&(params->auto_save_sgf),false);
+  params->addParameter("other","auto_save_sgf_prefix",&(params->auto_save_sgf_prefix),"");
+  
   #ifdef HAVE_MPI
     params->addParameter("mpi","mpi_update_period",&(params->mpi_update_period),MPI_UPDATE_PERIOD);
     params->addParameter("mpi","mpi_update_depth",&(params->mpi_update_depth),MPI_UPDATE_DEPTH);
@@ -250,6 +253,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   
   movetree=NULL;
   this->clearMoveTree();
+
+  isgamefinished=false;
   
   params->cleanup_in_progress=false;
   
@@ -288,6 +293,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
 
 Engine::~Engine()
 {
+  this->gameFinished();
   #ifdef HAVE_MPI
     MPIRANK0_ONLY(this->mpiBroadcastCommand(Engine::MPICMD_QUIT););
     this->mpiFreeDerivedTypes();
@@ -457,6 +463,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("final_status_list",this,&Engine::gtpFinalStatusList);
   gtpe->addFunctionCommand("undo",this,&Engine::gtpUndo);
   gtpe->addFunctionCommand("kgs-chat",this,&Engine::gtpChat);
+  gtpe->addFunctionCommand("kgs-game_over",this,&Engine::gtpGameOver);
   
   gtpe->addFunctionCommand("param",this,&Engine::gtpParam);
   gtpe->addFunctionCommand("showliberties",this,&Engine::gtpShowLiberties);
@@ -2792,6 +2799,16 @@ void Engine::gtpChat(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   gtpe->getOutput()->endResponse();
 }
 
+void Engine::gtpGameOver(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+
+  me->gameFinished();
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->endResponse();
+}
+
 void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
 {
   clearStatistics();
@@ -3210,6 +3227,10 @@ void Engine::makeMove(Go::Move move)
   #ifdef HAVE_MPI
     mpihashtable.clear();
   #endif
+
+  isgamefinished=false;
+  if (currentboard->getPassesPlayed()>=2 || move.isResign())
+    this->gameFinished();
 }
 
 void Engine::setBoardSize(int s)
@@ -3242,6 +3263,7 @@ void Engine::setKomi(float k)
 
 void Engine::clearBoard()
 {
+  this->gameFinished();
   #ifdef HAVE_MPI
     MPIRANK0_ONLY(this->mpiBroadcastCommand(MPICMD_CLEARBOARD););
   #endif
@@ -3266,6 +3288,7 @@ void Engine::clearBoard()
   params->surewin_expected=false;
   playout->resetLGRF();
   params->cleanup_in_progress=false;
+  isgamefinished=false;
 }
 
 void Engine::clearMoveTree()
@@ -4103,6 +4126,30 @@ std::string Engine::chat(bool pm,std::string name,std::string msg)
   }
   else
     return ("Unknown command '"+msg+"'. Try 'stat'.");
+}
+
+void Engine::gameFinished()
+{
+  if (isgamefinished)
+    return;
+  isgamefinished=true;
+
+  if (currentboard->getMovesMade()==0)
+    return;
+
+  if (params->auto_save_sgf)
+  {
+    boost::posix_time::time_facet *facet = new boost::posix_time::time_facet("_%Y-%m-%d_%H:%M:%S");
+    std::ostringstream ss;
+    ss << params->auto_save_sgf_prefix;
+    ss << "game";
+    ss.imbue(std::locale(ss.getloc(),facet));
+    ss << boost::posix_time::second_clock::local_time();
+    ss << ".sgf";
+    std::string filename=ss.str();
+    if (this->writeGameSGF(filename))
+      gtpe->getOutput()->printfDebug("Wrote game SGF to '%s'\n",filename.c_str());
+  }
 }
 
 #ifdef HAVE_MPI

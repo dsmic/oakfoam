@@ -19,8 +19,8 @@ Oakfoam::Oakfoam()
 
 Oakfoam::~Oakfoam()
 {
-  delete gtpe;
   delete engine;
+  delete gtpe;
 }
 
 void Oakfoam::run()
