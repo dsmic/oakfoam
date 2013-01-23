@@ -522,6 +522,8 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("showraveratios",this,&Engine::gtpShowRAVERatios);
   gtpe->addFunctionCommand("showraveratioscolor",this,&Engine::gtpShowRAVERatiosColor);
   gtpe->addFunctionCommand("showraveratiosother",this,&Engine::gtpShowRAVERatiosOther);
+
+  gtpe->addFunctionCommand("dtload",this,&Engine::gtpDTLoad);
   
   //gtpe->addAnalyzeCommand("final_score","Final Score","string");
   //gtpe->addAnalyzeCommand("showboard","Show Board","string");
@@ -2797,6 +2799,36 @@ void Engine::gtpChat(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printf(me->chat(pm,name,msg));
   gtpe->getOutput()->endResponse();
+}
+
+void Engine::gtpDTLoad(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("need 1 arg");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  std::string filename=cmd->getStringArg(0);
+  
+  DecisionTree *dt = DecisionTree::loadFile(filename);
+  
+  if (dt!=NULL)
+  {
+    gtpe->getOutput()->startResponse(cmd);
+    gtpe->getOutput()->printf("loaded decision tree: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+  else
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("error loading decision tree: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
 }
 
 void Engine::gtpGameOver(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)

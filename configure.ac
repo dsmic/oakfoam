@@ -35,7 +35,7 @@ if test x"$with_hoard" != xno; then
   LDFLAGS="$LDFLAGS $HOARD_LDFLAGS"
   LIBS="$LIBS $HOARD_LIB"
   AC_MSG_CHECKING(whether Hoard memory allocator is available)
-  AC_LINK_IFELSE(AC_LANG_PROGRAM(),
+  AC_LINK_IFELSE([AC_LANG_PROGRAM()],
     AC_MSG_RESULT(yes)
     AC_SUBST(HOARD_LDFLAGS)
     AC_SUBST(HOARD_LIB)

@@ -174,6 +174,7 @@
 #include "Book.h"
 #include "Playout.h"
 #include "Benson.h"
+#include "DecisionTree.h"
 #include "Worker.h"
 #include "../gtp/Gtp.h"
 #ifdef HAVE_WEB
@@ -486,6 +487,8 @@ class Engine
     static void gtpBookClear(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpBookLoad(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpBookSave(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+
+    static void gtpDTLoad(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     
     static void gtpShowCurrentHash(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowSafePositions(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
