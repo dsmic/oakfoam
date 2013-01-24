@@ -2816,6 +2816,7 @@ void Engine::gtpDTLoad(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   std::string filename=cmd->getStringArg(0);
   
   DecisionTree *dt = DecisionTree::loadFile(filename);
+  fprintf(stderr,"DT:\n%s\n",dt->toString().c_str());
   
   if (dt!=NULL)
   {

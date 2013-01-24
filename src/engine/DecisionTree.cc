@@ -20,11 +20,165 @@ DecisionTree::~DecisionTree()
   delete root;
 }
 
+std::string DecisionTree::toString()
+{
+  std::string r = "(DT[";
+  for (unsigned int i=0;i<attrs->size();i++)
+  {
+    if (i!=0)
+      r += "|";
+    r += attrs->at(i);
+  }
+  r += "]\n";
+
+  r += root->toString(2);
+
+  r += ")";
+  return r;
+}
+
+std::string DecisionTree::Node::toString(int indent)
+{
+  std::string r = "";
+
+  r += stats->toString(indent);
+
+  if (query == NULL)
+  {
+    for (int i=0;i<indent;i++)
+      r += " ";
+    r += "(WEIGHT[";
+    r += boost::lexical_cast<std::string>(weight);
+    r += "])\n";
+  }
+  else
+    r += query->toString(indent);
+
+  return r;
+}
+
+std::string DecisionTree::Query::toString(int indent)
+{
+  std::string r = "";
+
+  for (int i=0;i<indent;i++)
+    r += " ";
+  r += "(" + label + "[";
+  for (unsigned int i=0;i<attrs->size();i++)
+  {
+    if (i!=0)
+      r += "|";
+    r += attrs->at(i);
+  }
+  r += "]\n";
+
+  for (unsigned int i=0;i<options->size();i++)
+  {
+    r += options->at(i)->toString(indent+2);
+  }
+  
+  for (int i=0;i<indent;i++)
+    r += " ";
+  r += ")\n";
+
+  return r;
+}
+
+std::string DecisionTree::Option::toString(int indent)
+{
+  std::string r = "";
+
+  for (int i=0;i<indent;i++)
+    r += " ";
+  r += label + ":\n";
+
+  r += node->toString(indent+2);
+
+  return r;
+}
+
+std::string DecisionTree::Stats::toString(int indent)
+{
+  std::string r = "";
+
+  for (int i=0;i<indent;i++)
+    r += " ";
+  r += "(STATS:\n";
+
+  for (unsigned int i=0;i<statperms->size();i++)
+  {
+    r += statperms->at(i)->toString(indent+2);
+  }
+
+  for (int i=0;i<indent;i++)
+    r += " ";
+  r += ")\n";
+
+  return r;
+}
+
+std::string DecisionTree::StatPerm::toString(int indent)
+{
+  std::string r = "";
+
+  for (int i=0;i<indent;i++)
+    r += " ";
+  r += "(" + label + "[";
+  for (unsigned int i=0;i<attrs->size();i++)
+  {
+    if (i!=0)
+      r += "|";
+    r += attrs->at(i);
+  }
+  r += "]\n";
+
+  r += range->toString(indent+2);
+
+  for (int i=0;i<indent;i++)
+    r += " ";
+  r += ")\n";
+
+  return r;
+}
+
+std::string DecisionTree::Range::toString(int indent)
+{
+  std::string r = "";
+
+  for (int i=0;i<indent;i++)
+    r += " ";
+  r += "(";
+  r += boost::lexical_cast<std::string>(start);
+  r += ":";
+  r += boost::lexical_cast<std::string>(end);
+  r += "[";
+  r += boost::lexical_cast<std::string>(val);
+  r += "]";
+
+  if (left==NULL && right==NULL)
+    r += ")\n";
+  else
+  {
+    r += "\n";
+
+    if (left != NULL)
+      r += left->toString(indent+2);
+    if (right != NULL)
+      r += right->toString(indent+2);
+
+    for (int i=0;i<indent;i++)
+      r += " ";
+    r += ")\n";
+  }
+
+  return r;
+}
+
 DecisionTree *DecisionTree::parseString(std::string rawdata)
 {
   std::string data = DecisionTree::stripWhitespace(rawdata);
   std::transform(data.begin(),data.end(),data.begin(),::toupper);
-  fprintf(stderr,"[DT] parsing: '%s'\n",data.c_str());
+  //fprintf(stderr,"[DT] parsing: '%s'\n",data.c_str());
 
   unsigned int pos = data.find("(DT");
   if (pos == std::string::npos)

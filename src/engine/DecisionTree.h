@@ -10,6 +10,8 @@ class DecisionTree
   public:
     ~DecisionTree();
 
+    std::string toString();
+
     static DecisionTree *parseString(std::string rawdata);
     static DecisionTree *loadFile(std::string filename);
   
@@ -20,6 +22,8 @@ class DecisionTree
         Range(float s, float e, float v, Range *l, Range *r);
         Range(float s, float e, float v);
         ~Range();
+
+        std::string toString(int indent);
 
       private:
         float start, end, val;
@@ -33,6 +37,8 @@ class DecisionTree
         StatPerm(std::string l, std::vector<std::string> *a, Range *r);
         ~StatPerm();
 
+        std::string toString(int indent);
+
       private:
         std::string label;
         std::vector<std::string> *attrs;
@@ -44,6 +50,8 @@ class DecisionTree
       public:
         Stats(std::vector<StatPerm*> *sp);
         ~Stats();
+
+        std::string toString(int indent);
 
       private:
         std::vector<StatPerm*> *statperms;
@@ -57,6 +65,8 @@ class DecisionTree
         Option(std::string l, Node *n);
         ~Option();
 
+        std::string toString(int indent);
+
       private:
         std::string label;
         Node *node;
@@ -67,6 +77,8 @@ class DecisionTree
       public:
         Query(std::string l, std::vector<std::string> *a, std::vector<Option*> *o);
         ~Query();
+
+        std::string toString(int indent);
 
       private:
         std::string label;
@@ -80,6 +92,8 @@ class DecisionTree
         Node(Stats *s, Query *q);
         Node(Stats *s, float w);
         ~Node();
+
+        std::string toString(int indent);
 
       private:
         Stats *stats;
