@@ -147,8 +147,52 @@ DecisionTree::Node *DecisionTree::parseNode(std::string data, unsigned int &pos)
   }
   else
   {
-    //TODO: parse QUERY
-    return NULL;
+    if (data[pos] != '(')
+    {
+      fprintf(stderr,"[DT] Error! Expected '(' at '%s'\n",data.substr(pos).c_str());
+      delete stats;
+      return NULL;
+    }
+    pos++;
+
+    std::string label = "";
+    while (pos<data.length() && DecisionTree::isText(data[pos]))
+    {
+      label += data[pos];
+      pos++;
+    }
+    if (label.length() == 0)
+    {
+      fprintf(stderr,"[DT] Error! Unexpected '%c' at '%s'\n",data[pos],data.substr(pos).c_str());
+      delete stats;
+      return NULL;
+    }
+
+    if (data[pos] != '[')
+    {
+      fprintf(stderr,"[DT] Error! Expected '[' at '%s'\n",data.substr(pos).c_str());
+      delete stats;
+      return NULL;
+    }
+    pos++;
+
+    std::vector<std::string> *attrs = DecisionTree::parseAttrs(data,pos);
+    if (attrs == NULL)
+    {
+      delete stats;
+      return NULL;
+    }
+
+    std::vector<DecisionTree::Option*> *options = DecisionTree::parseOptions(data,pos);
+    if (options == NULL)
+    {
+      delete stats;
+      delete attrs;
+      return NULL;
+    }
+
+    DecisionTree::Query *query = new DecisionTree::Query(label,attrs,options);
+    return new DecisionTree::Node(stats,query);
   }
 }
 
@@ -229,7 +273,6 @@ std::vector<DecisionTree::StatPerm*> *DecisionTree::parseStatPerms(std::string d
     std::vector<DecisionTree::StatPerm*> *spstail = DecisionTree::parseStatPerms(data,pos);
     if (spstail == NULL)
     {
-      delete attrs;
       delete sp;
       return NULL;
     }
@@ -357,6 +400,58 @@ DecisionTree::Range *DecisionTree::parseRange(std::string data, unsigned int &po
   }
 }
 
+std::vector<DecisionTree::Option*> *DecisionTree::parseOptions(std::string data, unsigned int &pos)
+{
+  std::string label = "";
+  while (pos<data.length() && DecisionTree::isText(data[pos]))
+  {
+    label += data[pos];
+    pos++;
+  }
+  if (label.length() == 0)
+  {
+    fprintf(stderr,"[DT] Error! Unexpected '%c' at '%s'\n",data[pos],data.substr(pos).c_str());
+    return NULL;
+  }
+
+  if (data[pos] != ':')
+  {
+    fprintf(stderr,"[DT] Error! Expected ':' at '%s'\n",data.substr(pos).c_str());
+    return NULL;
+  }
+  pos++;
+
+  DecisionTree::Node *node = DecisionTree::parseNode(data,pos);
+  if (node == NULL)
+    return NULL;
+
+  DecisionTree::Option *opt = new DecisionTree::Option(label,node);
+  if (DecisionTree::isText(data[pos]))
+  {
+    std::vector<DecisionTree::Option*> *optstail = DecisionTree::parseOptions(data,pos);
+    if (optstail == NULL)
+    {
+      delete opt;
+      return NULL;
+    }
+    std::vector<DecisionTree::Option*> *opts = new std::vector<DecisionTree::Option*>();
+    opts->push_back(opt);
+    for (unsigned int i=0;i<optstail->size();i++)
+    {
+      opts->push_back(optstail->at(i));
+    }
+    delete optstail;
+
+    return opts;
+  }
+  else
+  {
+    std::vector<DecisionTree::Option*> *opts = new std::vector<DecisionTree::Option*>();
+    opts->push_back(opt);
+    return opts;
+  }
+}
+
 float *DecisionTree::parseNumber(std::string data, unsigned int &pos)
 {
   std::string s = "";
@@ -418,15 +513,25 @@ std::string DecisionTree::stripWhitespace(std::string in)
   return out;
 }
 
+DecisionTree::Node::Node(Stats *s, Query *q)
+{
+  stats = s;
+  query = q;
+  weight = 0;
+}
+
 DecisionTree::Node::Node(Stats *s, float w)
 {
   stats = s;
+  query = NULL;
   weight = w;
 }
 
 DecisionTree::Node::~Node()
 {
   delete stats;
+  if (query != NULL)
+    delete query;
 }
 
 DecisionTree::Stats::Stats(std::vector<StatPerm*> *sp)
@@ -480,5 +585,33 @@ DecisionTree::Range::~Range()
     delete left;
   if (right != NULL)
     delete right;
+}
+
+DecisionTree::Query::Query(std::string l, std::vector<std::string> *a, std::vector<Option*> *o)
+{
+  label = l;
+  attrs = a;
+  options = o;
+}
+
+DecisionTree::Query::~Query()
+{
+  delete attrs;
+  for (unsigned int i=0;i<options->size();i++)
+  {
+    delete options->at(i);
+  }
+  delete options;
+}
+
+DecisionTree::Option::Option(std::string l, Node *n)
+{
+  label = l;
+  node = n;
+}
+
+DecisionTree::Option::~Option()
+{
+  delete node;
 }
 

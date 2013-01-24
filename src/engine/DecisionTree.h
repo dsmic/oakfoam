@@ -49,17 +49,41 @@ class DecisionTree
         std::vector<StatPerm*> *statperms;
     };
 
+    class Node;
+
+    class Option
+    {
+      public:
+        Option(std::string l, Node *n);
+        ~Option();
+
+      private:
+        std::string label;
+        Node *node;
+    };
+
+    class Query
+    {
+      public:
+        Query(std::string l, std::vector<std::string> *a, std::vector<Option*> *o);
+        ~Query();
+
+      private:
+        std::string label;
+        std::vector<std::string> *attrs;
+        std::vector<Option*> *options;
+    };
+
     class Node
     {
       public:
+        Node(Stats *s, Query *q);
         Node(Stats *s, float w);
         ~Node();
 
-        Stats *getStats() { return stats; };
-        float getWeight() { return weight; };
-
       private:
         Stats *stats;
+        Query *query;
         float weight;
     };
 
@@ -74,6 +98,7 @@ class DecisionTree
     static Stats *parseStats(std::string data, unsigned int &pos);
     static std::vector<StatPerm*> *parseStatPerms(std::string data, unsigned int &pos);
     static Range *parseRange(std::string data, unsigned int &pos);
+    static std::vector<Option*> *parseOptions(std::string data, unsigned int &pos);
     static float *parseNumber(std::string data, unsigned int &pos);
     static bool isText(char c);
 };
