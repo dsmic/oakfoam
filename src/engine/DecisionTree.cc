@@ -20,6 +20,167 @@ DecisionTree::~DecisionTree()
   delete root;
 }
 
+float DecisionTree::getWeight(Go::Board *board, Go::Move move)
+{
+  if (!board->validMove(move))
+    return -1;
+
+  std::string type = attrs->at(0);
+  fprintf(stderr,"[DT] type: '%s'\n",type.c_str());
+  if (type == "SPARSE")
+    return this->getSparseWeight(board,move);
+  else
+    return -1;
+}
+
+float DecisionTree::getSparseWeight(Go::Board *board, Go::Move move)
+{
+  std::vector<int> *stones = new std::vector<int>();
+  bool invert = (move.getColor() != Go::BLACK);
+
+  stones->push_back(move.getPosition());
+
+  DecisionTree::Node *n = this->getSparseLeafNode(root,board,stones,invert);
+  float w = -1;
+  if (n != NULL)
+    w = n->getWeight();
+
+  delete stones;
+  return w;
+}
+
+DecisionTree::Node *DecisionTree::getSparseLeafNode(DecisionTree::Node *node, Go::Board *board, std::vector<int> *stones, bool invert)
+{
+  if (node->isLeaf())
+    return node;
+
+  int center = stones->at(0);
+  DecisionTree::Query *q = node->getQuery();
+
+  //TODO: handle compress chains param
+  
+  if (q->getLabel() == "NEW")
+  {
+    std::vector<std::string> *attrs = q->getAttrs();
+    bool B = (attrs->at(0).find('B') != std::string::npos);
+    bool W = (attrs->at(0).find('W') != std::string::npos);
+    bool S = (attrs->at(0).find('S') != std::string::npos);
+    std::string valstr = attrs->at(1);
+    int val = boost::lexical_cast<int>(valstr);
+
+    int newpos = -1;
+    for (int s=0; s<val; s++)
+    {
+      //XXX: need more efficient way of finding new points
+      std::list<int> matches;
+      for (int p=0; p<board->getPositionMax(); p++)
+      {
+        Go::Color col = board->getColor(p);
+        if (((invert?W:B) && col==Go::BLACK) || ((invert?B:W) && col==Go::WHITE) || (S && col==Go::OFFBOARD))
+        {
+          if (board->getRectDistance(center,p) <= s)
+            matches.push_back(p);
+        }
+      }
+      if (matches.size() > 0)
+      {
+        newpos = matches.front(); // TODO: break ties properly!
+        break;
+      }
+    }
+
+    Go::Color col = Go::EMPTY;
+    if (newpos != -1)
+    {
+      stones->push_back(newpos);
+      col = board->getColor(newpos);
+    }
+
+    std::vector<DecisionTree::Option*> *options = q->getOptions();
+    for (unsigned int i=0; i<options->size(); i++)
+    {
+      std::string l = options->at(i)->getLabel();
+      if (col==Go::BLACK && l=="B")
+        return this->getSparseLeafNode(options->at(i)->getNode(),board,stones,invert);
+      else if (col==Go::WHITE && l=="W")
+        return this->getSparseLeafNode(options->at(i)->getNode(),board,stones,invert);
+      else if (col==Go::OFFBOARD && l=="S")
+        return this->getSparseLeafNode(options->at(i)->getNode(),board,stones,invert);
+      else if (col==Go::EMPTY && l=="N")
+        return this->getSparseLeafNode(options->at(i)->getNode(),board,stones,invert);
+    }
+    return NULL;
+  }
+  else if (q->getLabel() == "DIST")
+  {
+    std::vector<std::string> *attrs = q->getAttrs();
+    int n0 = boost::lexical_cast<int>(attrs->at(0));
+    int n1 = boost::lexical_cast<int>(attrs->at(1));
+    bool eq = attrs->at(2) == "=";
+    int val = boost::lexical_cast<int>(attrs->at(3));
+
+    int dist = board->getRectDistance(stones->at(n0),stones->at(n1));
+    bool res;
+    if (eq)
+      res = dist == val;
+    else
+      res = dist < val;
+
+    std::vector<DecisionTree::Option*> *options = q->getOptions();
+    for (unsigned int i=0; i<options->size(); i++)
+    {
+      std::string l = options->at(i)->getLabel();
+      if (res && l=="Y")
+        return this->getSparseLeafNode(options->at(i)->getNode(),board,stones,invert);
+      else if (!res && l=="N")
+        return this->getSparseLeafNode(options->at(i)->getNode(),board,stones,invert);
+    }
+    return NULL;
+  }
+  else if (q->getLabel() == "ATTR")
+  {
+    std::vector<std::string> *attrs = q->getAttrs();
+    std::string type = attrs->at(0);
+    int n = boost::lexical_cast<int>(attrs->at(1));
+    bool eq = attrs->at(2) == "=";
+    int val = boost::lexical_cast<int>(attrs->at(3));
+
+    int attr = 0;
+    if (type == "SIZE")
+    {
+      int p = stones->at(n);
+      if (board->inGroup(p))
+        attr = board->getGroup(p)->numOfStones();
+      else
+        attr = 0;
+    }
+    else if (type == "LIB")
+      attr = board->getGroup(stones->at(n))->numOfPseudoLiberties();
+
+    bool res;
+    if (eq)
+      res = attr == val;
+    else
+      res = attr < val;
+
+    std::vector<DecisionTree::Option*> *options = q->getOptions();
+    for (unsigned int i=0; i<options->size(); i++)
+    {
+      std::string l = options->at(i)->getLabel();
+      if (res && l=="Y")
+        return this->getSparseLeafNode(options->at(i)->getNode(),board,stones,invert);
+      else if (!res && l=="N")
+        return this->getSparseLeafNode(options->at(i)->getNode(),board,stones,invert);
+    }
+    return NULL;
+  }
+  else
+  {
+    fprintf(stderr,"[DT] Error! Invalid query type: '%s'\n",q->getLabel().c_str());
+    return NULL;
+  }
+}
+
 std::string DecisionTree::toString()
 {
   std::string r = "(DT[";

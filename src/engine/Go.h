@@ -125,6 +125,14 @@ namespace Go
     }
   };
   
+  /** Get the manhattan distance between two points. */
+  inline static int rectDist(int x1, int y1, int x2, int y2)
+  {
+    int dx=abs(x1-x2);
+    int dy=abs(y1-y2);
+    return dx+dy;
+  };
+
   /** Get the circular distance between two points. */
   inline static int circDist(int x1, int y1, int x2, int y2)
   {
@@ -628,6 +636,8 @@ namespace Go
       bool isAtari(Go::Move move) const;
       /** Get the distance from the given position to the board edge. */
       int getDistanceToBorder(int pos) const;
+      /** Get the manhattan distance between two positions. */
+      int getRectDistance(int pos1, int pos2) const;
       /** Get the circular distance between two positions. */
       int getCircularDistance(int pos1, int pos2) const;
       /** Get the CFG distances from the given position. */

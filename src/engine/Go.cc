@@ -1690,6 +1690,16 @@ int Go::Board::getDistanceToBorder(int pos) const
   return dist;
 }
 
+int Go::Board::getRectDistance(int pos1, int pos2) const
+{
+  int x1=Go::Position::pos2x(pos1,size);
+  int y1=Go::Position::pos2y(pos1,size);
+  int x2=Go::Position::pos2x(pos2,size);
+  int y2=Go::Position::pos2y(pos2,size);
+  
+  return Go::rectDist(x1,y1,x2,y2);
+}
+
 int Go::Board::getCircularDistance(int pos1, int pos2) const
 {
   int x1=Go::Position::pos2x(pos1,size);

@@ -2,7 +2,9 @@
 #define DEF_OAKFOAM_DECISIONTREE_H
 
 #include <string>
+#include <list>
 #include <vector>
+#include "Go.h"
 
 /** Decision Tree for Feature Ensemble Method. */
 class DecisionTree
@@ -11,6 +13,8 @@ class DecisionTree
     ~DecisionTree();
 
     std::string toString();
+
+    float getWeight(Go::Board *board, Go::Move move);
 
     static DecisionTree *parseString(std::string rawdata);
     static DecisionTree *loadFile(std::string filename);
@@ -66,6 +70,8 @@ class DecisionTree
         ~Option();
 
         std::string toString(int indent);
+        std::string getLabel() { return label; };
+        Node *getNode() { return node; };
 
       private:
         std::string label;
@@ -79,6 +85,9 @@ class DecisionTree
         ~Query();
 
         std::string toString(int indent);
+        std::string getLabel() { return label; };
+        std::vector<std::string> *getAttrs() { return attrs; };
+        std::vector<Option*> *getOptions() { return options; };
 
       private:
         std::string label;
@@ -94,6 +103,9 @@ class DecisionTree
         ~Node();
 
         std::string toString(int indent);
+        float getWeight() { return weight; };
+        bool isLeaf() { return query == NULL; };
+        Query *getQuery() { return query; };
 
       private:
         Stats *stats;
@@ -101,10 +113,13 @@ class DecisionTree
         float weight;
     };
 
-    DecisionTree(std::vector<std::string> *a, DecisionTree::Node *r);
-
     std::vector<std::string> *attrs;
     Node *root;
+
+    DecisionTree(std::vector<std::string> *a, DecisionTree::Node *r);
+
+    float getSparseWeight(Go::Board *board, Go::Move move);
+    Node *getSparseLeafNode(Node *node, Go::Board *board, std::vector<int> *stones, bool invert);
 
     static std::string stripWhitespace(std::string in);
     static std::vector<std::string> *parseAttrs(std::string data, unsigned int &pos);
