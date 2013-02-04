@@ -181,7 +181,129 @@ std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::N
         break;
     }
 
-    //TODO: break ties!
+    if (matches.size() > 1) // try break ties (B...W...S)
+    {
+      std::list<int> m;
+      for (std::list<int>::iterator iter=matches.begin();iter!=matches.end();++iter)
+      {
+        int p = (*iter);
+        if (invert)
+        {
+          if (p>=0 && board->getColor(p)==Go::WHITE)
+            m.push_back(p);
+        }
+        else
+        {
+          if (p>=0 && board->getColor(p)==Go::BLACK)
+            m.push_back(p);
+        }
+      }
+      if (m.size()==0)
+      {
+        for (std::list<int>::iterator iter=matches.begin();iter!=matches.end();++iter)
+        {
+          int p = (*iter);
+          if (invert)
+          {
+            if (p>=0 && board->getColor(p)==Go::BLACK)
+              m.push_back(p);
+          }
+          else
+          {
+            if (p>=0 && board->getColor(p)==Go::WHITE)
+              m.push_back(p);
+          }
+        }
+        if (m.size()==0)
+        {
+          for (std::list<int>::iterator iter=matches.begin();iter!=matches.end();++iter)
+          {
+            int p = (*iter);
+            if (p<0) // side
+              m.push_back(p);
+          }
+        }
+      }
+      matches = m;
+
+      if (matches.size() > 1) // still tied (dist to newest node)
+      {
+        for (int i=stones->size()-1; i>0; i--) // implicitly checked distance to 0'th node
+        {
+          int mindist = DecisionTree::getDistance(board,stones->at(i),matches.front());
+          for (std::list<int>::iterator iter=matches.begin();iter!=matches.end();++iter)
+          {
+            int dist = DecisionTree::getDistance(board,stones->at(i),(*iter));
+            if (dist < mindist)
+              mindist = dist;
+          }
+
+          std::list<int> m;
+          for (std::list<int>::iterator iter=matches.begin();iter!=matches.end();++iter)
+          {
+            int dist = DecisionTree::getDistance(board,stones->at(i),(*iter));
+            if (dist == mindist)
+              m.push_back((*iter));
+          }
+          matches = m;
+
+          if (matches.size() == 1)
+            break;
+        }
+
+        if (matches.size() > 1) // yet still tied (largest size)
+        {
+          int maxsize = 0;
+          for (std::list<int>::iterator iter=matches.begin();iter!=matches.end();++iter)
+          {
+            int p = (*iter);
+            int size = 0;
+            if (p>0 && board->inGroup(p))
+              size = board->getGroup(p)->numOfStones();
+            if (size > maxsize)
+              maxsize = size;
+          }
+
+          std::list<int> m;
+          for (std::list<int>::iterator iter=matches.begin();iter!=matches.end();++iter)
+          {
+            int p = (*iter);
+            int size = 0;
+            if (p>0 && board->inGroup(p))
+              size = board->getGroup(p)->numOfStones();
+            if (size == maxsize)
+              m.push_back(p);
+          }
+          matches = m;
+
+          if (matches.size() > 1) // yet yet still tied (most liberties)
+          {
+            int maxlib = 0;
+            for (std::list<int>::iterator iter=matches.begin();iter!=matches.end();++iter)
+            {
+              int p = (*iter);
+              int lib = 0;
+              if (p>0 && board->inGroup(p))
+                lib = board->getGroup(p)->numOfPseudoLiberties();
+              if (lib > maxlib)
+                maxlib = lib;
+            }
+
+            std::list<int> m;
+            for (std::list<int>::iterator iter=matches.begin();iter!=matches.end();++iter)
+            {
+              int p = (*iter);
+              int lib = 0;
+              if (p>0 && board->inGroup(p))
+                lib = board->getGroup(p)->numOfPseudoLiberties();
+              if (lib == maxlib)
+                m.push_back(p);
+            }
+            matches = m;
+          }
+        }
+      }
+    }
 
     //fprintf(stderr,"[DT] matches: %lu\n",matches.size());
     if (matches.size() > 0)
