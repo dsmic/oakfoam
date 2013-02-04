@@ -122,6 +122,7 @@ class DecisionTree
     std::list<Node*> *getSparseLeafNodes(Node *node, Go::Board *board, std::vector<int> *stones, bool invert);
 
     static float combineNodeWeights(std::list<Node*> *nodes);
+    static int getDistance(Go::Board *board, int p1, int p2);
 
     static std::string stripWhitespace(std::string in);
     static std::vector<std::string> *parseAttrs(std::string data, unsigned int &pos);

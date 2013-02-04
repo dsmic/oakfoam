@@ -43,6 +43,45 @@ float DecisionTree::combineNodeWeights(std::list<DecisionTree::Node*> *nodes)
   return weight;
 }
 
+int DecisionTree::getDistance(Go::Board *board, int p1, int p2)
+{
+  if (p1<0 && p2<0) // both sides
+  {
+    if ((p1+p2)%2==0) // opposite sides
+      return board->getSize();
+    else
+      return 0;
+  }
+  else if (p1<0 || p2<0) // one side
+  {
+    if (p2 < 0)
+    {
+      int tmp = p1;
+      p1 = p2;
+      p2 = tmp;
+    }
+    // p1 is side
+
+    int size = board->getSize();
+    int x = Go::Position::pos2x(p2,size);
+    int y = Go::Position::pos2y(p2,size);
+    switch (p1)
+    {
+      case -1:
+        return x;
+      case -2:
+        return y;
+      case -3:
+        return size-x+1;
+      case -4:
+        return size-y+1;
+    }
+    return 0;
+  }
+  else
+    return board->getRectDistance(p1,p2);
+}
+
 float DecisionTree::getSparseWeight(Go::Board *board, Go::Move move)
 {
   std::vector<int> *stones = new std::vector<int>();
@@ -89,18 +128,44 @@ std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::N
     std::list<int> matches;
     for (int s=0; s<val; s++)
     {
-      //XXX: need more efficient way of finding new points
-      for (int p=0; p<board->getPositionMax(); p++)
+      //XXX: need more efficient way of finding new nearby points?
+      if (B || W)
       {
-        Go::Color col = board->getColor(p);
-        if (((invert?W:B) && col==Go::BLACK) || ((invert?B:W) && col==Go::WHITE) || (S && col==Go::OFFBOARD))
+        for (int i=0; i<board->getSize(); i++)
         {
-          if (board->getRectDistance(center,p) <= s)
+          for (int j=0; j<board->getSize(); j++)
+          {
+            int p = Go::Position::xy2pos(i,j,board->getSize());
+            Go::Color col = board->getColor(p);
+            if (((invert?W:B) && col==Go::BLACK) || ((invert?B:W) && col==Go::WHITE))
+            {
+              if (DecisionTree::getDistance(board,center,p) <= s)
+              {
+                bool found = false;
+                for (unsigned int i=0; i<stones->size(); i++)
+                {
+                  if (stones->at(i) == p)
+                  {
+                    found = true;
+                    break;
+                  }
+                }
+                if (!found)
+                  matches.push_back(p);
+              }
+            }
+          }
+        }
+      }
+      if (S)
+      {
+        for (int p=-1; p>=-4; p--)
+        {
+          if (DecisionTree::getDistance(board,center,p) <= s)
           {
             bool found = false;
             for (unsigned int i=0; i<stones->size(); i++)
             {
-              //TODO: compare sides correctly
               if (stones->at(i) == p)
               {
                 found = true;
@@ -118,16 +183,20 @@ std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::N
 
     //TODO: break ties!
 
+    //fprintf(stderr,"[DT] matches: %lu\n",matches.size());
     if (matches.size() > 0)
     {
-      fprintf(stderr,"[DT] matches: %lu\n",matches.size());
       std::list<DecisionTree::Node*> *nodes = NULL;
       for (std::list<int>::iterator iter=matches.begin();iter!=matches.end();++iter)
       {
         std::list<DecisionTree::Node*> *subnodes = NULL;
         int newpos = (*iter);
-        Go::Color col = board->getColor(newpos);
-        stones->push_back(newpos); //TODO: add correct point if side
+        Go::Color col;
+        if (newpos < 0) // side
+          col = Go::OFFBOARD;
+        else
+          col = board->getColor(newpos);
+        stones->push_back(newpos);
 
         std::vector<DecisionTree::Option*> *options = q->getOptions();
         for (unsigned int i=0; i<options->size(); i++)
@@ -172,8 +241,7 @@ std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::N
     bool eq = attrs->at(2) == "=";
     int val = boost::lexical_cast<int>(attrs->at(3));
 
-    //TODO: get correct distance if one or more of the nodes is a side
-    int dist = board->getRectDistance(stones->at(n0),stones->at(n1));
+    int dist = DecisionTree::getDistance(board,stones->at(n0),stones->at(n1));
     bool res;
     if (eq)
       res = dist == val;
@@ -201,19 +269,24 @@ std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::N
 
     int p = stones->at(n);
     int attr = 0;
-    if (type == "SIZE")
+    if (p < 0) // side
+      attr = 0;
+    else
     {
-      if (board->inGroup(p))
-        attr = board->getGroup(p)->numOfStones();
-      else
-        attr = 0;
-    }
-    else if (type == "LIB")
-    {
-      if (board->inGroup(p))
-        attr = board->getGroup(p)->numOfPseudoLiberties();
-      else
-        attr = 0;
+      if (type == "SIZE")
+      {
+        if (board->inGroup(p))
+          attr = board->getGroup(p)->numOfStones();
+        else
+          attr = 0;
+      }
+      else if (type == "LIB")
+      {
+        if (board->inGroup(p))
+          attr = board->getGroup(p)->numOfPseudoLiberties();
+        else
+          attr = 0;
+      }
     }
 
     bool res;
