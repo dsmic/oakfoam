@@ -33,6 +33,16 @@ float DecisionTree::getWeight(Go::Board *board, Go::Move move)
     return -1;
 }
 
+float DecisionTree::combineNodeWeights(std::list<DecisionTree::Node*> *nodes)
+{
+  float weight = 1;
+  for (std::list<DecisionTree::Node*>::iterator iter=nodes->begin();iter!=nodes->end();++iter)
+  {
+    weight *= (*iter)->getWeight();
+  }
+  return weight;
+}
+
 float DecisionTree::getSparseWeight(Go::Board *board, Go::Move move)
 {
   std::vector<int> *stones = new std::vector<int>();
@@ -40,27 +50,35 @@ float DecisionTree::getSparseWeight(Go::Board *board, Go::Move move)
 
   stones->push_back(move.getPosition());
 
-  DecisionTree::Node *n = this->getSparseLeafNode(root,board,stones,invert);
+  std::list<DecisionTree::Node*> *nodes = this->getSparseLeafNodes(root,board,stones,invert);
   float w = -1;
-  if (n != NULL)
-    w = n->getWeight();
+  if (nodes != NULL)
+  {
+    w = DecisionTree::combineNodeWeights(nodes);
+    delete nodes;
+  }
 
   delete stones;
   return w;
 }
 
-DecisionTree::Node *DecisionTree::getSparseLeafNode(DecisionTree::Node *node, Go::Board *board, std::vector<int> *stones, bool invert)
+std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::Node *node, Go::Board *board, std::vector<int> *stones, bool invert)
 {
   if (node->isLeaf())
-    return node;
+  {
+    std::list<DecisionTree::Node*> *list = new std::list<DecisionTree::Node*>();
+    list->push_back(node);
+    return list;
+  }
 
-  int center = stones->at(0);
   DecisionTree::Query *q = node->getQuery();
 
   //TODO: handle compress chains param
   
   if (q->getLabel() == "NEW")
   {
+    int center = stones->at(0);
+
     std::vector<std::string> *attrs = q->getAttrs();
     bool B = (attrs->at(0).find('B') != std::string::npos);
     bool W = (attrs->at(0).find('W') != std::string::npos);
@@ -68,48 +86,83 @@ DecisionTree::Node *DecisionTree::getSparseLeafNode(DecisionTree::Node *node, Go
     std::string valstr = attrs->at(1);
     int val = boost::lexical_cast<int>(valstr);
 
-    int newpos = -1;
+    std::list<int> matches;
     for (int s=0; s<val; s++)
     {
       //XXX: need more efficient way of finding new points
-      std::list<int> matches;
       for (int p=0; p<board->getPositionMax(); p++)
       {
         Go::Color col = board->getColor(p);
         if (((invert?W:B) && col==Go::BLACK) || ((invert?B:W) && col==Go::WHITE) || (S && col==Go::OFFBOARD))
         {
           if (board->getRectDistance(center,p) <= s)
-            matches.push_back(p);
+          {
+            bool found = false;
+            for (unsigned int i=0; i<stones->size(); i++)
+            {
+              //TODO: compare sides correctly
+              if (stones->at(i) == p)
+              {
+                found = true;
+                break;
+              }
+            }
+            if (!found)
+              matches.push_back(p);
+          }
         }
       }
       if (matches.size() > 0)
-      {
-        newpos = matches.front(); // TODO: break ties properly!
         break;
+    }
+
+    //TODO: break ties!
+
+    if (matches.size() > 0)
+    {
+      fprintf(stderr,"[DT] matches: %lu\n",matches.size());
+      std::list<DecisionTree::Node*> *nodes = NULL;
+      for (std::list<int>::iterator iter=matches.begin();iter!=matches.end();++iter)
+      {
+        std::list<DecisionTree::Node*> *subnodes = NULL;
+        int newpos = (*iter);
+        Go::Color col = board->getColor(newpos);
+        stones->push_back(newpos); //TODO: add correct point if side
+
+        std::vector<DecisionTree::Option*> *options = q->getOptions();
+        for (unsigned int i=0; i<options->size(); i++)
+        {
+          std::string l = options->at(i)->getLabel();
+          if (col==Go::BLACK && l=="B")
+            subnodes = this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert);
+          else if (col==Go::WHITE && l=="W")
+            subnodes = this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert);
+          else if (col==Go::OFFBOARD && l=="S")
+            subnodes = this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert);
+          else if (col==Go::EMPTY && l=="N")
+            subnodes = this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert);
+        }
+        stones->pop_back();
+
+        if (subnodes == NULL)
+        {
+          if (nodes != NULL)
+            delete nodes;
+          return NULL;
+        }
+
+        if (nodes == NULL)
+          nodes = subnodes;
+        else
+        {
+          nodes->splice(nodes->begin(),*subnodes);
+          delete subnodes;
+        }
       }
+      return nodes;
     }
-
-    Go::Color col = Go::EMPTY;
-    if (newpos != -1)
-    {
-      stones->push_back(newpos);
-      col = board->getColor(newpos);
-    }
-
-    std::vector<DecisionTree::Option*> *options = q->getOptions();
-    for (unsigned int i=0; i<options->size(); i++)
-    {
-      std::string l = options->at(i)->getLabel();
-      if (col==Go::BLACK && l=="B")
-        return this->getSparseLeafNode(options->at(i)->getNode(),board,stones,invert);
-      else if (col==Go::WHITE && l=="W")
-        return this->getSparseLeafNode(options->at(i)->getNode(),board,stones,invert);
-      else if (col==Go::OFFBOARD && l=="S")
-        return this->getSparseLeafNode(options->at(i)->getNode(),board,stones,invert);
-      else if (col==Go::EMPTY && l=="N")
-        return this->getSparseLeafNode(options->at(i)->getNode(),board,stones,invert);
-    }
-    return NULL;
+    else
+      return NULL;
   }
   else if (q->getLabel() == "DIST")
   {
@@ -119,6 +172,7 @@ DecisionTree::Node *DecisionTree::getSparseLeafNode(DecisionTree::Node *node, Go
     bool eq = attrs->at(2) == "=";
     int val = boost::lexical_cast<int>(attrs->at(3));
 
+    //TODO: get correct distance if one or more of the nodes is a side
     int dist = board->getRectDistance(stones->at(n0),stones->at(n1));
     bool res;
     if (eq)
@@ -131,9 +185,9 @@ DecisionTree::Node *DecisionTree::getSparseLeafNode(DecisionTree::Node *node, Go
     {
       std::string l = options->at(i)->getLabel();
       if (res && l=="Y")
-        return this->getSparseLeafNode(options->at(i)->getNode(),board,stones,invert);
+        return this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert);
       else if (!res && l=="N")
-        return this->getSparseLeafNode(options->at(i)->getNode(),board,stones,invert);
+        return this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert);
     }
     return NULL;
   }
@@ -145,17 +199,22 @@ DecisionTree::Node *DecisionTree::getSparseLeafNode(DecisionTree::Node *node, Go
     bool eq = attrs->at(2) == "=";
     int val = boost::lexical_cast<int>(attrs->at(3));
 
+    int p = stones->at(n);
     int attr = 0;
     if (type == "SIZE")
     {
-      int p = stones->at(n);
       if (board->inGroup(p))
         attr = board->getGroup(p)->numOfStones();
       else
         attr = 0;
     }
     else if (type == "LIB")
-      attr = board->getGroup(stones->at(n))->numOfPseudoLiberties();
+    {
+      if (board->inGroup(p))
+        attr = board->getGroup(p)->numOfPseudoLiberties();
+      else
+        attr = 0;
+    }
 
     bool res;
     if (eq)
@@ -168,9 +227,9 @@ DecisionTree::Node *DecisionTree::getSparseLeafNode(DecisionTree::Node *node, Go
     {
       std::string l = options->at(i)->getLabel();
       if (res && l=="Y")
-        return this->getSparseLeafNode(options->at(i)->getNode(),board,stones,invert);
+        return this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert);
       else if (!res && l=="N")
-        return this->getSparseLeafNode(options->at(i)->getNode(),board,stones,invert);
+        return this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert);
     }
     return NULL;
   }
