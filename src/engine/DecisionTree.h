@@ -10,10 +10,16 @@
 class DecisionTree
 {
   public:
+    enum Type
+    {
+      SPARSE
+    };
+
     ~DecisionTree();
 
     std::string toString();
 
+    Type getType() { return type; };
     float getWeight(Go::Board *board, Go::Move move);
 
     static DecisionTree *parseString(std::string rawdata);
@@ -52,10 +58,13 @@ class DecisionTree
     class Stats
     {
       public:
+        Stats(Type type);
         Stats(std::vector<StatPerm*> *sp);
         ~Stats();
 
         std::string toString(int indent);
+
+        std::vector<StatPerm*> *getStatPerms() { return statperms; };
 
       private:
         std::vector<StatPerm*> *statperms;
@@ -113,10 +122,11 @@ class DecisionTree
         float weight;
     };
 
+    Type type;
     std::vector<std::string> *attrs;
     Node *root;
 
-    DecisionTree(std::vector<std::string> *a, DecisionTree::Node *r);
+    DecisionTree(Type t, std::vector<std::string> *a, DecisionTree::Node *r);
 
     float getSparseWeight(Go::Board *board, Go::Move move);
     std::list<Node*> *getSparseLeafNodes(Node *node, Go::Board *board, std::vector<int> *stones, bool invert);
@@ -126,11 +136,11 @@ class DecisionTree
 
     static std::string stripWhitespace(std::string in);
     static std::vector<std::string> *parseAttrs(std::string data, unsigned int &pos);
-    static Node *parseNode(std::string data, unsigned int &pos);
+    static Node *parseNode(Type type, std::string data, unsigned int &pos);
     static Stats *parseStats(std::string data, unsigned int &pos);
     static std::vector<StatPerm*> *parseStatPerms(std::string data, unsigned int &pos);
     static Range *parseRange(std::string data, unsigned int &pos);
-    static std::vector<Option*> *parseOptions(std::string data, unsigned int &pos);
+    static std::vector<Option*> *parseOptions(Type type, std::string data, unsigned int &pos);
     static float *parseNumber(std::string data, unsigned int &pos);
     static bool isText(char c);
 };

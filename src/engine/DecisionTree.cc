@@ -8,8 +8,9 @@
 #define TEXT "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<>=!."
 #define WHITESPACE " \t\r\n"
 
-DecisionTree::DecisionTree(std::vector<std::string> *a, DecisionTree::Node *r)
+DecisionTree::DecisionTree(DecisionTree::Type t, std::vector<std::string> *a, DecisionTree::Node *r)
 {
+  type = t;
   attrs = a;
   root = r;
 }
@@ -25,9 +26,7 @@ float DecisionTree::getWeight(Go::Board *board, Go::Move move)
   if (!board->validMove(move))
     return -1;
 
-  std::string type = attrs->at(0);
-  fprintf(stderr,"[DT] type: '%s'\n",type.c_str());
-  if (type == "SPARSE")
+  if (type == SPARSE)
     return this->getSparseWeight(board,move);
   else
     return -1;
@@ -623,6 +622,17 @@ DecisionTree *DecisionTree::parseString(std::string rawdata)
   if (attrs == NULL)
     return NULL;
 
+  Type type;
+  std::string typestr = attrs->at(0);
+  if (typestr == "SPARSE")
+    type = SPARSE;
+  else
+  {
+    fprintf(stderr,"[DT] Error! Invalid type: '%s'\n",typestr.c_str());
+    delete attrs;
+    return NULL;
+  }
+
   if (attrs->size()!=2 || attrs->at(0)!="SPARSE" || attrs->at(1)!="NOCOMP") //TODO: extend to more tree types
   {
     fprintf(stderr,"[DT] Error! Invalid attributes for tree\n");
@@ -630,7 +640,7 @@ DecisionTree *DecisionTree::parseString(std::string rawdata)
     return NULL;
   }
 
-  DecisionTree::Node *root = DecisionTree::parseNode(data,pos);
+  DecisionTree::Node *root = DecisionTree::parseNode(type,data,pos);
   if (root == NULL)
   {
     delete attrs;
@@ -646,7 +656,7 @@ DecisionTree *DecisionTree::parseString(std::string rawdata)
   }
   pos++;
 
-  return new DecisionTree(attrs,root);
+  return new DecisionTree(type,attrs,root);
 }
 
 std::vector<std::string> *DecisionTree::parseAttrs(std::string data, unsigned int &pos)
@@ -692,11 +702,17 @@ std::vector<std::string> *DecisionTree::parseAttrs(std::string data, unsigned in
   }
 }
 
-DecisionTree::Node *DecisionTree::parseNode(std::string data, unsigned int &pos)
+DecisionTree::Node *DecisionTree::parseNode(DecisionTree::Type type, std::string data, unsigned int &pos)
 {
   DecisionTree::Stats *stats = DecisionTree::parseStats(data,pos);
   if (stats == NULL)
     return NULL;
+
+  if (stats->getStatPerms()->size() == 0) // populate empty stats
+  {
+    delete stats;
+    stats = new DecisionTree::Stats(type);
+  }
 
   if (data.substr(pos,8) == "(WEIGHT[")
   {
@@ -761,7 +777,7 @@ DecisionTree::Node *DecisionTree::parseNode(std::string data, unsigned int &pos)
       return NULL;
     }
 
-    std::vector<DecisionTree::Option*> *options = DecisionTree::parseOptions(data,pos);
+    std::vector<DecisionTree::Option*> *options = DecisionTree::parseOptions(type,data,pos);
     if (options == NULL)
     {
       delete stats;
@@ -783,9 +799,15 @@ DecisionTree::Stats *DecisionTree::parseStats(std::string data, unsigned int &po
   }
   pos += 7;
 
-  std::vector<DecisionTree::StatPerm*> *sp = DecisionTree::parseStatPerms(data,pos);
-  if (sp == NULL)
-    return NULL;
+  std::vector<DecisionTree::StatPerm*> *sp;
+  if (data[pos] == '(')
+  {
+    sp = DecisionTree::parseStatPerms(data,pos);
+    if (sp == NULL)
+      return NULL;
+  }
+  else
+    sp = new std::vector<DecisionTree::StatPerm*>();
 
   if (data[pos] != ')')
   {
@@ -978,7 +1000,7 @@ DecisionTree::Range *DecisionTree::parseRange(std::string data, unsigned int &po
   }
 }
 
-std::vector<DecisionTree::Option*> *DecisionTree::parseOptions(std::string data, unsigned int &pos)
+std::vector<DecisionTree::Option*> *DecisionTree::parseOptions(DecisionTree::Type type, std::string data, unsigned int &pos)
 {
   std::string label = "";
   while (pos<data.length() && DecisionTree::isText(data[pos]))
@@ -999,14 +1021,14 @@ std::vector<DecisionTree::Option*> *DecisionTree::parseOptions(std::string data,
   }
   pos++;
 
-  DecisionTree::Node *node = DecisionTree::parseNode(data,pos);
+  DecisionTree::Node *node = DecisionTree::parseNode(type,data,pos);
   if (node == NULL)
     return NULL;
 
   DecisionTree::Option *opt = new DecisionTree::Option(label,node);
   if (DecisionTree::isText(data[pos]))
   {
-    std::vector<DecisionTree::Option*> *optstail = DecisionTree::parseOptions(data,pos);
+    std::vector<DecisionTree::Option*> *optstail = DecisionTree::parseOptions(type,data,pos);
     if (optstail == NULL)
     {
       delete opt;
@@ -1115,6 +1137,30 @@ DecisionTree::Node::~Node()
 DecisionTree::Stats::Stats(std::vector<StatPerm*> *sp)
 {
   statperms = sp;
+}
+
+DecisionTree::Stats::Stats(DecisionTree::Type type)
+{
+  switch (type)
+  {
+    case SPARSE:
+      statperms = new std::vector<DecisionTree::StatPerm*>();
+
+      for (int i=1; i<8; i++)
+      {
+        std::string cols;
+        cols += (i&0x01?"B":"");
+        cols += (i&0x02?"W":"");
+        cols += (i&0x04?"S":"");
+        std::vector<std::string> *attrs = new std::vector<std::string>();
+        attrs->push_back(cols);
+        statperms->push_back(new DecisionTree::StatPerm("NEW",attrs,new DecisionTree::Range(1,100,0)));
+      }
+
+      // add stats for DIST and ATTR
+
+      break;
+  }
 }
 
 DecisionTree::Stats::~Stats()
