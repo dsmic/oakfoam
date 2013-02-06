@@ -20,7 +20,7 @@ class DecisionTree
     std::string toString();
 
     Type getType() { return type; };
-    float getWeight(Go::Board *board, Go::Move move);
+    float getWeight(Go::Board *board, Go::Move move, bool updatestats = false);
 
     static DecisionTree *parseString(std::string rawdata);
     static DecisionTree *loadFile(std::string filename);
@@ -141,8 +141,8 @@ class DecisionTree
 
     DecisionTree(Type t, std::vector<std::string> *a, DecisionTree::Node *r);
 
-    float getSparseWeight(Go::Board *board, Go::Move move);
-    std::list<Node*> *getSparseLeafNodes(Node *node, Go::Board *board, std::vector<int> *stones, bool invert);
+    float getSparseWeight(Go::Board *board, Go::Move move, bool updatestats);
+    std::list<Node*> *getSparseLeafNodes(Node *node, Go::Board *board, std::vector<int> *stones, bool invert, bool updatestats);
 
     static float combineNodeWeights(std::list<Node*> *nodes);
     static int getDistance(Go::Board *board, int p1, int p2);

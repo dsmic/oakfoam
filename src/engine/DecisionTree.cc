@@ -21,13 +21,13 @@ DecisionTree::~DecisionTree()
   delete root;
 }
 
-float DecisionTree::getWeight(Go::Board *board, Go::Move move)
+float DecisionTree::getWeight(Go::Board *board, Go::Move move, bool updatestats)
 {
   if (!board->validMove(move))
     return -1;
 
   if (type == SPARSE)
-    return this->getSparseWeight(board,move);
+    return this->getSparseWeight(board,move,updatestats);
   else
     return -1;
 }
@@ -81,14 +81,14 @@ int DecisionTree::getDistance(Go::Board *board, int p1, int p2)
     return board->getRectDistance(p1,p2);
 }
 
-float DecisionTree::getSparseWeight(Go::Board *board, Go::Move move)
+float DecisionTree::getSparseWeight(Go::Board *board, Go::Move move, bool updatestats)
 {
   std::vector<int> *stones = new std::vector<int>();
   bool invert = (move.getColor() != Go::BLACK);
 
   stones->push_back(move.getPosition());
 
-  std::list<DecisionTree::Node*> *nodes = this->getSparseLeafNodes(root,board,stones,invert);
+  std::list<DecisionTree::Node*> *nodes = this->getSparseLeafNodes(root,board,stones,invert,updatestats);
   float w = -1;
   if (nodes != NULL)
   {
@@ -100,8 +100,13 @@ float DecisionTree::getSparseWeight(Go::Board *board, Go::Move move)
   return w;
 }
 
-std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::Node *node, Go::Board *board, std::vector<int> *stones, bool invert)
+std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::Node *node, Go::Board *board, std::vector<int> *stones, bool invert, bool updatestats)
 {
+  if (updatestats)
+  {
+    //TODO: update stats here
+  }
+
   if (node->isLeaf())
   {
     std::list<DecisionTree::Node*> *list = new std::list<DecisionTree::Node*>();
@@ -324,13 +329,13 @@ std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::N
         {
           std::string l = options->at(i)->getLabel();
           if (col==Go::BLACK && l=="B")
-            subnodes = this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert);
+            subnodes = this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert,updatestats);
           else if (col==Go::WHITE && l=="W")
-            subnodes = this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert);
+            subnodes = this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert,updatestats);
           else if (col==Go::OFFBOARD && l=="S")
-            subnodes = this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert);
+            subnodes = this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert,updatestats);
           else if (col==Go::EMPTY && l=="N")
-            subnodes = this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert);
+            subnodes = this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert,updatestats);
         }
         stones->pop_back();
 
@@ -358,7 +363,7 @@ std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::N
       {
         std::string l = options->at(i)->getLabel();
         if (l=="N")
-          return this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert);
+          return this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert,updatestats);
       }
       return NULL;
     }
@@ -383,9 +388,9 @@ std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::N
     {
       std::string l = options->at(i)->getLabel();
       if (res && l=="Y")
-        return this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert);
+        return this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert,updatestats);
       else if (!res && l=="N")
-        return this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert);
+        return this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert,updatestats);
     }
     return NULL;
   }
@@ -430,9 +435,9 @@ std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::N
     {
       std::string l = options->at(i)->getLabel();
       if (res && l=="Y")
-        return this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert);
+        return this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert,updatestats);
       else if (!res && l=="N")
-        return this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert);
+        return this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert,updatestats);
     }
     return NULL;
   }
@@ -1174,12 +1179,11 @@ DecisionTree::Stats::Stats(DecisionTree::Type type, unsigned int maxnode)
       statperms = new std::vector<DecisionTree::StatPerm*>();
 
       // NEW
-      for (int i=1; i<8; i++)
+      std::string colslist = "BWS";
+      for (unsigned int i=0; i<colslist.size(); i++)
       {
         std::string cols;
-        cols += (i&0x01?"B":"");
-        cols += (i&0x02?"W":"");
-        cols += (i&0x04?"S":"");
+        cols = colslist[i];
         std::vector<std::string> *attrs = new std::vector<std::string>();
         attrs->push_back(cols);
         statperms->push_back(new DecisionTree::StatPerm("NEW",attrs,new DecisionTree::Range(1,100,0)));
