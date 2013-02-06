@@ -353,7 +353,16 @@ std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::N
       return nodes;
     }
     else
+    {
+      std::vector<DecisionTree::Option*> *options = q->getOptions();
+      for (unsigned int i=0; i<options->size(); i++)
+      {
+        std::string l = options->at(i)->getLabel();
+        if (l=="N")
+          return this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert);
+      }
       return NULL;
+    }
   }
   else if (q->getLabel() == "DIST")
   {
