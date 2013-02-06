@@ -58,7 +58,7 @@ class DecisionTree
     class Stats
     {
       public:
-        Stats(Type type);
+        Stats(Type type, unsigned int maxnode);
         Stats(std::vector<StatPerm*> *sp);
         ~Stats();
 
@@ -71,6 +71,7 @@ class DecisionTree
     };
 
     class Node;
+    class Query;
 
     class Option
     {
@@ -79,10 +80,13 @@ class DecisionTree
         ~Option();
 
         std::string toString(int indent);
+        Query *getParent() { return parent; };
+        void setParent(Query *p) { parent = p; };
         std::string getLabel() { return label; };
         Node *getNode() { return node; };
 
       private:
+        Query *parent;
         std::string label;
         Node *node;
     };
@@ -94,11 +98,14 @@ class DecisionTree
         ~Query();
 
         std::string toString(int indent);
+        Node *getParent() { return parent; };
+        void setParent(Node *p) { parent = p; };
         std::string getLabel() { return label; };
         std::vector<std::string> *getAttrs() { return attrs; };
         std::vector<Option*> *getOptions() { return options; };
 
       private:
+        Node *parent;
         std::string label;
         std::vector<std::string> *attrs;
         std::vector<Option*> *options;
@@ -112,11 +119,17 @@ class DecisionTree
         ~Node();
 
         std::string toString(int indent);
+        bool isRoot() { return parent==NULL; };
+        Option *getParent() { return parent; };
+        void setParent(Option *p) { parent = p; };
         float getWeight() { return weight; };
         bool isLeaf() { return query == NULL; };
         Query *getQuery() { return query; };
 
+        void populateEmptyStats(Type type, unsigned int maxnode = 0);
+
       private:
+        Option *parent;
         Stats *stats;
         Query *query;
         float weight;

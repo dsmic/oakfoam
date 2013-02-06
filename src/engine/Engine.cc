@@ -12,6 +12,7 @@
 #else
   #define MPIRANK0_ONLY(__body) { __body }
 #endif
+#include "DecisionTree.h"
 #ifdef HAVE_WEB
   #include "../web/Web.h"
 #endif

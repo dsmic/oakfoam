@@ -174,7 +174,6 @@
 #include "Book.h"
 #include "Playout.h"
 #include "Benson.h"
-#include "DecisionTree.h"
 #include "Worker.h"
 #include "../gtp/Gtp.h"
 #ifdef HAVE_WEB

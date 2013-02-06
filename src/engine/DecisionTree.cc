@@ -656,6 +656,8 @@ DecisionTree *DecisionTree::parseString(std::string rawdata)
   }
   pos++;
 
+  root->populateEmptyStats(type);
+
   return new DecisionTree(type,attrs,root);
 }
 
@@ -707,12 +709,6 @@ DecisionTree::Node *DecisionTree::parseNode(DecisionTree::Type type, std::string
   DecisionTree::Stats *stats = DecisionTree::parseStats(data,pos);
   if (stats == NULL)
     return NULL;
-
-  if (stats->getStatPerms()->size() == 0) // populate empty stats
-  {
-    delete stats;
-    stats = new DecisionTree::Stats(type);
-  }
 
   if (data.substr(pos,8) == "(WEIGHT[")
   {
@@ -1115,13 +1111,17 @@ std::string DecisionTree::stripWhitespace(std::string in)
 
 DecisionTree::Node::Node(Stats *s, Query *q)
 {
+  parent = NULL;
   stats = s;
   query = q;
   weight = 0;
+
+  query->setParent(this);
 }
 
 DecisionTree::Node::Node(Stats *s, float w)
 {
+  parent = NULL;
   stats = s;
   query = NULL;
   weight = w;
@@ -1134,18 +1134,46 @@ DecisionTree::Node::~Node()
     delete query;
 }
 
+void DecisionTree::Node::populateEmptyStats(DecisionTree::Type type, unsigned int maxnode)
+{
+  if (stats->getStatPerms()->size() == 0)
+  {
+    delete stats;
+    stats = new DecisionTree::Stats(type,maxnode);
+  }
+
+  if (query != NULL)
+  {
+    std::vector<DecisionTree::Option*> *options = query->getOptions();
+    for (unsigned int i=0; i<options->size(); i++)
+    {
+      DecisionTree::Option *opt = options->at(i);
+      bool addnode = false;
+      switch (type)
+      {
+        case SPARSE:
+          if (query->getLabel()=="NEW" && opt->getLabel()!="N")
+            addnode = true;
+          break;
+      }
+      opt->getNode()->populateEmptyStats(type,maxnode+(addnode?1:0));
+    }
+  }
+}
+
 DecisionTree::Stats::Stats(std::vector<StatPerm*> *sp)
 {
   statperms = sp;
 }
 
-DecisionTree::Stats::Stats(DecisionTree::Type type)
+DecisionTree::Stats::Stats(DecisionTree::Type type, unsigned int maxnode)
 {
   switch (type)
   {
     case SPARSE:
       statperms = new std::vector<DecisionTree::StatPerm*>();
 
+      // NEW
       for (int i=1; i<8; i++)
       {
         std::string cols;
@@ -1157,7 +1185,31 @@ DecisionTree::Stats::Stats(DecisionTree::Type type)
         statperms->push_back(new DecisionTree::StatPerm("NEW",attrs,new DecisionTree::Range(1,100,0)));
       }
 
-      // add stats for DIST and ATTR
+      for (unsigned int i=0; i<=maxnode; i++)
+      {
+        // DIST
+        for (unsigned int j=i+1; j<=maxnode; j++)
+        {
+          std::vector<std::string> *attrs = new std::vector<std::string>();
+          attrs->push_back(boost::lexical_cast<std::string>(i));
+          attrs->push_back(boost::lexical_cast<std::string>(j));
+          statperms->push_back(new DecisionTree::StatPerm("DIST",attrs,new DecisionTree::Range(1,100,0)));
+        }
+
+        // ATTR
+        {
+          std::vector<std::string> *attrs = new std::vector<std::string>();
+          attrs->push_back("LIB");
+          attrs->push_back(boost::lexical_cast<std::string>(i));
+          statperms->push_back(new DecisionTree::StatPerm("ATTR",attrs,new DecisionTree::Range(1,100,0)));
+        }
+        {
+          std::vector<std::string> *attrs = new std::vector<std::string>();
+          attrs->push_back("SIZE");
+          attrs->push_back(boost::lexical_cast<std::string>(i));
+          statperms->push_back(new DecisionTree::StatPerm("ATTR",attrs,new DecisionTree::Range(1,100,0)));
+        }
+      }
 
       break;
   }
@@ -1213,9 +1265,15 @@ DecisionTree::Range::~Range()
 
 DecisionTree::Query::Query(std::string l, std::vector<std::string> *a, std::vector<Option*> *o)
 {
+  parent = NULL;
   label = l;
   attrs = a;
   options = o;
+
+  for (unsigned int i=0;i<options->size();i++)
+  {
+    options->at(i)->setParent(this);
+  }
 }
 
 DecisionTree::Query::~Query()
@@ -1230,8 +1288,10 @@ DecisionTree::Query::~Query()
 
 DecisionTree::Option::Option(std::string l, Node *n)
 {
+  parent = NULL;
   label = l;
   node = n;
+  node->setParent(this);
 }
 
 DecisionTree::Option::~Option()
