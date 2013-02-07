@@ -30,13 +30,21 @@ class DecisionTree
     {
       public:
         Range(float s, float e, float v, Range *l, Range *r);
-        Range(float s, float e, float v);
+        Range(float s, float e, float v = 0);
         ~Range();
 
         std::string toString(int indent);
+        bool isRoot() { return parent==NULL; };
+        Range *getParent() { return parent; };
+        void setParent(Range *p) { parent = p; };
+        bool isTerminal() { return left==NULL && right==NULL; };
+        float getStart() { return start; };
+        float getEnd() { return end; };
+        void addVal(float v);
 
       private:
         float start, end, val;
+        Range *parent;
         Range *left;
         Range *right;
     };
@@ -48,6 +56,9 @@ class DecisionTree
         ~StatPerm();
 
         std::string toString(int indent);
+        std::string getLabel() { return label; };
+        std::vector<std::string> *getAttrs() { return attrs; };
+        Range *getRange() { return range; };
 
       private:
         std::string label;
@@ -63,7 +74,6 @@ class DecisionTree
         ~Stats();
 
         std::string toString(int indent);
-
         std::vector<StatPerm*> *getStatPerms() { return statperms; };
 
       private:
@@ -122,6 +132,7 @@ class DecisionTree
         bool isRoot() { return parent==NULL; };
         Option *getParent() { return parent; };
         void setParent(Option *p) { parent = p; };
+        Stats *getStats() { return stats; };
         float getWeight() { return weight; };
         bool isLeaf() { return query == NULL; };
         Query *getQuery() { return query; };

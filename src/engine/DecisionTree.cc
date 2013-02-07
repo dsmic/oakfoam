@@ -104,7 +104,140 @@ std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::N
 {
   if (updatestats)
   {
-    //TODO: update stats here
+    std::vector<DecisionTree::StatPerm*> *statperms = node->getStats()->getStatPerms();
+    for (unsigned int i=0; i<statperms->size(); i++)
+    {
+      DecisionTree::StatPerm *sp = statperms->at(i);
+
+      std::string spt = sp->getLabel();
+      std::vector<std::string> *attrs = sp->getAttrs();
+      fprintf(stderr,"[DT] SP type: '%s'\n",spt.c_str()); //!!!!!!!!!!!!!!!!!!!!!!!!
+      if (spt=="NEW")
+      {
+        std::string cols = attrs->at(0);
+        bool B = cols=="B";
+        bool W = cols=="W";
+        bool S = cols=="S";
+        int center = stones->at(0);
+
+        bool resfound = false;
+        int res = 0;
+        int resmax = sp->getRange()->getEnd();
+        for (int s=0; s<resmax; s++)
+        {
+          if (B || W)
+          {
+            for (int ii=0; ii<board->getSize(); ii++)
+            {
+              for (int jj=0; jj<board->getSize(); jj++)
+              {
+                int p = Go::Position::xy2pos(ii,jj,board->getSize());
+                Go::Color col = board->getColor(p);
+                if (((invert?W:B) && col==Go::BLACK) || ((invert?B:W) && col==Go::WHITE))
+                {
+                  if (DecisionTree::getDistance(board,center,p) <= s)
+                  {
+                    bool found = false;
+                    for (unsigned int iii=0; iii<stones->size(); iii++)
+                    {
+                      if (stones->at(iii) == p)
+                      {
+                        found = true;
+                        break;
+                      }
+                    }
+                    if (!found)
+                    {
+                      resfound = true;
+                      res = s;
+                      break;
+                    }
+                  }
+                }
+              }
+            }
+          }
+          else if (S)
+          {
+            for (int p=-1; p>=-4; p--)
+            {
+              if (DecisionTree::getDistance(board,center,p) <= s)
+              {
+                bool found = false;
+                for (unsigned int ii=0; ii<stones->size(); ii++)
+                {
+                  if (stones->at(ii) == p)
+                  {
+                    found = true;
+                    break;
+                  }
+                }
+                if (!found)
+                {
+                  resfound = true;
+                  res = s;
+                  break;
+                }
+              }
+            }
+          }
+          else
+          {
+            fprintf(stderr,"[DT] Error! Unknown attribute: '%s'\n",cols.c_str());
+            return NULL;
+          }
+          if (resfound)
+            break;
+        }
+
+        if (!resfound)
+          res = resmax-1;
+        sp->getRange()->addVal(res);
+      }
+      else if (spt=="DIST")
+      {
+        std::vector<std::string> *attrs = sp->getAttrs();
+        int n0 = boost::lexical_cast<int>(attrs->at(0));
+        int n1 = boost::lexical_cast<int>(attrs->at(1));
+
+        int dist = DecisionTree::getDistance(board,stones->at(n0),stones->at(n1));
+        sp->getRange()->addVal(dist);
+      }
+      else if (spt=="ATTR")
+      {
+        std::vector<std::string> *attrs = sp->getAttrs();
+        std::string type = attrs->at(0);
+        int n = boost::lexical_cast<int>(attrs->at(1));
+
+        int p = stones->at(n);
+        int attr = 0;
+        if (p < 0) // side
+          attr = 0;
+        else
+        {
+          if (type == "SIZE")
+          {
+            if (board->inGroup(p))
+              attr = board->getGroup(p)->numOfStones();
+            else
+              attr = 0;
+          }
+          else if (type == "LIB")
+          {
+            if (board->inGroup(p))
+              attr = board->getGroup(p)->numOfPseudoLiberties();
+            else
+              attr = 0;
+          }
+        }
+        sp->getRange()->addVal(attr);
+      }
+      else
+      {
+        fprintf(stderr,"[DT] Error! Unknown stat perm type: '%s'\n",spt.c_str());
+        return NULL;
+      }
+    }
   }
 
   if (node->isLeaf())
@@ -1177,6 +1310,8 @@ DecisionTree::Stats::Stats(DecisionTree::Type type, unsigned int maxnode)
   {
     case SPARSE:
       statperms = new std::vector<DecisionTree::StatPerm*>();
+      float rangemin = 0;
+      float rangemax = 100;
 
       // NEW
       std::string colslist = "BWS";
@@ -1186,7 +1321,7 @@ DecisionTree::Stats::Stats(DecisionTree::Type type, unsigned int maxnode)
         cols = colslist[i];
         std::vector<std::string> *attrs = new std::vector<std::string>();
         attrs->push_back(cols);
-        statperms->push_back(new DecisionTree::StatPerm("NEW",attrs,new DecisionTree::Range(1,100,0)));
+        statperms->push_back(new DecisionTree::StatPerm("NEW",attrs,new DecisionTree::Range(rangemin,rangemax)));
       }
 
       for (unsigned int i=0; i<=maxnode; i++)
@@ -1197,7 +1332,7 @@ DecisionTree::Stats::Stats(DecisionTree::Type type, unsigned int maxnode)
           std::vector<std::string> *attrs = new std::vector<std::string>();
           attrs->push_back(boost::lexical_cast<std::string>(i));
           attrs->push_back(boost::lexical_cast<std::string>(j));
-          statperms->push_back(new DecisionTree::StatPerm("DIST",attrs,new DecisionTree::Range(1,100,0)));
+          statperms->push_back(new DecisionTree::StatPerm("DIST",attrs,new DecisionTree::Range(rangemin,rangemax)));
         }
 
         // ATTR
@@ -1205,13 +1340,13 @@ DecisionTree::Stats::Stats(DecisionTree::Type type, unsigned int maxnode)
           std::vector<std::string> *attrs = new std::vector<std::string>();
           attrs->push_back("LIB");
           attrs->push_back(boost::lexical_cast<std::string>(i));
-          statperms->push_back(new DecisionTree::StatPerm("ATTR",attrs,new DecisionTree::Range(1,100,0)));
+          statperms->push_back(new DecisionTree::StatPerm("ATTR",attrs,new DecisionTree::Range(rangemin,rangemax)));
         }
         {
           std::vector<std::string> *attrs = new std::vector<std::string>();
           attrs->push_back("SIZE");
           attrs->push_back(boost::lexical_cast<std::string>(i));
-          statperms->push_back(new DecisionTree::StatPerm("ATTR",attrs,new DecisionTree::Range(1,100,0)));
+          statperms->push_back(new DecisionTree::StatPerm("ATTR",attrs,new DecisionTree::Range(rangemin,rangemax)));
         }
       }
 
@@ -1246,8 +1381,12 @@ DecisionTree::Range::Range(float s, float e, float v, Range *l, Range *r)
   start = s;
   end = e;
   val = v;
+  parent = NULL;
   left = l;
   right = r;
+
+  left->setParent(this);
+  right->setParent(this);
 }
 
 DecisionTree::Range::Range(float s, float e, float v)
@@ -1255,6 +1394,7 @@ DecisionTree::Range::Range(float s, float e, float v)
   start = s;
   end = e;
   val = v;
+  parent = NULL;
   left = NULL;
   right = NULL;
 }
@@ -1265,6 +1405,28 @@ DecisionTree::Range::~Range()
     delete left;
   if (right != NULL)
     delete right;
+}
+
+void DecisionTree::Range::addVal(float v)
+{
+  if (v<start || v>=end)
+    return;
+
+  if (val>10 || (this->isRoot() && this->isTerminal())) //XXX: parameterise 10
+  {
+    float mid = start + (end - start)/2;
+    left = new DecisionTree::Range(start,mid);
+    right = new DecisionTree::Range(mid,end);
+    left->setParent(this);
+    right->setParent(this);
+  }
+
+  val++;
+
+  if (left!=NULL)
+    left->addVal(v);
+  if (right!=NULL)
+    right->addVal(v);
 }
 
 DecisionTree::Query::Query(std::string l, std::vector<std::string> *a, std::vector<Option*> *o)

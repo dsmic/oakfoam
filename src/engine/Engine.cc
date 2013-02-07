@@ -2818,7 +2818,9 @@ void Engine::gtpDTLoad(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   
   DecisionTree *dt = DecisionTree::loadFile(filename);
   fprintf(stderr,"DT:\n%s\n",dt->toString().c_str());
-  fprintf(stderr,"DT weight at (3,3): %.2f\n",dt->getWeight(me->currentboard, Go::Move(Go::BLACK,3,3,me->boardsize)));
+  float w = dt->getWeight(me->currentboard, Go::Move(Go::BLACK,3,3,me->boardsize), true);
+  fprintf(stderr,"DT weight at (3,3): %.2f\n",w);
+  fprintf(stderr,"DT:\n%s\n",dt->toString().c_str());
   
   if (dt!=NULL)
   {
