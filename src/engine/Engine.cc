@@ -525,6 +525,9 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("showraveratiosother",this,&Engine::gtpShowRAVERatiosOther);
 
   gtpe->addFunctionCommand("dtload",this,&Engine::gtpDTLoad);
+  gtpe->addFunctionCommand("dtclear",this,&Engine::gtpDTClear);
+  gtpe->addFunctionCommand("dtprint",this,&Engine::gtpDTPrint);
+  gtpe->addFunctionCommand("dtat",this,&Engine::gtpDTAt);
   
   //gtpe->addAnalyzeCommand("final_score","Final Score","string");
   //gtpe->addAnalyzeCommand("showboard","Show Board","string");
@@ -2817,13 +2820,7 @@ void Engine::gtpDTLoad(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   std::string filename=cmd->getStringArg(0);
   
   DecisionTree *dt = DecisionTree::loadFile(filename);
-  fprintf(stderr,"DT:\n%s\n",dt->toString().c_str());
-  Go::Move move = Go::Move(Go::BLACK,3,3,me->boardsize);
-
-  float w = dt->getWeight(me->currentboard, move, true);
-  fprintf(stderr,"DT weight for %s: %.2f\n",move.toString(me->boardsize).c_str(),w);
-
-  dt->updateLeafIds();
+  /*dt->updateLeafIds();
   fprintf(stderr,"DT leaf ids:");
   std::list<int> *ids = dt->getLeafIds(me->currentboard, move);
   for (std::list<int>::iterator iter=ids->begin();iter!=ids->end();++iter)
@@ -2831,12 +2828,11 @@ void Engine::gtpDTLoad(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     fprintf(stderr," %d",(*iter));
   }
   delete ids;
-  fprintf(stderr,"\n");
-
-  fprintf(stderr,"DT:\n%s\n",dt->toString().c_str());
+  fprintf(stderr,"\n");*/
   
   if (dt!=NULL)
   {
+    me->decisiontrees.push_back(dt);
     gtpe->getOutput()->startResponse(cmd);
     gtpe->getOutput()->printf("loaded decision tree: %s",filename.c_str());
     gtpe->getOutput()->endResponse();
@@ -2847,6 +2843,61 @@ void Engine::gtpDTLoad(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     gtpe->getOutput()->printf("error loading decision tree: %s",filename.c_str());
     gtpe->getOutput()->endResponse();
   }
+}
+
+void Engine::gtpDTClear(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  me->decisiontrees.clear();
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printf("cleared decision trees");
+  gtpe->getOutput()->endResponse();
+}
+
+void Engine::gtpDTPrint(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printf("decision trees:\n");
+  for (std::list<DecisionTree*>::iterator iter=me->decisiontrees.begin();iter!=me->decisiontrees.end();++iter)
+  {
+    gtpe->getOutput()->printf("%s\n",(*iter)->toString().c_str());
+  }
+  gtpe->getOutput()->endResponse(true);
+}
+
+void Engine::gtpDTAt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("vertex is required");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  Gtp::Vertex vert = cmd->getVertexArg(0);
+  
+  if (vert.x==-3 && vert.y==-3)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("invalid vertex");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  int pos=Go::Position::xy2pos(vert.x,vert.y,me->boardsize);
+  Go::Move move=Go::Move(me->currentboard->nextToMove(),pos);
+
+  float w = DecisionTree::getCollectionWeight(&(me->decisiontrees), me->currentboard, move);
+
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printf("weight for %s: %.2f",move.toString(me->boardsize).c_str(),w);
+  gtpe->getOutput()->endResponse();
 }
 
 void Engine::gtpGameOver(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)

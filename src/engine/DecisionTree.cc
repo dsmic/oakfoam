@@ -45,6 +45,21 @@ float DecisionTree::getWeight(Go::Board *board, Go::Move move, bool updatetree)
     return -1;
 }
 
+float DecisionTree::getCollectionWeight(std::list<DecisionTree*> *trees, Go::Board *board, Go::Move move, bool updatetree)
+{
+  float weight = 1;
+
+  for (std::list<DecisionTree*>::iterator iter=trees->begin();iter!=trees->end();++iter)
+  {
+    float w = (*iter)->getWeight(board, move, updatetree);
+    if (w == -1)
+      return -1;
+    weight *= w;
+  }
+
+  return weight;
+}
+
 std::list<int> *DecisionTree::getLeafIds(Go::Board *board, Go::Move move)
 {
   if (!board->validMove(move))
@@ -68,6 +83,58 @@ std::list<int> *DecisionTree::getLeafIds(Go::Board *board, Go::Move move)
   }
   delete nodes;
   return ids;
+}
+
+std::list<int> *DecisionTree::getCollectionLeafIds(std::list<DecisionTree*> *trees, Go::Board *board, Go::Move move)
+{
+  std::list<int> *collids = new std::list<int>();
+  int offset = 0;
+
+  for (std::list<DecisionTree*>::iterator iter=trees->begin();iter!=trees->end();++iter)
+  {
+    std::list<int> *ids = (*iter)->getLeafIds(board, move);
+    if (ids == NULL)
+    {
+      delete collids;
+      return NULL;
+    }
+    for (std::list<int>::iterator iter2=ids->begin();iter2!=ids->end();++iter2)
+    {
+      collids->push_back(offset + (*iter2));
+    }
+    delete ids;
+    offset += (*iter)->getLeafCount();
+  }
+
+  return collids;
+}
+
+int DecisionTree::getCollectionLeafCount(std::list<DecisionTree*> *trees)
+{
+  int count = 0;
+
+  for (std::list<DecisionTree*>::iterator iter=trees->begin();iter!=trees->end();++iter)
+  {
+    count += (*iter)->getLeafCount();
+  }
+
+  return count;
+}
+
+void DecisionTree::setCollectionLeafWeight(std::list<DecisionTree*> *trees, int id, float w)
+{
+  int offset = 0;
+
+  for (std::list<DecisionTree*>::iterator iter=trees->begin();iter!=trees->end();++iter)
+  {
+    int lc = (*iter)->getLeafCount();
+    if (offset <= id && id < (offset+lc))
+    {
+      (*iter)->setLeafWeight(id-offset,w);
+      break;
+    }
+    offset += lc;
+  }
 }
 
 float DecisionTree::combineNodeWeights(std::list<DecisionTree::Node*> *nodes)
@@ -654,7 +721,7 @@ std::string DecisionTree::Node::toString(int indent)
     for (int i=0;i<indent;i++)
       r += " ";
     r += "(WEIGHT[";
-    r += boost::lexical_cast<std::string>(weight);
+    r += boost::lexical_cast<std::string>(weight); //TODO: make sure this is correctly formatted
     r += "])\n";
   }
   else

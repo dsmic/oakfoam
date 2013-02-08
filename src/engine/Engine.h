@@ -175,6 +175,8 @@
 #include "Playout.h"
 #include "Benson.h"
 #include "Worker.h"
+//from "DecisionTree.h":
+class DecisionTree;
 #include "../gtp/Gtp.h"
 #ifdef HAVE_WEB
   //from "../web/Web.h":
@@ -308,6 +310,7 @@ class Engine
     Go::TerritoryMap *territorymap;
     long statistics[STATISTICS_NUM];
     bool isgamefinished;
+    std::list<DecisionTree*> decisiontrees;
     
     enum MovePolicy
     {
@@ -488,6 +491,9 @@ class Engine
     static void gtpBookSave(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
 
     static void gtpDTLoad(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpDTClear(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpDTPrint(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpDTAt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     
     static void gtpShowCurrentHash(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowSafePositions(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);

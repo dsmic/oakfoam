@@ -28,6 +28,11 @@ class DecisionTree
 
     static DecisionTree *parseString(std::string rawdata);
     static DecisionTree *loadFile(std::string filename);
+
+    static float getCollectionWeight(std::list<DecisionTree*> *trees, Go::Board *board, Go::Move move, bool updatetree = false);
+    static std::list<int> *getCollectionLeafIds(std::list<DecisionTree*> *trees, Go::Board *board, Go::Move move);
+    static int getCollectionLeafCount(std::list<DecisionTree*> *trees);
+    static void setCollectionLeafWeight(std::list<DecisionTree*> *trees, int id, float w);
   
   private:
     class Range
