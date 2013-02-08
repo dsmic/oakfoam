@@ -13,6 +13,8 @@ DecisionTree::DecisionTree(DecisionTree::Type t, std::vector<std::string> *a, De
   type = t;
   attrs = a;
   root = r;
+  leafcount = -1;
+  //this->updateLeafIds();
 }
 
 DecisionTree::~DecisionTree()
@@ -21,15 +23,46 @@ DecisionTree::~DecisionTree()
   delete root;
 }
 
-float DecisionTree::getWeight(Go::Board *board, Go::Move move, bool updatestats)
+void DecisionTree::updateLeafIds()
+{
+  leafcount = 0;
+  root->populateLeafIds(leafcount);
+}
+
+float DecisionTree::getWeight(Go::Board *board, Go::Move move, bool updatetree)
 {
   if (!board->validMove(move))
     return -1;
 
   if (type == SPARSE)
-    return this->getSparseWeight(board,move,updatestats);
+    return this->getSparseWeight(board,move,updatetree);
   else
     return -1;
+}
+
+std::list<int> *DecisionTree::getLeafIds(Go::Board *board, Go::Move move)
+{
+  if (!board->validMove(move))
+    return NULL;
+
+  std::vector<int> *stones = new std::vector<int>();
+  bool invert = (move.getColor() != Go::BLACK);
+  stones->push_back(move.getPosition());
+
+  std::list<DecisionTree::Node*> *nodes = NULL;
+  if (type == SPARSE)
+    nodes = this->getSparseLeafNodes(root,board,stones,invert,false);
+
+  if (nodes == NULL)
+    return NULL;
+
+  std::list<int> *ids = new std::list<int>();
+  for (std::list<DecisionTree::Node*>::iterator iter=nodes->begin();iter!=nodes->end();++iter)
+  {
+    ids->push_back((*iter)->getLeafId());
+  }
+  delete nodes;
+  return ids;
 }
 
 float DecisionTree::combineNodeWeights(std::list<DecisionTree::Node*> *nodes)
@@ -81,14 +114,14 @@ int DecisionTree::getDistance(Go::Board *board, int p1, int p2)
     return board->getRectDistance(p1,p2);
 }
 
-float DecisionTree::getSparseWeight(Go::Board *board, Go::Move move, bool updatestats)
+float DecisionTree::getSparseWeight(Go::Board *board, Go::Move move, bool updatetree)
 {
   std::vector<int> *stones = new std::vector<int>();
   bool invert = (move.getColor() != Go::BLACK);
 
   stones->push_back(move.getPosition());
 
-  std::list<DecisionTree::Node*> *nodes = this->getSparseLeafNodes(root,board,stones,invert,updatestats);
+  std::list<DecisionTree::Node*> *nodes = this->getSparseLeafNodes(root,board,stones,invert,updatetree);
   float w = -1;
   if (nodes != NULL)
   {
@@ -100,144 +133,151 @@ float DecisionTree::getSparseWeight(Go::Board *board, Go::Move move, bool update
   return w;
 }
 
-std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::Node *node, Go::Board *board, std::vector<int> *stones, bool invert, bool updatestats)
+bool DecisionTree::updateSparseNode(DecisionTree::Node *node, Go::Board *board, std::vector<int> *stones, bool invert)
 {
-  if (updatestats)
+  std::vector<DecisionTree::StatPerm*> *statperms = node->getStats()->getStatPerms();
+  for (unsigned int i=0; i<statperms->size(); i++)
   {
-    std::vector<DecisionTree::StatPerm*> *statperms = node->getStats()->getStatPerms();
-    for (unsigned int i=0; i<statperms->size(); i++)
+    DecisionTree::StatPerm *sp = statperms->at(i);
+
+    std::string spt = sp->getLabel();
+    std::vector<std::string> *attrs = sp->getAttrs();
+    //fprintf(stderr,"[DT] SP type: '%s'\n",spt.c_str());
+    if (spt=="NEW")
     {
-      DecisionTree::StatPerm *sp = statperms->at(i);
+      std::string cols = attrs->at(0);
+      bool B = cols=="B";
+      bool W = cols=="W";
+      bool S = cols=="S";
+      int center = stones->at(0);
 
-      std::string spt = sp->getLabel();
-      std::vector<std::string> *attrs = sp->getAttrs();
-      fprintf(stderr,"[DT] SP type: '%s'\n",spt.c_str()); //!!!!!!!!!!!!!!!!!!!!!!!!
-      if (spt=="NEW")
+      bool resfound = false;
+      int res = 0;
+      int resmax = sp->getRange()->getEnd();
+      for (int s=0; s<resmax; s++)
       {
-        std::string cols = attrs->at(0);
-        bool B = cols=="B";
-        bool W = cols=="W";
-        bool S = cols=="S";
-        int center = stones->at(0);
-
-        bool resfound = false;
-        int res = 0;
-        int resmax = sp->getRange()->getEnd();
-        for (int s=0; s<resmax; s++)
+        if (B || W)
         {
-          if (B || W)
+          for (int ii=0; ii<board->getSize(); ii++)
           {
-            for (int ii=0; ii<board->getSize(); ii++)
+            for (int jj=0; jj<board->getSize(); jj++)
             {
-              for (int jj=0; jj<board->getSize(); jj++)
+              int p = Go::Position::xy2pos(ii,jj,board->getSize());
+              Go::Color col = board->getColor(p);
+              if (((invert?W:B) && col==Go::BLACK) || ((invert?B:W) && col==Go::WHITE))
               {
-                int p = Go::Position::xy2pos(ii,jj,board->getSize());
-                Go::Color col = board->getColor(p);
-                if (((invert?W:B) && col==Go::BLACK) || ((invert?B:W) && col==Go::WHITE))
+                if (DecisionTree::getDistance(board,center,p) <= s)
                 {
-                  if (DecisionTree::getDistance(board,center,p) <= s)
+                  bool found = false;
+                  for (unsigned int iii=0; iii<stones->size(); iii++)
                   {
-                    bool found = false;
-                    for (unsigned int iii=0; iii<stones->size(); iii++)
+                    if (stones->at(iii) == p)
                     {
-                      if (stones->at(iii) == p)
-                      {
-                        found = true;
-                        break;
-                      }
-                    }
-                    if (!found)
-                    {
-                      resfound = true;
-                      res = s;
+                      found = true;
                       break;
                     }
                   }
-                }
-              }
-            }
-          }
-          else if (S)
-          {
-            for (int p=-1; p>=-4; p--)
-            {
-              if (DecisionTree::getDistance(board,center,p) <= s)
-              {
-                bool found = false;
-                for (unsigned int ii=0; ii<stones->size(); ii++)
-                {
-                  if (stones->at(ii) == p)
+                  if (!found)
                   {
-                    found = true;
+                    resfound = true;
+                    res = s;
                     break;
                   }
                 }
-                if (!found)
-                {
-                  resfound = true;
-                  res = s;
-                  break;
-                }
               }
             }
           }
-          else
-          {
-            fprintf(stderr,"[DT] Error! Unknown attribute: '%s'\n",cols.c_str());
-            return NULL;
-          }
-          if (resfound)
-            break;
         }
-
-        if (!resfound)
-          res = resmax-1;
-        sp->getRange()->addVal(res);
-      }
-      else if (spt=="DIST")
-      {
-        std::vector<std::string> *attrs = sp->getAttrs();
-        int n0 = boost::lexical_cast<int>(attrs->at(0));
-        int n1 = boost::lexical_cast<int>(attrs->at(1));
-
-        int dist = DecisionTree::getDistance(board,stones->at(n0),stones->at(n1));
-        sp->getRange()->addVal(dist);
-      }
-      else if (spt=="ATTR")
-      {
-        std::vector<std::string> *attrs = sp->getAttrs();
-        std::string type = attrs->at(0);
-        int n = boost::lexical_cast<int>(attrs->at(1));
-
-        int p = stones->at(n);
-        int attr = 0;
-        if (p < 0) // side
-          attr = 0;
+        else if (S)
+        {
+          for (int p=-1; p>=-4; p--)
+          {
+            if (DecisionTree::getDistance(board,center,p) <= s)
+            {
+              bool found = false;
+              for (unsigned int ii=0; ii<stones->size(); ii++)
+              {
+                if (stones->at(ii) == p)
+                {
+                  found = true;
+                  break;
+                }
+              }
+              if (!found)
+              {
+                resfound = true;
+                res = s;
+                break;
+              }
+            }
+          }
+        }
         else
         {
-          if (type == "SIZE")
-          {
-            if (board->inGroup(p))
-              attr = board->getGroup(p)->numOfStones();
-            else
-              attr = 0;
-          }
-          else if (type == "LIB")
-          {
-            if (board->inGroup(p))
-              attr = board->getGroup(p)->numOfPseudoLiberties();
-            else
-              attr = 0;
-          }
+          fprintf(stderr,"[DT] Error! Unknown attribute: '%s'\n",cols.c_str());
+          return false;
         }
-        sp->getRange()->addVal(attr);
+        if (resfound)
+          break;
       }
+
+      if (!resfound)
+        res = resmax-1;
+      sp->getRange()->addVal(res);
+    }
+    else if (spt=="DIST")
+    {
+      std::vector<std::string> *attrs = sp->getAttrs();
+      int n0 = boost::lexical_cast<int>(attrs->at(0));
+      int n1 = boost::lexical_cast<int>(attrs->at(1));
+
+      int dist = DecisionTree::getDistance(board,stones->at(n0),stones->at(n1));
+      sp->getRange()->addVal(dist);
+    }
+    else if (spt=="ATTR")
+    {
+      std::vector<std::string> *attrs = sp->getAttrs();
+      std::string type = attrs->at(0);
+      int n = boost::lexical_cast<int>(attrs->at(1));
+
+      int p = stones->at(n);
+      int attr = 0;
+      if (p < 0) // side
+        attr = 0;
       else
       {
-        fprintf(stderr,"[DT] Error! Unknown stat perm type: '%s'\n",spt.c_str());
-        return NULL;
+        if (type == "SIZE")
+        {
+          if (board->inGroup(p))
+            attr = board->getGroup(p)->numOfStones();
+          else
+            attr = 0;
+        }
+        else if (type == "LIB")
+        {
+          if (board->inGroup(p))
+            attr = board->getGroup(p)->numOfPseudoLiberties();
+          else
+            attr = 0;
+        }
       }
+      sp->getRange()->addVal(attr);
     }
+    else
+    {
+      fprintf(stderr,"[DT] Error! Unknown stat perm type: '%s'\n",spt.c_str());
+      return false;
+    }
+  }
+  return true;
+}
+
+std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::Node *node, Go::Board *board, std::vector<int> *stones, bool invert, bool updatetree)
+{
+  if (updatetree)
+  {
+    if (!this->updateSparseNode(node,board,stones,invert))
+      return NULL;
   }
 
   if (node->isLeaf())
@@ -462,13 +502,13 @@ std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::N
         {
           std::string l = options->at(i)->getLabel();
           if (col==Go::BLACK && l=="B")
-            subnodes = this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert,updatestats);
+            subnodes = this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert,updatetree);
           else if (col==Go::WHITE && l=="W")
-            subnodes = this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert,updatestats);
+            subnodes = this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert,updatetree);
           else if (col==Go::OFFBOARD && l=="S")
-            subnodes = this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert,updatestats);
+            subnodes = this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert,updatetree);
           else if (col==Go::EMPTY && l=="N")
-            subnodes = this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert,updatestats);
+            subnodes = this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert,updatetree);
         }
         stones->pop_back();
 
@@ -496,7 +536,7 @@ std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::N
       {
         std::string l = options->at(i)->getLabel();
         if (l=="N")
-          return this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert,updatestats);
+          return this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert,updatetree);
       }
       return NULL;
     }
@@ -521,9 +561,9 @@ std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::N
     {
       std::string l = options->at(i)->getLabel();
       if (res && l=="Y")
-        return this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert,updatestats);
+        return this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert,updatetree);
       else if (!res && l=="N")
-        return this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert,updatestats);
+        return this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert,updatetree);
     }
     return NULL;
   }
@@ -568,9 +608,9 @@ std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::N
     {
       std::string l = options->at(i)->getLabel();
       if (res && l=="Y")
-        return this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert,updatestats);
+        return this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert,updatetree);
       else if (!res && l=="N")
-        return this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert,updatestats);
+        return this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert,updatetree);
     }
     return NULL;
   }
@@ -1252,6 +1292,7 @@ DecisionTree::Node::Node(Stats *s, Query *q)
   parent = NULL;
   stats = s;
   query = q;
+  leafid = -1;
   weight = 0;
 
   query->setParent(this);
@@ -1262,6 +1303,7 @@ DecisionTree::Node::Node(Stats *s, float w)
   parent = NULL;
   stats = s;
   query = NULL;
+  leafid = -1;
   weight = w;
 }
 
@@ -1295,6 +1337,23 @@ void DecisionTree::Node::populateEmptyStats(DecisionTree::Type type, unsigned in
           break;
       }
       opt->getNode()->populateEmptyStats(type,maxnode+(addnode?1:0));
+    }
+  }
+}
+
+void DecisionTree::Node::populateLeafIds(int &id)
+{
+  if (this->isLeaf())
+  {
+    leafid = id;
+    id++;
+  }
+  else
+  {
+    std::vector<DecisionTree::Option*> *options = query->getOptions();
+    for (unsigned int i=0; i<options->size(); i++)
+    {
+      options->at(i)->getNode()->populateLeafIds(id);
     }
   }
 }
@@ -1412,7 +1471,7 @@ void DecisionTree::Range::addVal(float v)
   if (v<start || v>=end)
     return;
 
-  if (val>10 || (this->isRoot() && this->isTerminal())) //XXX: parameterise 10
+  if (this->isTerminal() && (val>10 || this->isRoot())) //XXX: parameterise 10
   {
     float mid = start + (end - start)/2;
     left = new DecisionTree::Range(start,mid);

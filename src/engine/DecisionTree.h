@@ -20,7 +20,10 @@ class DecisionTree
     std::string toString();
 
     Type getType() { return type; };
-    float getWeight(Go::Board *board, Go::Move move, bool updatestats = false);
+    float getWeight(Go::Board *board, Go::Move move, bool updatetree = false);
+    std::list<int> *getLeafIds(Go::Board *board, Go::Move move);
+    void updateLeafIds();
+    int getLeafCount() { return leafcount; };
 
     static DecisionTree *parseString(std::string rawdata);
     static DecisionTree *loadFile(std::string filename);
@@ -135,25 +138,30 @@ class DecisionTree
         Stats *getStats() { return stats; };
         float getWeight() { return weight; };
         bool isLeaf() { return query == NULL; };
+        int getLeafId() { return leafid; };
         Query *getQuery() { return query; };
 
         void populateEmptyStats(Type type, unsigned int maxnode = 0);
+        void populateLeafIds(int &id);
 
       private:
         Option *parent;
         Stats *stats;
         Query *query;
+        int leafid;
         float weight;
     };
 
     Type type;
     std::vector<std::string> *attrs;
     Node *root;
+    int leafcount;
 
     DecisionTree(Type t, std::vector<std::string> *a, DecisionTree::Node *r);
 
-    float getSparseWeight(Go::Board *board, Go::Move move, bool updatestats);
-    std::list<Node*> *getSparseLeafNodes(Node *node, Go::Board *board, std::vector<int> *stones, bool invert, bool updatestats);
+    float getSparseWeight(Go::Board *board, Go::Move move, bool updatetree);
+    std::list<Node*> *getSparseLeafNodes(Node *node, Go::Board *board, std::vector<int> *stones, bool invert, bool updatetree);
+    bool updateSparseNode(Node *node, Go::Board *board, std::vector<int> *stones, bool invert);
 
     static float combineNodeWeights(std::list<Node*> *nodes);
     static int getDistance(Go::Board *board, int p1, int p2);

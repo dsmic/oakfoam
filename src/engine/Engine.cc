@@ -2818,8 +2818,21 @@ void Engine::gtpDTLoad(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   
   DecisionTree *dt = DecisionTree::loadFile(filename);
   fprintf(stderr,"DT:\n%s\n",dt->toString().c_str());
-  float w = dt->getWeight(me->currentboard, Go::Move(Go::BLACK,3,3,me->boardsize), true);
-  fprintf(stderr,"DT weight at (3,3): %.2f\n",w);
+  Go::Move move = Go::Move(Go::BLACK,3,3,me->boardsize);
+
+  float w = dt->getWeight(me->currentboard, move, true);
+  fprintf(stderr,"DT weight for %s: %.2f\n",move.toString(me->boardsize).c_str(),w);
+  dt->updateLeafIds();
+
+  fprintf(stderr,"DT leaf ids:");
+  std::list<int> *ids = dt->getLeafIds(me->currentboard, move);
+  for (std::list<int>::iterator iter=ids->begin();iter!=ids->end();++iter)
+  {
+    fprintf(stderr," %d",(*iter));
+  }
+  delete ids;
+  fprintf(stderr,"\n");
+
   fprintf(stderr,"DT:\n%s\n",dt->toString().c_str());
   
   if (dt!=NULL)
