@@ -258,6 +258,9 @@ bool DecisionTree::updateSparseNode(DecisionTree::Node *node, Go::Board *board, 
 
     std::string spt = sp->getLabel();
     std::vector<std::string> *attrs = sp->getAttrs();
+    int res = 0;
+    int resmin = sp->getRange()->getStart();
+    int resmax = sp->getRange()->getEnd();
     //fprintf(stderr,"[DT] SP type: '%s'\n",spt.c_str());
     if (spt=="NEW")
     {
@@ -268,8 +271,6 @@ bool DecisionTree::updateSparseNode(DecisionTree::Node *node, Go::Board *board, 
       int center = stones->at(0);
 
       bool resfound = false;
-      int res = 0;
-      int resmax = sp->getRange()->getEnd();
       for (int s=0; s<resmax; s++)
       {
         if (B || W)
@@ -338,8 +339,7 @@ bool DecisionTree::updateSparseNode(DecisionTree::Node *node, Go::Board *board, 
       }
 
       if (!resfound)
-        res = resmax-1;
-      sp->getRange()->addVal(res);
+        res = resmax;
     }
     else if (spt=="DIST")
     {
@@ -347,8 +347,7 @@ bool DecisionTree::updateSparseNode(DecisionTree::Node *node, Go::Board *board, 
       int n0 = boost::lexical_cast<int>(attrs->at(0));
       int n1 = boost::lexical_cast<int>(attrs->at(1));
 
-      int dist = DecisionTree::getDistance(board,stones->at(n0),stones->at(n1));
-      sp->getRange()->addVal(dist);
+      res = DecisionTree::getDistance(board,stones->at(n0),stones->at(n1));
     }
     else if (spt=="ATTR")
     {
@@ -357,38 +356,42 @@ bool DecisionTree::updateSparseNode(DecisionTree::Node *node, Go::Board *board, 
       int n = boost::lexical_cast<int>(attrs->at(1));
 
       int p = stones->at(n);
-      int attr = 0;
       if (p < 0) // side
-        attr = 0;
+        res = 0;
       else
       {
         if (type == "SIZE")
         {
           if (board->inGroup(p))
-            attr = board->getGroup(p)->numOfStones();
+            res = board->getGroup(p)->numOfStones();
           else
-            attr = 0;
+            res = 0;
         }
         else if (type == "LIB")
         {
           if (board->inGroup(p))
-            attr = board->getGroup(p)->numOfPseudoLiberties();
+            res = board->getGroup(p)->numOfPseudoLiberties();
           else
-            attr = 0;
+            res = 0;
         }
       }
-      sp->getRange()->addVal(attr);
     }
     else
     {
       fprintf(stderr,"[DT] Error! Unknown stat perm type: '%s'\n",spt.c_str());
       return false;
     }
+
+    if (res < resmin)
+      res = resmin;
+    else if (res > resmax)
+      res = resmax;
+    sp->getRange()->addVal(res);
   }
 
   if (node->isLeaf())
   {
-    float descents = statperms->at(0)->getRange()->getThisVal(); //TODO: choose a better selection criteria
+    int descents = statperms->at(0)->getRange()->getThisVal(); //TODO: choose a better selection criteria
     if (descents >= 100)
     {
       fprintf(stderr,"DT split now!\n");
@@ -1570,7 +1573,7 @@ DecisionTree::StatPerm::~StatPerm()
   delete range;
 }
 
-DecisionTree::Range::Range(float s, float e, float v, Range *l, Range *r)
+DecisionTree::Range::Range(int s, int e, int v, Range *l, Range *r)
 {
   start = s;
   end = e;
@@ -1583,7 +1586,7 @@ DecisionTree::Range::Range(float s, float e, float v, Range *l, Range *r)
   right->setParent(this);
 }
 
-DecisionTree::Range::Range(float s, float e, float v)
+DecisionTree::Range::Range(int s, int e, int v)
 {
   start = s;
   end = e;
@@ -1601,16 +1604,16 @@ DecisionTree::Range::~Range()
     delete right;
 }
 
-void DecisionTree::Range::addVal(float v)
+void DecisionTree::Range::addVal(int v)
 {
-  if (v<start || v>=end)
+  if (v<start || v>end)
     return;
 
-  if (this->isTerminal() && (val>10 || this->isRoot())) //XXX: parameterise 10
+  if (this->isTerminal() && start!=end && (val>10 || this->isRoot())) //XXX: parameterise 10
   {
-    float mid = start + (end - start)/2;
+    int mid = start + (end - start)/2; //XXX: consider choosing mid according to a log scale
     left = new DecisionTree::Range(start,mid);
-    right = new DecisionTree::Range(mid,end);
+    right = new DecisionTree::Range(mid+1,end);
     left->setParent(this);
     right->setParent(this);
   }

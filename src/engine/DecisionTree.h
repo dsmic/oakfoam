@@ -41,8 +41,8 @@ class DecisionTree
     class Range
     {
       public:
-        Range(float s, float e, float v, Range *l, Range *r);
-        Range(float s, float e, float v = 0);
+        Range(int s, int e, int v, Range *l, Range *r);
+        Range(int s, int e, int v = 0);
         ~Range();
 
         std::string toString(int indent);
@@ -50,13 +50,13 @@ class DecisionTree
         Range *getParent() { return parent; };
         void setParent(Range *p) { parent = p; };
         bool isTerminal() { return left==NULL && right==NULL; };
-        float getStart() { return start; };
-        float getEnd() { return end; };
-        void addVal(float v);
-        float getThisVal() { return val; };
+        int getStart() { return start; };
+        int getEnd() { return end; };
+        void addVal(int v);
+        int getThisVal() { return val; };
 
       private:
-        float start, end, val;
+        int start, end, val;
         Range *parent;
         Range *left;
         Range *right;
