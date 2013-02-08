@@ -23,7 +23,8 @@ class DecisionTree
     float getWeight(Go::Board *board, Go::Move move, bool updatetree = false);
     std::list<int> *getLeafIds(Go::Board *board, Go::Move move);
     void updateLeafIds();
-    int getLeafCount() { return leafcount; };
+    int getLeafCount() { return leafmap.size(); };
+    void setLeafWeight(int id, float w);
 
     static DecisionTree *parseString(std::string rawdata);
     static DecisionTree *loadFile(std::string filename);
@@ -137,12 +138,13 @@ class DecisionTree
         void setParent(Option *p) { parent = p; };
         Stats *getStats() { return stats; };
         float getWeight() { return weight; };
+        void setWeight(float w) { weight = w; };
         bool isLeaf() { return query == NULL; };
         int getLeafId() { return leafid; };
         Query *getQuery() { return query; };
 
         void populateEmptyStats(Type type, unsigned int maxnode = 0);
-        void populateLeafIds(int &id);
+        void populateLeafIds(std::vector<Node*> &leafmap);
 
       private:
         Option *parent;
@@ -155,7 +157,7 @@ class DecisionTree
     Type type;
     std::vector<std::string> *attrs;
     Node *root;
-    int leafcount;
+    std::vector<Node*> leafmap;
 
     DecisionTree(Type t, std::vector<std::string> *a, DecisionTree::Node *r);
 

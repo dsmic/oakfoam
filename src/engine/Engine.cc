@@ -2822,8 +2822,8 @@ void Engine::gtpDTLoad(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 
   float w = dt->getWeight(me->currentboard, move, true);
   fprintf(stderr,"DT weight for %s: %.2f\n",move.toString(me->boardsize).c_str(),w);
-  dt->updateLeafIds();
 
+  dt->updateLeafIds();
   fprintf(stderr,"DT leaf ids:");
   std::list<int> *ids = dt->getLeafIds(me->currentboard, move);
   for (std::list<int>::iterator iter=ids->begin();iter!=ids->end();++iter)

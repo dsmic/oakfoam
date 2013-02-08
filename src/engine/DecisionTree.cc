@@ -13,7 +13,6 @@ DecisionTree::DecisionTree(DecisionTree::Type t, std::vector<std::string> *a, De
   type = t;
   attrs = a;
   root = r;
-  leafcount = -1;
   //this->updateLeafIds();
 }
 
@@ -25,8 +24,14 @@ DecisionTree::~DecisionTree()
 
 void DecisionTree::updateLeafIds()
 {
-  leafcount = 0;
-  root->populateLeafIds(leafcount);
+  leafmap.clear();
+  root->populateLeafIds(leafmap);
+}
+
+void DecisionTree::setLeafWeight(int id, float w)
+{
+  //XXX: no error checking here
+  leafmap[id]->setWeight(w);
 }
 
 float DecisionTree::getWeight(Go::Board *board, Go::Move move, bool updatetree)
@@ -1341,19 +1346,19 @@ void DecisionTree::Node::populateEmptyStats(DecisionTree::Type type, unsigned in
   }
 }
 
-void DecisionTree::Node::populateLeafIds(int &id)
+void DecisionTree::Node::populateLeafIds(std::vector<DecisionTree::Node*> &leafmap)
 {
   if (this->isLeaf())
   {
-    leafid = id;
-    id++;
+    leafid = leafmap.size();
+    leafmap.push_back(this);;
   }
   else
   {
     std::vector<DecisionTree::Option*> *options = query->getOptions();
     for (unsigned int i=0; i<options->size(); i++)
     {
-      options->at(i)->getNode()->populateLeafIds(id);
+      options->at(i)->getNode()->populateLeafIds(leafmap);
     }
   }
 }
