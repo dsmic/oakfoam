@@ -494,6 +494,7 @@ class Engine
     static void gtpDTClear(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpDTPrint(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpDTAt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpDTUpdate(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     
     static void gtpShowCurrentHash(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowSafePositions(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);

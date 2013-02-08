@@ -34,6 +34,26 @@ void DecisionTree::setLeafWeight(int id, float w)
   leafmap[id]->setWeight(w);
 }
 
+unsigned int DecisionTree::getMaxNode(DecisionTree::Node *node)
+{
+  if (node->isRoot())
+    return 0;
+
+  DecisionTree::Option *opt = node->getParent();
+  DecisionTree::Query *query = opt->getParent();
+  bool addnode = false;
+  switch (type)
+  {
+    case SPARSE:
+      if (query->getLabel()=="NEW" && opt->getLabel()!="N")
+        addnode = true;
+      break;
+  }
+  
+  DecisionTree::Node *topnode = query->getParent();
+  return this->getMaxNode(topnode) + (addnode?1:0);
+}
+
 float DecisionTree::getWeight(Go::Board *board, Go::Move move, bool updatetree)
 {
   if (!board->validMove(move))
@@ -43,6 +63,30 @@ float DecisionTree::getWeight(Go::Board *board, Go::Move move, bool updatetree)
     return this->getSparseWeight(board,move,updatetree);
   else
     return -1;
+}
+
+void DecisionTree::updateDescent(Go::Board *board, Go::Move move)
+{
+  this->getWeight(board,move,true);
+}
+
+void DecisionTree::updateDescent(Go::Board *board)
+{
+  Go::Color col = board->nextToMove();
+  for (int p=0; p<board->getPositionMax(); p++)
+  {
+    Go::Move move = Go::Move(col,p);
+    if (board->validMove(move))
+      this->updateDescent(board,move);
+  }
+}
+
+void DecisionTree::collectionUpdateDescent(std::list<DecisionTree*> *trees, Go::Board *board)
+{
+  for (std::list<DecisionTree*>::iterator iter=trees->begin();iter!=trees->end();++iter)
+  {
+    (*iter)->updateDescent(board);
+  }
 }
 
 float DecisionTree::getCollectionWeight(std::list<DecisionTree*> *trees, Go::Board *board, Go::Move move, bool updatetree)
@@ -341,6 +385,27 @@ bool DecisionTree::updateSparseNode(DecisionTree::Node *node, Go::Board *board, 
       return false;
     }
   }
+
+  if (node->isLeaf())
+  {
+    float descents = statperms->at(0)->getRange()->getThisVal(); //TODO: choose a better selection criteria
+    if (descents >= 100)
+    {
+      fprintf(stderr,"DT split now!\n");
+      //TODO: select a split intelligently here
+
+      std::string label = "NEW";
+      std::vector<std::string> *attrs = new std::vector<std::string>();
+      attrs->push_back("BW");
+      attrs->push_back("2");
+      int maxnode = this->getMaxNode(node);
+
+      DecisionTree::Query *query = new DecisionTree::Query(type,label,attrs,maxnode);
+      query->setParent(node);
+      node->setQuery(query);
+    }
+  }
+
   return true;
 }
 
@@ -1571,6 +1636,43 @@ DecisionTree::Query::Query(std::string l, std::vector<std::string> *a, std::vect
   }
 }
 
+DecisionTree::Query::Query(DecisionTree::Type type, std::string l, std::vector<std::string> *a, unsigned int maxnode)
+{
+  parent = NULL;
+  label = l;
+  attrs = a;
+
+  options = new std::vector<DecisionTree::Option*>();
+  switch (type)
+  {
+    case SPARSE:
+      if (l=="NEW")
+      {
+        bool B = (attrs->at(0).find('B') != std::string::npos);
+        bool W = (attrs->at(0).find('W') != std::string::npos);
+        bool S = (attrs->at(0).find('S') != std::string::npos);
+        if (B)
+          options->push_back(new DecisionTree::Option(type,"B",maxnode+1));
+        if (W)
+          options->push_back(new DecisionTree::Option(type,"W",maxnode+1));
+        if (S)
+          options->push_back(new DecisionTree::Option(type,"S",maxnode+1));
+        options->push_back(new DecisionTree::Option(type,"N",maxnode));
+      }
+      else if (l=="DIST" || l=="ATTR")
+      {
+        options->push_back(new DecisionTree::Option(type,"Y",maxnode));
+        options->push_back(new DecisionTree::Option(type,"N",maxnode));
+      }
+      break;
+  }
+
+  for (unsigned int i=0;i<options->size();i++)
+  {
+    options->at(i)->setParent(this);
+  }
+}
+
 DecisionTree::Query::~Query()
 {
   delete attrs;
@@ -1586,6 +1688,14 @@ DecisionTree::Option::Option(std::string l, Node *n)
   parent = NULL;
   label = l;
   node = n;
+  node->setParent(this);
+}
+
+DecisionTree::Option::Option(DecisionTree::Type type, std::string l, unsigned int maxnode)
+{
+  parent = NULL;
+  label = l;
+  node = new DecisionTree::Node(new DecisionTree::Stats(type,maxnode),1);
   node->setParent(this);
 }
 

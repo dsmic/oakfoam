@@ -528,6 +528,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("dtclear",this,&Engine::gtpDTClear);
   gtpe->addFunctionCommand("dtprint",this,&Engine::gtpDTPrint);
   gtpe->addFunctionCommand("dtat",this,&Engine::gtpDTAt);
+  gtpe->addFunctionCommand("dtupdate",this,&Engine::gtpDTUpdate);
   
   //gtpe->addAnalyzeCommand("final_score","Final Score","string");
   //gtpe->addAnalyzeCommand("showboard","Show Board","string");
@@ -2897,6 +2898,16 @@ void Engine::gtpDTAt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printf("weight for %s: %.2f",move.toString(me->boardsize).c_str(),w);
+  gtpe->getOutput()->endResponse();
+}
+
+void Engine::gtpDTUpdate(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  DecisionTree::collectionUpdateDescent(&(me->decisiontrees),me->currentboard);
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printf("updated decision trees");
   gtpe->getOutput()->endResponse();
 }
 
