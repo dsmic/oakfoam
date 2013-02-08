@@ -573,13 +573,11 @@ std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::N
         for (unsigned int i=0; i<options->size(); i++)
         {
           std::string l = options->at(i)->getLabel();
-          if (col==Go::BLACK && l=="B")
+          if (col==Go::BLACK && l==(invert?"W":"B"))
             subnodes = this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert,updatetree);
-          else if (col==Go::WHITE && l=="W")
+          else if (col==Go::WHITE && l==(invert?"B":"W"))
             subnodes = this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert,updatetree);
           else if (col==Go::OFFBOARD && l=="S")
-            subnodes = this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert,updatetree);
-          else if (col==Go::EMPTY && l=="N")
             subnodes = this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert,updatetree);
         }
         stones->pop_back();
