@@ -1533,17 +1533,20 @@ DecisionTree::Stats::Stats(DecisionTree::Type type, unsigned int maxnode)
         }
 
         // ATTR
+        if (i>0) // don't need to keep stats on 0'th node
         {
-          std::vector<std::string> *attrs = new std::vector<std::string>();
-          attrs->push_back("LIB");
-          attrs->push_back(boost::lexical_cast<std::string>(i));
-          statperms->push_back(new DecisionTree::StatPerm("ATTR",attrs,new DecisionTree::Range(rangemin,rangemax)));
-        }
-        {
-          std::vector<std::string> *attrs = new std::vector<std::string>();
-          attrs->push_back("SIZE");
-          attrs->push_back(boost::lexical_cast<std::string>(i));
-          statperms->push_back(new DecisionTree::StatPerm("ATTR",attrs,new DecisionTree::Range(rangemin,rangemax)));
+          {
+            std::vector<std::string> *attrs = new std::vector<std::string>();
+            attrs->push_back("LIB");
+            attrs->push_back(boost::lexical_cast<std::string>(i));
+            statperms->push_back(new DecisionTree::StatPerm("ATTR",attrs,new DecisionTree::Range(rangemin,rangemax)));
+          }
+          {
+            std::vector<std::string> *attrs = new std::vector<std::string>();
+            attrs->push_back("SIZE");
+            attrs->push_back(boost::lexical_cast<std::string>(i));
+            statperms->push_back(new DecisionTree::StatPerm("ATTR",attrs,new DecisionTree::Range(rangemin,rangemax)));
+          }
         }
       }
 
