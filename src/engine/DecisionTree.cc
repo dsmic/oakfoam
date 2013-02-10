@@ -395,17 +395,59 @@ bool DecisionTree::updateSparseNode(DecisionTree::Node *node, Go::Board *board, 
     if (descents >= 100)
     {
       fprintf(stderr,"DT split now!\n");
-      //TODO: select a split intelligently here
 
-      std::string label = "NEW";
-      std::vector<std::string> *attrs = new std::vector<std::string>();
-      attrs->push_back("BW");
-      attrs->push_back("2");
-      int maxnode = this->getMaxNode(node);
+      std::string bestlabel = "";
+      std::vector<std::string> *bestattrs = NULL;
+      float bestval = -1;
 
-      DecisionTree::Query *query = new DecisionTree::Query(type,label,attrs,maxnode);
-      query->setParent(node);
-      node->setQuery(query);
+      //TODO: try combinations of NEW colors
+      //TODO: try = for DIST and ATTR
+      for (unsigned int i=0; i<statperms->size(); i++)
+      {
+        DecisionTree::StatPerm *sp = statperms->at(i);
+        DecisionTree::Range *range = sp->getRange();
+        int median = range->getExpectedMedian();
+        float perc = range->getExpectedPercentageLessThan(median);
+        float val = (perc-0.5)/0.5;
+        if (val < 0)
+          val = -val;
+        val = 1 - val;
+
+        fprintf(stderr,"DT stat: %s",sp->getLabel().c_str());
+        for (unsigned int j=0; j<sp->getAttrs()->size(); j++)
+          fprintf(stderr,"%c%s",(j==0?'[':'|'),sp->getAttrs()->at(j).c_str());
+        fprintf(stderr,"] %d %.2f %.2f\n",median,perc,val);
+
+        if (val > bestval)
+        {
+          bestval = val;
+          bestlabel = sp->getLabel();
+          if (bestattrs != NULL)
+            delete bestattrs;
+          std::vector<std::string> *attrs = new std::vector<std::string>();
+          for (unsigned int j=0; j<sp->getAttrs()->size(); j++)
+          {
+            attrs->push_back(sp->getAttrs()->at(j));
+          }
+          if (bestlabel == "NEW")
+            attrs->push_back(boost::lexical_cast<std::string>(median+1));
+          else
+          {
+            attrs->push_back("<");
+            attrs->push_back(boost::lexical_cast<std::string>(median));
+          }
+          bestattrs = attrs;
+        }
+      }
+
+      if (bestval != -1)
+      {
+        int maxnode = this->getMaxNode(node);
+
+        DecisionTree::Query *query = new DecisionTree::Query(type,bestlabel,bestattrs,maxnode);
+        query->setParent(node);
+        node->setQuery(query);
+      }
     }
   }
 
@@ -1627,6 +1669,55 @@ void DecisionTree::Range::addVal(int v)
     left->addVal(v);
   if (right!=NULL)
     right->addVal(v);
+}
+
+int DecisionTree::Range::getExpectedMedian(int vl, int vr)
+{
+  if (left==NULL || right==NULL)
+  {
+    return start + (end-start)/2;
+  }
+  else
+  {
+    float s = 1.0f * (left->val + right->val)/val;
+    int l = vl + left->val;
+    int r = vr + right->val;
+    if (l >= r)
+      return left->getExpectedMedian(s*vl,s*r);
+    else
+      return right->getExpectedMedian(s*l,s*vr);
+  }
+}
+
+float DecisionTree::Range::getExpectedPercentageLessThan(int val)
+{
+  if (this->isTerminal())
+  {
+    if (val <= start)
+      return 0;
+    else if (val > end)
+      return 1;
+    else
+      return 0.5; //TODO: rather assume uniform distribution
+  }
+  else
+  {
+    int t = left->val + right->val;
+    if (t==0)
+      return 0.5;
+    if (left!=NULL && (val <= left->end))
+    {
+      float p = left->getExpectedPercentageLessThan(val);
+      return p * left->val/t;
+    }
+    else if (right!=NULL && (val >= right->start))
+    {
+      float p = right->getExpectedPercentageLessThan(val);
+      return 1 - ((1-p) * right->val/t);
+    }
+    else
+      return 0.5;
+  }
 }
 
 DecisionTree::Query::Query(std::string l, std::vector<std::string> *a, std::vector<Option*> *o)

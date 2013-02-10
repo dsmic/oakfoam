@@ -54,12 +54,16 @@ class DecisionTree
         int getEnd() { return end; };
         void addVal(int v);
         int getThisVal() { return val; };
+        int getExpectedMedian() { return this->getExpectedMedian(0,0); };
+        float getExpectedPercentageLessThan(int val);
 
       private:
         int start, end, val;
         Range *parent;
         Range *left;
         Range *right;
+
+        int getExpectedMedian(int vl, int vr);
     };
 
     class StatPerm
