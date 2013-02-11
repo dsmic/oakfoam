@@ -800,7 +800,7 @@ std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::N
   }
 }
 
-std::string DecisionTree::toString()
+std::string DecisionTree::toString(bool ignorestats)
 {
   std::string r = "(DT[";
   for (unsigned int i=0;i<attrs->size();i++)
@@ -811,17 +811,24 @@ std::string DecisionTree::toString()
   }
   r += "]\n";
 
-  r += root->toString(2);
+  r += root->toString(2,ignorestats);
 
   r += ")";
   return r;
 }
 
-std::string DecisionTree::Node::toString(int indent)
+std::string DecisionTree::Node::toString(int indent, bool ignorestats)
 {
   std::string r = "";
 
-  r += stats->toString(indent);
+  if (ignorestats)
+  {
+    for (int i=0;i<indent;i++)
+      r += " ";
+    r += "(STATS:)\n";
+  }
+  else
+    r += stats->toString(indent);
 
   if (query == NULL)
   {
@@ -832,12 +839,12 @@ std::string DecisionTree::Node::toString(int indent)
     r += "])\n";
   }
   else
-    r += query->toString(indent);
+    r += query->toString(indent,ignorestats);
 
   return r;
 }
 
-std::string DecisionTree::Query::toString(int indent)
+std::string DecisionTree::Query::toString(int indent, bool ignorestats)
 {
   std::string r = "";
 
@@ -854,7 +861,7 @@ std::string DecisionTree::Query::toString(int indent)
 
   for (unsigned int i=0;i<options->size();i++)
   {
-    r += options->at(i)->toString(indent+2);
+    r += options->at(i)->toString(indent+2,ignorestats);
   }
   
   for (int i=0;i<indent;i++)
@@ -864,7 +871,7 @@ std::string DecisionTree::Query::toString(int indent)
   return r;
 }
 
-std::string DecisionTree::Option::toString(int indent)
+std::string DecisionTree::Option::toString(int indent, bool ignorestats)
 {
   std::string r = "";
 
@@ -872,7 +879,7 @@ std::string DecisionTree::Option::toString(int indent)
     r += " ";
   r += label + ":\n";
 
-  r += node->toString(indent+2);
+  r += node->toString(indent+2,ignorestats);
 
   return r;
 }

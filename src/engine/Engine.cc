@@ -2859,12 +2859,16 @@ void Engine::gtpDTClear(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 void Engine::gtpDTPrint(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
+
+  bool ignorestats = false;
+  if (cmd->numArgs()>=1)
+    ignorestats = cmd->getIntArg(0)!=0;
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printf("decision trees:\n");
   for (std::list<DecisionTree*>::iterator iter=me->decisiontrees.begin();iter!=me->decisiontrees.end();++iter)
   {
-    gtpe->getOutput()->printf("%s\n",(*iter)->toString().c_str());
+    gtpe->getOutput()->printf("%s\n",(*iter)->toString(ignorestats).c_str());
   }
   gtpe->getOutput()->endResponse(true);
 }
