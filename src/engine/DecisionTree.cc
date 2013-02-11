@@ -1,6 +1,7 @@
 #include "DecisionTree.h"
 
 #include <cstdio>
+#include <cmath>
 #include <fstream>
 #include <algorithm>
 #include <boost/lexical_cast.hpp>
@@ -391,35 +392,92 @@ bool DecisionTree::updateSparseNode(DecisionTree::Node *node, Go::Board *board, 
 
   if (node->isLeaf())
   {
-    int descents = statperms->at(0)->getRange()->getThisVal(); //TODO: choose a better selection criteria
-    if (descents >= 100)
+    int descents = statperms->at(0)->getRange()->getThisVal();
+    if (descents >= 100) //TODO: parameterise this value
     {
-      fprintf(stderr,"DT split now!\n");
+      //fprintf(stderr,"DT split now!\n");
 
       std::string bestlabel = "";
       std::vector<std::string> *bestattrs = NULL;
       float bestval = -1;
 
-      //TODO: try = for DIST and ATTR
       for (unsigned int i=0; i<statperms->size(); i++)
       {
         DecisionTree::StatPerm *sp = statperms->at(i);
         DecisionTree::Range *range = sp->getRange();
-        int median = range->getExpectedMedian();
-        float perc = range->getExpectedPercentageLessThan(median);
-        float val = (perc-0.5)/0.5;
-        if (val < 0)
-          val = -val;
-        val = 1 - val;
 
-        fprintf(stderr,"DT stat: %s",sp->getLabel().c_str());
+        float m = range->getExpectedMedian();
+        int m1 = floor(m);
+        int m2 = ceil(m);
+        float p1l = range->getExpectedPercentageLessThan(m1);
+        float p1e = range->getExpectedPercentageEquals(m1);
+        float p2l = (m1==m2?p1l:range->getExpectedPercentageLessThan(m2));
+        float p2e = (m1==m2?p1e:range->getExpectedPercentageEquals(m2));
+
+        float v1l = DecisionTree::percentageToVal(p1l);
+        float v2l = DecisionTree::percentageToVal(p2l);
+        float v1e = DecisionTree::percentageToVal(p1e);
+        float v2e = DecisionTree::percentageToVal(p2e);
+
+        /*fprintf(stderr,"DT stat: %s",sp->getLabel().c_str());
         for (unsigned int j=0; j<sp->getAttrs()->size(); j++)
           fprintf(stderr,"%c%s",(j==0?'[':'|'),sp->getAttrs()->at(j).c_str());
-        fprintf(stderr,"] %d %.2f %.2f\n",median,perc,val);
+        fprintf(stderr,"] \t %.3f %d %d %.3f %.3f %.3f %.3f\n",m,m1,m2,p1l,p1e,p2l,p2e);*/
+        //fprintf(stderr,"DT range:\n%s\n",range->toString().c_str());
 
-        if (val > bestval)
+        bool foundbest = false;
+        int localm = 0;
+        bool lne = false;
+
+        if (sp->getLabel()=="NEW")
         {
-          bestval = val;
+          if (v1l > bestval)
+          {
+            bestval = v1l;
+            localm = m1-1;
+            foundbest = true;
+          }
+          if (v2l > bestval)
+          {
+            bestval = v2l;
+            localm = m2-1;
+            foundbest = true;
+          }
+        }
+        else
+        {
+          if (v1l > bestval)
+          {
+            bestval = v1l;
+            localm = m1;
+            lne = true;
+            foundbest = true;
+          }
+          if (v2l > bestval)
+          {
+            bestval = v2l;
+            localm = m2;
+            lne = true;
+            foundbest = true;
+          }
+          if (v1e > bestval)
+          {
+            bestval = v1e;
+            localm = m1;
+            lne = false;
+            foundbest = true;
+          }
+          if (v2e > bestval)
+          {
+            bestval = v2e;
+            localm = m2;
+            lne = false;
+            foundbest = true;
+          }
+        }
+
+        if (foundbest)
+        {
           bestlabel = sp->getLabel();
           if (bestattrs != NULL)
             delete bestattrs;
@@ -428,13 +486,9 @@ bool DecisionTree::updateSparseNode(DecisionTree::Node *node, Go::Board *board, 
           {
             attrs->push_back(sp->getAttrs()->at(j));
           }
-          if (bestlabel == "NEW")
-            attrs->push_back(boost::lexical_cast<std::string>(median+1));
-          else
-          {
-            attrs->push_back("<");
-            attrs->push_back(boost::lexical_cast<std::string>(median));
-          }
+          if (bestlabel=="DIST" || bestlabel=="ATTR")
+            attrs->push_back(lne?"<":"=");
+          attrs->push_back(boost::lexical_cast<std::string>(localm));
           bestattrs = attrs;
         }
       }
@@ -442,6 +496,11 @@ bool DecisionTree::updateSparseNode(DecisionTree::Node *node, Go::Board *board, 
       if (bestval != -1)
       {
         int maxnode = this->getMaxNode(node);
+
+        /*fprintf(stderr,"DT best stat: %s",bestlabel.c_str());
+        for (unsigned int j=0; j<bestattrs->size(); j++)
+          fprintf(stderr,"%c%s",(j==0?'[':'|'),bestattrs->at(j).c_str());
+        fprintf(stderr,"]\n");*/
 
         DecisionTree::Query *query = new DecisionTree::Query(type,bestlabel,bestattrs,maxnode);
         query->setParent(node);
@@ -451,6 +510,15 @@ bool DecisionTree::updateSparseNode(DecisionTree::Node *node, Go::Board *board, 
   }
 
   return true;
+}
+
+float DecisionTree::percentageToVal(float p)
+{
+  float val = (p-0.5)/0.5;
+  if (val < 0)
+    val = -val;
+  val = 1 - val;
+  return val;
 }
 
 std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::Node *node, Go::Board *board, std::vector<int> *stones, bool invert, bool updatetree)
@@ -1664,7 +1732,7 @@ void DecisionTree::Range::addVal(int v)
   if (v<start || v>end)
     return;
 
-  if (this->isTerminal() && start!=end && (val>10 || this->isRoot())) //XXX: parameterise 10
+  if (this->isTerminal() && start!=end && (val>10 || this->isRoot())) //TODO: parameterise 10
   {
     int mid = start + (end - start)/2; //XXX: consider choosing mid according to a log scale
     left = new DecisionTree::Range(start,mid);
@@ -1681,52 +1749,97 @@ void DecisionTree::Range::addVal(int v)
     right->addVal(v);
 }
 
-int DecisionTree::Range::getExpectedMedian(int vl, int vr)
+float DecisionTree::Range::getExpectedMedian(float vl, float vr)
 {
   if (left==NULL || right==NULL)
   {
-    return start + (end-start)/2;
+    float t = vl + val + vr;
+    float rem = 0.5 - vl/t;
+    if (rem <= 0)
+      return start;
+    else if (rem >= 1)
+      return end;
+    else
+    {
+      float p = rem * val/t;
+      return start + p*(end-start);
+    }
   }
   else
   {
-    float s = 1.0f * (left->val + right->val)/val;
-    int l = vl + left->val;
-    int r = vr + right->val;
-    if (l >= r)
-      return left->getExpectedMedian(s*vl,s*r);
+    float s = 1.0f * (left->val + right->val)/val; // scale factor for next level
+    float l = s*vl + left->val; // left val relative to next level
+    float r = s*vr + right->val; // right val relative to next level
+    if (l == r)
+      return start + 0.5f*(end-start);
+    else if (l > r)
+      return left->getExpectedMedian(s*vl,r);
     else
-      return right->getExpectedMedian(s*l,s*vr);
+      return right->getExpectedMedian(l,s*vr);
   }
 }
 
-float DecisionTree::Range::getExpectedPercentageLessThan(int val)
+float DecisionTree::Range::getExpectedPercentageLessThan(int v)
 {
-  if (this->isTerminal())
+  if (left==NULL || right==NULL)
   {
-    if (val <= start)
+    if (v <= start)
       return 0;
-    else if (val > end)
+    else if (v > end)
       return 1;
     else
-      return 0.5; //TODO: rather assume uniform distribution
+      return 1.0f * (v-start)/(end-start+1);
   }
   else
   {
     int t = left->val + right->val;
     if (t==0)
-      return 0.5;
-    if (left!=NULL && (val <= left->end))
+      return 1.0f * (v-start)/(end-start+1);
+
+    if (v <= left->end)
     {
-      float p = left->getExpectedPercentageLessThan(val);
+      float p = left->getExpectedPercentageLessThan(v);
       return p * left->val/t;
     }
-    else if (right!=NULL && (val >= right->start))
+    else if (v >= right->start)
     {
-      float p = right->getExpectedPercentageLessThan(val);
-      return 1 - ((1-p) * right->val/t);
+      float p = right->getExpectedPercentageLessThan(v);
+      return 1.0f * left->val/t + p * right->val/t;
     }
     else
-      return 0.5;
+      return 1.0f * (v-start)/(end-start+1);
+  }
+}
+
+float DecisionTree::Range::getExpectedPercentageEquals(int v)
+{
+  if (left==NULL || right==NULL)
+  {
+    if (v < start)
+      return 0;
+    else if (v > end)
+      return 0;
+    else
+      return 1.0f/(end-start+1);
+  }
+  else
+  {
+    int t = left->val + right->val;
+    if (t==0)
+      return 1.0f/(end-start+1);
+
+    if (v <= left->end)
+    {
+      float p = left->getExpectedPercentageEquals(v);
+      return p * left->val/t;
+    }
+    else if (v >= right->start)
+    {
+      float p = right->getExpectedPercentageEquals(v);
+      return p * right->val/t;
+    }
+    else
+      return 1.0f/(end-start+1);
   }
 }
 

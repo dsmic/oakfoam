@@ -54,8 +54,9 @@ class DecisionTree
         int getEnd() { return end; };
         void addVal(int v);
         int getThisVal() { return val; };
-        int getExpectedMedian() { return this->getExpectedMedian(0,0); };
-        float getExpectedPercentageLessThan(int val);
+        float getExpectedMedian() { return this->getExpectedMedian(0,0); };
+        float getExpectedPercentageLessThan(int v);
+        float getExpectedPercentageEquals(int v);
 
       private:
         int start, end, val;
@@ -63,7 +64,7 @@ class DecisionTree
         Range *left;
         Range *right;
 
-        int getExpectedMedian(int vl, int vr);
+        float getExpectedMedian(float vl, float vr);
     };
 
     class StatPerm
@@ -184,6 +185,7 @@ class DecisionTree
 
     static float combineNodeWeights(std::list<Node*> *nodes);
     static int getDistance(Go::Board *board, int p1, int p2);
+    static float percentageToVal(float p);
 
     static std::string stripWhitespace(std::string in);
     static std::vector<std::string> *parseAttrs(std::string data, unsigned int &pos);
