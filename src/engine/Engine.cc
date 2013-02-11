@@ -533,6 +533,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("dtprint",this,&Engine::gtpDTPrint);
   gtpe->addFunctionCommand("dtat",this,&Engine::gtpDTAt);
   gtpe->addFunctionCommand("dtupdate",this,&Engine::gtpDTUpdate);
+  gtpe->addFunctionCommand("dtsave",this,&Engine::gtpDTSave);
   
   //gtpe->addAnalyzeCommand("final_score","Final Score","string");
   //gtpe->addAnalyzeCommand("showboard","Show Board","string");
@@ -2824,7 +2825,7 @@ void Engine::gtpDTLoad(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   
   std::string filename=cmd->getStringArg(0);
   
-  DecisionTree *dt = DecisionTree::loadFile(me->params,filename);
+  std::list<DecisionTree*> *trees = DecisionTree::loadFile(me->params,filename);
   /*dt->updateLeafIds();
   fprintf(stderr,"DT leaf ids:");
   std::list<int> *ids = dt->getLeafIds(me->currentboard, move);
@@ -2835,17 +2836,51 @@ void Engine::gtpDTLoad(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   delete ids;
   fprintf(stderr,"\n");*/
   
-  if (dt!=NULL)
+  if (trees!=NULL)
   {
-    me->decisiontrees.push_back(dt);
+    for (std::list<DecisionTree*>::iterator iter=trees->begin();iter!=trees->end();++iter)
+    {
+      me->decisiontrees.push_back((*iter));
+    }
+    delete trees;
+
     gtpe->getOutput()->startResponse(cmd);
-    gtpe->getOutput()->printf("loaded decision tree: %s",filename.c_str());
+    gtpe->getOutput()->printf("loaded decision trees: %s",filename.c_str());
     gtpe->getOutput()->endResponse();
   }
   else
   {
     gtpe->getOutput()->startResponse(cmd,false);
-    gtpe->getOutput()->printf("error loading decision tree: %s",filename.c_str());
+    gtpe->getOutput()->printf("error loading decision trees: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+}
+
+void Engine::gtpDTSave(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("need 1 arg");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  std::string filename=cmd->getStringArg(0);
+  
+  bool res = DecisionTree::saveFile(&(me->decisiontrees),filename);
+  if (res)
+  {
+    gtpe->getOutput()->startResponse(cmd);
+    gtpe->getOutput()->printf("saved decision trees: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+  else
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("error saving decision trees: %s",filename.c_str());
     gtpe->getOutput()->endResponse();
   }
 }

@@ -30,8 +30,9 @@ class DecisionTree
     void updateDescent(Go::Board *board, Go::Move move);
     void updateDescent(Go::Board *board);
 
-    static DecisionTree *parseString(Parameters *params, std::string rawdata);
-    static DecisionTree *loadFile(Parameters *params, std::string filename);
+    static std::list<DecisionTree*> *parseString(Parameters *params, std::string rawdata, unsigned long pos = 0);
+    static std::list<DecisionTree*> *loadFile(Parameters *params, std::string filename);
+    static bool saveFile(std::list<DecisionTree*> *trees, std::string filename);
 
     static float getCollectionWeight(std::list<DecisionTree*> *trees, Go::Board *board, Go::Move move, bool updatetree = false);
     static std::list<int> *getCollectionLeafIds(std::list<DecisionTree*> *trees, Go::Board *board, Go::Move move);
@@ -191,13 +192,13 @@ class DecisionTree
     static float percentageToVal(float p);
 
     static std::string stripWhitespace(std::string in);
-    static std::vector<std::string> *parseAttrs(std::string data, unsigned int &pos);
-    static Node *parseNode(Type type, std::string data, unsigned int &pos);
-    static Stats *parseStats(std::string data, unsigned int &pos);
-    static std::vector<StatPerm*> *parseStatPerms(std::string data, unsigned int &pos);
-    static Range *parseRange(std::string data, unsigned int &pos);
-    static std::vector<Option*> *parseOptions(Type type, std::string data, unsigned int &pos);
-    static float *parseNumber(std::string data, unsigned int &pos);
+    static std::vector<std::string> *parseAttrs(std::string data, unsigned long &pos);
+    static Node *parseNode(Type type, std::string data, unsigned long &pos);
+    static Stats *parseStats(std::string data, unsigned long &pos);
+    static std::vector<StatPerm*> *parseStatPerms(std::string data, unsigned long &pos);
+    static Range *parseRange(std::string data, unsigned long &pos);
+    static std::vector<Option*> *parseOptions(Type type, std::string data, unsigned long &pos);
+    static float *parseNumber(std::string data, unsigned long &pos);
     static bool isText(char c);
 };
 

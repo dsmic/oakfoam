@@ -1031,13 +1031,13 @@ std::string DecisionTree::Range::toString(int indent)
   return r;
 }
 
-DecisionTree *DecisionTree::parseString(Parameters *params, std::string rawdata)
+std::list<DecisionTree*> *DecisionTree::parseString(Parameters *params, std::string rawdata, unsigned long pos)
 {
   std::string data = DecisionTree::stripWhitespace(rawdata);
   std::transform(data.begin(),data.end(),data.begin(),::toupper);
   //fprintf(stderr,"[DT] parsing: '%s'\n",data.c_str());
 
-  unsigned int pos = data.find("(DT");
+  pos = data.find("(DT",pos);
   if (pos == std::string::npos)
   {
     fprintf(stderr,"[DT] Error! Missing '(DT'\n");
@@ -1092,10 +1092,35 @@ DecisionTree *DecisionTree::parseString(Parameters *params, std::string rawdata)
 
   root->populateEmptyStats(type);
 
-  return new DecisionTree(params,type,attrs,root);
+  DecisionTree *dt = new DecisionTree(params,type,attrs,root);
+  
+  bool isnext = false;
+  if (pos < data.size())
+  {
+    pos = data.find("(DT",pos);
+    if (pos != std::string::npos && pos < data.size())
+      isnext = true;
+  }
+  if (isnext)
+  {
+    std::list<DecisionTree*> *trees = DecisionTree::parseString(params,data,pos);
+    if (trees == NULL)
+    {
+      delete dt;
+      return NULL;
+    }
+    trees->push_front(dt);
+    return trees;
+  }
+  else
+  {
+    std::list<DecisionTree*> *trees = new std::list<DecisionTree*>();
+    trees->push_back(dt);
+    return trees;
+  }
 }
 
-std::vector<std::string> *DecisionTree::parseAttrs(std::string data, unsigned int &pos)
+std::vector<std::string> *DecisionTree::parseAttrs(std::string data, unsigned long &pos)
 {
   if (data[pos] == ']')
   {
@@ -1138,7 +1163,7 @@ std::vector<std::string> *DecisionTree::parseAttrs(std::string data, unsigned in
   }
 }
 
-DecisionTree::Node *DecisionTree::parseNode(DecisionTree::Type type, std::string data, unsigned int &pos)
+DecisionTree::Node *DecisionTree::parseNode(DecisionTree::Type type, std::string data, unsigned long &pos)
 {
   DecisionTree::Stats *stats = DecisionTree::parseStats(data,pos);
   if (stats == NULL)
@@ -1215,12 +1240,20 @@ DecisionTree::Node *DecisionTree::parseNode(DecisionTree::Type type, std::string
       return NULL;
     }
 
+    if (data[pos] != ')')
+    {
+      fprintf(stderr,"[DT] Error! Expected ')' at '%s'\n",data.substr(pos).c_str());
+      delete stats;
+      return NULL;
+    }
+    pos++;
+
     DecisionTree::Query *query = new DecisionTree::Query(label,attrs,options);
     return new DecisionTree::Node(stats,query);
   }
 }
 
-DecisionTree::Stats *DecisionTree::parseStats(std::string data, unsigned int &pos)
+DecisionTree::Stats *DecisionTree::parseStats(std::string data, unsigned long &pos)
 {
   if (data.substr(pos,7) != "(STATS:")
   {
@@ -1249,7 +1282,7 @@ DecisionTree::Stats *DecisionTree::parseStats(std::string data, unsigned int &po
   return new DecisionTree::Stats(sp);
 }
 
-std::vector<DecisionTree::StatPerm*> *DecisionTree::parseStatPerms(std::string data, unsigned int &pos)
+std::vector<DecisionTree::StatPerm*> *DecisionTree::parseStatPerms(std::string data, unsigned long &pos)
 {
   if (data[pos] != '(')
   {
@@ -1324,7 +1357,7 @@ std::vector<DecisionTree::StatPerm*> *DecisionTree::parseStatPerms(std::string d
   }
 }
 
-DecisionTree::Range *DecisionTree::parseRange(std::string data, unsigned int &pos)
+DecisionTree::Range *DecisionTree::parseRange(std::string data, unsigned long &pos)
 {
   if (data[pos] != '(')
   {
@@ -1430,7 +1463,7 @@ DecisionTree::Range *DecisionTree::parseRange(std::string data, unsigned int &po
   }
 }
 
-std::vector<DecisionTree::Option*> *DecisionTree::parseOptions(DecisionTree::Type type, std::string data, unsigned int &pos)
+std::vector<DecisionTree::Option*> *DecisionTree::parseOptions(DecisionTree::Type type, std::string data, unsigned long &pos)
 {
   std::string label = "";
   while (pos<data.length() && DecisionTree::isText(data[pos]))
@@ -1482,7 +1515,7 @@ std::vector<DecisionTree::Option*> *DecisionTree::parseOptions(DecisionTree::Typ
   }
 }
 
-float *DecisionTree::parseNumber(std::string data, unsigned int &pos)
+float *DecisionTree::parseNumber(std::string data, unsigned long &pos)
 {
   std::string s = "";
   while (pos<data.length() && (data[pos]=='.' || (data[pos]>='0' && data[pos]<='9')))
@@ -1506,7 +1539,7 @@ float *DecisionTree::parseNumber(std::string data, unsigned int &pos)
   return p;
 }
 
-DecisionTree *DecisionTree::loadFile(Parameters *params, std::string filename)
+std::list<DecisionTree*> *DecisionTree::loadFile(Parameters *params, std::string filename)
 {
   std::ifstream fin(filename.c_str());
   
@@ -1523,6 +1556,22 @@ DecisionTree *DecisionTree::loadFile(Parameters *params, std::string filename)
   fin.close();
   
   return DecisionTree::parseString(params,data);
+}
+
+bool DecisionTree::saveFile(std::list<DecisionTree*> *trees, std::string filename)
+{
+  std::ofstream fout(filename.c_str());
+
+  if (!fout)
+    return false;
+
+  for (std::list<DecisionTree*>::iterator iter=trees->begin();iter!=trees->end();++iter)
+  {
+    fout << (*iter)->toString() << "\n\n";
+  }
+
+  fout.close();
+  return true;
 }
 
 bool DecisionTree::isText(char c)
