@@ -217,6 +217,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("other","debug",&(params->debug_on),DEBUG_ON);
   
   params->addParameter("other","interrupts_enabled",&(params->interrupts_enabled),INTERRUPTS_ENABLED,&Engine::updateParameterWrapper,this);
+  params->addParameter("other","undo_enable",&(params->undo_enable),true);
   
   params->addParameter("other","features_only_small",&(params->features_only_small),false);
   params->addParameter("other","features_output_competitions",&(params->features_output_competitions),0.0);
@@ -808,7 +809,7 @@ void Engine::gtpShowBoard(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 void Engine::gtpUndo(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
-  if (me->undo())
+  if (me->params->undo_enable && me->undo())
   {
     gtpe->getOutput()->startResponse(cmd);
     gtpe->getOutput()->endResponse();

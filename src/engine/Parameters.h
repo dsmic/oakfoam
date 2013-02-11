@@ -492,6 +492,9 @@ class Parameters
     
     /** Whether to output debug info. */
     bool debug_on;
+
+    /** Is undo naively supported, or are undo commands ignored? */
+    bool undo_enable;
     
     /** Whether to use only small features.
      * Meant to aid incremental features for playouts.

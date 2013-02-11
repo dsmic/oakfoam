@@ -22,6 +22,9 @@ syntax: regexp
 ^scripts/features/mm\.tar\.bz2$
 ^scripts/features/.*\.dat$
 ^scripts/features/.*\.gamma$
+^scripts/decisiontrees/mm/.*$
+^scripts/decisiontrees/mm\.tar\.bz2$
+^scripts/decisiontrees/.*\.dat$
 ^docs/html/.*$
 ^docs/latex/.*$
 ^.*\/tags$
