@@ -522,12 +522,14 @@ class Parameters
 
     /** Probability that the decision trees are updated after a move. */
     float dt_update_prob;
-
     /** Number of descents that must occur before a decision tree node is split. */
     int dt_split_after;
-
     /** Number of range additions before dividing a range. */
     int dt_range_divide;
+    /** Probability to output decision tree competitions after each move for the MM tool.
+     * Used for training decision tree leaf weights.
+     */
+    float dt_output_mm;
     
     #ifdef HAVE_MPI
       /** Period between MPI syncs.

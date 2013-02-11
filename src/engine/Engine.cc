@@ -7,6 +7,7 @@
 #include <sstream>
 #include <iomanip>
 #include <boost/timer.hpp>
+#include <boost/lexical_cast.hpp>
 #ifdef HAVE_MPI
   #define MPIRANK0_ONLY(__body) {if (mpirank==0) { __body }}
 #else
@@ -230,6 +231,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("other","dt_update_prob",&(params->dt_update_prob),0.00);
   params->addParameter("other","dt_split_after",&(params->dt_split_after),100);
   params->addParameter("other","dt_range_divide",&(params->dt_range_divide),10);
+  params->addParameter("other","dt_output_mm",&(params->dt_output_mm),0.00);
   
   #ifdef HAVE_MPI
     params->addParameter("mpi","mpi_update_period",&(params->mpi_update_period),MPI_UPDATE_PERIOD);
@@ -2827,16 +2829,6 @@ void Engine::gtpDTLoad(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   std::string filename=cmd->getStringArg(0);
   
   std::list<DecisionTree*> *trees = DecisionTree::loadFile(me->params,filename);
-  /*dt->updateLeafIds();
-  fprintf(stderr,"DT leaf ids:");
-  std::list<int> *ids = dt->getLeafIds(me->currentboard, move);
-  for (std::list<int>::iterator iter=ids->begin();iter!=ids->end();++iter)
-  {
-    fprintf(stderr," %d",(*iter));
-  }
-  delete ids;
-  fprintf(stderr,"\n");*/
-  
   if (trees!=NULL)
   {
     for (std::list<DecisionTree*>::iterator iter=trees->begin();iter!=trees->end();++iter)
@@ -3284,8 +3276,46 @@ void Engine::makeMove(Go::Move move)
 
   if (WITH_P(params->dt_update_prob))
   {
-    gtpe->getOutput()->printfDebug("[DT]: update\n");
+    gtpe->getOutput()->printfDebug("[dt]: update\n");
     DecisionTree::collectionUpdateDescent(&decisiontrees,currentboard);
+  }
+
+  if (WITH_P(params->dt_output_mm))
+  {
+    std::list<int> *ids = DecisionTree::getCollectionLeafIds(&decisiontrees,currentboard,move);
+    if (ids != NULL)
+    {
+      gtpe->getOutput()->printfDebug("[dt]:#\n");
+      std::string idstring = "";
+      for (std::list<int>::iterator iter=ids->begin();iter!=ids->end();++iter)
+      {
+        idstring += (iter==ids->begin()?"":" ") + boost::lexical_cast<std::string>((*iter));
+      }
+      if (idstring.size() > 0)
+        gtpe->getOutput()->printfDebug("[dt]:%s\n",idstring.c_str());
+      delete ids;
+
+      Go::Color col=move.getColor();
+      for (int p=0;p<currentboard->getPositionMax();p++)
+      {
+        Go::Move m=Go::Move(col,p);
+        if (currentboard->validMove(m) || m==move)
+        {
+          std::list<int> *ids = DecisionTree::getCollectionLeafIds(&decisiontrees,currentboard,m);
+          if (ids != NULL)
+          {
+            std::string idstring = "";
+            for (std::list<int>::iterator iter=ids->begin();iter!=ids->end();++iter)
+            {
+              idstring += (iter==ids->begin()?"":" ") + boost::lexical_cast<std::string>((*iter));
+            }
+            if (idstring.size() > 0)
+              gtpe->getOutput()->printfDebug("[dt]:%s\n",idstring.c_str());
+            delete ids;
+          }
+        }
+      }
+    }
   }
   
   if (params->features_ordered_comparison)

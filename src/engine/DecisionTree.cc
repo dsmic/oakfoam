@@ -16,7 +16,7 @@ DecisionTree::DecisionTree(Parameters *p, DecisionTree::Type t, std::vector<std:
   type = t;
   attrs = a;
   root = r;
-  //this->updateLeafIds();
+  this->updateLeafIds();
 }
 
 DecisionTree::~DecisionTree()
