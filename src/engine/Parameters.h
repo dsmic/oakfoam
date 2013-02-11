@@ -516,6 +516,15 @@ class Parameters
     bool auto_save_sgf;
     /** The filename prefix for the outputted SGFs. */
     std::string auto_save_sgf_prefix;
+
+    /** Probability that the decision trees are updated after a move. */
+    float dt_update_prob;
+
+    /** Number of descents that must occur before a decision tree node is split. */
+    int dt_split_after;
+
+    /** Number of range additions before dividing a range. */
+    int dt_range_divide;
     
     #ifdef HAVE_MPI
       /** Period between MPI syncs.

@@ -225,6 +225,10 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   
   params->addParameter("other","auto_save_sgf",&(params->auto_save_sgf),false);
   params->addParameter("other","auto_save_sgf_prefix",&(params->auto_save_sgf_prefix),"");
+
+  params->addParameter("other","dt_update_prob",&(params->dt_update_prob),0.00);
+  params->addParameter("other","dt_split_after",&(params->dt_split_after),100);
+  params->addParameter("other","dt_range_divide",&(params->dt_range_divide),10);
   
   #ifdef HAVE_MPI
     params->addParameter("mpi","mpi_update_period",&(params->mpi_update_period),MPI_UPDATE_PERIOD);
@@ -2820,7 +2824,7 @@ void Engine::gtpDTLoad(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   
   std::string filename=cmd->getStringArg(0);
   
-  DecisionTree *dt = DecisionTree::loadFile(filename);
+  DecisionTree *dt = DecisionTree::loadFile(me->params,filename);
   /*dt->updateLeafIds();
   fprintf(stderr,"DT leaf ids:");
   std::list<int> *ids = dt->getLeafIds(me->currentboard, move);
@@ -3240,6 +3244,12 @@ void Engine::makeMove(Go::Move move)
       delete cfglastdist;
     if (cfgsecondlastdist!=NULL)
       delete cfgsecondlastdist;
+  }
+
+  if (WITH_P(params->dt_update_prob))
+  {
+    gtpe->getOutput()->printfDebug("[DT]: update\n");
+    DecisionTree::collectionUpdateDescent(&decisiontrees,currentboard);
   }
   
   if (params->features_ordered_comparison)

@@ -5,6 +5,8 @@
 #include <list>
 #include <vector>
 #include "Go.h"
+//from "Parameters.h":
+class Parameters;
 
 /** Decision Tree for Feature Ensemble Method. */
 class DecisionTree
@@ -28,8 +30,8 @@ class DecisionTree
     void updateDescent(Go::Board *board, Go::Move move);
     void updateDescent(Go::Board *board);
 
-    static DecisionTree *parseString(std::string rawdata);
-    static DecisionTree *loadFile(std::string filename);
+    static DecisionTree *parseString(Parameters *params, std::string rawdata);
+    static DecisionTree *loadFile(Parameters *params, std::string filename);
 
     static float getCollectionWeight(std::list<DecisionTree*> *trees, Go::Board *board, Go::Move move, bool updatetree = false);
     static std::list<int> *getCollectionLeafIds(std::list<DecisionTree*> *trees, Go::Board *board, Go::Move move);
@@ -52,7 +54,7 @@ class DecisionTree
         bool isTerminal() { return left==NULL && right==NULL; };
         int getStart() { return start; };
         int getEnd() { return end; };
-        void addVal(int v);
+        void addVal(int v, int div);
         int getThisVal() { return val; };
         float getExpectedMedian() { return this->getExpectedMedian(0,0); };
         float getExpectedPercentageLessThan(int v);
@@ -171,12 +173,13 @@ class DecisionTree
         float weight;
     };
 
+    Parameters *params;
     Type type;
     std::vector<std::string> *attrs;
     Node *root;
     std::vector<Node*> leafmap;
 
-    DecisionTree(Type t, std::vector<std::string> *a, DecisionTree::Node *r);
+    DecisionTree(Parameters *p, Type t, std::vector<std::string> *a, DecisionTree::Node *r);
 
     float getSparseWeight(Go::Board *board, Go::Move move, bool updatetree);
     std::list<Node*> *getSparseLeafNodes(Node *node, Go::Board *board, std::vector<int> *stones, bool invert, bool updatetree);

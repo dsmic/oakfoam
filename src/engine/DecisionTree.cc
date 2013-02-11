@@ -5,12 +5,14 @@
 #include <fstream>
 #include <algorithm>
 #include <boost/lexical_cast.hpp>
+#include "Parameters.h"
 
 #define TEXT "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<>=!."
 #define WHITESPACE " \t\r\n"
 
-DecisionTree::DecisionTree(DecisionTree::Type t, std::vector<std::string> *a, DecisionTree::Node *r)
+DecisionTree::DecisionTree(Parameters *p, DecisionTree::Type t, std::vector<std::string> *a, DecisionTree::Node *r)
 {
+  params = p;
   type = t;
   attrs = a;
   root = r;
@@ -387,13 +389,13 @@ bool DecisionTree::updateSparseNode(DecisionTree::Node *node, Go::Board *board, 
       res = resmin;
     else if (res > resmax)
       res = resmax;
-    sp->getRange()->addVal(res);
+    sp->getRange()->addVal(res,params->dt_range_divide);
   }
 
   if (node->isLeaf())
   {
     int descents = statperms->at(0)->getRange()->getThisVal();
-    if (descents >= 100) //TODO: parameterise this value
+    if (descents >= params->dt_split_after)
     {
       //fprintf(stderr,"DT split now!\n");
 
@@ -1029,7 +1031,7 @@ std::string DecisionTree::Range::toString(int indent)
   return r;
 }
 
-DecisionTree *DecisionTree::parseString(std::string rawdata)
+DecisionTree *DecisionTree::parseString(Parameters *params, std::string rawdata)
 {
   std::string data = DecisionTree::stripWhitespace(rawdata);
   std::transform(data.begin(),data.end(),data.begin(),::toupper);
@@ -1090,7 +1092,7 @@ DecisionTree *DecisionTree::parseString(std::string rawdata)
 
   root->populateEmptyStats(type);
 
-  return new DecisionTree(type,attrs,root);
+  return new DecisionTree(params,type,attrs,root);
 }
 
 std::vector<std::string> *DecisionTree::parseAttrs(std::string data, unsigned int &pos)
@@ -1504,7 +1506,7 @@ float *DecisionTree::parseNumber(std::string data, unsigned int &pos)
   return p;
 }
 
-DecisionTree *DecisionTree::loadFile(std::string filename)
+DecisionTree *DecisionTree::loadFile(Parameters *params, std::string filename)
 {
   std::ifstream fin(filename.c_str());
   
@@ -1520,7 +1522,7 @@ DecisionTree *DecisionTree::loadFile(std::string filename)
   
   fin.close();
   
-  return DecisionTree::parseString(data);
+  return DecisionTree::parseString(params,data);
 }
 
 bool DecisionTree::isText(char c)
@@ -1727,12 +1729,12 @@ DecisionTree::Range::~Range()
     delete right;
 }
 
-void DecisionTree::Range::addVal(int v)
+void DecisionTree::Range::addVal(int v, int div)
 {
   if (v<start || v>end)
     return;
 
-  if (this->isTerminal() && start!=end && (val>10 || this->isRoot())) //TODO: parameterise 10
+  if (this->isTerminal() && start!=end && (val>div || this->isRoot()))
   {
     int mid = start + (end - start)/2; //XXX: consider choosing mid according to a log scale
     left = new DecisionTree::Range(start,mid);
@@ -1744,9 +1746,9 @@ void DecisionTree::Range::addVal(int v)
   val++;
 
   if (left!=NULL)
-    left->addVal(v);
+    left->addVal(v,div);
   if (right!=NULL)
-    right->addVal(v);
+    right->addVal(v,div);
 }
 
 float DecisionTree::Range::getExpectedMedian(float vl, float vr)
