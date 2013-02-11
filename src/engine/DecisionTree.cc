@@ -265,9 +265,9 @@ bool DecisionTree::updateSparseNode(DecisionTree::Node *node, Go::Board *board, 
     if (spt=="NEW")
     {
       std::string cols = attrs->at(0);
-      bool B = cols=="B";
-      bool W = cols=="W";
-      bool S = cols=="S";
+      bool B = (cols.find('B') != std::string::npos);
+      bool W = (cols.find('W') != std::string::npos);
+      bool S = (cols.find('S') != std::string::npos);
       int center = stones->at(0);
 
       bool resfound = false;
@@ -400,7 +400,6 @@ bool DecisionTree::updateSparseNode(DecisionTree::Node *node, Go::Board *board, 
       std::vector<std::string> *bestattrs = NULL;
       float bestval = -1;
 
-      //TODO: try combinations of NEW colors
       //TODO: try = for DIST and ATTR
       for (unsigned int i=0; i<statperms->size(); i++)
       {
@@ -1554,10 +1553,14 @@ DecisionTree::Stats::Stats(DecisionTree::Type type, unsigned int maxnode)
 
       // NEW
       std::string colslist = "BWS";
-      for (unsigned int i=0; i<colslist.size(); i++)
+      for (unsigned int i=1; i<(1<<colslist.size()); i++)
       {
-        std::string cols;
-        cols = colslist[i];
+        std::string cols = "";
+        for (unsigned int j=0; j<colslist.size(); j++)
+        {
+          if ((i>>j)&0x01)
+            cols += colslist[j];
+        }
         std::vector<std::string> *attrs = new std::vector<std::string>();
         attrs->push_back(cols);
         statperms->push_back(new DecisionTree::StatPerm("NEW",attrs,new DecisionTree::Range(rangemin,rangemax)));
