@@ -53,7 +53,7 @@ echo "!" >> $TEMPMM
 cat "$TEMPLOG" | grep '\[dt\]:' | sed 's/\[dt\]://' >> $TEMPMM
 #cat $TEMPMM
 
-MMOUTPUT=`cat $TEMPMM | $MM 2> $TEMPLOG`
+MMOUTPUT=`cat $TEMPMM | $MM`
 
 echo "Training done. Updating tree..." >&2
 
