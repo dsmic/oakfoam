@@ -59,7 +59,7 @@ unsigned int DecisionTree::getMaxNode(DecisionTree::Node *node)
 
 float DecisionTree::getWeight(Go::Board *board, Go::Move move, bool updatetree)
 {
-  if (!board->validMove(move))
+  if (!board->validMove(move) || !move.isNormal())
     return -1;
 
   if (type == SPARSE)
@@ -96,7 +96,7 @@ float DecisionTree::getCollectionWeight(std::list<DecisionTree*> *trees, Go::Boa
 {
   float weight = 1;
 
-  if (!board->validMove(move))
+  if (!board->validMove(move) || !move.isNormal())
     return -1;
 
   for (std::list<DecisionTree*>::iterator iter=trees->begin();iter!=trees->end();++iter)

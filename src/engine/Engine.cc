@@ -3381,36 +3381,39 @@ void Engine::makeMove(Go::Move move)
 
   if (WITH_P(params->dt_output_mm))
   {
-    std::list<int> *ids = DecisionTree::getCollectionLeafIds(&decisiontrees,currentboard,move);
-    if (ids != NULL)
+    if (move.isNormal())
     {
-      gtpe->getOutput()->printfDebug("[dt]:#\n");
-      std::string idstring = "";
-      for (std::list<int>::iterator iter=ids->begin();iter!=ids->end();++iter)
+      std::list<int> *ids = DecisionTree::getCollectionLeafIds(&decisiontrees,currentboard,move);
+      if (ids != NULL)
       {
-        idstring += (iter==ids->begin()?"":" ") + boost::lexical_cast<std::string>((*iter));
-      }
-      if (idstring.size() > 0)
-        gtpe->getOutput()->printfDebug("[dt]:%s\n",idstring.c_str());
-      delete ids;
-
-      Go::Color col=move.getColor();
-      for (int p=0;p<currentboard->getPositionMax();p++)
-      {
-        Go::Move m=Go::Move(col,p);
-        if (currentboard->validMove(m) || m==move)
+        gtpe->getOutput()->printfDebug("[dt]:#\n");
+        std::string idstring = "";
+        for (std::list<int>::iterator iter=ids->begin();iter!=ids->end();++iter)
         {
-          std::list<int> *ids = DecisionTree::getCollectionLeafIds(&decisiontrees,currentboard,m);
-          if (ids != NULL)
+          idstring += (iter==ids->begin()?"":" ") + boost::lexical_cast<std::string>((*iter));
+        }
+        if (idstring.size() > 0)
+          gtpe->getOutput()->printfDebug("[dt]:%s\n",idstring.c_str());
+        delete ids;
+
+        Go::Color col=move.getColor();
+        for (int p=0;p<currentboard->getPositionMax();p++)
+        {
+          Go::Move m=Go::Move(col,p);
+          if (currentboard->validMove(m) || m==move)
           {
-            std::string idstring = "";
-            for (std::list<int>::iterator iter=ids->begin();iter!=ids->end();++iter)
+            std::list<int> *ids = DecisionTree::getCollectionLeafIds(&decisiontrees,currentboard,m);
+            if (ids != NULL)
             {
-              idstring += (iter==ids->begin()?"":" ") + boost::lexical_cast<std::string>((*iter));
+              std::string idstring = "";
+              for (std::list<int>::iterator iter=ids->begin();iter!=ids->end();++iter)
+              {
+                idstring += (iter==ids->begin()?"":" ") + boost::lexical_cast<std::string>((*iter));
+              }
+              if (idstring.size() > 0)
+                gtpe->getOutput()->printfDebug("[dt]:%s\n",idstring.c_str());
+              delete ids;
             }
-            if (idstring.size() > 0)
-              gtpe->getOutput()->printfDebug("[dt]:%s\n",idstring.c_str());
-            delete ids;
           }
         }
       }
