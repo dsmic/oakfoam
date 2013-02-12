@@ -226,9 +226,9 @@ int DecisionTree::getDistance(Go::Board *board, int p1, int p2)
       case -2:
         return y;
       case -3:
-        return size-x+1;
+        return size-x-1;
       case -4:
-        return size-y+1;
+        return size-y-1;
     }
     return 0;
   }
