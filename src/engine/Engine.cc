@@ -537,6 +537,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("dtat",this,&Engine::gtpDTAt);
   gtpe->addFunctionCommand("dtupdate",this,&Engine::gtpDTUpdate);
   gtpe->addFunctionCommand("dtsave",this,&Engine::gtpDTSave);
+  gtpe->addFunctionCommand("dtset",this,&Engine::gtpDTSet);
   
   //gtpe->addAnalyzeCommand("final_score","Final Score","string");
   //gtpe->addAnalyzeCommand("showboard","Show Board","string");
@@ -2944,6 +2945,28 @@ void Engine::gtpDTUpdate(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   DecisionTree::collectionUpdateDescent(&(me->decisiontrees),me->currentboard);
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printf("updated decision trees");
+  gtpe->getOutput()->endResponse();
+}
+
+void Engine::gtpDTSet(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=2)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("id and weight are required");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  int id = cmd->getIntArg(0);
+  float weight = cmd->getFloatArg(1);
+  
+  DecisionTree::setCollectionLeafWeight(&(me->decisiontrees), id, weight);
+
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printf("decision tree leaf weight updated");
   gtpe->getOutput()->endResponse();
 }
 

@@ -26,7 +26,7 @@ if ! test -x mm/mm; then
 fi
 
 LEAVES=`cat "$DTFILE" | grep 'WEIGHT' | wc -l`
-echo "Starting training '$DTFILE':" >&2
+echo "Training '$DTFILE':" >&2
 echo " Leaves: $LEAVES" >&2
 
 echo "dtload \"$DTFILE\"" >> $TEMPGTP
@@ -39,10 +39,10 @@ do
   echo "loadsgf \"$GAME\"" >> $TEMPGTP
 done
 
-#echo "dtsave \"$DTFILE\"" >> $TEMPGTP
-
 # Use gogui-adapter to emulate loadsgf
 cat "$TEMPGTP" | gogui-adapter "$OAKFOAM" &> /dev/null
+
+echo "Data captured. Training weights..." >&2
 
 echo "! $LEAVES" >> $TEMPMM
 echo "$LEAVES" >> $TEMPMM
@@ -51,10 +51,23 @@ for i in `seq $LEAVES`; do
 done
 echo "!" >> $TEMPMM
 cat "$TEMPLOG" | grep '\[dt\]:' | sed 's/\[dt\]://' >> $TEMPMM
-
 #cat $TEMPMM
 
-cat $TEMPMM | $MM
+MMOUTPUT=`cat $TEMPMM | $MM 2> $TEMPLOG`
+
+echo "Training done. Updating tree..." >&2
+
+echo "dtload \"$DTFILE\"" > $TEMPGTP
+echo "$MMOUTPUT" | sed 's/[ \t]\+/ /g; s/^ //' | while read WEIGHT; do
+  echo "dtset $WEIGHT" >> $TEMPGTP
+done
+echo "dtprint 1" >> $TEMPGTP
+echo "dtsave \"$DTFILE\"" >> $TEMPGTP
+#cat $TEMPGTP
+
+cat "$TEMPGTP" | gogui-adapter "$OAKFOAM" &> /dev/null
+
+echo "Updated tree." >&2
 
 rm -f $TEMPGTP $TEMPMM $TEMPLOG
 
