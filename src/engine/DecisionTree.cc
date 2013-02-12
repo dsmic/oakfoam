@@ -96,6 +96,9 @@ float DecisionTree::getCollectionWeight(std::list<DecisionTree*> *trees, Go::Boa
 {
   float weight = 1;
 
+  if (!board->validMove(move))
+    return -1;
+
   for (std::list<DecisionTree*>::iterator iter=trees->begin();iter!=trees->end();++iter)
   {
     float w = (*iter)->getWeight(board, move, updatetree);
@@ -1558,7 +1561,7 @@ std::list<DecisionTree*> *DecisionTree::loadFile(Parameters *params, std::string
   return DecisionTree::parseString(params,data);
 }
 
-bool DecisionTree::saveFile(std::list<DecisionTree*> *trees, std::string filename)
+bool DecisionTree::saveFile(std::list<DecisionTree*> *trees, std::string filename, bool ignorestats)
 {
   std::ofstream fout(filename.c_str());
 
@@ -1567,7 +1570,7 @@ bool DecisionTree::saveFile(std::list<DecisionTree*> *trees, std::string filenam
 
   for (std::list<DecisionTree*>::iterator iter=trees->begin();iter!=trees->end();++iter)
   {
-    fout << (*iter)->toString() << "\n\n";
+    fout << (*iter)->toString(ignorestats) << "\n\n";
   }
 
   fout.close();

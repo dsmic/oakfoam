@@ -538,6 +538,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("dtupdate",this,&Engine::gtpDTUpdate);
   gtpe->addFunctionCommand("dtsave",this,&Engine::gtpDTSave);
   gtpe->addFunctionCommand("dtset",this,&Engine::gtpDTSet);
+  gtpe->addFunctionCommand("dtdistribution",this,&Engine::gtpDTDistribution);
   
   //gtpe->addAnalyzeCommand("final_score","Final Score","string");
   //gtpe->addAnalyzeCommand("showboard","Show Board","string");
@@ -562,6 +563,7 @@ void Engine::addGtpCommands()
   //gtpe->addAnalyzeCommand("shownakadecenters","Show Nakade Centers","sboard");
   gtpe->addAnalyzeCommand("featurematchesat %%p","Feature Matches At","string");
   gtpe->addAnalyzeCommand("featureprobdistribution","Feature Probability Distribution","cboard");
+  gtpe->addAnalyzeCommand("dtdistribution","Decision Tree Distribution","cboard");
   gtpe->addAnalyzeCommand("loadfeaturegammas %%r","Load Feature Gammas","none");
   gtpe->addAnalyzeCommand("showcriticality","Show Criticality","cboard");
   gtpe->addAnalyzeCommand("showterritory","Show Territory","dboard");
@@ -2854,7 +2856,7 @@ void Engine::gtpDTSave(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
   
-  if (cmd->numArgs()!=1)
+  if (cmd->numArgs()<1)
   {
     gtpe->getOutput()->startResponse(cmd,false);
     gtpe->getOutput()->printf("need 1 arg");
@@ -2863,8 +2865,11 @@ void Engine::gtpDTSave(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   }
   
   std::string filename=cmd->getStringArg(0);
+  bool ignorestats = false;
+  if (cmd->numArgs()>1)
+    ignorestats = cmd->getIntArg(1)!=0;
   
-  bool res = DecisionTree::saveFile(&(me->decisiontrees),filename);
+  bool res = DecisionTree::saveFile(&(me->decisiontrees),filename,ignorestats);
   if (res)
   {
     gtpe->getOutput()->startResponse(cmd);
@@ -2968,6 +2973,64 @@ void Engine::gtpDTSet(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printf("decision tree leaf weight updated");
   gtpe->getOutput()->endResponse();
+}
+
+void Engine::gtpDTDistribution(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  Go::Board *board = me->currentboard;
+  Go::Color col = board->nextToMove();
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("\n");
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      Go::Move move = Go::Move(col,Go::Position::xy2pos(x,y,me->boardsize)); 
+      float weight = DecisionTree::getCollectionWeight(&(me->decisiontrees), board, move);
+      if (weight < 0)
+        gtpe->getOutput()->printf("\"\" ");
+      else
+      {
+        float val = atan(weight)/asin(1);
+        float point1 = 0.15;
+        float point2 = 0.85;
+        float r,g,b;
+        // scale from blue-green-red-reddest?
+        if (val >= point2)
+        {
+          b = 0;
+          r = 1;
+          g = 0;
+        }
+        else if (val >= point1)
+        {
+          b = 0;
+          r = (val-point1)/(point2-point1);
+          g = 1 - r;
+        }
+        else
+        {
+          r = 0;
+          g = val/point1;
+          b = 1 - g;
+        }
+        if (r < 0)
+          r = 0;
+        if (g < 0)
+          g = 0;
+        if (b < 0)
+          b = 0;
+        gtpe->getOutput()->printf("#%02x%02x%02x ",(int)(r*255),(int)(g*255),(int)(b*255));
+        //gtpe->getOutput()->printf("#%06x ",(int)(prob*(1<<24)));
+      }
+    }
+    gtpe->getOutput()->printf("\n");
+  }
+
+  gtpe->getOutput()->endResponse(true);
 }
 
 void Engine::gtpGameOver(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)

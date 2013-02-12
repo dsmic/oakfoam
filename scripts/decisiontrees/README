@@ -11,8 +11,8 @@ Requirements:
 Example Usage:
   1. Create a new blank decision tree collection:
     $ cp dt_blank.dat dt.dat
-  2. Grow the collection from 100 random games in a collection: (this step can be repeated as necessary)
-    $ ls sgfs/*.sgf | shuf -n 100 | ./dt-grow.sh dt.dat
+  2. Grow the collection from 100 random games in a collection:
+    $ ls sgfs/*.sgf | shuf -n 100 | ./dt-grow.sh dt.dat 1
   3. Train weights for the tree leaf nodes:
     $ ls sgfs/*.sgf | shuf -n 100 | ./dt-train.sh dt.dat
   4. Test the results:
@@ -20,12 +20,13 @@ Example Usage:
 
 Scripts:
   dt-grow.sh
-    - Grow a decision tree from a series of games
-    eg: $ ls sgfs/*.sgf | ./dt-grow.sh dt.dat
+    - Grow a decision tree from a series of games.
+      The 2nd argument specifies if the stats should be preserved (0) or dropped (1).
+    eg: $ ls sgfs/*.sgf | ./dt-grow.sh dt.dat [0|1]
   dt-train.sh
-    - Train weights for a decision tree from a series of games
+    - Train weights for a decision tree from a series of games.
     eg: $ ls sgfs/*.sgf | ./dt-train.sh dt.dat
   mm-fetch.sh
-    - Download and make the MM tool, used for training leaf weights
+    - Download and make the MM tool, used for training leaf weights.
     eg: $ ./mm-fetch.sh
 

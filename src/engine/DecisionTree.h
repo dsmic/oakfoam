@@ -32,7 +32,7 @@ class DecisionTree
 
     static std::list<DecisionTree*> *parseString(Parameters *params, std::string rawdata, unsigned long pos = 0);
     static std::list<DecisionTree*> *loadFile(Parameters *params, std::string filename);
-    static bool saveFile(std::list<DecisionTree*> *trees, std::string filename);
+    static bool saveFile(std::list<DecisionTree*> *trees, std::string filename, bool ignorestats = false);
 
     static float getCollectionWeight(std::list<DecisionTree*> *trees, Go::Board *board, Go::Move move, bool updatetree = false);
     static std::list<int> *getCollectionLeafIds(std::list<DecisionTree*> *trees, Go::Board *board, Go::Move move);

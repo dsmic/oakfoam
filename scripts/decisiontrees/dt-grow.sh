@@ -6,12 +6,17 @@ TEMPGTP="grow_`date +%F_%T`.tmp"
 TEMPLOG="growlog_`date +%F_%T`.tmp"
 OAKFOAM="../../oakfoam --nobook --log $TEMPLOG"
 
-if (( $# != 1 )); then
+if (( $# < 1 )); then
   echo "Exactly one DT required" >&2
   exit 1
 fi
 
 DTFILE=$1
+
+DTIGNORESTATS=0
+if (( $# > 1 )); then
+  DTIGNORESTATS=$2
+fi
 
 if ! test -x ../../oakfoam; then
   echo "File ../../oakfoam not found" >&2
@@ -30,7 +35,7 @@ do
   echo "loadsgf \"$GAME\"" >> $TEMPGTP
 done
 
-echo "dtsave \"$DTFILE\"" >> $TEMPGTP
+echo "dtsave \"$DTFILE\" $DTIGNORESTATS" >> $TEMPGTP
 
 # Use gogui-adapter to emulate loadsgf
 cat "$TEMPGTP" | gogui-adapter "$OAKFOAM" &> /dev/null
