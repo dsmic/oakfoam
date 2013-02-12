@@ -530,6 +530,10 @@ class Parameters
      * Used for training decision tree leaf weights.
      */
     float dt_output_mm;
+    /** Whether to output a comparison of each move made with the decision trees' ordering.
+     * Used to measure feature accuracy.
+     */
+    bool dt_ordered_comparison;
     
     #ifdef HAVE_MPI
       /** Period between MPI syncs.

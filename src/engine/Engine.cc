@@ -232,6 +232,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("other","dt_split_after",&(params->dt_split_after),100);
   params->addParameter("other","dt_range_divide",&(params->dt_range_divide),10);
   params->addParameter("other","dt_output_mm",&(params->dt_output_mm),0.00);
+  params->addParameter("other","dt_ordered_comparison",&(params->dt_ordered_comparison),false);
   
   #ifdef HAVE_MPI
     params->addParameter("mpi","mpi_update_period",&(params->mpi_update_period),MPI_UPDATE_PERIOD);
@@ -3502,6 +3503,70 @@ void Engine::makeMove(Go::Move move)
       delete cfglastdist;
     if (cfgsecondlastdist!=NULL)
       delete cfgsecondlastdist;
+  }
+
+  if (params->dt_ordered_comparison)
+  {
+    bool usedpos[currentboard->getPositionMax()];
+    for (int i=0;i<currentboard->getPositionMax();i++)
+      usedpos[i] = false;
+    int posused = 0;
+    float bestweight = -1;
+    int bestpos = 0;
+    Go::Color col = move.getColor();
+    int matchedat = 0;
+
+    float weights[currentboard->getPositionMax()];
+    for (int p=0;p<currentboard->getPositionMax();p++)
+    {
+      Go::Move m = Go::Move(col,p);
+      if (currentboard->validMove(m) || m==move)
+        weights[p] = DecisionTree::getCollectionWeight(&decisiontrees,currentboard,move);
+      else
+        weights[p] = -1;
+    }
+    
+    gtpe->getOutput()->printfDebug("[dt_comparison]:# comparison (%d,%s)\n",(currentboard->getMovesMade()+1),Go::Position::pos2string(move.getPosition(),boardsize).c_str());
+    
+    gtpe->getOutput()->printfDebug("[dt_comparison]:");
+    while (true)
+    {
+      for (int p=0;p<currentboard->getPositionMax();p++)
+      {
+        if (!usedpos[p])
+        {
+          Go::Move m = Go::Move(col,p);
+          if (currentboard->validMove(m) || m==move)
+          {
+            float weight = weights[p];
+            if (weight > bestweight)
+            {
+              bestweight = weight;
+              bestpos = p;
+            }
+          }
+        }
+      }
+      
+      if (bestweight!=-1)
+      {
+        Go::Move m = Go::Move(col,bestpos);
+        posused++;
+        usedpos[bestpos]=true;
+        gtpe->getOutput()->printfDebug(" %s",Go::Position::pos2string(m.getPosition(),boardsize).c_str());
+        if (m==move)
+        {
+          gtpe->getOutput()->printfDebug("*");
+          matchedat = posused;
+        }
+      }
+      else
+        break;
+      
+      bestweight = -1;
+    }
+    gtpe->getOutput()->printfDebug("\n");
+    gtpe->getOutput()->printfDebug("[dt_comparison]:matched at: %d\n",matchedat);
   }
   
   currentboard->makeMove(move);
