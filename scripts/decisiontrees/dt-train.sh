@@ -8,12 +8,17 @@ TEMPLOG="trainlog_`date +%F_%T`.tmp"
 OAKFOAM="../../oakfoam --nobook --log $TEMPLOG"
 MM="mm/mm"
 
-if (( $# != 1 )); then
+if (( $# < 1 )); then
   echo "Exactly one DT required" >&2
   exit 1
 fi
 
 DTFILE=$1
+
+DTIGNORESTATS=0
+if (( $# > 1 )); then
+  DTIGNORESTATS=$2
+fi
 
 if ! test -x ../../oakfoam; then
   echo "File ../../oakfoam not found" >&2
@@ -61,8 +66,8 @@ echo "dtload \"$DTFILE\"" > $TEMPGTP
 echo "$MMOUTPUT" | sed 's/[ \t]\+/ /g; s/^ //' | while read WEIGHT; do
   echo "dtset $WEIGHT" >> $TEMPGTP
 done
-echo "dtprint 1" >> $TEMPGTP
-echo "dtsave \"$DTFILE\"" >> $TEMPGTP
+#echo "dtprint 1" >> $TEMPGTP
+echo "dtsave \"$DTFILE\" $DTIGNORESTATS" >> $TEMPGTP
 #cat $TEMPGTP
 
 cat "$TEMPGTP" | gogui-adapter "$OAKFOAM" &> /dev/null
