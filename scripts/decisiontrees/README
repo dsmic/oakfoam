@@ -14,7 +14,7 @@ Example Usage:
   2. Grow the collection from 100 random games in a collection: (this step can be repeated as necessary)
     $ ls sgfs/*.sgf | shuf -n 100 | ./dt-grow.sh dt.dat
   3. Train weights for the tree leaf nodes:
-    TODO
+    $ ls sgfs/*.sgf | shuf -n 100 | ./dt-train.sh dt.dat
   4. Test the results:
     TODO
 
@@ -22,6 +22,9 @@ Scripts:
   dt-grow.sh
     - Grow a decision tree from a series of games
     eg: $ ls sgfs/*.sgf | ./dt-grow.sh dt.dat
+  dt-train.sh
+    - Train weights for a decision tree from a series of games
+    eg: $ ls sgfs/*.sgf | ./dt-train.sh dt.dat
   mm-fetch.sh
     - Download and make the MM tool, used for training leaf weights
     eg: $ ./mm-fetch.sh
