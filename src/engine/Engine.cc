@@ -2981,6 +2981,18 @@ void Engine::gtpDTDistribution(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
   
   Go::Board *board = me->currentboard;
   Go::Color col = board->nextToMove();
+
+  float weightmax = 0;
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      Go::Move move = Go::Move(col,Go::Position::xy2pos(x,y,me->boardsize)); 
+      float weight = DecisionTree::getCollectionWeight(&(me->decisiontrees), board, move);
+      if (weight >= 0 && weight > weightmax)
+        weightmax = weight;
+    }
+  }
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printString("\n");
@@ -2994,9 +3006,10 @@ void Engine::gtpDTDistribution(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
         gtpe->getOutput()->printf("\"\" ");
       else
       {
-        float val = atan(weight)/asin(1);
+        //float val = atan(weight)/asin(1);
+        float val = weight/weightmax;
         float point1 = 0.15;
-        float point2 = 0.85;
+        float point2 = 0.65;
         float r,g,b;
         // scale from blue-green-red-reddest?
         if (val >= point2)
