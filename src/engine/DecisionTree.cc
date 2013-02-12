@@ -376,7 +376,12 @@ bool DecisionTree::updateSparseNode(DecisionTree::Node *node, Go::Board *board, 
         else if (type == "LIB")
         {
           if (board->inGroup(p))
-            res = board->getGroup(p)->numOfPseudoLiberties();
+          {
+            if (board->getGroup(p)->inAtari())
+              res = 1;
+            else
+              res = board->getGroup(p)->numOfPseudoLiberties();
+          }
           else
             res = 0;
         }
@@ -715,7 +720,12 @@ std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::N
               int p = (*iter);
               int lib = 0;
               if (p>0 && board->inGroup(p))
-                lib = board->getGroup(p)->numOfPseudoLiberties();
+              {
+                if (board->getGroup(p)->inAtari())
+                  lib = 1;
+                else
+                  lib = board->getGroup(p)->numOfPseudoLiberties();
+              }
               if (lib > maxlib)
                 maxlib = lib;
             }
@@ -726,7 +736,12 @@ std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::N
               int p = (*iter);
               int lib = 0;
               if (p>0 && board->inGroup(p))
-                lib = board->getGroup(p)->numOfPseudoLiberties();
+              {
+                if (board->getGroup(p)->inAtari())
+                  lib = 1;
+                else
+                  lib = board->getGroup(p)->numOfPseudoLiberties();
+              }
               if (lib == maxlib)
                 m.push_back(p);
             }
@@ -843,7 +858,12 @@ std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::N
       else if (type == "LIB")
       {
         if (board->inGroup(p))
-          attr = board->getGroup(p)->numOfPseudoLiberties();
+        {
+          if (board->getGroup(p)->inAtari())
+            attr = 1;
+          else
+            attr = board->getGroup(p)->numOfPseudoLiberties();
+        }
         else
           attr = 0;
       }
