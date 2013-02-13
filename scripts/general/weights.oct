@@ -1,0 +1,13 @@
+x = load('weights.txt');
+
+lx = log(x);
+
+lxmin = min(lx);
+lxmax = max(lx);
+
+N = 100;
+
+hist(lx,N);
+grid on;
+print('hist.png');
+
