@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <boost/lexical_cast.hpp>
 #include "Parameters.h"
+#include "Engine.h"
 
 #define TEXT "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<>=!."
 #define WHITESPACE " \t\r\n"
@@ -403,7 +404,7 @@ bool DecisionTree::updateSparseNode(DecisionTree::Node *node, Go::Board *board, 
   if (node->isLeaf())
   {
     int descents = statperms->at(0)->getRange()->getThisVal();
-    if (descents >= params->dt_split_after)
+    if (descents >= params->dt_split_after && (descents%10)==0)
     {
       //fprintf(stderr,"DT split now!\n");
 
@@ -505,16 +506,21 @@ bool DecisionTree::updateSparseNode(DecisionTree::Node *node, Go::Board *board, 
 
       if (bestval != -1)
       {
-        int maxnode = this->getMaxNode(node);
+        if (bestval >= params->dt_split_threshold)
+        {
+          int maxnode = this->getMaxNode(node);
 
-        /*fprintf(stderr,"DT best stat: %s",bestlabel.c_str());
-        for (unsigned int j=0; j<bestattrs->size(); j++)
-          fprintf(stderr,"%c%s",(j==0?'[':'|'),bestattrs->at(j).c_str());
-        fprintf(stderr,"]\n");*/
+          DecisionTree::Query *query = new DecisionTree::Query(type,bestlabel,bestattrs,maxnode);
+          query->setParent(node);
+          node->setQuery(query);
 
-        DecisionTree::Query *query = new DecisionTree::Query(type,bestlabel,bestattrs,maxnode);
-        query->setParent(node);
-        node->setQuery(query);
+          /*params->engine->getGtpEngine()->getOutput()->printfDebug("DT best stat: %s",bestlabel.c_str());
+          for (unsigned int j=0; j<bestattrs->size(); j++)
+            params->engine->getGtpEngine()->getOutput()->printfDebug("%c%s",(j==0?'[':'|'),bestattrs->at(j).c_str());
+          params->engine->getGtpEngine()->getOutput()->printfDebug("] %.2f\n",bestval);*/
+        }
+        else
+          delete bestattrs;
       }
     }
   }
