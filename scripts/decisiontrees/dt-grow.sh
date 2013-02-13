@@ -50,5 +50,5 @@ echo " Size:   $SIZE" >&2
 echo " Lines:  $LINES" >&2
 echo " Leaves: $LEAVES" >&2
 
-#rm -f $TEMPGTP $TEMPLOG
+rm -f $TEMPGTP $TEMPLOG
 
