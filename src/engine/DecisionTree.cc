@@ -568,7 +568,7 @@ std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::N
     int val = boost::lexical_cast<int>(valstr);
 
     std::list<int> matches;
-    for (int s=0; s<val; s++)
+    for (int s=0; s<=val; s++)
     {
       //XXX: need more efficient way of finding new nearby points?
       if (B || W)
