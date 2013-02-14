@@ -800,6 +800,27 @@ std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::N
           delete subnodes;
         }
       }
+
+      /*if (nodes->size()>1)
+      {
+        int minid = -1;
+        for (std::list<DecisionTree::Node*>::iterator iter=nodes->begin();iter!=nodes->end();++iter)
+        {
+          if (minid==-1 || (*iter)->getLeafId()<minid)
+            minid = (*iter)->getLeafId();
+        }
+        std::list<DecisionTree::Node*> *newnodes = new std::list<DecisionTree::Node*>();;
+        for (std::list<DecisionTree::Node*>::iterator iter=nodes->begin();iter!=nodes->end();++iter)
+        {
+          if ((*iter)->getLeafId()==minid)
+          {
+            newnodes->push_back((*iter));
+            break;
+          }
+        }
+        delete nodes;
+        nodes = newnodes;
+      }*/
       return nodes;
     }
     else
