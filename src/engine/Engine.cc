@@ -3522,7 +3522,7 @@ void Engine::makeMove(Go::Move move)
     {
       Go::Move m = Go::Move(col,p);
       if (currentboard->validMove(m) || m==move)
-        weights[p] = DecisionTree::getCollectionWeight(&decisiontrees,currentboard,move);
+        weights[p] = DecisionTree::getCollectionWeight(&decisiontrees,currentboard,m);
       else
         weights[p] = -1;
     }
