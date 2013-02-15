@@ -13,12 +13,18 @@ fi
 
 DTFILE=$1
 
+DTSOLOLEAF=1
+if (( $# > 2 )); then
+  DTSOLOLEAF=$3
+fi
+
 if ! test -x ../../oakfoam; then
   echo "File ../../oakfoam not found" >&2
   exit 1
 fi
 
 echo "dtload \"$DTFILE\"" >> $TEMPGTP
+echo "param dt_solo_leaf $DTSOLOLEAF" >> $TEMPGTP
 echo 'param dt_ordered_comparison 1' >> $TEMPGTP
 echo 'param undo_enable 0' >> $TEMPGTP # so gogui-adapter doesn't send undo commands
 

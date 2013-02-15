@@ -232,6 +232,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("other","dt_split_after",&(params->dt_split_after),100);
   params->addParameter("other","dt_split_threshold",&(params->dt_split_threshold),0.00);
   params->addParameter("other","dt_range_divide",&(params->dt_range_divide),10);
+  params->addParameter("other","dt_solo_leaf",&(params->dt_solo_leaf),false);
   params->addParameter("other","dt_output_mm",&(params->dt_output_mm),0.00);
   params->addParameter("other","dt_ordered_comparison",&(params->dt_ordered_comparison),false);
   

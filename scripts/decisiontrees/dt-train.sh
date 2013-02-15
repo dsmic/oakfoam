@@ -20,6 +20,11 @@ if (( $# > 1 )); then
   DTIGNORESTATS=$2
 fi
 
+DTSOLOLEAF=1
+if (( $# > 2 )); then
+  DTSOLOLEAF=$3
+fi
+
 if ! test -x ../../oakfoam; then
   echo "File ../../oakfoam not found" >&2
   exit 1
@@ -35,6 +40,7 @@ echo "Training '$DTFILE':" >&2
 echo " Leaves: $LEAVES" >&2
 
 echo "dtload \"$DTFILE\"" >> $TEMPGTP
+echo "param dt_solo_leaf $DTSOLOLEAF" >> $TEMPGTP
 echo 'param dt_output_mm 0.1' >> $TEMPGTP
 echo 'param undo_enable 0' >> $TEMPGTP # so gogui-adapter doesn't send undo commands
 
@@ -50,11 +56,31 @@ cat "$TEMPGTP" | gogui-adapter "$OAKFOAM" &> /dev/null
 echo "Data captured. Training weights..." >&2
 
 echo "! $LEAVES" >> $TEMPMM
-echo "$LEAVES" >> $TEMPMM
-for i in `seq $LEAVES`; do
-  echo "1 feature_$i" >> $TEMPMM
-done
+if (( $DTSOLOLEAF != 0 )); then
+  TREES=`cat "$DTFILE" | grep '(DT' | wc -l`
+  echo "$TREES" >> $TEMPMM
+  for i in `seq $TREES`; do
+    LN1=`cat "$DTFILE" | grep -n '(DT' | sed -n "${i}p" | sed 's/:.*//'`
+    if (( $i == $TREES )); then
+      LN2='$'
+    else
+      let "j=$i+1"
+      LN2=`cat "$DTFILE" | grep -n '(DT' | sed -n "${j}p" | sed 's/:.*//'`
+    fi
+
+    L=`cat "$DTFILE" | sed -n "${LN1},${LN2}p" | grep 'WEIGHT' | wc -l`
+
+    #echo "$TREES $i $LN1 $LN2 $L"
+    echo "$L feature_$i" >> $TEMPMM
+  done
+else
+  echo "$LEAVES" >> $TEMPMM
+  for i in `seq $LEAVES`; do
+    echo "1 feature_$i" >> $TEMPMM
+  done
+fi
 echo "!" >> $TEMPMM
+
 cat "$TEMPLOG" | grep '\[dt\]:' | sed 's/\[dt\]://' >> $TEMPMM
 #cat $TEMPMM
 

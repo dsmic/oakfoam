@@ -25,10 +25,10 @@ Scripts:
     eg: $ ls sgfs/*.sgf | ./dt-grow.sh dt.dat [0|1]
   dt-train.sh
     - Train weights for a decision tree from a series of games.
-    eg: $ ls sgfs/*.sgf | ./dt-train.sh dt.dat [0|1]
+    eg: $ ls sgfs/*.sgf | ./dt-train.sh dt.dat [0|1] [0|1]
   dt-compare.sh
     - Compare trained decision tree with a series of games.
-    eg: $ ls sgfs/*.sgf | ./dt-compare.sh dt.dat > res.txt
+    eg: $ ls sgfs/*.sgf | ./dt-compare.sh dt.dat [0|1] > res.txt
   mm-fetch.sh
     - Download and make the MM tool, used for training leaf weights.
     eg: $ ./mm-fetch.sh

@@ -525,10 +525,15 @@ class Parameters
     /** Number of descents that must occur before a decision tree node is split. */
     int dt_split_after;
     /** Minimum value required to make a decision tree split.
-     * Split values are in the range [0,1], with a larger value indicating a better split. */
+     * Split values are in the range [0,1], with a larger value indicating a better split.
+     */
     float dt_split_threshold;
     /** Number of range additions before dividing a range. */
     int dt_range_divide;
+    /** Whether to return only a single leaf node from each decision tree.
+     * In practice, the leaf node with the smallest leaf id will be used.
+     */
+    bool dt_solo_leaf;
     /** Probability to output decision tree competitions after each move for the MM tool.
      * Used for training decision tree leaf weights.
      */

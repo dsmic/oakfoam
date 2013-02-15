@@ -534,27 +534,29 @@ std::list<DecisionTree::Node*> *DecisionTree::getLeafNodes(Go::Board *board, Go:
 
   delete stones;
 
-  // solo parameter
-  /*if (nodes->size()>1)
+  if (nodes!=NULL && params->dt_solo_leaf)
   {
-    int minid = -1;
-    for (std::list<DecisionTree::Node*>::iterator iter=nodes->begin();iter!=nodes->end();++iter)
+    if (nodes->size()>1)
     {
-      if (minid==-1 || (*iter)->getLeafId()<minid)
-        minid = (*iter)->getLeafId();
-    }
-    std::list<DecisionTree::Node*> *newnodes = new std::list<DecisionTree::Node*>();;
-    for (std::list<DecisionTree::Node*>::iterator iter=nodes->begin();iter!=nodes->end();++iter)
-    {
-      if ((*iter)->getLeafId()==minid)
+      int minid = -1;
+      for (std::list<DecisionTree::Node*>::iterator iter=nodes->begin();iter!=nodes->end();++iter)
       {
-        newnodes->push_back((*iter));
-        break;
+        if (minid==-1 || (*iter)->getLeafId()<minid)
+          minid = (*iter)->getLeafId();
       }
+      std::list<DecisionTree::Node*> *newnodes = new std::list<DecisionTree::Node*>();;
+      for (std::list<DecisionTree::Node*>::iterator iter=nodes->begin();iter!=nodes->end();++iter)
+      {
+        if ((*iter)->getLeafId()==minid)
+        {
+          newnodes->push_back((*iter));
+          break;
+        }
+      }
+      delete nodes;
+      nodes = newnodes;
     }
-    delete nodes;
-    nodes = newnodes;
-  }*/
+  }
 
   return nodes;
 }
