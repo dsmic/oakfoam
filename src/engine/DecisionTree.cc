@@ -63,15 +63,22 @@ float DecisionTree::getWeight(Go::Board *board, Go::Move move, bool updatetree)
   if (!board->validMove(move) || !move.isNormal())
     return -1;
 
-  if (type == SPARSE)
-    return this->getSparseWeight(board,move,updatetree);
-  else
-    return -1;
+  std::list<DecisionTree::Node*> *nodes = this->getLeafNodes(board,move,updatetree);
+  float w = -1;
+  if (nodes != NULL)
+  {
+    w = DecisionTree::combineNodeWeights(nodes);
+    delete nodes;
+  }
+
+  return w;
 }
 
 void DecisionTree::updateDescent(Go::Board *board, Go::Move move)
 {
-  this->getWeight(board,move,true);
+  std::list<DecisionTree::Node*> *nodes = this->getLeafNodes(board,move,true);
+  if (nodes != NULL)
+    delete nodes;
 }
 
 void DecisionTree::updateDescent(Go::Board *board)
@@ -116,14 +123,7 @@ std::list<int> *DecisionTree::getLeafIds(Go::Board *board, Go::Move move)
   if (!board->validMove(move))
     return NULL;
 
-  std::vector<int> *stones = new std::vector<int>();
-  bool invert = (move.getColor() != Go::BLACK);
-  stones->push_back(move.getPosition());
-
-  std::list<DecisionTree::Node*> *nodes = NULL;
-  if (type == SPARSE)
-    nodes = this->getSparseLeafNodes(root,board,stones,invert,false);
-
+  std::list<DecisionTree::Node*> *nodes = this->getLeafNodes(board,move,false);
   if (nodes == NULL)
     return NULL;
 
@@ -235,25 +235,6 @@ int DecisionTree::getDistance(Go::Board *board, int p1, int p2)
   }
   else
     return board->getRectDistance(p1,p2);
-}
-
-float DecisionTree::getSparseWeight(Go::Board *board, Go::Move move, bool updatetree)
-{
-  std::vector<int> *stones = new std::vector<int>();
-  bool invert = (move.getColor() != Go::BLACK);
-
-  stones->push_back(move.getPosition());
-
-  std::list<DecisionTree::Node*> *nodes = this->getSparseLeafNodes(root,board,stones,invert,updatetree);
-  float w = -1;
-  if (nodes != NULL)
-  {
-    w = DecisionTree::combineNodeWeights(nodes);
-    delete nodes;
-  }
-
-  delete stones;
-  return w;
 }
 
 bool DecisionTree::updateSparseNode(DecisionTree::Node *node, Go::Board *board, std::vector<int> *stones, bool invert)
@@ -537,6 +518,47 @@ float DecisionTree::percentageToVal(float p)
   return val;
 }
 
+std::list<DecisionTree::Node*> *DecisionTree::getLeafNodes(Go::Board *board, Go::Move move, bool updatetree)
+{
+  std::list<DecisionTree::Node*> *nodes = NULL;
+
+  std::vector<int> *stones = new std::vector<int>();
+  bool invert = (move.getColor() != Go::BLACK);
+  stones->push_back(move.getPosition());
+
+  switch (type)
+  {
+    case SPARSE:
+      nodes = this->getSparseLeafNodes(root,board,stones,invert,updatetree);
+  }
+
+  delete stones;
+
+  // solo parameter
+  /*if (nodes->size()>1)
+  {
+    int minid = -1;
+    for (std::list<DecisionTree::Node*>::iterator iter=nodes->begin();iter!=nodes->end();++iter)
+    {
+      if (minid==-1 || (*iter)->getLeafId()<minid)
+        minid = (*iter)->getLeafId();
+    }
+    std::list<DecisionTree::Node*> *newnodes = new std::list<DecisionTree::Node*>();;
+    for (std::list<DecisionTree::Node*>::iterator iter=nodes->begin();iter!=nodes->end();++iter)
+    {
+      if ((*iter)->getLeafId()==minid)
+      {
+        newnodes->push_back((*iter));
+        break;
+      }
+    }
+    delete nodes;
+    nodes = newnodes;
+  }*/
+
+  return nodes;
+}
+
 std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::Node *node, Go::Board *board, std::vector<int> *stones, bool invert, bool updatetree)
 {
   if (updatetree)
@@ -801,26 +823,6 @@ std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::N
         }
       }
 
-      /*if (nodes->size()>1)
-      {
-        int minid = -1;
-        for (std::list<DecisionTree::Node*>::iterator iter=nodes->begin();iter!=nodes->end();++iter)
-        {
-          if (minid==-1 || (*iter)->getLeafId()<minid)
-            minid = (*iter)->getLeafId();
-        }
-        std::list<DecisionTree::Node*> *newnodes = new std::list<DecisionTree::Node*>();;
-        for (std::list<DecisionTree::Node*>::iterator iter=nodes->begin();iter!=nodes->end();++iter)
-        {
-          if ((*iter)->getLeafId()==minid)
-          {
-            newnodes->push_back((*iter));
-            break;
-          }
-        }
-        delete nodes;
-        nodes = newnodes;
-      }*/
       return nodes;
     }
     else

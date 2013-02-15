@@ -182,7 +182,7 @@ class DecisionTree
 
     DecisionTree(Parameters *p, Type t, std::vector<std::string> *a, DecisionTree::Node *r);
 
-    float getSparseWeight(Go::Board *board, Go::Move move, bool updatetree);
+    std::list<Node*> *getLeafNodes(Go::Board *board, Go::Move move, bool updatetree);
     std::list<Node*> *getSparseLeafNodes(Node *node, Go::Board *board, std::vector<int> *stones, bool invert, bool updatetree);
     bool updateSparseNode(Node *node, Go::Board *board, std::vector<int> *stones, bool invert);
     unsigned int getMaxNode(Node *node);
