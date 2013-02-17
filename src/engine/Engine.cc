@@ -3376,10 +3376,13 @@ void Engine::makeMove(Go::Move move)
       delete cfgsecondlastdist;
   }
 
-  if (WITH_P(params->dt_update_prob))
+  if (params->dt_update_prob > 0)
   {
-    gtpe->getOutput()->printfDebug("[dt]: update\n");
-    DecisionTree::collectionUpdateDescent(&decisiontrees,currentboard);
+    for (std::list<DecisionTree*>::iterator iter=decisiontrees.begin();iter!=decisiontrees.end();++iter)
+    {
+      if (WITH_P(params->dt_update_prob))
+        (*iter)->updateDescent(currentboard);
+    }
   }
 
   if (WITH_P(params->dt_output_mm))
