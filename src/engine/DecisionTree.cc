@@ -198,6 +198,55 @@ float DecisionTree::combineNodeWeights(std::list<DecisionTree::Node*> *nodes)
   return weight;
 }
 
+void DecisionTree::getTreeStats(int &treenodes, int &leaves, int &maxdepth, float &avgdepth, int &maxnodes, float &avgnodes)
+{
+  treenodes = 0;
+  leaves = 0;
+  maxdepth = 0;
+  int sumdepth = 0;
+  maxnodes = 0;
+  int sumnodes = 0;
+
+  root->getTreeStats(type,1,1,treenodes,leaves,maxdepth,sumdepth,maxnodes,sumnodes);
+  avgdepth = sumdepth/leaves;
+  avgnodes = sumnodes/leaves;
+}
+
+void DecisionTree::Node::getTreeStats(DecisionTree::Type type, int depth, int nodes, int &treenodes, int &leaves, int &maxdepth, int &sumdepth, int &maxnodes, int &sumnodes)
+{
+  treenodes++;
+
+  if (this->isLeaf())
+  {
+    leaves++;
+
+    if (depth > maxdepth)
+      maxdepth = depth;
+    sumdepth += depth;
+
+    if (nodes > maxnodes)
+      maxnodes = nodes;
+    sumnodes += nodes;
+  }
+  else if (query!=NULL)
+  {
+    std::vector<DecisionTree::Option*> *options = query->getOptions();
+    for (unsigned int i=0; i<options->size(); i++)
+    {
+      DecisionTree::Option *opt = options->at(i);
+      bool addnode = false;
+      switch (type)
+      {
+        case SPARSE:
+          if (query->getLabel()=="NEW" && opt->getLabel()!="N")
+            addnode = true;
+          break;
+      }
+      opt->getNode()->getTreeStats(type,depth+1,nodes+(addnode?1:0),treenodes,leaves,maxdepth,sumdepth,maxnodes,sumnodes);
+    }
+  }
+}
+
 int DecisionTree::getDistance(Go::Board *board, int p1, int p2)
 {
   if (p1<0 && p2<0) // both sides

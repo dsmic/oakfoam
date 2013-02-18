@@ -22,6 +22,7 @@ class DecisionTree
     std::string toString(bool ignorestats = false);
 
     Type getType() { return type; };
+    std::vector<std::string> *getAttrs() { return attrs; };
     float getWeight(Go::Board *board, Go::Move move, bool updatetree = false);
     std::list<int> *getLeafIds(Go::Board *board, Go::Move move);
     void updateLeafIds();
@@ -29,6 +30,7 @@ class DecisionTree
     void setLeafWeight(int id, float w);
     void updateDescent(Go::Board *board, Go::Move move);
     void updateDescent(Go::Board *board);
+    void getTreeStats(int &treenodes, int &leaves, int &maxdepth, float &avgdepth, int &maxnodes, float &avgnodes);
 
     static std::list<DecisionTree*> *parseString(Parameters *params, std::string rawdata, unsigned long pos = 0);
     static std::list<DecisionTree*> *loadFile(Parameters *params, std::string filename);
@@ -165,6 +167,7 @@ class DecisionTree
 
         void populateEmptyStats(Type type, unsigned int maxnode = 0);
         void populateLeafIds(std::vector<Node*> &leafmap);
+        void getTreeStats(Type type, int depth, int nodes, int &treenodes, int &leaves, int &maxdepth, int &sumdepth, int &maxnodes, int &sumnodes);
 
       private:
         Option *parent;

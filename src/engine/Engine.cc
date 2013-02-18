@@ -543,6 +543,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("dtsave",this,&Engine::gtpDTSave);
   gtpe->addFunctionCommand("dtset",this,&Engine::gtpDTSet);
   gtpe->addFunctionCommand("dtdistribution",this,&Engine::gtpDTDistribution);
+  gtpe->addFunctionCommand("dtstats",this,&Engine::gtpDTStats);
   
   //gtpe->addAnalyzeCommand("final_score","Final Score","string");
   //gtpe->addAnalyzeCommand("showboard","Show Board","string");
@@ -3047,6 +3048,42 @@ void Engine::gtpDTDistribution(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
     gtpe->getOutput()->printf("\n");
   }
 
+  gtpe->getOutput()->endResponse(true);
+}
+
+void Engine::gtpDTStats(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printf("decision trees stats:");
+  for (std::list<DecisionTree*>::iterator iter=me->decisiontrees.begin();iter!=me->decisiontrees.end();++iter)
+  {
+    std::vector<std::string> *attrs = (*iter)->getAttrs();
+    std::string attrstr = "";
+    for (unsigned int i=0;i<attrs->size();i++)
+    {
+      if (i!=0)
+        attrstr += "|";
+      attrstr += attrs->at(i);
+    }
+
+    int treenodes;
+    int leaves;
+    int maxdepth;
+    float avgdepth;
+    int maxnodes;
+    float avgnodes;
+    (*iter)->getTreeStats(treenodes,leaves,maxdepth,avgdepth,maxnodes,avgnodes);
+
+    gtpe->getOutput()->printf("\nStats for DT[%s]:\n",attrstr.c_str());
+    gtpe->getOutput()->printf("  Nodes: %d\n",treenodes);
+    gtpe->getOutput()->printf("  Leaves: %d\n",leaves);
+    gtpe->getOutput()->printf("  Max Depth: %d\n",maxdepth);
+    gtpe->getOutput()->printf("  Avg Depth: %.2f\n",avgdepth);
+    gtpe->getOutput()->printf("  Max Nodes: %d\n",maxnodes);
+    gtpe->getOutput()->printf("  Avg Nodes: %.2f\n",avgnodes);
+  }
   gtpe->getOutput()->endResponse(true);
 }
 
