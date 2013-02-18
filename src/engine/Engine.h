@@ -442,6 +442,7 @@ class Engine
     static void gtpUndo(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpChat(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpGameOver(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpEcho(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     
     static void gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowLiberties(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);

@@ -19,3 +19,5 @@ for i in `seq $DTFOREST`; do
   cat dt_blank.dat >> "$DTFILE"
 done
 
+echo "Initialized \"$DTFILE\" with a decision tree forest of size $DTFOREST." >&2
+

@@ -44,14 +44,16 @@ echo "param dt_solo_leaf $DTSOLOLEAF" >> $TEMPGTP
 echo 'param dt_output_mm 0.1' >> $TEMPGTP
 echo 'param undo_enable 0' >> $TEMPGTP # so gogui-adapter doesn't send undo commands
 
+i=0
 cat | while read GAME
 do
-  #echo -e "'$GAME'" >&2
+  let "i=$i+1"
+  echo "echo @@ GAME: \"$i '$GAME'\"" >> $TEMPGTP
   echo "loadsgf \"$GAME\"" >> $TEMPGTP
 done
 
 # Use gogui-adapter to emulate loadsgf
-cat "$TEMPGTP" | gogui-adapter "$OAKFOAM" &> /dev/null
+cat "$TEMPGTP" | gogui-adapter "$OAKFOAM" 2>&1 | sed -n 's/^= @@ //p' >&2
 
 echo "Data captured. Training weights..." >&2
 

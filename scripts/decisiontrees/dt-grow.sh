@@ -30,16 +30,19 @@ echo 'param dt_split_threshold 0.40' >> $TEMPGTP
 echo 'param dt_range_divide 10' >> $TEMPGTP
 echo 'param undo_enable 0' >> $TEMPGTP # so gogui-adapter doesn't send undo commands
 
+i=0
 cat | while read GAME
 do
-  #echo -e "'$GAME'" >&2
+  let "i=$i+1"
+  echo "echo @@ GAME: \"$i '$GAME'\"" >> $TEMPGTP
   echo "loadsgf \"$GAME\"" >> $TEMPGTP
 done
 
+echo "echo @@ Saving..." >> $TEMPGTP
 echo "dtsave \"$DTFILE\" $DTIGNORESTATS" >> $TEMPGTP
 
 # Use gogui-adapter to emulate loadsgf
-cat "$TEMPGTP" | gogui-adapter "$OAKFOAM" &> /dev/null
+cat "$TEMPGTP" | gogui-adapter "$OAKFOAM" 2>&1 | sed -n 's/^= @@ //p' >&2
 
 LINES=`cat "$DTFILE" | wc -l`
 LEAVES=`cat "$DTFILE" | grep 'WEIGHT' | wc -l`

@@ -475,6 +475,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("undo",this,&Engine::gtpUndo);
   gtpe->addFunctionCommand("kgs-chat",this,&Engine::gtpChat);
   gtpe->addFunctionCommand("kgs-game_over",this,&Engine::gtpGameOver);
+  gtpe->addFunctionCommand("echo",this,&Engine::gtpEcho);
   
   gtpe->addFunctionCommand("param",this,&Engine::gtpParam);
   gtpe->addFunctionCommand("showliberties",this,&Engine::gtpShowLiberties);
@@ -3056,6 +3057,18 @@ void Engine::gtpGameOver(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   me->gameFinished();
   
   gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->endResponse();
+}
+
+void Engine::gtpEcho(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  gtpe->getOutput()->startResponse(cmd);
+  for (unsigned int i=0; i<cmd->numArgs(); i++)
+  {
+    if (i!=0)
+      gtpe->getOutput()->printf(" ");
+    gtpe->getOutput()->printf(cmd->getStringArg(i));
+  }
   gtpe->getOutput()->endResponse();
 }
 
