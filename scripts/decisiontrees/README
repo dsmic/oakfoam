@@ -2,8 +2,6 @@
 - Scripts for Decision Trees
 --------------------------------------
 
-NOTE: This work is still under heavy construction
-
 Requirements:
   GoGui (http://gogui.sourceforge.net)
   MM tool by Remi Coulom (see mm-fetch.sh)
