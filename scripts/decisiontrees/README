@@ -10,7 +10,7 @@ Requirements:
   
 Example Usage:
   1. Create a new blank decision tree collection:
-    $ cp dt_blank.dat dt.dat
+    $ ./dt-init.sh dt.dat 1
   2. Grow the collection from 100 random games in a collection:
     $ ls sgfs/*.sgf | shuf -n 100 | ./dt-grow.sh dt.dat 1
   3. Train weights for the tree leaf nodes:
@@ -19,6 +19,9 @@ Example Usage:
     $ ls sgfs/*.sgf | shuf -n 100 | ./dt-compare.sh dt.dat > res.txt
 
 Scripts:
+  dt-init.sh
+    - Create an empty decision tree collection.
+    eg: $ ./dt-init.sh dt.dat [FORESTSIZE]
   dt-grow.sh
     - Grow a decision tree from a series of games.
       The 2nd argument specifies if the stats should be preserved (0) or dropped (1).
