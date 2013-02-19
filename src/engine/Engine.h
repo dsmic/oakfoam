@@ -237,6 +237,8 @@ class Engine
     Pattern::ThreeByThreeTable *getPatternTable() const { return patterntable; };
     /** Get the features in use. */
     Features *getFeatures() const { return features; };
+    /** Get the decision trees in use. */
+    std::list<DecisionTree*> *getDecisionTrees() { return &decisiontrees; };
     /** Get the Zobrist table is use. */
     Go::ZobristTable *getZobristTable() const { return zobristtable; };
     /** Get the hash tree of Zobrist hashes that have occured in this game. */

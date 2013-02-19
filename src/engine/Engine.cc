@@ -192,6 +192,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("tree","uct_decay_m",&(params->uct_decay_m),UCT_DECAY_M);
 
   params->addParameter("tree","features_ladders",&(params->features_ladders),FEATURES_LADDERS);
+  params->addParameter("tree","features_dt_use",&(params->features_dt_use),false);
   
   params->addParameter("rules","rules_positional_superko_enabled",&(params->rules_positional_superko_enabled),RULES_POSITIONAL_SUPERKO_ENABLED);
   params->addParameter("rules","rules_superko_top_ply",&(params->rules_superko_top_ply),RULES_SUPERKO_TOP_PLY);
@@ -3490,6 +3491,16 @@ void Engine::makeMove(Go::Move move)
     Go::ObjectBoard<int> *cfglastdist=NULL;
     Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
     features->computeCFGDist(currentboard,&cfglastdist,&cfgsecondlastdist);
+
+    float weights[currentboard->getPositionMax()];
+    for (int p=0;p<currentboard->getPositionMax();p++)
+    {
+      Go::Move m = Go::Move(col,p);
+      if (currentboard->validMove(m) || m==move)
+        weights[p] = features->getMoveGamma(currentboard,cfglastdist,cfgsecondlastdist,m);
+      else
+        weights[p] = -1;
+    }
   
     gtpe->getOutput()->printfDebug("[feature_comparison]:# comparison (%d,%s)\n",(currentboard->getMovesMade()+1),Go::Position::pos2string(move.getPosition(),boardsize).c_str());
     
@@ -3503,7 +3514,8 @@ void Engine::makeMove(Go::Move move)
           Go::Move m=Go::Move(col,p);
           if (currentboard->validMove(m) || m==move)
           {
-            float gamma=features->getMoveGamma(currentboard,cfglastdist,cfgsecondlastdist,m);;
+            //float gamma=features->getMoveGamma(currentboard,cfglastdist,cfgsecondlastdist,m);
+            float gamma = weights[p];
             if (gamma>bestgamma)
             {
               bestgamma=gamma;

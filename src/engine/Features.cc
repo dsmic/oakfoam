@@ -6,7 +6,9 @@
 #include <algorithm>
 #include <iomanip>
 #include "Parameters.h"
+#include "Engine.h"
 #include "Pattern.h"
+#include "DecisionTree.h"
 
 Features::Features(Parameters *prms) : params(prms)
 {
@@ -293,6 +295,9 @@ float Features::getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist
   g*=this->getFeatureGamma(Features::CFGLASTDIST,this->matchFeatureClass(Features::CFGLASTDIST,board,cfglastdist,cfgsecondlastdist,move,false));
   g*=this->getFeatureGamma(Features::CFGSECONDLASTDIST,this->matchFeatureClass(Features::CFGSECONDLASTDIST,board,cfglastdist,cfgsecondlastdist,move,false));
   g*=this->getFeatureGamma(Features::PATTERN3X3,this->matchFeatureClass(Features::PATTERN3X3,board,cfglastdist,cfgsecondlastdist,move,false));
+
+  if (params->features_dt_use)
+    g*=DecisionTree::getCollectionWeight(params->engine->getDecisionTrees(),board,move);
 
   if (params->uct_factor_circpattern>0.0)
   {
@@ -714,6 +719,23 @@ std::string Features::getMatchingFeaturesString(Go::Board *board, Go::ObjectBoar
       ss<<" pattern3x3:0x"<<std::hex<<std::setw(4)<<std::setfill('0')<<level;
     else
       ss<<" "<<(int)patternids->getGamma(level);
+  }
+  base+=patternids->getCount();
+
+  if (params->features_dt_use)
+  {
+    std::list<int> *ids = DecisionTree::getCollectionLeafIds(params->engine->getDecisionTrees(),board,move);
+    if (ids != NULL)
+    {
+      for (std::list<int>::iterator iter=ids->begin();iter!=ids->end();++iter)
+      {
+        int i = base+(*iter);
+        if (pretty)
+          ss<<" dt:"<<i;
+        else
+          ss<<" "<<i;
+      }
+    }
   }
   
   return ss.str();

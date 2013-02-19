@@ -201,6 +201,7 @@ namespace Pattern
     public:
       ThreeByThreeGammas() : gammas((float *)malloc(sizeof(float)*PATTERN_3x3_GAMMAS))
       {
+        count = 0;
         for (int i=0;i<PATTERN_3x3_GAMMAS;i++)
           gammas[i]=-1;
       };
@@ -211,12 +212,15 @@ namespace Pattern
        */
       float getGamma(unsigned int hash) const { return gammas[hash]; };
       /** Set the gamma value for a given hash. */
-      void setGamma(unsigned int hash, float g) { gammas[hash]=g; };
+      void setGamma(unsigned int hash, float g) { if (this->getGamma(hash)==-1) count++; gammas[hash]=g; if (g==-1) count--; };
       /** Determine whether a hash has an associated gamma value. */
       bool hasGamma(unsigned int hash) const { return (gammas[hash]!=-1); };
+      /** Get count of hashes that are set. */
+      unsigned int getCount() { return count; };
     
     private:
       float *const gammas;
+      unsigned int count;
   };
   
   /** Dictionary used for circular pattern hashing. */

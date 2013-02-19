@@ -514,6 +514,8 @@ class Parameters
     bool features_ordered_comparison;
     /** Whether to try take ladders into account with features. */
     bool features_ladders;
+    /** Whether to use decision trees with features. */
+    bool features_dt_use;
 
     /** Whether to automatically output an SGF when a game finishes. */
     bool auto_save_sgf;
