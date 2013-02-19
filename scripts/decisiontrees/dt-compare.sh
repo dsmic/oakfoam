@@ -14,8 +14,8 @@ fi
 DTFILE=$1
 
 DTSOLOLEAF=1
-if (( $# > 2 )); then
-  DTSOLOLEAF=$3
+if (( $# > 1 )); then
+  DTSOLOLEAF=$2
 fi
 
 if ! test -x ../../oakfoam; then
