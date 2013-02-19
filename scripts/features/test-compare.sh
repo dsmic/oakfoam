@@ -9,7 +9,7 @@ PROGRAM="gogui-adapter \"$OAKFOAMLOG\""
 INITIALPATTERNGAMMAS=$1
 
 DTFILE="-"
-if (( $# > 2 )); then
+if (( $# > 1 )); then
   DTFILE=$2
 fi
 

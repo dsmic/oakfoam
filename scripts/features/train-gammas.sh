@@ -93,7 +93,7 @@ rm -f $TEMPLOG
 
 echo "[`date +%F_%T`] training..." >&2
 MMOUTPUT=`cat $TEMPMM | $MM`
-rm -f mm-with-freq.dat
+#rm -f mm-with-freq.dat
 
 echo "[`date +%F_%T`] done." >&2
 
