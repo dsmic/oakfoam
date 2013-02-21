@@ -289,146 +289,149 @@ int DecisionTree::getDistance(Go::Board *board, int p1, int p2)
 bool DecisionTree::updateSparseNode(DecisionTree::Node *node, Go::Board *board, std::vector<int> *stones, bool invert)
 {
   std::vector<DecisionTree::StatPerm*> *statperms = node->getStats()->getStatPerms();
-  for (unsigned int i=0; i<statperms->size(); i++)
+  if (node->isLeaf()) // only update stats until the node is split
   {
-    DecisionTree::StatPerm *sp = statperms->at(i);
-
-    std::string spt = sp->getLabel();
-    std::vector<std::string> *attrs = sp->getAttrs();
-    int res = 0;
-    int resmin = sp->getRange()->getStart();
-    int resmax = sp->getRange()->getEnd();
-    //fprintf(stderr,"[DT] SP type: '%s'\n",spt.c_str());
-    if (spt=="NEW")
+    for (unsigned int i=0; i<statperms->size(); i++)
     {
-      std::string cols = attrs->at(0);
-      bool B = (cols.find('B') != std::string::npos);
-      bool W = (cols.find('W') != std::string::npos);
-      bool S = (cols.find('S') != std::string::npos);
-      int center = stones->at(0);
+      DecisionTree::StatPerm *sp = statperms->at(i);
 
-      bool resfound = false;
-      for (int s=0; s<resmax; s++)
+      std::string spt = sp->getLabel();
+      std::vector<std::string> *attrs = sp->getAttrs();
+      int res = 0;
+      int resmin = sp->getRange()->getStart();
+      int resmax = sp->getRange()->getEnd();
+      //fprintf(stderr,"[DT] SP type: '%s'\n",spt.c_str());
+      if (spt=="NEW")
       {
-        if (B || W)
+        std::string cols = attrs->at(0);
+        bool B = (cols.find('B') != std::string::npos);
+        bool W = (cols.find('W') != std::string::npos);
+        bool S = (cols.find('S') != std::string::npos);
+        int center = stones->at(0);
+
+        bool resfound = false;
+        for (int s=0; s<resmax; s++)
         {
-          for (int ii=0; ii<board->getSize(); ii++)
+          if (B || W)
           {
-            for (int jj=0; jj<board->getSize(); jj++)
+            for (int ii=0; ii<board->getSize(); ii++)
             {
-              int p = Go::Position::xy2pos(ii,jj,board->getSize());
-              Go::Color col = board->getColor(p);
-              if (((invert?W:B) && col==Go::BLACK) || ((invert?B:W) && col==Go::WHITE))
+              for (int jj=0; jj<board->getSize(); jj++)
               {
-                if (DecisionTree::getDistance(board,center,p) <= s)
+                int p = Go::Position::xy2pos(ii,jj,board->getSize());
+                Go::Color col = board->getColor(p);
+                if (((invert?W:B) && col==Go::BLACK) || ((invert?B:W) && col==Go::WHITE))
                 {
-                  bool found = false;
-                  for (unsigned int iii=0; iii<stones->size(); iii++)
+                  if (DecisionTree::getDistance(board,center,p) <= s)
                   {
-                    if (stones->at(iii) == p)
+                    bool found = false;
+                    for (unsigned int iii=0; iii<stones->size(); iii++)
                     {
-                      found = true;
+                      if (stones->at(iii) == p)
+                      {
+                        found = true;
+                        break;
+                      }
+                    }
+                    if (!found)
+                    {
+                      resfound = true;
+                      res = s;
                       break;
                     }
                   }
-                  if (!found)
+                }
+              }
+            }
+          }
+          else if (S)
+          {
+            for (int p=-1; p>=-4; p--)
+            {
+              if (DecisionTree::getDistance(board,center,p) <= s)
+              {
+                bool found = false;
+                for (unsigned int ii=0; ii<stones->size(); ii++)
+                {
+                  if (stones->at(ii) == p)
                   {
-                    resfound = true;
-                    res = s;
+                    found = true;
                     break;
                   }
                 }
-              }
-            }
-          }
-        }
-        else if (S)
-        {
-          for (int p=-1; p>=-4; p--)
-          {
-            if (DecisionTree::getDistance(board,center,p) <= s)
-            {
-              bool found = false;
-              for (unsigned int ii=0; ii<stones->size(); ii++)
-              {
-                if (stones->at(ii) == p)
+                if (!found)
                 {
-                  found = true;
+                  resfound = true;
+                  res = s;
                   break;
                 }
               }
-              if (!found)
-              {
-                resfound = true;
-                res = s;
-                break;
-              }
             }
           }
+          else
+          {
+            fprintf(stderr,"[DT] Error! Unknown attribute: '%s'\n",cols.c_str());
+            return false;
+          }
+          if (resfound)
+            break;
         }
+
+        if (!resfound)
+          res = resmax;
+      }
+      else if (spt=="DIST")
+      {
+        std::vector<std::string> *attrs = sp->getAttrs();
+        int n0 = boost::lexical_cast<int>(attrs->at(0));
+        int n1 = boost::lexical_cast<int>(attrs->at(1));
+
+        res = DecisionTree::getDistance(board,stones->at(n0),stones->at(n1));
+      }
+      else if (spt=="ATTR")
+      {
+        std::vector<std::string> *attrs = sp->getAttrs();
+        std::string type = attrs->at(0);
+        int n = boost::lexical_cast<int>(attrs->at(1));
+
+        int p = stones->at(n);
+        if (p < 0) // side
+          res = 0;
         else
         {
-          fprintf(stderr,"[DT] Error! Unknown attribute: '%s'\n",cols.c_str());
-          return false;
+          if (type == "SIZE")
+          {
+            if (board->inGroup(p))
+              res = board->getGroup(p)->numOfStones();
+            else
+              res = 0;
+          }
+          else if (type == "LIB")
+          {
+            if (board->inGroup(p))
+            {
+              if (board->getGroup(p)->inAtari())
+                res = 1;
+              else
+                res = board->getGroup(p)->numOfPseudoLiberties();
+            }
+            else
+              res = 0;
+          }
         }
-        if (resfound)
-          break;
       }
-
-      if (!resfound)
-        res = resmax;
-    }
-    else if (spt=="DIST")
-    {
-      std::vector<std::string> *attrs = sp->getAttrs();
-      int n0 = boost::lexical_cast<int>(attrs->at(0));
-      int n1 = boost::lexical_cast<int>(attrs->at(1));
-
-      res = DecisionTree::getDistance(board,stones->at(n0),stones->at(n1));
-    }
-    else if (spt=="ATTR")
-    {
-      std::vector<std::string> *attrs = sp->getAttrs();
-      std::string type = attrs->at(0);
-      int n = boost::lexical_cast<int>(attrs->at(1));
-
-      int p = stones->at(n);
-      if (p < 0) // side
-        res = 0;
       else
       {
-        if (type == "SIZE")
-        {
-          if (board->inGroup(p))
-            res = board->getGroup(p)->numOfStones();
-          else
-            res = 0;
-        }
-        else if (type == "LIB")
-        {
-          if (board->inGroup(p))
-          {
-            if (board->getGroup(p)->inAtari())
-              res = 1;
-            else
-              res = board->getGroup(p)->numOfPseudoLiberties();
-          }
-          else
-            res = 0;
-        }
+        fprintf(stderr,"[DT] Error! Unknown stat perm type: '%s'\n",spt.c_str());
+        return false;
       }
-    }
-    else
-    {
-      fprintf(stderr,"[DT] Error! Unknown stat perm type: '%s'\n",spt.c_str());
-      return false;
-    }
 
-    if (res < resmin)
-      res = resmin;
-    else if (res > resmax)
-      res = resmax;
-    sp->getRange()->addVal(res,params->dt_range_divide);
+      if (res < resmin)
+        res = resmin;
+      else if (res > resmax)
+        res = resmax;
+      sp->getRange()->addVal(res,params->dt_range_divide);
+    }
   }
 
   if (node->isLeaf())
