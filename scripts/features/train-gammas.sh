@@ -6,8 +6,8 @@ TEMPIDS="ids_`date +%F_%T`.tmp"
 TEMPLOG="log_`date +%F_%T`.tmp"
 TEMPMM="mm_`date +%F_%T`.tmp"
 TEMPGTP="gtp_`date +%F_%T`.tmp"
-OAKFOAM="../../oakfoam"
-OAKFOAMLOG="../../oakfoam --log $TEMPLOG"
+OAKFOAM="../../oakfoam --nobook"
+OAKFOAMLOG="../../oakfoam --nobook --log $TEMPLOG"
 PROGRAM="gogui-adapter \"$OAKFOAMLOG\""
 MM="mm/mm"
 
@@ -38,7 +38,7 @@ if ! test -x mm/mm; then
   exit 1
 fi
 
-echo -e "loadfeaturegammas $INITIALPATTERNGAMMAS\nlistfeatureids" | $OAKFOAM | grep -e "^[0-9]* [a-zA-Z0-9]*:[0-9a-fA-FxX]*" > $TEMPIDS
+echo -e "loadfeaturegammas $INITIALPATTERNGAMMAS\nlistfeatureids" | $OAKFOAM 2>/dev/null | grep -e "^[0-9]* [a-zA-Z0-9]*:[0-9a-fA-FxX]*" > $TEMPIDS
 FEATUREIDCOUNT=`cat $TEMPIDS | wc -l`
 
 MMFEATURES=`cat $TEMPIDS | sed "s/[0-9]* \([a-zA-Z0-9]*\):.*/\1/" | uniq -c | sed "s/^ *//"`
@@ -76,7 +76,7 @@ i=0
 cat | while read GAME
 do
   let "i=$i+1"
-  echo -e "[`date +%F_%T`] $i \t: '$GAME'" >&2
+  #echo -e "[`date +%F_%T`] $i \t: '$GAME'" >&2
   #echo -e "loadfeaturegammas ${INITIALPATTERNGAMMAS}\nparam features_output_competitions 1\nparam features_output_competitions_mmstyle 1\n${SMALLONLY}loadsgf \"$GAME\"" | gogui-adapter "$OAKFOAMLOG" > /dev/null
   #cat $TEMPLOG | grep "^\[features\]:" | sed "s/\[features\]://" | sed "s/^#.*/#/;s/[a-zA-Z0-9]*[*:] //" >> $TEMPMM
   #rm -f $TEMPLOG

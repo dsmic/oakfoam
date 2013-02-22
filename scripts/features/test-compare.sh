@@ -1,9 +1,10 @@
 #!/bin/bash
 
 TEMPLOG="log_`date +%F_%T`.tmp"
+TEMPGTP="gtp_`date +%F_%T`.tmp"
 TEMPCMP="cmp_`date +%F_%T`.tmp"
-OAKFOAM="../../oakfoam"
-OAKFOAMLOG="../../oakfoam --log $TEMPLOG"
+OAKFOAM="../../oakfoam --nobook"
+OAKFOAMLOG="../../oakfoam --nobook --log $TEMPLOG"
 PROGRAM="gogui-adapter \"$OAKFOAMLOG\""
 
 INITIALPATTERNGAMMAS=$1
@@ -18,25 +19,32 @@ if ! test -x ../../oakfoam; then
   exit 1
 fi
 
-echo "[`date +%F_%T`] doing comparisons..." >&2
+echo "loadfeaturegammas $INITIALPATTERNGAMMAS" >> $TEMPGTP
+echo "param features_ordered_comparison 1" >> $TEMPGTP
+if [ "$DTFILE" != "-" ]; then
+  echo "dtload \"$DTFILE\"" >> $TEMPGTP
+  echo "param dt_solo_leaf 1" >> $TEMPGTP
+  echo "param features_dt_use 1" >> $TEMPGTP
+fi
+echo 'param undo_enable 0' >> $TEMPGTP # so gogui-adapter doesn't send undo commands
+
 i=0
 cat | while read GAME
 do
   let "i=$i+1"
-  echo -e "[`date +%F_%T`] $i \t: '$GAME'" >&2
-  if [ "$DTFILE" != "-" ]; then
-    echo -e "loadfeaturegammas $INITIALPATTERNGAMMAS\nparam features_ordered_comparison 1\ndtload \"$DTFILE\"\nparam dt_solo_leaf 1\nparam features_dt_use 1\nloadsgf \"$GAME\"" | gogui-adapter "$OAKFOAMLOG" > /dev/null
-  else
-    echo -e "loadfeaturegammas $INITIALPATTERNGAMMAS\nparam features_ordered_comparison 1\nloadsgf \"$GAME\"" | gogui-adapter "$OAKFOAMLOG" > /dev/null
-  fi
-  cat $TEMPLOG | grep "\[feature_comparison\]:matched" | sed "s/.*: //" >> $TEMPCMP
-  rm -f $TEMPLOG
+  echo "echo @@ GAME: \"$i '$GAME'\"" >> $TEMPGTP
+  echo "loadsgf \"$GAME\"" >> $TEMPGTP
 done
+
+echo "[`date +%F_%T`] doing comparisons..." >&2
+cat "$TEMPGTP" | gogui-adapter "$OAKFOAMLOG" 2>&1 | sed -n 's/^= @@ //p' >&2
 echo "[`date +%F_%T`] done." >&2
 
+cat $TEMPLOG | grep "\[feature_comparison\]:matched" | sed "s/.*: //" >> $TEMPCMP
 cat $TEMPCMP | sort -n
 
 rm -f $TEMPLOG
+rm -f $TEMPGTP
 rm -f $TEMPCMP
 
 
