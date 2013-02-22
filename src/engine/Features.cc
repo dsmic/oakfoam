@@ -297,7 +297,11 @@ float Features::getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist
   g*=this->getFeatureGamma(Features::PATTERN3X3,this->matchFeatureClass(Features::PATTERN3X3,board,cfglastdist,cfgsecondlastdist,move,false));
 
   if (params->features_dt_use)
-    g*=DecisionTree::getCollectionWeight(params->engine->getDecisionTrees(),board,move);
+  {
+    float w = DecisionTree::getCollectionWeight(params->engine->getDecisionTrees(),board,move);
+    if (w != -1)
+      g *= w;
+  }
 
   if (params->uct_factor_circpattern>0.0)
   {
