@@ -225,8 +225,10 @@ void Gtp::Engine::setPonderer(Gtp::Engine::PonderFunction f, void *i, volatile b
   {
     ponderthread->ponderStop();
     delete ponderthread;
+    ponderthread=NULL;
   }
-  ponderthread=new PonderThread(f,i,s);
+  if (f!=NULL)
+    ponderthread=new PonderThread(f,i,s);
 }
 
 Gtp::Engine::WorkerThread::WorkerThread(Gtp::Engine *eng)

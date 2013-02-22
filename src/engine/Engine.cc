@@ -325,6 +325,10 @@ Engine::~Engine()
   delete zobristtable;
   delete playout;
   delete territorymap;
+  for (std::list<DecisionTree*>::iterator iter=decisiontrees.begin();iter!=decisiontrees.end();++iter)
+  {
+    delete (*iter);
+  }
 }
 
 void Engine::run(bool web_inf, std::string web_addr, int web_port)
@@ -2894,6 +2898,10 @@ void Engine::gtpDTClear(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
   
+  for (std::list<DecisionTree*>::iterator iter=me->decisiontrees.begin();iter!=me->decisiontrees.end();++iter)
+  {
+    delete (*iter);
+  }
   me->decisiontrees.clear();
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printf("cleared decision trees");

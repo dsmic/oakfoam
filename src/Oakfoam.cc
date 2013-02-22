@@ -19,6 +19,7 @@ Oakfoam::Oakfoam()
 
 Oakfoam::~Oakfoam()
 {
+  gtpe->setPonderer(NULL,NULL,NULL);
   delete engine;
   delete gtpe;
 }
