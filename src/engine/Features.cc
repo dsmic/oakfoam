@@ -739,6 +739,7 @@ std::string Features::getMatchingFeaturesString(Go::Board *board, Go::ObjectBoar
         else
           ss<<" "<<i;
       }
+      delete ids;
     }
   }
   
