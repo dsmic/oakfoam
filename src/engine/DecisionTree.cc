@@ -208,8 +208,8 @@ void DecisionTree::getTreeStats(int &treenodes, int &leaves, int &maxdepth, floa
   int sumnodes = 0;
 
   root->getTreeStats(type,1,1,treenodes,leaves,maxdepth,sumdepth,maxnodes,sumnodes);
-  avgdepth = sumdepth/leaves;
-  avgnodes = sumnodes/leaves;
+  avgdepth = (float)sumdepth/leaves;
+  avgnodes = (float)sumnodes/leaves;
 }
 
 void DecisionTree::Node::getTreeStats(DecisionTree::Type type, int depth, int nodes, int &treenodes, int &leaves, int &maxdepth, int &sumdepth, int &maxnodes, int &sumnodes)
