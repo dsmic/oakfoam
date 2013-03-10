@@ -15,6 +15,7 @@
 
 #define RAVE_MOVES 3000
 #define RAVE_INIT_WINS 5
+#define UCT_PRESET_RAVE_F 0.0
 #define RAVE_SKIP 0.00
 #define RAVE_MOVES_USE 0.00
 #define UCT_EXPAND_AFTER 10
@@ -23,6 +24,7 @@
 #define UCT_VIRTUAL_LOSS true
 #define UCT_LOCK_FREE false
 #define UCT_ATARI_PRIOR 0
+#define UCT_PLAYOUTMOVE_PRIOR 0
 #define UCT_PATTERN_PRIOR 0
 #define UCT_PASS_DETER 0
 #define UCT_PROGRESSIVE_WIDENING_ENABLED true
@@ -37,8 +39,13 @@
 #define UCT_PROGRESSIVE_BIAS_H 10.0
 #define UCT_PROGRESSIVE_BIAS_SCALED true
 #define UCT_PROGRESSIVE_BIAS_RELATIVE false
+//value from 9x9 200 playout optimization
+#define UCT_PROGRESSIVE_BIAS_MOVES 113.0
+#define UCT_PROGRESSIVE_BIAS_EXPONENT 1.0
+#define UCT_PROGRESSIVE_BIAS_RELATIVE false
+
 #define UCT_CRITICALITY_URGENCY_FACTOR 0.00
-#define UCT_CRITICALITY_URGENCY_DECAY false
+#define UCT_CRITICALITY_URGENCY_DECAY 0.0
 #define UCT_CRITICALITY_UNPRUNE_FACTOR 0.00
 #define UCT_CRITICALITY_UNPRUNE_MULTIPLY true
 #define UCT_CRITICALITY_MIN_PLAYOUTS 150
@@ -47,10 +54,20 @@
 #define UCT_SLOW_DEBUG_INTERVAL 5000
 #define UCT_STOP_EARLY true
 #define UCT_TERMINAL_HANDLING true
+#define UCT_PRIOR_UNPRUNE_FACTOR 0.00
 #define UCT_RAVE_UNPRUNE_FACTOR 0.00
+#define UCT_EARLYRAVE_UNPRUNE_FACTOR 0.00
 #define UCT_RAVE_UNPRUNE_DECAY 0.00
+#define UCT_OLDMOVE_UNPRUNE_FACTOR 0.00
+#define UCT_OLDMOVE_UNPRUNE_FACTOR_B 0.00
+#define UCT_OLDMOVE_UNPRUNE_FACTOR_C 0.00
 #define UCT_REPRUNE_FACTOR 0.00
 #define UCT_FACTOR_CIRCPATTERN 0.00
+#define UCT_FACTOR_CIRCPATTERN_EXPONENT 1.00
+#define UCT_SIMPLE_PATTERN_FACTOR 1.0
+#define UCT_ATARI_UNPRUNE 1.0
+#define UCT_ATARI_UNPRUNE_EXP 0.0
+#define UCT_DANGER_VALUE 0.0
 #define UCT_RAVE_UNPRUNE_MULTIPLY false
 
 #define UCT_DECAY_ALPHA 1
@@ -70,15 +87,25 @@
 #define PLAYOUT_ATARI_ENABLED false
 #define PLAYOUT_LASTCAPTURE_ENABLED true
 #define PLAYOUT_PATTERNS_P 1.0
+#define PLAYOUT_PATTERNS_GAMMAS_P 0.0
 #define PLAYOUT_FEATURES_ENABLED false
 #define PLAYOUT_FEATURES_INCREMENTAL false
 #define PLAYOUT_LASTATARI_P 1.0
 #define PLAYOUT_LASTATARI_LEAVEDOUBLE true
 #define PLAYOUT_LASTATARI_CAPTUREATTACHED 1.0
 #define PLAYOUT_NAKADE_ENABLED true
+#define PLAYOUT_NAKADE4_ENABLED false
+#define PLAYOUT_NAKADE_BENT4_ENABLED false
+#define PLAYOUT_NAKADE5_ENABLED false
 #define PLAYOUT_FILLBOARD_ENABLED true
 #define PLAYOUT_FILLBOARD_N 5
 #define PLAYOUT_CIRCREPLACE_ENABLED false
+#define PLAYOUT_FILLBOARD_BESTCIRC_ENABLED false
+#define PLAYOUT_RANDOMQUICK_BESTCIRC_N 0
+#define PLAYOUT_RANDOM_WEIGHT_TERRITORY_N 0
+#define PLAYOUT_RANDOM_WEIGHT_TERRITORY_F 0.0
+#define PLAYOUT_RANDOM_WEIGHT_TERRITORY_F0 0.0
+#define PLAYOUT_RANDOM_WEIGHT_TERRITORY_F1 0.0
 #define PLAYOUT_CIRCPATTERN_N 0
 #define PLAYOUT_ANYCAPTURE_P 1.0
 #define PLAYOUT_LGRF1_ENABLED true
@@ -100,11 +127,13 @@
 #define PLAYOUT_LAST2LIBATARI_COMPLEX true
 #define PLAYOUT_POOLRAVE_ENABLED false
 #define PLAYOUT_POOLRAVE_CRITICALITY false
+#define PLAYOUT_CRITICALITY_RANDOM_N 0
 #define PLAYOUT_POOLRAVE_P 0.5
 #define PLAYOUT_POOLRAVE_K 20
 #define PLAYOUT_POOLRAVE_MIN_PLAYOUTS 50
 #define PLAYOUT_AVOID_SELFATARI true
 #define PLAYOUT_AVOID_SELFATARI_SIZE 5 // biggest killing shape is 6 stones
+#define PLAYOUT_AVOID_SELFATARI_COMPLEX false // uses pseudoends to determine smaller not killing shapes
 #define PLAYOUT_USELESS_MOVE false
 #define PLAYOUT_ORDER 0 //numbers to test different playout orders
 #define PLAYOUT_NEARBY_ENABLED false
@@ -190,6 +219,29 @@ class DecisionTree;
 class Engine
 {
   public:
+    //contains the order of the statistics printed after the move
+    //with usefull names
+    enum StatNames
+    {
+      LASTATARI,    //must start with 0, should be standard conform
+      LASTCAPTURE,
+      LAST2LIBATARI,
+      NAKED,
+      PATTERN,
+      ANYCAPTURE,
+      CIRCPATTERN_QUICK,
+      FILL_BOARD,
+      RANDOM_QUICK,
+      RANDOM,
+      FILL_WEAK_EYE,
+      PASS,
+      REPLACE_WITH_CIRC,
+      RANDOM_QUICK_CIRC,
+      RANDOM_QUICK_TERRITORY,
+      LGRF2,
+      STATISTICS_NUM     //is set to the number of entries !!
+    };
+
     /** Create an engine.
      * @param ge GTP engine to use.
      * @param ln The long name of the engine.
@@ -262,25 +314,6 @@ class Engine
 
     bool isCircPattern(std::string circpattern) {return features->isCircPattern(circpattern);}
 
-    /** Names for playout move statistics. */
-    enum StatNames
-    {
-      LASTATARI,
-      LASTCAPTURE,
-      LAST2LIBATARI,
-      NAKED,
-      PATTERN,
-      ANYCAPTURE,
-      CIRCPATTERN_QUICK,
-      FILL_BOARD,
-      RANDOM_QUICK,
-      RANDOM,
-      FILL_WEAK_EYE,
-      PASS,
-      REPLACE_WITH_CIRC,
-      STATISTICS_NUM // number of entries
-    };
-
     Pattern::CircularDictionary *getCircDict() {return features->circdict;}
     int getCircSize() {return features->getCircSize();}
     void statisticsPlus(StatNames i) {statistics[i]++;}
@@ -288,7 +321,10 @@ class Engine
     long statisticsSum() {int i; long sum=0; for (i=0;i<STATISTICS_NUM;i++) sum+=statistics[i]; return sum;}
     long getStatistics(int i) {return statistics[i]*1000/(statisticsSum()+1);} //+1 avoid crash
     Go::TerritoryMap *getTerritoryMap() const {return territorymap;}
-    
+    float getOldMoveValue(Go::Move m);
+    void getOnePlayoutMove(Go::Board *board, Go::Color col, Go::Move *move);
+
+    void addpresetplayout(float p) {presetplayouts+=p; presetnum++;}
   private:
     Gtp::Engine *gtpe;
     std::string longname;
@@ -313,6 +349,17 @@ class Engine
     long statistics[STATISTICS_NUM];
     bool isgamefinished;
     std::list<DecisionTree*> decisiontrees;
+
+    //This holds the values of moves, calculated earlier
+    //If a move is done the not used moves are here
+    float *blackOldMoves;
+    float *whiteOldMoves;
+    int blackOldMovesNum;
+    int whiteOldMovesNum;
+    float blackOldMean,whiteOldMean;
+
+    float presetplayouts;
+    int presetnum;
     
     enum MovePolicy
     {
@@ -401,7 +448,7 @@ class Engine
     void chooseSubTree(Go::Move move);
     
     void doNPlayouts(int n);
-    void doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::BitBoard *secondlist);
+    void doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::BitBoard *secondlist, Go::BitBoard *earlyfirstlist, Go::BitBoard *earlysecondlist);
     void displayPlayoutLiveGfx(int totalplayouts=-1, bool livegfx=true);
     void doSlowUpdate();
     

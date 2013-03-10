@@ -19,7 +19,7 @@ cat | parallel ./harvest-circular-played.sh {} $SIZE >$TEMPOUTPUT
 #mawk was unusable slow and default on Debian
 cat ${TEMPOUTPUT} | ./harvest-combine-gawk.sh | sort -rn > ${TEMPCOMBINED}
 cat $TEMPCOMBINED
-./count.pl $TEMPCOMBINED
+#./count.pl $TEMPCOMBINED
 
 #rm -f $TEMPOUTPUT
 #rm -f $TEMPCOMBINED

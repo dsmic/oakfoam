@@ -274,6 +274,7 @@ namespace Pattern
     public:
       /** Create a pattern from a given board position. */
       Circular(Pattern::CircularDictionary *dict, const Go::Board *board, int pos, int sz);
+      Circular(Pattern::CircularDictionary *dict, std::string fromString);
       
       /** Get the size of this pattern. */
       int getSize() const { return size; };
@@ -288,6 +289,8 @@ namespace Pattern
       /** Get a string representation of this pattern. */
       std::string toString(Pattern::CircularDictionary *dict) const;
 
+      int sizefromString(std::string patternstring);
+      
       /** Count the number of stones to get an idea of the uniqunes of the pattern */
       int countStones(Pattern::CircularDictionary *dict);
       

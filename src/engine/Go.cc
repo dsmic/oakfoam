@@ -106,8 +106,10 @@ Go::Group::Group(Go::Board *brd, int pos)
     position(pos)
 {
   stonescount=1;
+  pseudoborderdist=brd->getPseudoDistanceToBorder(pos);
   parent=NULL;
   pseudoliberties=0;
+  pseudoends=0;
   libpossum=0;
   libpossumsq=0;
 }
@@ -118,6 +120,8 @@ void Go::Group::addTouchingEmpties()
   foreach_adjacent(position,p,{
     if (board->getColor(p)==Go::EMPTY)
       this->addPseudoLiberty(p);
+    if (board->getColor(p)!=board->getColor(position))
+      this->addPseudoEnd();
   });
 }
 
@@ -470,6 +474,8 @@ bool Go::Board::validMoveCheck(Go::Move move) const
     foreach_adjacent(pos,p,{
       if (this->getColor(p)==col || this->getColor(p)==othercol)
         this->getGroup(p)->removePseudoLiberty(pos);
+      if (this->getColor(p)==col)
+        this->getGroup(p)->removePseudoEnd();
     });
     
     foreach_adjacent(pos,p,{
@@ -486,6 +492,8 @@ bool Go::Board::validMoveCheck(Go::Move move) const
     foreach_adjacent(pos,p,{
       if (this->getColor(p)==col || this->getColor(p)==othercol)
         this->getGroup(p)->addPseudoLiberty(pos);
+      if (this->getColor(p)==col)
+        this->getGroup(p)->addPseudoEnd();
     });
     
     if (isvalid)
@@ -573,6 +581,7 @@ void Go::Board::makeMove(Go::Move move)
     {
       Go::Group *othergroup=this->getGroup(p);
       othergroup->removePseudoLiberty(pos);
+      othergroup->removePseudoEnd();
       
       if (othergroup->numOfStones()>thisgroup->numOfStones())
         this->mergeGroups(othergroup,thisgroup);
@@ -587,6 +596,7 @@ void Go::Board::makeMove(Go::Move move)
     {
       Go::Group *othergroup=this->getGroup(p);
       othergroup->removePseudoLiberty(pos);
+      // not here, other group looses only lib but not end: othergroup->removePseudoEnd();
       
       thisgroup->getAdjacentGroups()->push_back(p);
       othergroup->getAdjacentGroups()->push_back(pos);
@@ -695,6 +705,18 @@ int Go::Board::touchingEmpty(int pos) const
   int lib=0;
   
   foreach_adjacent(pos,p,{
+    if (this->getColor(p)==Go::EMPTY)
+      lib++;
+  });
+  
+  return lib;
+}
+
+int Go::Board::diagonalEmpty(int pos) const
+{
+  int lib=0;
+  
+  foreach_diagonal(pos,p,{
     if (this->getColor(p)==Go::EMPTY)
       lib++;
   });
@@ -839,6 +861,7 @@ void Go::Board::spreadRemoveStones(Go::Color col, int pos, std::list<int,Go::all
         possiblesuicides->push_back(liberty);
       }
       othergroup->addPseudoLiberty(pos);
+      // not here: othergroup->addPseudoEnd();
     }
   });
   
@@ -1597,7 +1620,7 @@ bool Go::Board::isSelfAtari(Go::Move move) const
   return this->isSelfAtariOfSize(move,0);
 }
 
-bool Go::Board::isSelfAtariOfSize(Go::Move move, int minsize) const
+bool Go::Board::isSelfAtariOfSize(Go::Move move, int minsize, bool complex) const
 {
   Go::Color col=move.getColor();
   int pos=move.getPosition();
@@ -1607,14 +1630,20 @@ bool Go::Board::isSelfAtariOfSize(Go::Move move, int minsize) const
 
   int libpos=-1;
   int groupsize=1;
+  int groupbent4indicator=this->getPseudoDistanceToBorder(pos);
   Go::Group *groups_used[4];
   int groups_used_num=0;
+  int usedneighbours=0;
+  int attach_group_pos=-1;
+  int capturedstones=0;
   foreach_adjacent(pos,p,{
     if (this->inGroup(p))
     {
       Go::Group *group=this->getGroup(p);
       if (col==group->getColor())
       {
+        attach_group_pos=p;
+        usedneighbours++;
         if (!(group->inAtari() || group->isOneOfTwoLiberties(pos)))
           return false; // attached group has more than two libs
         bool found=false;
@@ -1631,14 +1660,28 @@ bool Go::Board::isSelfAtariOfSize(Go::Move move, int minsize) const
           groups_used[groups_used_num]=group;
           groups_used_num++;
           int otherlib=group->getOtherOneOfTwoLiberties(pos);
+          //fprintf(stderr,"otherlib %d\n",otherlib);
           if (otherlib!=-1)
           {
             if (libpos==-1)
               libpos=otherlib;
             else if (libpos!=otherlib)
               return false; // at least 2 libs
-            groupsize+=group->numOfStones();
           }
+          groupsize+=group->numOfStones();
+          groupbent4indicator+=group->numOfPseudoBorderDist();
+          //fprintf(stderr,"groupsize now %d %d\n",groupsize,groupbent4indicator);
+        }
+      }
+      else
+      {
+        //more than on stone is captured, so not self atari
+        if (group->inAtari())
+          capturedstones+=group->numOfStones();
+        if (capturedstones>1)
+        {
+          //fprintf(stderr,"group catched of size more than 1\n");
+          return false;
         }
       }
     }
@@ -1654,7 +1697,49 @@ bool Go::Board::isSelfAtariOfSize(Go::Move move, int minsize) const
   if (groupsize>minsize)
     return true;
   else
+  {
+    if (!complex)
+      return false;
+    //complex
+    if (groupsize<4) return false; //no complex handling necessary
+    int pseudoends=4-usedneighbours-usedneighbours;
+    for (int i=0;i<groups_used_num;i++)
+    {
+        pseudoends+=groups_used[i]->numOfPseudoEnds();
+        //fprintf(stderr,"-- %d\n",groups_used[i]->numOfPseudoEnds());
+    }
+    //now we know the pseudoends of the group and can check if it is a good or bad form
+    //fprintf(stderr,"complex self atari checked stones %d pseudoends %d bent4indicator %d\n",groupsize,pseudoends,groupbent4indicator);
+    if (groupsize==5 && pseudoends!=10)
+      return true; //do only play XXX
+                   //             XX   form
+    /*
+     * 
+     * bent 4 handling in the corner not ok     
+    */ 
+    //fprintf(stderr,"debug boardsize must be 9 selfatari 4 or 5 at %s with attached %s\n",move.toString (9).c_str(),Go::Position::pos2string(attach_group_pos,9).c_str());
+    if (groupsize==4)
+    {
+      //here allow play of bent 4 in the corner
+      if (groupbent4indicator==4)
+        return false; //this is bent 4 in the corner or   
+                      // XX
+                      // XX in the corner, which is ok too
+      if (attach_group_pos>=0) 
+      {
+        int nattached=0;
+        foreach_adjacent(attach_group_pos,p,{
+          if (this->getColor(p)==col)
+            nattached++;
+        });
+        if (nattached!=2 && pseudoends!=8)
+          return true; //do only play XX   XXX
+                       //             XX    X
+      }
+     }
+                                          
     return false;
+  }
 }
 
 bool Go::Board::isAtari(Go::Move move) const
@@ -1698,6 +1783,23 @@ int Go::Board::getRectDistance(int pos1, int pos2) const
   int y2=Go::Position::pos2y(pos2,size);
   
   return Go::rectDist(x1,y1,x2,y2);
+}
+
+int Go::Board::getPseudoDistanceToBorder(int pos) const
+{
+  int x=Go::Position::pos2x(pos,size);
+  int y=Go::Position::pos2y(pos,size);
+  int ix=(size-x-1);
+  int iy=(size-y-1);
+  
+  int distx=x;
+  int disty=y;
+  if (ix<distx)
+    distx=ix;
+  if (iy<disty)
+    disty=iy;
+  
+  return distx+disty;
 }
 
 int Go::Board::getCircularDistance(int pos1, int pos2) const
@@ -1798,6 +1900,215 @@ int Go::Board::getThreeEmptyGroupCenterFrom(int pos) const
           return this->getThreeEmptyGroupCenterFrom(p);
         else
           return -1;
+      }
+    });
+    return -1;
+  }
+  else
+    return -1;
+}
+
+int Go::Board::getBent4EmptyGroupCenterFrom(int pos,bool onlycheck) const
+{
+  //fprintf(stderr,"test bent4 %s\n",Go::Position::pos2string(pos,size).c_str());
+  if (this->getColor(pos)!=Go::EMPTY || this->getPseudoDistanceToBorder(pos)>2)
+    return -1;
+  
+  int empnei=this->touchingEmpty(pos);
+  Go::Color col=Go::EMPTY;
+  
+  if (empnei==2 && this->getPseudoDistanceToBorder(pos)==1) // possibly at center
+  {
+    int empty,black,white,offboard;
+    foreach_adjacent(pos,p,{
+      if (this->getColor(p)==Go::EMPTY)
+      {
+        if (this->touchingEmpty(p)>2)
+          return -1;
+        else
+        {
+          this->countAdjacentColors(p,empty,black,white,offboard);
+          if (col==Go::EMPTY)
+          {
+            if (black>0 && white>0)
+              return -1;
+            else if (black>0)
+              col=Go::BLACK;
+            else if (white>0)
+              col=Go::WHITE;
+          }
+          else if (col==Go::BLACK && white>0)
+            return -1;
+          else if (col==Go::WHITE && black>0)
+            return -1;
+        }
+      }
+      else if (this->getColor(p)!=Go::OFFBOARD)
+      {
+        Go::Color col2=this->getColor(p);
+        if (col==Go::EMPTY)
+            col=col2;
+        else if (col!=col2)
+          return -1;
+      }
+    });
+    return pos;
+  }
+  else if (empnei==1) // possibly at end
+  {
+    if (onlycheck)
+      return -1;
+    foreach_adjdiag(pos,p,{
+      if (this->getColor(p)==Go::EMPTY)
+      {
+        //fprintf(stderr,"test bent4 in %s\n",Go::Position::pos2string(p,size).c_str());
+        if (this->touchingEmpty(p)==2 )
+        {
+          int retvalue=this->getBent4EmptyGroupCenterFrom(p,true);
+          if (retvalue>-1)
+            return retvalue;
+        }
+      }
+    });
+    return -1;
+  }
+  else
+    return -1;
+}
+
+int Go::Board::getFourEmptyGroupCenterFrom(int pos) const
+{
+  // this handles the play of the 
+  // XXX
+  //  X
+  //form,
+
+  // the bent 4 is not ready yet!
+  
+  if (this->getColor(pos)!=Go::EMPTY)
+    return -1;
+  
+  int empnei=this->touchingEmpty(pos);
+  Go::Color col=Go::EMPTY;
+  
+  if (empnei==3) // possibly at center
+  {
+    int empty,black,white,offboard;
+    foreach_adjacent(pos,p,{
+      if (this->getColor(p)==Go::EMPTY)
+      {
+        if (this->touchingEmpty(p)!=1)
+          return -1;
+        else
+        {
+          this->countAdjacentColors(p,empty,black,white,offboard);
+          if (col==Go::EMPTY)
+          {
+            if (black>0 && white>0)
+              return -1;
+            else if (black>0)
+              col=Go::BLACK;
+            else if (white>0)
+              col=Go::WHITE;
+          }
+          else if (col==Go::BLACK && white>0)
+            return -1;
+          else if (col==Go::WHITE && black>0)
+            return -1;
+        }
+      }
+      else if (this->getColor(p)!=Go::OFFBOARD)
+      {
+        Go::Color col2=this->getColor(p);
+        if (col==Go::EMPTY)
+            col=col2;
+        else if (col!=col2)
+          return -1;
+      }
+    });
+    //fprintf(stderr,"returned by bent4 %s\n",Go::Position::pos2string(pos,9).c_str());
+    return pos;
+  }
+  else if (empnei==1) // possibly at end
+  {
+    foreach_adjacent(pos,p,{
+      if (this->getColor(p)==Go::EMPTY)
+      {
+        if (this->touchingEmpty(p)==3)
+          return this->getFourEmptyGroupCenterFrom(p);
+        else
+          return -1;
+      }
+    });
+    return -1;
+  }
+  else
+    return -1;
+}
+
+
+int Go::Board::getFiveEmptyGroupCenterFrom(int pos) const
+{
+  //fprintf(stderr,"test 5 %s\n",Go::Position::pos2string(pos,size).c_str());
+  if (this->getColor(pos)!=Go::EMPTY)
+    return -1;
+  
+  int empnei=this->touchingEmpty(pos);
+  Go::Color col=Go::EMPTY;
+  
+  if (empnei==3) // possibly at center
+  {
+    if (this->diagonalEmpty(pos)!=1)
+      return -1; //not exacly 5 empties
+    int empty,black,white,offboard;
+    this->countAdjacentColors(pos,empty,black,white,offboard);
+    if (black>0 && white>0)
+      return -1;
+    else if (black>0)
+      col=Go::BLACK;
+    else if (white>0)
+      col=Go::WHITE;
+    int tmpempty,tmpblack,tmpwhite,tmpoffboard;
+    foreach_adjdiag(pos,p,{
+      if (this->getColor(p)==Go::EMPTY)
+      {
+        this->countAdjacentColors(p,tmpempty,tmpblack,tmpwhite,tmpoffboard);
+        if (col==Go::EMPTY)
+        {
+          if (tmpblack>0 && tmpwhite>0)
+            return -1;
+          else if (tmpblack>0)
+            col=Go::BLACK;
+          else if (tmpwhite>0)
+            col=Go::WHITE;
+        }
+        else if (col==Go::BLACK && tmpwhite>0)
+          return -1;
+        else if (col==Go::WHITE && tmpblack>0)
+          return -1;
+        black+=tmpblack;
+        white+=tmpwhite;
+        offboard+=tmpoffboard;
+      }
+    });
+    if (black>0 && white>0)
+      fprintf(stderr,"should not happen!\n");
+    int numattached=black+white+offboard;
+    // XXX
+    // XX   Form has exactly 10 pseudo touches other forms not (hopefully:)
+    if (numattached==10)
+      return pos;
+    else
+      return -1;
+  }
+  else if (empnei<3) // possibly at end  can be optimized for empnei==1, but should not make to much difference!
+  {
+    foreach_adjdiag(pos,p,{
+      if (this->getColor(p)==Go::EMPTY)
+      {
+        //fprintf(stderr,"now try at %s\n",Go::Position::pos2string(p,size).c_str());
+        if (this->touchingEmpty(p)==3)
+          return this->getFiveEmptyGroupCenterFrom(p);
       }
     });
     return -1;

@@ -110,12 +110,17 @@ class Tree
     float getWins() const { return wins; };
     /** Get the number of RAVE playouts through this node. */
     float getRAVEPlayouts() const { return raveplayouts; };
+    float getRAVEWins() const { return ravewins; };
+    float getEARLYRAVEPlayouts() const { return earlyraveplayouts; };
     /** Get the number of RAVE playouts for the other color through this node. */
     float getRAVEPlayoutsOther() const { return raveplayoutsother; };
+    float getRAVEWinsOther() const { return ravewinsother; };
+    float getRAVEPlayoutsOtherEarly() const { return earlyraveplayoutsother; };
+    float getRAVEWinsOtherEarly() const { return earlyravewinsother; };
     /** Get the ratio of wins to playouts. */
     float getRatio() const;
     /** Get the unprune factor, used for determining the order to unprune nodes in. */
-    float getUnPruneFactor() const;
+    float getUnPruneFactor(float *moveValues=NULL, float mean=0, int num=0) const;
     /** Get the score mean. */
     float getScoreMean() const;
     /** Get the score standard deviation. */
@@ -123,6 +128,7 @@ class Tree
 
     /** Get the ratio of RAVE wins to playouts. */
     float getRAVERatio() const;
+    float getEARLYRAVERatio() const;
     /** Get the ratio of RAVE wins to playouts for the other color. */
     float getRAVERatioOther() const;
     /** Get the ratio of RAVE wins to playouts used for poolRAVE (excluding any initial wins). */
@@ -160,18 +166,20 @@ class Tree
     /** Add a number of prior losses to this node. */
     void addPriorLoses(int n);
     /** Add a RAVE win to this node. */
-    void addRAVEWin();
+    void addRAVEWin(bool early);
     /** Add a RAVE loss to this node. */
-    void addRAVELose();
+    void addRAVELose(bool early);
     /** Add a RAVE win for the other color to this node. */
-    void addRAVEWinOther();
+    void addRAVEWinOther(bool early);
     /** Add a RAVE loss for the other color to this node. */
-    void addRAVELoseOther();
+    void addRAVELoseOther(bool early);
     
     /** Add a number of RAVE wins to this node. */
-    void addRAVEWins(int n);
+    void addRAVEWins(int n,bool early);
+    void presetRave(float ravew,float ravep);
+    void presetRaveEarly(float ravew,float ravep);
     /** Add a number of RAVE losses to this node. */
-    void addRAVELoses(int n);
+    void addRAVELoses(int n,bool early);
     /** Add a partial result to this node.
      * A partial result is used for non-integer result rewards.
      */
@@ -199,7 +207,7 @@ class Tree
     /** Get the child with the best ratio. */
     Tree *getBestRatioChild(float playoutthreshold=0) const;
     /** Update RAVE values for the path from this node to the root of the tree. */
-    void updateRAVE(Go::Color wincol,Go::BitBoard *blacklist,Go::BitBoard *whitelist);
+    void updateRAVE(Go::Color wincol,Go::BitBoard *blacklist,Go::BitBoard *whitelist,bool early);
     /** Prune any superko violations. */
     void pruneSuperkoViolations();
     
@@ -266,6 +274,8 @@ class Tree
       void resetMpiDiff();
     #endif
 
+    std::list<Tree*> *getChildren() {return children;}
+    
   private:
     Tree *parent;
     std::list<Tree*> *children;
@@ -273,10 +283,12 @@ class Tree
     Tree *symmetryprimary;
     
     Go::Move move;
-    float playouts,raveplayouts;
-    float wins,ravewins;
+    float playouts,raveplayouts,earlyraveplayouts;
+    float wins,ravewins,earlyravewins;
     float raveplayoutsother;
     float ravewinsother;
+    float earlyraveplayoutsother;
+    float earlyravewinsother;
     float scoresum,scoresumsq;
     float decayedwins,decayedplayouts;
     Parameters *const params;
