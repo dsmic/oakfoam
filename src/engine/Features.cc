@@ -7,6 +7,7 @@
 #include <iomanip>
 #include "Parameters.h"
 #include "Pattern.h"
+#include "Engine.h"
 
 Features::Features(Parameters *prms) : params(prms)
 {
@@ -124,10 +125,16 @@ unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::B
     }
     case Features::SELFATARI:
     {
-      if (board->isSelfAtari(move))
-        return 1;
+      //of size uses the same parameters as in the playouts!!!!! 
+      if (params->playout_avoid_selfatari_size>0 && board->isSelfAtariOfSize(move,params->playout_avoid_selfatari_size,params->playout_avoid_selfatari_complex))
+        return 2;
       else
-        return 0;
+      {
+        if (board->isSelfAtari(move))
+          return 1;
+        else
+          return 0;
+      }
     }
     case Features::ATARI:
     {
@@ -275,7 +282,7 @@ float Features::getFeatureGamma(Features::FeatureClass featclass, unsigned int l
   }
 }
 
-float Features::getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove) const
+float Features::getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove, bool usecircularpatterns) const
 {
   float g=1.0;
   
@@ -288,24 +295,69 @@ float Features::getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist
   g*=this->getFeatureGamma(Features::SELFATARI,this->matchFeatureClass(Features::SELFATARI,board,cfglastdist,cfgsecondlastdist,move,false));
   g*=this->getFeatureGamma(Features::ATARI,this->matchFeatureClass(Features::ATARI,board,cfglastdist,cfgsecondlastdist,move,false));
   g*=this->getFeatureGamma(Features::BORDERDIST,this->matchFeatureClass(Features::BORDERDIST,board,cfglastdist,cfgsecondlastdist,move,false));
-  g*=this->getFeatureGamma(Features::LASTDIST,this->matchFeatureClass(Features::LASTDIST,board,cfglastdist,cfgsecondlastdist,move,false));
-  g*=this->getFeatureGamma(Features::SECONDLASTDIST,this->matchFeatureClass(Features::SECONDLASTDIST,board,cfglastdist,cfgsecondlastdist,move,false));
-  g*=this->getFeatureGamma(Features::CFGLASTDIST,this->matchFeatureClass(Features::CFGLASTDIST,board,cfglastdist,cfgsecondlastdist,move,false));
-  g*=this->getFeatureGamma(Features::CFGSECONDLASTDIST,this->matchFeatureClass(Features::CFGSECONDLASTDIST,board,cfglastdist,cfgsecondlastdist,move,false));
+  g*=1.0+params->test_p12*(this->getFeatureGamma(Features::LASTDIST,this->matchFeatureClass(Features::LASTDIST,board,cfglastdist,cfgsecondlastdist,move,false))-1.0);
+  g*=1.0+params->test_p13*(this->getFeatureGamma(Features::SECONDLASTDIST,this->matchFeatureClass(Features::SECONDLASTDIST,board,cfglastdist,cfgsecondlastdist,move,false))-1.0);
+  g*=1.0+params->test_p14*(this->getFeatureGamma(Features::CFGLASTDIST,this->matchFeatureClass(Features::CFGLASTDIST,board,cfglastdist,cfgsecondlastdist,move,false))-1.0);
+  g*=1.0+params->test_p15*(this->getFeatureGamma(Features::CFGSECONDLASTDIST,this->matchFeatureClass(Features::CFGSECONDLASTDIST,board,cfglastdist,cfgsecondlastdist,move,false))-1.0);
   g*=this->getFeatureGamma(Features::PATTERN3X3,this->matchFeatureClass(Features::PATTERN3X3,board,cfglastdist,cfgsecondlastdist,move,false));
 
-  if (params->uct_factor_circpattern>0.0)
+  if (params->uct_factor_circpattern>0.0 && usecircularpatterns)
   {
     Pattern::Circular pattcirc=Pattern::Circular(circdict,board,move.getPosition(),circpatternsize);
     if (move.getColor()==Go::WHITE)
             pattcirc.invert();
-    pattcirc.convertToSmallestEquivalent(circdict);
+    pattcirc.convertToSmallestEquivalent(circdict);  
     if (this->valueCircPattern(pattcirc.toString(circdict))>0.0)
     {
      //fprintf(stderr,"found pattern %f %s (stones %d)\n",params->test_p1,pattcirc.toString(circdict).c_str(),pattcirc.countStones(circdict));
-     g*=1+params->uct_factor_circpattern*this->valueCircPattern(pattcirc.toString(circdict));
+     //fprintf(stderr,"found pattern %f %s (stones %d)\n",this->valueCircPattern(pattcirc.toString(circdict)),pattcirc.toString(circdict).c_str(),pattcirc.countStones(circdict));
+     g*=1+exp(params->test_p6*circpatternsize)*params->uct_factor_circpattern * this->valueCircPattern(pattcirc.toString(circdict)); 
+    }
+    for (int j=circpatternsize-1;j>params->test_p8;j--)
+    {
+      Pattern::Circular tmp=pattcirc.getSubPattern(circdict,j);
+      tmp.convertToSmallestEquivalent(circdict);
+      std::string tmpPattString=tmp.toString(circdict);
+      if (this->valueCircPattern(tmpPattString)>0.0)
+      {
+       //fprintf(stderr,"found pattern %f %s (stones %d)\n",this->valueCircPattern(tmpPattString),tmpPattString.c_str(),tmp.countStones(circdict));
+       g*=1+exp(params->test_p6*j)*params->uct_factor_circpattern * this->valueCircPattern(tmpPattString); //params->uct_factor_circpattern_exponent
+      }
     }
   }
+  if (params->uct_simple_pattern_factor!=1.0)
+  {
+    unsigned int pattern=Pattern::ThreeByThree::makeHash(board,move.getPosition ());
+    if (move.getColor()==Go::WHITE)
+      pattern=Pattern::ThreeByThree::invert(pattern);
+   if (params->engine->getPatternTable()->isPattern (pattern))
+      g*=params->uct_simple_pattern_factor;
+  }
+  if ((params->uct_atari_unprune!=1.0 || params->uct_atari_unprune_exp!=0.0 || params->uct_danger_value!=0.0) && move.isNormal() && !board->isSelfAtariOfSize(move,2))
+  {
+    int size=params->board_size;
+    int StonesInAtari=0;
+    float DangerValue=0.0;
+    Go::Color col=move.getColor();
+    int pos=move.getPosition();
+    foreach_adjacent(pos,p,{
+      if (board->inGroup(p))
+      {
+        Go::Group *group=board->getGroup(p);
+        if (col!=group->getColor() && group->isOneOfTwoLiberties(pos))
+          StonesInAtari+=group->numOfStones();
+        if (col!=group->getColor())
+          DangerValue+=params->uct_danger_value*group->numOfStones()/group->numOfPseudoLiberties();
+      }
+    });
+    //set gamma
+    //fprintf(stderr,"StonesInAtari %d move %s\n",StonesInAtari,move.toString(size).c_str());
+    if (StonesInAtari>0)
+      g*=params->uct_atari_unprune*pow(StonesInAtari,params->uct_atari_unprune_exp);
+    g*=1+DangerValue;
+  }
+
+
   return g;
 }
 
@@ -434,6 +486,7 @@ bool Features::loadGammaFile(std::string filename)
 
 bool Features::loadCircFile(std::string filename,int numlines)
 {
+  
   std::ifstream fin(filename.c_str());
   
   if (!fin)
@@ -449,10 +502,28 @@ bool Features::loadCircFile(std::string filename,int numlines)
     int numpos = line.find(" ");
     long int timesfound = atol(line.substr(0,numpos).c_str());
     circpatternsize=atoi(line.substr(numpos,strpos).c_str());
-    circpatterns.insert(std::make_pair(line.substr(strpos+1),timesfound));
+    circpatterns.insert(std::make_pair(line.substr(numpos+1),timesfound));
+    //create small patterns and insert them
+    Pattern::Circular tmpPattern=Pattern::Circular(circdict,line.substr(numpos+1));
+    for (int j=circpatternsize-1;j>1;j--)
+    {
+      Pattern::Circular tmp=tmpPattern.getSubPattern(circdict,j);
+      tmp.convertToSmallestEquivalent(circdict);
+      std::string tmpPattString=tmp.toString(circdict);
+      if (circpatterns.count(tmpPattString))
+      {
+        //long vor=circpatterns.find(tmpPattString)->second;
+        circpatterns.find(tmpPattString)->second+=timesfound;
+        //long nach=circpatterns.find(tmpPattString)->second;
+        //fprintf(stderr,"played %s %ld %ld\n",tmpPattString.c_str(),vor,nach);
+      }
+      else
+        circpatterns.insert(std::make_pair(tmpPattString,timesfound));
+    }
     n++;
     num_circmoves+=timesfound;
-    fprintf(stderr,"%d %s %d %ld\n",n,line.substr(strpos+1).c_str(),circpatternsize,timesfound);
+    //fprintf(stderr,"line %s\n",line.c_str());
+    //fprintf(stderr,"%d %s %d %ld %s\n",n,line.substr(numpos+1).c_str(),circpatternsize,timesfound,tmpPattern.toString(circdict).c_str());
   }
   
   fin.close();
@@ -468,7 +539,7 @@ bool Features::loadCircFileNot(std::string filename,int numlines)
     return false;
   num_circmoves_not=0;
   std::string line;
-  circpatterns.clear();
+  circpatternsnot.clear();
   circpatternsize=0;
   int n=0;
   while (std::getline(fin,line)&&(numlines==0||n<numlines))
@@ -477,10 +548,27 @@ bool Features::loadCircFileNot(std::string filename,int numlines)
     int numpos = line.find(" ");
     long int timesfound = atol(line.substr(0,numpos).c_str());
     circpatternsize=atoi(line.substr(numpos,strpos).c_str());
-    circpatternsnot.insert(std::make_pair(line.substr(strpos+1),timesfound));
+    circpatternsnot.insert(std::make_pair(line.substr(numpos+1),timesfound));
+    //create small patterns and insert them
+    Pattern::Circular tmpPattern=Pattern::Circular(circdict,line.substr(numpos+1));
+    for (int j=circpatternsize-1;j>1;j--)
+    {
+      Pattern::Circular tmp=tmpPattern.getSubPattern(circdict,j);
+      tmp.convertToSmallestEquivalent(circdict);
+      std::string tmpPattString=tmp.toString(circdict);
+      if (circpatternsnot.count(tmpPattString))
+      {
+        //long vor=circpatternsnot.find(tmpPattString)->second;
+        circpatternsnot.find(tmpPattString)->second+=timesfound;
+        //long nach=circpatternsnot.find(tmpPattString)->second;
+        //fprintf(stderr,"not played %s %ld %ld\n",tmpPattString.c_str(),vor,nach);
+      }
+      else
+        circpatternsnot.insert(std::make_pair(tmpPattString,timesfound));
+    }
     n++;
     num_circmoves_not+=timesfound;
-    fprintf(stderr,"%d %s %d %ld\n",n,line.substr(strpos+1).c_str(),circpatternsize,timesfound);
+    //fprintf(stderr,"%d %s %d %ld\n",n,line.substr(numpos+1).c_str(),circpatternsize,timesfound);
   }
   
   fin.close();
@@ -514,6 +602,7 @@ bool Features::loadGammaLine(std::string line)
   std::istringstream issline(line);
   if (!getline(issline,id,' '))
     return false;
+  //fprintf(stderr,"debug: %s %s\n",line.c_str(),gammastring.c_str());
   if (!getline(issline,gammastring,' '))
     return false;
   
@@ -790,21 +879,30 @@ void Features::computeCFGDist(Go::Board *board, Go::ObjectBoard<int> **cfglastdi
 
 float Features::valueCircPattern(std::string circpattern) const
 {
-  //strip the patternsize
-  int strpos = circpattern.find(":");
+  //not strip the patternsize anymore!!!!
+  //int strpos = circpattern.find(":");
     
-// fprintf(stderr,"%s %d\n",circpattern.substr(strpos+1).c_str(),circpatterns.count(circpattern.substr(strpos+1)));
+ //fprintf(stderr,"not %s %ld\n",circpattern.c_str(),circpatternsnot.count(circpattern));
+ //fprintf(stderr,"played %s %ld\n",circpattern.c_str(),circpatterns.count(circpattern));
   //in the not played database the circ pattern is not contained, therefore if it is played
   //it is set to factor 1 (count allways gives 1 or 0 in map)
-  if (!circpatternsnot.count(circpattern.substr(strpos+1)))
-    return circpatterns.count(circpattern.substr(strpos+1));
-  if (!circpatterns.count(circpattern.substr(strpos+1)))
+
+//this is managed by test_p7 at the moment
+//  if (!circpatternsnot.count(circpattern))
+//    return 0;
+  
+  std::map<std::string,long int>::const_iterator it;
+  it=circpatterns.find(circpattern);
+  if (it==circpatterns.end())
     return 0;
   //both exist
-  long int num_played=circpatterns.find(circpattern.substr(strpos+1))->second;
-  long int num_not_played=circpatternsnot.find(circpattern.substr(strpos+1))->second;
-  float ratio=float(num_played)/num_not_played;
+  long int num_played=it->second;
+  long int num_not_played=0;
+  it=circpatternsnot.find(circpattern);
+  if (it!=circpatternsnot.end()) num_not_played=it->second;
+  float ratio=float(num_played)/(num_not_played+params->test_p7)*params->uct_factor_circpattern_exponent;
   if (ratio>1.0) ratio=1.0;
+  //fprintf(stderr,"valueCircPattern %ld %ld %f\n",num_played,num_not_played,ratio);
   return ratio;
 }
 

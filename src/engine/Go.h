@@ -243,9 +243,9 @@ namespace Go
       };
       
       /** Create an empty move. */
-      inline Move() : color(Go::EMPTY), pos(-2) {};
+      inline Move() : color(Go::EMPTY), pos(-2), useforlgrf(false) {};
       /** Create a move for given color and position. */
-      inline Move(Go::Color col, int p) : color(col), pos(p) {};
+      inline Move(Go::Color col, int p) : color(col), pos(p), useforlgrf(false) {};
       /** Create a move for given color and x-y coordinates. */
       inline Move(Go::Color col, int x, int y, int boardsize) : color(col), pos(x<0?x:Go::Position::xy2pos(x,y,boardsize)) {};
       /** Create a move for given color and type. */
@@ -280,10 +280,13 @@ namespace Go
       inline bool operator==(const Go::Move other) const { return (color==other.getColor() && pos==other.getPosition()); };
       /** Determine inequality with another move. */
       inline bool operator!=(const Go::Move other) const { return !(*this == other); };
-    
+      inline void set_useforlgrf(bool u) {useforlgrf=u;}
+      inline bool is_useforlgrf() {return useforlgrf;}
+      
     private:
       Go::Color color;
       int pos;
+      bool useforlgrf;
   };
   
   /** Zobrist hash type.
@@ -415,6 +418,8 @@ namespace Go
         othergroup->setParent(this);
         stonescount+=othergroup->stonescount;
         pseudoliberties+=othergroup->pseudoliberties;
+        pseudoends+=othergroup->pseudoends;
+        pseudoborderdist+=othergroup->pseudoborderdist;
         libpossum+=othergroup->libpossum;
         libpossumsq+=othergroup->libpossumsq;
         adjacentgroups.splice(adjacentgroups.end(),*othergroup->getAdjacentGroups());
@@ -426,11 +431,16 @@ namespace Go
       inline int numOfStones() const { return stonescount; };
       /** Get the number of pseudo liberties for this group. */
       inline int numOfPseudoLiberties() const { return pseudoliberties; };
+      inline int numOfPseudoEnds() const { return pseudoends; };
+      inline int numOfPseudoBorderDist() const { return pseudoborderdist; };
       
       /** Add a pseudo liberty to this group. */
       inline void addPseudoLiberty(int pos) { pseudoliberties++; libpossum+=pos; libpossumsq+=pos*pos; };
+      inline void addPseudoEnd() { pseudoends++;};
+      inline void addPseudoBorderDist(int dist) { pseudoborderdist+=dist;};
       /** Remove a pseudo liberty from this group. */
       inline void removePseudoLiberty(int pos) { pseudoliberties--; libpossum-=pos; libpossumsq-=pos*pos; };
+      inline void removePseudoEnd() { pseudoends--;};
       /** Determine if this group is in atari. */
       inline bool inAtari() const { return (pseudoliberties>0 && (pseudoliberties*libpossumsq)==(libpossum*libpossum)); };
       /** Get the last remaining postion of a group in atari.
@@ -457,6 +467,8 @@ namespace Go
       Go::Group *parent;
       
       int pseudoliberties;
+      int pseudoends;
+      int pseudoborderdist;
       int libpossum;
       int libpossumsq;
       
@@ -570,6 +582,7 @@ namespace Go
       bool strongEye(Go::Color col, int pos) const;
       /** Get the number of empty positions orthogonally adjacent to the given position. */
       int touchingEmpty(int pos) const;
+      int diagonalEmpty(int pos) const;
       /** Get the number of empty positions in the eight positions surrounding the given position. */
       int surroundingEmpty(int pos) const;
       /** Get the number of each color in the orthogonally adjacent positions to the given position. */
@@ -623,11 +636,12 @@ namespace Go
       /** Determine is the given move is a self-atari. */
       bool isSelfAtari(Go::Move move) const;
       /** Determine is the given move is a self-atari of a group of a minimum size. */
-      bool isSelfAtariOfSize(Go::Move move, int minsize=0) const;
+      bool isSelfAtariOfSize(Go::Move move, int minsize=0, bool complex=false) const;
       /** Determine is the given move is an atari. */
       bool isAtari(Go::Move move) const;
       /** Get the distance from the given position to the board edge. */
       int getDistanceToBorder(int pos) const;
+      int getPseudoDistanceToBorder(int pos) const;
       /** Get the circular distance between two positions. */
       int getCircularDistance(int pos1, int pos2) const;
       /** Get the CFG distances from the given position. */
@@ -637,6 +651,9 @@ namespace Go
        * If there is not such position, -1 is returned.
        */
       int getThreeEmptyGroupCenterFrom(int pos) const;
+      int getBent4EmptyGroupCenterFrom(int pos,bool onlycheck=false) const;
+      int getFourEmptyGroupCenterFrom(int pos) const;
+      int getFiveEmptyGroupCenterFrom(int pos) const;
       
       /** Compute the Zobrist hash for this board. */
       Go::ZobristHash getZobristHash(Go::ZobristTable *table) const;

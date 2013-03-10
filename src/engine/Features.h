@@ -4,7 +4,7 @@
 #define PASS_LEVELS 2
 #define CAPTURE_LEVELS 3
 #define EXTENSION_LEVELS 2
-#define SELFATARI_LEVELS 1
+#define SELFATARI_LEVELS 2
 #define ATARI_LEVELS 3
 #define BORDERDIST_LEVELS 4
 #define LASTDIST_LEVELS 10
@@ -25,6 +25,7 @@ const std::string FEATURES_DEFAULT=
   "extension:1 4.03331 \n"
   "extension:2 0.1 \n" // hand-picked, after adding level
   "selfatari:1 0.05 \n" // hand-picked, after fixing bug
+  "selfatari:2 0.05 \n" // hand-picked, after adding level choosen to be no change. Change it by setting param selfatari:2!!!
   "atari:1 1.66722 \n"
   "atari:2 2.99897 \n"
   "atari:3 0.5 \n" // hand-picked, after adding level
@@ -722,7 +723,7 @@ class Features
     /** Return the weight for a move.
      * The weight for a move is the product of matching feature weights for that move.
      */
-    float getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove=true) const;
+    float getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove=true, bool withcircularpatterns=true) const;
     /** Return the total of all gammas for the moves on a board. */
     float getBoardGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Color col) const;
     /** Return the total of all gammas for the moves on a board and each move's weight in @p gammas. */
@@ -757,6 +758,7 @@ class Features
     bool isCircPattern(std::string circpattern) const;
     float valueCircPattern(std::string circpattern) const;
     int getCircSize () {return circpatternsize;}
+    Pattern::ThreeByThreeGammas* getPatternGammas() {return patterngammas;}
     
   private:
     Parameters *const params;

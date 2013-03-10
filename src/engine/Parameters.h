@@ -92,6 +92,7 @@ class Parameters
      * If any moves around the last two moves match a pattern, play one of them.
      */
     float playout_patterns_p;
+    float playout_patterns_gammas_p;
     /** Whether to use the features heuristic in playouts.
      * The feature gamma of a move over the sum of the gammas is the probability of that move being played.
      */
@@ -110,6 +111,9 @@ class Parameters
      * If the last move created an eye of size 3, play in the center of that eye.
      */
     bool playout_nakade_enabled;
+    bool playout_nakade4_enabled;
+    bool playout_nakade_bent4_enabled;
+    bool playout_nakade5_enabled;
     /** Whether to use the fillboard heuristic in playouts.
      * Randomly select a position on the board and play there if there are no surrounding stones.
      */
@@ -118,6 +122,12 @@ class Parameters
     int playout_fillboard_n;
     /** replace a fillboard move with a neighbouring circpattern move*/
     bool playout_circreplace_enabled;
+    bool playout_fillboard_bestcirc_enabled;
+    int playout_randomquick_bestcirc_n;
+    int playout_random_weight_territory_n;
+    float playout_random_weight_territory_f0;
+    float playout_random_weight_territory_f1;
+    float playout_random_weight_territory_f;
     /** Number of times to try the circpattern heuristic before continuing. */
     int playout_circpattern_n;
     /** The probability of using the anycapture heuristic in playouts.
@@ -156,7 +166,7 @@ class Parameters
      */
     float playout_mercy_rule_factor;
 
-    /*
+    
     float test_p1;
     float test_p2;
     float test_p3;
@@ -167,7 +177,12 @@ class Parameters
     float test_p8;
     float test_p9;
     float test_p10;
-    */
+    float test_p11;
+    float test_p12;
+    float test_p13;
+    float test_p14;
+    float test_p15;
+    
 
     
     /** Skip all playout heuristics with this probability.
@@ -190,6 +205,7 @@ class Parameters
      * Similar to poolRAVE, but using criticality.
      */
     bool playout_poolrave_criticality;
+    int playout_criticality_random_n;
     /** Chance of using poolRAVE.
      * @see playout_poolrave_enabled
      */
@@ -208,7 +224,7 @@ class Parameters
     bool playout_avoid_selfatari;
     /** Only avoid self-atari of groups of this size or larger. */
     int playout_avoid_selfatari_size;
-
+    bool playout_avoid_selfatari_complex;
     /** The useless move heuristic from the Crazy Stone paper. */
     bool playout_useless_move;
     /** Integer which allows different playout orders to be tested.
@@ -242,6 +258,7 @@ class Parameters
     int rave_moves;
     /** Number of wins added to the RAVE statistics initially. */
     int rave_init_wins;
+    float uct_preset_rave_f;
     /** Probability that the RAVE heuristic is ignored.
      * If triggered, RAVE is ignored for the selection of an urgent child.
      */
@@ -268,6 +285,7 @@ class Parameters
     bool uct_lock_free;
     /** Number of prior wins to add to atari moves in the tree. */
     int uct_atari_prior;
+    int uct_playoutmove_prior;
     /** Number of prior wins to add to moves in the tree that match a pattern. */
     int uct_pattern_prior;
     /** Whether to make use of progressive widening.
@@ -325,11 +343,15 @@ class Parameters
      * Set to zero to disable.
      * @todo Include relevant formula.
      */
+
+    float uct_progressive_bias_moves;
+    float uct_progressive_bias_exponent;
+    
     float uct_criticality_urgency_factor;
     /** Parameter for criticality urgency.
      * @see uct_criticality_urgency_factor
      */
-    bool uct_criticality_urgency_decay;
+    float uct_criticality_urgency_decay;
     /** Constant for adjusting progressive widening based on criticality.
      * Set to zero to disable.
      * @todo Include relevant formula.
@@ -351,16 +373,25 @@ class Parameters
      * Set to zero to disable.
      * @todo Include relevant formula.
      */
+    float uct_prior_unprune_factor;
     float uct_rave_unprune_factor;
+    float uct_earlyrave_unprune_factor;
     float uct_rave_unprune_decay;
     /** Parameter for RAVE unpruning.
      * @see uct_rave_unprune_factor
      */
     float uct_reprune_factor;
     float uct_factor_circpattern;
-
+    float uct_factor_circpattern_exponent;
+    float uct_simple_pattern_factor;
+    float uct_atari_unprune;
+    float uct_atari_unprune_exp;
+    float uct_danger_value;
    
     bool uct_rave_unprune_multiply;
+    float uct_oldmove_unprune_factor;
+    float uct_oldmove_unprune_factor_b;
+    float uct_oldmove_unprune_factor_c;
     
     /** Constant for decaying tree statistics.
      * Set to one to disable.

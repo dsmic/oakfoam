@@ -595,6 +595,35 @@ std::string Pattern::Circular::toString(Pattern::CircularDictionary *dict) const
   return ss.str();
 }
 
+int Pattern::Circular::sizefromString(std::string patternstring)
+{
+  std::istringstream iss(patternstring);
+  std::string dummy1;
+  getline(iss,dummy1,':');
+  return strtol(dummy1.c_str(),NULL,10);
+}
+
+Pattern::Circular::Circular(Pattern::CircularDictionary *dict, std::string fromString): size(sizefromString(fromString)>PATTERN_CIRC_MAXSIZE?PATTERN_CIRC_MAXSIZE:sizefromString(fromString))
+{
+  //fprintf(stderr,"the size is %d\n",size);
+  std::string dummy1, dummy2, dummy3;
+  std::istringstream iss(fromString);
+  getline(iss,dummy1,':');
+
+  int i=0;
+  while (1)
+  {
+    dummy2="";
+    getline(iss,dummy2,':');
+    if (dummy2.length()==0)
+      break;
+    hash[i]=strtoul(dummy2.c_str(),NULL,16);
+    //fprintf(stderr,"1 %s\n",dummy2.c_str());
+    //fprintf(stderr,"2 %lx\n",strtoul(dummy2.c_str(),NULL,16));
+    i++;
+  }
+}
+
 Pattern::Circular Pattern::Circular::getSubPattern(Pattern::CircularDictionary *dict, int newsize) const
 {
   int s=newsize;

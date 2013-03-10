@@ -19,6 +19,9 @@
 
 Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
 {
+  presetplayouts=0;
+  presetnum=1;
+  
   gtpe=ge;
   longname=ln;
   #ifdef HAVE_WEB
@@ -62,6 +65,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("general","playouts_per_move_max",&(params->playouts_per_move_max),PLAYOUTS_PER_MOVE_MAX);
   params->addParameter("general","playouts_per_move_min",&(params->playouts_per_move_min),PLAYOUTS_PER_MOVE_MIN);
   
+  params->addParameter("playout","playout_criticality_random_n",&(params->playout_criticality_random_n),PLAYOUT_CRITICALITY_RANDOM_N);
   params->addParameter("playout","playout_poolrave_enabled",&(params->playout_poolrave_enabled),PLAYOUT_POOLRAVE_ENABLED);
   params->addParameter("playout","playout_poolrave_criticality",&(params->playout_poolrave_criticality),PLAYOUT_POOLRAVE_CRITICALITY);
   params->addParameter("playout","playout_poolrave_p",&(params->playout_poolrave_p),PLAYOUT_POOLRAVE_P);
@@ -86,12 +90,22 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","playout_last2libatari_enabled",&(params->playout_last2libatari_enabled),PLAYOUT_LAST2LIBATARI_ENABLED);
   params->addParameter("playout","playout_last2libatari_complex",&(params->playout_last2libatari_complex),PLAYOUT_LAST2LIBATARI_COMPLEX);
   params->addParameter("playout","playout_nakade_enabled",&(params->playout_nakade_enabled),PLAYOUT_NAKADE_ENABLED);
+  params->addParameter("playout","playout_nakade4_enabled",&(params->playout_nakade4_enabled),PLAYOUT_NAKADE4_ENABLED);
+  params->addParameter("playout","playout_nakade_bent4_enabled",&(params->playout_nakade_bent4_enabled),PLAYOUT_NAKADE_BENT4_ENABLED);
+  params->addParameter("playout","playout_nakade5_enabled",&(params->playout_nakade5_enabled),PLAYOUT_NAKADE5_ENABLED);
   params->addParameter("playout","playout_nearby_enabled",&(params->playout_nearby_enabled),PLAYOUT_NEARBY_ENABLED);
   params->addParameter("playout","playout_fillboard_enabled",&(params->playout_fillboard_enabled),PLAYOUT_FILLBOARD_ENABLED);
   params->addParameter("playout","playout_fillboard_n",&(params->playout_fillboard_n),PLAYOUT_FILLBOARD_N);
   params->addParameter("playout","playout_circreplace_enabled",&(params->playout_circreplace_enabled),PLAYOUT_CIRCREPLACE_ENABLED);
+  params->addParameter("playout","playout_fillboard_bestcirc_enabled",&(params->playout_fillboard_bestcirc_enabled),PLAYOUT_FILLBOARD_BESTCIRC_ENABLED);
+  params->addParameter("playout","playout_randomquick_bestcirc_n",&(params->playout_randomquick_bestcirc_n),PLAYOUT_RANDOMQUICK_BESTCIRC_N);
+  params->addParameter("playout","playout_random_weight_territory_n",&(params->playout_random_weight_territory_n),PLAYOUT_RANDOM_WEIGHT_TERRITORY_N);
+  params->addParameter("playout","playout_random_weight_territory_f0",&(params->playout_random_weight_territory_f0),PLAYOUT_RANDOM_WEIGHT_TERRITORY_F0);
+  params->addParameter("playout","playout_random_weight_territory_f1",&(params->playout_random_weight_territory_f1),PLAYOUT_RANDOM_WEIGHT_TERRITORY_F1);
+  params->addParameter("playout","playout_random_weight_territory_f",&(params->playout_random_weight_territory_f),PLAYOUT_RANDOM_WEIGHT_TERRITORY_F);
   params->addParameter("playout","playout_circpattern_n",&(params->playout_circpattern_n),PLAYOUT_CIRCPATTERN_N);
   params->addParameter("playout","playout_patterns_p",&(params->playout_patterns_p),PLAYOUT_PATTERNS_P);
+  params->addParameter("playout","playout_patterns_gammas_p",&(params->playout_patterns_gammas_p),PLAYOUT_PATTERNS_GAMMAS_P);
   params->addParameter("playout","playout_anycapture_p",&(params->playout_anycapture_p),PLAYOUT_ANYCAPTURE_P);
   params->addParameter("playout","playout_features_enabled",&(params->playout_features_enabled),PLAYOUT_FEATURES_ENABLED);
   params->addParameter("playout","playout_features_incremental",&(params->playout_features_incremental),PLAYOUT_FEATURES_INCREMENTAL);
@@ -99,24 +113,30 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","playout_random_approach_p",&(params->playout_random_approach_p),PLAYOUT_RANDOM_APPROACH_P);
   params->addParameter("playout","playout_avoid_selfatari",&(params->playout_avoid_selfatari),PLAYOUT_AVOID_SELFATARI);
   params->addParameter("playout","playout_avoid_selfatari_size",&(params->playout_avoid_selfatari_size),PLAYOUT_AVOID_SELFATARI_SIZE);
+  params->addParameter("playout","playout_avoid_selfatari_complex",&(params->playout_avoid_selfatari_complex),PLAYOUT_AVOID_SELFATARI_COMPLEX);
   params->addParameter("playout","playout_useless_move",&(params->playout_useless_move),PLAYOUT_USELESS_MOVE);
   params->addParameter("playout","playout_order",&(params->playout_order),PLAYOUT_ORDER);
   params->addParameter("playout","playout_mercy_rule_enabled",&(params->playout_mercy_rule_enabled),PLAYOUT_MERCY_RULE_ENABLED);
   params->addParameter("playout","playout_mercy_rule_factor",&(params->playout_mercy_rule_factor),PLAYOUT_MERCY_RULE_FACTOR);
   params->addParameter("playout","playout_fill_weak_eyes",&(params->playout_fill_weak_eyes),PLAYOUT_FILL_WEAK_EYES);
   
-  /*
+ 
   params->addParameter("playout","test_p1",&(params->test_p1),0.0);
-  params->addParameter("playout","test_p2",&(params->test_p2),0.0);
+  params->addParameter("playout","test_p2",&(params->test_p2),1.0);
   params->addParameter("playout","test_p3",&(params->test_p3),0.0);
   params->addParameter("playout","test_p4",&(params->test_p4),0.0);
-  params->addParameter("playout","test_p5",&(params->test_p5),0.0);
+  params->addParameter("playout","test_p5",&(params->test_p5),1.0);
   params->addParameter("playout","test_p6",&(params->test_p6),0.0);
   params->addParameter("playout","test_p7",&(params->test_p7),0.0);
   params->addParameter("playout","test_p8",&(params->test_p8),0.0);
-  params->addParameter("playout","test_p9",&(params->test_p9),0.0);
+  params->addParameter("playout","test_p9",&(params->test_p9),1.0);
   params->addParameter("playout","test_p10",&(params->test_p10),0.0);
-  */
+  params->addParameter("playout","test_p11",&(params->test_p11),0.0);
+  params->addParameter("playout","test_p12",&(params->test_p12),1.0);
+  params->addParameter("playout","test_p13",&(params->test_p13),1.0);
+  params->addParameter("playout","test_p14",&(params->test_p14),1.0);
+  params->addParameter("playout","test_p15",&(params->test_p15),1.0);
+ 
   
   params->addParameter("tree","ucb_c",&(params->ucb_c),UCB_C);
   params->addParameter("tree","ucb_init",&(params->ucb_init),UCB_INIT);
@@ -128,6 +148,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
 
   params->addParameter("tree","rave_moves",&(params->rave_moves),RAVE_MOVES);
   params->addParameter("tree","rave_init_wins",&(params->rave_init_wins),RAVE_INIT_WINS);
+  params->addParameter("tree","uct_preset_rave_f",&(params->uct_preset_rave_f),UCT_PRESET_RAVE_F);
   params->addParameter("tree","rave_skip",&(params->rave_skip),RAVE_SKIP);
   params->addParameter("tree","rave_moves_use",&(params->rave_moves_use),RAVE_MOVES_USE);
   
@@ -141,6 +162,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("tree","uct_virtual_loss",&(params->uct_virtual_loss),UCT_VIRTUAL_LOSS);
   params->addParameter("tree","uct_lock_free",&(params->uct_lock_free),UCT_LOCK_FREE);
   params->addParameter("tree","uct_atari_prior",&(params->uct_atari_prior),UCT_ATARI_PRIOR);
+  params->addParameter("tree","uct_playoutmove_prior",&(params->uct_playoutmove_prior),UCT_PLAYOUTMOVE_PRIOR);
   params->addParameter("tree","uct_pattern_prior",&(params->uct_pattern_prior),UCT_PATTERN_PRIOR);
   params->addParameter("tree","uct_progressive_widening_enabled",&(params->uct_progressive_widening_enabled),UCT_PROGRESSIVE_WIDENING_ENABLED);
   params->addParameter("tree","uct_progressive_widening_init",&(params->uct_progressive_widening_init),UCT_PROGRESSIVE_WIDENING_INIT);
@@ -154,17 +176,29 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("tree","uct_progressive_bias_h",&(params->uct_progressive_bias_h),UCT_PROGRESSIVE_BIAS_H);
   params->addParameter("tree","uct_progressive_bias_scaled",&(params->uct_progressive_bias_scaled),UCT_PROGRESSIVE_BIAS_SCALED);
   params->addParameter("tree","uct_progressive_bias_relative",&(params->uct_progressive_bias_relative),UCT_PROGRESSIVE_BIAS_RELATIVE);
+  params->addParameter("tree","uct_progressive_bias_moves",&(params->uct_progressive_bias_moves),UCT_PROGRESSIVE_BIAS_MOVES);
+  params->addParameter("tree","uct_progressive_bias_exponent",&(params->uct_progressive_bias_exponent),UCT_PROGRESSIVE_BIAS_EXPONENT);
   params->addParameter("tree","uct_criticality_urgency_factor",&(params->uct_criticality_urgency_factor),UCT_CRITICALITY_URGENCY_FACTOR);
   params->addParameter("tree","uct_criticality_urgency_decay",&(params->uct_criticality_urgency_decay),UCT_CRITICALITY_URGENCY_DECAY);
   params->addParameter("tree","uct_criticality_unprune_factor",&(params->uct_criticality_unprune_factor),UCT_CRITICALITY_UNPRUNE_FACTOR);
   params->addParameter("tree","uct_criticality_unprune_multiply",&(params->uct_criticality_unprune_multiply),UCT_CRITICALITY_UNPRUNE_MULTIPLY);
   params->addParameter("tree","uct_criticality_min_playouts",&(params->uct_criticality_min_playouts),UCT_CRITICALITY_MIN_PLAYOUTS);
   params->addParameter("tree","uct_criticality_siblings",&(params->uct_criticality_siblings),UCT_CRITICALITY_SIBLINGS);
+  params->addParameter("tree","uct_prior_unprune_factor",&(params->uct_prior_unprune_factor),UCT_PRIOR_UNPRUNE_FACTOR);
   params->addParameter("tree","uct_rave_unprune_factor",&(params->uct_rave_unprune_factor),UCT_RAVE_UNPRUNE_FACTOR);
+  params->addParameter("tree","uct_earlyrave_unprune_factor",&(params->uct_earlyrave_unprune_factor),UCT_EARLYRAVE_UNPRUNE_FACTOR);
   params->addParameter("tree","uct_rave_unprune_decay",&(params->uct_rave_unprune_decay),UCT_RAVE_UNPRUNE_DECAY);
   params->addParameter("tree","uct_rave_unprune_multiply",&(params->uct_rave_unprune_multiply),UCT_RAVE_UNPRUNE_MULTIPLY);
+  params->addParameter("tree","uct_oldmove_unprune_factor",&(params->uct_oldmove_unprune_factor),UCT_OLDMOVE_UNPRUNE_FACTOR);
+  params->addParameter("tree","uct_oldmove_unprune_factor_b",&(params->uct_oldmove_unprune_factor_b),UCT_OLDMOVE_UNPRUNE_FACTOR_B);
+  params->addParameter("tree","uct_oldmove_unprune_factor_c",&(params->uct_oldmove_unprune_factor_c),UCT_OLDMOVE_UNPRUNE_FACTOR_C);
   params->addParameter("tree","uct_reprune_factor",&(params->uct_reprune_factor),UCT_REPRUNE_FACTOR);
   params->addParameter("tree","uct_factor_circpattern",&(params->uct_factor_circpattern),UCT_FACTOR_CIRCPATTERN);
+  params->addParameter("tree","uct_factor_circpattern_exponent",&(params->uct_factor_circpattern_exponent),UCT_FACTOR_CIRCPATTERN_EXPONENT);
+  params->addParameter("tree","uct_simple_pattern_factor",&(params->uct_simple_pattern_factor),UCT_SIMPLE_PATTERN_FACTOR);
+  params->addParameter("tree","uct_atari_unprune",&(params->uct_atari_unprune),UCT_ATARI_UNPRUNE);
+  params->addParameter("tree","uct_atari_unprune_exp",&(params->uct_atari_unprune_exp),UCT_ATARI_UNPRUNE_EXP);
+  params->addParameter("tree","uct_danger_value",&(params->uct_atari_unprune_exp),UCT_DANGER_VALUE);
   
   params->addParameter("tree","uct_slow_update_interval",&(params->uct_slow_update_interval),UCT_SLOW_UPDATE_INTERVAL);
   params->uct_slow_update_last=0;
@@ -244,6 +278,17 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   hashtree=new Go::ZobristTree();
   
   territorymap=new Go::TerritoryMap(boardsize);
+  blackOldMoves=new float[currentboard->getPositionMax()];
+  whiteOldMoves=new float[currentboard->getPositionMax()];
+  for (int i=0;i<currentboard->getPositionMax();i++)
+  {
+    blackOldMoves[i]=0;
+    whiteOldMoves[i]=0;
+  }
+  blackOldMean=0.5;
+  whiteOldMean=0.5;
+  blackOldMovesNum=0;
+  whiteOldMovesNum=0;
   
   this->addGtpCommands();
   
@@ -305,6 +350,8 @@ Engine::~Engine()
   delete zobristtable;
   delete playout;
   delete territorymap;
+  delete blackOldMoves;
+  delete whiteOldMoves;
 }
 
 void Engine::run(bool web_inf, std::string web_addr, int web_port)
@@ -1357,7 +1404,7 @@ void Engine::gtpPlayoutSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     std::list<Go::Move> playoutmoves;
     std::list<std::string> movereasons;
     Tree *playouttree = me->movetree->getUrgentChild(me->threadpool->getThreadZero()->getSettings());
-    me->playout->doPlayout(me->threadpool->getThreadZero()->getSettings(),playoutboard,finalscore,playouttree,playoutmoves,col,NULL,NULL,&movereasons);
+    me->playout->doPlayout(me->threadpool->getThreadZero()->getSettings(),playoutboard,finalscore,playouttree,playoutmoves,col,NULL,NULL,NULL,NULL,&movereasons);
     if (finalscore*win>=0)
     {
       foundwin=true;
@@ -1423,7 +1470,7 @@ void Engine::gtpPlayoutSGF_pos(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
     std::list<Go::Move> playoutmoves;
     std::list<std::string> movereasons;
     Tree *playouttree = me->movetree->getUrgentChild(me->threadpool->getThreadZero()->getSettings());
-    me->playout->doPlayout(me->threadpool->getThreadZero()->getSettings(),playoutboard,finalscore,playouttree,playoutmoves,col,NULL,NULL,&movereasons);
+    me->playout->doPlayout(me->threadpool->getThreadZero()->getSettings(),playoutboard,finalscore,playouttree,playoutmoves,col,NULL,NULL,NULL,NULL,&movereasons);
     if (finalscore!=0 && i<1000) from_often++;
     playoutboard->score();
     //fprintf(stderr,"playoutres %d %d finalscore: %f\n",i,playoutboard->getScoredOwner(where),finalscore);
@@ -2448,7 +2495,7 @@ void Engine::gtpDoBenchmark(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd
   {
     Go::Board *board=new Go::Board(me->boardsize);
     std::list<Go::Move> playoutmoves;
-    me->playout->doPlayout(me->threadpool->getThreadZero()->getSettings(),board,finalscore,NULL,playoutmoves,Go::BLACK,NULL,NULL);
+    me->playout->doPlayout(me->threadpool->getThreadZero()->getSettings(),board,finalscore,NULL,playoutmoves,Go::BLACK,NULL,NULL,NULL,NULL);
     delete board;
   }
   
@@ -2592,6 +2639,30 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   {
     std::string param=cmd->getStringArg(0);
     std::transform(param.begin(),param.end(),param.begin(),::tolower);
+
+    //this are gammas, they are found due to a : in the string!!!!!
+    int pos=param.find(":");
+    if (pos>0)
+    {
+      std::string tmp=cmd->getStringArg(0)+" "+cmd->getStringArg(1);
+      //fprintf(stderr,"test %s %d\n",tmp.c_str(),pos);
+      if (me->features->loadGammaLine(tmp))
+      {
+        //fprintf(stderr,"success\n");
+        #ifdef HAVE_MPI
+        if (me->mpirank==0)
+        {
+          me->mpiBroadcastCommand(MPICMD_SETPARAM);
+          me->mpiBroadcastString(param);
+          me->mpiBroadcastString(cmd->getStringArg(1));
+        }
+      #endif
+      
+      gtpe->getOutput()->startResponse(cmd);
+      gtpe->getOutput()->endResponse();
+      return;
+      }
+    }
     
     if (me->params->setParameter(param,cmd->getStringArg(1)))
     {
@@ -2619,7 +2690,12 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     std::string category=cmd->getStringArg(0); //check this parameter in category?
     std::string param=cmd->getStringArg(1);
     std::transform(param.begin(),param.end(),param.begin(),::tolower);
-    
+    if (category.compare("feature")==0)
+    {
+      std::string tmp=cmd->getStringArg(1)+" "+cmd->getStringArg(2);
+      fprintf(stderr,"test %s\n",tmp.c_str());
+      me->features->loadGammaLine(tmp);
+    }
     if (me->params->setParameter(param,cmd->getStringArg(2)))
     {
       #ifdef HAVE_MPI
@@ -2854,6 +2930,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
       ssun<<getStatistics (nn);
     }
     ssun<<")";
+    ssun<< " ravepreset: " << (presetplayouts/presetnum);
     Tree *besttree=movetree->getRobustChild();
     float scoresd=0;
     float scoremean=0;
@@ -2958,10 +3035,24 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     playoutboard->turnSymmetryOff();
     if (params->playout_features_enabled)
       playoutboard->setFeatures(features,params->playout_features_incremental);
-    playout->getPlayoutMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,**move);
+    playout->getPlayoutMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,**move,NULL);
+    if (params->playout_useless_move)
+      playout->checkUselessMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,**move,(std::string *)NULL);
     delete playoutboard;
     this->makeMove(**move);
   }
+}
+
+void Engine::getOnePlayoutMove(Go::Board *board, Go::Color col, Go::Move *move)
+{
+  Go::Board *playoutboard=board->copy();
+  playoutboard->turnSymmetryOff();
+  if (params->playout_features_enabled)
+    playoutboard->setFeatures(features,params->playout_features_incremental);
+  playout->getPlayoutMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,*move,NULL);
+  if (params->playout_useless_move)
+    playout->checkUselessMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,*move,(std::string *)NULL);
+  delete playoutboard;
 }
 
 bool Engine::isMoveAllowed(Go::Move move)
@@ -3137,6 +3228,18 @@ void Engine::makeMove(Go::Move move)
   hashtree->addHash(hash);
   params->uct_slow_update_last=0;
   territorymap->decay(params->territory_decayfactor);
+  blackOldMoves=new float[currentboard->getPositionMax()];
+  whiteOldMoves=new float[currentboard->getPositionMax()];
+  for (int i=0;i<currentboard->getPositionMax();i++)
+  {
+    blackOldMoves[i]=0;
+    whiteOldMoves[i]=0;
+  }
+  blackOldMean=0.5;
+  whiteOldMean=0.5;
+  blackOldMovesNum=0;
+  whiteOldMovesNum=0;
+
   if (params->uct_keep_subtree)
     this->chooseSubTree(move);
   else
@@ -3184,12 +3287,27 @@ void Engine::clearBoard()
   delete movehistory;
   delete hashtree;
   delete territorymap;
+  delete blackOldMoves;
+  delete whiteOldMoves;
+  
   if (newsize)
     delete zobristtable;
   currentboard = new Go::Board(boardsize);
   movehistory = new std::list<Go::Move>();
   hashtree=new Go::ZobristTree();
   territorymap=new Go::TerritoryMap(boardsize);
+  blackOldMoves=new float[currentboard->getPositionMax()];
+  whiteOldMoves=new float[currentboard->getPositionMax()];
+  for (int i=0;i<currentboard->getPositionMax();i++)
+  {
+    blackOldMoves[i]=0;
+    whiteOldMoves[i]=0;
+  }
+  blackOldMean=0.5;
+  whiteOldMean=0.5;
+  blackOldMovesNum=0;
+  whiteOldMovesNum=0;
+
   if (newsize)
     zobristtable=new Go::ZobristTable(params,boardsize,ZOBRIST_HASH_SEED);
   if (!params->uct_symmetry_use)
@@ -3263,6 +3381,50 @@ void Engine::chooseSubTree(Go::Move move)
   }
   
   movetree->divorceChild(subtree);
+
+  //keep the childrens values
+  std::list<Tree*>* childtmp=movetree->getChildren();
+  float sum=0;
+  int num=0;
+  std::list<Tree*>::iterator iter=childtmp->begin();
+  Go::Color col=((*iter)->getMove()).getColor();
+  for (int i=0;i<currentboard->getPositionMax();i++)
+  {
+    if (col==Go::BLACK)
+      blackOldMoves[i]=0;
+    else
+      whiteOldMoves[i]=0;
+  }
+  for(iter=childtmp->begin();iter!=childtmp->end();++iter) 
+    {
+      if (!(*iter)->isPruned() && ((*iter)->getMove()).isNormal())
+      {
+        num++;
+        sum+=(*iter)->getRatio();
+        if (col==Go::BLACK)
+        {
+          blackOldMoves[((*iter)->getMove()).getPosition()]=(*iter)->getRatio();
+          //fprintf(stderr,"blackOldMoves %s %f (%f) ((%f))\n",((*iter)->getMove()).toString(boardsize).c_str(),(*iter)->getRatio(),(*iter)->getUrgency(),(*iter)->getRatio()-(*iter)->getUrgency());
+         }
+        else
+        {
+          whiteOldMoves[((*iter)->getMove()).getPosition()]=(*iter)->getRatio();
+          //fprintf(stderr,"whiteOldMoves %s %f (%f) ((%f))\n",((*iter)->getMove()).toString(boardsize).c_str(),(*iter)->getRatio(),(*iter)->getUrgency(),(*iter)->getRatio()-(*iter)->getUrgency());
+        }
+      }
+    }
+  if (col==Go::BLACK && num>0)
+  {
+    blackOldMean=sum/num;
+    blackOldMovesNum=movetree->getPlayouts();
+    //fprintf(stderr,"blackOldMean %f\n",blackOldMean);
+  }
+  if (col==Go::WHITE && num>0)
+  {
+    whiteOldMean=sum/num;
+    whiteOldMovesNum=movetree->getPlayouts();
+    //fprintf(stderr,"whiteOldMean %f\n",whiteOldMean);
+  }
   delete movetree;
   movetree=subtree;
   movetree->pruneSuperkoViolations();
@@ -3348,7 +3510,7 @@ void Engine::doNPlayouts(int n)
   }
 }
 
-void Engine::doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::BitBoard *secondlist)
+void Engine::doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::BitBoard *secondlist,Go::BitBoard *earlyfirstlist, Go::BitBoard *earlysecondlist)
 {
   //bool givenfirstlist,givensecondlist;
   Go::Color col=currentboard->nextToMove();
@@ -3391,11 +3553,13 @@ void Engine::doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::
   {
     firstlist->clear();
     secondlist->clear();
+    earlyfirstlist->clear();
+    earlysecondlist->clear();
   }
   Go::Color playoutcol=playoutmoves.back().getColor();
   
   float finalscore;
-  playout->doPlayout(settings,playoutboard,finalscore,playouttree,playoutmoves,col,(params->rave_moves>0?firstlist:NULL),(params->rave_moves>0?secondlist:NULL));
+  playout->doPlayout(settings,playoutboard,finalscore,playouttree,playoutmoves,col,(params->rave_moves>0?firstlist:NULL),(params->rave_moves>0?secondlist:NULL),(params->rave_moves>0?earlyfirstlist:NULL),(params->rave_moves>0?earlysecondlist:NULL));
   if (this->getTreeMemoryUsage()>(params->memory_usage_max*1024*1024) && !stopthinking)
   {
       gtpe->getOutput()->printfDebug("WARNING! Memory limit reached! Stopping search right now!\n");
@@ -3464,9 +3628,13 @@ void Engine::doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::
       Go::Color wincol=(blackwin?Go::BLACK:Go::WHITE);
       
       if (col==Go::BLACK)
-        playouttree->updateRAVE(wincol,firstlist,secondlist);
+        playouttree->updateRAVE(wincol,firstlist,secondlist,false);
       else
-        playouttree->updateRAVE(wincol,secondlist,firstlist);
+        playouttree->updateRAVE(wincol,secondlist,firstlist,false);
+      if (col==Go::BLACK)
+        playouttree->updateRAVE(wincol,earlyfirstlist,earlysecondlist,true);
+      else
+        playouttree->updateRAVE(wincol,earlysecondlist,earlyfirstlist,true);
     }
   }
   
@@ -3654,6 +3822,8 @@ void Engine::ponderThread(Worker::Settings *settings)
     
     Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
     Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
+    Go::BitBoard *earlyfirstlist=new Go::BitBoard(boardsize);
+    Go::BitBoard *earlysecondlist=new Go::BitBoard(boardsize);
     long playouts;
     
     while (!stoppondering && !stopthinking && (playouts=(long)movetree->getPlayouts())<(params->pondering_playouts_max))
@@ -3664,12 +3834,14 @@ void Engine::ponderThread(Worker::Settings *settings)
         break;
       }
       
-      this->doPlayout(settings,firstlist,secondlist);
+      this->doPlayout(settings,firstlist,secondlist,earlyfirstlist,earlysecondlist);
       playouts++;
     }
     
     delete firstlist;
     delete secondlist;
+    delete earlyfirstlist;
+    delete earlysecondlist;
     //fprintf(stderr,"pondering done! %d %.0f\n",playouts,movetree->getPlayouts());
   }
 }
@@ -3765,6 +3937,8 @@ void Engine::generateThread(Worker::Settings *settings)
   
   Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
   Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
+  Go::BitBoard *earlyfirstlist=new Go::BitBoard(boardsize);
+  Go::BitBoard *earlysecondlist=new Go::BitBoard(boardsize);
   
   while ((totalplayouts=(long)(movetree->getPlayouts()-params->uct_initial_playouts))<(params->playouts_per_move_max))
   {
@@ -3788,7 +3962,7 @@ void Engine::generateThread(Worker::Settings *settings)
       break;
     }
     
-    this->doPlayout(settings,firstlist,secondlist);
+    this->doPlayout(settings,firstlist,secondlist,earlyfirstlist,earlysecondlist);
     totalplayouts+=1;
     
     #ifdef HAVE_MPI
@@ -3855,7 +4029,9 @@ void Engine::generateThread(Worker::Settings *settings)
   
   delete firstlist;
   delete secondlist;
-  
+  delete earlyfirstlist;
+  delete earlysecondlist;
+    
   #ifdef HAVE_MPI
   //gtpe->getOutput()->printfDebug("genmove on rank %d stopping... (inform: %d)\n",mpirank,mpi_inform_others);
   if (settings->thread->getID()==0 && mpiworldsize>1 && mpi_inform_others)
@@ -3870,6 +4046,8 @@ void Engine::doNPlayoutsThread(Worker::Settings *settings)
   int livegfxupdate=0;
   Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
   Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
+  Go::BitBoard *earlyfirstlist=new Go::BitBoard(boardsize);
+  Go::BitBoard *earlysecondlist=new Go::BitBoard(boardsize);
   long totalplayouts;
   
   while ((totalplayouts=(long)(movetree->getPlayouts()-params->uct_initial_playouts))<(params->playouts_per_move))
@@ -3882,7 +4060,7 @@ void Engine::doNPlayoutsThread(Worker::Settings *settings)
     else if (stopthinking)
       break;
     
-    this->doPlayout(settings,firstlist,secondlist);
+    this->doPlayout(settings,firstlist,secondlist,earlyfirstlist,earlysecondlist);
     totalplayouts+=1;
     
     if (settings->thread->getID()==0 && params->livegfx_on)
@@ -3903,6 +4081,8 @@ void Engine::doNPlayoutsThread(Worker::Settings *settings)
   
   delete firstlist;
   delete secondlist;
+  delete earlyfirstlist;
+  delete earlysecondlist;  
 }
 
 void Engine::doThreadWork(Worker::Settings *settings)
@@ -4405,4 +4585,26 @@ void Engine::mpiFillList(std::list<mpistruct_updatemsg> &list, float threshold, 
 
 #endif
 
-
+float Engine::getOldMoveValue(Go::Move m)
+{
+  if (m.isNormal ())
+  {
+    if (m.getColor ()==Go::BLACK)
+    {
+      if (blackOldMoves[m.getPosition ()]-blackOldMean>0)
+        return (blackOldMoves[m.getPosition ()]-blackOldMean)*pow(whiteOldMovesNum,params->uct_oldmove_unprune_factor_c);
+      else
+        return 0; //do not allow negative results ??? If not using this, one must take care of the Pruned childs!!!!!!
+    }
+    else
+    {
+      if (whiteOldMoves[m.getPosition ()]-blackOldMean>0)
+        return (whiteOldMoves[m.getPosition ()]-whiteOldMean)*pow(blackOldMovesNum,params->uct_oldmove_unprune_factor_c);
+      else
+        return 0; //do not allow negative results ??? If not using this, one must take care of the Pruned childs!!!!!!
+    }
+  }
+  else
+    return 0; //was a pass move
+}
+    
