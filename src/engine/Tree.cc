@@ -1377,8 +1377,7 @@ void Tree::updateRAVE(Go::Color wincol,Go::BitBoard *blacklist,Go::BitBoard *whi
   {
     parent->updateRAVE(wincol,blacklist,whitelist,early);
 
-    //does this make sense?
-    if (0 && this->getMove().isNormal())
+    if (this->getMove().isNormal())
     {
       int pos=this->getMove().getPosition();
       if (this->getMove().getColor()==Go::BLACK)
