@@ -27,6 +27,7 @@ syntax: regexp
 ^scripts/decisiontrees/.*\.dat$
 ^docs/html/.*$
 ^docs/latex/.*$
+^tags$
 ^.*\/tags$
 ^backup-.*-pre-oakfoam\.tgz$
 
