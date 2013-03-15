@@ -309,7 +309,7 @@ float Features::getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist
       g *= w;
   }
 
-  if (params->uct_factor_circpattern>0.0 && usecircularpatterns)
+  if (params->uct_factor_circpattern>0.0 &&move.isNormal() && usecircularpatterns)
   {
     Pattern::Circular pattcirc=Pattern::Circular(circdict,board,move.getPosition(),circpatternsize);
     if (move.getColor()==Go::WHITE)
