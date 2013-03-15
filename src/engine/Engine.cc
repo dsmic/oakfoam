@@ -538,6 +538,8 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("loadfeaturegammas",this,&Engine::gtpLoadFeatureGammas);
   gtpe->addFunctionCommand("loadcircpatterns",this,&Engine::gtpLoadCircPatterns);
   gtpe->addFunctionCommand("loadcircpatternsnot",this,&Engine::gtpLoadCircPatternsNot);
+  gtpe->addFunctionCommand("savecircpatternvalues",this,&Engine::gtpSaveCircPatternValues);
+  gtpe->addFunctionCommand("loadcircpatternvalues",this,&Engine::gtpLoadCircPatternValues);
   gtpe->addFunctionCommand("listfeatureids",this,&Engine::gtpListFeatureIds);
   gtpe->addFunctionCommand("showcfgfrom",this,&Engine::gtpShowCFGFrom);
   gtpe->addFunctionCommand("showcircdistfrom",this,&Engine::gtpShowCircDistFrom);
@@ -1947,6 +1949,86 @@ void Engine::gtpLoadCircPatternsNot(void *instance, Gtp::Engine* gtpe, Gtp::Comm
   {
     gtpe->getOutput()->startResponse(cmd,false);
     gtpe->getOutput()->printf("error loading circpatterns file: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+}
+
+void Engine::gtpSaveCircPatternValues(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("need 1 arg (filename and number of lines)");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  std::string filename=cmd->getStringArg(0);
+  
+  if (me->features==NULL)
+    me->features=new Features(me->params);
+  bool success=me->features->saveCircValueFile(filename);
+  
+  if (success)
+  {
+    #ifdef HAVE_MPI
+      if (me->mpirank==0)
+      {
+        me->mpiBroadcastCommand(MPICMD_LOADFEATUREGAMMAS);
+        me->mpiBroadcastString(filename);
+      }
+    #endif
+    
+    gtpe->getOutput()->startResponse(cmd);
+    gtpe->getOutput()->printf("saved circvalue file: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+  else
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("error saving circpatterns file: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+}
+
+void Engine::gtpLoadCircPatternValues(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("need 1 arg (filename and number of lines)");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  std::string filename=cmd->getStringArg(0);
+  
+  if (me->features==NULL)
+    me->features=new Features(me->params);
+  bool success=me->features->loadCircValueFile(filename);
+  
+  if (success)
+  {
+    #ifdef HAVE_MPI
+      if (me->mpirank==0)
+      {
+        me->mpiBroadcastCommand(MPICMD_LOADFEATUREGAMMAS);
+        me->mpiBroadcastString(filename);
+      }
+    #endif
+    
+    gtpe->getOutput()->startResponse(cmd);
+    gtpe->getOutput()->printf("loaded circvalue file: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+  else
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("error saving circpatterns file: %s",filename.c_str());
     gtpe->getOutput()->endResponse();
   }
 }

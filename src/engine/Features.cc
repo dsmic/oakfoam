@@ -584,6 +584,43 @@ bool Features::loadCircFileNot(std::string filename,int numlines)
   return true;
 }
 
+bool Features::saveCircValueFile(std::string filename)
+{
+  std::ofstream fout(filename.c_str());
+  if (!fout)
+    return false;
+  if (circpatterns.empty()||circpatternsnot.empty())
+    return false;
+  std::map<std::string,long int>::iterator it;
+  for (it=circpatterns.begin();it!=circpatterns.end();++it)
+  {
+    float v=valueCircPattern(it->first);
+    if (v!=0)
+    {
+      //circpatternvalues.insert(std::make_pair(it->first,v));
+      fout<<it->first<<" "<<v<<"\n";
+    }
+  }
+  fout.close();
+  return true;
+}
+
+bool Features::loadCircValueFile(std::string filename)
+{
+  circpatternvalues.clear();
+  std::ifstream fin(filename.c_str());
+  if (!fin)
+    return false;
+  std::string line;
+  while (std::getline(fin,line))
+  {
+    int numpos = line.find(" ");
+    float v=atof(line.substr(numpos+1).c_str());
+    circpatternvalues.insert(std::make_pair(line.substr(0,numpos),v));
+  }
+  fin.close();
+  return true;
+}
 bool Features::loadGammaString(std::string lines)
 {
   std::istringstream iss(lines);
@@ -905,6 +942,13 @@ void Features::computeCFGDist(Go::Board *board, Go::ObjectBoard<int> **cfglastdi
 
 float Features::valueCircPattern(std::string circpattern) const
 {
+  //use ready circular pattern values, if availible
+  if (!circpatternvalues.empty())
+  {
+    if (circpatternvalues.count(circpattern))
+      return circpatternvalues.find(circpattern)->second;
+    return 0;
+  }
   //not strip the patternsize anymore!!!!
   //int strpos = circpattern.find(":");
     

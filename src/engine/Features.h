@@ -746,6 +746,8 @@ class Features
     bool loadGammaFile(std::string filename);
     bool loadCircFile(std::string filename,int numlines);
     bool loadCircFileNot(std::string filename,int numlines);
+    bool saveCircValueFile(std::string filename);
+    bool loadCircValueFile(std::string filename);
     /** Load a number of lines of gamma values. */
     bool loadGammaString(std::string lines);
     /** Load the default gamma values. */
@@ -780,6 +782,7 @@ class Features
 
     std::map<std::string,long int> circpatterns;
     std::map<std::string,long int> circpatternsnot;
+    std::map<std::string,float> circpatternvalues;
     int circpatternsize;
     long int num_circmoves;
     long int num_circmoves_not;
