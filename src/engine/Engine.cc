@@ -3415,6 +3415,9 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
 
     int num_unpruned=movetree->getNumUnprunedChildren();
     std::ostringstream ssun;
+    std::map<float,Tree*> ordervalue;
+    std::map<float,Tree*> ordergamma;
+    float forcesort=0;
     ssun<<"un:(";
     for (int nn=1;nn<=num_unpruned;nn++)
     {
@@ -3423,8 +3426,27 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
         if ((*iter)->getUnprunedNum()==nn && (*iter)->isPrimary() && !(*iter)->isPruned())
         {
           ssun<<(nn!=1?",":"")<<Go::Position::pos2string((*iter)->getMove().getPosition(),boardsize);
+          ordergamma.insert(std::make_pair((*iter)->getFeatureGamma()+forcesort,(*iter)));
+          ordervalue.insert(std::make_pair((*iter)->getPlayouts()+forcesort,(*iter)));
+          forcesort+=0.01;
         }
       }
+    }
+    ssun<<")";
+    ssun<<"ordergamma:(";
+    std::map<float,Tree*>::iterator it;
+    int nn=1;
+    for (it=ordergamma.begin();it!=ordergamma.end();++it)
+    {
+      ssun<<(nn!=1?",":"")<<Go::Position::pos2string(it->second->getMove().getPosition(),boardsize);
+      nn++;
+    }
+    ssun<<") ordermc:(";
+    nn=1;
+    for (it=ordervalue.begin();it!=ordervalue.end();++it)
+    {
+      ssun<<(nn!=1?",":"")<<Go::Position::pos2string(it->second->getMove().getPosition(),boardsize);
+      nn++;
     }
     ssun<<")";
     ssun<<"st:(";

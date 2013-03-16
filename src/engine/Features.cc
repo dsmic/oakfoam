@@ -615,7 +615,7 @@ bool Features::saveCircValueFile(std::string filename)
   std::ofstream fout(filename.c_str());
   if (!fout)
     return false;
-  if (circpatterns.empty()||circpatternsnot.empty())
+  if ((circpatterns.empty()||circpatternsnot.empty())&&circpatternvalues.empty())
     return false;
   std::map<std::string,long int>::iterator it;
   for (it=circpatterns.begin();it!=circpatterns.end();++it)
