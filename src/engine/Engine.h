@@ -505,6 +505,8 @@ class Engine
     static void gtpFeatureProbDistribution(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpListAllPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpLoadFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpLoadFeatureGammasRaw(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpSaveFeatureGammasRaw(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpLoadCircPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpLoadCircPatternsNot(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpSaveCircPatternValues(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);

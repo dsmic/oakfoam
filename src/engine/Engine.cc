@@ -536,6 +536,8 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("featureprobdistribution",this,&Engine::gtpFeatureProbDistribution);
   gtpe->addFunctionCommand("listallpatterns",this,&Engine::gtpListAllPatterns);
   gtpe->addFunctionCommand("loadfeaturegammas",this,&Engine::gtpLoadFeatureGammas);
+  gtpe->addFunctionCommand("loadfeaturegammasraw",this,&Engine::gtpLoadFeatureGammasRaw);
+  gtpe->addFunctionCommand("savefeaturegammasraw",this,&Engine::gtpSaveFeatureGammasRaw);
   gtpe->addFunctionCommand("loadcircpatterns",this,&Engine::gtpLoadCircPatterns);
   gtpe->addFunctionCommand("loadcircpatternsnot",this,&Engine::gtpLoadCircPatternsNot);
   gtpe->addFunctionCommand("savecircpatternvalues",this,&Engine::gtpSaveCircPatternValues);
@@ -1848,6 +1850,86 @@ void Engine::gtpLoadFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Comman
   delete me->features;
   me->features=new Features(me->params);
   bool success=me->features->loadGammaFile(filename);
+  
+  if (success)
+  {
+    #ifdef HAVE_MPI
+      if (me->mpirank==0)
+      {
+        me->mpiBroadcastCommand(MPICMD_LOADFEATUREGAMMAS);
+        me->mpiBroadcastString(filename);
+      }
+    #endif
+    
+    gtpe->getOutput()->startResponse(cmd);
+    gtpe->getOutput()->printf("loaded features gamma file: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+  else
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("error loading features gamma file: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+}
+
+void Engine::gtpLoadFeatureGammasRaw(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("need 1 arg");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  std::string filename=cmd->getStringArg(0);
+  
+  delete me->features;
+  me->features=new Features(me->params);
+  bool success=me->features->loadGammaFileRaw(filename);
+  
+  if (success)
+  {
+    #ifdef HAVE_MPI
+      if (me->mpirank==0)
+      {
+        me->mpiBroadcastCommand(MPICMD_LOADFEATUREGAMMAS);
+        me->mpiBroadcastString(filename);
+      }
+    #endif
+    
+    gtpe->getOutput()->startResponse(cmd);
+    gtpe->getOutput()->printf("loaded features gamma file: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+  else
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("error loading features gamma file: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+}
+
+void Engine::gtpSaveFeatureGammasRaw(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("need 1 arg");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  std::string filename=cmd->getStringArg(0);
+  
+  delete me->features;
+  me->features=new Features(me->params);
+  bool success=me->features->saveGammaFileRaw(filename);
   
   if (success)
   {

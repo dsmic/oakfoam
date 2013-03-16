@@ -744,6 +744,8 @@ class Features
     bool loadGammaLine(std::string line);
     /** Load a file of gamma values. */
     bool loadGammaFile(std::string filename);
+    bool saveGammaFileRaw(std::string filename);
+    bool loadGammaFileRaw(std::string filename);
     bool loadCircFile(std::string filename,int numlines);
     bool loadCircFileNot(std::string filename,int numlines);
     bool saveCircValueFile(std::string filename);
