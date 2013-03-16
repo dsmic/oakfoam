@@ -493,7 +493,7 @@ bool Features::loadGammaFile(std::string filename)
   return true;
 }
 
-bool Features::saveGammaFileRaw(std::string filename)
+bool Features::saveGammaFile(std::string filename)
 {
   std::ofstream fout(filename.c_str());
   
@@ -501,56 +501,20 @@ bool Features::saveGammaFileRaw(std::string filename)
     return false;
   
   unsigned int i;
-  for (i=0;i<PASS_LEVELS;i++) fout<<gammas_pass[i]<<"\n";
-  for (i=0;i<CAPTURE_LEVELS;i++) fout<<gammas_capture[i]<<"\n";
-  for (i=0;i<EXTENSION_LEVELS;i++) fout<<gammas_extension[i]<<"\n";
-  for (i=0;i<SELFATARI_LEVELS;i++) fout<<gammas_selfatari[i]<<"\n";
-  for (i=0;i<ATARI_LEVELS;i++) fout<<gammas_atari[i]<<"\n";
-  for (i=0;i<BORDERDIST_LEVELS;i++) fout<<gammas_borderdist[i]<<"\n";
-  for (i=0;i<LASTDIST_LEVELS;i++) fout<<gammas_lastdist[i]<<"\n";
-  for (i=0;i<SECONDLASTDIST_LEVELS;i++) fout<<gammas_secondlastdist[i]<<"\n";
-  for (i=0;i<CFGLASTDIST_LEVELS;i++) fout<<gammas_cfglastdist[i]<<"\n";
-  for (i=0;i<CFGSECONDLASTDIST_LEVELS;i++) fout<<gammas_cfgsecondlastdist[i]<<"\n";
+  for (i=0;i<PASS_LEVELS;i++) fout<<"pass:"<<i+1<<" "<<gammas_pass[i]<<" \n";
+  for (i=0;i<CAPTURE_LEVELS;i++) fout<<"capture:"<<i+1<<" "<<gammas_capture[i]<<" \n";
+  for (i=0;i<EXTENSION_LEVELS;i++) fout<<"extension:"<<i+1<<" "<<gammas_extension[i]<<" \n";
+  for (i=0;i<SELFATARI_LEVELS;i++) fout<<"selfatari:"<<i+1<<" "<<gammas_selfatari[i]<<" \n";
+  for (i=0;i<ATARI_LEVELS;i++) fout<<"atari:"<<i+1<<" "<<gammas_atari[i]<<" \n";
+  for (i=0;i<BORDERDIST_LEVELS;i++) fout<<"borderdist:"<<i+1<<" "<<gammas_borderdist[i]<<" \n";
+  for (i=0;i<LASTDIST_LEVELS;i++) fout<<"lastdist:"<<i+1<<" "<<gammas_lastdist[i]<<" \n";
+  for (i=0;i<SECONDLASTDIST_LEVELS;i++) fout<<"secondlastdist:"<<i+1<<" "<<gammas_secondlastdist[i]<<" \n";
+  for (i=0;i<CFGLASTDIST_LEVELS;i++) fout<<"cfglastdist:"<<i+1<<" "<<gammas_cfglastdist[i]<<" \n";
+  for (i=0;i<CFGSECONDLASTDIST_LEVELS;i++) fout<<"cfgsecondlastdist:"<<i+1<<" "<<gammas_cfgsecondlastdist[i]<<" \n";
     
-  for (i=0;i<PATTERN_3x3_GAMMAS;i++) fout<<patterngammas->getGamma (i)<<"\n";
+  for (i=0;i<PATTERN_3x3_GAMMAS;i++) if (patterngammas->getGamma (i)>0) {fout<<"pattern3x3:0x"<<std::hex<<std::setw(4)<<std::setfill('0')<<i<<" "<<patterngammas->getGamma (i)<<" \n";};
   
-  fout<<"end\n";
   fout.close();
-  
-  return true;
-}
-
-bool Features::loadGammaFileRaw(std::string filename)
-{
-  std::ifstream fin(filename.c_str());
-  
-  if (!fin)
-    return false;
-  
-  std::string line;
-
-  unsigned int i;
-  for (i=0;i<PASS_LEVELS;i++) {std::getline(fin,line); gammas_pass[i]=atof(line.c_str());};
-  for (i=0;i<CAPTURE_LEVELS;i++) {std::getline(fin,line); gammas_capture[i]=atof(line.c_str());};
-  for (i=0;i<EXTENSION_LEVELS;i++) {std::getline(fin,line); gammas_extension[i]=atof(line.c_str());};
-  for (i=0;i<SELFATARI_LEVELS;i++) {std::getline(fin,line); gammas_selfatari[i]=atof(line.c_str());};
-  for (i=0;i<ATARI_LEVELS;i++) {std::getline(fin,line); gammas_atari[i]=atof(line.c_str());};
-  for (i=0;i<BORDERDIST_LEVELS;i++) {std::getline(fin,line); gammas_borderdist[i]=atof(line.c_str());};
-  for (i=0;i<LASTDIST_LEVELS;i++) {std::getline(fin,line); gammas_lastdist[i]=atof(line.c_str());};
-  for (i=0;i<SECONDLASTDIST_LEVELS;i++) {std::getline(fin,line); gammas_secondlastdist[i]=atof(line.c_str());};
-  for (i=0;i<CFGLASTDIST_LEVELS;i++) {std::getline(fin,line); gammas_cfglastdist[i]=atof(line.c_str());};
-  for (i=0;i<CFGSECONDLASTDIST_LEVELS;i++) {std::getline(fin,line); gammas_cfgsecondlastdist[i]=atof(line.c_str());};
-    
-  for (i=0;i<PATTERN_3x3_GAMMAS;i++) {std::getline(fin,line); patterngammas->setGamma (i,atof(line.c_str()));};
-
-  //to make it a little bit more save, that everything read and write is lined up
-  std::getline(fin,line);
-  if (line.compare("end")!=0)
-  {
-    fin.close();
-    return false;
-  }
-  fin.close();
   
   return true;
 }
