@@ -223,8 +223,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("tree","features_ladders",&(params->features_ladders),FEATURES_LADDERS);
   params->addParameter("tree","features_dt_use",&(params->features_dt_use),false);
   
-  params->addParameter("tree","learn_enabled",&(params->features_dt_use),false);
-  params->addParameter("tree","flearn_delta",&(params->features_dt_use),LEARN_DELTA);
+  params->addParameter("tree","learn_enabled",&(params->learn_enabled),false);
+  params->addParameter("tree","learn_delta",&(params->learn_delta),LEARN_DELTA);
 
   params->addParameter("rules","rules_positional_superko_enabled",&(params->rules_positional_superko_enabled),RULES_POSITIONAL_SUPERKO_ENABLED);
   params->addParameter("rules","rules_superko_top_ply",&(params->rules_superko_top_ply),RULES_SUPERKO_TOP_PLY);
@@ -3458,7 +3458,9 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     for (it=ordergamma.begin();it!=ordergamma.end();++it)
     {
       ssun<<(nn!=1?",":"")<<Go::Position::pos2string(it->second->getMove().getPosition(),boardsize);
+      fprintf(stderr,"numvalue_gamma before %d ",numvalue_gamma.find(it->second->getMove().getPosition())->second);
       numvalue_gamma.find(it->second->getMove().getPosition())->second-=nn;
+      fprintf(stderr,"after %d for move %d\n",numvalue_gamma.find(it->second->getMove().getPosition())->second,it->second->getMove().getPosition());
       nn++;
     }
     ssun<<")";
@@ -3476,10 +3478,15 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
           if ((*iter)->getUnprunedNum()==nn && (*iter)->isPrimary() && !(*iter)->isPruned())
           {
             //learn this iter here!
-            getFeatures()->learnMoveGamma(currentboard,cfglastdist,cfgsecondlastdist,(*iter)->getMove(),numvalue_gamma.find(it->second->getMove().getPosition())->second);
+            fprintf(stderr,"test %s move %d diff %d\n",(*iter)->getMove().toString(boardsize).c_str(),(*iter)->getMove().getPosition(),numvalue_gamma.find((*iter)->getMove().getPosition())->second);
+            // mc position - gamma position is negative, if the mc is better than gamma.
+            // this means the features used to calculate the gamma must get higher values
+            // therefore the -diff is used to put positive change to the features
+            getFeatures()->learnMoveGamma(currentboard,cfglastdist,cfgsecondlastdist,(*iter)->getMove(),-numvalue_gamma.find((*iter)->getMove().getPosition())->second);
           }
         }
       }
+      fprintf(stderr,"files gamma %s circ %s\n",learn_filename_features.c_str(),learn_filename_circ_patterns.c_str()); 
     getFeatures()->saveGammaFile (learn_filename_features);
     getFeatures()->saveCircValueFile (learn_filename_circ_patterns);
     }

@@ -735,7 +735,7 @@ class Features
     Features::FeatureClass getFeatureClassFromName(std::string name) const;
     /** Set the gamma value for a specific feature and level. */
     bool setFeatureGamma(Features::FeatureClass featclass, unsigned int level, float gamma);
-    void learnFeatureGamma(Features::FeatureClass featclass, unsigned int level, int learn_diff) const;
+    void learnFeatureGamma(Features::FeatureClass featclass, unsigned int level, float learn_diff) const;
     
     /** Return a string of all the matching features for a move. */ 
     std::string getMatchingFeaturesString(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool pretty=true) const;

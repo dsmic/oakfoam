@@ -283,7 +283,7 @@ float Features::getFeatureGamma(Features::FeatureClass featclass, unsigned int l
   }
 }
 
-void Features::learnFeatureGamma(Features::FeatureClass featclass, unsigned int level, int learn_diff) const
+void Features::learnFeatureGamma(Features::FeatureClass featclass, unsigned int level, float learn_diff) const
 {
   if (level==0 && featclass!=Features::PATTERN3X3)
     return;
@@ -303,10 +303,9 @@ void Features::learnFeatureGamma(Features::FeatureClass featclass, unsigned int 
     float *gammas=this->getStandardGamma(featclass);
     if (gammas!=NULL)
     {
-      float gamma=gammas[level-1];
-      if (gamma>0)
+      if (gammas[level-1]>0)
       {
-        gamma+=params->learn_delta*learn_diff;
+        gammas[level-1]+=params->learn_delta*learn_diff;
         return;
       }
       else
@@ -427,10 +426,11 @@ bool Features::learnMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdis
     if (move.getColor()==Go::WHITE)
             pattcirc.invert();
     pattcirc.convertToSmallestEquivalent(circdict);
+    fprintf(stderr,"found pattern %f %s (stones %d)\n",this->valueCircPattern(pattcirc.toString(circdict)),pattcirc.toString(circdict).c_str(),pattcirc.countStones(circdict));
     if (this->valueCircPattern(pattcirc.toString(circdict))>0.0)
     {
      //fprintf(stderr,"found pattern %f %s (stones %d)\n",params->test_p1,pattcirc.toString(circdict).c_str(),pattcirc.countStones(circdict));
-     //fprintf(stderr,"found pattern %f %s (stones %d)\n",this->valueCircPattern(pattcirc.toString(circdict)),pattcirc.toString(circdict).c_str(),pattcirc.countStones(circdict));
+     fprintf(stderr,"found pattern %f %s (stones %d)\n",this->valueCircPattern(pattcirc.toString(circdict)),pattcirc.toString(circdict).c_str(),pattcirc.countStones(circdict));
      this->learnCircPattern(pattcirc.toString(circdict),params->learn_delta*learn_diff); 
     }
     for (int j=circpatternsize-1;j>params->test_p8;j--)
@@ -440,7 +440,7 @@ bool Features::learnMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdis
       std::string tmpPattString=tmp.toString(circdict);
       if (this->valueCircPattern(tmpPattString)>0.0)
       {
-       //fprintf(stderr,"found pattern %f %s (stones %d)\n",this->valueCircPattern(tmpPattString),tmpPattString.c_str(),tmp.countStones(circdict));
+       fprintf(stderr,"found pattern %f %s (stones %d)\n",this->valueCircPattern(tmpPattString),tmpPattString.c_str(),tmp.countStones(circdict));
        this->learnCircPattern(tmpPattString,params->learn_delta*learn_diff); //params->uct_factor_circpattern_exponent
       }
     }
@@ -694,7 +694,23 @@ bool Features::saveCircValueFile(std::string filename)
   std::ofstream fout(filename.c_str());
   if (!fout)
     return false;
-  if ((circpatterns.empty()||circpatternsnot.empty())&&circpatternvalues.empty())
+
+  if (!circpatternvalues.empty())
+  {
+    std::map<std::string,float>::iterator it;
+    for (it=circpatternvalues.begin();it!=circpatternvalues.end();++it)
+    {
+      float v=valueCircPattern(it->first);
+      if (v!=0)
+      {
+        //fprintf(stderr,"%s %f\n",it->first.c_str(),v);;
+        fout<<it->first<<" "<<v<<"\n";
+      }
+    }
+    fout.close();
+    return true;
+  }
+  if ((circpatterns.empty()||circpatternsnot.empty()))
     return false;
   std::map<std::string,long int>::iterator it;
   for (it=circpatterns.begin();it!=circpatterns.end();++it)
@@ -702,7 +718,7 @@ bool Features::saveCircValueFile(std::string filename)
     float v=valueCircPattern(it->first);
     if (v!=0)
     {
-      //circpatternvalues.insert(std::make_pair(it->first,v));
+      circpatternvalues.insert(std::make_pair(it->first,v));
       fout<<it->first<<" "<<v<<"\n";
     }
   }
@@ -717,9 +733,12 @@ bool Features::loadCircValueFile(std::string filename)
   if (!fin)
     return false;
   std::string line;
+  circpatternsize=0;
   while (std::getline(fin,line))
   {
+    int strpos = line.find(":");
     int numpos = line.find(" ");
+    circpatternsize = atoi(line.substr(0,strpos).c_str()); //sorted, so that the biggest are last
     float v=atof(line.substr(numpos+1).c_str());
     circpatternvalues.insert(std::make_pair(line.substr(0,numpos),v));
   }
@@ -1087,7 +1106,7 @@ void Features::learnCircPattern(std::string circpattern,float delta)
   if (!circpatternvalues.empty())
   {
     if (circpatternvalues.count(circpattern))
-      circpatternvalues.find(circpattern)->second=0;
+      circpatternvalues.find(circpattern)->second+=delta;
   }
 }
 
