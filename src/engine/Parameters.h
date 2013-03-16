@@ -166,6 +166,8 @@ class Parameters
      */
     float playout_mercy_rule_factor;
 
+    bool learn_enabled;
+    float learn_delta;
     
     float test_p1;
     float test_p2;

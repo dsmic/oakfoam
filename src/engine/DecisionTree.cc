@@ -1785,7 +1785,7 @@ DecisionTree::Stats::Stats(DecisionTree::Type type, unsigned int maxnode)
 
       // NEW
       std::string colslist = "BWS";
-      for (unsigned int i=1; i<(1<<colslist.size()); i++)
+      for (unsigned int i=1; i<((unsigned int)1<<colslist.size()); i++)
       {
         std::string cols = "";
         for (unsigned int j=0; j<colslist.size(); j++)

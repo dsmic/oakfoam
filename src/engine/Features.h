@@ -724,6 +724,7 @@ class Features
      * The weight for a move is the product of matching feature weights for that move.
      */
     float getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove=true, bool withcircularpatterns=true) const;
+    bool learnMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, int learn_diff);
     /** Return the total of all gammas for the moves on a board. */
     float getBoardGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Color col) const;
     /** Return the total of all gammas for the moves on a board and each move's weight in @p gammas. */
@@ -734,6 +735,7 @@ class Features
     Features::FeatureClass getFeatureClassFromName(std::string name) const;
     /** Set the gamma value for a specific feature and level. */
     bool setFeatureGamma(Features::FeatureClass featclass, unsigned int level, float gamma);
+    void learnFeatureGamma(Features::FeatureClass featclass, unsigned int level, int learn_diff) const;
     
     /** Return a string of all the matching features for a move. */ 
     std::string getMatchingFeaturesString(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool pretty=true) const;
@@ -760,6 +762,7 @@ class Features
     Pattern::CircularDictionary *circdict; 
     bool isCircPattern(std::string circpattern) const;
     float valueCircPattern(std::string circpattern) const;
+    void learnCircPattern(std::string circpattern,float delta);
     int getCircSize () {return circpatternsize;}
     Pattern::ThreeByThreeGammas* getPatternGammas() {return patterngammas;}
     

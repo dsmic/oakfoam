@@ -223,6 +223,9 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("tree","features_ladders",&(params->features_ladders),FEATURES_LADDERS);
   params->addParameter("tree","features_dt_use",&(params->features_dt_use),false);
   
+  params->addParameter("tree","learn_enabled",&(params->features_dt_use),false);
+  params->addParameter("tree","flearn_delta",&(params->features_dt_use),LEARN_DELTA);
+
   params->addParameter("rules","rules_positional_superko_enabled",&(params->rules_positional_superko_enabled),RULES_POSITIONAL_SUPERKO_ENABLED);
   params->addParameter("rules","rules_superko_top_ply",&(params->rules_superko_top_ply),RULES_SUPERKO_TOP_PLY);
   params->addParameter("rules","rules_superko_prune_after",&(params->rules_superko_prune_after),RULES_SUPERKO_PRUNE_AFTER);
@@ -1845,6 +1848,7 @@ void Engine::gtpLoadFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Comman
   }
   
   std::string filename=cmd->getStringArg(0);
+  me->learn_filename_features=filename;
   
   delete me->features;
   me->features=new Features(me->params);
@@ -2045,6 +2049,7 @@ void Engine::gtpLoadCircPatternValues(void *instance, Gtp::Engine* gtpe, Gtp::Co
   }
   
   std::string filename=cmd->getStringArg(0);
+  me->learn_filename_circ_patterns=filename;
   
   if (me->features==NULL)
     me->features=new Features(me->params);
@@ -3415,8 +3420,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
 
     int num_unpruned=movetree->getNumUnprunedChildren();
     std::ostringstream ssun;
-    std::map<float,Tree*> ordervalue;
-    std::map<float,Tree*> ordergamma;
+    std::map<float,Tree*,std::greater<float> > ordervalue;
+    std::map<float,Tree*,std::greater<float> > ordergamma;
     float forcesort=0;
     ssun<<"un:(";
     for (int nn=1;nn<=num_unpruned;nn++)
@@ -3428,27 +3433,57 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
           ssun<<(nn!=1?",":"")<<Go::Position::pos2string((*iter)->getMove().getPosition(),boardsize);
           ordergamma.insert(std::make_pair((*iter)->getFeatureGamma()+forcesort,(*iter)));
           ordervalue.insert(std::make_pair((*iter)->getPlayouts()+forcesort,(*iter)));
-          forcesort+=0.01;
+          forcesort+=0.01012321232123;
         }
       }
     }
     ssun<<")";
-    ssun<<"ordergamma:(";
+    if (ordergamma.size()!=ordervalue.size())
+      ssun<<"\nthe ordering of gamma versus mc did not work correctly "<<ordergamma.size()<<" "<<ordervalue.size()<<"\n";
+    ssun<<" ordermc:(";
+
+    //for the moves (getPosition) the difference mc_position - gamma_position is calculated into numvalue_gamma
+    std::map<int,int> numvalue_gamma;
+    
     std::map<float,Tree*>::iterator it;
     int nn=1;
-    for (it=ordergamma.begin();it!=ordergamma.end();++it)
-    {
-      ssun<<(nn!=1?",":"")<<Go::Position::pos2string(it->second->getMove().getPosition(),boardsize);
-      nn++;
-    }
-    ssun<<") ordermc:(";
-    nn=1;
     for (it=ordervalue.begin();it!=ordervalue.end();++it)
     {
       ssun<<(nn!=1?",":"")<<Go::Position::pos2string(it->second->getMove().getPosition(),boardsize);
+      numvalue_gamma.insert(std::make_pair(it->second->getMove().getPosition(),nn));
+      nn++;
+    }
+    ssun<<") ordergamma:(";
+    nn=1;
+    for (it=ordergamma.begin();it!=ordergamma.end();++it)
+    {
+      ssun<<(nn!=1?",":"")<<Go::Position::pos2string(it->second->getMove().getPosition(),boardsize);
+      numvalue_gamma.find(it->second->getMove().getPosition())->second-=nn;
       nn++;
     }
     ssun<<")";
+
+    //now do learning
+    if (params->learn_enabled)
+    {
+    Go::ObjectBoard<int> *cfglastdist=NULL;
+    Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
+    getFeatures()->computeCFGDist(currentboard,&cfglastdist,&cfgsecondlastdist);
+    for (int nn=1;nn<=num_unpruned;nn++)
+      {
+        for(std::list<Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
+        {
+          if ((*iter)->getUnprunedNum()==nn && (*iter)->isPrimary() && !(*iter)->isPruned())
+          {
+            //learn this iter here!
+            getFeatures()->learnMoveGamma(currentboard,cfglastdist,cfgsecondlastdist,(*iter)->getMove(),numvalue_gamma.find(it->second->getMove().getPosition())->second);
+          }
+        }
+      }
+    getFeatures()->saveGammaFile (learn_filename_features);
+    getFeatures()->saveCircValueFile (learn_filename_circ_patterns);
+    }
+    
     ssun<<"st:(";
     for (int nn=0;nn<STATISTICS_NUM;nn++)
     {

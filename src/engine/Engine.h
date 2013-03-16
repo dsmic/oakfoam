@@ -76,6 +76,8 @@
 
 #define FEATURES_LADDERS false
 
+#define LEARN_DELTA 0.01
+
 #define RULES_POSITIONAL_SUPERKO_ENABLED true
 #define RULES_SUPERKO_TOP_PLY false
 #define RULES_SUPERKO_PRUNE_AFTER 200
@@ -360,6 +362,8 @@ class Engine
 
     float presetplayouts;
     int presetnum;
+
+    std::string learn_filename_features,learn_filename_circ_patterns;
     
     enum MovePolicy
     {

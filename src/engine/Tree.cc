@@ -1336,7 +1336,7 @@ bool Tree::expandLeaf(Worker::Settings *settings)
     {
       if ((*iter)->isPrimary())
       {
-        float gamma=params->engine->getFeatures()->getMoveGamma(startboard,cfglastdist,cfgsecondlastdist,(*iter)->getMove(),now_unpruned >= params->test_p11);
+        float gamma=params->engine->getFeatures()->getMoveGamma(startboard,cfglastdist,cfgsecondlastdist,(*iter)->getMove(),true,now_unpruned >= params->test_p11);
         (*iter)->setFeatureGamma(gamma);
         //if ((*iter)->getMove().toString(params->board_size).compare("B:E1")==0)
         //  fprintf(stderr,"move %s %f\n",(*iter)->getMove().toString(params->board_size).c_str(),gamma);
