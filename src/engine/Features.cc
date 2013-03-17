@@ -691,12 +691,12 @@ bool Features::loadCircFileNot(std::string filename,int numlines)
 
 bool Features::saveCircValueFile(std::string filename)
 {
-  std::ofstream fout(filename.c_str());
-  if (!fout)
-    return false;
-
+  
   if (!circpatternvalues.empty())
   {
+    std::ofstream fout(filename.c_str());
+    if (!fout)
+      return false;
     std::map<std::string,float>::iterator it;
     for (it=circpatternvalues.begin();it!=circpatternvalues.end();++it)
     {
@@ -711,6 +711,9 @@ bool Features::saveCircValueFile(std::string filename)
     return true;
   }
   if ((circpatterns.empty()||circpatternsnot.empty()))
+    return false;
+  std::ofstream fout(filename.c_str());
+  if (!fout)
     return false;
   std::map<std::string,long int>::iterator it;
   for (it=circpatterns.begin();it!=circpatterns.end();++it)
@@ -738,7 +741,12 @@ bool Features::loadCircValueFile(std::string filename)
   {
     int strpos = line.find(":");
     int numpos = line.find(" ");
-    circpatternsize = atoi(line.substr(0,strpos).c_str()); //sorted, so that the biggest are last
+    int tmp = atoi(line.substr(0,strpos).c_str()); //sorted, so that the biggest are last
+    if (tmp>circpatternsize) 
+    {
+      fprintf(stderr,"circpatternsize now %d\n",tmp);
+      circpatternsize=tmp;
+    }
     float v=atof(line.substr(numpos+1).c_str());
     circpatternvalues.insert(std::make_pair(line.substr(0,numpos),v));
   }

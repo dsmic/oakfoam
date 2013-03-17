@@ -1865,7 +1865,7 @@ void Engine::gtpLoadFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Comman
     #endif
     
     gtpe->getOutput()->startResponse(cmd);
-    gtpe->getOutput()->printf("loaded features gamma file: %s",filename.c_str());
+    gtpe->getOutput()->printf("loaded features gamma file: %s Attention, circ pattern files are removed by this!",filename.c_str());
     gtpe->getOutput()->endResponse();
   }
   else
