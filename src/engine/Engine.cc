@@ -3443,7 +3443,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     ssun<<" ordermc:(";
 
     //for the moves (getPosition) the difference mc_position - gamma_position is calculated into numvalue_gamma
-    std::map<int,int> numvalue_gamma;
+    std::map<int,float> numvalue_gamma;
     
     std::map<float,Tree*>::iterator it;
     int nn=1;
@@ -3458,9 +3458,10 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     for (it=ordergamma.begin();it!=ordergamma.end();++it)
     {
       ssun<<(nn!=1?",":"")<<Go::Position::pos2string(it->second->getMove().getPosition(),boardsize);
-      fprintf(stderr,"numvalue_gamma before %d ",numvalue_gamma.find(it->second->getMove().getPosition())->second);
-      numvalue_gamma.find(it->second->getMove().getPosition())->second-=nn;
-      fprintf(stderr,"after %d for move %d\n",numvalue_gamma.find(it->second->getMove().getPosition())->second,it->second->getMove().getPosition());
+      fprintf(stderr,"numvalue_gamma before %f ",numvalue_gamma.find(it->second->getMove().getPosition())->second);
+      float tmp=numvalue_gamma.find(it->second->getMove().getPosition())->second;
+      numvalue_gamma.find(it->second->getMove().getPosition())->second=(tmp-nn)/(tmp+nn);
+      fprintf(stderr,"after %f for move %d\n",numvalue_gamma.find(it->second->getMove().getPosition())->second,it->second->getMove().getPosition());
       nn++;
     }
     ssun<<")";
@@ -3478,7 +3479,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
           if ((*iter)->getUnprunedNum()==nn && (*iter)->isPrimary() && !(*iter)->isPruned())
           {
             //learn this iter here!
-            fprintf(stderr,"test %s move %d diff %d\n",(*iter)->getMove().toString(boardsize).c_str(),(*iter)->getMove().getPosition(),numvalue_gamma.find((*iter)->getMove().getPosition())->second);
+            fprintf(stderr,"test %s move %d diff %f\n",(*iter)->getMove().toString(boardsize).c_str(),(*iter)->getMove().getPosition(),numvalue_gamma.find((*iter)->getMove().getPosition())->second);
             // mc position - gamma position is negative, if the mc is better than gamma.
             // this means the features used to calculate the gamma must get higher values
             // therefore the -diff is used to put positive change to the features
