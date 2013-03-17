@@ -591,6 +591,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("dtset",this,&Engine::gtpDTSet);
   gtpe->addFunctionCommand("dtdistribution",this,&Engine::gtpDTDistribution);
   gtpe->addFunctionCommand("dtstats",this,&Engine::gtpDTStats);
+  gtpe->addFunctionCommand("dtpath",this,&Engine::gtpDTPath);
   
   //gtpe->addAnalyzeCommand("final_score","Final Score","string");
   //gtpe->addAnalyzeCommand("showboard","Show Board","string");
@@ -2990,9 +2991,11 @@ void Engine::gtpDTPrint(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printf("decision trees:\n");
+  int leafoffset = 0;
   for (std::list<DecisionTree*>::iterator iter=me->decisiontrees.begin();iter!=me->decisiontrees.end();++iter)
   {
-    gtpe->getOutput()->printf("%s\n",(*iter)->toString(ignorestats).c_str());
+    gtpe->getOutput()->printf("%s\n",(*iter)->toString(ignorestats,leafoffset).c_str());
+    leafoffset += (*iter)->getLeafCount();
   }
   gtpe->getOutput()->endResponse(true);
 }
@@ -3166,6 +3169,27 @@ void Engine::gtpDTStats(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     gtpe->getOutput()->printf("  Avg Nodes: %.2f\n",avgnodes);
   }
   gtpe->getOutput()->endResponse(true);
+}
+
+void Engine::gtpDTPath(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("leaf id required");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  int id = cmd->getIntArg(0);
+  
+  std::string path = DecisionTree::getCollectionLeafPath(&(me->decisiontrees), id);
+
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printf("decision tree leaf %d path: %s",id,path.c_str());
+  gtpe->getOutput()->endResponse();
 }
 
 void Engine::gtpGameOver(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)

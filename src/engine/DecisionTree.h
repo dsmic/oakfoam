@@ -19,7 +19,7 @@ class DecisionTree
 
     ~DecisionTree();
 
-    std::string toString(bool ignorestats = false);
+    std::string toString(bool ignorestats = false, int leafoffset = 0);
 
     Type getType() { return type; };
     std::vector<std::string> *getAttrs() { return attrs; };
@@ -31,6 +31,7 @@ class DecisionTree
     void updateDescent(Go::Board *board, Go::Move move);
     void updateDescent(Go::Board *board);
     void getTreeStats(int &treenodes, int &leaves, int &maxdepth, float &avgdepth, int &maxnodes, float &avgnodes);
+    std::string getLeafPath(int id);
 
     static std::list<DecisionTree*> *parseString(Parameters *params, std::string rawdata, unsigned long pos = 0);
     static std::list<DecisionTree*> *loadFile(Parameters *params, std::string filename);
@@ -41,6 +42,7 @@ class DecisionTree
     static int getCollectionLeafCount(std::list<DecisionTree*> *trees);
     static void setCollectionLeafWeight(std::list<DecisionTree*> *trees, int id, float w);
     static void collectionUpdateDescent(std::list<DecisionTree*> *trees, Go::Board *board);
+    static std::string getCollectionLeafPath(std::list<DecisionTree*> *trees, int id);
   
   private:
     class Range
@@ -113,7 +115,7 @@ class DecisionTree
         Option(Type type, std::string l, unsigned int maxnode);
         ~Option();
 
-        std::string toString(int indent = 0, bool ignorestats = false);
+        std::string toString(int indent = 0, bool ignorestats = false, int leafoffset = 0);
         Query *getParent() { return parent; };
         void setParent(Query *p) { parent = p; };
         std::string getLabel() { return label; };
@@ -132,7 +134,7 @@ class DecisionTree
         Query(Type type, std::string l, std::vector<std::string> *a, unsigned int maxnode);
         ~Query();
 
-        std::string toString(int indent = 0, bool ignorestats = false);
+        std::string toString(int indent = 0, bool ignorestats = false, int leafoffset = 0);
         Node *getParent() { return parent; };
         void setParent(Node *p) { parent = p; };
         std::string getLabel() { return label; };
@@ -153,7 +155,7 @@ class DecisionTree
         Node(Stats *s, float w);
         ~Node();
 
-        std::string toString(int indent = 0, bool ignorestats = false);
+        std::string toString(int indent = 0, bool ignorestats = false, int leafoffset = 0);
         bool isRoot() { return parent==NULL; };
         Option *getParent() { return parent; };
         void setParent(Option *p) { parent = p; };
@@ -164,6 +166,7 @@ class DecisionTree
         int getLeafId() { return leafid; };
         Query *getQuery() { return query; };
         void setQuery(Query *q) { query = q; };
+        std::string getPath();
 
         void populateEmptyStats(Type type, unsigned int maxnode = 0);
         void populateLeafIds(std::vector<Node*> &leafmap);

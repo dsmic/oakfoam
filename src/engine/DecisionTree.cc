@@ -39,6 +39,12 @@ void DecisionTree::setLeafWeight(int id, float w)
   leafmap[id]->setWeight(w);
 }
 
+std::string DecisionTree::getLeafPath(int id)
+{
+  //XXX: no error checking here
+  return leafmap[id]->getPath();
+}
+
 unsigned int DecisionTree::getMaxNode(DecisionTree::Node *node)
 {
   if (node->isRoot())
@@ -187,6 +193,21 @@ void DecisionTree::setCollectionLeafWeight(std::list<DecisionTree*> *trees, int 
     }
     offset += lc;
   }
+}
+
+std::string DecisionTree::getCollectionLeafPath(std::list<DecisionTree*> *trees, int id)
+{
+  int offset = 0;
+
+  for (std::list<DecisionTree*>::iterator iter=trees->begin();iter!=trees->end();++iter)
+  {
+    int lc = (*iter)->getLeafCount();
+    if (offset <= id && id < (offset+lc))
+      return (*iter)->getLeafPath(id-offset);
+    offset += lc;
+  }
+
+  return "";
 }
 
 float DecisionTree::combineNodeWeights(std::list<DecisionTree::Node*> *nodes)
@@ -977,7 +998,7 @@ std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::N
   }
 }
 
-std::string DecisionTree::toString(bool ignorestats)
+std::string DecisionTree::toString(bool ignorestats, int leafoffset)
 {
   std::string r = "(DT[";
   for (unsigned int i=0;i<attrs->size();i++)
@@ -989,13 +1010,13 @@ std::string DecisionTree::toString(bool ignorestats)
   r += "]\n";
   //r += " # leaves: " + boost::lexical_cast<std::string>(leafmap.size()) + "\n";
 
-  r += root->toString(2,ignorestats);
+  r += root->toString(2,ignorestats,leafoffset);
 
   r += ")";
   return r;
 }
 
-std::string DecisionTree::Node::toString(int indent, bool ignorestats)
+std::string DecisionTree::Node::toString(int indent, bool ignorestats, int leafoffset)
 {
   std::string r = "";
 
@@ -1014,15 +1035,47 @@ std::string DecisionTree::Node::toString(int indent, bool ignorestats)
       r += " ";
     r += "(WEIGHT[";
     r += boost::lexical_cast<std::string>(weight); //TODO: make sure this is correctly formatted
-    r += "]) # id: " + boost::lexical_cast<std::string>(leafid) + "\n";
+    r += "]) # id: " + boost::lexical_cast<std::string>(leafoffset+leafid) + "\n";
   }
   else
-    r += query->toString(indent,ignorestats);
+    r += query->toString(indent,ignorestats,leafoffset);
 
   return r;
 }
 
-std::string DecisionTree::Query::toString(int indent, bool ignorestats)
+std::string DecisionTree::Node::getPath()
+{
+  std::string r = "";
+
+  if (!this->isRoot())
+  {
+    DecisionTree::Option *opt = this->getParent();
+    DecisionTree::Query *query = opt->getParent();
+    DecisionTree::Node *node = query->getParent();
+
+    r = node->getPath();
+    r += query->getLabel() + "[";
+    for (unsigned int i=0;i<query->getAttrs()->size();i++)
+    {
+      if (i!=0)
+        r += "|";
+      r += query->getAttrs()->at(i);
+    }
+    r += "]->";
+    r += opt->getLabel() + ":";
+  }
+
+  if (query == NULL)
+  {
+    r += "WEIGHT[";
+    r += boost::lexical_cast<std::string>(weight); //TODO: make sure this is correctly formatted
+    r += "]";
+  }
+
+  return r;
+}
+
+std::string DecisionTree::Query::toString(int indent, bool ignorestats, int leafoffset)
 {
   std::string r = "";
 
@@ -1039,7 +1092,7 @@ std::string DecisionTree::Query::toString(int indent, bool ignorestats)
 
   for (unsigned int i=0;i<options->size();i++)
   {
-    r += options->at(i)->toString(indent+2,ignorestats);
+    r += options->at(i)->toString(indent+2,ignorestats,leafoffset);
   }
   
   for (int i=0;i<indent;i++)
@@ -1049,7 +1102,7 @@ std::string DecisionTree::Query::toString(int indent, bool ignorestats)
   return r;
 }
 
-std::string DecisionTree::Option::toString(int indent, bool ignorestats)
+std::string DecisionTree::Option::toString(int indent, bool ignorestats, int leafoffset)
 {
   std::string r = "";
 
@@ -1057,7 +1110,7 @@ std::string DecisionTree::Option::toString(int indent, bool ignorestats)
     r += " ";
   r += label + ":\n";
 
-  r += node->toString(indent+2,ignorestats);
+  r += node->toString(indent+2,ignorestats,leafoffset);
 
   return r;
 }
@@ -1673,9 +1726,11 @@ bool DecisionTree::saveFile(std::list<DecisionTree*> *trees, std::string filenam
   if (!fout)
     return false;
 
+  int leafoffset = 0;
   for (std::list<DecisionTree*>::iterator iter=trees->begin();iter!=trees->end();++iter)
   {
-    fout << (*iter)->toString(ignorestats) << "\n\n";
+    fout << (*iter)->toString(ignorestats,leafoffset) << "\n\n";
+    leafoffset += (*iter)->getLeafCount();
   }
 
   fout.close();
