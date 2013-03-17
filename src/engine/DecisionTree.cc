@@ -987,6 +987,7 @@ std::string DecisionTree::toString(bool ignorestats)
     r += attrs->at(i);
   }
   r += "]\n";
+  //r += " # leaves: " + boost::lexical_cast<std::string>(leafmap.size()) + "\n";
 
   r += root->toString(2,ignorestats);
 
@@ -1013,7 +1014,7 @@ std::string DecisionTree::Node::toString(int indent, bool ignorestats)
       r += " ";
     r += "(WEIGHT[";
     r += boost::lexical_cast<std::string>(weight); //TODO: make sure this is correctly formatted
-    r += "])\n";
+    r += "]) # id: " + boost::lexical_cast<std::string>(leafid) + "\n";
   }
   else
     r += query->toString(indent,ignorestats);
