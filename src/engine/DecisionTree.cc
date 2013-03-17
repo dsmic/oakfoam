@@ -10,6 +10,7 @@
 
 #define TEXT "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<>=!."
 #define WHITESPACE " \t\r\n"
+#define COMMENT "#"
 
 DecisionTree::DecisionTree(Parameters *p, DecisionTree::Type t, std::vector<std::string> *a, DecisionTree::Node *r)
 {
@@ -1139,7 +1140,7 @@ std::string DecisionTree::Range::toString(int indent)
 
 std::list<DecisionTree*> *DecisionTree::parseString(Parameters *params, std::string rawdata, unsigned long pos)
 {
-  std::string data = DecisionTree::stripWhitespace(rawdata);
+  std::string data = DecisionTree::stripWhitespace(DecisionTree::stripComments(rawdata));
   std::transform(data.begin(),data.end(),data.begin(),::toupper);
   //fprintf(stderr,"[DT] parsing: '%s'\n",data.c_str());
 
@@ -1693,6 +1694,27 @@ std::string DecisionTree::stripWhitespace(std::string in)
   for (unsigned int i = 0; i < in.length(); i++)
   {
     if (whitespace.find(in[i]) == std::string::npos)
+      out += in[i];
+  }
+  return out;
+}
+
+std::string DecisionTree::stripComments(std::string in)
+{
+  std::string comment = COMMENT;
+  std::string newline = "\r\n";
+  bool incomment = false;
+  std::string out = "";
+  for (unsigned int i = 0; i < in.length(); i++)
+  {
+    if (comment.find(in[i]) != std::string::npos)
+      incomment = true;
+    else if (newline.find(in[i]) != std::string::npos)
+    {
+      incomment = false;
+      out += in[i];
+    }
+    else if (!incomment)
       out += in[i];
   }
   return out;

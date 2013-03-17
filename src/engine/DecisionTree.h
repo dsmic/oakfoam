@@ -195,6 +195,7 @@ class DecisionTree
     static float percentageToVal(float p);
 
     static std::string stripWhitespace(std::string in);
+    static std::string stripComments(std::string in);
     static std::vector<std::string> *parseAttrs(std::string data, unsigned long &pos);
     static Node *parseNode(Type type, std::string data, unsigned long &pos);
     static Stats *parseStats(std::string data, unsigned long &pos);
