@@ -1117,7 +1117,7 @@ void Features::learnCircPattern(std::string circpattern,float delta)
     {
       float v=circpatternvalues.find(circpattern)->second+delta;
       if (v>1) v=1;
-      if (v<0) v=0;
+      if (v<0.0001) v=0.0001;
       circpatternvalues.find(circpattern)->second=v;
     }
   }
