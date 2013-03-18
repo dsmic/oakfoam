@@ -3487,9 +3487,6 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
           }
         }
       }
-      fprintf(stderr,"files gamma %s circ %s\n",learn_filename_features.c_str(),learn_filename_circ_patterns.c_str()); 
-    getFeatures()->saveGammaFile (learn_filename_features);
-    getFeatures()->saveCircValueFile (learn_filename_circ_patterns);
     }
     
     ssun<<"st:(";
@@ -4930,6 +4927,14 @@ void Engine::gameFinished()
     return;
   isgamefinished=true;
 
+  if (params->learn_enabled) 
+  {
+    fprintf(stderr,"files gamma %s circ %s\n",learn_filename_features.c_str(),learn_filename_circ_patterns.c_str()); 
+    getFeatures()->saveGammaFile (learn_filename_features);
+    getFeatures()->saveCircValueFile (learn_filename_circ_patterns);
+    gtpe->getOutput()->printfDebug("learned gammas and circ patterns saved \n");
+  }
+  
   if (currentboard->getMovesMade()==0)
     return;
 
