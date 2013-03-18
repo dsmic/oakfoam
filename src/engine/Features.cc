@@ -1114,7 +1114,12 @@ void Features::learnCircPattern(std::string circpattern,float delta)
   if (!circpatternvalues.empty())
   {
     if (circpatternvalues.count(circpattern))
-      circpatternvalues.find(circpattern)->second+=delta;
+    {
+      float v=circpatternvalues.find(circpattern)->second+delta;
+      if (v>1) v=1;
+      if (v<0) v=0;
+      circpatternvalues.find(circpattern)->second=v;
+    }
   }
 }
 
