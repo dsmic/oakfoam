@@ -314,7 +314,7 @@ class Engine
 
     bool isCircPattern(std::string circpattern) {return features->isCircPattern(circpattern);}
 
-    Pattern::CircularDictionary *getCircDict() {return features->circdict;}
+    Pattern::CircularDictionary *getCircDict() {return features->getCircDict();}
     int getCircSize() {return features->getCircSize();}
     void statisticsPlus(StatNames i) {statistics[i]++;}
     void clearStatistics() {int i; for (i=0;i<STATISTICS_NUM;i++) statistics[i]=0;}

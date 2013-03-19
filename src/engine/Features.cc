@@ -35,8 +35,13 @@ Features::Features(Parameters *prms) : params(prms)
     gammas_cfglastdist[i]=1.0;
   for (int i=0;i<CFGSECONDLASTDIST_LEVELS;i++)
     gammas_cfgsecondlastdist[i]=1.0;
-  circpatternsize=0;
+
   circdict=new Pattern::CircularDictionary();
+  circlevels = new std::map<Pattern::Circular,unsigned int>();
+  circstrings = new std::map<unsigned int,std::string>();
+  circgammas = new std::map<unsigned int,float>();
+
+  circpatternsize=0;
   num_circmoves=0;
   num_circmoves_not=0;
 }
@@ -46,6 +51,9 @@ Features::~Features()
   delete patterngammas;
   delete patternids;
   delete circdict;
+  delete circgammas;
+  delete circstrings;
+  delete circlevels;
 }
 
 unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove) const
@@ -250,6 +258,23 @@ unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::B
       
       return hash;
     }
+    case Features::CIRCPATT:
+    {
+      Go::Color col=move.getColor();
+      int pos=move.getPosition();
+      
+      Pattern::Circular pattcirc = Pattern::Circular(circdict,board,pos,PATTERN_CIRC_MAXSIZE);
+      if (col == Go::WHITE)
+        pattcirc.invert();
+
+      for (int s=PATTERN_CIRC_MAXSIZE;s>=3;s--)
+      {
+        Pattern::Circular pc = pattcirc.getSubPattern(circdict,s);
+        if (circlevels->find(pc) != circlevels->end())
+          return (*circlevels)[pc];
+      }
+      return 0;
+    }
     default:
       return 0;
   }
@@ -264,6 +289,13 @@ float Features::getFeatureGamma(Features::FeatureClass featclass, unsigned int l
   {
     if (patterngammas->hasGamma(level))
       return patterngammas->getGamma(level);
+    else
+      return 1.0;
+  }
+  else if (featclass==Features::CIRCPATT)
+  {
+    if (circgammas->find(level) != circgammas->end())
+      return (*circgammas)[level];
     else
       return 1.0;
   }
@@ -301,6 +333,7 @@ float Features::getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist
   g*=1.0+params->test_p14*(this->getFeatureGamma(Features::CFGLASTDIST,this->matchFeatureClass(Features::CFGLASTDIST,board,cfglastdist,cfgsecondlastdist,move,false))-1.0);
   g*=1.0+params->test_p15*(this->getFeatureGamma(Features::CFGSECONDLASTDIST,this->matchFeatureClass(Features::CFGSECONDLASTDIST,board,cfglastdist,cfgsecondlastdist,move,false))-1.0);
   g*=this->getFeatureGamma(Features::PATTERN3X3,this->matchFeatureClass(Features::PATTERN3X3,board,cfglastdist,cfgsecondlastdist,move,false));
+  g*=this->getFeatureGamma(Features::CIRCPATT,this->matchFeatureClass(Features::CIRCPATT,board,cfglastdist,cfgsecondlastdist,move,false));
 
   if (params->features_dt_use)
   {
@@ -438,6 +471,8 @@ std::string Features::getFeatureClassName(Features::FeatureClass featclass) cons
       return "cfgsecondlastdist";
     case Features::PATTERN3X3:
       return "pattern3x3";
+    case Features::CIRCPATT:
+      return "circpatt";
     default:
       return "";
   }
@@ -467,6 +502,8 @@ Features::FeatureClass Features::getFeatureClassFromName(std::string name) const
     return Features::CFGSECONDLASTDIST;
   else if (name=="pattern3x3")
     return Features::PATTERN3X3;
+  else if (name=="circpatt")
+    return Features::CIRCPATT;
   else
     return Features::INVALID;
 }
@@ -617,10 +654,23 @@ bool Features::loadGammaLine(std::string line)
   std::istringstream issid(id);
   if (!getline(issid,classname,':'))
     return false;
-  if (!getline(issid,levelstring,':'))
+  if (!getline(issid,levelstring,' '))
     return false;
   
-  if (levelstring.at(0)=='0' && levelstring.at(1)=='x')
+  if (levelstring.find(':') != std::string::npos)
+  {
+    Pattern::Circular pc = Pattern::Circular(circdict,levelstring);
+
+    if (circlevels->find(pc) != circlevels->end())
+      level = (*circlevels)[pc];
+    else
+    {
+      level = circlevels->size()+1;
+      (*circlevels)[pc] = level;
+      (*circstrings)[level] = pc.toString(circdict);
+    }
+  }
+  else if (levelstring.at(0)=='0' && levelstring.at(1)=='x')
   {
     level=0;
     std::string hex="0123456789abcdef";
@@ -678,7 +728,12 @@ float *Features::getStandardGamma(Features::FeatureClass featclass) const
 
 bool Features::setFeatureGamma(Features::FeatureClass featclass, unsigned int level, float gamma)
 {
-  if (featclass==Features::PATTERN3X3)
+  if (featclass==Features::CIRCPATT)
+  {
+    (*circgammas)[level] = gamma;
+    return true;
+  }
+  else if (featclass==Features::PATTERN3X3)
   {
     patterngammas->setGamma(level,gamma);
     this->updatePatternIds();
@@ -814,6 +869,16 @@ std::string Features::getMatchingFeaturesString(Go::Board *board, Go::ObjectBoar
   }
   base+=patternids->getCount();
 
+  level=this->matchFeatureClass(Features::CIRCPATT,board,cfglastdist,cfgsecondlastdist,move);
+  if (level>0 && !move.isPass() && !move.isResign())
+  {
+    if (pretty)
+      ss<<" circpatt:"<<(*circstrings)[level];
+    else
+      ss<<" "<<(base+level-1);
+  }
+  base+=circlevels->size();
+
   if (params->features_dt_use)
   {
     std::list<int> *ids = DecisionTree::getCollectionLeafIds(params->engine->getDecisionTrees(),board,move);
@@ -879,6 +944,9 @@ std::string Features::getFeatureIdList() const
         fprintf(stderr,"WARNING! pattern id mismatch");
     }
   }
+
+  for (unsigned int level=1;level<=circlevels->size();level++)
+    ss<<(id++)<<" circpatt:"<<(*circstrings)[level]<<"\n";
   
   return ss.str();
 }

@@ -647,6 +647,7 @@ class Parameters;
 namespace Pattern
 {
   class ThreeByThreeGammas;
+  class Circular;
   class CircularDictionary;
 };
 
@@ -688,6 +689,8 @@ namespace Pattern
  *    - x: The move is x away from the second last move (CFG distance).
  *  - PATTERN3X3
  *    - x: The move has a 3x3 pattern hash of x.
+ *  - CIRCPATT
+ *    - x: The move has the circular pattern x.
  */
 class Features
 {
@@ -706,6 +709,7 @@ class Features
       CFGLASTDIST,
       CFGSECONDLASTDIST,
       PATTERN3X3,
+      CIRCPATT,
       INVALID
     };
     
@@ -754,11 +758,14 @@ class Features
     /** Return the CFG distances for the last and second last moves on a board. */
     void computeCFGDist(Go::Board *board, Go::ObjectBoard<int> **cfglastdist, Go::ObjectBoard<int> **cfgsecondlastdist);
 
-    Pattern::CircularDictionary *circdict; 
+    /** Return a structure with the gammas for the 3x3 patterns. */
+    Pattern::ThreeByThreeGammas* getPatternGammas() {return patterngammas;}
+    /** Return the circular dictionary. */
+    Pattern::CircularDictionary *getCircDict() { return circdict; };
+
     bool isCircPattern(std::string circpattern) const;
     float valueCircPattern(std::string circpattern) const;
     int getCircSize () {return circpatternsize;}
-    Pattern::ThreeByThreeGammas* getPatternGammas() {return patterngammas;}
     
   private:
     Parameters *const params;
@@ -774,6 +781,11 @@ class Features
     float gammas_secondlastdist[SECONDLASTDIST_LEVELS];
     float gammas_cfglastdist[CFGLASTDIST_LEVELS];
     float gammas_cfgsecondlastdist[CFGSECONDLASTDIST_LEVELS];
+
+    Pattern::CircularDictionary *circdict; 
+    std::map<Pattern::Circular,unsigned int> *circlevels;
+    std::map<unsigned int,std::string> *circstrings;
+    std::map<unsigned int,float> *circgammas;
     
     float *getStandardGamma(Features::FeatureClass featclass) const;
     void updatePatternIds();
