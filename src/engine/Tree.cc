@@ -4,6 +4,7 @@
 #include <sstream>
 #include "Parameters.h"
 #include "Engine.h"
+#include "Pattern.h"
 #include "Worker.h"
 
 Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p) : params(prms)

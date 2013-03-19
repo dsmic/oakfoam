@@ -762,6 +762,8 @@ class Features
     Pattern::ThreeByThreeGammas* getPatternGammas() {return patterngammas;}
     /** Return the circular dictionary. */
     Pattern::CircularDictionary *getCircDict() { return circdict; };
+    /** Determine if a circular pattern is present. */
+    bool hasCircPattern(Pattern::Circular *pc);
 
     bool isCircPattern(std::string circpattern) const;
     float valueCircPattern(std::string circpattern) const;

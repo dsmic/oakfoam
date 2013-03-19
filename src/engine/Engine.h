@@ -196,7 +196,14 @@
 #include "Go.h"
 #include "Tree.h"
 #include "Random.h"
-#include "Pattern.h"
+//from "Pattern.h":
+namespace Pattern
+{
+  class ThreeByThreeGammas;
+  class ThreeByThreeTable;
+  class Circular;
+  class CircularDictionary;
+};
 #include "Parameters.h"
 #include "Features.h"
 #include "Time.h"

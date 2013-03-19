@@ -6,9 +6,9 @@
 #include <algorithm>
 #include <iomanip>
 #include "Parameters.h"
-#include "Engine.h"
 #include "Pattern.h"
 #include "DecisionTree.h"
+#include "Engine.h"
 
 Features::Features(Parameters *prms) : params(prms)
 {
@@ -1008,3 +1008,9 @@ bool Features::isCircPattern(std::string circpattern) const
 // fprintf(stderr,"%s %d\n",circpattern.substr(strpos+1).c_str(),circpatterns.count(circpattern.substr(strpos+1)));
   return circpatterns.count(circpattern.substr(strpos+1));
 }
+
+bool Features::hasCircPattern(Pattern::Circular *pc)
+{
+  return (circlevels->find(*pc) != circlevels->end());
+}
+

@@ -17,13 +17,14 @@ if (( $# < 1 )); then
 fi
 
 GAME=$1
-SIZE=$2
+INITGAMMAS=$2
+SIZE=$3
 
-CMDS="param undo_enable 0\nparam features_circ_list 0.1\nparam features_circ_list_size $SIZE\nloadsgf \"$GAME\""
+CMDS="param undo_enable 0\nparam features_circ_list 0.1\nparam features_circ_list_size $SIZE\nloadfeaturegammas \"$INITGAMMAS\"\nloadsgf \"$GAME\""
 # Use gogui-adapter to emulate loadsgf
 echo -e $CMDS | gogui-adapter "$OAKFOAM"
 
-cat $TEMPOUTPUT | grep -e "[1-9][0-9]*:" | sed "s/ /\\n/g" | grep "^[1-9][0-9]*:" >> $TEMPOUTPUT2
+cat $TEMPOUTPUT | grep -e '^[1-9][0-9]*:' | sed 's/ /\n/g' | grep '^[1-9][0-9]*:' >> $TEMPOUTPUT2
 
 cat $TEMPOUTPUT2 | sort | uniq -c | sort -rn
 

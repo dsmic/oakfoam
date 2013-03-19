@@ -13,6 +13,7 @@
 #else
   #define MPIRANK0_ONLY(__body) { __body }
 #endif
+#include "Pattern.h"
 #include "DecisionTree.h"
 #ifdef HAVE_WEB
   #include "../web/Web.h"
@@ -3572,7 +3573,23 @@ void Engine::makeMove(Go::Move move)
           }
         }
         else
-          gtpe->getOutput()->printfDebug("%s\n",pattcirc.getSubPattern(this->getCircDict(),params->features_circ_list_size).toString(this->getCircDict()).c_str());
+        {
+          bool found = false;
+          for (int s=PATTERN_CIRC_MAXSIZE;s>params->features_circ_list_size;s--)
+          {
+            Pattern::Circular pc = pattcirc.getSubPattern(this->getCircDict(),s);
+            if (features->hasCircPattern(&pc))
+            {
+              found = true;
+              break;
+            }
+          }
+          if (!found)
+          {
+            Pattern::Circular pc = pattcirc.getSubPattern(this->getCircDict(),params->features_circ_list_size);
+            gtpe->getOutput()->printfDebug("%s\n",pc.toString(this->getCircDict()).c_str());
+          }
+        }
       }
     }
     }
