@@ -1,10 +1,10 @@
 #!/bin/bash
 
+set -eu
+
 TEMPOUTPUT="patterns_circ_`date +%F_%T`.tmp"
-OAKFOAM="../../oakfoam"
-OAKFOAMLOG="../../oakfoam --log $TEMPOUTPUT"
-PROGRAM="gogui-adapter \"$OAKFOAM\""
-# Use gogui-adapter to emulate loadsgf
+TEMPOUTPUT2="patterns_circ_2_`date +%F_%T`.tmp"
+OAKFOAM="../../oakfoam --nobook --log $TEMPOUTPUT"
 
 if ! test -x ../../oakfoam; then
   echo "File ../../oakfoam not found" >&2
@@ -19,19 +19,13 @@ fi
 GAME=$1
 SIZE=$2
 
-echo -e "loadsgf \"$GAME\"" | gogui-adapter "$OAKFOAMLOG" > /dev/null
-MOVES=`cat $TEMPOUTPUT | grep "^play " | wc -l`
-rm -f $TEMPOUTPUT
+CMDS="param undo_enable 0\nparam features_circ_list 0.1\nparam features_circ_list_size $SIZE\nloadsgf \"$GAME\""
+# Use gogui-adapter to emulate loadsgf
+echo -e $CMDS | gogui-adapter "$OAKFOAM"
 
-CMDS=""
-for i in `seq $MOVES`
-do
-  CMDS="${CMDS}\nloadsgf \"$GAME\" $i\nlistallcircularpatterns $SIZE"
-done
+cat $TEMPOUTPUT | grep -e "[1-9][0-9]*:" | sed "s/ /\\n/g" | grep "^[1-9][0-9]*:" >> $TEMPOUTPUT2
 
-echo -e $CMDS | $PROGRAM | grep -e "[1-9][0-9]*:" | sed "s/= //;s/ /\\n/g" | grep "^[1-9][0-9]*:" >> $TEMPOUTPUT
+cat $TEMPOUTPUT2 | sort | uniq -c | sort -rn
 
-cat $TEMPOUTPUT | sort | uniq -c | sort -rn
-
-rm -f $TEMPOUTPUT
+rm -f $TEMPOUTPUT $TEMPOUTPUT2
 

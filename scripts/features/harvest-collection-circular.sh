@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -eu
+
 TEMPOUTPUT="collection_circ_`date +%F_%T`.tmp"
 TEMPCOMBINED="combined_circ_`date +%F_%T`.tmp"
 

@@ -254,6 +254,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("other","features_output_competitions",&(params->features_output_competitions),0.0);
   params->addParameter("other","features_output_competitions_mmstyle",&(params->features_output_competitions_mmstyle),false);
   params->addParameter("other","features_ordered_comparison",&(params->features_ordered_comparison),false);
+  params->addParameter("other","features_circ_list",&(params->features_circ_list),0.0);
+  params->addParameter("other","features_circ_list_size",&(params->features_circ_list_size),0);
   
   params->addParameter("other","auto_save_sgf",&(params->auto_save_sgf),false);
   params->addParameter("other","auto_save_sgf_prefix",&(params->auto_save_sgf_prefix),"");
@@ -3545,6 +3547,35 @@ void Engine::makeMove(Go::Move move)
     if (cfgsecondlastdist!=NULL)
       delete cfgsecondlastdist;
   }
+
+  if (WITH_P(params->features_circ_list))
+  {
+    Go::Color col=currentboard->nextToMove();
+    
+    for (int p=0;p<currentboard->getPositionMax();p++)
+    {
+      if (currentboard->validMove(Go::Move(col,p)))
+      {
+        Pattern::Circular pattcirc=Pattern::Circular(this->getCircDict(),currentboard,p,PATTERN_CIRC_MAXSIZE);
+        if (col==Go::WHITE)
+          pattcirc.invert();
+        pattcirc.convertToSmallestEquivalent(this->getCircDict());
+        if (params->features_circ_list_size==0)
+        {
+          for (int s=3;s<=PATTERN_CIRC_MAXSIZE;s++)
+          {
+            gtpe->getOutput()->printfDebug("%s",pattcirc.getSubPattern(this->getCircDict(),s).toString(this->getCircDict()).c_str());
+            if (s==PATTERN_CIRC_MAXSIZE)
+              gtpe->getOutput()->printfDebug("\n");
+            else
+              gtpe->getOutput()->printfDebug(" ");
+          }
+        }
+        else
+          gtpe->getOutput()->printfDebug("%s\n",pattcirc.getSubPattern(this->getCircDict(),params->features_circ_list_size).toString(this->getCircDict()).c_str());
+      }
+    }
+    }
 
   if (params->dt_update_prob > 0)
   {

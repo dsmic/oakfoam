@@ -547,6 +547,12 @@ class Parameters
     bool features_ladders;
     /** Whether to use decision trees with features. */
     bool features_dt_use;
+    /** Probability that the circular patterns are listed after a move. */
+    float features_circ_list;
+    /** Size of circular patterns that are listed after a move.
+     * @see features_circ_list
+     */
+    int features_circ_list_size;
 
     /** Whether to automatically output an SGF when a game finishes. */
     bool auto_save_sgf;
