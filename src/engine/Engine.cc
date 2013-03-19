@@ -3424,6 +3424,9 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     std::map<float,Tree*,std::greater<float> > ordergamma;
     float forcesort=0;
     ssun<<"un:(";
+    Go::ObjectBoard<int> *cfglastdist=NULL;
+    Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
+    getFeatures()->computeCFGDist(currentboard,&cfglastdist,&cfgsecondlastdist);
     for (int nn=1;nn<=num_unpruned;nn++)
     {
       for(std::list<Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
@@ -3431,7 +3434,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
         if ((*iter)->getUnprunedNum()==nn && (*iter)->isPrimary() && !(*iter)->isPruned())
         {
           ssun<<(nn!=1?",":"")<<Go::Position::pos2string((*iter)->getMove().getPosition(),boardsize);
-          ordergamma.insert(std::make_pair((*iter)->getFeatureGamma()+forcesort,(*iter)));
+          //do not use getFeatureGamma of the tree, as this might be not exactly the order of the gammas to be trained
+          ordergamma.insert(std::make_pair(getFeatures()->getMoveGamma(currentboard,cfglastdist,cfgsecondlastdist,(*iter)->getMove())+forcesort,(*iter)));
           ordervalue.insert(std::make_pair((*iter)->getPlayouts()+forcesort,(*iter)));
           forcesort+=0.01012321232123;
         }
@@ -3469,9 +3473,6 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     //now do learning
     if (params->learn_enabled)
     {
-    Go::ObjectBoard<int> *cfglastdist=NULL;
-    Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
-    getFeatures()->computeCFGDist(currentboard,&cfglastdist,&cfgsecondlastdist);
     for (int nn=1;nn<=num_unpruned;nn++)
       {
         for(std::list<Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
