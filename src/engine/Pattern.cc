@@ -455,6 +455,7 @@ Pattern::CircularDictionary::CircularDictionary()
 
 Pattern::Circular::Circular(Pattern::CircularDictionary *dict, const Go::Board *board, int pos, int sz) : size(sz>PATTERN_CIRC_MAXSIZE?PATTERN_CIRC_MAXSIZE:sz)
 {
+  ldict=dict;
   for (int i=0;i<PATTERN_CIRC_32BITPARTS;i++)
   {
     hash[i]=0;
@@ -562,7 +563,7 @@ void Pattern::Circular::resetColor(int offset)
   int part=offset/(32/2);
   int bitoffset=(offset%(32/2))*2;
   
-  hash[part]&=~((boost::uint_fast32_t)(3<<(32-bitoffset-2)));
+  hash[part]&=~(((boost::uint_fast32_t)3<<(32-bitoffset-2)));
 }
 
 void Pattern::CircularDictionary::setTrans(boost::uint_fast32_t data[PATTERN_CIRC_32BITPARTS], int offset)
@@ -605,6 +606,11 @@ int Pattern::Circular::sizefromString(std::string patternstring)
 
 Pattern::Circular::Circular(Pattern::CircularDictionary *dict, std::string fromString): size(sizefromString(fromString)>PATTERN_CIRC_MAXSIZE?PATTERN_CIRC_MAXSIZE:sizefromString(fromString))
 {
+  ldict=dict;
+  for (int i=0;i<PATTERN_CIRC_32BITPARTS;i++)
+  {
+    hash[i]=0;
+  }
   //fprintf(stderr,"the size is %d\n",size);
   std::string dummy1, dummy2, dummy3;
   std::istringstream iss(fromString);
@@ -664,6 +670,11 @@ bool Pattern::Circular::operator==(const Pattern::Circular other) const
 
 bool Pattern::Circular::operator<(const Pattern::Circular other) const
 {
+  if (size<other.size)
+    return true;
+  else if(size>other.size)
+    return false;
+
   for (int i=0;i<PATTERN_CIRC_32BITPARTS;i++)
   {
     if (hash[i]<other.hash[i])
@@ -676,6 +687,11 @@ bool Pattern::Circular::operator<(const Pattern::Circular other) const
 
 bool Pattern::Circular::operator<(const Pattern::Circular *other) const
 {
+  if (size<other->size)
+    return true;
+  else if(size>other->size)
+    return false;
+
   for (int i=0;i<PATTERN_CIRC_32BITPARTS;i++)
   {
     if (hash[i]<other->hash[i])
@@ -741,7 +757,6 @@ void Pattern::Circular::flipHorizontal(Pattern::CircularDictionary *dict)
 
 void Pattern::Circular::convertToSmallestEquivalent(Pattern::CircularDictionary *dict)
 {
-  ldict=dict;
   Pattern::Circular alternative=this->copy();
   
   //fprintf(stderr,"comparing: %s\n",this->toString(dict).c_str());

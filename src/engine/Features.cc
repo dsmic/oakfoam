@@ -266,11 +266,12 @@ unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::B
       Pattern::Circular pattcirc = Pattern::Circular(circdict,board,pos,PATTERN_CIRC_MAXSIZE);
       if (col == Go::WHITE)
         pattcirc.invert();
+      pattcirc.convertToSmallestEquivalent(circdict);
 
       for (int s=PATTERN_CIRC_MAXSIZE;s>=3;s--)
       {
         Pattern::Circular pc = pattcirc.getSubPattern(circdict,s);
-        if (circlevels->find(pc) != circlevels->end())
+        if (circlevels->count(pc)>0)
           return (*circlevels)[pc];
       }
       return 0;
@@ -294,7 +295,7 @@ float Features::getFeatureGamma(Features::FeatureClass featclass, unsigned int l
   }
   else if (featclass==Features::CIRCPATT)
   {
-    if (circgammas->find(level) != circgammas->end())
+    if (circgammas->count(level)>0)
       return (*circgammas)[level];
     else
       return 1.0;
@@ -661,7 +662,7 @@ bool Features::loadGammaLine(std::string line)
   {
     Pattern::Circular pc = Pattern::Circular(circdict,levelstring);
 
-    if (circlevels->find(pc) != circlevels->end())
+    if (circlevels->count(pc)>0)
       level = (*circlevels)[pc];
     else
     {
@@ -1011,6 +1012,6 @@ bool Features::isCircPattern(std::string circpattern) const
 
 bool Features::hasCircPattern(Pattern::Circular *pc)
 {
-  return (circlevels->find(*pc) != circlevels->end());
+  return (circlevels->count(*pc)>0);
 }
 
