@@ -25,6 +25,7 @@ syntax: regexp
 ^scripts/decisiontrees/mm/.*$
 ^scripts/decisiontrees/mm\.tar\.bz2$
 ^scripts/decisiontrees/.*\.dat$
+^scripts/move-prediction/results_.*$
 ^docs/html/.*$
 ^docs/latex/.*$
 ^tags$

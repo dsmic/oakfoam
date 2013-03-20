@@ -1,6 +1,8 @@
 #!/bin/bash
 
 set -eu
+OLDPWD=`pwd`
+cd `dirname "$0"`
 
 TEMPIDS="ids_`date +%F_%T`.tmp"
 TEMPLOG="log_`date +%F_%T`.tmp"
@@ -16,7 +18,7 @@ if (( $# < 2 )); then
   exit 1
 fi
 
-INITIALPATTERNGAMMAS=$1
+INITIALPATTERNGAMMAS=${OLDPWD}/${1}
 if [ "$2" = "small" ]; then
   SMALLONLY="param features_only_small 1\n"
 else
@@ -25,7 +27,7 @@ fi
 
 DTFILE="-"
 if (( $# > 2 )); then
-  DTFILE=$3
+  DTFILE=${OLDPWD}/${3}
 fi
 
 if ! test -x ../../oakfoam; then

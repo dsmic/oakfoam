@@ -1,0 +1,38 @@
+##################################################
+# Example test file
+# Test files are mini bash scripts
+# Copy this file and edit it for your use
+##################################################
+
+##################################################
+# Helper Functions
+# There should be no need to edit this
+##################################################
+
+function get_games
+{
+  find $GAMES_PATH -name '*.sgf' | shuf -n $1
+}
+
+##################################################
+# Parameters
+# Edit this!
+##################################################
+
+# full path to sgf game collection
+GAMES_PATH="/data/go/games/gogod/"
+
+# boolean parameters (0:disabled, 1: enabled)
+PATT_3X3=0    # 3x3 patterns
+PATT_CIRC=0   # circular patterns
+DT=0          # decision trees
+
+# game lists
+PATT_3X3_GAMES="`get_games 10`"
+PATT_CIRC_GAMES="`get_games 10`"
+DT_GAMES="`get_games 10`"
+TRAIN_GAMES="`get_games 10`"
+
+# decision trees
+DT_FOREST_SIZE=2
+

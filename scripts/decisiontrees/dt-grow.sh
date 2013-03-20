@@ -1,6 +1,8 @@
 #!/bin/bash
 
 set -eu
+OLDPWD=`pwd`
+cd `dirname "$0"`
 
 TEMPGTP="grow_`date +%F_%T`.tmp"
 TEMPLOG="growlog_`date +%F_%T`.tmp"
@@ -11,12 +13,8 @@ if (( $# < 1 )); then
   exit 1
 fi
 
-DTFILE=$1
-
-DTIGNORESTATS=0
-if (( $# > 1 )); then
-  DTIGNORESTATS=$2
-fi
+DTFILE=${OLDPWD}/${1}
+DTIGNORESTATS=${2:-1}
 
 if ! test -x ../../oakfoam; then
   echo "File ../../oakfoam not found" >&2

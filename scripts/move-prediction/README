@@ -1,0 +1,17 @@
+--------------------------------------------------
+- Scripts for Move Prediction
+--------------------------------------------------
+
+These scripts are for features and move prediction
+testing. Test parameters are stored in '.test'
+files like 'example.test'. Results are stored
+in timestamped directories with the prefix
+'results_'.
+
+Requirements:
+  GoGui (http://gogui.sourceforge.net)
+  MM tool by Remi Coulom (see mm-fetch.sh)
+
+Usage:
+  $ ./run.sh params.test
+

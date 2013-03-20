@@ -1,17 +1,15 @@
 #!/bin/bash
 
 set -eu
+OLDPWD=`pwd`
+cd `dirname "$0"`
 
 if (( $# < 1 )); then
   echo "DT file required" >&2
   exit 1
 fi
-DTFILE=$1
-
-DTFOREST=1
-if (( $# > 1 )); then
-  DTFOREST=$2
-fi
+DTFILE=${OLDPWD}/${1}
+DTFOREST=${2:-1}
 
 rm -f "$DTFILE" # clear
 
