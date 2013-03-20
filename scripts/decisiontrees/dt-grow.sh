@@ -40,7 +40,7 @@ echo "echo @@ Saving..." >> $TEMPGTP
 echo "dtsave \"$DTFILE\" $DTIGNORESTATS" >> $TEMPGTP
 
 # Use gogui-adapter to emulate loadsgf
-cat "$TEMPGTP" | gogui-adapter "$OAKFOAM" 2>&1 | sed -n 's/^= @@ //p' >&2
+cat "$TEMPGTP" | gogui-adapter "$OAKFOAM" 2>&1 | sed -nu 's/^= @@ //p' >&2
 
 LINES=`cat "$DTFILE" | wc -l`
 LEAVES=`cat "$DTFILE" | grep 'WEIGHT' | wc -l`

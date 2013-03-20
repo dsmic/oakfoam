@@ -89,7 +89,7 @@ done
 echo "[`date +%F_%T`] extracting competitions..." >&2
 
 #cat $TEMPGTP | gogui-adapter "$OAKFOAMLOG" > /dev/null
-cat "$TEMPGTP" | gogui-adapter "$OAKFOAMLOG" 2>&1 | sed -n 's/^= @@ //p' >&2
+cat "$TEMPGTP" | gogui-adapter "$OAKFOAMLOG" 2>&1 | sed -nu 's/^= @@ //p' >&2
 cat $TEMPLOG | grep "^\[features\]:" | sed "s/\[features\]://" | sed "s/^#.*/#/;s/[a-zA-Z0-9]*[*:] //" >> $TEMPMM
 rm -f $TEMPLOG
 
