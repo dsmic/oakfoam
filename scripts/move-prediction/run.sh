@@ -118,5 +118,19 @@ check $?
 
 rm -f $INITGAMMAS
 
-# run tests
+# plot weights?
+
+init "Testing on $(echo "${TEST_GAMES:-}" | wc -l) games"
+(echo "${TEST_GAMES:-}" | ../../features/test-compare.sh $TRAINEDGAMMAS ${DTFILE:-} | sort -n | uniq -c > cmp.txt) 2>&1 | lastline
+check $?
+
+init "Generating reference plots"
+octave -q ../../general/plot.oct > /dev/null
+check $?
+
+mv plot.png move-prediction.png
+cat cmp.txt | awk '{print $2","$1}' > move-prediction.csv
+if (( $? == 0 )); then
+  rm cmp.txt
+fi
 

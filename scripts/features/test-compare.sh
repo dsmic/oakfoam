@@ -1,5 +1,9 @@
 #!/bin/bash
 
+set -eu
+OLDPWD=`pwd`
+cd `dirname "$0"`
+
 TEMPLOG="log_`date +%F_%T`.tmp"
 TEMPGTP="gtp_`date +%F_%T`.tmp"
 TEMPCMP="cmp_`date +%F_%T`.tmp"
@@ -37,7 +41,7 @@ do
 done
 
 echo "[`date +%F_%T`] doing comparisons..." >&2
-cat "$TEMPGTP" | gogui-adapter "$OAKFOAMLOG" 2>&1 | sed -n 's/^= @@ //p' >&2
+cat "$TEMPGTP" | gogui-adapter "$OAKFOAMLOG" 2>&1 | sed -nu 's/^= @@ //p' >&2
 echo "[`date +%F_%T`] done." >&2
 
 cat $TEMPLOG | grep "\[feature_comparison\]:matched" | sed "s/.*: //" >> $TEMPCMP
