@@ -33,6 +33,12 @@ PATT_CIRC_GAMES="`get_games 10`"
 DT_GAMES="`get_games 10`"
 TRAIN_GAMES="`get_games 10`"
 
+# patterns
+PATT_3X3_THRESHOLD=100
+PATT_CIRC_THRESHOLD=100
+PATT_CIRC_START=3
+PATT_CIRC_END=15
+
 # decision trees
 DT_FOREST_SIZE=2
 

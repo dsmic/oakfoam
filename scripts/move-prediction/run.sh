@@ -45,8 +45,6 @@ function lastline
     tput el
     echo "$LINE" >> $LOGFILE
     echo -n "$LINE" >&2
-    sleep 0.1 # flushes output
-    # sync
   done
   tput rc
   tput el
@@ -76,15 +74,36 @@ check $?
 INITGAMMAS="init.gamma"
 touch $INITGAMMAS
 
-# harvest patterns
+if (( ${PATT_3X3:-0} != 0 )); then
+  TEMPPATT="patt_3x3.tmp"
+  init "Harvesting 3x3 patterns from $(echo "${PATT_3X3_GAMES:-}" | wc -l) games"
+  (echo "${PATT_3X3_GAMES:-}" | ../../features/harvest-collection.sh > $TEMPPATT) 2>&1 | lastline
+  if (( $? != 0 )); then
+    check 1
+  fi
+  PATTERNS=`cat $TEMPPATT | awk "BEGIN{m=0} {if (\\$1>=${PATT_3X3_THRESHOLD:-100}) m=NR} END{print m}"`
+  cat $TEMPPATT | head -n $PATTERNS | ../../features/train-prepare-circular.sh >> $INITGAMMAS
+  check $?
+  msg "3x3 patterns harvested: $PATTERNS"
+  rm -f $TEMPPATT
+fi
+
+if (( ${PATT_CIRC:-0} != 0 )); then
+  TEMPPATT="patt_circ.tmp"
+  init "Harvesting circular patterns from $(echo "${PATT_3X3_GAMES:-}" | wc -l) games"
+  (echo "${PATT_CIRC_GAMES:-}" | ../../features/harvest-collection-circular-range.sh ${PATT_CIRC_THRESHOLD:-100} ${PATT_CIRC_END:-15} ${PATT_CIRC_START:-3} > $TEMPPATT) 2>&1 | lastline
+  check $?
+  msg "Circular patterns harvested: `cat $TEMPPATT | wc -l`"
+  cat $TEMPPATT >> $INITGAMMAS
+  rm -f $TEMPPATT
+fi
 
 if (( ${DT:-0} != 0 )); then
   DTFILE="dt.dat"
-  init "Growing decision forest on $(echo "${DT_GAMES:-}" | wc -l) games"
+  init "Growing decision forest from $(echo "${DT_GAMES:-}" | wc -l) games"
   rm -f "$DTFILE" # clear
   ../../decisiontrees/dt-init.sh $DTFILE ${DT_FOREST_SIZE:-1} &>> $LOGFILE
-  exec 3<> tmp
-  echo "${DT_GAMES:-}" | ../../decisiontrees/dt-grow.sh $DTFILE 1 2>&1 1>&3 | lastline
+  echo "${DT_GAMES:-}" | ../../decisiontrees/dt-grow.sh $DTFILE 1 2>&1 | lastline
   check $?
   msg "Decision forest:"
   msg "  Forest size:   ${DT_FOREST_SIZE:-1}"
@@ -94,7 +113,6 @@ fi
 TRAINEDGAMMAS="trained.gamma"
 
 init "Training on $(echo "${TRAIN_GAMES:-}" | wc -l) games"
-# echo "${TRAIN_GAMES:-}" | ../../features/train-gammas.sh $INITGAMMAS large ${DTFILE:-} > $TRAINEDGAMMAS 2>> $LOGFILE
 (echo "${TRAIN_GAMES:-}" | ../../features/train-gammas.sh $INITGAMMAS large ${DTFILE:-} > $TRAINEDGAMMAS) 2>&1 | lastline
 check $?
 

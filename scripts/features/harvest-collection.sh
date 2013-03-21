@@ -1,5 +1,9 @@
 #!/bin/bash
 
+set -eu
+OLDPWD=`pwd`
+cd `dirname "$0"`
+
 TEMPOUTPUT="collection_`date +%F_%T`.tmp"
 TEMPGAME="game_`date +%F_%T`.tmp"
 
