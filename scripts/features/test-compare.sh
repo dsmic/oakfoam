@@ -11,11 +11,11 @@ OAKFOAM="../../oakfoam --nobook"
 OAKFOAMLOG="../../oakfoam --nobook --log $TEMPLOG"
 PROGRAM="gogui-adapter \"$OAKFOAMLOG\""
 
-INITIALPATTERNGAMMAS=$1
+INITIALPATTERNGAMMAS=${OLDPWD}/${1}
 
 DTFILE="-"
 if (( $# > 1 )); then
-  DTFILE=$2
+  DTFILE=${OLDPWD}/${2}
 fi
 
 if ! test -x ../../oakfoam; then

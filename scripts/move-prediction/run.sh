@@ -90,7 +90,7 @@ fi
 
 if (( ${PATT_CIRC:-0} != 0 )); then
   TEMPPATT="patt_circ.tmp"
-  init "Harvesting circular patterns from $(echo "${PATT_3X3_GAMES:-}" | wc -l) games"
+  init "Harvesting circular patterns from $(echo "${PATT_CIRC_GAMES:-}" | wc -l) games"
   (echo "${PATT_CIRC_GAMES:-}" | ../../features/harvest-collection-circular-range.sh ${PATT_CIRC_THRESHOLD:-100} ${PATT_CIRC_END:-15} ${PATT_CIRC_START:-3} > $TEMPPATT) 2>&1 | lastline
   check $?
   msg "Circular patterns harvested: `cat $TEMPPATT | wc -l`"
