@@ -9,7 +9,7 @@
 # There should be no need to edit this
 ##################################################
 
-get_games () { find $GAMES_PATH -name '*.sgf' | shuf -n $1; }
+get_games () { find "$GAMES_PATH" -name '*.sgf' | shuf -n $1; }
 
 ##################################################
 # Parameters
