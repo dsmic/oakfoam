@@ -27,6 +27,7 @@ syntax: regexp
 ^scripts/decisiontrees/.*\.dat$
 ^scripts/move-prediction/results_.*$
 ^scripts/move-prediction/.*\.test$
+^scripts/move-prediction/.*\.json$
 ^docs/html/.*$
 ^docs/latex/.*$
 ^tags$

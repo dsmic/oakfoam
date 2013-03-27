@@ -1,0 +1,15 @@
+{
+  "title":  "Example Plot",
+  "xmax":   150,
+  "data":
+  [
+    {
+      "label":  "Plot 1",
+      "file":   "results_date/move-prediction.csv"
+    },
+    {
+      "label":  "Plot 2",
+      "file":   "results_date/move-prediction.csv"
+    }
+  ]
+}
