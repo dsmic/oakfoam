@@ -82,7 +82,7 @@ if (( ${PATT_3X3:-0} != 0 )); then
     check 1
   fi
   PATTERNS=`cat $TEMPPATT | awk "BEGIN{m=0} {if (\\$1>=${PATT_3X3_THRESHOLD:-100}) m=NR} END{print m}"`
-  cat $TEMPPATT | head -n $PATTERNS | ../../features/train-prepare-circular.sh >> $INITGAMMAS
+  cat $TEMPPATT | head -n $PATTERNS | ../../features/train-prepare.sh >> $INITGAMMAS
   check $?
   msg "3x3 patterns harvested: $PATTERNS"
   rm -f $TEMPPATT
