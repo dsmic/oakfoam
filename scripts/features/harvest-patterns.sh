@@ -1,8 +1,10 @@
 #!/bin/bash
 
+set -eu
+
 TEMPOUTPUT="patterns_`date +%F_%T`.tmp"
 OAKFOAM="../../oakfoam"
-OAKFOAMLOG="../../oakfoam --log $TEMPOUTPUT"
+OAKFOAMLOG="../../oakfoam --nobook --log $TEMPOUTPUT"
 PROGRAM="gogui-adapter \"$OAKFOAM\""
 # Use gogui-adapter to emulate loadsgf
 
