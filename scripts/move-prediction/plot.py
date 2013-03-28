@@ -69,7 +69,7 @@ if plot3d:
       X.append(zz)
 
   # ax.plot_wireframe(X, Y, Z, color='b', cmap='jet')
-  surf = ax.plot_surface(X, Y, Z, rstride=1,  cstride=1, cmap=cm.coolwarm)
+  surf = ax.plot_surface(X, Y, Z, rstride=1, cstride=1, cmap=cm.jet)
   fig.colorbar(surf, shrink=0.5, aspect=5)
 
   ax.set_zlim(0,1)
