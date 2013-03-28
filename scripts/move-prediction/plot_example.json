@@ -1,5 +1,6 @@
 {
   "title":  "Example Plot",
+  "type":   "2d",
   "xmax":   150,
   "data":
   [
