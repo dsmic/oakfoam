@@ -1,8 +1,7 @@
 #!/bin/bash
 
 set -eu
-OLDPWD=`pwd`
-cd `dirname "$0"`
+WD="$(dirname "$0")"
 
 TEMPGAMES="harvest_range_games_`date +%F_%T`.tmp"
 TEMPGAMMAS="harvest_range_gammas_`date +%F_%T`.tmp"
@@ -22,9 +21,15 @@ touch $TEMPGAMMAS
 
 for i in `seq $END -1 $START`; do
   echo -e "\n\n=== Harvesting size: $i" >&2
-  (cat $TEMPGAMES | ./harvest-collection-circular.sh $TEMPGAMMAS $i > $TEMPPATT) 2>&1 | sed -u "s/^/Size $i: /" >&2
+  (cat $TEMPGAMES | $WD/harvest-collection-circular.sh $TEMPGAMMAS $i > $TEMPPATT) 2>&1 | sed -u "s/^/Size $i: /" >&2
+
+  LINES=`cat "$TEMPPATT" | wc -l`
+  if (( $LINES <= 1 )); then
+    exit 1
+  fi
+
   PATTERNS=`cat $TEMPPATT | awk "BEGIN{m=0} {if (\\$1>=${1:-100}) m=NR} END{print m}"`
-  cat $TEMPPATT | head -n $PATTERNS | ./train-prepare-circular.sh >> $TEMPGAMMAS
+  cat $TEMPPATT | head -n $PATTERNS | $WD/train-prepare-circular.sh >> $TEMPGAMMAS
 done
 
 cat $TEMPGAMMAS

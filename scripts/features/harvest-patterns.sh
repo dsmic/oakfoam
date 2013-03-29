@@ -1,15 +1,16 @@
 #!/bin/bash
 
 set -eu
+WD="$(dirname "$0")"
 
 TEMPOUTPUT="patterns_`date +%F_%T`.tmp"
-OAKFOAM="../../oakfoam"
-OAKFOAMLOG="../../oakfoam --nobook --log $TEMPOUTPUT"
+OAKFOAM="$WD/../../oakfoam"
+OAKFOAMLOG="$WD/../../oakfoam --nobook --log $TEMPOUTPUT"
 PROGRAM="gogui-adapter \"$OAKFOAM\""
 # Use gogui-adapter to emulate loadsgf
 
-if ! test -x ../../oakfoam; then
-  echo "File ../../oakfoam not found" >&2
+if ! test -x $WD/../../oakfoam; then
+  echo "File $WD/../../oakfoam not found" >&2
   exit 1
 fi
 

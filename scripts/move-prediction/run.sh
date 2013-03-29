@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -u
+set -eu
 OLDPWD=`pwd`
 cd `dirname "$0"`
 
@@ -32,6 +32,7 @@ function check
     tput setaf 1
     msg_short "[Fail]"
     tput sgr0
+    trap - ERR
     exit 1
   fi
 }
@@ -49,6 +50,8 @@ function lastline
   tput rc
   tput el
 }
+
+trap 'check 1' ERR
 
 RESDIR="results_`date +%F_%T`"
 mkdir $RESDIR

@@ -1,27 +1,26 @@
 #!/bin/bash
 
 set -eu
-OLDPWD=`pwd`
-cd `dirname "$0"`
+WD="$(dirname "$0")"
 
 TEMPLOG="log_`date +%F_%T`.tmp"
 TEMPGTP="gtp_`date +%F_%T`.tmp"
 TEMPCMP="cmp_`date +%F_%T`.tmp"
-OAKFOAM="../../oakfoam --nobook"
-OAKFOAMLOG="../../oakfoam --nobook --log $TEMPLOG"
+OAKFOAM="$WD/../../oakfoam --nobook"
+OAKFOAMLOG="$WD/../../oakfoam --nobook --log $TEMPLOG"
 PROGRAM="gogui-adapter \"$OAKFOAMLOG\""
 
-INITIALPATTERNGAMMAS=${OLDPWD}/${1}
+INITIALPATTERNGAMMAS=${1}
 
-DTFILE="-"
-if (( $# > 1 )); then
-  DTFILE=${OLDPWD}/${2}
-fi
+DTFILE=${2:--}
+# if (( $# > 1 )); then
+#   DTFILE=${OLDPWD}/${2}
+# fi
 
 LADDERS=${3:-0}
 
-if ! test -x ../../oakfoam; then
-  echo "File ../../oakfoam not found" >&2
+if ! test -x $WD/../../oakfoam; then
+  echo "File $WD/../../oakfoam not found" >&2
   exit 1
 fi
 

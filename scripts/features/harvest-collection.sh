@@ -1,8 +1,7 @@
 #!/bin/bash
 
 set -eu
-OLDPWD=`pwd`
-cd `dirname "$0"`
+WD="$(dirname "$0")"
 
 TEMPOUTPUT="collection_`date +%F_%T`.tmp"
 TEMPGAME="game_`date +%F_%T`.tmp"
@@ -14,10 +13,10 @@ cat | while read GAME
 do
   let "i=$i+1"
   echo -e "$i \t: '$GAME'" >&2
-  ./harvest-patterns.sh "$GAME" > $TEMPGAME
+  $WD/harvest-patterns.sh "$GAME" > $TEMPGAME
   
   DATA=`cat ${TEMPOUTPUT}`"\n"`cat ${TEMPGAME}`
-  echo -e "$DATA" | ./harvest-combine.sh | sort -rn > ${TEMPOUTPUT}
+  echo -e "$DATA" | $WD/harvest-combine.sh | sort -rn > ${TEMPOUTPUT}
 done
 
 cat $TEMPOUTPUT

@@ -1,24 +1,23 @@
 #!/bin/bash
 
 set -eu
-OLDPWD=`pwd`
-cd `dirname "$0"`
+WD="$(dirname "$0")"
 
 TEMPIDS="ids_`date +%F_%T`.tmp"
 TEMPLOG="log_`date +%F_%T`.tmp"
 TEMPMM="mm_`date +%F_%T`.tmp"
 TEMPGTP="gtp_`date +%F_%T`.tmp"
-OAKFOAM="../../oakfoam --nobook"
-OAKFOAMLOG="../../oakfoam --nobook --log $TEMPLOG"
+OAKFOAM="$WD/../../oakfoam --nobook"
+OAKFOAMLOG="$WD/../../oakfoam --nobook --log $TEMPLOG"
 PROGRAM="gogui-adapter \"$OAKFOAMLOG\""
-MM="mm/mm"
+MM="$WD/mm/mm"
 
 if (( $# < 2 )); then
   echo "At least 2 parameters required" >&2
   exit 1
 fi
 
-INITIALPATTERNGAMMAS=${OLDPWD}/${1}
+INITIALPATTERNGAMMAS=${1}
 if [ "$2" = "small" ]; then
   SMALLONLY="param features_only_small 1\n"
 else
@@ -26,19 +25,19 @@ else
 fi
 
 DTFILE=${3:--}
-if [ "$DTFILE" != "-" ]; then
-  DTFILE=${OLDPWD}/${DTFILE}
-fi
+# if [ "$DTFILE" != "-" ]; then
+#   DTFILE=${OLDPWD}/${DTFILE}
+# fi
 
 LADDERS=${4:-0}
 
-if ! test -x ../../oakfoam; then
-  echo "File ../oakfoam not found" >&2
+if ! test -x $WD/../../oakfoam; then
+  echo "File $WD/../oakfoam not found" >&2
   exit 1
 fi
 
-if ! test -x mm/mm; then
-  echo "File mm/mm not found" >&2
+if ! test -x $WD/mm/mm; then
+  echo "File $WD/mm/mm not found" >&2
   exit 1
 fi
 
@@ -51,7 +50,7 @@ if [ "$DTFILE" != "-" ]; then
   LEAVES=`cat "$DTFILE" | grep 'WEIGHT' | wc -l`
   ORIGFEATURES=$FEATUREIDCOUNT
   let "FEATUREIDCOUNT=$FEATUREIDCOUNT+$LEAVES"
-  DTFEATURES=`../decisiontrees/dt-features.sh "$DTFILE" 1 | sed -n '2,$p'`
+  DTFEATURES=`$WD/../decisiontrees/dt-features.sh "$DTFILE" 1 | sed -n '2,$p'`
   MMFEATURES="$MMFEATURES
 $DTFEATURES"
 fi
@@ -99,6 +98,11 @@ rm -f $TEMPLOG
 echo "[`date +%F_%T`] training..." >&2
 MMOUTPUT=`cat $TEMPMM | $MM`
 #rm -f mm-with-freq.dat
+
+LINES=`echo "$MMOUTPUT" | wc -l`
+if (( $LINES <= 1 )); then
+  exit 1
+fi
 
 echo "[`date +%F_%T`] done." >&2
 

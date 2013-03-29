@@ -1,23 +1,22 @@
 #!/bin/bash
 
 set -eu
-OLDPWD=`pwd`
-cd `dirname "$0"`
+WD="$(dirname "$0")"
 
 TEMPGTP="grow_`date +%F_%T`.tmp"
 TEMPLOG="growlog_`date +%F_%T`.tmp"
-OAKFOAM="../../oakfoam --nobook --log $TEMPLOG"
+OAKFOAM="$WD/../../oakfoam --nobook --log $TEMPLOG"
 
 if (( $# < 1 )); then
   echo "Exactly one DT required" >&2
   exit 1
 fi
 
-DTFILE=${OLDPWD}/${1}
+DTFILE=${1}
 DTIGNORESTATS=${2:-1}
 
-if ! test -x ../../oakfoam; then
-  echo "File ../../oakfoam not found" >&2
+if ! test -x $WD/../../oakfoam; then
+  echo "File $WD/../../oakfoam not found" >&2
   exit 1
 fi
 

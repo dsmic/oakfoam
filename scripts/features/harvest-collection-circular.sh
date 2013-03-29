@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -eu
+WD="$(dirname "$0")"
 
 TEMPOUTPUT="collection_circ_`date +%F_%T`.tmp"
 TEMPCOMBINED="combined_circ_`date +%F_%T`.tmp"
@@ -15,10 +16,10 @@ cat | while read GAME
 do
   let "i=$i+1"
   echo -e "$i \t: '$GAME'" >&2
-  ./harvest-circular.sh "$GAME" $INITGAMMAS $SIZE >> ${TEMPOUTPUT}
+  $WD/harvest-circular.sh "$GAME" $INITGAMMAS $SIZE >> ${TEMPOUTPUT}
 done
 
-cat ${TEMPOUTPUT} | ./harvest-combine.sh | sort -rn > ${TEMPCOMBINED}
+cat ${TEMPOUTPUT} | $WD/harvest-combine.sh | sort -rn > ${TEMPCOMBINED}
 cat $TEMPCOMBINED
 
 rm -f $TEMPOUTPUT
