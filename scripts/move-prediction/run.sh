@@ -113,7 +113,7 @@ fi
 TRAINEDGAMMAS="trained.gamma"
 
 init "Training on $(echo "${TRAIN_GAMES:-}" | wc -l) games"
-(echo "${TRAIN_GAMES:-}" | ../../features/train-gammas.sh $INITGAMMAS large ${DTFILE:-} > $TRAINEDGAMMAS) 2>&1 | lastline
+(echo "${TRAIN_GAMES:-}" | ../../features/train-gammas.sh $INITGAMMAS large ${DTFILE:--} ${NONPATT_LADDERS:-0} > $TRAINEDGAMMAS) 2>&1 | lastline
 check $?
 
 rm -f $INITGAMMAS
@@ -121,7 +121,7 @@ rm -f $INITGAMMAS
 # plot weights?
 
 init "Testing on $(echo "${TEST_GAMES:-}" | wc -l) games"
-(echo "${TEST_GAMES:-}" | ../../features/test-compare.sh $TRAINEDGAMMAS ${DTFILE:-} | sort -n | uniq -c > cmp.txt) 2>&1 | lastline
+(echo "${TEST_GAMES:-}" | ../../features/test-compare.sh $TRAINEDGAMMAS ${DTFILE:--} ${NONPATT_LADDERS:-0} | sort -n | uniq -c > cmp.txt) 2>&1 | lastline
 check $?
 
 init "Generating reference plots"

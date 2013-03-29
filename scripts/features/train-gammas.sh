@@ -25,10 +25,12 @@ else
   SMALLONLY=""
 fi
 
-DTFILE="-"
-if (( $# > 2 )); then
-  DTFILE=${OLDPWD}/${3}
+DTFILE=${3:--}
+if [ "$DTFILE" != "-" ]; then
+  DTFILE=${OLDPWD}/${DTFILE}
 fi
+
+LADDERS=${4:-0}
 
 if ! test -x ../../oakfoam; then
   echo "File ../oakfoam not found" >&2
@@ -63,6 +65,7 @@ echo "$MMHEADER" > $TEMPMM
 
 #here is a probability to introduce (1.0) it says with which probability a move is taken for the data base. set to 1 for original behaviour
 echo -e "loadfeaturegammas ${INITIALPATTERNGAMMAS}\nparam features_output_competitions 0.1\nparam features_output_competitions_mmstyle 1\n${SMALLONLY}" > $TEMPGTP
+echo "param features_ladders $LADDERS" >> $TEMPGTP
 echo 'param undo_enable 0' >> $TEMPGTP # so gogui-adapter doesn't send undo commands
 
 if [ "$DTFILE" != "-" ]; then

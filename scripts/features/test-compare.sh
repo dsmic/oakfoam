@@ -18,6 +18,8 @@ if (( $# > 1 )); then
   DTFILE=${OLDPWD}/${2}
 fi
 
+LADDERS=${3:-0}
+
 if ! test -x ../../oakfoam; then
   echo "File ../../oakfoam not found" >&2
   exit 1
@@ -25,6 +27,7 @@ fi
 
 echo "loadfeaturegammas $INITIALPATTERNGAMMAS" >> $TEMPGTP
 echo "param features_ordered_comparison 1" >> $TEMPGTP
+echo "param features_ladders $LADDERS" >> $TEMPGTP
 if [ "$DTFILE" != "-" ]; then
   echo "dtload \"$DTFILE\"" >> $TEMPGTP
   echo "param dt_solo_leaf 1" >> $TEMPGTP

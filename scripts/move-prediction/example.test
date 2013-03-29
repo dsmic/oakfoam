@@ -31,6 +31,9 @@ DT_GAMES="`get_games 10`"
 TRAIN_GAMES="`get_games 10`"
 TEST_GAMES="`get_games 10`"
 
+# non-pattern
+NONPATT_LADDERS=0
+
 # 3x3 patterns
 PATT_3X3_THRESHOLD=100
 
