@@ -180,6 +180,7 @@ Go::Board::Board(int s)
 {
   markchanges=false;
   lastchanges=new Go::BitBoard(size);
+  lastcapture=false;
   
   for (int p=0;p<sizedata;p++)
   {
@@ -518,6 +519,8 @@ void Go::Board::makeMove(Go::Move move)
     fprintf(stderr,"WARNING! unexpected move color\n");
   }
   
+  lastcapture = false;
+
   if (simpleko!=-1)
   {
     int kopos=simpleko;
@@ -603,6 +606,7 @@ void Go::Board::makeMove(Go::Move move)
       
       if (othergroup->numOfPseudoLiberties()==0)
       {
+        lastcapture=true;
         if (removeGroup(othergroup)==1)
         {
           if (posko==-1)

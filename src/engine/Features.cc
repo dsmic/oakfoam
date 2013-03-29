@@ -80,9 +80,11 @@ unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::B
       if (board->isCapture(move))
       {
         Go::Color col=move.getColor();
+        Go::Color othercol=Go::otherColor(col);
         int pos=move.getPosition();
         int size=board->getSize();
 
+        // check if adjacent group of captured group is in atari
         foreach_adjacent(pos,p,{
           if (board->inGroup(p))
           {
@@ -95,14 +97,60 @@ unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::B
                 if (board->inGroup((*iter)) && board->getGroup((*iter))->inAtari())
                 {
                   if (group->numOfStones()>=10)
-                    return 3;
+                    return 6;
                   else
-                    return 2;
+                    return 5;
                 }
               }
             }
           }
         });
+
+        // check for re-capture
+        if (board->isLastCapture() && board->getLastMove().isNormal())
+        {
+          int lastpos = board->getLastMove().getPosition();
+          foreach_adjacent(pos,p,{
+            if (board->inGroup(p))
+            {
+              Go::Group *group=board->getGroup(p);
+              if (group->getColor()!=col && group->inAtari()) // captured group
+              {
+                if (board->getGroup(lastpos)==group)
+                  return 4;
+              }
+            }
+          });
+        }
+
+        // check if this prevents a connection
+        foreach_adjacent(pos,p,{
+          if (board->inGroup(p))
+          {
+            Go::Group *group=board->getGroup(p);
+            if (group->getColor()!=col && !group->inAtari()) // another group
+            {
+              if (board->isExtension(Go::Move(othercol,pos)))
+                return 3;
+            }
+          }
+        });
+
+        // check if in ladder
+        if (params->features_ladders)
+        {
+          Go::Color col=move.getColor();
+          int pos=move.getPosition();
+          int size=board->getSize();
+          foreach_adjacent(pos,p,{
+            if (board->inGroup(p) && board->getColor(p)==col)
+            {
+              Go::Group *group=board->getGroup(p);
+              if (board->isLadder(group) && !board->isProbableWorkingLadder(group))
+                return 2;
+            }
+          });
+        }
 
         return 1;
       }

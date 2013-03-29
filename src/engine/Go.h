@@ -558,6 +558,8 @@ namespace Go
        * Used to make the mercy rule more robust.
        */
       void resetCaptures() { blackcaptures=0; whitecaptures=0; };
+      /** Determine if the last move captured a group. */
+      bool isLastCapture() { return lastcapture; };
       
       /** Get the color of the given position. */
       inline Go::Color getColor(int pos) const { return data[pos].color; };
@@ -712,6 +714,7 @@ namespace Go
       Go::ObjectBoard<float> *blackgammas;
       Go::ObjectBoard<float> *whitegammas;
       int blackcaptures,whitecaptures;
+      bool lastcapture;
       
       struct ScoreVertex
       {

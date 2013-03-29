@@ -2,7 +2,7 @@
 #define DEF_OAKFOAM_FEATURES_H
 
 #define PASS_LEVELS 2
-#define CAPTURE_LEVELS 3
+#define CAPTURE_LEVELS 6
 #define EXTENSION_LEVELS 2
 #define SELFATARI_LEVELS 2
 #define ATARI_LEVELS 3
@@ -20,8 +20,11 @@ const std::string FEATURES_DEFAULT=
   "pass:1 0.950848 \n"
   "pass:2 85.7124 \n"
   "capture:1 3.33649 \n"
-  "capture:2 50.0 \n" // hand-picked, after adding level
-  "capture:3 1000.0 \n" // hand-picked, after adding level
+  "capture:2 3.33649 \n" // duplicated prev value after adding level
+  "capture:3 3.33649 \n" // duplicated prev value after adding level
+  "capture:4 3.33649 \n" // duplicated prev value after adding level
+  "capture:5 50.0 \n" // hand-picked, after adding level
+  "capture:6 1000.0 \n" // hand-picked, after adding level
   "extension:1 4.03331 \n"
   "extension:2 0.1 \n" // hand-picked, after adding level
   "selfatari:1 0.05 \n" // hand-picked, after fixing bug
@@ -666,13 +669,17 @@ namespace Pattern
  *    - 2: The move and previous move are passes.
  *  - CAPTURE
  *    - 1: The move is a capture.
- *    - 2: The move is a capture of a group adjacent to another group in atari.
- *    - 3: The move is a capture of a group, of 10 or more stones, adjacent to another group in atari.
+ *    - 2: The move is a capture of a group in a broken ladder.
+ *    - 3: The move is a capture that prevents the opponent playing a connection here.
+ *    - 4: The move re-captures a group that just caused a capture.
+ *    - 5: The move is a capture of a group adjacent to another group in atari.
+ *    - 6: The move is a capture of a group, of 10 or more stones, adjacent to another group in atari.
  *  - EXTENSION
  *    - 1: The move extends a group in atari.
  *    - 2: The move extends a group in atari and a working ladder.
  *  - SELFATARI
  *    - 1: The move is a self-atari.
+ *    - 2: The move is a self-atari that matches the playout_avoid_selfatari heuristic.
  *  - ATARI
  *    - 1: The move is an atari.
  *    - 2: The move is an atari and there is an active ko.
