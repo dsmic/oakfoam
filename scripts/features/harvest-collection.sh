@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -eu
+set -o pipefail
 WD="$(dirname "$0")"
 
 TEMPOUTPUT="collection_`date +%F_%T`.tmp"

@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -eu
+set -o pipefail
 WD="$(dirname "$0")"
 
 TEMPIDS="ids_`date +%F_%T`.tmp"

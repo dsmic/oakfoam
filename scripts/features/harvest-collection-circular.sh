@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -eu
+set -o pipefail
 WD="$(dirname "$0")"
 
 TEMPOUTPUT="collection_circ_`date +%F_%T`.tmp"
@@ -19,6 +20,7 @@ do
   $WD/harvest-circular.sh "$GAME" $INITGAMMAS $SIZE >> ${TEMPOUTPUT}
 done
 
+echo "Sorting and combining patterns..." >&2
 cat ${TEMPOUTPUT} | $WD/harvest-combine.sh | sort -rn > ${TEMPCOMBINED}
 cat $TEMPCOMBINED
 

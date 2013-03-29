@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -eu
+set -o pipefail
 OLDPWD=`pwd`
 cd `dirname "$0"`
 
@@ -97,6 +98,10 @@ if (( ${PATT_CIRC:-0} != 0 )); then
   (echo "${PATT_CIRC_GAMES:-}" | ../../features/harvest-collection-circular-range.sh ${PATT_CIRC_THRESHOLD:-100} ${PATT_CIRC_END:-15} ${PATT_CIRC_START:-3} > $TEMPPATT) 2>&1 | lastline
   check $?
   msg "Circular patterns harvested: `cat $TEMPPATT | wc -l`"
+  LINES=`cat "$TEMPPATT" | wc -l`
+  if (( $LINES <= 1 )); then
+    check 1
+  fi
   cat $TEMPPATT >> $INITGAMMAS
   rm -f $TEMPPATT
 fi

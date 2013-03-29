@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -eu
+set -o pipefail
 WD="$(dirname "$0")"
 
 TEMPGAMES="harvest_range_games_`date +%F_%T`.tmp"
@@ -29,6 +30,7 @@ for i in `seq $END -1 $START`; do
   fi
 
   PATTERNS=`cat $TEMPPATT | awk "BEGIN{m=0} {if (\\$1>=${1:-100}) m=NR} END{print m}"`
+  echo "Preparing $PATTERNS gammas for size $i..." >&2
   cat $TEMPPATT | head -n $PATTERNS | $WD/train-prepare-circular.sh >> $TEMPGAMMAS
 done
 
