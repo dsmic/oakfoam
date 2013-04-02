@@ -2,6 +2,7 @@
   "title":  "Example Plot",
   "type":   "2d",
   "xmax":   150,
+  "errk":   1.96,
   "data":
   [
     {

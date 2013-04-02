@@ -85,6 +85,9 @@ else:
     plt.xlim(0,float(jd['xmax']))
   else:
     plt.xlim(0,200)
+  errk = 0.0
+  if 'errk' in jd.keys():
+    errk = float(jd['errk'])
 
   for f in jd['data']:
     with open(f['file'], 'rb') as csvfile:
@@ -98,12 +101,27 @@ else:
       s = sum(y)
       t = 0.0
       z = []
+      err = []
+      err1 = []
+      err2 = []
       for yy in y:
         t += yy
-        z.append(t/s)
+        v = t/s
+        z.append(v)
+        if errk>0:
+          e = errk*math.sqrt(v*(1-v)/s)
+        else:
+          e = 0
+        err.append(e)
+        err1.append(v+e)
+        err2.append(v-e)
 
       lbl = f['label'] + ' (%.1f%%)' % (z[0]*100)
       p = plt.plot(x, z, label = lbl)
+      col = p[0].get_color()
+      if errk>0:
+        plt.fill_between(x, err1, err2, alpha = 0.2, color = col)
+        # plt.errorbar(x, z, yerr = err, fmt='.', color = col)
 
   plt.legend(loc=4)
 
