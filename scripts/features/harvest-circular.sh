@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -eu
+set -o pipefail
 WD="$(dirname "$0")"
 
 TEMPOUTPUT="patterns_circ_`date +%F_%T`.tmp"
@@ -23,11 +24,17 @@ SIZE=$3
 
 CMDS="param undo_enable 0\nparam features_circ_list 0.1\nparam features_circ_list_size $SIZE\nloadfeaturegammas \"$INITGAMMAS\"\nloadsgf \"$GAME\""
 # Use gogui-adapter to emulate loadsgf
-echo -e $CMDS | gogui-adapter "$OAKFOAM"
+echo -e $CMDS | gogui-adapter "$OAKFOAM" > /dev/null
 
-cat $TEMPOUTPUT | grep -e '^[1-9][0-9]*:' | sed 's/ /\n/g' | grep '^[1-9][0-9]*:' >> $TEMPOUTPUT2
+set +e
+HARVESTED=`cat $TEMPOUTPUT | grep -e '^[1-9][0-9]*:' | wc -l`
+set -e
 
-cat $TEMPOUTPUT2 | sort | uniq -c | sort -rn
+if (( ${HARVESTED:-0} > 0 )); then
+  cat $TEMPOUTPUT | grep -e '^[1-9][0-9]*:' | sed 's/ /\n/g' | grep '^[1-9][0-9]*:' >> $TEMPOUTPUT2
+
+  cat $TEMPOUTPUT2 | sort | uniq -c | sort -rn
+fi
 
 rm -f $TEMPOUTPUT $TEMPOUTPUT2
 

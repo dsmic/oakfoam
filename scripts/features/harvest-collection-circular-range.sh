@@ -31,7 +31,9 @@ for i in `seq $END -1 $START`; do
 
   PATTERNS=`cat $TEMPPATT | awk "BEGIN{m=0} {if (\\$1>=${1:-100}) m=NR} END{print m}"`
   echo "Preparing $PATTERNS gammas for size $i..." >&2
+  set +e # disable error handling for the next command, workaround
   cat $TEMPPATT | head -n $PATTERNS | $WD/train-prepare-circular.sh >> $TEMPGAMMAS
+  set -e
 done
 
 cat $TEMPGAMMAS

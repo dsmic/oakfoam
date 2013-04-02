@@ -25,6 +25,8 @@ function init
 
 function check
 { 
+  tput rc
+  tput el
   if ((${1:-0}==0)); then
     tput setaf 2
     msg_short "[Done]"
