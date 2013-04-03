@@ -97,21 +97,24 @@ cat $TEMPLOG | grep "^\[features\]:" | sed "s/\[features\]://" | sed "s/^#.*/#/;
 rm -f $TEMPLOG
 
 echo "[`date +%F_%T`] training..." >&2
-MMOUTPUT=`cat $TEMPMM | $MM`
+MMOUTPUT="mm_output.tmp"
+# MMOUTPUT=`cat $TEMPMM | $MM`
+cat $TEMPMM | $MM > $MMOUTPUT
 #rm -f mm-with-freq.dat
 
-LINES=`echo "$MMOUTPUT" | wc -l`
+LINES=`cat "$MMOUTPUT" | wc -l`
 if (( $LINES <= 1 )); then
   exit 1
 fi
 
-echo "[`date +%F_%T`] done." >&2
+echo "[`date +%F_%T`] saving weights..." >&2
 
-#echo "$MMOUTPUT"
+set +e # workaround for random bug
+#cat "$MMOUTPUT"
 if [ "$DTFILE" != "-" ]; then
-  MMOUTPUT_TOP=`echo "$MMOUTPUT" | head -n $ORIGFEATURES`
+  MMOUTPUT_TOP=`cat "$MMOUTPUT" | head -n $ORIGFEATURES`
   LEAVES=`cat "$DTFILE" | grep 'WEIGHT' | wc -l`
-  MMOUTPUT_BOT=`echo "$MMOUTPUT" | tail -n $LEAVES`
+  MMOUTPUT_BOT=`cat "$MMOUTPUT" | tail -n $LEAVES`
 
   echo "dtload \"$DTFILE\"" > $TEMPGTP
   echo "$MMOUTPUT_BOT" | while read IDWEIGHT; do
@@ -125,9 +128,11 @@ if [ "$DTFILE" != "-" ]; then
 
   cat "$TEMPGTP" | gogui-adapter "$OAKFOAM" &> /dev/null
 
-  MMOUTPUT="$MMOUTPUT_TOP"
+  echo "$MMOUTPUT_TOP" > $MMOUTPUT
 fi
-echo "$MMOUTPUT" | join $TEMPIDS - | sed "s/ */ /;s/^ //;s/^[0-9]* //"
+cat "$MMOUTPUT" | join $TEMPIDS - | sed "s/ */ /;s/^ //;s/^[0-9]* //"
+rm -f "$MMOUTPUT"
+set -e # end workaround
 
 rm -f $TEMPMM
 rm -f $TEMPIDS
