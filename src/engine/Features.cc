@@ -292,7 +292,7 @@ void Features::learnFeatureGamma(Features::FeatureClass featclass, unsigned int 
   {
     if (patterngammas->hasGamma(level))
     {
-      patterngammas->learnGamma(level,params->learn_delta*learn_diff);
+      patterngammas->learnGamma(level,learn_diff);
       return;
     }
     else
@@ -305,7 +305,9 @@ void Features::learnFeatureGamma(Features::FeatureClass featclass, unsigned int 
     {
       if (gammas[level-1]>0)
       {
-        gammas[level-1]+=params->learn_delta*learn_diff;
+        gammas[level-1]+=learn_diff;
+        if (gammas[level-1]<=0.0) 
+          gammas[level-1]=0.001;
         return;
       }
       else

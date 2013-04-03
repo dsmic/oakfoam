@@ -349,6 +349,11 @@ class Engine
     Worker::Pool *threadpool;
     Go::TerritoryMap *territorymap;
     long statistics[STATISTICS_NUM];
+
+    //learning statistics
+    float learn_sum;
+    int learn_n;
+    
     bool isgamefinished;
     std::list<DecisionTree*> decisiontrees;
 
