@@ -283,10 +283,47 @@ float Features::getFeatureGamma(Features::FeatureClass featclass, unsigned int l
   }
 }
 
-void Features::learnFeatureGamma(Features::FeatureClass featclass, unsigned int level, float learn_diff) const
+int Features::learnFeatureGammaC(Features::FeatureClass featclass, unsigned int level, float learn_diff)
 {
   if (level==0 && featclass!=Features::PATTERN3X3)
-    return;
+      return 0;
+
+  
+  if (featclass==Features::PATTERN3X3)
+  {
+    if (patterngammas->hasGamma(level))
+    {
+      //patterngammas->learnGamma(level,learn_diff);
+      return 1;
+    }
+    else
+      return 0;
+  }
+  else
+  {
+    float *gammas=this->getStandardGamma(featclass);
+    if (gammas!=NULL)
+    {
+      if (gammas[level-1]>0)
+      {
+        //gammas[level-1]+=learn_diff;
+        //if (gammas[level-1]<=0.0) 
+        //  gammas[level-1]=0.001;
+        return 1;
+      }
+      else
+        return 0;
+    }
+    else
+      return 0;
+  }
+}
+
+void Features::learnFeatureGamma(Features::FeatureClass featclass, unsigned int level, float learn_diff)
+{
+  if (level==0 && featclass!=Features::PATTERN3X3)
+      return;
+
   
   if (featclass==Features::PATTERN3X3)
   {
@@ -405,10 +442,62 @@ float Features::getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist
   return g;
 }
 
+int Features::learnMoveGammaC(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move,float learn_diff)
+{
+  int C=0;
+  if (!board->validMove(move))
+    return 0;
+  
+  C+=this->learnFeatureGammaC(Features::PASS,this->matchFeatureClass(Features::PASS,board,cfglastdist,cfgsecondlastdist,move),params->learn_delta*learn_diff);
+  C+=this->learnFeatureGammaC(Features::CAPTURE,this->matchFeatureClass(Features::CAPTURE,board,cfglastdist,cfgsecondlastdist,move),params->learn_delta*learn_diff);
+  C+=this->learnFeatureGammaC(Features::EXTENSION,this->matchFeatureClass(Features::EXTENSION,board,cfglastdist,cfgsecondlastdist,move),params->learn_delta*learn_diff);
+  C+=this->learnFeatureGammaC(Features::SELFATARI,this->matchFeatureClass(Features::SELFATARI,board,cfglastdist,cfgsecondlastdist,move),params->learn_delta*learn_diff);
+  C+=this->learnFeatureGammaC(Features::ATARI,this->matchFeatureClass(Features::ATARI,board,cfglastdist,cfgsecondlastdist,move),params->learn_delta*learn_diff);
+  C+=this->learnFeatureGammaC(Features::BORDERDIST,this->matchFeatureClass(Features::BORDERDIST,board,cfglastdist,cfgsecondlastdist,move),params->learn_delta*learn_diff);
+  C+=this->learnFeatureGammaC(Features::LASTDIST,this->matchFeatureClass(Features::LASTDIST,board,cfglastdist,cfgsecondlastdist,move),params->learn_delta*learn_diff);
+  C+=this->learnFeatureGammaC(Features::SECONDLASTDIST,this->matchFeatureClass(Features::SECONDLASTDIST,board,cfglastdist,cfgsecondlastdist,move),params->learn_delta*learn_diff);
+  C+=this->learnFeatureGammaC(Features::CFGLASTDIST,this->matchFeatureClass(Features::CFGLASTDIST,board,cfglastdist,cfgsecondlastdist,move),params->learn_delta*learn_diff);
+  C+=this->learnFeatureGammaC(Features::CFGSECONDLASTDIST,this->matchFeatureClass(Features::CFGSECONDLASTDIST,board,cfglastdist,cfgsecondlastdist,move),params->learn_delta*learn_diff);
+  C+=this->learnFeatureGammaC(Features::PATTERN3X3,this->matchFeatureClass(Features::PATTERN3X3,board,cfglastdist,cfgsecondlastdist,move),params->learn_delta*learn_diff);
+
+  if (params->uct_factor_circpattern>0.0 &&move.isNormal())
+  {
+    Pattern::Circular pattcirc=Pattern::Circular(circdict,board,move.getPosition(),circpatternsize);
+    if (move.getColor()==Go::WHITE)
+            pattcirc.invert();
+    pattcirc.convertToSmallestEquivalent(circdict);
+    fprintf(stderr,"found pattern %f %s (stones %d)\n",this->valueCircPattern(pattcirc.toString(circdict)),pattcirc.toString(circdict).c_str(),pattcirc.countStones(circdict));
+    if (this->valueCircPattern(pattcirc.toString(circdict))>0.0)
+    {
+     //fprintf(stderr,"found pattern %f %s (stones %d)\n",params->test_p1,pattcirc.toString(circdict).c_str(),pattcirc.countStones(circdict));
+     //fprintf(stderr,"found pattern %f %s (stones %d)\n",this->valueCircPattern(pattcirc.toString(circdict)),pattcirc.toString(circdict).c_str(),pattcirc.countStones(circdict));
+     //this->learnCircPattern(pattcirc.toString(circdict),params->learn_delta*learn_diff);
+     C++;
+    }
+    for (int j=circpatternsize-1;j>params->test_p8;j--)
+    {
+      Pattern::Circular tmp=pattcirc.getSubPattern(circdict,j);
+      tmp.convertToSmallestEquivalent(circdict);
+      std::string tmpPattString=tmp.toString(circdict);
+      if (this->valueCircPattern(tmpPattString)>0.0)
+      {
+       //fprintf(stderr,"found pattern %f %s (stones %d)\n",this->valueCircPattern(tmpPattString),tmpPattString.c_str(),tmp.countStones(circdict));
+       //this->learnCircPattern(tmpPattString,params->learn_delta*learn_diff); //params->uct_factor_circpattern_exponent
+        C++;
+      }
+    }
+  }
+
+  return C;
+}
+
 bool Features::learnMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move,float learn_diff)
 {
   if (!board->validMove(move))
     return 0;
+  int number_of_features_used=learnMoveGammaC(board,cfglastdist,cfgsecondlastdist,move,0);
+  if (number_of_features_used>0)
+    learn_diff/=number_of_features_used;
   
   this->learnFeatureGamma(Features::PASS,this->matchFeatureClass(Features::PASS,board,cfglastdist,cfgsecondlastdist,move),params->learn_delta*learn_diff);
   this->learnFeatureGamma(Features::CAPTURE,this->matchFeatureClass(Features::CAPTURE,board,cfglastdist,cfgsecondlastdist,move),params->learn_delta*learn_diff);

@@ -43,6 +43,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   komi=7.5;
 
   learn_sum=0;
+  learn_sum_diff=0;
   learn_n=0;
   
   params->tree_instances=0;
@@ -3467,6 +3468,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     ssun<<") ordergamma:(";
     nn=1;
     float learn_sqr=0;
+    float learn_d=0;
     int tmp_counter=0;
 
 #define sign(A) ((A>0)?1:((A<0)?-1:0))
@@ -3494,14 +3496,14 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
       for (int j=1;j<=i;j++)
         sum_befor+=gamma_from_mc_position(j);
       float diff=0;
-      if (sum_after>0 && i!=num_unpruned)
+      if (sum_after>0 && i!=num_unpruned && i!=1) //testing ignoring the first and the last!!
       {
         ssun<<" after "<<gamma_from_mc_position(i)/sum_after;
         //this has to be multiplied by the ratio of sum_after/sum_all?!
         //this is the ratio, that one of the afters has won?!
         diff+=(1.0-gamma_from_mc_position(i)/sum_after) * sum_after / sum_all;
       }
-      if (sum_befor>0 && i!=1)
+      if (sum_befor>0 && i!=1 && i!=num_unpruned) //testing ignoring the first and the last!!
       {
         ssun<<" befor "<<gamma_from_mc_position(i)/sum_befor;
         diff-=gamma_from_mc_position(i)/sum_befor;
@@ -3509,6 +3511,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
       ssun<<" diff "<<diff;
       numvalue_gamma.insert(std::make_pair(mc_pos_move.find(i)->second,diff));
       learn_sqr+=fabs(diff);
+      learn_d+=diff;
       tmp_counter++;
     }
     ssun<<"\n";
@@ -3527,6 +3530,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     if (tmp_counter>0)
     {
       learn_sum+=(learn_sqr)/tmp_counter;
+      learn_sum_diff+=learn_d/tmp_counter;
       learn_n++;
     }
 
@@ -5000,11 +5004,17 @@ void Engine::gameFinished()
     fprintf(stderr,"files gamma %s circ %s\n",learn_filename_features.c_str(),learn_filename_circ_patterns.c_str()); 
     getFeatures()->saveGammaFile (learn_filename_features);
     getFeatures()->saveCircValueFile (learn_filename_circ_patterns);
-    if (learn_n>0) 
+    if (learn_n>0)
+    {
       learn_sum/=learn_n;
+      learn_sum_diff/=learn_n;
+    }
     else
+    {
       learn_sum=0;
-    gtpe->getOutput()->printfDebug("learned gammas and circ patterns saved with orderquality %f\n",learn_sum);
+      learn_sum_diff=0;
+    }
+    gtpe->getOutput()->printfDebug("learned gammas and circ patterns saved with orderquality %f %f\n",learn_sum,learn_sum_diff);
   }
   
   if (currentboard->getMovesMade()==0)

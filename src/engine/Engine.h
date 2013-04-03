@@ -352,6 +352,7 @@ class Engine
 
     //learning statistics
     float learn_sum;
+    float learn_sum_diff;
     int learn_n;
     
     bool isgamefinished;
