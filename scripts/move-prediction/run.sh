@@ -14,6 +14,7 @@ function msg
 {
   DATE=`date +%F_%T`
   msg_short "[$DATE] ${1:-}"
+  tput sc
 }
 
 function init
@@ -21,6 +22,7 @@ function init
   DATE=`date +%F_%T`
   echo -en "[$DATE] ${1:-Working}..." | awk '{printf "%-70s",$0}' | tee -a $LOGFILE >&2
   echo >> $LOGFILE
+  tput sc
 }
 
 function check
