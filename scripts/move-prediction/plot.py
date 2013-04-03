@@ -4,6 +4,7 @@
 
 import sys
 import math
+import numpy as np
 import json
 import csv
 import matplotlib
@@ -76,19 +77,25 @@ if plot3d:
   ax.set_ylim(0,xmax)
 
 else:
+  fig = plt.figure()
+  fig.canvas.set_window_title(jd['title']) 
   plt.title(jd['title'])
   plt.xlabel('Move Rank')
   plt.ylabel('Cumulative Probability')
   plt.grid(True)
   plt.ylim(0,1)
+  xmin = 1
+  xmax = 50
   if 'xmax' in jd.keys():
-    plt.xlim(0,float(jd['xmax']))
-  else:
-    plt.xlim(0,200)
+    xmax = int(jd['xmax'])
+  plt.xlim(xmin,xmax)
+  plt.yticks(np.append(np.arange(0,1,0.05),1))
+  plt.xticks(np.arange(xmin,xmax))
   errk = 0.0
   if 'errk' in jd.keys():
     errk = float(jd['errk'])
 
+  c = 0
   for f in jd['data']:
     with open(f['file'], 'rb') as csvfile:
       x = []
@@ -117,8 +124,11 @@ else:
         err2.append(v-e)
 
       lbl = f['label'] + ' (%.1f%%)' % (z[0]*100)
-      p = plt.plot(x, z, label = lbl)
-      col = p[0].get_color()
+      col = cm.spectral(c*0.9/(len(jd['data'])-1),1)
+      c+=1
+      # p = plt.plot(x, z, label = lbl)
+      p = plt.plot(x, z, label = lbl, color = col)
+      # col = p[0].get_color()
       if errk>0:
         plt.fill_between(x, err1, err2, alpha = 0.2, color = col)
         # plt.errorbar(x, z, yerr = err, fmt='.', color = col)
