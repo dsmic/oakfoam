@@ -3496,18 +3496,22 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
       for (int j=1;j<=i;j++)
         sum_befor+=gamma_from_mc_position(j);
       float diff=0;
-      if (sum_after>0 && i!=num_unpruned && i!=1) //testing ignoring the first and the last!!
+      if (sum_after>0 && i!=num_unpruned && i==1) //testing ignoring the first and the last!!
       {
         ssun<<" after "<<gamma_from_mc_position(i)/sum_after;
         //this has to be multiplied by the ratio of sum_after/sum_all?!
         //this is the ratio, that one of the afters has won?!
         diff+=(1.0-gamma_from_mc_position(i)/sum_after) * sum_after / sum_all;
       }
-      if (sum_befor>0 && i!=1 && i!=num_unpruned) //testing ignoring the first and the last!!
+      else
+        diff-=gamma_from_mc_position(i)/sum_all;
+      /*
+       if (sum_befor>0 && i!=1 && i!=num_unpruned) //testing ignoring the first and the last!!
       {
         ssun<<" befor "<<gamma_from_mc_position(i)/sum_befor;
         diff-=gamma_from_mc_position(i)/sum_befor;
       }
+    */
       ssun<<" diff "<<diff;
       numvalue_gamma.insert(std::make_pair(mc_pos_move.find(i)->second,diff));
       learn_sqr+=fabs(diff);
