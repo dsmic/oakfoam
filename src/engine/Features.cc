@@ -329,7 +329,7 @@ void Features::learnFeatureGammaMoves(Features::FeatureClass featclass, Go::Boar
   {
     Go::Move move_1=it->second;
     int level_1=matchFeatureClass(Features::PASS,board,cfglastdist,cfgsecondlastdist,move_1,false);
-    float C_iM=0;
+    float C_iM_gamma_i=0;
     float gammaHERE=0;
     std::map<float,Go::Move>::iterator it_int;
     for (it_int=it;it_int!=ordervalue.end();++it_int)
@@ -349,7 +349,7 @@ void Features::learnFeatureGammaMoves(Features::FeatureClass featclass, Go::Boar
             if (patterngammas->hasGamma(level))
             {
               gammaHERE=patterngammas->getGamma(level);
-              C_iM+=move_gamma.find(it_int->second.getPosition())->second;
+              C_iM_gamma_i+=move_gamma.find(it_int->second.getPosition())->second;
               break;
             }
             else
@@ -363,7 +363,7 @@ void Features::learnFeatureGammaMoves(Features::FeatureClass featclass, Go::Boar
               if (gammas[level-1]>0)
               {
                 gammaHERE=gammas[level-1];
-                C_iM+=move_gamma.find(it_int->second.getPosition())->second;
+                C_iM_gamma_i+=move_gamma.find(it_int->second.getPosition())->second;
                 break;
               }
               else
@@ -381,13 +381,13 @@ void Features::learnFeatureGammaMoves(Features::FeatureClass featclass, Go::Boar
       }
     }
 
-    // Now C_iM has not the value of the paper times gamma_i !!
+    // Now C_iM_gamma_i has now the value of docs C_iM times gamma_i !!
     // and sum_gamma should be correct for incremental Taylor expansion of min max formula
     float diff_gamma_i;
     if (it==ordervalue.begin())
     {
       //this was a win
-      diff_gamma_i=1/C_iM-gammaHERE;
+      diff_gamma_i=1/C_iM_gamma_i-gammaHERE;
     }
     else
     {
@@ -607,8 +607,9 @@ int Features::learnMoveGammaC(Go::Board *board, Go::ObjectBoard<int> *cfglastdis
   return C;
 }
 
-bool Features::learnMovesGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, std::map<float,Go::Move,std::greater<float> > ordervalue, std::map<int,float> move_gamma, float sum_gammas, float learn_diff)
+bool Features::learnMovesGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, std::map<float,Go::Move,std::greater<float> > ordervalue, std::map<int,float> move_gamma, float sum_gammas)
 {
+  //the formula used is documented in the docs directory IncrementalMMAlgorithm.lyx and pdf
   this->learnFeatureGammaMoves(Features::PASS,board,cfglastdist,cfgsecondlastdist,ordervalue,move_gamma,sum_gammas);
   this->learnFeatureGammaMoves(Features::CAPTURE,board,cfglastdist,cfgsecondlastdist,ordervalue,move_gamma,sum_gammas);
   this->learnFeatureGammaMoves(Features::EXTENSION,board,cfglastdist,cfgsecondlastdist,ordervalue,move_gamma,sum_gammas);
@@ -626,12 +627,12 @@ bool Features::learnMovesGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdi
   for (it=ordervalue.begin();it!=ordervalue.end();++it)
   {
     //Go::Move move_1=it->second;
-    float C_iM[PATTERN_CIRC_MAXSIZE];
+    float C_iM_gamma_i[PATTERN_CIRC_MAXSIZE];
     float gammaHERE[PATTERN_CIRC_MAXSIZE];
     std::string stringHERE[PATTERN_CIRC_MAXSIZE];
     for (int i=0;i<PATTERN_CIRC_MAXSIZE;i++)
     {
-      C_iM[i]=0;
+      C_iM_gamma_i[i]=0;
       gammaHERE[i]=0;
     }
     std::map<float,Go::Move>::iterator it_int;
@@ -646,7 +647,7 @@ bool Features::learnMovesGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdi
         pattcirc.convertToSmallestEquivalent(circdict);
         if (this->valueCircPattern(pattcirc.toString(circdict))>0.0)
         {
-         C_iM[circpatternsize]+=move_gamma.find(it_int->second.getPosition())->second;
+         C_iM_gamma_i[circpatternsize]+=move_gamma.find(it_int->second.getPosition())->second;
          gammaHERE[circpatternsize]=this->valueCircPattern(pattcirc.toString(circdict));
          stringHERE[circpatternsize]=pattcirc.toString(circdict);
         }
@@ -657,30 +658,30 @@ bool Features::learnMovesGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdi
           std::string tmpPattString=tmp.toString(circdict);
           if (this->valueCircPattern(tmpPattString)>0.0)
           {
-           C_iM[j]+=move_gamma.find(it_int->second.getPosition())->second;
+           C_iM_gamma_i[j]+=move_gamma.find(it_int->second.getPosition())->second;
            gammaHERE[j]=this->valueCircPattern(tmpPattString);
            stringHERE[j]=tmpPattString;
           }
         }
       }
     }
-    //now
+    //C_iM_gamma_i is C_iM*gamma_i with respect to docs name!!!
     for (int i=0;i<=circpatternsize;i++)
     {
-      if (C_iM[i]!=0)
+      if (C_iM_gamma_i[i]!=0)
       {
         float diff_gamma_i;
         if (it==ordervalue.begin())
         {
           //this was a win
-          diff_gamma_i=1/C_iM[i]-gammaHERE[i];
+          diff_gamma_i=1/C_iM_gamma_i[i]-gammaHERE[i];
         }
         else
         {
           //this was a loss
           diff_gamma_i=-gammaHERE[i];
         }
-        this->learnCircPattern(stringHERE[i],diff_gamma_i); 
+        this->learnCircPattern(stringHERE[i],params->learn_delta*diff_gamma_i); 
       }
     }
   }

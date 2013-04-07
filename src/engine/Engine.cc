@@ -3467,9 +3467,9 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     }
     ssun<<") ordergamma:(";
     nn=1;
-    float learn_sqr=0;
-    float learn_d=0;
-    int tmp_counter=0;
+//    float learn_sqr=0;
+//    float learn_d=0;
+//    int tmp_counter=0;
 
 #define sign(A) ((A>0)?1:((A<0)?-1:0))
 #define gamma_from_mc_position(A) (move_gamma.find(mc_pos_move.find(A)->second)->second)
@@ -3481,7 +3481,9 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
       sum_gammas+=it->first;
       nn++;
     }
+    getFeatures()->learnMovesGamma(currentboard,cfglastdist,cfgsecondlastdist,ordervalue,move_gamma,sum_gammas);
     ssun<<")";
+/*    
     float sum_all=0;
     for (int i=1;i<=num_unpruned;i++)
     {
@@ -3506,13 +3508,13 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
       }
       else
         diff-=gamma_from_mc_position(i)/sum_all;
-      /*
-       if (sum_befor>0 && i!=1 && i!=num_unpruned) //testing ignoring the first and the last!!
-      {
-        ssun<<" befor "<<gamma_from_mc_position(i)/sum_befor;
-        diff-=gamma_from_mc_position(i)/sum_befor;
-      }
-    */
+      
+    //   if (sum_befor>0 && i!=1 && i!=num_unpruned) //testing ignoring the first and the last!!
+    //  {
+    //    ssun<<" befor "<<gamma_from_mc_position(i)/sum_befor;
+    //    diff-=gamma_from_mc_position(i)/sum_befor;
+    //  }
+    
       ssun<<" diff "<<diff;
       numvalue_gamma.insert(std::make_pair(mc_pos_move.find(i)->second,diff));
       learn_sqr+=fabs(diff);
@@ -3522,15 +3524,15 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     ssun<<"\n";
     ssun<<"---"<<gamma_move_pos.find(mc_pos_move.find(1)->second)->second<<"---"<<gamma_move_pos.find(mc_pos_move.find(2)->second)->second;
     //if (gamma_move_pos.find(mc_pos_move.find(1)->second)->second > gamma_move_pos.find(mc_pos_move.find(2)->second)->second)
-    /*if (gamma_move_pos.find(mc_pos_move.find(1)->second)->second>1)
-    {
-      numvalue_gamma.insert(std::make_pair(mc_pos_move.find(1)->second,1)); 
-      for (int nn=2;nn<=num_unpruned;nn++)
-        numvalue_gamma.insert(std::make_pair(mc_pos_move.find(2)->second,-1.0/(num_unpruned-1)));
-      ssun<<"!!!!!!!!";
-      learn_sqr=1;
-    }
-    */
+    //if (gamma_move_pos.find(mc_pos_move.find(1)->second)->second>1)
+    //{
+    //  numvalue_gamma.insert(std::make_pair(mc_pos_move.find(1)->second,1)); 
+    //  for (int nn=2;nn<=num_unpruned;nn++)
+    //    numvalue_gamma.insert(std::make_pair(mc_pos_move.find(2)->second,-1.0/(num_unpruned-1)));
+    //  ssun<<"!!!!!!!!";
+    //  learn_sqr=1;
+    //}
+    
     
     if (tmp_counter>0)
     {
@@ -3562,6 +3564,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
         }
       }
     }
+    */
     
     ssun<<"st:(";
     for (int nn=0;nn<STATISTICS_NUM;nn++)
