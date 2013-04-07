@@ -3424,8 +3424,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
 
     int num_unpruned=movetree->getNumUnprunedChildren();
     std::ostringstream ssun;
-    std::map<float,Tree*,std::greater<float> > ordervalue;
-    std::map<float,Tree*,std::greater<float> > ordergamma;
+    std::map<float,Go::Move,std::greater<float> > ordervalue;
+    std::map<float,Go::Move,std::greater<float> > ordergamma;
 
     float forcesort=0;
     ssun<<"un:(";
@@ -3440,8 +3440,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
         {
           ssun<<(nn!=1?",":"")<<Go::Position::pos2string((*iter)->getMove().getPosition(),boardsize);
           //do not use getFeatureGamma of the tree, as this might be not exactly the order of the gammas to be trained
-          ordergamma.insert(std::make_pair(getFeatures()->getMoveGamma(currentboard,cfglastdist,cfgsecondlastdist,(*iter)->getMove())+forcesort,(*iter)));
-          ordervalue.insert(std::make_pair((*iter)->getPlayouts()+forcesort,(*iter)));
+          ordergamma.insert(std::make_pair(getFeatures()->getMoveGamma(currentboard,cfglastdist,cfgsecondlastdist,(*iter)->getMove())+forcesort,(*iter)->getMove()));
+          ordervalue.insert(std::make_pair((*iter)->getPlayouts()+forcesort,(*iter)->getMove()));
           forcesort+=0.001012321232123;
         }
       }
@@ -3456,13 +3456,13 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     std::map<int,int> gamma_move_pos;
     std::map<int,float> numvalue_gamma;
     std::map<int,float> move_gamma;
-    
-    std::map<float,Tree*>::iterator it;
+    float sum_gammas=0;
+    std::map<float,Go::Move>::iterator it;
     int nn=1;
     for (it=ordervalue.begin();it!=ordervalue.end();++it)
     {
-      ssun<<(nn!=1?",":"")<<Go::Position::pos2string(it->second->getMove().getPosition(),boardsize);
-      mc_pos_move.insert(std::make_pair(nn,it->second->getMove().getPosition()));
+      ssun<<(nn!=1?",":"")<<Go::Position::pos2string(it->second.getPosition(),boardsize);
+      mc_pos_move.insert(std::make_pair(nn,it->second.getPosition()));
       nn++;
     }
     ssun<<") ordergamma:(";
@@ -3475,9 +3475,10 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
 #define gamma_from_mc_position(A) (move_gamma.find(mc_pos_move.find(A)->second)->second)
     for (it=ordergamma.begin();it!=ordergamma.end();++it)
     {
-      ssun<<(nn!=1?",":"")<<Go::Position::pos2string(it->second->getMove().getPosition(),boardsize);
-      gamma_move_pos.insert(std::make_pair(it->second->getMove().getPosition(),nn));
-      move_gamma.insert(std::make_pair(it->second->getMove().getPosition(),it->first));
+      ssun<<(nn!=1?",":"")<<Go::Position::pos2string(it->second.getPosition(),boardsize);
+      gamma_move_pos.insert(std::make_pair(it->second.getPosition(),nn));
+      move_gamma.insert(std::make_pair(it->second.getPosition(),it->first));
+      sum_gammas+=it->first;
       nn++;
     }
     ssun<<")";

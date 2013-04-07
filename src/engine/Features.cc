@@ -319,6 +319,122 @@ int Features::learnFeatureGammaC(Features::FeatureClass featclass, unsigned int 
   }
 }
 
+void Features::learnFeatureGammaMoves(Features::FeatureClass featclass, Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, std::map<float,Go::Move,std::greater<float> > ordervalue, std::map<int,float> move_gamma, float sum_gammas)
+{
+
+  std::map<float,Go::Move>::iterator it;
+  std::map<long int,bool> used_moves_levels;
+  int win=1;
+  for (it=ordervalue.begin();it!=ordervalue.end();++it)
+  {
+    Go::Move move_1=it->second;
+    int level_1=matchFeatureClass(Features::PASS,board,cfglastdist,cfgsecondlastdist,move_1,false);
+    float C_iM=0;
+    float gammaHERE=0;
+    std::map<float,Go::Move>::iterator it_int;
+    for (it_int=it;it_int!=ordervalue.end();++it_int)
+    {
+      Go::Move move=it_int->second;
+      int level=matchFeatureClass(Features::PASS,board,cfglastdist,cfgsecondlastdist,move,false);
+      if (level==level_1 && !used_moves_levels.count(PATTERN_3x3_GAMMAS*move.getPosition()+level))
+      {
+        switch (win) //dummy to use the break statement and keep the code closer to other parts
+        {
+          default:
+            if (level==0 && featclass!=Features::PATTERN3X3)
+              break;
+            if (featclass==Features::PATTERN3X3)
+          {
+            //used patterns should not be done by featurelevels_used, to much ram?!
+            if (patterngammas->hasGamma(level))
+            {
+              gammaHERE=patterngammas->getGamma(level);
+              C_iM+=move_gamma.find(it_int->second.getPosition())->second;
+              break;
+            }
+            else
+              break;
+          }
+            else
+          {
+            float *gammas=this->getStandardGamma(featclass);
+            if (gammas!=NULL)
+            {
+              if (gammas[level-1]>0)
+              {
+                gammaHERE=gammas[level-1];
+                C_iM+=move_gamma.find(it_int->second.getPosition())->second;
+                break;
+              }
+              else
+                break;
+            }
+            else
+              break;
+          };
+        }
+
+#if (1L<<16!=PATTERN_3x3_GAMMAS)
+#warning PATTERN_3x3_GAMMAS not 1L<<16!!! may be a problem
+#endif
+        used_moves_levels.insert(std::make_pair(PATTERN_3x3_GAMMAS*move.getPosition()+level,true));
+      }
+    }
+
+    // Now C_iM has not the value of the paper times gamma_i !!
+    // and sum_gamma should be correct for incremental Taylor expansion of min max formula
+    float diff_gamma_i;
+    if (it==ordervalue.begin())
+    {
+      //this was a win
+      diff_gamma_i=1/C_iM-gammaHERE;
+    }
+    else
+    {
+      //this was a loss
+      diff_gamma_i=-gammaHERE;
+    }
+
+    //Now the gamma has to be changed
+    {
+      switch (win) //dummy to use the break statement and keep the code closer to other parts
+      {
+        default:
+          if (level_1==0 && featclass!=Features::PATTERN3X3)
+            break;
+          if (featclass==Features::PATTERN3X3)
+        {
+          //used patterns should not be done by featurelevels_used, to much ram?!
+          if (patterngammas->hasGamma(level_1))
+          {
+            patterngammas->learnGamma(level_1,diff_gamma_i*params->learn_delta);
+            break;
+          }
+          else
+            break;
+        }
+          else
+        {
+          float *gammas=this->getStandardGamma(featclass);
+          if (gammas!=NULL)
+          {
+            if (gammas[level_1-1]>0)
+            {
+              gammas[level_1-1]+=diff_gamma_i*params->learn_delta;
+              break;
+            }
+            else
+              break;
+          }
+          else
+            break;
+        };
+      }
+    }
+  }
+  return;
+}
+  
 void Features::learnFeatureGamma(Features::FeatureClass featclass, unsigned int level, float learn_diff)
 {
   if (level==0 && featclass!=Features::PATTERN3X3)
@@ -489,6 +605,87 @@ int Features::learnMoveGammaC(Go::Board *board, Go::ObjectBoard<int> *cfglastdis
   }
 
   return C;
+}
+
+bool Features::learnMovesGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, std::map<float,Go::Move,std::greater<float> > ordervalue, std::map<int,float> move_gamma, float sum_gammas, float learn_diff)
+{
+  this->learnFeatureGammaMoves(Features::PASS,board,cfglastdist,cfgsecondlastdist,ordervalue,move_gamma,sum_gammas);
+  this->learnFeatureGammaMoves(Features::CAPTURE,board,cfglastdist,cfgsecondlastdist,ordervalue,move_gamma,sum_gammas);
+  this->learnFeatureGammaMoves(Features::EXTENSION,board,cfglastdist,cfgsecondlastdist,ordervalue,move_gamma,sum_gammas);
+  this->learnFeatureGammaMoves(Features::SELFATARI,board,cfglastdist,cfgsecondlastdist,ordervalue,move_gamma,sum_gammas);
+  this->learnFeatureGammaMoves(Features::ATARI,board,cfglastdist,cfgsecondlastdist,ordervalue,move_gamma,sum_gammas);
+  this->learnFeatureGammaMoves(Features::BORDERDIST,board,cfglastdist,cfgsecondlastdist,ordervalue,move_gamma,sum_gammas);
+  this->learnFeatureGammaMoves(Features::LASTDIST,board,cfglastdist,cfgsecondlastdist,ordervalue,move_gamma,sum_gammas);
+  this->learnFeatureGammaMoves(Features::SECONDLASTDIST,board,cfglastdist,cfgsecondlastdist,ordervalue,move_gamma,sum_gammas);
+  this->learnFeatureGammaMoves(Features::CFGLASTDIST,board,cfglastdist,cfgsecondlastdist,ordervalue,move_gamma,sum_gammas);
+  this->learnFeatureGammaMoves(Features::CFGSECONDLASTDIST,board,cfglastdist,cfgsecondlastdist,ordervalue,move_gamma,sum_gammas);
+  this->learnFeatureGammaMoves(Features::PATTERN3X3,board,cfglastdist,cfgsecondlastdist,ordervalue,move_gamma,sum_gammas);
+
+  std::map<float,Go::Move>::iterator it;
+  std::map<long int,bool> used_moves_levels;
+  for (it=ordervalue.begin();it!=ordervalue.end();++it)
+  {
+    //Go::Move move_1=it->second;
+    float C_iM[PATTERN_CIRC_MAXSIZE];
+    float gammaHERE[PATTERN_CIRC_MAXSIZE];
+    std::string stringHERE[PATTERN_CIRC_MAXSIZE];
+    for (int i=0;i<PATTERN_CIRC_MAXSIZE;i++)
+    {
+      C_iM[i]=0;
+      gammaHERE[i]=0;
+    }
+    std::map<float,Go::Move>::iterator it_int;
+    for (it_int=it;it_int!=ordervalue.end();++it_int)
+    {
+      Go::Move move=it_int->second;
+      if (params->uct_factor_circpattern>0.0 &&move.isNormal())
+      {
+        Pattern::Circular pattcirc=Pattern::Circular(circdict,board,move.getPosition(),circpatternsize);
+        if (move.getColor()==Go::WHITE)
+                pattcirc.invert();
+        pattcirc.convertToSmallestEquivalent(circdict);
+        if (this->valueCircPattern(pattcirc.toString(circdict))>0.0)
+        {
+         C_iM[circpatternsize]+=move_gamma.find(it_int->second.getPosition())->second;
+         gammaHERE[circpatternsize]=this->valueCircPattern(pattcirc.toString(circdict));
+         stringHERE[circpatternsize]=pattcirc.toString(circdict);
+        }
+        for (int j=circpatternsize-1;j>params->test_p8;j--)
+        {
+          Pattern::Circular tmp=pattcirc.getSubPattern(circdict,j);
+          tmp.convertToSmallestEquivalent(circdict);
+          std::string tmpPattString=tmp.toString(circdict);
+          if (this->valueCircPattern(tmpPattString)>0.0)
+          {
+           C_iM[j]+=move_gamma.find(it_int->second.getPosition())->second;
+           gammaHERE[j]=this->valueCircPattern(tmpPattString);
+           stringHERE[j]=tmpPattString;
+          }
+        }
+      }
+    }
+    //now
+    for (int i=0;i<=circpatternsize;i++)
+    {
+      if (C_iM[i]!=0)
+      {
+        float diff_gamma_i;
+        if (it==ordervalue.begin())
+        {
+          //this was a win
+          diff_gamma_i=1/C_iM[i]-gammaHERE[i];
+        }
+        else
+        {
+          //this was a loss
+          diff_gamma_i=-gammaHERE[i];
+        }
+        this->learnCircPattern(stringHERE[i],diff_gamma_i); 
+      }
+    }
+  }
+
+  return true;
 }
 
 bool Features::learnMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move,float learn_diff)

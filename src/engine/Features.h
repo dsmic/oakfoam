@@ -724,6 +724,7 @@ class Features
      * The weight for a move is the product of matching feature weights for that move.
      */
     float getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove=true, bool withcircularpatterns=true) const;
+    bool learnMovesGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, std::map<float,Go::Move,std::greater<float> > ordervalue, std::map<int,float> move_gamma, float sum_gammas, float learn_diff);
     bool learnMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, float learn_diff);
     int learnMoveGammaC(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, float learn_diff);
     /** Return the total of all gammas for the moves on a board. */
@@ -736,6 +737,7 @@ class Features
     Features::FeatureClass getFeatureClassFromName(std::string name) const;
     /** Set the gamma value for a specific feature and level. */
     bool setFeatureGamma(Features::FeatureClass featclass, unsigned int level, float gamma);
+    void learnFeatureGammaMoves(Features::FeatureClass featclass, Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, std::map<float,Go::Move,std::greater<float> > ordervalue, std::map<int,float> move_gamma, float sum_gammas);
     void learnFeatureGamma(Features::FeatureClass featclass, unsigned int level, float learn_diff);
     int learnFeatureGammaC(Features::FeatureClass featclass, unsigned int level, float learn_diff);
     
