@@ -3481,6 +3481,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
       sum_gammas+=it->first;
       nn++;
     }
+    learn_n=1; //force learning
     getFeatures()->learnMovesGamma(currentboard,cfglastdist,cfgsecondlastdist,ordervalue,move_gamma,sum_gammas);
     ssun<<")";
 /*    

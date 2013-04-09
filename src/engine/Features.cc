@@ -328,14 +328,14 @@ void Features::learnFeatureGammaMoves(Features::FeatureClass featclass, Go::Boar
   for (it=ordervalue.begin();it!=ordervalue.end();++it)
   {
     Go::Move move_1=it->second;
-    int level_1=matchFeatureClass(Features::PASS,board,cfglastdist,cfgsecondlastdist,move_1,false);
+    int level_1=matchFeatureClass(featclass,board,cfglastdist,cfgsecondlastdist,move_1,false);
     float C_iM_gamma_i=0;
     float gammaHERE=0;
     std::map<float,Go::Move>::iterator it_int;
     for (it_int=it;it_int!=ordervalue.end();++it_int)
     {
       Go::Move move=it_int->second;
-      int level=matchFeatureClass(Features::PASS,board,cfglastdist,cfgsecondlastdist,move,false);
+      int level=matchFeatureClass(featclass,board,cfglastdist,cfgsecondlastdist,move,false);
       if (level==level_1 && !used_moves_levels.count(PATTERN_3x3_GAMMAS*move.getPosition()+level))
       {
         switch (win) //dummy to use the break statement and keep the code closer to other parts
@@ -383,16 +383,23 @@ void Features::learnFeatureGammaMoves(Features::FeatureClass featclass, Go::Boar
 
     // Now C_iM_gamma_i has now the value of docs C_iM times gamma_i !!
     // and sum_gamma should be correct for incremental Taylor expansion of min max formula
-    float diff_gamma_i;
-    if (it==ordervalue.begin())
+    float diff_gamma_i=0;
+    if (C_iM_gamma_i!=0)
     {
-      //this was a win
-      diff_gamma_i=1/C_iM_gamma_i-gammaHERE;
-    }
-    else
-    {
-      //this was a loss
-      diff_gamma_i=-gammaHERE;
+      if (it==ordervalue.begin())
+      {
+        //this was a win
+        diff_gamma_i=(sum_gammas/C_iM_gamma_i-1)*gammaHERE;
+        fprintf(stderr,"win feature %d level %d win sum_gammas %f C_iM_gamma_i %f gammaHERE %f diff_gamma %f\n",featclass,level_1,sum_gammas,C_iM_gamma_i,gammaHERE,diff_gamma_i);
+        
+      }
+      else
+      {
+        //this was a loss
+        diff_gamma_i=-gammaHERE;
+        fprintf(stderr,"lost feature %d level %d win sum_gammas %f C_iM_gamma_i %f gammaHERE %f diff_gamma %f\n",featclass,level_1,sum_gammas,C_iM_gamma_i,gammaHERE,diff_gamma_i);
+        
+      }
     }
 
     //Now the gamma has to be changed
@@ -674,7 +681,7 @@ bool Features::learnMovesGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdi
         if (it==ordervalue.begin())
         {
           //this was a win
-          diff_gamma_i=1/C_iM_gamma_i[i]-gammaHERE[i];
+          diff_gamma_i=(sum_gammas/C_iM_gamma_i[i]-1)*gammaHERE[i];
         }
         else
         {

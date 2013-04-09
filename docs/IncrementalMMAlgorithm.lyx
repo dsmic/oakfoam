@@ -212,7 +212,49 @@ In the program
 
 \begin_inset Formula 
 \[
-\frac{1}{B}=params->learn\_delta\,.
+\frac{1}{B}=params->learn\_delta\,,
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+C_{iM}\cdot\gamma_{i}=C\_iM\_gamm\_i\,,
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+E_{M}=sum\_gammas\,.
+\]
+
+\end_inset
+
+giving
+\end_layout
+
+\begin_layout Standard
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+\begin_inset Formula 
+\[
+\gamma_{i}^{M}=\gamma_{i}+\frac{1}{B}\left(\frac{r\cdot sum\_gammas_{M}\cdot\gamma_{i}}{C\_iM\_gamm\_i}-\gamma_{i}\right)\,.
 \]
 
 \end_inset
