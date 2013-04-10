@@ -328,14 +328,14 @@ void Features::learnFeatureGammaMoves(Features::FeatureClass featclass, Go::Boar
   for (it=ordervalue.begin();it!=ordervalue.end();++it)
   {
     Go::Move move_1=it->second;
-    int level_1=matchFeatureClass(featclass,board,cfglastdist,cfgsecondlastdist,move_1,false);
+    int level_1=matchFeatureClass(featclass,board,cfglastdist,cfgsecondlastdist,move_1,true);
     float C_iM_gamma_i=0;
     float gammaHERE=0;
     std::map<float,Go::Move>::iterator it_int;
     for (it_int=it;it_int!=ordervalue.end();++it_int)
     {
       Go::Move move=it_int->second;
-      int level=matchFeatureClass(featclass,board,cfglastdist,cfgsecondlastdist,move,false);
+      int level=matchFeatureClass(featclass,board,cfglastdist,cfgsecondlastdist,move,true);
       if (level==level_1 && !used_moves_levels.count(PATTERN_3x3_GAMMAS*move.getPosition()+level))
       {
         switch (win) //dummy to use the break statement and keep the code closer to other parts

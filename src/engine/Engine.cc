@@ -3446,6 +3446,18 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
         }
       }
     }
+    //include pruned into learning, as they all lost!!
+    for(std::list<Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
+    {
+      if ((*iter)->isPrimary() && (*iter)->isPruned())
+      {
+        //ssun<<(nn!=1?",":"")<<Go::Position::pos2string((*iter)->getMove().getPosition(),boardsize);
+        //do not use getFeatureGamma of the tree, as this might be not exactly the order of the gammas to be trained
+        ordergamma.insert(std::make_pair(getFeatures()->getMoveGamma(currentboard,cfglastdist,cfgsecondlastdist,(*iter)->getMove())+forcesort,(*iter)->getMove()));
+        ordervalue.insert(std::make_pair(0.0+forcesort,(*iter)->getMove()));
+        forcesort+=0.001012321232123;
+      }
+    }
     ssun<<")";
     if (ordergamma.size()!=ordervalue.size())
       ssun<<"\nthe ordering of gamma versus mc did not work correctly "<<ordergamma.size()<<" "<<ordervalue.size()<<"\n";
