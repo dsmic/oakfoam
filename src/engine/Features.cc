@@ -389,14 +389,14 @@ void Features::learnFeatureGammaMoves(Features::FeatureClass featclass, Go::Boar
       if (it==ordervalue.begin())
       {
         //this was a win
-        diff_gamma_i=(sum_gammas/C_iM_gamma_i-1)*gammaHERE;
+        diff_gamma_i=1-C_iM_gamma_i/sum_gammas;
         fprintf(stderr,"win feature %d level %d win sum_gammas %f C_iM_gamma_i %f gammaHERE %f diff_gamma %f\n",featclass,level_1,sum_gammas,C_iM_gamma_i,gammaHERE,diff_gamma_i);
         
       }
       else
       {
         //this was a loss
-        diff_gamma_i=-gammaHERE;
+        diff_gamma_i=-C_iM_gamma_i/sum_gammas;
         fprintf(stderr,"lost feature %d level %d win sum_gammas %f C_iM_gamma_i %f gammaHERE %f diff_gamma %f\n",featclass,level_1,sum_gammas,C_iM_gamma_i,gammaHERE,diff_gamma_i);
         
       }
@@ -681,12 +681,12 @@ bool Features::learnMovesGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdi
         if (it==ordervalue.begin())
         {
           //this was a win
-          diff_gamma_i=(sum_gammas/C_iM_gamma_i[i]-1)*gammaHERE[i];
+          diff_gamma_i=1-C_iM_gamma_i[i]/sum_gammas;
         }
         else
         {
           //this was a loss
-          diff_gamma_i=-gammaHERE[i];
+          diff_gamma_i=-C_iM_gamma_i[i]/sum_gammas;
         }
         this->learnCircPattern(stringHERE[i],params->learn_delta*diff_gamma_i); 
       }

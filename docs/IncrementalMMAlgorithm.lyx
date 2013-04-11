@@ -160,44 +160,7 @@ The value of
 \begin_inset Formula $A_{i}$
 \end_inset
 
- depends on how many games allready played.
- As it is proportional to typical values of 
-\begin_inset Formula $x$
-\end_inset
-
- it might be a good approach if one introduces
-\begin_inset Formula 
-\[
-Bx=A_{i}\,,
-\]
-
-\end_inset
-
-with 
-\begin_inset Formula $B$
-\end_inset
-
- being constant, if one has no way to get exact values of 
-\begin_inset Formula $A_{i}$
-\end_inset
-
-:
-\begin_inset Formula 
-\[
-\gamma_{i}^{M}=\gamma_{i}-\frac{\gamma_{i}}{B}+\frac{1}{B}\frac{r}{x}\,,
-\]
-
-\end_inset
-
-or written differently
-\begin_inset Formula 
-\[
-\gamma_{i}^{M}=\gamma_{i}+\frac{1}{B}\left(\frac{r}{x}-\gamma_{i}\right)\,.
-\]
-
-\end_inset
-
-In the program 
+ depends on how many games allready played.In the program 
 \family default
 \series default
 \shape default
@@ -212,7 +175,7 @@ In the program
 
 \begin_inset Formula 
 \[
-\frac{1}{B}=params->learn\_delta\,,
+\frac{1}{A}=params->learn\_delta\,,
 \]
 
 \end_inset
@@ -254,7 +217,7 @@ giving
 \color none
 \begin_inset Formula 
 \[
-\gamma_{i}^{M}=\gamma_{i}+\frac{1}{B}\left(\frac{r\cdot sum\_gammas_{M}\cdot\gamma_{i}}{C\_iM\_gamm\_i}-\gamma_{i}\right)\,.
+\gamma_{i}^{M}=\gamma_{i}+learn\_delta\left(r-\frac{C\_iM\_gamm\_i}{sum\_gammas}\right)\,.
 \]
 
 \end_inset
