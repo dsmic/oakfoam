@@ -9,7 +9,9 @@
 # There should be no need to edit this
 ##################################################
 
-get_games () { find "$GAMES_PATH" -name '*.sgf' | shuf -n $1; }
+get_games () { echo "$GAMES" | shuf -n $1; }
+get_games_excl () { comm -23 <(echo "$GAMES") <(echo "$1" | sort) | sed 's/\t//' | shuf -n $2; }
+get_games_excl_test () { get_games_excl "$TEST_GAMES" $1; }
 
 ##################################################
 # Parameters
@@ -18,6 +20,7 @@ get_games () { find "$GAMES_PATH" -name '*.sgf' | shuf -n $1; }
 
 # full path to sgf game collection
 GAMES_PATH="/data/go/games/gogod/"
+GAMES="`find "$GAMES_PATH" -name '*.sgf' | sort`"
 
 # boolean parameters (0:disabled, 1: enabled)
 PATT_3X3=0    # 3x3 patterns
@@ -25,11 +28,11 @@ PATT_CIRC=0   # circular patterns
 DT=0          # decision trees
 
 # game lists
-PATT_3X3_GAMES="`get_games 10`"
-PATT_CIRC_GAMES="`get_games 10`"
-DT_GAMES="`get_games 10`"
-TRAIN_GAMES="`get_games 10`"
 TEST_GAMES="`get_games 10`"
+PATT_3X3_GAMES="`get_games_excl_test 10`"
+PATT_CIRC_GAMES="`get_games_excl_test 10`"
+DT_GAMES="`get_games_excl_test 10`"
+TRAIN_GAMES="`get_games_excl_test 10`"
 
 # non-pattern
 NONPATT_LADDERS=0
