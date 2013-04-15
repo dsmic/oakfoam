@@ -90,7 +90,7 @@ else:
     xmax = int(jd['xmax'])
   plt.xlim(xmin,xmax)
   plt.yticks(np.append(np.arange(0,1,0.05),1))
-  plt.xticks(np.arange(xmin,xmax))
+  plt.xticks(np.append(np.arange(xmin,xmax),xmax))
   errk = 0.0
   if 'errk' in jd.keys():
     errk = float(jd['errk'])
