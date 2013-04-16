@@ -550,6 +550,8 @@ class Parameters
     /** Whether to use decision trees with features. */
     bool features_dt_use;
 
+    bool features_pass_no_move_for_lastdist;
+
     /** Whether to automatically output an SGF when a game finishes. */
     bool auto_save_sgf;
     /** The filename prefix for the outputted SGFs. */

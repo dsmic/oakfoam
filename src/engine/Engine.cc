@@ -42,10 +42,6 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   currentboard=new Go::Board(boardsize);
   komi=7.5;
 
-  learn_sum=0;
-  learn_sum_diff=0;
-  learn_n=0;
-  
   params->tree_instances=0;
   
   zobristtable=new Go::ZobristTable(params,boardsize,ZOBRIST_HASH_SEED);
@@ -226,6 +222,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
 
   params->addParameter("tree","features_ladders",&(params->features_ladders),FEATURES_LADDERS);
   params->addParameter("tree","features_dt_use",&(params->features_dt_use),false);
+  params->addParameter("tree","features_pass_no_move_for_lastdist",&(params->features_pass_no_move_for_lastdist),FEATURES_PASS_NO_MOVE_FOR_LASTDIST);
   
   params->addParameter("tree","learn_enabled",&(params->learn_enabled),false);
   params->addParameter("tree","learn_delta",&(params->learn_delta),LEARN_DELTA);
@@ -3424,160 +3421,76 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
 
     int num_unpruned=movetree->getNumUnprunedChildren();
     std::ostringstream ssun;
-    std::map<float,Go::Move,std::greater<float> > ordervalue;
-    std::map<float,Go::Move,std::greater<float> > ordergamma;
-
-    float forcesort=0;
-    ssun<<"un:(";
-    Go::ObjectBoard<int> *cfglastdist=NULL;
-    Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
-    getFeatures()->computeCFGDist(currentboard,&cfglastdist,&cfgsecondlastdist);
-    for (int nn=1;nn<=num_unpruned;nn++)
-    {
-      for(std::list<Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
-      {
-        if ((*iter)->getUnprunedNum()==nn && (*iter)->isPrimary() && !(*iter)->isPruned())
-        {
-          ssun<<(nn!=1?",":"")<<Go::Position::pos2string((*iter)->getMove().getPosition(),boardsize);
-          //do not use getFeatureGamma of the tree, as this might be not exactly the order of the gammas to be trained
-          ordergamma.insert(std::make_pair(getFeatures()->getMoveGamma(currentboard,cfglastdist,cfgsecondlastdist,(*iter)->getMove())+forcesort,(*iter)->getMove()));
-          ordervalue.insert(std::make_pair((*iter)->getPlayouts()+forcesort,(*iter)->getMove()));
-          forcesort+=0.001012321232123;
-        }
-      }
-    }
-    //include pruned into learning, as they all lost!!
-    for(std::list<Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
-    {
-      if ((*iter)->isPrimary() && (*iter)->isPruned())
-      {
-        //ssun<<(nn!=1?",":"")<<Go::Position::pos2string((*iter)->getMove().getPosition(),boardsize);
-        //do not use getFeatureGamma of the tree, as this might be not exactly the order of the gammas to be trained
-        ordergamma.insert(std::make_pair(getFeatures()->getMoveGamma(currentboard,cfglastdist,cfgsecondlastdist,(*iter)->getMove())+forcesort,(*iter)->getMove()));
-        ordervalue.insert(std::make_pair(0.0+forcesort,(*iter)->getMove()));
-        forcesort+=0.001012321232123;
-      }
-    }
-    ssun<<")";
-    if (ordergamma.size()!=ordervalue.size())
-      ssun<<"\nthe ordering of gamma versus mc did not work correctly "<<ordergamma.size()<<" "<<ordervalue.size()<<"\n";
-    ssun<<" ordermc:(";
-
-    //for the moves (getPosition) the difference mc_position - gamma_position is calculated into numvalue_gamma
-    std::map<int,int> mc_pos_move;
-    std::map<int,int> gamma_move_pos;
-    std::map<int,float> numvalue_gamma;
-    std::map<int,float> move_gamma;
-    float sum_gammas=0;
-    std::map<float,Go::Move>::iterator it;
-    int nn=1;
-    for (it=ordervalue.begin();it!=ordervalue.end();++it)
-    {
-      ssun<<(nn!=1?",":"")<<Go::Position::pos2string(it->second.getPosition(),boardsize);
-      mc_pos_move.insert(std::make_pair(nn,it->second.getPosition()));
-      nn++;
-    }
-    ssun<<") ordergamma:(";
-    nn=1;
-//    float learn_sqr=0;
-//    float learn_d=0;
-//    int tmp_counter=0;
-
-#define sign(A) ((A>0)?1:((A<0)?-1:0))
-#define gamma_from_mc_position(A) (move_gamma.find(mc_pos_move.find(A)->second)->second)
-    for (it=ordergamma.begin();it!=ordergamma.end();++it)
-    {
-      ssun<<(nn!=1?",":"")<<Go::Position::pos2string(it->second.getPosition(),boardsize);
-      gamma_move_pos.insert(std::make_pair(it->second.getPosition(),nn));
-      move_gamma.insert(std::make_pair(it->second.getPosition(),it->first));
-      sum_gammas+=it->first;
-      nn++;
-    }
-    learn_n=1; //force learning
-    getFeatures()->learnMovesGamma(currentboard,cfglastdist,cfgsecondlastdist,ordervalue,move_gamma,sum_gammas);
-    ssun<<")";
-/*    
-    float sum_all=0;
-    for (int i=1;i<=num_unpruned;i++)
-    {
-      sum_all+=gamma_from_mc_position(i);
-    }
-    for (int i=1;i<=num_unpruned;i++)
-    {
-      ssun<<"\n"<<i<<" "<<gamma_from_mc_position(i);
-      float sum_after=0;
-      for (int j=i;j<=num_unpruned;j++)
-        sum_after+=gamma_from_mc_position(j);
-      float sum_befor=0;
-      for (int j=1;j<=i;j++)
-        sum_befor+=gamma_from_mc_position(j);
-      float diff=0;
-      if (sum_after>0 && i!=num_unpruned && i==1) //testing ignoring the first and the last!!
-      {
-        ssun<<" after "<<gamma_from_mc_position(i)/sum_after;
-        //this has to be multiplied by the ratio of sum_after/sum_all?!
-        //this is the ratio, that one of the afters has won?!
-        diff+=(1.0-gamma_from_mc_position(i)/sum_after) * sum_after / sum_all;
-      }
-      else
-        diff-=gamma_from_mc_position(i)/sum_all;
-      
-    //   if (sum_befor>0 && i!=1 && i!=num_unpruned) //testing ignoring the first and the last!!
-    //  {
-    //    ssun<<" befor "<<gamma_from_mc_position(i)/sum_befor;
-    //    diff-=gamma_from_mc_position(i)/sum_befor;
-    //  }
-    
-      ssun<<" diff "<<diff;
-      numvalue_gamma.insert(std::make_pair(mc_pos_move.find(i)->second,diff));
-      learn_sqr+=fabs(diff);
-      learn_d+=diff;
-      tmp_counter++;
-    }
-    ssun<<"\n";
-    ssun<<"---"<<gamma_move_pos.find(mc_pos_move.find(1)->second)->second<<"---"<<gamma_move_pos.find(mc_pos_move.find(2)->second)->second;
-    //if (gamma_move_pos.find(mc_pos_move.find(1)->second)->second > gamma_move_pos.find(mc_pos_move.find(2)->second)->second)
-    //if (gamma_move_pos.find(mc_pos_move.find(1)->second)->second>1)
-    //{
-    //  numvalue_gamma.insert(std::make_pair(mc_pos_move.find(1)->second,1)); 
-    //  for (int nn=2;nn<=num_unpruned;nn++)
-    //    numvalue_gamma.insert(std::make_pair(mc_pos_move.find(2)->second,-1.0/(num_unpruned-1)));
-    //  ssun<<"!!!!!!!!";
-    //  learn_sqr=1;
-    //}
-    
-    
-    if (tmp_counter>0)
-    {
-      learn_sum+=(learn_sqr)/tmp_counter;
-      learn_sum_diff+=learn_d/tmp_counter;
-      learn_n++;
-    }
-
-    //now do learning
     if (params->learn_enabled)
     {
-    for (int nn=1;nn<=num_unpruned;nn++)
+      std::map<float,Go::Move,std::greater<float> > ordervalue;
+      std::map<float,Go::Move,std::greater<float> > ordergamma;
+
+      float forcesort=0;
+      ssun<<"un:(";
+      Go::ObjectBoard<int> *cfglastdist=NULL;
+      Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
+      getFeatures()->computeCFGDist(currentboard,&cfglastdist,&cfgsecondlastdist);
+      for (int nn=1;nn<=num_unpruned;nn++)
       {
         for(std::list<Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
         {
           if ((*iter)->getUnprunedNum()==nn && (*iter)->isPrimary() && !(*iter)->isPruned())
           {
-            //learn this iter here!
-            //fprintf(stderr,"test %s move %d diff %f\n",(*iter)->getMove().toString(boardsize).c_str(),(*iter)->getMove().getPosition(),numvalue_gamma.find((*iter)->getMove().getPosition())->second);
-            // mc position - gamma position is negative, if the mc is better than gamma.
-            // this means the features used to calculate the gamma must get higher values
-            // therefore the -diff is used to put positive change to the features
-            if (numvalue_gamma.count((*iter)->getMove().getPosition()))
-            {
-              getFeatures()->learnMoveGamma(currentboard,cfglastdist,cfgsecondlastdist,(*iter)->getMove(),numvalue_gamma.find((*iter)->getMove().getPosition())->second);
-              ssun<<"!!!!learned!!!!"<<(*iter)->getMove().getPosition()<<":::::"<<numvalue_gamma.find((*iter)->getMove().getPosition())->second<<"!!!";
-            }
+            ssun<<(nn!=1?",":"")<<Go::Position::pos2string((*iter)->getMove().getPosition(),boardsize);
+            //do not use getFeatureGamma of the tree, as this might be not exactly the order of the gammas to be trained
+            ordergamma.insert(std::make_pair(getFeatures()->getMoveGamma(currentboard,cfglastdist,cfgsecondlastdist,(*iter)->getMove())+forcesort,(*iter)->getMove()));
+            ordervalue.insert(std::make_pair((*iter)->getPlayouts()+forcesort,(*iter)->getMove()));
+            forcesort+=0.001012321232123;
           }
         }
       }
+      //include pruned into learning, as they all lost!!
+      for(std::list<Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
+      {
+        if ((*iter)->isPrimary() && (*iter)->isPruned())
+        {
+          //ssun<<(nn!=1?",":"")<<Go::Position::pos2string((*iter)->getMove().getPosition(),boardsize);
+          //do not use getFeatureGamma of the tree, as this might be not exactly the order of the gammas to be trained
+          ordergamma.insert(std::make_pair(getFeatures()->getMoveGamma(currentboard,cfglastdist,cfgsecondlastdist,(*iter)->getMove())+forcesort,(*iter)->getMove()));
+          ordervalue.insert(std::make_pair(0.0+forcesort,(*iter)->getMove()));
+          forcesort+=0.001012321232123;
+        }
+      }
+      ssun<<")";
+      if (ordergamma.size()!=ordervalue.size())
+        ssun<<"\nthe ordering of gamma versus mc did not work correctly "<<ordergamma.size()<<" "<<ordervalue.size()<<"\n";
+      ssun<<" ordermc:(";
+
+      //for the moves (getPosition) the difference mc_position - gamma_position is calculated into numvalue_gamma
+      std::map<int,int> mc_pos_move;
+      std::map<int,int> gamma_move_pos;
+      std::map<int,float> numvalue_gamma;
+      std::map<int,float> move_gamma;
+      float sum_gammas=0;
+      std::map<float,Go::Move>::iterator it;
+      int nn=1;
+      for (it=ordervalue.begin();it!=ordervalue.end();++it)
+      {
+        ssun<<(nn!=1?",":"")<<Go::Position::pos2string(it->second.getPosition(),boardsize);
+        mc_pos_move.insert(std::make_pair(nn,it->second.getPosition()));
+        nn++;
+      }
+      ssun<<") ordergamma:(";
+      nn=1;
+  #define sign(A) ((A>0)?1:((A<0)?-1:0))
+  #define gamma_from_mc_position(A) (move_gamma.find(mc_pos_move.find(A)->second)->second)
+      for (it=ordergamma.begin();it!=ordergamma.end();++it)
+      {
+        ssun<<(nn!=1?",":"")<<Go::Position::pos2string(it->second.getPosition(),boardsize);
+        gamma_move_pos.insert(std::make_pair(it->second.getPosition(),nn));
+        move_gamma.insert(std::make_pair(it->second.getPosition(),it->first));
+        sum_gammas+=it->first;
+        nn++;
+      }
+      getFeatures()->learnMovesGamma(currentboard,cfglastdist,cfgsecondlastdist,ordervalue,move_gamma,sum_gammas);
+      ssun<<")";
     }
-    */
     
     ssun<<"st:(";
     for (int nn=0;nn<STATISTICS_NUM;nn++)
@@ -5020,22 +4933,12 @@ void Engine::gameFinished()
     return;
   isgamefinished=true;
 
-  if (params->learn_enabled && learn_n>0) 
+  if (params->learn_enabled) 
   {
     fprintf(stderr,"files gamma %s circ %s\n",learn_filename_features.c_str(),learn_filename_circ_patterns.c_str()); 
     getFeatures()->saveGammaFile (learn_filename_features);
     getFeatures()->saveCircValueFile (learn_filename_circ_patterns);
-    if (learn_n>0)
-    {
-      learn_sum/=learn_n;
-      learn_sum_diff/=learn_n;
-    }
-    else
-    {
-      learn_sum=0;
-      learn_sum_diff=0;
-    }
-    gtpe->getOutput()->printfDebug("learned gammas and circ patterns saved with orderquality %f %f\n",learn_sum,learn_sum_diff);
+    gtpe->getOutput()->printfDebug("learned gammas and circ patterns saved with orderquality\n");
   }
   
   if (currentboard->getMovesMade()==0)

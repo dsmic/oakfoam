@@ -75,7 +75,7 @@
 #define UCT_DECAY_M 0
 
 #define FEATURES_LADDERS false
-
+#define FEATURES_PASS_NO_MOVE_FOR_LASTDIST false
 #define LEARN_DELTA 0.01
 
 #define RULES_POSITIONAL_SUPERKO_ENABLED true
@@ -350,11 +350,6 @@ class Engine
     Go::TerritoryMap *territorymap;
     long statistics[STATISTICS_NUM];
 
-    //learning statistics
-    float learn_sum;
-    float learn_sum_diff;
-    int learn_n;
-    
     bool isgamefinished;
     std::list<DecisionTree*> decisiontrees;
 
