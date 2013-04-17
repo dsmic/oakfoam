@@ -77,6 +77,7 @@
 #define FEATURES_LADDERS false
 #define FEATURES_PASS_NO_MOVE_FOR_LASTDIST false
 #define LEARN_DELTA 0.01
+#define LEARN_MIN_PLAYOUTS 100
 
 #define RULES_POSITIONAL_SUPERKO_ENABLED true
 #define RULES_SUPERKO_TOP_PLY false
@@ -472,7 +473,8 @@ class Engine
     std::string chat(bool pm,std::string name,std::string msg);
 
     void gameFinished();
-
+    void learnFromTree(Go::Board *tmpboard, Tree *learntree, std::ostringstream *ssun, int move_num);
+    
     static void ponderWrapper(void *instance) { ((Engine*)instance)->ponder(); };
     void ponder();
 

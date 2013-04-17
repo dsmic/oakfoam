@@ -168,6 +168,7 @@ class Parameters
 
     bool learn_enabled;
     float learn_delta;
+    int learn_min_playouts;
     
     float test_p1;
     float test_p2;
