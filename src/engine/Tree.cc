@@ -472,12 +472,12 @@ float Tree::getVal(bool skiprave) const
   {
     //float alpha=(float)(ravemoves-playouts)/params->rave_moves;
 
-    //float alpha=(float)raveplayouts/(raveplayouts + playouts + (float)(raveplayouts*playouts)/params->rave_moves);
+    float alpha=(float)raveplayouts/(raveplayouts + playouts + (float)(raveplayouts*playouts)/params->rave_moves);
     //float alpha=exp(-pow((float)playouts/params->rave_moves,params->test_p1));
     //float alpha=params->test_p2/(exp(pow((float)playouts/params->rave_moves,params->test_p1))+params->test_p2);
     //if (alpha<0.5)
     //  fprintf(stderr,"%5.0f %5.0f %5.2f\n",raveplayouts,playouts,alpha);
-    float alpha=exp(-pow((float)playouts/params->rave_moves,params->test_p1));
+    //float alpha=exp(-pow((float)playouts/params->rave_moves,params->test_p1));
     //float alpha=1.0/pow(playouts*params->test_p6+params->test_p7,params->test_p8);
     if (alpha<=0)
       return this->getRatio();
@@ -751,7 +751,7 @@ void Tree::unPruneNextChildNew()
 void Tree::unPruneNextChild()
 {
 //  Gtp::Engine *gtpe=params->engine->getGtpEngine();
-if (this->hasPrunedChildren())
+  if (this->hasPrunedChildren())
   {
     Tree *bestchild=NULL;
     float bestfactor=-1;
@@ -791,8 +791,14 @@ if (this->hasPrunedChildren())
       {
         if ((*iter)->isPruned())
         {
+          if ((*iter)->getUnPruneFactor()>bestfactor || bestchild==NULL)
+          {
+            bestfactor=(*iter)->getUnPruneFactor(moveValues,mean,num);
+            bestchild=(*iter);
+          }
           //  fprintf(stderr,"%s %5.3f %5.3f (%5.0f) %5.3f",(*iter)->getMove().toString(params->board_size).c_str(),(*iter)->getUnPruneFactor(),(*iter)->getRAVERatio(),(*iter)->getRAVEPlayouts(),(*iter)->getFeatureGamma());
-          if (unprune_select_p<params->test_p9 || this->getNumUnprunedChildren()<3)
+          // Following is commented out because is cannot be disabled
+          /*if (unprune_select_p<params->test_p9 || this->getNumUnprunedChildren()<3)
           {
             if ((*iter)->getUnPruneFactor()>bestfactor || bestchild==NULL)
             {
@@ -818,7 +824,7 @@ if (this->hasPrunedChildren())
                 bestchild=(*iter);
               }
             }
-          }
+          }*/
         }
         else
         {
@@ -1163,48 +1169,48 @@ bool Tree::expandLeaf(Worker::Settings *settings)
   // here we could add preknown rave values?!
   
   if (params->uct_preset_rave_f!=0.0 && this->getParent())
+  {
+    Tree *p=this->getParent();
+    bool twohigher=false;
+    if (p->getParent())
     {
-      Tree *p=this->getParent();
-      bool twohigher=false;
-      if (p->getParent())
+      twohigher=true;
+      p=p->getParent();
+    }
+    int posmax=startboard->getPositionMax();
+    //fprintf(stderr,"posmax %d\n",posmax);
+    rwins=new float[posmax];
+    rplayouts=new float[posmax];
+    //earlyrwins=new float[posmax];
+    //earlyrplayouts=new float[posmax];
+    for (int i=0;i<posmax;i++)
+    {
+      rplayouts[i]=-1;
+      //earlyrplayouts[i]=-1;
+    }
+    std::list<Tree*> *childrenTmp=p->getChildren();
+    for(std::list<Tree*>::iterator iter=childrenTmp->begin();iter!=childrenTmp->end();++iter) 
+    {
+      int pos=(*iter)->getMove().getPosition();
+      if (pos>=0)
       {
-        twohigher=true;
-        p=p->getParent();
-      }
-      int posmax=startboard->getPositionMax();
-      //fprintf(stderr,"posmax %d\n",posmax);
-      rwins=new float[posmax];
-      rplayouts=new float[posmax];
-      //earlyrwins=new float[posmax];
-      //earlyrplayouts=new float[posmax];
-      for (int i=0;i<posmax;i++)
-      {
-        rplayouts[i]=-1;
-        //earlyrplayouts[i]=-1;
-      }
-      std::list<Tree*> *childrenTmp=p->getChildren();
-      for(std::list<Tree*>::iterator iter=childrenTmp->begin();iter!=childrenTmp->end();++iter) 
-      {
-        int pos=(*iter)->getMove().getPosition();
-        if (pos>=0)
+        if (!twohigher)
         {
-          if (!twohigher)
-          {
-            rwins[pos]=(*iter)->getRAVEWinsOther();
-            rplayouts[pos]=(*iter)->getRAVEPlayoutsOther();
-          //earlyrwins[pos]=(*iter)->getRAVEWinsOtherEarly();
-          //earlyrplayouts[pos]=(*iter)->getRAVEPlayoutsOtherEarly();
-          }
-          else
-          {
-            rwins[pos]=(*iter)->getRAVEWins();
-            rplayouts[pos]=(*iter)->getRAVEPlayouts();
-          //earlyrwins[pos]=(*iter)->getRAVEWinsEarly();
-          //earlyrplayouts[pos]=(*iter)->getRAVEPlayoutsEarly();
-          }
+          rwins[pos]=(*iter)->getRAVEWinsOther();
+          rplayouts[pos]=(*iter)->getRAVEPlayoutsOther();
+        //earlyrwins[pos]=(*iter)->getRAVEWinsOtherEarly();
+        //earlyrplayouts[pos]=(*iter)->getRAVEPlayoutsOtherEarly();
+        }
+        else
+        {
+          rwins[pos]=(*iter)->getRAVEWins();
+          rplayouts[pos]=(*iter)->getRAVEPlayouts();
+        //earlyrwins[pos]=(*iter)->getRAVEWinsEarly();
+        //earlyrplayouts[pos]=(*iter)->getRAVEPlayoutsEarly();
         }
       }
     }
+  }
   
   if (startboard->numOfValidMoves(col)>0)
   {
@@ -1269,14 +1275,14 @@ bool Tree::expandLeaf(Worker::Settings *settings)
     //if (earlyrplayouts) delete earlyrplayouts;
     
     if (params->uct_playoutmove_prior>0)
-      {
-        //try unpruning a playout move?!
-        Go::Move tmpmove;
-        params->engine->getOnePlayoutMove(startboard, startboard->nextToMove(),&tmpmove);       
-        fprintf(stderr,"test %s\n",tmpmove.toString (params->board_size).c_str());
-        Tree *mt=this->getChild(tmpmove);
-        if (mt!=NULL)
-          mt->addPriorWins(params->uct_playoutmove_prior);
+    {
+      //try unpruning a playout move?!
+      Go::Move tmpmove;
+      params->engine->getOnePlayoutMove(startboard, startboard->nextToMove(),&tmpmove);       
+      fprintf(stderr,"test %s\n",tmpmove.toString (params->board_size).c_str());
+      Tree *mt=this->getChild(tmpmove);
+      if (mt!=NULL)
+        mt->addPriorWins(params->uct_playoutmove_prior);
     }
 
     if (params->uct_atari_prior>0)
