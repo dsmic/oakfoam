@@ -33,6 +33,7 @@ function check
 
 echo $LINE | tee -a deploy.log
 echo "Deploying to $HOST:" | tee -a deploy.log
+echo "Changeset: `hg sum | sed -n 's/^parent: *//p'`" | tee -a deploy.log
 date | tee -a deploy.log
 echo $LINE | tee -a deploy.log
 
