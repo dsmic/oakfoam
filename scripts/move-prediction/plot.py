@@ -76,7 +76,7 @@ if plot3d:
   ax.set_zlim(0,1)
   ax.set_ylim(0,xmax)
 
-else:
+else: # 2d plot
   fig = plt.figure()
   fig.canvas.set_window_title(jd['title']) 
   plt.title(jd['title'])
@@ -94,6 +94,11 @@ else:
   errk = 0.0
   if 'errk' in jd.keys():
     errk = float(jd['errk'])
+
+  table = []
+  table.append(range(xmin,xmax+1))
+  tablelabels = []
+  tablelabels.append('Move Rank')
 
   c = 0
   for f in jd['data']:
@@ -133,7 +138,32 @@ else:
         plt.fill_between(x, err1, err2, alpha = 0.2, color = col)
         # plt.errorbar(x, z, yerr = err, fmt='.', color = col)
 
+      td = []
+      xi = 0
+      for i in table[0]:
+        while i > x[xi]:
+          xi += 1
+        td.append(z[xi])
+      table.append(td)
+      tablelabels.append(lbl)
+
   plt.legend(loc=4)
+
+  sys.stdout.write('# ' + jd['title'] + '\n')
+
+  tt = len(tablelabels)
+  for i in range(tt):
+    sys.stdout.write('# ' + ('     | ')*i + ' '*5 + '+' + ('-'*7)*(tt-i-1) + '- %d: ' % i + tablelabels[i] +'\n')
+  sys.stdout.write('#' + (' |----|')*tt + '\n')
+
+  for i in range(len(table[0])):
+    sys.stdout.write(' ')
+    for j in range(len(table)):
+      if j == 0:
+        sys.stdout.write(' %6d' % table[j][i])
+      else:
+        sys.stdout.write(' %6.3f' % table[j][i])
+    sys.stdout.write('\n')
 
 plt.show()
 
