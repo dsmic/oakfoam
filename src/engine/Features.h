@@ -687,9 +687,9 @@ namespace Pattern
  *  - BORDERDIST
  *    - x: The move is x away from the border.
  *  - LASTDIST
- *    - x: The move is x away from the last move (Manhattan distance).
+ *    - x: The move is x away from the last move (Circular distance).
  *  - SECONDLASTDIST
- *    - x: The move is x away from the second last move (Manhattan distance).
+ *    - x: The move is x away from the second last move (Circular distance).
  *  - CFGLASTDIST
  *    - x: The move is x away from the last move (CFG distance).
  *  - CFGSECONDLASTDIST
