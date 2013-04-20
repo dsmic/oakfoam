@@ -1,6 +1,7 @@
 
-version 0.1.3: xxxx-xx-xx
-  * todo
+version 0.1.3: 2013-04-20
+  * inclusion of circular patterns as features
+  * added prototype decision tree features
 
 version 0.1.2: 2012-08-29
   * minor bug fixes
