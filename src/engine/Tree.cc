@@ -125,7 +125,8 @@ float Tree::getRatio() const
 
 float Tree::getRAVERatio() const
 {
-  if (raveplayouts>0)
+  //passes and resigns do not have a correct rave value
+  if (raveplayouts>0 && getMove().isNormal())
     return (float)ravewins/raveplayouts;
   else
     return 0;
@@ -133,7 +134,8 @@ float Tree::getRAVERatio() const
 
 float Tree::getEARLYRAVERatio() const
 {
-  if (earlyraveplayouts>0)
+  //passes and resigns do not have a correct rave value
+  if (earlyraveplayouts>0 && getMove().isNormal())
     return (float)earlyravewins/earlyraveplayouts;
   else
     return 0;
@@ -141,7 +143,8 @@ float Tree::getEARLYRAVERatio() const
 
 float Tree::getRAVERatioOther() const
 {
-  if (raveplayoutsother>0)
+  //passes and resigns do not have a correct rave value
+  if (raveplayoutsother>0 && getMove().isNormal())
     return (float)ravewinsother/raveplayoutsother;
   else
     return 0;
