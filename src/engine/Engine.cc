@@ -3361,7 +3361,7 @@ void Engine::learnFromTree(Go::Board *tmpboard, Tree *learntree, std::ostringstr
   *ssun<<")";
   if (ordergamma.size()!=ordervalue.size())
     *ssun<<"\nthe ordering of gamma versus mc did not work correctly "<<ordergamma.size()<<" "<<ordervalue.size()<<"\n";
-  *ssun<<" ordermc:(";
+  //*ssun<<" ordermc:(";
 
   //for the moves (getPosition) the difference mc_position - gamma_position is calculated into numvalue_gamma
   std::map<int,int> mc_pos_move;
@@ -3373,17 +3373,17 @@ void Engine::learnFromTree(Go::Board *tmpboard, Tree *learntree, std::ostringstr
   int nn=1;
   for (it=ordervalue.begin();it!=ordervalue.end();++it)
   {
-    *ssun<<(nn!=1?",":"")<<Go::Position::pos2string(it->second.getPosition(),boardsize);
+    //*ssun<<(nn!=1?",":"")<<Go::Position::pos2string(it->second.getPosition(),boardsize);
     mc_pos_move.insert(std::make_pair(nn,it->second.getPosition()));
     nn++;
   }
-  *ssun<<") ordergamma:(";
+  //*ssun<<") ordergamma:(";
   nn=1;
 #define sign(A) ((A>0)?1:((A<0)?-1:0))
 #define gamma_from_mc_position(A) (move_gamma.find(mc_pos_move.find(A)->second)->second)
   for (it=ordergamma.begin();it!=ordergamma.end();++it)
   {
-    *ssun<<(nn!=1?",":"")<<Go::Position::pos2string(it->second.getPosition(),boardsize);
+    //*ssun<<(nn!=1?",":"")<<Go::Position::pos2string(it->second.getPosition(),boardsize);
     gamma_move_pos.insert(std::make_pair(it->second.getPosition(),nn));
     move_gamma.insert(std::make_pair(it->second.getPosition(),it->first));
     sum_gammas+=it->first;
