@@ -1783,6 +1783,7 @@ DecisionTree::Stats::Stats(DecisionTree::Type type, unsigned int maxnode)
       float rangemin = 0;
       float rangemax = 100;
 
+      // ATTR
       for (unsigned int i=0; i<=maxnode; i++)
       {
         // DIST
