@@ -75,6 +75,9 @@
 #define UCT_DECAY_M 0
 
 #define FEATURES_LADDERS false
+#define FEATURES_PASS_NO_MOVE_FOR_LASTDIST false
+#define LEARN_DELTA 0.01
+#define LEARN_MIN_PLAYOUTS 100
 
 #define RULES_POSITIONAL_SUPERKO_ENABLED true
 #define RULES_SUPERKO_TOP_PLY false
@@ -354,6 +357,7 @@ class Engine
     Worker::Pool *threadpool;
     Go::TerritoryMap *territorymap;
     long statistics[STATISTICS_NUM];
+
     bool isgamefinished;
     std::list<DecisionTree*> decisiontrees;
 
@@ -367,6 +371,8 @@ class Engine
 
     float presetplayouts;
     int presetnum;
+
+    std::string learn_filename_features,learn_filename_circ_patterns;
     
     enum MovePolicy
     {
@@ -474,7 +480,8 @@ class Engine
     std::string chat(bool pm,std::string name,std::string msg);
 
     void gameFinished();
-
+    void learnFromTree(Go::Board *tmpboard, Tree *learntree, std::ostringstream *ssun, int move_num);
+    
     static void ponderWrapper(void *instance) { ((Engine*)instance)->ponder(); };
     void ponder();
 
@@ -512,8 +519,11 @@ class Engine
     static void gtpFeatureProbDistribution(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpListAllPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpLoadFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpSaveFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpLoadCircPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpLoadCircPatternsNot(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpSaveCircPatternValues(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpLoadCircPatternValues(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpListFeatureIds(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowCFGFrom(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowCircDistFrom(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);

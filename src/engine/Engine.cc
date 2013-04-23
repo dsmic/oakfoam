@@ -135,6 +135,11 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","test_p13",&(params->test_p13),1.0);
   params->addParameter("playout","test_p14",&(params->test_p14),1.0);
   params->addParameter("playout","test_p15",&(params->test_p15),1.0);
+  params->addParameter("playout","test_p16",&(params->test_p16),1.0);
+  params->addParameter("playout","test_p17",&(params->test_p17),1.0);
+  params->addParameter("playout","test_p18",&(params->test_p18),1.0);
+  params->addParameter("playout","test_p19",&(params->test_p19),1.0);
+  params->addParameter("playout","test_p20",&(params->test_p20),1.0);
   
   params->addParameter("tree","ucb_c",&(params->ucb_c),UCB_C);
   params->addParameter("tree","ucb_init",&(params->ucb_init),UCB_INIT);
@@ -223,7 +228,12 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
 
   params->addParameter("tree","features_ladders",&(params->features_ladders),FEATURES_LADDERS);
   params->addParameter("tree","features_dt_use",&(params->features_dt_use),false);
+  params->addParameter("tree","features_pass_no_move_for_lastdist",&(params->features_pass_no_move_for_lastdist),FEATURES_PASS_NO_MOVE_FOR_LASTDIST);
   
+  params->addParameter("tree","learn_enabled",&(params->learn_enabled),false);
+  params->addParameter("tree","learn_delta",&(params->learn_delta),LEARN_DELTA);
+  params->addParameter("tree","learn_min_playouts",&(params->learn_min_playouts),LEARN_MIN_PLAYOUTS);
+
   params->addParameter("rules","rules_positional_superko_enabled",&(params->rules_positional_superko_enabled),RULES_POSITIONAL_SUPERKO_ENABLED);
   params->addParameter("rules","rules_superko_top_ply",&(params->rules_superko_top_ply),RULES_SUPERKO_TOP_PLY);
   params->addParameter("rules","rules_superko_prune_after",&(params->rules_superko_prune_after),RULES_SUPERKO_PRUNE_AFTER);
@@ -539,8 +549,11 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("featureprobdistribution",this,&Engine::gtpFeatureProbDistribution);
   gtpe->addFunctionCommand("listallpatterns",this,&Engine::gtpListAllPatterns);
   gtpe->addFunctionCommand("loadfeaturegammas",this,&Engine::gtpLoadFeatureGammas);
+  gtpe->addFunctionCommand("savefeaturegammas",this,&Engine::gtpSaveFeatureGammas);
   gtpe->addFunctionCommand("loadcircpatterns",this,&Engine::gtpLoadCircPatterns);
   gtpe->addFunctionCommand("loadcircpatternsnot",this,&Engine::gtpLoadCircPatternsNot);
+  gtpe->addFunctionCommand("savecircpatternvalues",this,&Engine::gtpSaveCircPatternValues);
+  gtpe->addFunctionCommand("loadcircpatternvalues",this,&Engine::gtpLoadCircPatternValues);
   gtpe->addFunctionCommand("listfeatureids",this,&Engine::gtpListFeatureIds);
   gtpe->addFunctionCommand("showcfgfrom",this,&Engine::gtpShowCFGFrom);
   gtpe->addFunctionCommand("showcircdistfrom",this,&Engine::gtpShowCircDistFrom);
@@ -1847,6 +1860,7 @@ void Engine::gtpLoadFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Comman
   }
   
   std::string filename=cmd->getStringArg(0);
+  me->learn_filename_features=filename;
   
   delete me->features;
   me->features=new Features(me->params);
@@ -1863,13 +1877,51 @@ void Engine::gtpLoadFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Comman
     #endif
     
     gtpe->getOutput()->startResponse(cmd);
-    gtpe->getOutput()->printf("loaded features gamma file: %s",filename.c_str());
+    gtpe->getOutput()->printf("loaded features gamma file: %s Attention, circ pattern files are removed by this!",filename.c_str());
     gtpe->getOutput()->endResponse();
   }
   else
   {
     gtpe->getOutput()->startResponse(cmd,false);
     gtpe->getOutput()->printf("error loading features gamma file: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+}
+
+void Engine::gtpSaveFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("need 1 arg");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  std::string filename=cmd->getStringArg(0);
+  
+  bool success=me->features->saveGammaFile(filename);
+  
+  if (success)
+  {
+    #ifdef HAVE_MPI
+      if (me->mpirank==0)
+      {
+        me->mpiBroadcastCommand(MPICMD_LOADFEATUREGAMMAS);
+        me->mpiBroadcastString(filename);
+      }
+    #endif
+    
+    gtpe->getOutput()->startResponse(cmd);
+    gtpe->getOutput()->printf("saveded features gamma file: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+  else
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("error saveing features gamma file: %s",filename.c_str());
     gtpe->getOutput()->endResponse();
   }
 }
@@ -1952,6 +2004,87 @@ void Engine::gtpLoadCircPatternsNot(void *instance, Gtp::Engine* gtpe, Gtp::Comm
   {
     gtpe->getOutput()->startResponse(cmd,false);
     gtpe->getOutput()->printf("error loading circpatterns file: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+}
+
+void Engine::gtpSaveCircPatternValues(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("need 1 arg (filename and number of lines)");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  std::string filename=cmd->getStringArg(0);
+  
+  if (me->features==NULL)
+    me->features=new Features(me->params);
+  bool success=me->features->saveCircValueFile(filename);
+  
+  if (success)
+  {
+    #ifdef HAVE_MPI
+      if (me->mpirank==0)
+      {
+        me->mpiBroadcastCommand(MPICMD_LOADFEATUREGAMMAS);
+        me->mpiBroadcastString(filename);
+      }
+    #endif
+    
+    gtpe->getOutput()->startResponse(cmd);
+    gtpe->getOutput()->printf("saved circvalue file: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+  else
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("error saving circpatterns file: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+}
+
+void Engine::gtpLoadCircPatternValues(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("need 1 arg (filename and number of lines)");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  std::string filename=cmd->getStringArg(0);
+  me->learn_filename_circ_patterns=filename;
+  
+  if (me->features==NULL)
+    me->features=new Features(me->params);
+  bool success=me->features->loadCircValueFile(filename);
+  
+  if (success)
+  {
+    #ifdef HAVE_MPI
+      if (me->mpirank==0)
+      {
+        me->mpiBroadcastCommand(MPICMD_LOADFEATUREGAMMAS);
+        me->mpiBroadcastString(filename);
+      }
+    #endif
+    
+    gtpe->getOutput()->startResponse(cmd);
+    gtpe->getOutput()->printf("loaded circvalue file: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+  else
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("error saving circpatterns file: %s",filename.c_str());
     gtpe->getOutput()->endResponse();
   }
 }
@@ -3218,6 +3351,95 @@ void Engine::gtpEcho(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   gtpe->getOutput()->endResponse();
 }
 
+
+void Engine::learnFromTree(Go::Board *tmpboard, Tree *learntree, std::ostringstream *ssun, int movenum)
+{
+  int num_unpruned=learntree->getNumUnprunedChildren();
+  std::map<float,Go::Move,std::greater<float> > ordervalue;
+  std::map<float,Tree*,std::greater<float> > orderlearntree;
+  std::map<float,Go::Move,std::greater<float> > ordergamma;
+
+  float forcesort=0;
+  *ssun<<"\nun:"<<movenum<<"(";
+  Go::ObjectBoard<int> *cfglastdist=NULL;
+  Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
+  getFeatures()->computeCFGDist(tmpboard,&cfglastdist,&cfgsecondlastdist);
+  for (int nn=1;nn<=num_unpruned;nn++)
+  {
+    for(std::list<Tree*>::iterator iter=learntree->getChildren()->begin();iter!=learntree->getChildren()->end();++iter) 
+    {
+      if ((*iter)->getUnprunedNum()==nn && (*iter)->isPrimary() && !(*iter)->isPruned())
+      {
+        *ssun<<(nn!=1?",":"")<<Go::Position::pos2string((*iter)->getMove().getPosition(),boardsize);
+        //do not use getFeatureGamma of the tree, as this might be not exactly the order of the gammas to be trained
+        ordergamma.insert(std::make_pair(getFeatures()->getMoveGamma(tmpboard,cfglastdist,cfgsecondlastdist,(*iter)->getMove())+forcesort,(*iter)->getMove()));
+        ordervalue.insert(std::make_pair((*iter)->getPlayouts()+forcesort,(*iter)->getMove()));
+        orderlearntree.insert(std::make_pair((*iter)->getPlayouts()+forcesort,(*iter)));
+        forcesort+=0.001012321232123;
+      }
+    }
+  }
+  //include pruned into learning, as they all lost!!
+  for(std::list<Tree*>::iterator iter=learntree->getChildren()->begin();iter!=learntree->getChildren()->end();++iter) 
+  {
+    if ((*iter)->isPrimary() && (*iter)->isPruned())
+    {
+      //ssun<<(nn!=1?",":"")<<Go::Position::pos2string((*iter)->getMove().getPosition(),boardsize);
+      //do not use getFeatureGamma of the tree, as this might be not exactly the order of the gammas to be trained
+      ordergamma.insert(std::make_pair(getFeatures()->getMoveGamma(tmpboard,cfglastdist,cfgsecondlastdist,(*iter)->getMove())+forcesort,(*iter)->getMove()));
+      ordervalue.insert(std::make_pair(0.0+forcesort,(*iter)->getMove()));
+      forcesort+=0.001012321232123;
+    }
+  }
+  *ssun<<")";
+  if (ordergamma.size()!=ordervalue.size())
+    *ssun<<"\nthe ordering of gamma versus mc did not work correctly "<<ordergamma.size()<<" "<<ordervalue.size()<<"\n";
+  //*ssun<<" ordermc:(";
+
+  //for the moves (getPosition) the difference mc_position - gamma_position is calculated into numvalue_gamma
+  std::map<int,int> mc_pos_move;
+  std::map<int,int> gamma_move_pos;
+  std::map<int,float> numvalue_gamma;
+  std::map<int,float> move_gamma;
+  float sum_gammas=0;
+  std::map<float,Go::Move>::iterator it;
+  int nn=1;
+  for (it=ordervalue.begin();it!=ordervalue.end();++it)
+  {
+    //*ssun<<(nn!=1?",":"")<<Go::Position::pos2string(it->second.getPosition(),boardsize);
+    mc_pos_move.insert(std::make_pair(nn,it->second.getPosition()));
+    nn++;
+  }
+  //*ssun<<") ordergamma:(";
+  nn=1;
+#define sign(A) ((A>0)?1:((A<0)?-1:0))
+#define gamma_from_mc_position(A) (move_gamma.find(mc_pos_move.find(A)->second)->second)
+  for (it=ordergamma.begin();it!=ordergamma.end();++it)
+  {
+    //*ssun<<(nn!=1?",":"")<<Go::Position::pos2string(it->second.getPosition(),boardsize);
+    gamma_move_pos.insert(std::make_pair(it->second.getPosition(),nn));
+    move_gamma.insert(std::make_pair(it->second.getPosition(),it->first));
+    sum_gammas+=it->first;
+    nn++;
+  }
+  getFeatures()->learnMovesGamma(tmpboard,cfglastdist,cfgsecondlastdist,ordervalue,move_gamma,sum_gammas);
+  *ssun<<")";
+  std::map<float,Tree*>::iterator it_learntree;
+  for (it_learntree=orderlearntree.begin();it_learntree!=orderlearntree.end();++it_learntree)
+  {
+    //check if enough playouts
+    if (params->learn_min_playouts>=it_learntree->second->getPlayouts ())
+      break;
+    //tmpboard must be copied
+    Go::Board *nextboard=tmpboard->copy();
+    //the move must be made first!
+    nextboard->makeMove(it_learntree->second->getMove());
+    *ssun<<"-"<<it_learntree->second->getMove().toString (boardsize)<<"-";
+    //learnFromTree has to be called
+    learnFromTree (nextboard,it_learntree->second,ssun,movenum+1);
+  }
+}
+
 void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
 {
   clearStatistics();
@@ -3322,18 +3544,9 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
 
     int num_unpruned=movetree->getNumUnprunedChildren();
     std::ostringstream ssun;
-    ssun<<"un:(";
-    for (int nn=1;nn<=num_unpruned;nn++)
-    {
-      for(std::list<Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
-      {
-        if ((*iter)->getUnprunedNum()==nn && (*iter)->isPrimary() && !(*iter)->isPruned())
-        {
-          ssun<<(nn!=1?",":"")<<Go::Position::pos2string((*iter)->getMove().getPosition(),boardsize);
-        }
-      }
-    }
-    ssun<<")";
+    Tree *learntree=movetree;
+    if (params->learn_enabled)
+      learnFromTree (currentboard,learntree,&ssun,1);
     ssun<<"st:(";
     for (int nn=0;nn<STATISTICS_NUM;nn++)
     {
@@ -4291,13 +4504,16 @@ void Engine::doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::
           ss << " r2:" << std::setprecision(2)<<robustmove->secondBestPlayoutRatio();
           ss << ")";
           Tree *bestratio=movetree->getBestRatioChild();
-          if (robustmove==bestratio)
-            ss << " (same)";
-          else
+          if (bestratio!=NULL)
           {
-            ss << " (br:" << Go::Position::pos2string(bestratio->getMove().getPosition(),boardsize);
-            ss << " r:" << std::setprecision(2)<<bestratio->getRatio();
-            ss << ")";
+            if (robustmove==bestratio)
+              ss << " (same)";
+            else
+            {
+              ss << " (br:" << Go::Position::pos2string(bestratio->getMove().getPosition(),boardsize);
+              ss << " r:" << std::setprecision(2)<<bestratio->getRatio();
+              ss << ")";
+            }
           }
           ss << "\n";
           gtpe->getOutput()->printfDebug(ss.str());
@@ -4817,6 +5033,14 @@ void Engine::gameFinished()
     return;
   isgamefinished=true;
 
+  if (params->learn_enabled) 
+  {
+    fprintf(stderr,"files gamma %s circ %s\n",learn_filename_features.c_str(),learn_filename_circ_patterns.c_str()); 
+    getFeatures()->saveGammaFile (learn_filename_features);
+    getFeatures()->saveCircValueFile (learn_filename_circ_patterns);
+    gtpe->getOutput()->printfDebug("learned gammas and circ patterns saved with orderquality\n");
+  }
+  
   if (currentboard->getMovesMade()==0)
     return;
 

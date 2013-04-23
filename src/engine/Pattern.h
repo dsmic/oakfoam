@@ -213,6 +213,7 @@ namespace Pattern
       float getGamma(unsigned int hash) const { return gammas[hash]; };
       /** Set the gamma value for a given hash. */
       void setGamma(unsigned int hash, float g) { if (this->getGamma(hash)==-1) count++; gammas[hash]=g; if (g==-1) count--; };
+      void learnGamma(unsigned int hash, float g) { if (this->getGamma(hash)==-1) count++; gammas[hash]+=g; if (gammas[hash]<=0) {gammas[hash]=0.0001;}  if (g==-1) count--; };
       /** Determine whether a hash has an associated gamma value. */
       bool hasGamma(unsigned int hash) const { return (gammas[hash]!=-1); };
       /** Get count of hashes that are set. */

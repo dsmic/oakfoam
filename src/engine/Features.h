@@ -735,6 +735,9 @@ class Features
      * The weight for a move is the product of matching feature weights for that move.
      */
     float getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove=true, bool withcircularpatterns=true) const;
+    bool learnMovesGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, std::map<float,Go::Move,std::greater<float> > ordervalue, std::map<int,float> move_gamma, float sum_gammas);
+    bool learnMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, float learn_diff);
+    int learnMoveGammaC(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, float learn_diff);
     /** Return the total of all gammas for the moves on a board. */
     float getBoardGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Color col) const;
     /** Return the total of all gammas for the moves on a board and each move's weight in @p gammas. */
@@ -745,6 +748,9 @@ class Features
     Features::FeatureClass getFeatureClassFromName(std::string name) const;
     /** Set the gamma value for a specific feature and level. */
     bool setFeatureGamma(Features::FeatureClass featclass, unsigned int level, float gamma);
+    void learnFeatureGammaMoves(Features::FeatureClass featclass, Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, std::map<float,Go::Move,std::greater<float> > ordervalue, std::map<int,float> move_gamma, float sum_gammas);
+    void learnFeatureGamma(Features::FeatureClass featclass, unsigned int level, float learn_diff);
+    int learnFeatureGammaC(Features::FeatureClass featclass, unsigned int level, float learn_diff);
     
     /** Return a string of all the matching features for a move. */ 
     std::string getMatchingFeaturesString(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool pretty=true) const;
@@ -755,8 +761,11 @@ class Features
     bool loadGammaLine(std::string line);
     /** Load a file of gamma values. */
     bool loadGammaFile(std::string filename);
+    bool saveGammaFile(std::string filename);
     bool loadCircFile(std::string filename,int numlines);
     bool loadCircFileNot(std::string filename,int numlines);
+    bool saveCircValueFile(std::string filename);
+    bool loadCircValueFile(std::string filename);
     /** Load a number of lines of gamma values. */
     bool loadGammaString(std::string lines);
     /** Load the default gamma values. */
@@ -774,6 +783,7 @@ class Features
 
     bool isCircPattern(std::string circpattern) const;
     float valueCircPattern(std::string circpattern) const;
+    void learnCircPattern(std::string circpattern,float delta);
     int getCircSize () {return circpatternsize;}
     
   private:
@@ -801,6 +811,7 @@ class Features
 
     std::map<std::string,long int> circpatterns;
     std::map<std::string,long int> circpatternsnot;
+    std::map<std::string,float> circpatternvalues;
     int circpatternsize;
     long int num_circmoves;
     long int num_circmoves_not;

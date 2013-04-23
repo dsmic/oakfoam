@@ -8,6 +8,7 @@
 
 unsigned int Pattern::ThreeByThree::makeHash(Go::Color colnw, Go::Color coln, Go::Color colne, Go::Color colw, Go::Color cole, Go::Color colsw, Go::Color cols, Go::Color colse)
 {
+  //it is used later, that the return value has only 16 bit, even if unsigned int is larger!
   unsigned int hash=0;
   
   hash|=(Pattern::ThreeByThree::hashColor(colnw) << 14);

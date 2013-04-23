@@ -166,6 +166,9 @@ class Parameters
      */
     float playout_mercy_rule_factor;
 
+    bool learn_enabled;
+    float learn_delta;
+    int learn_min_playouts;
     
     float test_p1;
     float test_p2;
@@ -182,6 +185,11 @@ class Parameters
     float test_p13;
     float test_p14;
     float test_p15;
+    float test_p16;
+    float test_p17;
+    float test_p18;
+    float test_p19;
+    float test_p20;
     
 
     
@@ -553,6 +561,8 @@ class Parameters
      * @see features_circ_list
      */
     int features_circ_list_size;
+
+    bool features_pass_no_move_for_lastdist;
 
     /** Whether to automatically output an SGF when a game finishes. */
     bool auto_save_sgf;
