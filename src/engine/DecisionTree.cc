@@ -1783,21 +1783,6 @@ DecisionTree::Stats::Stats(DecisionTree::Type type, unsigned int maxnode)
       float rangemin = 0;
       float rangemax = 100;
 
-      // NEW
-      std::string colslist = "BWS";
-      for (unsigned int i=1; i<((unsigned int)1<<colslist.size()); i++)
-      {
-        std::string cols = "";
-        for (unsigned int j=0; j<colslist.size(); j++)
-        {
-          if ((i>>j)&0x01)
-            cols += colslist[j];
-        }
-        std::vector<std::string> *attrs = new std::vector<std::string>();
-        attrs->push_back(cols);
-        statperms->push_back(new DecisionTree::StatPerm("NEW",attrs,new DecisionTree::Range(rangemin,rangemax)));
-      }
-
       for (unsigned int i=0; i<=maxnode; i++)
       {
         // DIST
