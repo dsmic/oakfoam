@@ -134,6 +134,11 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","test_p13",&(params->test_p13),1.0);
   params->addParameter("playout","test_p14",&(params->test_p14),1.0);
   params->addParameter("playout","test_p15",&(params->test_p15),1.0);
+  params->addParameter("playout","test_p16",&(params->test_p16),1.0);
+  params->addParameter("playout","test_p17",&(params->test_p17),1.0);
+  params->addParameter("playout","test_p18",&(params->test_p18),1.0);
+  params->addParameter("playout","test_p19",&(params->test_p19),1.0);
+  params->addParameter("playout","test_p20",&(params->test_p20),1.0);
   
   params->addParameter("tree","ucb_c",&(params->ucb_c),UCB_C);
   params->addParameter("tree","ucb_init",&(params->ucb_init),UCB_INIT);
