@@ -901,7 +901,10 @@ void Engine::gtpUndo(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 
 float Engine::getScoreKomi() const
 { 
-  float dynamic_komi=7.5*komi_handicap*exp(-20.0*(float)currentboard->getMovesMade()/boardsize/boardsize);
+  float dynamic_komi=7.5*komi_handicap*exp(-10.0*(float)currentboard->getMovesMade()/boardsize/boardsize);
+  if (dynamic_komi<5)
+    dynamic_komi=0;  //save the end game
+  
   return komi+komi_handicap+dynamic_komi; 
 }
 
@@ -2819,11 +2822,11 @@ void Engine::gtpShowTerritory(void *instance, Gtp::Engine* gtpe, Gtp::Command* c
   }
 
   if (territorycount-me->getKomi()>0)
-    gtpe->getOutput()->printf("Territory %.1f Komi %.1f B+%.1f (with ScoreKomi %.1f)\n",
-      territorycount,me->getKomi(),territorycount-me->getKomi(),territorycount-me->getScoreKomi());
+    gtpe->getOutput()->printf("Territory %.1f Komi %.1f B+%.1f (with ScoreKomi %.1f) (%.1f)\n",
+      territorycount,me->getKomi(),territorycount-me->getKomi(),territorycount-me->getScoreKomi(),me->getScoreKomi());
   else
-    gtpe->getOutput()->printf("Territory %.1f Komi %.1f W+%.1f (with ScoreKomi %.1f)\n",
-      territorycount,me->getKomi(),-(territorycount-me->getKomi()),-(territorycount-me->getScoreKomi()));
+    gtpe->getOutput()->printf("Territory %.1f Komi %.1f W+%.1f (with ScoreKomi %.1f) (%.1f)\n",
+      territorycount,me->getKomi(),-(territorycount-me->getKomi()),-(territorycount-me->getScoreKomi()),me->getScoreKomi());
     
   gtpe->getOutput()->endResponse(true);
 }
