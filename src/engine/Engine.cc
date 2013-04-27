@@ -536,6 +536,8 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("kgs-chat",this,&Engine::gtpChat);
   gtpe->addFunctionCommand("kgs-game_over",this,&Engine::gtpGameOver);
   gtpe->addFunctionCommand("echo",this,&Engine::gtpEcho);
+  gtpe->addFunctionCommand("place_free_handicap",this,&Engine::gtpPlaceFreeHandicap);
+  gtpe->addFunctionCommand("set_free_handicap",this,&Engine::gtpSetFreeHandicap);
   
   gtpe->addFunctionCommand("param",this,&Engine::gtpParam);
   gtpe->addFunctionCommand("showliberties",this,&Engine::gtpShowLiberties);
@@ -3351,6 +3353,89 @@ void Engine::gtpEcho(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   gtpe->getOutput()->endResponse();
 }
 
+void Engine::gtpPlaceFreeHandicap(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("argument is required");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+
+  int numHandicapstones=cmd->getIntArg (0);
+  if (numHandicapstones<2||numHandicapstones>9)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("number of handicap stones not supported");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+
+  int sizem1=me->boardsize-1;
+  int boarderdist=3;
+  if (me->boardsize<13)
+    boarderdist=2;
+  int sizemb=sizem1-boarderdist;
+  Gtp::Vertex vert[9];
+  vert[0].x=boarderdist;  vert[0].y=boarderdist;
+  vert[1].x=sizemb;       vert[1].y=sizemb;
+  vert[2].x=sizemb;       vert[2].y=boarderdist;
+  vert[3].x=boarderdist;  vert[3].y=sizemb;
+  vert[4].x=boarderdist;  vert[4].y=sizem1/2;
+  vert[5].x=sizemb;       vert[5].y=sizem1/2;
+  vert[6].x=sizem1/2;     vert[6].y=boarderdist;
+  vert[7].x=sizem1/2;     vert[7].y=sizemb;
+  vert[8].x=sizem1/2;     vert[8].y=sizem1/2;
+  if (numHandicapstones>4 && numHandicapstones%2==1)
+  {
+    vert[numHandicapstones-1].x=sizem1/2; vert[numHandicapstones-1].y=sizem1/2;
+  }
+  gtpe->getOutput()->startResponse(cmd);
+  for (int i=0;i<numHandicapstones;i++)
+  {
+    Go::Move move=Go::Move(Go::BLACK,vert[i].x,vert[i].y,me->boardsize);
+    me->makeMove(move);
+    gtpe->getOutput()->printVertex(vert[i]);
+    gtpe->getOutput()->printf(" ");
+  }
+  gtpe->getOutput()->endResponse();
+}
+
+void Engine::gtpSetFreeHandicap(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+
+  int numVertices=cmd->numArgs();
+  if (cmd->numArgs()<2)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("At least 2 handicap stones required");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+
+  gtpe->getOutput()->startResponse(cmd);
+  for (int x=0;x<numVertices;x++)
+  {
+    Gtp::Vertex vert=cmd->getVertexArg (x);
+    Go::Move move=Go::Move(Go::BLACK,vert.x,vert.y,me->boardsize);
+    if (!me->isMoveAllowed(move))
+    {
+      gtpe->getOutput()->startResponse(cmd,false);
+      gtpe->getOutput()->printString("illegal move");
+      gtpe->getOutput()->endResponse();
+      return;
+    }
+    me->makeMove(move);
+  
+    //gtpe->getOutput()->printVertex(vert);
+    //gtpe->getOutput()->printf(" ");
+  }
+  gtpe->getOutput()->endResponse();
+}
 
 void Engine::learnFromTree(Go::Board *tmpboard, Tree *learntree, std::ostringstream *ssun, int movenum)
 {
