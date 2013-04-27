@@ -899,6 +899,12 @@ void Engine::gtpUndo(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   }
 }
 
+float Engine::getScoreKomi() const
+{ 
+  float dynamic_komi=7.5*komi_handicap*exp(-20.0*(float)currentboard->getMovesMade()/boardsize/boardsize);
+  return komi+komi_handicap+dynamic_komi; 
+}
+
 void Engine::gtpFinalScore(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
@@ -912,9 +918,9 @@ void Engine::gtpFinalScore(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   }
   
   if (me->params->rules_all_stones_alive || me->params->cleanup_in_progress)
-    score=me->currentboard->score()-me->komi;
+    score=me->currentboard->score()-me->komi-me->komi_handicap;
   else
-    score=me->currentboard->territoryScore(me->territorymap,me->params->territory_threshold)-me->komi;
+    score=me->currentboard->territoryScore(me->territorymap,me->params->territory_threshold)-me->komi-me->komi_handicap;
   
   gtpe->getOutput()->startResponse(cmd);
   if (score==0) // jigo

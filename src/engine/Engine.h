@@ -289,7 +289,7 @@ class Engine
     void clearBoard();
     /** Get the current komi. */
     float getKomi() const { return komi; };
-    float getScoreKomi() const { return komi+komi_handicap; };
+    float getScoreKomi() const;
     /** Set the current komi. */
     void setKomi(float k);
     void setHandicapKomi(float k) {komi_handicap=k;};
