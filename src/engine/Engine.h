@@ -289,8 +289,10 @@ class Engine
     void clearBoard();
     /** Get the current komi. */
     float getKomi() const { return komi; };
+    float getScoreKomi() const { return komi+komi_handicap; };
     /** Set the current komi. */
     void setKomi(float k);
+    void setHandicapKomi(float k) {komi_handicap=k;};
     /** Undo the last move made.
      * Return true if successful.
      */
@@ -340,6 +342,7 @@ class Engine
     std::string longname;
     Go::Board *currentboard;
     float komi;
+    float komi_handicap;
     int boardsize;
     Time *time;
     Tree *movetree;

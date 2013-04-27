@@ -42,6 +42,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->board_size=boardsize;
   currentboard=new Go::Board(boardsize);
   komi=7.5;
+  komi_handicap=0;
 
   params->tree_instances=0;
   
@@ -2812,11 +2813,11 @@ void Engine::gtpShowTerritory(void *instance, Gtp::Engine* gtpe, Gtp::Command* c
   }
 
   if (territorycount-me->getKomi()>0)
-    gtpe->getOutput()->printf("Territory %.1f Komi %.1f B+%.1f\n",
-      territorycount,me->getKomi(),territorycount-me->getKomi());
+    gtpe->getOutput()->printf("Territory %.1f Komi %.1f B+%.1f (with ScoreKomi %.1f)\n",
+      territorycount,me->getKomi(),territorycount-me->getKomi(),territorycount-me->getScoreKomi());
   else
-    gtpe->getOutput()->printf("Territory %.1f Komi %.1f W+%.1f\n",
-      territorycount,me->getKomi(),-(territorycount-me->getKomi()));
+    gtpe->getOutput()->printf("Territory %.1f Komi %.1f W+%.1f (with ScoreKomi %.1f)\n",
+      territorycount,me->getKomi(),-(territorycount-me->getKomi()),-(territorycount-me->getScoreKomi()));
     
   gtpe->getOutput()->endResponse(true);
 }
@@ -3401,6 +3402,7 @@ void Engine::gtpPlaceFreeHandicap(void *instance, Gtp::Engine* gtpe, Gtp::Comman
     gtpe->getOutput()->printVertex(vert[i]);
     gtpe->getOutput()->printf(" ");
   }
+  me->setHandicapKomi(numHandicapstones);
   gtpe->getOutput()->endResponse();
 }
 
@@ -3434,6 +3436,7 @@ void Engine::gtpSetFreeHandicap(void *instance, Gtp::Engine* gtpe, Gtp::Command*
     //gtpe->getOutput()->printVertex(vert);
     //gtpe->getOutput()->printf(" ");
   }
+  me->setHandicapKomi(numVertices);
   gtpe->getOutput()->endResponse();
 }
 
@@ -4208,6 +4211,7 @@ void Engine::clearBoard()
   playout->resetLGRF();
   params->cleanup_in_progress=false;
   isgamefinished=false;
+  komi_handicap=0;
 }
 
 void Engine::clearMoveTree()
