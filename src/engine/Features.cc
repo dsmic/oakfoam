@@ -579,7 +579,7 @@ void Features::learnFeatureGamma(Features::FeatureClass featclass, unsigned int 
   }
 }
 
-float Features::getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove, bool usecircularpatterns) const
+float Features::              getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove, bool usecircularpatterns) const
 {
   float g=1.0;
   
@@ -592,10 +592,10 @@ float Features::getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist
   g*=this->getFeatureGamma(Features::SELFATARI,this->matchFeatureClass(Features::SELFATARI,board,cfglastdist,cfgsecondlastdist,move,false));
   g*=this->getFeatureGamma(Features::ATARI,this->matchFeatureClass(Features::ATARI,board,cfglastdist,cfgsecondlastdist,move,false));
   g*=this->getFeatureGamma(Features::BORDERDIST,this->matchFeatureClass(Features::BORDERDIST,board,cfglastdist,cfgsecondlastdist,move,false));
-  g*=1.0+params->test_p12*(this->getFeatureGamma(Features::LASTDIST,this->matchFeatureClass(Features::LASTDIST,board,cfglastdist,cfgsecondlastdist,move,false))-1.0);
-  g*=1.0+params->test_p13*(this->getFeatureGamma(Features::SECONDLASTDIST,this->matchFeatureClass(Features::SECONDLASTDIST,board,cfglastdist,cfgsecondlastdist,move,false))-1.0);
-  g*=1.0+params->test_p14*(this->getFeatureGamma(Features::CFGLASTDIST,this->matchFeatureClass(Features::CFGLASTDIST,board,cfglastdist,cfgsecondlastdist,move,false))-1.0);
-  g*=1.0+params->test_p15*(this->getFeatureGamma(Features::CFGSECONDLASTDIST,this->matchFeatureClass(Features::CFGSECONDLASTDIST,board,cfglastdist,cfgsecondlastdist,move,false))-1.0);
+  g*=this->getFeatureGamma(Features::LASTDIST,this->matchFeatureClass(Features::LASTDIST,board,cfglastdist,cfgsecondlastdist,move,false));
+  g*=this->getFeatureGamma(Features::SECONDLASTDIST,this->matchFeatureClass(Features::SECONDLASTDIST,board,cfglastdist,cfgsecondlastdist,move,false));
+  g*=this->getFeatureGamma(Features::CFGLASTDIST,this->matchFeatureClass(Features::CFGLASTDIST,board,cfglastdist,cfgsecondlastdist,move,false));
+  g*=this->getFeatureGamma(Features::CFGSECONDLASTDIST,this->matchFeatureClass(Features::CFGSECONDLASTDIST,board,cfglastdist,cfgsecondlastdist,move,false));
   g*=this->getFeatureGamma(Features::PATTERN3X3,this->matchFeatureClass(Features::PATTERN3X3,board,cfglastdist,cfgsecondlastdist,move,false));
   if (circlevels->size()>0)
     g*=this->getFeatureGamma(Features::CIRCPATT,this->matchFeatureClass(Features::CIRCPATT,board,cfglastdist,cfgsecondlastdist,move,false));
@@ -617,11 +617,9 @@ float Features::getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist
     {
      //fprintf(stderr,"found pattern %f %s (stones %d)\n",params->test_p1,pattcirc.toString(circdict).c_str(),pattcirc.countStones(circdict));
      //fprintf(stderr,"found pattern %f %s (stones %d)\n",this->valueCircPattern(pattcirc.toString(circdict)),pattcirc.toString(circdict).c_str(),pattcirc.countStones(circdict));
-     g*=params->test_p16+exp(params->test_p6*circpatternsize)*params->uct_factor_circpattern * this->valueCircPattern(pattcirc.toString(circdict)); 
+     g*=1.0+exp(-0.5*circpatternsize)*params->uct_factor_circpattern * this->valueCircPattern(pattcirc.toString(circdict)); 
     }
-    else
-        g*=params->test_p16;
-    for (int j=circpatternsize-1;j>params->test_p8;j--)
+    for (int j=circpatternsize-1;j>=params->uct_circpattern_minsize;j--)
     {
       Pattern::Circular tmp=pattcirc.getSubPattern(circdict,j);
       tmp.convertToSmallestEquivalent(circdict);
@@ -629,10 +627,8 @@ float Features::getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist
       if (this->valueCircPattern(tmpPattString)>0.0)
       {
        //fprintf(stderr,"found pattern %f %s (stones %d)\n",this->valueCircPattern(tmpPattString),tmpPattString.c_str(),tmp.countStones(circdict));
-       g*=params->test_p16+exp(params->test_p6*j)*params->uct_factor_circpattern * this->valueCircPattern(tmpPattString); //params->uct_factor_circpattern_exponent
+       g*=1.0+exp(-0.5*j)*params->uct_factor_circpattern * this->valueCircPattern(tmpPattString); //params->uct_factor_circpattern_exponent
       }
-      else
-        g*=params->test_p16;
     }
   }
 
@@ -704,7 +700,7 @@ int Features::learnMoveGammaC(Go::Board *board, Go::ObjectBoard<int> *cfglastdis
      //this->learnCircPattern(pattcirc.toString(circdict),params->learn_delta*learn_diff);
      C++;
     }
-    for (int j=circpatternsize-1;j>params->test_p8;j--)
+    for (int j=circpatternsize-1;j>=params->uct_circpattern_minsize;j--)
     {
       Pattern::Circular tmp=pattcirc.getSubPattern(circdict,j);
       tmp.convertToSmallestEquivalent(circdict);
@@ -764,7 +760,7 @@ bool Features::learnMovesGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdi
          //gammaHERE[circpatternsize]=this->valueCircPattern(pattcirc.toString(circdict));
          stringHERE[circpatternsize]=pattcirc.toString(circdict);
         }
-        for (int j=circpatternsize-1;j>params->test_p8;j--)
+        for (int j=circpatternsize-1;j>=params->uct_circpattern_minsize;j--)
         {
           Pattern::Circular tmp=pattcirc.getSubPattern(circdict,j);
           tmp.convertToSmallestEquivalent(circdict);
@@ -835,7 +831,7 @@ bool Features::learnMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdis
      fprintf(stderr,"found pattern %f %s (stones %d)\n",this->valueCircPattern(pattcirc.toString(circdict)),pattcirc.toString(circdict).c_str(),pattcirc.countStones(circdict));
      this->learnCircPattern(pattcirc.toString(circdict),params->learn_delta*learn_diff); 
     }
-    for (int j=circpatternsize-1;j>params->test_p8;j--)
+    for (int j=circpatternsize-1;j>=params->uct_circpattern_minsize;j--)
     {
       Pattern::Circular tmp=pattcirc.getSubPattern(circdict,j);
       tmp.convertToSmallestEquivalent(circdict);
@@ -1539,7 +1535,7 @@ float Features::valueCircPattern(std::string circpattern) const
   long int num_not_played=0;
   it=circpatternsnot.find(circpattern);
   if (it!=circpatternsnot.end()) num_not_played=it->second;
-  float ratio=float(num_played)/(num_not_played+params->test_p7)*params->uct_factor_circpattern_exponent;
+  float ratio=float(num_played)/(num_not_played+20)*params->uct_factor_circpattern_exponent;
   if (ratio>1.0) ratio=1.0;
   //fprintf(stderr,"valueCircPattern %ld %ld %f\n",num_played,num_not_played,ratio);
   return ratio;

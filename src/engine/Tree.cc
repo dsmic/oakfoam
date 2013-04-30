@@ -488,7 +488,7 @@ float Tree::getVal(bool skiprave) const
       return this->getRAVERatio();
     else
       //return this->getEARLYRAVERatio()*alpha + this->getRatio()*(1-alpha);
-      return this->getRAVERatio()*alpha + this->getRatio()*(1-params->test_p2*alpha);
+      return this->getRAVERatio()*alpha + this->getRatio()*(1-alpha);
   }
 }
 
@@ -787,7 +787,7 @@ void Tree::unPruneNextChild()
       if (num>0)
         mean=sum/num;
     }
-    float unprune_select_p=(float)rand()/RAND_MAX;
+    //float unprune_select_p=(float)rand()/RAND_MAX;
     for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
     {
       if ((*iter)->isPrimary() && !(*iter)->isSuperkoViolation())
@@ -962,13 +962,13 @@ float Tree::getUnPruneFactor(float *moveValues,float mean, int num) const
   }
 
 
-  factor+=params->test_p3*this->getRAVERatio()*this->getCriticality();
+  factor+=params->uct_criticality_rave_unprune_factor*this->getRAVERatio()*this->getCriticality();
 
   float terrOwn=params->engine->getTerritoryMap()->getPositionOwner(move.getPosition());
   if (move.getColor()==Go::WHITE)
     terrOwn=-terrOwn;
 
-  factor+=params->test_p4*exp(-pow(terrOwn-1.0/3,2));
+  factor+=params->uct_area_owner_factor_a*exp(-pow(params->uct_area_owner_factor_c*(terrOwn-params->uct_area_owner_factor_b),2));
   
   if (params->uct_earlyrave_unprune_factor>0 && this->getEARLYRAVEPlayouts ()>1)
   {
@@ -1340,13 +1340,13 @@ bool Tree::expandLeaf(Worker::Settings *settings)
     Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
     params->engine->getFeatures()->computeCFGDist(startboard,&cfglastdist,&cfgsecondlastdist);
 
-    int now_unpruned=this->getUnprunedNum();
+    //int now_unpruned=this->getUnprunedNum();
     //fprintf(stderr,"debugging %d\n",now_unpruned);
     for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
     {
       if ((*iter)->isPrimary())
       {
-        float gamma=params->engine->getFeatures()->getMoveGamma(startboard,cfglastdist,cfgsecondlastdist,(*iter)->getMove(),true,now_unpruned >= params->test_p11);
+        float gamma=params->engine->getFeatures()->getMoveGamma(startboard,cfglastdist,cfgsecondlastdist,(*iter)->getMove(),true,true);
         (*iter)->setFeatureGamma(gamma);
         //if ((*iter)->getMove().toString(params->board_size).compare("B:E1")==0)
         //  fprintf(stderr,"move %s %f\n",(*iter)->getMove().toString(params->board_size).c_str(),gamma);

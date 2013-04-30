@@ -121,7 +121,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","playout_mercy_rule_factor",&(params->playout_mercy_rule_factor),PLAYOUT_MERCY_RULE_FACTOR);
   params->addParameter("playout","playout_fill_weak_eyes",&(params->playout_fill_weak_eyes),PLAYOUT_FILL_WEAK_EYES);
   
-  params->addParameter("playout","test_p1",&(params->test_p1),0.0);
+/*
+   params->addParameter("playout","test_p1",&(params->test_p1),0.0);
   params->addParameter("playout","test_p2",&(params->test_p2),1.0);
   params->addParameter("playout","test_p3",&(params->test_p3),0.0);
   params->addParameter("playout","test_p4",&(params->test_p4),0.0);
@@ -141,7 +142,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","test_p18",&(params->test_p18),1.0);
   params->addParameter("playout","test_p19",&(params->test_p19),1.0);
   params->addParameter("playout","test_p20",&(params->test_p20),1.0);
-  
+*/  
   params->addParameter("tree","ucb_c",&(params->ucb_c),UCB_C);
   params->addParameter("tree","ucb_init",&(params->ucb_init),UCB_INIT);
 
@@ -188,6 +189,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("tree","uct_criticality_unprune_multiply",&(params->uct_criticality_unprune_multiply),UCT_CRITICALITY_UNPRUNE_MULTIPLY);
   params->addParameter("tree","uct_criticality_min_playouts",&(params->uct_criticality_min_playouts),UCT_CRITICALITY_MIN_PLAYOUTS);
   params->addParameter("tree","uct_criticality_siblings",&(params->uct_criticality_siblings),UCT_CRITICALITY_SIBLINGS);
+  params->addParameter("tree","uct_criticality_rave_unprune_factor",&(params->uct_criticality_rave_unprune_factor),UCT_CRITICALITY_RAVE_UNPRUNE_FACTOR);
   params->addParameter("tree","uct_prior_unprune_factor",&(params->uct_prior_unprune_factor),UCT_PRIOR_UNPRUNE_FACTOR);
   params->addParameter("tree","uct_rave_unprune_factor",&(params->uct_rave_unprune_factor),UCT_RAVE_UNPRUNE_FACTOR);
   params->addParameter("tree","uct_earlyrave_unprune_factor",&(params->uct_earlyrave_unprune_factor),UCT_EARLYRAVE_UNPRUNE_FACTOR);
@@ -196,9 +198,13 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("tree","uct_oldmove_unprune_factor",&(params->uct_oldmove_unprune_factor),UCT_OLDMOVE_UNPRUNE_FACTOR);
   params->addParameter("tree","uct_oldmove_unprune_factor_b",&(params->uct_oldmove_unprune_factor_b),UCT_OLDMOVE_UNPRUNE_FACTOR_B);
   params->addParameter("tree","uct_oldmove_unprune_factor_c",&(params->uct_oldmove_unprune_factor_c),UCT_OLDMOVE_UNPRUNE_FACTOR_C);
+  params->addParameter("tree","uct_area_owner_factor_a",&(params->uct_area_owner_factor_a),UCT_AREA_OWNER_FACTOR_A);
+  params->addParameter("tree","uct_area_owner_factor_b",&(params->uct_area_owner_factor_b),UCT_AREA_OWNER_FACTOR_B);
+  params->addParameter("tree","uct_area_owner_factor_c",&(params->uct_area_owner_factor_c),UCT_AREA_OWNER_FACTOR_C);
   params->addParameter("tree","uct_reprune_factor",&(params->uct_reprune_factor),UCT_REPRUNE_FACTOR);
   params->addParameter("tree","uct_factor_circpattern",&(params->uct_factor_circpattern),UCT_FACTOR_CIRCPATTERN);
   params->addParameter("tree","uct_factor_circpattern_exponent",&(params->uct_factor_circpattern_exponent),UCT_FACTOR_CIRCPATTERN_EXPONENT);
+  params->addParameter("tree","uct_circpattern_minsize",&(params->uct_circpattern_minsize),UCT_CIRCPATTERN_MINSIZE);
   params->addParameter("tree","uct_simple_pattern_factor",&(params->uct_simple_pattern_factor),UCT_SIMPLE_PATTERN_FACTOR);
   params->addParameter("tree","uct_atari_unprune",&(params->uct_atari_unprune),UCT_ATARI_UNPRUNE);
   params->addParameter("tree","uct_atari_unprune_exp",&(params->uct_atari_unprune_exp),UCT_ATARI_UNPRUNE_EXP);
@@ -901,7 +907,7 @@ void Engine::gtpUndo(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 
 float Engine::getScoreKomi() const
 { 
-  float dynamic_komi=7.5*komi_handicap*exp(-10.0*(float)currentboard->getMovesMade()/boardsize/boardsize);
+  float dynamic_komi=7.5*komi_handicap*exp(-5.0*sqrt(komi_handicap)*(float)currentboard->getMovesMade()/boardsize/boardsize);
   if (dynamic_komi<5)
     dynamic_komi=0;  //save the end game
   

@@ -170,7 +170,7 @@ class Parameters
     float learn_delta;
     int learn_min_playouts;
     
-    float test_p1;
+/*    float test_p1;
     float test_p2;
     float test_p3;
     float test_p4;
@@ -180,7 +180,8 @@ class Parameters
     float test_p8;
     float test_p9;
     float test_p10;
-    float test_p11;
+
+     float test_p11;
     float test_p12;
     float test_p13;
     float test_p14;
@@ -190,7 +191,7 @@ class Parameters
     float test_p18;
     float test_p19;
     float test_p20;
-    
+    */
 
     
     /** Skip all playout heuristics with this probability.
@@ -376,6 +377,9 @@ class Parameters
     /** Whether criticality updates should also affect siblings of the path to the root. */
     bool uct_criticality_siblings;
     /** Whether terminal nodes should be propogated up the tree. */
+
+    float uct_criticality_rave_unprune_factor;
+    
     bool uct_terminal_handling;
     /** Constant for adjusting progressive widening based on RAVE.
      * Set to zero to disable.
@@ -391,6 +395,7 @@ class Parameters
     float uct_reprune_factor;
     float uct_factor_circpattern;
     float uct_factor_circpattern_exponent;
+    int uct_circpattern_minsize;
     float uct_simple_pattern_factor;
     float uct_atari_unprune;
     float uct_atari_unprune_exp;
@@ -400,6 +405,11 @@ class Parameters
     float uct_oldmove_unprune_factor;
     float uct_oldmove_unprune_factor_b;
     float uct_oldmove_unprune_factor_c;
+
+    float uct_area_owner_factor_a;
+    float uct_area_owner_factor_b;
+    float uct_area_owner_factor_c;
+    
     
     /** Constant for decaying tree statistics.
      * Set to one to disable.
