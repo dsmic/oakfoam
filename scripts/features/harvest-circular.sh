@@ -4,8 +4,9 @@ set -eu
 set -o pipefail
 WD="$(dirname "$0")"
 
-TEMPOUTPUT="patterns_circ_`date +%F_%T`.tmp"
-TEMPOUTPUT2="patterns_circ_2_`date +%F_%T`.tmp"
+#$RANDOM reduces collisions if executed parallel, not 100% sure of cause!
+TEMPOUTPUT="patterns_circ_`date +%F_%T`$RANDOM$RANDOM.tmp"
+TEMPOUTPUT2="patterns_circ_2_`date +%F_%T`$RANDOM$RANDOM.tmp"
 OAKFOAM="$WD/../../oakfoam --nobook --log $TEMPOUTPUT"
 
 if ! test -x $WD/../../oakfoam; then
@@ -21,6 +22,8 @@ fi
 GAME=$1
 INITGAMMAS=$2
 SIZE=$3
+
+echo $GAME >&2
 
 CMDS="param undo_enable 0\nparam features_circ_list 0.1\nparam features_circ_list_size $SIZE\nloadfeaturegammas \"$INITGAMMAS\"\nloadsgf \"$GAME\""
 # Use gogui-adapter to emulate loadsgf
