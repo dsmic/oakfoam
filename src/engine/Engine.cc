@@ -4130,8 +4130,9 @@ void Engine::makeMove(Go::Move move)
   params->uct_slow_update_last=0;
   params->uct_slow_debug_last=0;
   territorymap->decay(params->territory_decayfactor);
-  blackOldMoves=new float[currentboard->getPositionMax()];
-  whiteOldMoves=new float[currentboard->getPositionMax()];
+  //was memory leak
+  //blackOldMoves=new float[currentboard->getPositionMax()];
+  //whiteOldMoves=new float[currentboard->getPositionMax()];
   for (int i=0;i<currentboard->getPositionMax();i++)
   {
     blackOldMoves[i]=0;
