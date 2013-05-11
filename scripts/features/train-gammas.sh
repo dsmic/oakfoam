@@ -133,7 +133,7 @@ cat "$MMOUTPUT" | join $TEMPIDS - | sed "s/ */ /;s/^ //;s/^[0-9]* //"
 rm -f "$MMOUTPUT"
 set -e # end workaround
 
-#rm -f $TEMPMM
-#rm -f $TEMPIDS
-#rm -f $TEMPLOG
-#rm -f $TEMPGTP
+rm -f $TEMPMM
+rm -f $TEMPIDS
+rm -f $TEMPLOG
+rm -f $TEMPGTP

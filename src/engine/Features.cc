@@ -579,7 +579,7 @@ void Features::learnFeatureGamma(Features::FeatureClass featclass, unsigned int 
   }
 }
 
-float Features::              getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove, bool usecircularpatterns) const
+float Features::getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove, bool usecircularpatterns) const
 {
   float g=1.0;
   

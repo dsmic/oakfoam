@@ -1924,14 +1924,6 @@ void Engine::gtpSaveFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Comman
   
   if (success)
   {
-    #ifdef HAVE_MPI
-      if (me->mpirank==0)
-      {
-        me->mpiBroadcastCommand(MPICMD_LOADFEATUREGAMMAS);
-        me->mpiBroadcastString(filename);
-      }
-    #endif
-    
     gtpe->getOutput()->startResponse(cmd);
     gtpe->getOutput()->printf("saveded features gamma file: %s",filename.c_str());
     gtpe->getOutput()->endResponse();
@@ -3391,18 +3383,18 @@ void Engine::gtpPlaceFreeHandicap(void *instance, Gtp::Engine* gtpe, Gtp::Comman
   }
 
   int sizem1=me->boardsize-1;
-  int boarderdist=3;
+  int borderdist=3;
   if (me->boardsize<13)
-    boarderdist=2;
-  int sizemb=sizem1-boarderdist;
+    borderdist=2;
+  int sizemb=sizem1-borderdist;
   Gtp::Vertex vert[9];
-  vert[0].x=boarderdist;  vert[0].y=boarderdist;
+  vert[0].x=borderdist;   vert[0].y=borderdist;
   vert[1].x=sizemb;       vert[1].y=sizemb;
-  vert[2].x=sizemb;       vert[2].y=boarderdist;
-  vert[3].x=boarderdist;  vert[3].y=sizemb;
-  vert[4].x=boarderdist;  vert[4].y=sizem1/2;
+  vert[2].x=sizemb;       vert[2].y=borderdist;
+  vert[3].x=borderdist;   vert[3].y=sizemb;
+  vert[4].x=borderdist;   vert[4].y=sizem1/2;
   vert[5].x=sizemb;       vert[5].y=sizem1/2;
-  vert[6].x=sizem1/2;     vert[6].y=boarderdist;
+  vert[6].x=sizem1/2;     vert[6].y=borderdist;
   vert[7].x=sizem1/2;     vert[7].y=sizemb;
   vert[8].x=sizem1/2;     vert[8].y=sizem1/2;
   if (numHandicapstones>4 && numHandicapstones%2==1)
@@ -3647,9 +3639,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
 
     int num_unpruned=movetree->getNumUnprunedChildren();
     std::ostringstream ssun;
-    Tree *learntree=movetree;
     if (params->learn_enabled)
-      learnFromTree (currentboard,learntree,&ssun,1);
+      learnFromTree (currentboard,movetree,&ssun,1);
     ssun<<"st:(";
     for (int nn=0;nn<STATISTICS_NUM;nn++)
     {
