@@ -18,6 +18,7 @@ DTFILE=${2:--}
 # fi
 
 LADDERS=${3:-0}
+LOGEVIDENCE=${4:-0}
 
 if ! test -x $WD/../../oakfoam; then
   echo "File $WD/../../oakfoam not found" >&2
@@ -26,6 +27,7 @@ fi
 
 echo "loadfeaturegammas $INITIALPATTERNGAMMAS" >> $TEMPGTP
 echo "param features_ordered_comparison 1" >> $TEMPGTP
+echo "param features_ordered_comparison_log_evidence $LOGEVIDENCE" >> $TEMPGTP
 echo "param features_ladders $LADDERS" >> $TEMPGTP
 if [ "$DTFILE" != "-" ]; then
   echo "dtload \"$DTFILE\"" >> $TEMPGTP

@@ -543,6 +543,8 @@ class Parameters
      * Used to measure feature accuracy.
      */
     bool features_ordered_comparison;
+    /** Whether to include the log evidence in the feature comparison. */
+    bool features_ordered_comparison_log_evidence;
     /** Whether to try take ladders into account with features. */
     bool features_ladders;
     /** Whether to use decision trees with features. */

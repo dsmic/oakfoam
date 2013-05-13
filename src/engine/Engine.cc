@@ -255,6 +255,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("other","features_output_competitions",&(params->features_output_competitions),0.0);
   params->addParameter("other","features_output_competitions_mmstyle",&(params->features_output_competitions_mmstyle),false);
   params->addParameter("other","features_ordered_comparison",&(params->features_ordered_comparison),false);
+  params->addParameter("other","features_ordered_comparison_log_evidence",&(params->features_ordered_comparison_log_evidence),false);
   params->addParameter("other","features_circ_list",&(params->features_circ_list),0.0);
   params->addParameter("other","features_circ_list_size",&(params->features_circ_list_size),0);
   
@@ -3660,14 +3661,31 @@ void Engine::makeMove(Go::Move move)
     Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
     features->computeCFGDist(currentboard,&cfglastdist,&cfgsecondlastdist);
 
-    float weights[currentboard->getPositionMax()];
+    float weights[currentboard->getPositionMax()+1]; // +1 for pass
+    float sumweights = 0;
     for (int p=0;p<currentboard->getPositionMax();p++)
     {
       Go::Move m = Go::Move(col,p);
       if (currentboard->validMove(m) || m==move)
-        weights[p] = features->getMoveGamma(currentboard,cfglastdist,cfgsecondlastdist,m);
+      {
+        float w = features->getMoveGamma(currentboard,cfglastdist,cfgsecondlastdist,m);
+        weights[p] = w;
+        if (w != -1)
+          sumweights += w;
+      }
       else
         weights[p] = -1;
+    }
+    {
+      int p = currentboard->getPositionMax();
+      Go::Move m = Go::Move(col,Go::Move::PASS);
+      if (currentboard->validMove(m) || m==move)
+      {
+        float w = features->getMoveGamma(currentboard,cfglastdist,cfgsecondlastdist,m);
+        weights[p] = w;
+        if (w != -1)
+          sumweights += w;
+      }
     }
   
     gtpe->getOutput()->printfDebug("[feature_comparison]:# comparison (%d,%s)\n",(currentboard->getMovesMade()+1),Go::Position::pos2string(move.getPosition(),boardsize).c_str());
@@ -3700,7 +3718,8 @@ void Engine::makeMove(Go::Move move)
           Go::Move m=Go::Move(col,Go::Move::PASS);
           if (currentboard->validMove(m) || m==move)
           {
-            float gamma=features->getMoveGamma(currentboard,cfglastdist,cfgsecondlastdist,m);;
+            // float gamma=features->getMoveGamma(currentboard,cfglastdist,cfgsecondlastdist,m);
+            float gamma = weights[p];
             if (gamma>bestgamma)
             {
               bestgamma=gamma;
@@ -3732,7 +3751,21 @@ void Engine::makeMove(Go::Move move)
       bestgamma=-1;
     }
     gtpe->getOutput()->printfDebug("\n");
-    gtpe->getOutput()->printfDebug("[feature_comparison]:matched at: %d\n",matchedat);
+    gtpe->getOutput()->printfDebug("[feature_comparison]:matched at: %d",matchedat);
+    if (params->features_ordered_comparison_log_evidence)
+    {
+      float w = -1;
+      if (move.isNormal())
+        w = weights[move.getPosition()];
+      else if (move.isPass())
+        w = weights[currentboard->getPositionMax()];
+      float p = 1e-9;
+      if (w != -1)
+        p = w / sumweights;
+      float le = log(p);
+      gtpe->getOutput()->printfDebug(" %.2f",le);
+    }
+    gtpe->getOutput()->printfDebug("\n");
     
     if (cfglastdist!=NULL)
       delete cfglastdist;
