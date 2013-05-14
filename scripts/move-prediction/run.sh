@@ -82,67 +82,94 @@ check $?
 INITGAMMAS="init.gamma"
 touch $INITGAMMAS
 
-if (( ${PATT_3X3:-0} != 0 )); then
-  TEMPPATT="patt_3x3.tmp"
-  init "Harvesting 3x3 patterns from $(echo "${PATT_3X3_GAMES:-}" | wc -l) games"
-  (echo "${PATT_3X3_GAMES:-}" | ../../features/harvest-collection.sh > $TEMPPATT) 2>&1 | lastline
-  if (( $? != 0 )); then
-    check 1
+if [ "${PREGEN_GAMMAS:--}" != "-" ]; then
+  msg "Using pre-generated gammas: $PREGEN_GAMMAS"
+  cp "${OLDPWD}/${PREGEN_GAMMAS}" $INITGAMMAS
+else
+  if (( ${PATT_3X3:-0} != 0 )); then
+    TEMPPATT="patt_3x3.tmp"
+    init "Harvesting 3x3 patterns from $(echo "${PATT_3X3_GAMES:-}" | wc -l) games"
+    echo "${PATT_3X3_GAMES:-}" > games-3x3.dat
+    (echo "${PATT_3X3_GAMES:-}" | ../../features/harvest-collection.sh > $TEMPPATT) 2>&1 | lastline
+    if (( $? != 0 )); then
+      check 1
+    fi
+    PATTERNS=`cat $TEMPPATT | awk "BEGIN{m=0} {if (\\$1>=${PATT_3X3_THRESHOLD:-100}) m=NR} END{print m}"`
+    cat $TEMPPATT | head -n $PATTERNS | ../../features/train-prepare.sh >> $INITGAMMAS
+    check $?
+    msg "3x3 patterns harvested: $PATTERNS"
+    rm -f $TEMPPATT
   fi
-  PATTERNS=`cat $TEMPPATT | awk "BEGIN{m=0} {if (\\$1>=${PATT_3X3_THRESHOLD:-100}) m=NR} END{print m}"`
-  cat $TEMPPATT | head -n $PATTERNS | ../../features/train-prepare.sh >> $INITGAMMAS
-  check $?
-  msg "3x3 patterns harvested: $PATTERNS"
-  rm -f $TEMPPATT
+
+  if (( ${PATT_CIRC:-0} != 0 )); then
+    TEMPPATT="patt_circ.tmp"
+    init "Harvesting circular patterns from $(echo "${PATT_CIRC_GAMES:-}" | wc -l) games"
+    echo "${PATT_CIRC_GAMES:-}" > games-circ.dat
+    (echo "${PATT_CIRC_GAMES:-}" | ../../features/harvest-collection-circular-range.sh ${PATT_CIRC_THRESHOLD:-100} ${PATT_CIRC_END:-15} ${PATT_CIRC_START:-3} > $TEMPPATT) 2>&1 | lastline
+    check $?
+    msg "Circular patterns harvested: `cat $TEMPPATT | wc -l`"
+    LINES=`cat "$TEMPPATT" | wc -l`
+    if (( $LINES <= 1 )); then
+      check 1
+    fi
+    cat $TEMPPATT >> $INITGAMMAS
+    rm -f $TEMPPATT
+  fi
 fi
 
-if (( ${PATT_CIRC:-0} != 0 )); then
-  TEMPPATT="patt_circ.tmp"
-  init "Harvesting circular patterns from $(echo "${PATT_CIRC_GAMES:-}" | wc -l) games"
-  (echo "${PATT_CIRC_GAMES:-}" | ../../features/harvest-collection-circular-range.sh ${PATT_CIRC_THRESHOLD:-100} ${PATT_CIRC_END:-15} ${PATT_CIRC_START:-3} > $TEMPPATT) 2>&1 | lastline
-  check $?
-  msg "Circular patterns harvested: `cat $TEMPPATT | wc -l`"
-  LINES=`cat "$TEMPPATT" | wc -l`
-  if (( $LINES <= 1 )); then
-    check 1
+if [ "${PREGEN_DT:--}" != "-" ]; then
+  msg "Using pre-generated decision forest: $PREGEN_DT"
+  cp "${OLDPWD}/${PREGEN_DT}" dt.dat
+else
+  if (( ${DT:-0} != 0 )); then
+    DTFILE="dt.dat"
+    init "Growing decision forest from $(echo "${DT_GAMES:-}" | wc -l) games"
+    echo "${DT_GAMES:-}" > games-dt.dat
+    rm -f "$DTFILE" # clear
+    ../../decisiontrees/dt-init.sh $DTFILE ${DT_FOREST_SIZE:-1} &>> $LOGFILE
+    echo "${DT_GAMES:-}" | ../../decisiontrees/dt-grow.sh $DTFILE 1 2>&1 | lastline
+    check $?
+    msg "Decision forest:"
+    msg "  Forest size:   ${DT_FOREST_SIZE:-1}"
+    msg "  Leaves:        `cat $DTFILE | grep 'WEIGHT' | wc -l`"
   fi
-  cat $TEMPPATT >> $INITGAMMAS
-  rm -f $TEMPPATT
-fi
-
-if (( ${DT:-0} != 0 )); then
-  DTFILE="dt.dat"
-  init "Growing decision forest from $(echo "${DT_GAMES:-}" | wc -l) games"
-  rm -f "$DTFILE" # clear
-  ../../decisiontrees/dt-init.sh $DTFILE ${DT_FOREST_SIZE:-1} &>> $LOGFILE
-  echo "${DT_GAMES:-}" | ../../decisiontrees/dt-grow.sh $DTFILE 1 2>&1 | lastline
-  check $?
-  msg "Decision forest:"
-  msg "  Forest size:   ${DT_FOREST_SIZE:-1}"
-  msg "  Leaves:        `cat $DTFILE | grep 'WEIGHT' | wc -l`"
 fi
 
 TRAINEDGAMMAS="trained.gamma"
 
-init "Training on $(echo "${TRAIN_GAMES:-}" | wc -l) games"
-(echo "${TRAIN_GAMES:-}" | ../../features/train-gammas.sh $INITGAMMAS large ${DTFILE:--} ${NONPATT_LADDERS:-0} > $TRAINEDGAMMAS) 2>&1 | lastline
-check $?
+if (( ${TRAIN:-1} != 0 )); then
+  init "Training on $(echo "${TRAIN_GAMES:-}" | wc -l) games"
+  echo "${TRAIN_GAMES:-}" > games-train.dat
+  (echo "${TRAIN_GAMES:-}" | ../../features/train-gammas.sh $INITGAMMAS large ${DTFILE:--} ${NONPATT_LADDERS:-0} > $TRAINEDGAMMAS) 2>&1 | lastline
+  check $?
+else
+  cp $INITGAMMAS $TRAINEDGAMMAS
+fi
 
 rm -f $INITGAMMAS
 
-# plot weights?
-
 init "Testing on $(echo "${TEST_GAMES:-}" | wc -l) games"
-(echo "${TEST_GAMES:-}" | ../../features/test-compare.sh $TRAINEDGAMMAS ${DTFILE:--} ${NONPATT_LADDERS:-0} | sort -n | uniq -c > cmp.txt) 2>&1 | lastline
+  echo "${TEST_GAMES:-}" > games-test.dat
+  TESTRESULTS="cmp.txt"
+  (echo "${TEST_GAMES:-}" | ../../features/test-compare.sh $TRAINEDGAMMAS ${DTFILE:--} ${NONPATT_LADDERS:-0} 1 > $TESTRESULTS) 2>&1 | lastline
 check $?
 
-init "Generating reference plots"
-octave -q ../../general/plot.oct > /dev/null
+init "Extracting results"
+  (
+    cat $TESTRESULTS | awk '{print $2}' | sort -n | uniq -c | awk '{print $2","$1}' > move-prediction.csv # legacy format, used by plot.py
+    cat $TESTRESULTS | ../../features/test-filter.sh 1 > results-mp.csv
+    cat $TESTRESULTS | ../../features/test-filter.sh 0 > results-le.csv
+    cat $TESTRESULTS | ../../features/test-stages.sh ${TEST_STAGE_SIZE:-30} | sed 's/ /,/g' > results-stages.csv
+  ) 2>&1 | lastline
 check $?
+msg "Results summary:"
+msg "  Move prediction accuracy:  `cat results-mp.csv | head -n1 | awk '{printf("%.1f%%\n",$2*100)}'`"
+msg "  Mean log-evidence:         `cat results-le.csv`"
 
-mv plot.png move-prediction.png
-cat cmp.txt | awk '{print $2","$1}' > move-prediction.csv
-if (( $? == 0 )); then
-  rm cmp.txt
-fi
+# init "Generating reference plots"
+# octave -q ../../general/plot.oct > /dev/null
+# check $?
+# mv plot.png move-prediction.png
+
+rm -f $TESTRESULTS
 
