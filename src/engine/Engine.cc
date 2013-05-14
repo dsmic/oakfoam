@@ -256,6 +256,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("other","features_output_competitions_mmstyle",&(params->features_output_competitions_mmstyle),false);
   params->addParameter("other","features_ordered_comparison",&(params->features_ordered_comparison),false);
   params->addParameter("other","features_ordered_comparison_log_evidence",&(params->features_ordered_comparison_log_evidence),false);
+  params->addParameter("other","features_ordered_comparison_move_num",&(params->features_ordered_comparison_move_num),false);
   params->addParameter("other","features_circ_list",&(params->features_circ_list),0.0);
   params->addParameter("other","features_circ_list_size",&(params->features_circ_list_size),0);
   
@@ -3751,7 +3752,10 @@ void Engine::makeMove(Go::Move move)
       bestgamma=-1;
     }
     gtpe->getOutput()->printfDebug("\n");
-    gtpe->getOutput()->printfDebug("[feature_comparison]:matched at: %d",matchedat);
+    gtpe->getOutput()->printfDebug("[feature_comparison]:matched at: ");
+    if (params->features_ordered_comparison_move_num)
+      gtpe->getOutput()->printfDebug("%d ",currentboard->getMovesMade()+1);
+    gtpe->getOutput()->printfDebug("%d",matchedat);
     if (params->features_ordered_comparison_log_evidence)
     {
       float w = -1;
@@ -3759,7 +3763,7 @@ void Engine::makeMove(Go::Move move)
         w = weights[move.getPosition()];
       else if (move.isPass())
         w = weights[currentboard->getPositionMax()];
-      float p = 1e-9;
+      float p = 1e-9; // prevent log(0)
       if (w != -1)
         p = w / sumweights;
       float le = log(p);

@@ -545,6 +545,8 @@ class Parameters
     bool features_ordered_comparison;
     /** Whether to include the log evidence in the feature comparison. */
     bool features_ordered_comparison_log_evidence;
+    /** Whether to include the move number in the feature comparison. */
+    bool features_ordered_comparison_move_num;
     /** Whether to try take ladders into account with features. */
     bool features_ladders;
     /** Whether to use decision trees with features. */
