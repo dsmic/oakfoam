@@ -162,14 +162,14 @@ init "Extracting results"
     cat $TESTRESULTS | ../../features/test-stages.sh ${TEST_STAGE_SIZE:-30} | sed 's/ /,/g' > results-stages.csv
   ) 2>&1 | lastline
 check $?
+
+init "Generating reference plots"
+  octave -q --eval 'mpin="results-mp.csv";mpout="results-mp.png";stagesin="results-stages.csv";stagesout="results-stages.png";' ../../general/plot.oct > /dev/null
+check $?
+
 msg "Results summary:"
 msg "  Move prediction accuracy:  `cat results-mp.csv | head -n1 | awk '{printf("%.1f%%\n",$2*100)}'`"
 msg "  Mean log-evidence:         `cat results-le.csv`"
-
-# init "Generating reference plots"
-# octave -q ../../general/plot.oct > /dev/null
-# check $?
-# mv plot.png move-prediction.png
 
 rm -f $TESTRESULTS
 
