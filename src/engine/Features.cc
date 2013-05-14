@@ -400,6 +400,13 @@ int Features::learnFeatureGammaC(Features::FeatureClass featclass, unsigned int 
     else
       return 0;
   }
+  else if (featclass==Features::CIRCPATT)
+  {
+    if (circgammas->count(level)>0)
+      return 1; //(*circgammas)[level];
+    else
+      return 0;
+  }
   else
   {
     float *gammas=this->getStandardGamma(featclass);
@@ -450,6 +457,16 @@ void Features::learnFeatureGammaMoves(Features::FeatureClass featclass, Go::Boar
             if (patterngammas->hasGamma(level))
             {
               //gammaHERE=patterngammas->getGamma(level);
+              C_iM_gamma_i+=move_gamma.find(it_int->second.getPosition())->second;
+              break;
+            }
+            else
+              break;
+          }
+            else if (featclass==Features::CIRCPATT)
+          {
+            if (circgammas->count(level)>0)
+            {
               C_iM_gamma_i+=move_gamma.find(it_int->second.getPosition())->second;
               break;
             }
@@ -521,7 +538,20 @@ void Features::learnFeatureGammaMoves(Features::FeatureClass featclass, Go::Boar
           else
             break;
         }
-          else
+          else if (featclass==Features::CIRCPATT)
+          {
+            if (circgammas->count(level_1)>0)
+            {
+              float g=(*circgammas)[level_1];
+              g+=diff_gamma_i*params->learn_delta;
+              if (g<0.001) g=0.001;
+              (*circgammas)[level_1]=g;
+              break;
+            }
+            else
+              break;
+          }
+            else
         {
           float *gammas=this->getStandardGamma(featclass);
           if (gammas!=NULL)
@@ -554,6 +584,19 @@ void Features::learnFeatureGamma(Features::FeatureClass featclass, unsigned int 
     if (patterngammas->hasGamma(level))
     {
       patterngammas->learnGamma(level,learn_diff);
+      return;
+    }
+    else
+      return;
+  }
+  else if (featclass==Features::CIRCPATT)
+  {
+    if (circgammas->count(level)>0)
+    {
+      float g=circgammas->find(level)->second;
+      g+=learn_diff;
+      if (g<0.001) g=0.001;
+      (*circgammas)[level]=g;
       return;
     }
     else
@@ -994,7 +1037,12 @@ bool Features::saveGammaFile(std::string filename)
   for (i=0;i<CFGSECONDLASTDIST_LEVELS;i++) fout<<"cfgsecondlastdist:"<<i+1<<" "<<gammas_cfgsecondlastdist[i]<<" \n";
     
   for (i=0;i<PATTERN_3x3_GAMMAS;i++) if (patterngammas->getGamma (i)>0) {fout<<"pattern3x3:0x"<<std::hex<<std::setw(4)<<std::setfill('0')<<i<<" "<<patterngammas->getGamma (i)<<" \n";};
-  
+  std::map<unsigned int,std::string>::iterator it;
+  for (it=circstrings->begin();it!=circstrings->end();++it)
+  {
+    int circid=it->first;
+    fout<<"circpatt:"<<(*circstrings)[circid]<<" "<<(*circgammas)[i]<<" \n";
+  }
   fout.close();
   
   return true;
