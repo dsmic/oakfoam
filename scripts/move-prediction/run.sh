@@ -85,6 +85,8 @@ touch $INITGAMMAS
 if [ "${PREGEN_GAMMAS:--}" != "-" ]; then
   msg "Using pre-generated gammas: $PREGEN_GAMMAS"
   cp "${OLDPWD}/${PREGEN_GAMMAS}" $INITGAMMAS
+  msg "3x3 patterns used:       `cat $INITGAMMAS | sed 's/^\([^:]*\):.*$/\1/' | grep 'pattern3x3' | wc -l`"
+  msg "Circular patterns used:  `cat $INITGAMMAS | sed 's/^\([^:]*\):.*$/\1/' | grep 'circpatt' | wc -l`"
 else
   if (( ${PATT_3X3:-0} != 0 )); then
     TEMPPATT="patt_3x3.tmp"
@@ -118,8 +120,15 @@ else
 fi
 
 if [ "${PREGEN_DT:--}" != "-" ]; then
+  DTFILE="dt.dat"
   msg "Using pre-generated decision forest: $PREGEN_DT"
-  cp "${OLDPWD}/${PREGEN_DT}" dt.dat
+  if [ "${PREGEN_GAMMAS:--}" == "-" ]; then
+    msg "WARNING: Did you forget to include gammas?"
+  fi
+  cp "${OLDPWD}/${PREGEN_DT}" $DTFILE
+  msg "Decision forest:"
+  msg "  Forest size:   `cat $DTFILE | grep '(DT' | wc -l`"
+  msg "  Leaves:        `cat $DTFILE | grep 'WEIGHT' | wc -l`"
 else
   if (( ${DT:-0} != 0 )); then
     DTFILE="dt.dat"

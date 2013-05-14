@@ -22,7 +22,7 @@ get_games_excl_test () { get_games_excl "$TEST_GAMES" $1; }
 GAMES_PATH="/data/go/games/gogod/"
 GAMES="`find "$GAMES_PATH" -name '*.sgf' | sort`"
 
-# boolean parameters (0:disabled, 1: enabled)
+# boolean parameters (0:disabled, 1:enabled)
 PATT_3X3=0    # 3x3 patterns
 PATT_CIRC=0   # circular patterns
 DT=0          # decision trees
