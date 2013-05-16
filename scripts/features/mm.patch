@@ -1,70 +1,62 @@
-diff -upr mm/makefile /media/d7425c72-cdfe-49cb-b10d-7e37816da32a/oakfoam/scripts/features2/mm/makefile
---- mm/makefile	2009-06-25 11:01:25.000000000 +0200
-+++ /media/d7425c72-cdfe-49cb-b10d-7e37816da32a/oakfoam/scripts/features2/mm/makefile	2013-05-08 12:59:30.000000000 +0200
-@@ -1,5 +1,5 @@
- mm: mm.cpp
--	g++ -O3 -Wall -o mm mm.cpp
-+	g++ -O3 -g -march=native -Wall -ftree-vectorizer-verbose=5 -o mm mm.cpp
- 
- clean:
- 	rm -vf `cat .gitignore`
-Binärdateien mm/mm and /media/d7425c72-cdfe-49cb-b10d-7e37816da32a/oakfoam/scripts/features2/mm/mm sind verschieden.
-diff -upr mm/mm.cpp /media/d7425c72-cdfe-49cb-b10d-7e37816da32a/oakfoam/scripts/features2/mm/mm.cpp
---- mm/mm.cpp	2009-06-25 10:51:16.000000000 +0200
-+++ /media/d7425c72-cdfe-49cb-b10d-7e37816da32a/oakfoam/scripts/features2/mm/mm.cpp	2013-05-06 13:41:55.000000000 +0200
-@@ -13,6 +13,7 @@
+diff -rupN mm-orig/mm.cpp mm/mm.cpp
+--- mm-orig/mm.cpp	2013-05-15 18:32:40.000000000 +0200
++++ mm/mm.cpp	2013-05-15 18:37:07.000000000 +0200
+@@ -11,6 +11,7 @@
+ #include <iomanip>
+ #include <sstream>
  #include <vector>
++#include <map>
  #include <cmath>
  #include <fstream>
-+#include <stdlib.h>
  
- const double PriorVictories = 1.0;
- const double PriorGames = 2.0;
-@@ -173,18 +174,22 @@ void CGameCollection::MM(int Feature)
-  //
-  // Compute denominator for each gamma
-  //
-- std::vector<double> vDen(vGamma.size());
-- for (int i = vDen.size(); --i >= 0;)
-+ //std::vector<double> vDen(vGamma.size());
-+ int o=vGamma.size();
-+ double * vDen=(double*)malloc(sizeof(double)*o);
-+ 
-+ for (int i = 0; i<o; i++)
-   vDen[i] = 0.0;
- 
+@@ -180,13 +181,16 @@ void CGameCollection::MM(int Feature)
   //
   // Main loop over games
   //
-+ double *tMul=(double*)malloc(sizeof(double)*o);
-+ 
++ std::map<int,double> tMul;
   for (int i = vgame.size(); --i >= 0;)
   {
 -  double tMul[vGamma.size()];
-   {
+-  {
 -   for (int i = vGamma.size(); --i >= 0;)
-+   for (int i = 0; i<o; i++)
-     tMul[i] = 0.0;
-   }
+-    tMul[i] = 0.0;
+-  }
++  //double tMul[vGamma.size()];
++  //{
++  // for (int i = vGamma.size(); --i >= 0;)
++  //  tMul[i] = 0.0;
++  //}
++  tMul.clear();
++
    double Den = 0.0;
-@@ -215,9 +220,10 @@ void CGameCollection::MM(int Feature)
+ 
+   std::vector<CTeam> &v = vgame[i].vParticipants;
+@@ -208,15 +212,25 @@ void CGameCollection::MM(int Feature)
+ 
+    if (FeatureIndex >= 0)
+    {
+-    tMul[FeatureIndex] += Product;
++    //tMul[FeatureIndex] += Product;
++    if (tMul.count(FeatureIndex))
++    	tMul[FeatureIndex] += Product;
++    else
++	tMul[FeatureIndex]=Product;
++    
+     Product *= vGamma[FeatureIndex];
+    }
+ 
     Den += Product;
    }
  
 -  for (int i = Max; --i >= Min;)
-+  for (int i = Min; i<Max; i++)
-    vDen[i] += tMul[i] / Den;
+-   vDen[i] += tMul[i] / Den;
++  //for (int i = Max; --i >= Min;)
++  // vDen[i] += tMul[i] / Den;
++  for (std::map<int,double>::iterator it=tMul.begin();it!=tMul.end();++it)
++  {
++   int key=it->first;
++   vDen[key]+=it->second / Den;
++  }
   }
-+ free(tMul);
  
   //
-  // Update Gammas
-@@ -228,6 +234,7 @@ void CGameCollection::MM(int Feature)
-                     (vDen[i] + PriorGames / (vGamma[i] + PriorOpponentGamma));
-   vGamma[i] = NewGamma;
-  }
-+free(vDen);
- }
- 
- /////////////////////////////////////////////////////////////////////////////
-Nur in /media/d7425c72-cdfe-49cb-b10d-7e37816da32a/oakfoam/scripts/features2/mm: mm.cpp~.
