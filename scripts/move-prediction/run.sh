@@ -166,8 +166,8 @@ check $?
 init "Extracting results"
   (
     cat $TESTRESULTS | awk '{print $2}' | sort -n | uniq -c | awk '{print $2","$1}' > move-prediction.csv # legacy format, used by plot.py
-    cat $TESTRESULTS | ../../features/test-filter.sh 1 > results-mp.csv
-    cat $TESTRESULTS | ../../features/test-filter.sh 0 > results-le.csv
+    cat $TESTRESULTS | ../../features/test-filter.sh 1 | sed 's/ /,/g' > results-mp.csv
+    cat $TESTRESULTS | ../../features/test-filter.sh 0 | sed 's/ /,/g' > results-le.csv
     cat $TESTRESULTS | ../../features/test-stages.sh ${TEST_STAGE_SIZE:-30} | sed 's/ /,/g' > results-stages.csv
   ) 2>&1 | lastline
 check $?
@@ -177,8 +177,8 @@ init "Generating reference plots"
 check $?
 
 msg "Results summary:"
-msg "  Move prediction accuracy:  `cat results-mp.csv | head -n1 | awk '{printf("%.1f%%\n",$2*100)}'`"
-msg "  Mean log-evidence:         `cat results-le.csv`"
+msg "  Move prediction accuracy:  `cat results-mp.csv | head -n1 | awk -F',' '{printf("%.1f%%\n",$2*100)}'`"
+msg "  Mean log-evidence:         `cat results-le.csv | head -n1 | awk -F',' '{printf("%.2f\n",$1)}'`"
 
 rm -f $TESTRESULTS
 
