@@ -236,10 +236,12 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("tree","features_ladders",&(params->features_ladders),FEATURES_LADDERS);
   params->addParameter("tree","features_dt_use",&(params->features_dt_use),false);
   params->addParameter("tree","features_pass_no_move_for_lastdist",&(params->features_pass_no_move_for_lastdist),FEATURES_PASS_NO_MOVE_FOR_LASTDIST);
+
+  params->addParameter("tree","dynkomi_enabled",&(params->dynkomi_enabled),true);
   
-  params->addParameter("tree","learn_enabled",&(params->learn_enabled),false);
-  params->addParameter("tree","learn_delta",&(params->learn_delta),LEARN_DELTA);
-  params->addParameter("tree","learn_min_playouts",&(params->learn_min_playouts),LEARN_MIN_PLAYOUTS);
+  params->addParameter("tree","mm_learn_enabled",&(params->mm_learn_enabled),false);
+  params->addParameter("tree","mm_learn_delta",&(params->mm_learn_delta),MM_LEARN_DELTA);
+  params->addParameter("tree","mm_learn_min_playouts",&(params->mm_learn_min_playouts),MM_LEARN_MIN_PLAYOUTS);
 
   params->addParameter("rules","rules_positional_superko_enabled",&(params->rules_positional_superko_enabled),RULES_POSITIONAL_SUPERKO_ENABLED);
   params->addParameter("rules","rules_superko_top_ply",&(params->rules_superko_top_ply),RULES_SUPERKO_TOP_PLY);
@@ -559,6 +561,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("listallpatterns",this,&Engine::gtpListAllPatterns);
   gtpe->addFunctionCommand("loadfeaturegammas",this,&Engine::gtpLoadFeatureGammas);
   gtpe->addFunctionCommand("savefeaturegammas",this,&Engine::gtpSaveFeatureGammas);
+  gtpe->addFunctionCommand("savefeaturegammasinline",this,&Engine::gtpSaveFeatureGammasInline);
   gtpe->addFunctionCommand("loadcircpatterns",this,&Engine::gtpLoadCircPatterns);
   gtpe->addFunctionCommand("loadcircpatternsnot",this,&Engine::gtpLoadCircPatternsNot);
   gtpe->addFunctionCommand("savecircpatternvalues",this,&Engine::gtpSaveCircPatternValues);
@@ -907,10 +910,18 @@ void Engine::gtpUndo(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 
 float Engine::getScoreKomi() const
 { 
-  float dynamic_komi=7.5*komi_handicap*exp(-5.0*sqrt(komi_handicap)*(float)currentboard->getMovesMade()/boardsize/boardsize);
-  if (dynamic_komi<5)
-    dynamic_komi=0;  //save the end game
-  
+//own test, did not look too bad!!!
+//float dynamic_komi=7.5*komi_handicap*exp(-5.0*sqrt(komi_handicap)*(float)currentboard->getMovesMade()/boardsize/boardsize);
+//  if (dynamic_komi<5)
+//    dynamic_komi=0;  //save the end game
+  //Formula Petr Baudis dynamic komi (N=200 for 19x19 board scaled to smaller boards)
+  float dynamic_komi=0;
+  if (params->dynkomi_enabled)
+  {
+    dynamic_komi=7.0*komi_handicap*(1-(float)currentboard->getMovesMade()/(boardsize*boardsize*200.0/19.0/19.0));
+    if (dynamic_komi<0)
+      dynamic_komi=0;  //save the end game
+  }
   return komi+komi_handicap+dynamic_komi; 
 }
 
@@ -1921,6 +1932,36 @@ void Engine::gtpSaveFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Comman
   std::string filename=cmd->getStringArg(0);
   
   bool success=me->features->saveGammaFile(filename);
+  
+  if (success)
+  {
+    gtpe->getOutput()->startResponse(cmd);
+    gtpe->getOutput()->printf("saveded features gamma file: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+  else
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("error saveing features gamma file: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+}
+
+void Engine::gtpSaveFeatureGammasInline(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("need 1 arg");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  std::string filename=cmd->getStringArg(0);
+  
+  bool success=me->features->saveGammaFileInline(filename);
   
   if (success)
   {
@@ -3523,7 +3564,7 @@ void Engine::learnFromTree(Go::Board *tmpboard, Tree *learntree, std::ostringstr
   for (it_learntree=orderlearntree.begin();it_learntree!=orderlearntree.end();++it_learntree)
   {
     //check if enough playouts
-    if (params->learn_min_playouts>=it_learntree->second->getPlayouts ())
+    if (params->mm_learn_min_playouts>=it_learntree->second->getPlayouts ())
       break;
     //tmpboard must be copied
     Go::Board *nextboard=tmpboard->copy();
@@ -3639,7 +3680,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
 
     int num_unpruned=movetree->getNumUnprunedChildren();
     std::ostringstream ssun;
-    if (params->learn_enabled)
+    if (params->mm_learn_enabled)
       learnFromTree (currentboard,movetree,&ssun,1);
     ssun<<"st:(";
     for (int nn=0;nn<STATISTICS_NUM;nn++)
@@ -5129,7 +5170,7 @@ void Engine::gameFinished()
     return;
   isgamefinished=true;
 
-  if (params->learn_enabled) 
+  if (params->mm_learn_enabled) 
   {
     fprintf(stderr,"files gamma %s circ %s\n",learn_filename_features.c_str(),learn_filename_circ_patterns.c_str()); 
     getFeatures()->saveGammaFile (learn_filename_features);

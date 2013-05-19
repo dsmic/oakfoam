@@ -276,6 +276,8 @@ namespace Pattern
       /** Create a pattern from a given board position. */
       Circular(Pattern::CircularDictionary *dict, const Go::Board *board, int pos, int sz);
       Circular(Pattern::CircularDictionary *dict, std::string fromString);
+      Circular(boost::uint32_t hash_tmp[PATTERN_CIRC_32BITPARTS],int size_tmp):size(size_tmp) {
+        memcpy(hash, hash_tmp, sizeof(boost::uint32_t)*PATTERN_CIRC_32BITPARTS);} 
       
       /** Get the size of this pattern. */
       int getSize() const { return size; };

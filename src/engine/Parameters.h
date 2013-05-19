@@ -166,9 +166,11 @@ class Parameters
      */
     float playout_mercy_rule_factor;
 
-    bool learn_enabled;
-    float learn_delta;
-    int learn_min_playouts;
+    bool dynkomi_enabled;
+
+    bool mm_learn_enabled;
+    float mm_learn_delta;
+    int mm_learn_min_playouts;
     
 /*    float test_p1;
     float test_p2;

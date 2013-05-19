@@ -81,8 +81,8 @@
 
 #define FEATURES_LADDERS false
 #define FEATURES_PASS_NO_MOVE_FOR_LASTDIST false
-#define LEARN_DELTA 0.01
-#define LEARN_MIN_PLAYOUTS 100
+#define MM_LEARN_DELTA 0.01
+#define MM_LEARN_MIN_PLAYOUTS 100
 
 #define RULES_POSITIONAL_SUPERKO_ENABLED true
 #define RULES_SUPERKO_TOP_PLY false
@@ -530,6 +530,7 @@ class Engine
     static void gtpListAllPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpLoadFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpSaveFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpSaveFeatureGammasInline(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpLoadCircPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpLoadCircPatternsNot(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpSaveCircPatternValues(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);

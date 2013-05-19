@@ -40,7 +40,7 @@ cat | while read GAME
 do
   let "i=$i+1"
 #  echo -e "$i \t: '$GAME'" >&2
-  echo "echo @@ GAME: \"$i '$GAME'\"" >>$GTPIN
+  echo "echo @@ Size: $SIZE GAME: \"$i '$GAME'\"" >>$GTPIN
   echo -e "loadsgf \"$GAME\"\n" >>$GTPIN
 #  $WD/harvest-circular.sh "$GAME" $INITGAMMAS $SIZE >> ${TEMPOUTPUT}
 done
@@ -57,11 +57,9 @@ echo -e "`date +%F_%T`: GREPPING..." >&2
 if (( ${HARVESTED:-0} > 0 )); then
   $CAT $TEMPOUTPUT | grep -e '^[1-9][0-9]*:' | sed 's/ /\n/g' | grep '^[1-9][0-9]*:' > $TEMPOUTPUT2
   echo -e "`date +%F_%T`: SORTING..." >&2
-  $CAT $TEMPOUTPUT2 | sort | $CAT >$TEMPOUTPUT
-  echo -e "`date +%F_%T`: UNIQ..." >&2
-  $CAT $TEMPOUTPUT | uniq -c | $CAT >$TEMPOUTPUT2
+  $CAT $TEMPOUTPUT2 | sort | uniq -c | $CAT >$TEMPOUTPUT
   echo -e "`date +%F_%T`: ...SORTING" >&2
-  $CAT $TEMPOUTPUT2 | sort -rn 
+  $CAT $TEMPOUTPUT | sort -rn | $CAT
 fi
 
 rm -f $TEMPOUTPUT $TEMPOUTPUT2 $GTPIN
