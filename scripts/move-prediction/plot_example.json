@@ -1,17 +1,17 @@
 {
   "title":  "Example Plot",
-  "type":   "2d",
-  "xmax":   150,
+  "type":   "move-prediction",
+  "xmax":   20,
   "errk":   1.96,
   "data":
   [
     {
       "label":  "Plot 1",
-      "file":   "results_date/move-prediction.csv"
+      "file":   "results_date/results-mp.csv"
     },
     {
       "label":  "Plot 2",
-      "file":   "results_date/move-prediction.csv"
+      "file":   "results_date/results-mp.csv"
     }
   ]
 }
