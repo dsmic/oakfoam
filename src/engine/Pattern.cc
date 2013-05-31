@@ -567,7 +567,7 @@ void Pattern::Circular::resetColor(int offset)
   hash[part]&=~(((boost::uint_fast32_t)3<<(32-bitoffset-2)));
 }
 
-void Pattern::CircularDictionary::setTrans(boost::uint_fast32_t data[PATTERN_CIRC_32BITPARTS], int offset)
+void Pattern::CircularDictionary::setTrans(boost::uint32_t data[PATTERN_CIRC_32BITPARTS], int offset)
 {
   int part=offset/(32/2);
   int bitoffset=(offset%(32/2))*2;

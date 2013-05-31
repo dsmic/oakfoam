@@ -16,6 +16,11 @@
 #include <set>
 #include <map>
 
+#define with_unordered
+
+#ifdef with_unordered
+#include <unordered_map>
+#endif
 
 #include "Go.h"
 //from "Parameters.h":
@@ -76,6 +81,15 @@ class Parameters;
  *  - CIRCPATT
  *    - x: The move has the circular pattern x.
  */
+class circHash
+{
+  public:
+    std::size_t operator() (const Pattern::Circular& b) const
+    {
+      return b.hashf();
+    }
+};
+
 class Features
 {
   public:
@@ -180,7 +194,11 @@ class Features
     float gammas_cfgsecondlastdist[CFGSECONDLASTDIST_LEVELS];
 
     Pattern::CircularDictionary *circdict; 
+#ifdef with_unordered
+    std::unordered_map<Pattern::Circular,unsigned int,circHash> *circlevels;
+#else
     std::map<Pattern::Circular,unsigned int> *circlevels;
+#endif    
     std::vector<std::string> *circstrings;
     std::vector<float> *circgammas;
 

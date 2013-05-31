@@ -669,7 +669,11 @@ Features::Features(Parameters *prms) : params(prms)
     gammas_cfgsecondlastdist[i]=1.0;
 
   circdict=new Pattern::CircularDictionary();
+#ifdef with_unordered
+  circlevels = new std::unordered_map<Pattern::Circular,unsigned int,circHash>();
+#else
   circlevels = new std::map<Pattern::Circular,unsigned int>();
+#endif
   circstrings = new std::vector<std::string>();
   circgammas = new std::vector<float>();
   

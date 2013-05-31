@@ -968,7 +968,16 @@ float Tree::getUnPruneFactor(float *moveValues,float mean, int num) const
   if (move.getColor()==Go::WHITE)
     terrOwn=-terrOwn;
 
+  //tested version was ok with parameters
+  //optimized_settings +='param uct_area_owner_factor_a 2.8\n'
+  //optimized_settings +='param uct_area_owner_factor_b 0.1\n'
+  //optimized_settings +='param uct_area_owner_factor_c 1.3\n'
   factor+=params->uct_area_owner_factor_a*exp(-pow(params->uct_area_owner_factor_c*(terrOwn-params->uct_area_owner_factor_b),2));
+
+  //factor+=(params->uct_area_owner_factor_a+params->uct_area_owner_factor_b*terrOwn+params->uct_area_owner_factor_c*terrOwn*terrOwn)*exp(-pow(params->test_p1*terrOwn,2));
+  float terrCovar=params->engine->getCorrelation(move.getPosition());
+  if (terrCovar <0) terrCovar=0;
+  factor+=params->test_p1*terrCovar;
   
   if (params->uct_earlyrave_unprune_factor>0 && this->getEARLYRAVEPlayouts ()>1)
   {

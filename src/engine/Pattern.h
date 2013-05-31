@@ -233,25 +233,25 @@ namespace Pattern
       /** @defgroup CircDictRotate Hash parts applicable when rotating.
        * @{
        */
-      boost::uint_fast32_t rot_r2[PATTERN_CIRC_32BITPARTS]; /**< Shift right by 2. */
-      boost::uint_fast32_t rot_r4[PATTERN_CIRC_32BITPARTS]; /**< Shift right by 4. */
-      boost::uint_fast32_t rot_l6[PATTERN_CIRC_32BITPARTS]; /**< Shift left by 6. */
-      boost::uint_fast32_t rot_l12[PATTERN_CIRC_32BITPARTS]; /**< Shift left by 12. */
+      boost::uint32_t rot_r2[PATTERN_CIRC_32BITPARTS]; /**< Shift right by 2. */
+      boost::uint32_t rot_r4[PATTERN_CIRC_32BITPARTS]; /**< Shift right by 4. */
+      boost::uint32_t rot_l6[PATTERN_CIRC_32BITPARTS]; /**< Shift left by 6. */
+      boost::uint32_t rot_l12[PATTERN_CIRC_32BITPARTS]; /**< Shift left by 12. */
       /** @} */
       /** @defgroup CircDictFlip Hash parts applicable when flipping.
        * @{
        */
-      boost::uint_fast32_t flip_0[PATTERN_CIRC_32BITPARTS]; /**< Remain the same. */
-      boost::uint_fast32_t flip_r2[PATTERN_CIRC_32BITPARTS]; /**< Shift right by 2. */
-      boost::uint_fast32_t flip_r4[PATTERN_CIRC_32BITPARTS]; /**< Shift right by 4. */
-      boost::uint_fast32_t flip_r6[PATTERN_CIRC_32BITPARTS]; /**< Shift right by 6. */
-      boost::uint_fast32_t flip_r10[PATTERN_CIRC_32BITPARTS]; /**< Shift right by 10. */
-      boost::uint_fast32_t flip_r14[PATTERN_CIRC_32BITPARTS]; /**< Shift right by 14. */
-      boost::uint_fast32_t flip_l2[PATTERN_CIRC_32BITPARTS]; /**< Shift left by 2. */
-      boost::uint_fast32_t flip_l4[PATTERN_CIRC_32BITPARTS]; /**< Shift left by 4. */
-      boost::uint_fast32_t flip_l6[PATTERN_CIRC_32BITPARTS]; /**< Shift left by 6. */
-      boost::uint_fast32_t flip_l10[PATTERN_CIRC_32BITPARTS]; /**< Shift left by 10. */
-      boost::uint_fast32_t flip_l14[PATTERN_CIRC_32BITPARTS]; /**< Shift left by 14. */
+      boost::uint32_t flip_0[PATTERN_CIRC_32BITPARTS]; /**< Remain the same. */
+      boost::uint32_t flip_r2[PATTERN_CIRC_32BITPARTS]; /**< Shift right by 2. */
+      boost::uint32_t flip_r4[PATTERN_CIRC_32BITPARTS]; /**< Shift right by 4. */
+      boost::uint32_t flip_r6[PATTERN_CIRC_32BITPARTS]; /**< Shift right by 6. */
+      boost::uint32_t flip_r10[PATTERN_CIRC_32BITPARTS]; /**< Shift right by 10. */
+      boost::uint32_t flip_r14[PATTERN_CIRC_32BITPARTS]; /**< Shift right by 14. */
+      boost::uint32_t flip_l2[PATTERN_CIRC_32BITPARTS]; /**< Shift left by 2. */
+      boost::uint32_t flip_l4[PATTERN_CIRC_32BITPARTS]; /**< Shift left by 4. */
+      boost::uint32_t flip_l6[PATTERN_CIRC_32BITPARTS]; /**< Shift left by 6. */
+      boost::uint32_t flip_l10[PATTERN_CIRC_32BITPARTS]; /**< Shift left by 10. */
+      boost::uint32_t flip_l14[PATTERN_CIRC_32BITPARTS]; /**< Shift left by 14. */
       /** @} */
       
       /** Get a list of the x offsets applicable for a pattern of given size. */
@@ -266,7 +266,7 @@ namespace Pattern
       std::list<int> dicty[PATTERN_CIRC_MAXSIZE+1];
       int baseoffset[PATTERN_CIRC_MAXSIZE+1];
       
-      void setTrans(boost::uint_fast32_t data[PATTERN_CIRC_32BITPARTS], int offset);
+      void setTrans(boost::uint32_t data[PATTERN_CIRC_32BITPARTS], int offset);
   };
   
   /** Circular Pattern. */
@@ -282,7 +282,7 @@ namespace Pattern
       /** Get the size of this pattern. */
       int getSize() const { return size; };
       /** Get the hash of this pattern. */
-      boost::uint_fast32_t *getHash() const { return (boost::uint_fast32_t *)hash; };
+      boost::uint32_t *getHash() const { return (boost::uint32_t *)hash; };
       
       /** Make a copy of this pattern. */
       Pattern::Circular copy() { return this->getSubPattern(ldict,size); };
@@ -318,7 +318,8 @@ namespace Pattern
        * @see Pattern::ThreeByThree::smallestEquivalent()
        */
       void convertToSmallestEquivalent(Pattern::CircularDictionary *dict);
-    
+      std::size_t hashf() const {size_t t=0; for (int i=0;i<PATTERN_CIRC_32BITPARTS;i++) {t+=(2*i+1)*hash[i];}; return t;};
+      
     private:
       Circular(int sz=0) : size(sz) {};
       

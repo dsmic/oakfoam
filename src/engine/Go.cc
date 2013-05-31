@@ -2367,6 +2367,37 @@ void Go::Board::updateTerritoryMap(Go::TerritoryMap *tmap) const
   }
 }
 
+void Go::Board::updateCorrelationMap(Go::ObjectBoard<Go::CorrelationData> *cmap, Go::BitBoard *blacklist,Go::BitBoard *whitelist)
+{
+  if (cmap==NULL) return;
+  if (lastscoredata!=NULL)
+  {
+    for (int p=0;p<sizedata;p++)
+    {
+      int played=0;
+      int owned;
+      switch (lastscoredata[p].color)
+      {
+        case Go::BLACK: owned= 1; break;
+        case Go::WHITE: owned=-1; break;
+        default: owned=0; break;
+      }  
+      if (!(blacklist->get(p) && whitelist->get(p))) 
+      {
+        if (blacklist->get(p)) played=1;
+        if (whitelist->get(p)) played=-1;
+        (cmap->getp(p))->putData(played,owned);
+      }
+      else  
+      {
+       // fprintf(stderr,"This should not happen!!! a place played by black and white in bitboard?!\n");
+       //have probably been removed from board
+        (cmap->getp(p))->putData(-owned,owned);
+      }
+    }
+  }
+}
+
 void Go::TerritoryMap::decay(float factor)
 {
   for (int p=0;p<sizedata;p++)

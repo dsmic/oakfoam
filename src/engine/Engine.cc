@@ -121,8 +121,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","playout_mercy_rule_factor",&(params->playout_mercy_rule_factor),PLAYOUT_MERCY_RULE_FACTOR);
   params->addParameter("playout","playout_fill_weak_eyes",&(params->playout_fill_weak_eyes),PLAYOUT_FILL_WEAK_EYES);
   
-/*
-   params->addParameter("playout","test_p1",&(params->test_p1),0.0);
+
+  params->addParameter("playout","test_p1",&(params->test_p1),0.0);
   params->addParameter("playout","test_p2",&(params->test_p2),1.0);
   params->addParameter("playout","test_p3",&(params->test_p3),0.0);
   params->addParameter("playout","test_p4",&(params->test_p4),0.0);
@@ -142,7 +142,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","test_p18",&(params->test_p18),1.0);
   params->addParameter("playout","test_p19",&(params->test_p19),1.0);
   params->addParameter("playout","test_p20",&(params->test_p20),1.0);
-*/  
+ 
   params->addParameter("tree","ucb_c",&(params->ucb_c),UCB_C);
   params->addParameter("tree","ucb_init",&(params->ucb_init),UCB_INIT);
 
@@ -311,6 +311,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   hashtree=new Go::ZobristTree();
   
   territorymap=new Go::TerritoryMap(boardsize);
+  correlationmap=new Go::ObjectBoard<Go::CorrelationData>(boardsize);
+  
   blackOldMoves=new float[currentboard->getPositionMax()];
   whiteOldMoves=new float[currentboard->getPositionMax()];
   for (int i=0;i<currentboard->getPositionMax();i++)
@@ -387,6 +389,7 @@ Engine::~Engine()
   delete zobristtable;
   delete playout;
   delete territorymap;
+  delete correlationmap;
   delete blackOldMoves;
   delete whiteOldMoves;
   for (std::list<DecisionTree*>::iterator iter=decisiontrees.begin();iter!=decisiontrees.end();++iter)
@@ -603,6 +606,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("dobenchmark",this,&Engine::gtpDoBenchmark);
   gtpe->addFunctionCommand("showcriticality",this,&Engine::gtpShowCriticality);
   gtpe->addFunctionCommand("showterritory",this,&Engine::gtpShowTerritory);
+  gtpe->addFunctionCommand("showcorrelationmap",this,&Engine::gtpShowCorrelationMap);
   gtpe->addFunctionCommand("showratios",this,&Engine::gtpShowRatios);
   gtpe->addFunctionCommand("showunprune",this,&Engine::gtpShowUnPrune);
   gtpe->addFunctionCommand("showunprunecolor",this,&Engine::gtpShowUnPruneColor);
@@ -648,6 +652,7 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("loadfeaturegammas %%r","Load Feature Gammas","none");
   gtpe->addAnalyzeCommand("showcriticality","Show Criticality","cboard");
   gtpe->addAnalyzeCommand("showterritory","Show Territory","dboard");
+  gtpe->addAnalyzeCommand("showcorrelationmap","Show Correlation","dboard");
   gtpe->addAnalyzeCommand("showtreelivegfx","Show Tree Live Gfx","gfx");
   gtpe->addAnalyzeCommand("loadpatterns %%r","Load Patterns","none");
   gtpe->addAnalyzeCommand("clearpatterns","Clear Patterns","none");
@@ -2870,6 +2875,25 @@ void Engine::gtpShowTerritory(void *instance, Gtp::Engine* gtpe, Gtp::Command* c
   gtpe->getOutput()->endResponse(true);
 }
 
+void Engine::gtpShowCorrelationMap(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("\n");
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      int pos=Go::Position::xy2pos(x,y,me->boardsize);
+      float tmp=me->getCorrelation(pos);
+      gtpe->getOutput()->printf("%.2f ",tmp);  
+    }
+    gtpe->getOutput()->printf("\n");
+  }
+  gtpe->getOutput()->endResponse(true);
+}
+
 void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
@@ -4228,6 +4252,7 @@ void Engine::clearBoard()
   delete moveexplanations;
   delete hashtree;
   delete territorymap;
+  delete correlationmap;
   delete blackOldMoves;
   delete whiteOldMoves;
   
@@ -4238,6 +4263,7 @@ void Engine::clearBoard()
   moveexplanations = new std::list<std::string>();
   hashtree=new Go::ZobristTree();
   territorymap=new Go::TerritoryMap(boardsize);
+  correlationmap=new Go::ObjectBoard<Go::CorrelationData>(boardsize);
   blackOldMoves=new float[currentboard->getPositionMax()];
   whiteOldMoves=new float[currentboard->getPositionMax()];
   for (int i=0;i<currentboard->getPositionMax();i++)
@@ -4553,7 +4579,13 @@ void Engine::doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::
     playouttree->addLose(finalscore);
   
   playoutboard->updateTerritoryMap(territorymap);
-  
+
+  //here with with firstlist and secondlist the correlationmap can be updated
+  if (col==Go::BLACK)
+    playoutboard->updateCorrelationMap(correlationmap,firstlist,secondlist);
+  else
+    playoutboard->updateCorrelationMap(correlationmap,secondlist,firstlist);
+
   if (!playoutjigo)
   {
     Go::Color wincol=(finalscore>0?Go::BLACK:Go::WHITE);

@@ -338,6 +338,7 @@ class Engine
     long statisticsSum() {int i; long sum=0; for (i=0;i<STATISTICS_NUM;i++) sum+=statistics[i]; return sum;}
     long getStatistics(int i) {return statistics[i]*1000/(statisticsSum()+1);} //+1 avoid crash
     Go::TerritoryMap *getTerritoryMap() const {return territorymap;}
+    float getCorrelation(int pos) const {return (correlationmap->get(pos)).getCorrelation();}
     float getOldMoveValue(Go::Move m);
     void getOnePlayoutMove(Go::Board *board, Go::Color col, Go::Move *move);
 
@@ -364,6 +365,8 @@ class Engine
     volatile bool stoppondering;
     Worker::Pool *threadpool;
     Go::TerritoryMap *territorymap;
+    Go::ObjectBoard<Go::CorrelationData> *correlationmap;
+    
     long statistics[STATISTICS_NUM];
 
     bool isgamefinished;
@@ -584,6 +587,7 @@ class Engine
     static void gtpDoBenchmark(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowCriticality(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowTerritory(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpShowCorrelationMap(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowRatios(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowUnPrune(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowUnPruneColor(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);

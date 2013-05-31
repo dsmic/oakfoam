@@ -206,7 +206,25 @@ namespace Go
       const int size,sizesq,sizedata;
       bool *const data;
   };
-  
+
+  class CorrelationData
+  {
+    public:
+      CorrelationData() {playedsum=0; ownedsum=0; playedXownedsum=0; n=0;};
+      //add data, played and owned are +1 for black and -1 for white, 0 if unknown
+      void putData(int played, int owned) 
+      {
+        if (played!=0) {playedsum+=played; ownedsum+=owned; playedXownedsum+=played*owned; n++;}
+      };
+      float getCorrelation() {if (n==0 || playedsum*playedsum>=n*n || ownedsum*ownedsum>=n*n) 
+          return 0; else 
+          return ((float)playedXownedsum/n-(float)playedsum/n*ownedsum/n)/
+            (sqrt(1.0-(float)playedsum*playedsum/n/n)*sqrt(1.0-(float)ownedsum*ownedsum/n/n)
+             );}; 
+    private:  
+      int playedsum, ownedsum, playedXownedsum, n;
+  };
+      
   /** Board with an object for each position. */
   template<typename T>
   class ObjectBoard
@@ -226,6 +244,7 @@ namespace Go
       
       /** Get the value of a position. */
       inline T get(int pos) const { return data[pos]; };
+      inline T* getp(int pos) const { return &data[pos]; };
       /** Set the value of a position. */
       inline void set(int pos, const T val) { data[pos]=val; };
       /** Fill the whole board with a set value. */
@@ -674,6 +693,7 @@ namespace Go
       Go::Color getScoredOwner(int pos) const;
       /** Update the given territory map. */
       void updateTerritoryMap(Go::TerritoryMap *tmap) const;
+      void updateCorrelationMap(Go::ObjectBoard<Go::CorrelationData> *correlationmap, Go::BitBoard *blacklist,Go::BitBoard *whitelist);
       /** Determine if a stone is alive, according to the given territory map and threshold. */
       bool isAlive(Go::TerritoryMap *tmap, float threshold, int pos) const;
       /** Get the territory score using the given territory map and threshold. */

@@ -172,7 +172,7 @@ class Parameters
     float mm_learn_delta;
     int mm_learn_min_playouts;
     
-/*    float test_p1;
+    float test_p1;
     float test_p2;
     float test_p3;
     float test_p4;
@@ -193,7 +193,7 @@ class Parameters
     float test_p18;
     float test_p19;
     float test_p20;
-    */
+    
 
     
     /** Skip all playout heuristics with this probability.
