@@ -3,6 +3,7 @@
 
 #include <string>
 #include <list>
+#include <unordered_set>
 #include <boost/pool/pool.hpp>
 #include <boost/pool/pool_alloc.hpp>
 #include <boost/pool/object_pool.hpp>
@@ -543,7 +544,7 @@ namespace Go
        */
       const Go::Vertex *boardData() const { return data; };
       /** Get a list of the groups on this board. */
-      std::set<Go::Group*> *getGroups() { return &groups; };
+      std::unordered_set<Go::Group*> *getGroups() { return &groups; };
       
       /** Get the size of this board. */
       int getSize() const { return size; };
@@ -715,7 +716,7 @@ namespace Go
       const int sizesq;
       const int sizedata;
       Go::Vertex *const data;
-      std::set<Go::Group*> groups;
+      std::unordered_set<Go::Group*> groups;
       int movesmade,passesplayed;
       Go::Color nexttomove;
       int simpleko;

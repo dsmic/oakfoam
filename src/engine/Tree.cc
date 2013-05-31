@@ -1299,8 +1299,8 @@ bool Tree::expandLeaf(Worker::Settings *settings)
 
     if (params->uct_atari_prior>0)
     {
-      std::set<Go::Group*> *groups=startboard->getGroups();
-      for(std::set<Go::Group*>::iterator iter=groups->begin();iter!=groups->end();++iter) 
+      std::unordered_set<Go::Group*> *groups=startboard->getGroups();
+      for(std::unordered_set<Go::Group*>::iterator iter=groups->begin();iter!=groups->end();++iter) 
       {
         if ((*iter)->inAtari())
         {
