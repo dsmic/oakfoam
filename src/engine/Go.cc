@@ -834,7 +834,7 @@ int Go::Board::removeGroup(Go::Group *group)
       this->removeValidMove(Go::Move(groupcol,(*iter)));
   }
   
-  possiblesuicides->resize(0);
+  possiblesuicides->resize(0);  //what's the idea of this??
   delete possiblesuicides;
   
   return s;

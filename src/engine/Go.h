@@ -8,6 +8,10 @@
 #include <boost/pool/pool_alloc.hpp>
 #include <boost/pool/object_pool.hpp>
 #include <boost/cstdint.hpp>
+
+//can be set or unordered_set last is faster
+#define ourset unordered_set
+
 //from "Features.h":
 class Features;
 //from "Parameters.h":
@@ -544,7 +548,7 @@ namespace Go
        */
       const Go::Vertex *boardData() const { return data; };
       /** Get a list of the groups on this board. */
-      std::unordered_set<Go::Group*> *getGroups() { return &groups; };
+      std::ourset<Go::Group*> *getGroups() { return &groups; };
       
       /** Get the size of this board. */
       int getSize() const { return size; };
@@ -716,7 +720,7 @@ namespace Go
       const int sizesq;
       const int sizedata;
       Go::Vertex *const data;
-      std::unordered_set<Go::Group*> groups;
+      std::ourset<Go::Group*> groups;
       int movesmade,passesplayed;
       Go::Color nexttomove;
       int simpleko;

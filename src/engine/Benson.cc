@@ -110,8 +110,8 @@ void Benson::updateChainsAndRegions()
 {
   Go::BitBoard *usedflags=new Go::BitBoard(size);
   
-  std::unordered_set<Go::Group*> *allgroups=board->getGroups();
-  for(std::unordered_set<Go::Group*>::iterator iter=allgroups->begin();iter!=allgroups->end();++iter) 
+  std::ourset<Go::Group*> *allgroups=board->getGroups();
+  for(std::ourset<Go::Group*>::iterator iter=allgroups->begin();iter!=allgroups->end();++iter) 
   {
     Benson::Chain *chain=new Benson::Chain();
     chain->group=(*iter);
