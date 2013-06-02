@@ -318,7 +318,7 @@ namespace Pattern
        * @see Pattern::ThreeByThree::smallestEquivalent()
        */
       void convertToSmallestEquivalent(Pattern::CircularDictionary *dict);
-      std::size_t hashf() const {size_t t=0; for (int i=0;i<PATTERN_CIRC_32BITPARTS;i++) {t+=(2*i+1)*hash[i];}; return t;};
+      std::size_t hashf() const {size_t t=0; for (int i=0;i<PATTERN_CIRC_32BITPARTS;i++) {t+=(2*i+1)*hash[i];}; return t+size*PATTERN_CIRC_32BITPARTS;};
       
     private:
       Circular(int sz=0) : size(sz) {};
