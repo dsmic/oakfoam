@@ -50,6 +50,7 @@
 #define UCT_CRITICALITY_UNPRUNE_MULTIPLY true
 #define UCT_CRITICALITY_MIN_PLAYOUTS 150
 #define UCT_CRITICALITY_SIBLINGS true
+#define UCT_CRITICALITY_RAVE_UNPRUNE_FACTOR 0.0
 #define UCT_SLOW_UPDATE_INTERVAL 100
 #define UCT_SLOW_DEBUG_INTERVAL 5000
 #define UCT_STOP_EARLY true
@@ -61,9 +62,13 @@
 #define UCT_OLDMOVE_UNPRUNE_FACTOR 0.00
 #define UCT_OLDMOVE_UNPRUNE_FACTOR_B 0.00
 #define UCT_OLDMOVE_UNPRUNE_FACTOR_C 0.00
+#define UCT_AREA_OWNER_FACTOR_A 0.00
+#define UCT_AREA_OWNER_FACTOR_B 0.33333
+#define UCT_AREA_OWNER_FACTOR_C 1.00
 #define UCT_REPRUNE_FACTOR 0.00
 #define UCT_FACTOR_CIRCPATTERN 0.00
 #define UCT_FACTOR_CIRCPATTERN_EXPONENT 1.00
+#define UCT_CIRCPATTERN_MINSIZE 2
 #define UCT_SIMPLE_PATTERN_FACTOR 1.0
 #define UCT_ATARI_UNPRUNE 1.0
 #define UCT_ATARI_UNPRUNE_EXP 0.0
@@ -75,6 +80,9 @@
 #define UCT_DECAY_M 0
 
 #define FEATURES_LADDERS false
+#define FEATURES_PASS_NO_MOVE_FOR_LASTDIST false
+#define MM_LEARN_DELTA 0.01
+#define MM_LEARN_MIN_PLAYOUTS 100
 
 #define RULES_POSITIONAL_SUPERKO_ENABLED true
 #define RULES_SUPERKO_TOP_PLY false
@@ -286,8 +294,10 @@ class Engine
     void clearBoard();
     /** Get the current komi. */
     float getKomi() const { return komi; };
+    float getScoreKomi() const;
     /** Set the current komi. */
     void setKomi(float k);
+    void setHandicapKomi(float k) {komi_handicap=k;};
     /** Undo the last move made.
      * Return true if successful.
      */
@@ -337,6 +347,7 @@ class Engine
     std::string longname;
     Go::Board *currentboard;
     float komi;
+    float komi_handicap;
     int boardsize;
     Time *time;
     Tree *movetree;
@@ -354,6 +365,7 @@ class Engine
     Worker::Pool *threadpool;
     Go::TerritoryMap *territorymap;
     long statistics[STATISTICS_NUM];
+
     bool isgamefinished;
     std::list<DecisionTree*> decisiontrees;
 
@@ -367,6 +379,8 @@ class Engine
 
     float presetplayouts;
     int presetnum;
+
+    std::string learn_filename_features,learn_filename_circ_patterns;
     
     enum MovePolicy
     {
@@ -474,7 +488,8 @@ class Engine
     std::string chat(bool pm,std::string name,std::string msg);
 
     void gameFinished();
-
+    void learnFromTree(Go::Board *tmpboard, Tree *learntree, std::ostringstream *ssun, int move_num);
+    
     static void ponderWrapper(void *instance) { ((Engine*)instance)->ponder(); };
     void ponder();
 
@@ -499,6 +514,8 @@ class Engine
     static void gtpChat(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpGameOver(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpEcho(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpPlaceFreeHandicap(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpSetFreeHandicap(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     
     static void gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowLiberties(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
@@ -512,8 +529,12 @@ class Engine
     static void gtpFeatureProbDistribution(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpListAllPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpLoadFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpSaveFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpSaveFeatureGammasInline(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpLoadCircPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpLoadCircPatternsNot(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpSaveCircPatternValues(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpLoadCircPatternValues(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpListFeatureIds(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowCFGFrom(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowCircDistFrom(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);

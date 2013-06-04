@@ -22,7 +22,8 @@ touch $TEMPGAMMAS
 
 for i in `seq $END -1 $START`; do
   echo -e "\n\n=== Harvesting size: $i" >&2
-  (cat $TEMPGAMES | $WD/harvest-collection-circular.sh $TEMPGAMMAS $i > $TEMPPATT) 2>&1 | sed -u "s/^/Size $i: /" >&2
+  (cat $TEMPGAMES | $WD/harvest-collection-circular2.sh $TEMPGAMMAS $i > $TEMPPATT)
+# 2>&1 | sed -u "s/^/Size $i: /" >&2
 
   LINES=`cat "$TEMPPATT" | wc -l`
   if (( $LINES <= 1 )); then

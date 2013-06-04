@@ -71,7 +71,7 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
 
   if (board->getPassesPlayed()>=2)
   {
-    finalscore=board->score(params)-params->engine->getKomi();
+    finalscore=board->score(params)-params->engine->getScoreKomi();
     return;
   }
   int treemovescount=0;
@@ -103,7 +103,7 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
     {
       if (params->debug_on)
         gtpe->getOutput()->printfDebug("\n");
-      finalscore=board->score(params)-(params->engine->getKomi());
+      finalscore=board->score(params)-(params->engine->getScoreKomi());
       return;
     }
   }
@@ -314,7 +314,7 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
   if (critarray)
     delete[] critarray;
   if (!mercywin)
-    finalscore=board->score(params)-params->engine->getKomi();
+    finalscore=board->score(params)-params->engine->getScoreKomi();
   //Go::Color playoutcol=playoutmoves.back().getColor();
   //bool playoutwin=Go::Board::isWinForColor(playoutcol,finalscore);
   bool playoutjigo=(finalscore==0);

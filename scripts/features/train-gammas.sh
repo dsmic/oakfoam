@@ -3,7 +3,6 @@
 set -eu
 set -o pipefail
 WD="$(dirname "$0")"
-
 TEMPIDS="ids_`date +%F_%T`.tmp"
 TEMPLOG="log_`date +%F_%T`.tmp"
 TEMPMM="mm_`date +%F_%T`.tmp"
@@ -138,5 +137,3 @@ rm -f $TEMPMM
 rm -f $TEMPIDS
 rm -f $TEMPLOG
 rm -f $TEMPGTP
-
-

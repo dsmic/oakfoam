@@ -32,6 +32,7 @@
 
 #include <string>
 #include <list>
+#include <cstring>
 #include <boost/cstdint.hpp>
 #include "Go.h"
 
@@ -213,6 +214,7 @@ namespace Pattern
       float getGamma(unsigned int hash) const { return gammas[hash]; };
       /** Set the gamma value for a given hash. */
       void setGamma(unsigned int hash, float g) { if (this->getGamma(hash)==-1) count++; gammas[hash]=g; if (g==-1) count--; };
+      void learnGamma(unsigned int hash, float g) { if (this->getGamma(hash)==-1) count++; gammas[hash]+=g; if (gammas[hash]<=0) {gammas[hash]=0.0001;}  if (g==-1) count--; };
       /** Determine whether a hash has an associated gamma value. */
       bool hasGamma(unsigned int hash) const { return (gammas[hash]!=-1); };
       /** Get count of hashes that are set. */
@@ -275,6 +277,7 @@ namespace Pattern
       /** Create a pattern from a given board position. */
       Circular(Pattern::CircularDictionary *dict, const Go::Board *board, int pos, int sz);
       Circular(Pattern::CircularDictionary *dict, std::string fromString);
+      Circular(boost::uint32_t hash_tmp[PATTERN_CIRC_32BITPARTS], int size_tmp):size(size_tmp) { memcpy(hash, hash_tmp, sizeof(boost::uint32_t)*PATTERN_CIRC_32BITPARTS); };
       
       /** Get the size of this pattern. */
       int getSize() const { return size; };

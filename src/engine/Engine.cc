@@ -42,6 +42,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->board_size=boardsize;
   currentboard=new Go::Board(boardsize);
   komi=7.5;
+  komi_handicap=0;
 
   params->tree_instances=0;
   
@@ -120,7 +121,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","playout_mercy_rule_factor",&(params->playout_mercy_rule_factor),PLAYOUT_MERCY_RULE_FACTOR);
   params->addParameter("playout","playout_fill_weak_eyes",&(params->playout_fill_weak_eyes),PLAYOUT_FILL_WEAK_EYES);
   
-  params->addParameter("playout","test_p1",&(params->test_p1),0.0);
+/*
+   params->addParameter("playout","test_p1",&(params->test_p1),0.0);
   params->addParameter("playout","test_p2",&(params->test_p2),1.0);
   params->addParameter("playout","test_p3",&(params->test_p3),0.0);
   params->addParameter("playout","test_p4",&(params->test_p4),0.0);
@@ -135,7 +137,12 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","test_p13",&(params->test_p13),1.0);
   params->addParameter("playout","test_p14",&(params->test_p14),1.0);
   params->addParameter("playout","test_p15",&(params->test_p15),1.0);
-  
+  params->addParameter("playout","test_p16",&(params->test_p16),1.0);
+  params->addParameter("playout","test_p17",&(params->test_p17),1.0);
+  params->addParameter("playout","test_p18",&(params->test_p18),1.0);
+  params->addParameter("playout","test_p19",&(params->test_p19),1.0);
+  params->addParameter("playout","test_p20",&(params->test_p20),1.0);
+*/  
   params->addParameter("tree","ucb_c",&(params->ucb_c),UCB_C);
   params->addParameter("tree","ucb_init",&(params->ucb_init),UCB_INIT);
 
@@ -182,6 +189,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("tree","uct_criticality_unprune_multiply",&(params->uct_criticality_unprune_multiply),UCT_CRITICALITY_UNPRUNE_MULTIPLY);
   params->addParameter("tree","uct_criticality_min_playouts",&(params->uct_criticality_min_playouts),UCT_CRITICALITY_MIN_PLAYOUTS);
   params->addParameter("tree","uct_criticality_siblings",&(params->uct_criticality_siblings),UCT_CRITICALITY_SIBLINGS);
+  params->addParameter("tree","uct_criticality_rave_unprune_factor",&(params->uct_criticality_rave_unprune_factor),UCT_CRITICALITY_RAVE_UNPRUNE_FACTOR);
   params->addParameter("tree","uct_prior_unprune_factor",&(params->uct_prior_unprune_factor),UCT_PRIOR_UNPRUNE_FACTOR);
   params->addParameter("tree","uct_rave_unprune_factor",&(params->uct_rave_unprune_factor),UCT_RAVE_UNPRUNE_FACTOR);
   params->addParameter("tree","uct_earlyrave_unprune_factor",&(params->uct_earlyrave_unprune_factor),UCT_EARLYRAVE_UNPRUNE_FACTOR);
@@ -190,9 +198,13 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("tree","uct_oldmove_unprune_factor",&(params->uct_oldmove_unprune_factor),UCT_OLDMOVE_UNPRUNE_FACTOR);
   params->addParameter("tree","uct_oldmove_unprune_factor_b",&(params->uct_oldmove_unprune_factor_b),UCT_OLDMOVE_UNPRUNE_FACTOR_B);
   params->addParameter("tree","uct_oldmove_unprune_factor_c",&(params->uct_oldmove_unprune_factor_c),UCT_OLDMOVE_UNPRUNE_FACTOR_C);
+  params->addParameter("tree","uct_area_owner_factor_a",&(params->uct_area_owner_factor_a),UCT_AREA_OWNER_FACTOR_A);
+  params->addParameter("tree","uct_area_owner_factor_b",&(params->uct_area_owner_factor_b),UCT_AREA_OWNER_FACTOR_B);
+  params->addParameter("tree","uct_area_owner_factor_c",&(params->uct_area_owner_factor_c),UCT_AREA_OWNER_FACTOR_C);
   params->addParameter("tree","uct_reprune_factor",&(params->uct_reprune_factor),UCT_REPRUNE_FACTOR);
   params->addParameter("tree","uct_factor_circpattern",&(params->uct_factor_circpattern),UCT_FACTOR_CIRCPATTERN);
   params->addParameter("tree","uct_factor_circpattern_exponent",&(params->uct_factor_circpattern_exponent),UCT_FACTOR_CIRCPATTERN_EXPONENT);
+  params->addParameter("tree","uct_circpattern_minsize",&(params->uct_circpattern_minsize),UCT_CIRCPATTERN_MINSIZE);
   params->addParameter("tree","uct_simple_pattern_factor",&(params->uct_simple_pattern_factor),UCT_SIMPLE_PATTERN_FACTOR);
   params->addParameter("tree","uct_atari_unprune",&(params->uct_atari_unprune),UCT_ATARI_UNPRUNE);
   params->addParameter("tree","uct_atari_unprune_exp",&(params->uct_atari_unprune_exp),UCT_ATARI_UNPRUNE_EXP);
@@ -223,7 +235,14 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
 
   params->addParameter("tree","features_ladders",&(params->features_ladders),FEATURES_LADDERS);
   params->addParameter("tree","features_dt_use",&(params->features_dt_use),false);
+  params->addParameter("tree","features_pass_no_move_for_lastdist",&(params->features_pass_no_move_for_lastdist),FEATURES_PASS_NO_MOVE_FOR_LASTDIST);
+
+  params->addParameter("tree","dynkomi_enabled",&(params->dynkomi_enabled),true);
   
+  params->addParameter("tree","mm_learn_enabled",&(params->mm_learn_enabled),false);
+  params->addParameter("tree","mm_learn_delta",&(params->mm_learn_delta),MM_LEARN_DELTA);
+  params->addParameter("tree","mm_learn_min_playouts",&(params->mm_learn_min_playouts),MM_LEARN_MIN_PLAYOUTS);
+
   params->addParameter("rules","rules_positional_superko_enabled",&(params->rules_positional_superko_enabled),RULES_POSITIONAL_SUPERKO_ENABLED);
   params->addParameter("rules","rules_superko_top_ply",&(params->rules_superko_top_ply),RULES_SUPERKO_TOP_PLY);
   params->addParameter("rules","rules_superko_prune_after",&(params->rules_superko_prune_after),RULES_SUPERKO_PRUNE_AFTER);
@@ -528,6 +547,8 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("kgs-chat",this,&Engine::gtpChat);
   gtpe->addFunctionCommand("kgs-game_over",this,&Engine::gtpGameOver);
   gtpe->addFunctionCommand("echo",this,&Engine::gtpEcho);
+  gtpe->addFunctionCommand("place_free_handicap",this,&Engine::gtpPlaceFreeHandicap);
+  gtpe->addFunctionCommand("set_free_handicap",this,&Engine::gtpSetFreeHandicap);
   
   gtpe->addFunctionCommand("param",this,&Engine::gtpParam);
   gtpe->addFunctionCommand("showliberties",this,&Engine::gtpShowLiberties);
@@ -541,8 +562,12 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("featureprobdistribution",this,&Engine::gtpFeatureProbDistribution);
   gtpe->addFunctionCommand("listallpatterns",this,&Engine::gtpListAllPatterns);
   gtpe->addFunctionCommand("loadfeaturegammas",this,&Engine::gtpLoadFeatureGammas);
+  gtpe->addFunctionCommand("savefeaturegammas",this,&Engine::gtpSaveFeatureGammas);
+  gtpe->addFunctionCommand("savefeaturegammasinline",this,&Engine::gtpSaveFeatureGammasInline);
   gtpe->addFunctionCommand("loadcircpatterns",this,&Engine::gtpLoadCircPatterns);
   gtpe->addFunctionCommand("loadcircpatternsnot",this,&Engine::gtpLoadCircPatternsNot);
+  gtpe->addFunctionCommand("savecircpatternvalues",this,&Engine::gtpSaveCircPatternValues);
+  gtpe->addFunctionCommand("loadcircpatternvalues",this,&Engine::gtpLoadCircPatternValues);
   gtpe->addFunctionCommand("listfeatureids",this,&Engine::gtpListFeatureIds);
   gtpe->addFunctionCommand("showcfgfrom",this,&Engine::gtpShowCFGFrom);
   gtpe->addFunctionCommand("showcircdistfrom",this,&Engine::gtpShowCircDistFrom);
@@ -885,6 +910,23 @@ void Engine::gtpUndo(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   }
 }
 
+float Engine::getScoreKomi() const
+{ 
+//own test, did not look too bad!!!
+//float dynamic_komi=7.5*komi_handicap*exp(-5.0*sqrt(komi_handicap)*(float)currentboard->getMovesMade()/boardsize/boardsize);
+//  if (dynamic_komi<5)
+//    dynamic_komi=0;  //save the end game
+  //Formula Petr Baudis dynamic komi (N=200 for 19x19 board scaled to smaller boards)
+  float dynamic_komi=0;
+  if (params->dynkomi_enabled)
+  {
+    dynamic_komi=7.0*komi_handicap*(1-(float)currentboard->getMovesMade()/(boardsize*boardsize*200.0/19.0/19.0));
+    if (dynamic_komi<0)
+      dynamic_komi=0;  //save the end game
+  }
+  return komi+komi_handicap+dynamic_komi; 
+}
+
 void Engine::gtpFinalScore(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
@@ -898,9 +940,9 @@ void Engine::gtpFinalScore(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   }
   
   if (me->params->rules_all_stones_alive || me->params->cleanup_in_progress)
-    score=me->currentboard->score()-me->komi;
+    score=me->currentboard->score()-me->komi-me->komi_handicap;
   else
-    score=me->currentboard->territoryScore(me->territorymap,me->params->territory_threshold)-me->komi;
+    score=me->currentboard->territoryScore(me->territorymap,me->params->territory_threshold)-me->komi-me->komi_handicap;
   
   gtpe->getOutput()->startResponse(cmd);
   if (score==0) // jigo
@@ -1849,6 +1891,7 @@ void Engine::gtpLoadFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Comman
   }
   
   std::string filename=cmd->getStringArg(0);
+  me->learn_filename_features=filename;
   
   delete me->features;
   me->features=new Features(me->params);
@@ -1865,13 +1908,73 @@ void Engine::gtpLoadFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Comman
     #endif
     
     gtpe->getOutput()->startResponse(cmd);
-    gtpe->getOutput()->printf("loaded features gamma file: %s",filename.c_str());
+    gtpe->getOutput()->printf("loaded features gamma file: %s Attention, circ pattern files are removed by this!",filename.c_str());
     gtpe->getOutput()->endResponse();
   }
   else
   {
     gtpe->getOutput()->startResponse(cmd,false);
     gtpe->getOutput()->printf("error loading features gamma file: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+}
+
+void Engine::gtpSaveFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("need 1 arg");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  std::string filename=cmd->getStringArg(0);
+  
+  bool success=me->features->saveGammaFile(filename);
+  
+  if (success)
+  {
+    gtpe->getOutput()->startResponse(cmd);
+    gtpe->getOutput()->printf("saved features gamma file: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+  else
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("error saving features gamma file: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+}
+
+void Engine::gtpSaveFeatureGammasInline(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("need 1 arg");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  std::string filename=cmd->getStringArg(0);
+  
+  bool success=me->features->saveGammaFileInline(filename);
+  
+  if (success)
+  {
+    gtpe->getOutput()->startResponse(cmd);
+    gtpe->getOutput()->printf("saved features gamma file: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+  else
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("error saving features gamma file: %s",filename.c_str());
     gtpe->getOutput()->endResponse();
   }
 }
@@ -1954,6 +2057,87 @@ void Engine::gtpLoadCircPatternsNot(void *instance, Gtp::Engine* gtpe, Gtp::Comm
   {
     gtpe->getOutput()->startResponse(cmd,false);
     gtpe->getOutput()->printf("error loading circpatterns file: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+}
+
+void Engine::gtpSaveCircPatternValues(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("need 1 arg (filename and number of lines)");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  std::string filename=cmd->getStringArg(0);
+  
+  if (me->features==NULL)
+    me->features=new Features(me->params);
+  bool success=me->features->saveCircValueFile(filename);
+  
+  if (success)
+  {
+    #ifdef HAVE_MPI
+      if (me->mpirank==0)
+      {
+        me->mpiBroadcastCommand(MPICMD_LOADFEATUREGAMMAS);
+        me->mpiBroadcastString(filename);
+      }
+    #endif
+    
+    gtpe->getOutput()->startResponse(cmd);
+    gtpe->getOutput()->printf("saved circvalue file: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+  else
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("error saving circpatterns file: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+}
+
+void Engine::gtpLoadCircPatternValues(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("need 1 arg (filename and number of lines)");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  std::string filename=cmd->getStringArg(0);
+  me->learn_filename_circ_patterns=filename;
+  
+  if (me->features==NULL)
+    me->features=new Features(me->params);
+  bool success=me->features->loadCircValueFile(filename);
+  
+  if (success)
+  {
+    #ifdef HAVE_MPI
+      if (me->mpirank==0)
+      {
+        me->mpiBroadcastCommand(MPICMD_LOADFEATUREGAMMAS);
+        me->mpiBroadcastString(filename);
+      }
+    #endif
+    
+    gtpe->getOutput()->startResponse(cmd);
+    gtpe->getOutput()->printf("loaded circvalue file: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+  else
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("error saving circpatterns file: %s",filename.c_str());
     gtpe->getOutput()->endResponse();
   }
 }
@@ -2679,11 +2863,11 @@ void Engine::gtpShowTerritory(void *instance, Gtp::Engine* gtpe, Gtp::Command* c
   }
 
   if (territorycount-me->getKomi()>0)
-    gtpe->getOutput()->printf("Territory %.1f Komi %.1f B+%.1f\n",
-      territorycount,me->getKomi(),territorycount-me->getKomi());
+    gtpe->getOutput()->printf("Territory %.1f Komi %.1f B+%.1f (with ScoreKomi %.1f) (%.1f)\n",
+      territorycount,me->getKomi(),territorycount-me->getKomi(),territorycount-me->getScoreKomi(),me->getScoreKomi());
   else
-    gtpe->getOutput()->printf("Territory %.1f Komi %.1f W+%.1f\n",
-      territorycount,me->getKomi(),-(territorycount-me->getKomi()));
+    gtpe->getOutput()->printf("Territory %.1f Komi %.1f W+%.1f (with ScoreKomi %.1f) (%.1f)\n",
+      territorycount,me->getKomi(),-(territorycount-me->getKomi()),-(territorycount-me->getScoreKomi()),me->getScoreKomi());
     
   gtpe->getOutput()->endResponse(true);
 }
@@ -3220,6 +3404,180 @@ void Engine::gtpEcho(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   gtpe->getOutput()->endResponse();
 }
 
+void Engine::gtpPlaceFreeHandicap(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("argument is required");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+
+  int numHandicapstones=cmd->getIntArg (0);
+  if (numHandicapstones<2||numHandicapstones>9)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("number of handicap stones not supported");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+
+  int sizem1=me->boardsize-1;
+  int borderdist=3;
+  if (me->boardsize<13)
+    borderdist=2;
+  int sizemb=sizem1-borderdist;
+  Gtp::Vertex vert[9];
+  vert[0].x=borderdist;   vert[0].y=borderdist;
+  vert[1].x=sizemb;       vert[1].y=sizemb;
+  vert[2].x=sizemb;       vert[2].y=borderdist;
+  vert[3].x=borderdist;   vert[3].y=sizemb;
+  vert[4].x=borderdist;   vert[4].y=sizem1/2;
+  vert[5].x=sizemb;       vert[5].y=sizem1/2;
+  vert[6].x=sizem1/2;     vert[6].y=borderdist;
+  vert[7].x=sizem1/2;     vert[7].y=sizemb;
+  vert[8].x=sizem1/2;     vert[8].y=sizem1/2;
+  if (numHandicapstones>4 && numHandicapstones%2==1)
+  {
+    vert[numHandicapstones-1].x=sizem1/2; vert[numHandicapstones-1].y=sizem1/2;
+  }
+  gtpe->getOutput()->startResponse(cmd);
+  for (int i=0;i<numHandicapstones;i++)
+  {
+    Go::Move move=Go::Move(Go::BLACK,vert[i].x,vert[i].y,me->boardsize);
+    me->makeMove(move);
+    gtpe->getOutput()->printVertex(vert[i]);
+    gtpe->getOutput()->printf(" ");
+  }
+  me->setHandicapKomi(numHandicapstones);
+  gtpe->getOutput()->endResponse();
+}
+
+void Engine::gtpSetFreeHandicap(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+
+  int numVertices=cmd->numArgs();
+  if (cmd->numArgs()<2)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("At least 2 handicap stones required");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+
+  gtpe->getOutput()->startResponse(cmd);
+  for (int x=0;x<numVertices;x++)
+  {
+    Gtp::Vertex vert=cmd->getVertexArg (x);
+    Go::Move move=Go::Move(Go::BLACK,vert.x,vert.y,me->boardsize);
+    if (!me->isMoveAllowed(move))
+    {
+      gtpe->getOutput()->startResponse(cmd,false);
+      gtpe->getOutput()->printString("illegal move");
+      gtpe->getOutput()->endResponse();
+      return;
+    }
+    me->makeMove(move);
+  
+    //gtpe->getOutput()->printVertex(vert);
+    //gtpe->getOutput()->printf(" ");
+  }
+  me->setHandicapKomi(numVertices);
+  gtpe->getOutput()->endResponse();
+}
+
+void Engine::learnFromTree(Go::Board *tmpboard, Tree *learntree, std::ostringstream *ssun, int movenum)
+{
+  int num_unpruned=learntree->getNumUnprunedChildren();
+  std::map<float,Go::Move,std::greater<float> > ordervalue;
+  std::map<float,Tree*,std::greater<float> > orderlearntree;
+  std::map<float,Go::Move,std::greater<float> > ordergamma;
+
+  float forcesort=0;
+  *ssun<<"\nun:"<<movenum<<"(";
+  Go::ObjectBoard<int> *cfglastdist=NULL;
+  Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
+  getFeatures()->computeCFGDist(tmpboard,&cfglastdist,&cfgsecondlastdist);
+  for (int nn=1;nn<=num_unpruned;nn++)
+  {
+    for(std::list<Tree*>::iterator iter=learntree->getChildren()->begin();iter!=learntree->getChildren()->end();++iter) 
+    {
+      if ((*iter)->getUnprunedNum()==nn && (*iter)->isPrimary() && !(*iter)->isPruned())
+      {
+        *ssun<<(nn!=1?",":"")<<Go::Position::pos2string((*iter)->getMove().getPosition(),boardsize);
+        //do not use getFeatureGamma of the tree, as this might be not exactly the order of the gammas to be trained
+        ordergamma.insert(std::make_pair(getFeatures()->getMoveGamma(tmpboard,cfglastdist,cfgsecondlastdist,(*iter)->getMove())+forcesort,(*iter)->getMove()));
+        ordervalue.insert(std::make_pair((*iter)->getPlayouts()+forcesort,(*iter)->getMove()));
+        orderlearntree.insert(std::make_pair((*iter)->getPlayouts()+forcesort,(*iter)));
+        forcesort+=0.001012321232123;
+      }
+    }
+  }
+  //include pruned into learning, as they all lost!!
+  for(std::list<Tree*>::iterator iter=learntree->getChildren()->begin();iter!=learntree->getChildren()->end();++iter) 
+  {
+    if ((*iter)->isPrimary() && (*iter)->isPruned())
+    {
+      //ssun<<(nn!=1?",":"")<<Go::Position::pos2string((*iter)->getMove().getPosition(),boardsize);
+      //do not use getFeatureGamma of the tree, as this might be not exactly the order of the gammas to be trained
+      ordergamma.insert(std::make_pair(getFeatures()->getMoveGamma(tmpboard,cfglastdist,cfgsecondlastdist,(*iter)->getMove())+forcesort,(*iter)->getMove()));
+      ordervalue.insert(std::make_pair(0.0+forcesort,(*iter)->getMove()));
+      forcesort+=0.001012321232123;
+    }
+  }
+  *ssun<<")";
+  if (ordergamma.size()!=ordervalue.size())
+    *ssun<<"\nthe ordering of gamma versus mc did not work correctly "<<ordergamma.size()<<" "<<ordervalue.size()<<"\n";
+  //*ssun<<" ordermc:(";
+
+  //for the moves (getPosition) the difference mc_position - gamma_position is calculated into numvalue_gamma
+  std::map<int,int> mc_pos_move;
+  std::map<int,int> gamma_move_pos;
+  std::map<int,float> numvalue_gamma;
+  std::map<int,float> move_gamma;
+  float sum_gammas=0;
+  std::map<float,Go::Move>::iterator it;
+  int nn=1;
+  for (it=ordervalue.begin();it!=ordervalue.end();++it)
+  {
+    //*ssun<<(nn!=1?",":"")<<Go::Position::pos2string(it->second.getPosition(),boardsize);
+    mc_pos_move.insert(std::make_pair(nn,it->second.getPosition()));
+    nn++;
+  }
+  //*ssun<<") ordergamma:(";
+  nn=1;
+#define sign(A) ((A>0)?1:((A<0)?-1:0))
+#define gamma_from_mc_position(A) (move_gamma.find(mc_pos_move.find(A)->second)->second)
+  for (it=ordergamma.begin();it!=ordergamma.end();++it)
+  {
+    //*ssun<<(nn!=1?",":"")<<Go::Position::pos2string(it->second.getPosition(),boardsize);
+    gamma_move_pos.insert(std::make_pair(it->second.getPosition(),nn));
+    move_gamma.insert(std::make_pair(it->second.getPosition(),it->first));
+    sum_gammas+=it->first;
+    nn++;
+  }
+  getFeatures()->learnMovesGamma(tmpboard,cfglastdist,cfgsecondlastdist,ordervalue,move_gamma,sum_gammas);
+  *ssun<<")";
+  std::map<float,Tree*>::iterator it_learntree;
+  for (it_learntree=orderlearntree.begin();it_learntree!=orderlearntree.end();++it_learntree)
+  {
+    //check if enough playouts
+    if (params->mm_learn_min_playouts>=it_learntree->second->getPlayouts ())
+      break;
+    //tmpboard must be copied
+    Go::Board *nextboard=tmpboard->copy();
+    //the move must be made first!
+    nextboard->makeMove(it_learntree->second->getMove());
+    *ssun<<"-"<<it_learntree->second->getMove().toString (boardsize)<<"-";
+    //learnFromTree has to be called
+    learnFromTree (nextboard,it_learntree->second,ssun,movenum+1);
+  }
+}
+
 void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
 {
   clearStatistics();
@@ -3324,18 +3682,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
 
     int num_unpruned=movetree->getNumUnprunedChildren();
     std::ostringstream ssun;
-    ssun<<"un:(";
-    for (int nn=1;nn<=num_unpruned;nn++)
-    {
-      for(std::list<Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
-      {
-        if ((*iter)->getUnprunedNum()==nn && (*iter)->isPrimary() && !(*iter)->isPruned())
-        {
-          ssun<<(nn!=1?",":"")<<Go::Position::pos2string((*iter)->getMove().getPosition(),boardsize);
-        }
-      }
-    }
-    ssun<<")";
+    if (params->mm_learn_enabled)
+      learnFromTree (currentboard,movetree,&ssun,1);
     ssun<<"st:(";
     for (int nn=0;nn<STATISTICS_NUM;nn++)
     {
@@ -3851,8 +4199,9 @@ void Engine::makeMove(Go::Move move)
   params->uct_slow_update_last=0;
   params->uct_slow_debug_last=0;
   territorymap->decay(params->territory_decayfactor);
-  blackOldMoves=new float[currentboard->getPositionMax()];
-  whiteOldMoves=new float[currentboard->getPositionMax()];
+  //was memory leak
+  //blackOldMoves=new float[currentboard->getPositionMax()];
+  //whiteOldMoves=new float[currentboard->getPositionMax()];
   for (int i=0;i<currentboard->getPositionMax();i++)
   {
     blackOldMoves[i]=0;
@@ -3947,6 +4296,7 @@ void Engine::clearBoard()
   playout->resetLGRF();
   params->cleanup_in_progress=false;
   isgamefinished=false;
+  komi_handicap=0;
 }
 
 void Engine::clearMoveTree()
@@ -4328,13 +4678,16 @@ void Engine::doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::
           ss << " r2:" << std::setprecision(2)<<robustmove->secondBestPlayoutRatio();
           ss << ")";
           Tree *bestratio=movetree->getBestRatioChild();
-          if (robustmove==bestratio)
-            ss << " (same)";
-          else
+          if (bestratio!=NULL)
           {
-            ss << " (br:" << Go::Position::pos2string(bestratio->getMove().getPosition(),boardsize);
-            ss << " r:" << std::setprecision(2)<<bestratio->getRatio();
-            ss << ")";
+            if (robustmove==bestratio)
+              ss << " (same)";
+            else
+            {
+              ss << " (br:" << Go::Position::pos2string(bestratio->getMove().getPosition(),boardsize);
+              ss << " r:" << std::setprecision(2)<<bestratio->getRatio();
+              ss << ")";
+            }
           }
           ss << "\n";
           gtpe->getOutput()->printfDebug(ss.str());
@@ -4854,6 +5207,14 @@ void Engine::gameFinished()
     return;
   isgamefinished=true;
 
+  if (params->mm_learn_enabled) 
+  {
+    fprintf(stderr,"files gamma %s circ %s\n",learn_filename_features.c_str(),learn_filename_circ_patterns.c_str()); 
+    getFeatures()->saveGammaFile (learn_filename_features);
+    getFeatures()->saveCircValueFile (learn_filename_circ_patterns);
+    gtpe->getOutput()->printfDebug("learned gammas and circ patterns saved with orderquality\n");
+  }
+  
   if (currentboard->getMovesMade()==0)
     return;
 

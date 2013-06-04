@@ -1,0 +1,136 @@
+diff -Naur mm-orig/makefile mm/makefile
+--- mm-orig/makefile	2013-05-15 18:32:40.000000000 +0200
++++ mm/makefile	2013-05-19 20:25:49.000000000 +0200
+@@ -1,5 +1,5 @@
+ mm: mm.cpp
+-	g++ -O3 -Wall -o mm mm.cpp
++	g++ -O3 -Wall -march=native -ftree-vectorizer-verbose=2 -o mm mm.cpp
+ 
+ clean:
+ 	rm -vf `cat .gitignore`
+diff -Naur mm-orig/mm.cpp mm/mm.cpp
+--- mm-orig/mm.cpp	2013-05-15 18:32:40.000000000 +0200
++++ mm/mm.cpp	2013-05-16 20:10:05.000000000 +0200
+@@ -11,6 +11,7 @@
+ #include <iomanip>
+ #include <sstream>
+ #include <vector>
++#include <map>
+ #include <cmath>
+ #include <fstream>
+ 
+@@ -123,7 +124,9 @@
+  vParticipations.resize(vGamma.size());
+  vPresences.resize(vGamma.size());
+ 
+- for (int i = vVictories.size(); --i >= 0;)
++ //vectorizing
++ unsigned int o=vVictories.size();
++ for (unsigned int i = 0; i<o; i++)
+  {
+   vVictories[i] = 0;
+   vParticipations[i] = 0;
+@@ -136,8 +139,10 @@
+   for (int j = Winner.GetSize(); --j >= 0;)
+    vVictories[Winner.GetIndex(j)]++;
+ 
+-  int tParticipations[vGamma.size()];
+-  for (int j = vGamma.size(); --j >= 0;)
++  //vectorizing
++  unsigned int o=vGamma.size();
++  int tParticipations[o];
++  for (unsigned int j = 0; j< o; j++)
+    tParticipations[j] = 0;
+ 
+   for (int k = vgame[i].vParticipants.size(); --k >= 0;)
+@@ -148,9 +153,10 @@
+     tParticipations[Index]++;
+    }
+ 
+-  for (int i = vGamma.size(); --i >= 0;)
+-   if (tParticipations[i])
+-    vPresences[i]++;
++  for (unsigned int i = 0; i < o; i++)
++   //if (tParticipations[i])
++   // vPresences[i]++;
++   vPresences[i]+=(tParticipations[i]!=0);
+  }
+ 
+ #if 0
+@@ -173,20 +179,24 @@
+  //
+  // Compute denominator for each gamma
+  //
+- std::vector<double> vDen(vGamma.size());
+- for (int i = vDen.size(); --i >= 0;)
++ unsigned int o=vGamma.size();
++ std::vector<double> vDen(o);
++ for (unsigned int i = 0; i < o; i++)
+   vDen[i] = 0.0;
+ 
+  //
+  // Main loop over games
+  //
++ std::map<int,double> tMul;
+  for (int i = vgame.size(); --i >= 0;)
+  {
+-  double tMul[vGamma.size()];
+-  {
+-   for (int i = vGamma.size(); --i >= 0;)
+-    tMul[i] = 0.0;
+-  }
++  //double tMul[vGamma.size()];
++  //{
++  // for (int i = vGamma.size(); --i >= 0;)
++  //  tMul[i] = 0.0;
++  //}
++  tMul.clear();
++
+   double Den = 0.0;
+ 
+   std::vector<CTeam> &v = vgame[i].vParticipants;
+@@ -208,21 +218,31 @@
+ 
+    if (FeatureIndex >= 0)
+    {
+-    tMul[FeatureIndex] += Product;
++    //tMul[FeatureIndex] += Product;
++    if (tMul.count(FeatureIndex))
++    	tMul[FeatureIndex] += Product;
++    else
++	tMul[FeatureIndex]=Product;
++    
+     Product *= vGamma[FeatureIndex];
+    }
+ 
+    Den += Product;
+   }
+ 
+-  for (int i = Max; --i >= Min;)
+-   vDen[i] += tMul[i] / Den;
++  //for (int i = Max; --i >= Min;)
++  // vDen[i] += tMul[i] / Den;
++  for (std::map<int,double>::iterator it=tMul.begin();it!=tMul.end();++it)
++  {
++   int key=it->first;
++   vDen[key]+=it->second / Den;
++  }
+  }
+ 
+  //
+  // Update Gammas
+  //
+- for (int i = Max; --i >= Min;)
++ for (int i = Min; i < Max; i++)
+  {
+   double NewGamma = (vVictories[i] + PriorVictories) /
+                     (vDen[i] + PriorGames / (vGamma[i] + PriorOpponentGamma));
+@@ -246,7 +266,7 @@
+   int Gammas = 0;
+   is >> s >> Gammas;
+   gcol.vGamma.resize(Gammas);
+-  for (int i = Gammas; --i >= 0;)
++  for (int i = 0; i < Gammas; i++)
+    gcol.vGamma[i] = 1.0;
+  }
+ 
