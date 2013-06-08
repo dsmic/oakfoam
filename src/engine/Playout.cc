@@ -95,9 +95,12 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
       gtpe->getOutput()->printfDebug(" %s",(*iter).toString(board->getSize()).c_str());
     if (((*iter).getColor()==colfirst?firstlist:secondlist)!=NULL && !(*iter).isPass() && !(*iter).isResign())
     {
-      ((*iter).getColor()==colfirst?firstlist:secondlist)->set((*iter).getPosition());
-      if (((*iter).getColor()==colfirst?earlyfirstlist:earlysecondlist)!=NULL)
-        ((*iter).getColor()==colfirst?earlyfirstlist:earlysecondlist)->set((*iter).getPosition());
+      if (params->test_p2==0 || ((*iter).getColor()!=colfirst?firstlist:secondlist)->get((*iter).getPosition())==false)
+      {
+        ((*iter).getColor()==colfirst?firstlist:secondlist)->set((*iter).getPosition());
+        if (((*iter).getColor()==colfirst?earlyfirstlist:earlysecondlist)!=NULL)
+          ((*iter).getColor()==colfirst?earlyfirstlist:earlysecondlist)->set((*iter).getPosition());
+      }
     }
     if (board->getPassesPlayed()>=2 || (*iter).isResign())
     {
@@ -279,9 +282,12 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
     int p=move.getPosition();
     if ((coltomove==colfirst?firstlist:secondlist)!=NULL && !move.isPass() && !move.isResign())
     {
-      (coltomove==colfirst?firstlist:secondlist)->set(p);
-      if ((coltomove==colfirst?earlyfirstlist:earlysecondlist)!=NULL && params->rave_moves_use>0 && playoutmovescount < (board->getSize()*board->getSize()-treemovescount)*params->rave_moves_use)
-        (coltomove==colfirst?earlyfirstlist:earlysecondlist)->set(p);
+      if (params->test_p2==0 || (coltomove!=colfirst?firstlist:secondlist)->get(p)==false)
+      {
+        (coltomove==colfirst?firstlist:secondlist)->set(p);
+        if ((coltomove==colfirst?earlyfirstlist:earlysecondlist)!=NULL && params->rave_moves_use>0 && playoutmovescount < (board->getSize()*board->getSize()-treemovescount)*params->rave_moves_use)
+          (coltomove==colfirst?earlyfirstlist:earlysecondlist)->set(p);
+      }
     }
     resign=move.isResign();
     coltomove=Go::otherColor(coltomove);
