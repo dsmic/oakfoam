@@ -2508,7 +2508,7 @@ am__tar='$${TAR-tar} chof - "$$tardir"' am__untar='$${TAR-tar} xf -'
 
 ac_config_headers="$ac_config_headers config.h"
 
-CXXFLAGS="-Wall -g -O3 -DTOPSRCDIR=\\\"`pwd`\\\" -fno-strict-aliasing"
+CXXFLAGS="-Wall -g -O3 -std=c++0x -DTOPSRCDIR=\\\"`pwd`\\\" -fno-strict-aliasing"
 
 ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'

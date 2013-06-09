@@ -1139,6 +1139,7 @@ bool Tree::expandLeaf(Worker::Settings *settings)
   if (!expandmutex.try_lock())
     return false;
 
+  //this is never executed?
   if (!this->isLeaf())
   {
     //fprintf(stderr,"Node was already expanded!\n");

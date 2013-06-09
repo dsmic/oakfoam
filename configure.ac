@@ -2,7 +2,7 @@ AC_INIT([Oakfoam], [0.1.4-dev], [oakfoam@gmail.com], [oakfoam])
 AM_INIT_AUTOMAKE([-Wall subdir-objects])
 
 AM_CONFIG_HEADER([config.h])
-CXXFLAGS="-Wall -g -O3 -DTOPSRCDIR=\\\"`pwd`\\\" -fno-strict-aliasing"
+CXXFLAGS="-Wall -g -O3 -std=c++0x -DTOPSRCDIR=\\\"`pwd`\\\" -fno-strict-aliasing"
 
 AC_PROG_CXX
 AC_PROG_CXX_C_O
