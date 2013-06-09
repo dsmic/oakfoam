@@ -930,6 +930,11 @@ float Engine::getScoreKomi() const
   return komi+komi_handicap+dynamic_komi; 
 }
 
+float Engine::getHandiKomi() const
+{ 
+  return komi+komi_handicap; 
+}
+
 void Engine::gtpFinalScore(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
@@ -2865,12 +2870,12 @@ void Engine::gtpShowTerritory(void *instance, Gtp::Engine* gtpe, Gtp::Command* c
     gtpe->getOutput()->printf("\n");
   }
 
-  if (territorycount-me->getKomi()>0)
+  if (territorycount-me->getHandiKomi()>0)
     gtpe->getOutput()->printf("Territory %.1f Komi %.1f B+%.1f (with ScoreKomi %.1f) (%.1f)\n",
-      territorycount,me->getKomi(),territorycount-me->getKomi(),territorycount-me->getScoreKomi(),me->getScoreKomi());
+      territorycount,me->getHandiKomi(),territorycount-me->getHandiKomi(),territorycount-me->getScoreKomi(),me->getScoreKomi());
   else
     gtpe->getOutput()->printf("Territory %.1f Komi %.1f W+%.1f (with ScoreKomi %.1f) (%.1f)\n",
-      territorycount,me->getKomi(),-(territorycount-me->getKomi()),-(territorycount-me->getScoreKomi()),me->getScoreKomi());
+      territorycount,me->getHandiKomi(),-(territorycount-me->getHandiKomi()),-(territorycount-me->getScoreKomi()),me->getScoreKomi());
     
   gtpe->getOutput()->endResponse(true);
 }
@@ -4566,7 +4571,7 @@ void Engine::doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::
   }
   if (!params->rules_all_stones_alive && !params->cleanup_in_progress && playoutboard->getPassesPlayed()>=2 && (playoutboard->getMovesMade()-currentboard->getMovesMade())<=2)
   {
-    finalscore=playoutboard->territoryScore(territorymap,params->territory_threshold)-params->engine->getKomi();
+    finalscore=playoutboard->territoryScore(territorymap,params->territory_threshold)-params->engine->getHandiKomi();
   }
   
   bool playoutwin=Go::Board::isWinForColor(playoutcol,finalscore);
@@ -5147,9 +5152,9 @@ void Engine::updateTerritoryScoringInTree()
   {
     float scorenow;
     if (params->cleanup_in_progress)
-      scorenow=currentboard->score()-params->engine->getKomi();
+      scorenow=currentboard->score()-params->engine->getHandiKomi();
     else
-      scorenow=currentboard->territoryScore(territorymap,params->territory_threshold)-params->engine->getKomi();
+      scorenow=currentboard->territoryScore(territorymap,params->territory_threshold)-params->engine->getHandiKomi();
     
     Go::Color col=currentboard->nextToMove();
     Go::Color othercol=Go::otherColor(col);

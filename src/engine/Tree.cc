@@ -1167,7 +1167,7 @@ bool Tree::expandLeaf(Worker::Settings *settings)
   
   Go::Color col=startboard->nextToMove();
   
-  bool winnow=Go::Board::isWinForColor(col,startboard->score()-params->engine->getKomi());
+  bool winnow=Go::Board::isWinForColor(col,startboard->score()-params->engine->getHandiKomi());
   Tree *nmt=new Tree(params,startboard->getZobristHash(params->engine->getZobristTable()),Go::Move(col,Go::Move::PASS));
   if (winnow)
     nmt->addPriorWins(1);

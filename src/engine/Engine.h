@@ -295,6 +295,7 @@ class Engine
     /** Get the current komi. */
     float getKomi() const { return komi; };
     float getScoreKomi() const;
+    float getHandiKomi() const;
     /** Set the current komi. */
     void setKomi(float k);
     void setHandicapKomi(float k) {komi_handicap=k;};
