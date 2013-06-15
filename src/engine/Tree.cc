@@ -527,6 +527,10 @@ float Tree::getUrgency(bool skiprave) const
 
   if (params->uct_progressive_bias_enabled)
     val+=this->getProgressiveBias();
+
+  //risc penalty
+  if (params->test_p3>0)
+    val-=params->test_p3*this->getScoreSD()/params->board_size/params->board_size;
   
   if (params->uct_criticality_urgency_factor>0 && (params->uct_criticality_siblings?parent->playouts:playouts)>(params->uct_criticality_min_playouts))
   {

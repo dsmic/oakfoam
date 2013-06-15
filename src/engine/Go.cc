@@ -2121,6 +2121,217 @@ int Go::Board::getFiveEmptyGroupCenterFrom(int pos) const
     return -1;
 }
 
+bool Go::Board::isThreeEmptyGroupCenterFrom(int pos) const
+{
+  if (this->getColor(pos)!=Go::EMPTY)
+    return false;
+  
+  int empnei=this->touchingEmpty(pos);
+  Go::Color col=Go::EMPTY;
+  
+  if (empnei==2) // possibly at center
+  {
+    int empty,black,white,offboard;
+    foreach_adjacent(pos,p,{
+      if (this->getColor(p)==Go::EMPTY)
+      {
+        if (this->touchingEmpty(p)!=1)
+          return false;
+        else
+        {
+          this->countAdjacentColors(p,empty,black,white,offboard);
+          if (col==Go::EMPTY)
+          {
+            if (black>0 && white>0)
+              return false;
+            else if (black>0)
+              col=Go::BLACK;
+            else if (white>0)
+              col=Go::WHITE;
+          }
+          else if (col==Go::BLACK && white>0)
+            return false;
+          else if (col==Go::WHITE && black>0)
+            return false;
+        }
+      }
+      else if (this->getColor(p)!=Go::OFFBOARD)
+      {
+        Go::Color col2=this->getColor(p);
+        if (col==Go::EMPTY)
+            col=col2;
+        else if (col!=col2)
+          return false;
+      }
+    });
+    return true;
+  }
+  return false;
+}
+
+bool Go::Board::isBent4EmptyGroupCenterFrom(int pos) const
+{
+  //fprintf(stderr,"test bent4 %s\n",Go::Position::pos2string(pos,size).c_str());
+  if (this->getColor(pos)!=Go::EMPTY || this->getPseudoDistanceToBorder(pos)>2)
+    return false;
+  
+  int empnei=this->touchingEmpty(pos);
+  Go::Color col=Go::EMPTY;
+  
+  if (empnei==2 && this->getPseudoDistanceToBorder(pos)==1) // possibly at center
+  {
+    int empty,black,white,offboard;
+    foreach_adjacent(pos,p,{
+      if (this->getColor(p)==Go::EMPTY)
+      {
+        if (this->touchingEmpty(p)>2)
+          return false;
+        else
+        {
+          this->countAdjacentColors(p,empty,black,white,offboard);
+          if (col==Go::EMPTY)
+          {
+            if (black>0 && white>0)
+              return false;
+            else if (black>0)
+              col=Go::BLACK;
+            else if (white>0)
+              col=Go::WHITE;
+          }
+          else if (col==Go::BLACK && white>0)
+            return false;
+          else if (col==Go::WHITE && black>0)
+            return false;
+        }
+      }
+      else if (this->getColor(p)!=Go::OFFBOARD)
+      {
+        Go::Color col2=this->getColor(p);
+        if (col==Go::EMPTY)
+            col=col2;
+        else if (col!=col2)
+          return false;
+      }
+    });
+    return true;
+  }
+  return false;
+}
+
+bool Go::Board::isFourEmptyGroupCenterFrom(int pos) const
+{
+  // this handles the play of the 
+  // XXX
+  //  X
+  //form,
+
+  // the bent 4 is not ready yet!
+  
+  if (this->getColor(pos)!=Go::EMPTY)
+    return false;
+  
+  int empnei=this->touchingEmpty(pos);
+  Go::Color col=Go::EMPTY;
+  
+  if (empnei==3) // possibly at center
+  {
+    int empty,black,white,offboard;
+    foreach_adjacent(pos,p,{
+      if (this->getColor(p)==Go::EMPTY)
+      {
+        if (this->touchingEmpty(p)!=1)
+          return false;
+        else
+        {
+          this->countAdjacentColors(p,empty,black,white,offboard);
+          if (col==Go::EMPTY)
+          {
+            if (black>0 && white>0)
+              return false;
+            else if (black>0)
+              col=Go::BLACK;
+            else if (white>0)
+              col=Go::WHITE;
+          }
+          else if (col==Go::BLACK && white>0)
+            return false;
+          else if (col==Go::WHITE && black>0)
+            return false;
+        }
+      }
+      else if (this->getColor(p)!=Go::OFFBOARD)
+      {
+        Go::Color col2=this->getColor(p);
+        if (col==Go::EMPTY)
+            col=col2;
+        else if (col!=col2)
+          return false;
+      }
+    });
+    //fprintf(stderr,"returned by bent4 %s\n",Go::Position::pos2string(pos,9).c_str());
+    return true;
+  }
+  return false;
+}
+
+
+bool Go::Board::isFiveEmptyGroupCenterFrom(int pos) const
+{
+  //fprintf(stderr,"test 5 %s\n",Go::Position::pos2string(pos,size).c_str());
+  if (this->getColor(pos)!=Go::EMPTY)
+    return false;
+  
+  int empnei=this->touchingEmpty(pos);
+  Go::Color col=Go::EMPTY;
+  
+  if (empnei==3) // possibly at center
+  {
+    if (this->diagonalEmpty(pos)!=1)
+      return false; //not exacly 5 empties
+    int empty,black,white,offboard;
+    this->countAdjacentColors(pos,empty,black,white,offboard);
+    if (black>0 && white>0)
+      return false;
+    else if (black>0)
+      col=Go::BLACK;
+    else if (white>0)
+      col=Go::WHITE;
+    int tmpempty,tmpblack,tmpwhite,tmpoffboard;
+    foreach_adjdiag(pos,p,{
+      if (this->getColor(p)==Go::EMPTY)
+      {
+        this->countAdjacentColors(p,tmpempty,tmpblack,tmpwhite,tmpoffboard);
+        if (col==Go::EMPTY)
+        {
+          if (tmpblack>0 && tmpwhite>0)
+            return false;
+          else if (tmpblack>0)
+            col=Go::BLACK;
+          else if (tmpwhite>0)
+            col=Go::WHITE;
+        }
+        else if (col==Go::BLACK && tmpwhite>0)
+          return false;
+        else if (col==Go::WHITE && tmpblack>0)
+          return false;
+        black+=tmpblack;
+        white+=tmpwhite;
+        offboard+=tmpoffboard;
+      }
+    });
+    if (black>0 && white>0)
+      fprintf(stderr,"should not happen!\n");
+    int numattached=black+white+offboard;
+    // XXX
+    // XX   Form has exactly 10 pseudo touches other forms not (hopefully:)
+    if (numattached==10)
+      return true;
+    else
+      return false;
+  }
+  return false;
+}
+
 void Go::Board::countAdjacentColors(int pos, int &empty, int &black, int &white, int &offboard) const
 {
   empty=0;
@@ -2354,6 +2565,56 @@ float Go::TerritoryMap::getPositionOwner(int pos) const
       return 0;
   }
 }
+
+
+Go::MoveProbabilityMap::MoveProbabilityMap(int sz)
+  : size(sz),
+    sizedata(1+(sz+1)*(sz+2))
+{
+  move_num=new ObjectBoard<long>(sz);
+  count=new ObjectBoard<long>(sz);
+  played=new ObjectBoard<int>(sz);
+  move_num->fill(0);
+  count->fill(0);
+  played->fill(0);
+}
+
+Go::MoveProbabilityMap::~MoveProbabilityMap()
+{
+  delete move_num;
+  delete count;
+  delete played;
+}
+
+
+void Go::MoveProbabilityMap::setMoveAs(int pos, int move_number)
+{
+  if (pos<0) return;
+  move_num->set(pos,move_num->get(pos)+move_number);      
+  count->set(pos,count->get(pos)+1);
+//  fprintf(stderr,"pos %d move_num %f count %f\n",pos,move_num->get(pos),count->get(pos));
+}
+
+
+float Go::MoveProbabilityMap::getMoveAs(int pos) const
+{
+  float n=move_num->get(pos);
+  float c=count->get(pos);
+  if (c>0)
+    return (float)n/c;
+  else
+    return 0;
+}
+
+void Go::MoveProbabilityMap::decay(float factor)
+{
+  for (int p=0;p<sizedata;p++)
+  {
+    move_num->set(p,move_num->get(p)*factor);
+    count->set(p,move_num->get(p)*factor);
+  }
+}
+
 
 void Go::Board::updateTerritoryMap(Go::TerritoryMap *tmap) const
 {

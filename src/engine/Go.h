@@ -401,6 +401,31 @@ namespace Go
       float boards;
       ObjectBoard<float> *blackowns,*whiteowns;
   };
+
+  //this class tries to find the mean value of moves, till pos is played in the playouts
+  //if small, the pos is played with a high probability.
+  class MoveProbabilityMap
+  {
+    public:
+      /** Create an instance of given board size. */
+      MoveProbabilityMap(int sz);
+      ~MoveProbabilityMap();
+
+      
+      /** Add an owner for a specific position. */
+      void setMoveAs(int pos, int move_number);
+      void setMoveAsFirst(int pos, int move_number) {if (played->get(pos)==0) {played->set(pos,1); setMoveAs(pos,move_number);}}
+      /** Get the owner for a specific position. */
+      float getMoveAs(int pos) const;
+      /** Decay the statistics. */
+      void decay(float factor);
+      void resetplayed() {played->fill(0);}
+      
+    private:
+      const int size, sizedata;
+      ObjectBoard<long> *move_num,*count;
+      ObjectBoard<int> *played;
+  };
   
   class Group;
   
@@ -603,6 +628,7 @@ namespace Go
       
       /** Get the number of legal moves currently available. */
       int numOfValidMoves(Go::Color col) const { return (col==Go::BLACK?blackvalidmovecount:whitevalidmovecount); };
+      int numOfValidMoves() const {return (blackvalidmovecount+whitevalidmovecount)/2;}
       /** Get a board showing which moves are legal. */
       Go::BitBoard *getValidMoves(Go::Color col) const { return (col==Go::BLACK?blackvalidmoves:whitevalidmoves); };
       
@@ -690,6 +716,11 @@ namespace Go
       int getBent4EmptyGroupCenterFrom(int pos,bool onlycheck=false) const;
       int getFourEmptyGroupCenterFrom(int pos) const;
       int getFiveEmptyGroupCenterFrom(int pos) const;
+
+      bool isThreeEmptyGroupCenterFrom(int pos) const;
+      bool isBent4EmptyGroupCenterFrom(int pos) const;
+      bool isFourEmptyGroupCenterFrom(int pos) const;
+      bool isFiveEmptyGroupCenterFrom(int pos) const;
       
       /** Compute the Zobrist hash for this board. */
       Go::ZobristHash getZobristHash(Go::ZobristTable *table) const;

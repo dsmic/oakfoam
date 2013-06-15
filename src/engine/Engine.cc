@@ -311,6 +311,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   hashtree=new Go::ZobristTree();
   
   territorymap=new Go::TerritoryMap(boardsize);
+  probabilitymap=new Go::MoveProbabilityMap(boardsize);
   correlationmap=new Go::ObjectBoard<Go::CorrelationData>(boardsize);
   
   blackOldMoves=new float[currentboard->getPositionMax()];
@@ -389,6 +390,7 @@ Engine::~Engine()
   delete zobristtable;
   delete playout;
   delete territorymap;
+  delete probabilitymap;
   delete correlationmap;
   delete blackOldMoves;
   delete whiteOldMoves;
@@ -606,6 +608,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("dobenchmark",this,&Engine::gtpDoBenchmark);
   gtpe->addFunctionCommand("showcriticality",this,&Engine::gtpShowCriticality);
   gtpe->addFunctionCommand("showterritory",this,&Engine::gtpShowTerritory);
+  gtpe->addFunctionCommand("showmoveprobability",this,&Engine::gtpShowMoveProbability);
   gtpe->addFunctionCommand("showcorrelationmap",this,&Engine::gtpShowCorrelationMap);
   gtpe->addFunctionCommand("showratios",this,&Engine::gtpShowRatios);
   gtpe->addFunctionCommand("showunprune",this,&Engine::gtpShowUnPrune);
@@ -652,6 +655,7 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("loadfeaturegammas %%r","Load Feature Gammas","none");
   gtpe->addAnalyzeCommand("showcriticality","Show Criticality","cboard");
   gtpe->addAnalyzeCommand("showterritory","Show Territory","dboard");
+  gtpe->addAnalyzeCommand("showmoveprobability","Show Move Probability","dboard");
   gtpe->addAnalyzeCommand("showcorrelationmap","Show Correlation","dboard");
   gtpe->addAnalyzeCommand("showtreelivegfx","Show Tree Live Gfx","gfx");
   gtpe->addAnalyzeCommand("loadpatterns %%r","Load Patterns","none");
@@ -807,6 +811,7 @@ void Engine::gtpGenMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   }
   
   Go::Move *move;
+  me->probabilitymap->decay(0);
   me->generateMove((gtpcol==Gtp::BLACK ? Go::BLACK : Go::WHITE),&move,true);
   Gtp::Vertex vert={move->getX(me->boardsize),move->getY(me->boardsize)};
   delete move;
@@ -2880,6 +2885,26 @@ void Engine::gtpShowTerritory(void *instance, Gtp::Engine* gtpe, Gtp::Command* c
   gtpe->getOutput()->endResponse(true);
 }
 
+void Engine::gtpShowMoveProbability(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("\n");
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      int pos=Go::Position::xy2pos(x,y,me->boardsize);
+      float tmp=me->probabilitymap->getMoveAs(pos)/me->currentboard->numOfValidMoves();
+      gtpe->getOutput()->printf("%.2f ",tmp);  
+    }
+    gtpe->getOutput()->printf("\n");
+  }
+
+  gtpe->getOutput()->endResponse(true);
+}
+
 void Engine::gtpShowCorrelationMap(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
@@ -4257,6 +4282,7 @@ void Engine::clearBoard()
   delete moveexplanations;
   delete hashtree;
   delete territorymap;
+  delete probabilitymap;
   delete correlationmap;
   delete blackOldMoves;
   delete whiteOldMoves;
@@ -4268,6 +4294,7 @@ void Engine::clearBoard()
   moveexplanations = new std::list<std::string>();
   hashtree=new Go::ZobristTree();
   territorymap=new Go::TerritoryMap(boardsize);
+  probabilitymap=new Go::MoveProbabilityMap (boardsize);
   correlationmap=new Go::ObjectBoard<Go::CorrelationData>(boardsize);
   blackOldMoves=new float[currentboard->getPositionMax()];
   whiteOldMoves=new float[currentboard->getPositionMax()];

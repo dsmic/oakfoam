@@ -71,6 +71,10 @@ const std::string FEATURES_DEFAULT=
   "cfgsecondlastdist:8 1.35704 \n"
   "cfgsecondlastdist:9 1.25574 \n"
   "cfgsecondlastdist:10 1.08943 \n"
+  "naked:1 1.0 \n" //no change of behaviour for now
+  "naked:2 1.0 \n"
+  "naked:3 1.0 \n"
+  "naked:4 1.0 \n"
   "pattern3x3:0x0000 0.3169 \n"
   "pattern3x3:0x0001 0.178076 \n"
   "pattern3x3:0x0002 0.265096 \n"
@@ -667,6 +671,8 @@ Features::Features(Parameters *prms) : params(prms)
     gammas_cfglastdist[i]=1.0;
   for (int i=0;i<CFGSECONDLASTDIST_LEVELS;i++)
     gammas_cfgsecondlastdist[i]=1.0;
+  for (int i=0;i<NAKED_LEVELS;i++)
+    gammas_naked[i]=1.0;
 
   circdict=new Pattern::CircularDictionary();
 #ifdef with_unordered
@@ -949,6 +955,18 @@ unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::B
         return dist;
       else
         return 0;
+    }
+    case Features::NAKED:
+    {
+      //only naked places freshly created are taken into account
+      int dist=board->getCircularDistance(move.getPosition(),board->getLastMove().getPosition());
+      if (dist>4) return 0;
+      if (board->isFiveEmptyGroupCenterFrom(move.getPosition())) return 3;
+      if (dist>2) return 0;
+      if (board->isThreeEmptyGroupCenterFrom(move.getPosition())) return 1;
+      if (board->isFourEmptyGroupCenterFrom(move.getPosition())) return 2;
+      if (board->isBent4EmptyGroupCenterFrom(move.getPosition())) return 4;
+      return 0;
     }
     case Features::PATTERN3X3:
     {
@@ -1592,6 +1610,8 @@ std::string Features::getFeatureClassName(Features::FeatureClass featclass) cons
       return "cfglastdist";
     case Features::CFGSECONDLASTDIST:
       return "cfgsecondlastdist";
+    case Features::NAKED:
+      return "naked";
     case Features::PATTERN3X3:
       return "pattern3x3";
     case Features::CIRCPATT:
@@ -1671,6 +1691,7 @@ bool Features::saveGammaFile(std::string filename)
   for (i=0;i<SECONDLASTDIST_LEVELS;i++) fout<<"secondlastdist:"<<i+1<<" "<<gammas_secondlastdist[i]<<" \n";
   for (i=0;i<CFGLASTDIST_LEVELS;i++) fout<<"cfglastdist:"<<i+1<<" "<<gammas_cfglastdist[i]<<" \n";
   for (i=0;i<CFGSECONDLASTDIST_LEVELS;i++) fout<<"cfgsecondlastdist:"<<i+1<<" "<<gammas_cfgsecondlastdist[i]<<" \n";
+  for (i=0;i<NAKED_LEVELS;i++) fout<<"naked:"<<i+1<<" "<<gammas_naked[i]<<" \n";
     
   for (i=0;i<PATTERN_3x3_GAMMAS;i++) if (patterngammas->getGamma (i)>0) {fout<<"pattern3x3:0x"<<std::hex<<std::setw(4)<<std::setfill('0')<<i<<" "<<patterngammas->getGamma (i)<<" \n";};
   std::map<unsigned int,std::string>::iterator it;
@@ -1997,6 +2018,8 @@ float *Features::getStandardGamma(Features::FeatureClass featclass) const
       return (float *)gammas_cfglastdist;
     case Features::CFGSECONDLASTDIST:
       return (float *)gammas_cfgsecondlastdist;
+    case Features::NAKED:
+      return (float *)gammas_naked;
     default:
       return NULL;
   }
@@ -2135,6 +2158,16 @@ std::string Features::getMatchingFeaturesString(Go::Board *board, Go::ObjectBoar
   }
   base+=CFGSECONDLASTDIST_LEVELS;
   
+  level=this->matchFeatureClass(Features::NAKED,board,cfglastdist,cfgsecondlastdist,move);
+  if (level>0)
+  {
+    if (pretty)
+      ss<<" naked:"<<level;
+    else
+      ss<<" "<<(base+level-1);
+  }
+  base+=NAKED_LEVELS;
+  
   level=this->matchFeatureClass(Features::PATTERN3X3,board,cfglastdist,cfgsecondlastdist,move);
   if (patterngammas->hasGamma(level) && !move.isPass() && !move.isResign())
   {
@@ -2209,6 +2242,9 @@ std::string Features::getFeatureIdList() const
   
   for (unsigned int level=1;level<=CFGSECONDLASTDIST_LEVELS;level++)
     ss<<(id++)<<" cfgsecondlastdist:"<<level<<"\n";
+  
+  for (unsigned int level=1;level<=NAKED_LEVELS;level++)
+    ss<<(id++)<<" naked:"<<level<<"\n";
   
   for (unsigned int level=0;level<PATTERN_3x3_GAMMAS;level++)
   {

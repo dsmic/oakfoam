@@ -246,6 +246,7 @@ class Engine
       ANYCAPTURE,
       CIRCPATTERN_QUICK,
       FILL_BOARD,
+      RANDOM_REWEIGHTED_QUICK,
       RANDOM_QUICK,
       RANDOM,
       FILL_WEAK_EYE,
@@ -339,6 +340,9 @@ class Engine
     long statisticsSum() {int i; long sum=0; for (i=0;i<STATISTICS_NUM;i++) sum+=statistics[i]; return sum;}
     long getStatistics(int i) {return statistics[i]*1000/(statisticsSum()+1);} //+1 avoid crash
     Go::TerritoryMap *getTerritoryMap() const {return territorymap;}
+    void ProbabilityMoveAs(int pos, int move_number) {if (pos>=0) probabilitymap->setMoveAsFirst(pos,move_number);}
+    void ProbabilityClean() {probabilitymap->resetplayed();}
+    float getProbabilityMoveAt(int pos) {if (pos>=0) return probabilitymap->getMoveAs (pos); else return boardsize*boardsize;}
     float getCorrelation(int pos) const {return (correlationmap->get(pos)).getCorrelation();}
     float getOldMoveValue(Go::Move m);
     void getOnePlayoutMove(Go::Board *board, Go::Color col, Go::Move *move);
@@ -366,6 +370,7 @@ class Engine
     volatile bool stoppondering;
     Worker::Pool *threadpool;
     Go::TerritoryMap *territorymap;
+    Go::MoveProbabilityMap *probabilitymap;
     Go::ObjectBoard<Go::CorrelationData> *correlationmap;
     
     long statistics[STATISTICS_NUM];
@@ -588,6 +593,7 @@ class Engine
     static void gtpDoBenchmark(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowCriticality(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowTerritory(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpShowMoveProbability(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowCorrelationMap(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowRatios(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowUnPrune(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
