@@ -279,6 +279,7 @@ class Parameters
      * Set to zero to disable.
      */
     float rave_moves_use;
+    bool rave_only_first_move;
     
     /** After this many playouts through a node, it will be expanded. */
     int uct_expand_after;

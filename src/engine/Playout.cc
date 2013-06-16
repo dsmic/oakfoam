@@ -282,7 +282,7 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
     int p=move.getPosition();
     if ((coltomove==colfirst?firstlist:secondlist)!=NULL && !move.isPass() && !move.isResign())
     {
-      if (params->test_p2==0 || (coltomove!=colfirst?firstlist:secondlist)->get(p)==false)
+      if (params->rave_only_first_move==0 || (coltomove!=colfirst?firstlist:secondlist)->get(p)==false)
       {
         (coltomove==colfirst?firstlist:secondlist)->set(p);
         if ((coltomove==colfirst?earlyfirstlist:earlysecondlist)!=NULL && params->rave_moves_use>0 && playoutmovescount < (board->getSize()*board->getSize()-treemovescount)*params->rave_moves_use)

@@ -18,6 +18,7 @@
 #define UCT_PRESET_RAVE_F 0.0
 #define RAVE_SKIP 0.00
 #define RAVE_MOVES_USE 0.00
+#define RAVE_ONLY_FIRST_MOVE false
 #define UCT_EXPAND_AFTER 10
 #define UCT_KEEP_SUBTREE true
 #define UCT_SYMMETRY_USE true
