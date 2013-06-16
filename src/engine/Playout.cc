@@ -95,7 +95,7 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
       gtpe->getOutput()->printfDebug(" %s",(*iter).toString(board->getSize()).c_str());
     if (((*iter).getColor()==colfirst?firstlist:secondlist)!=NULL && !(*iter).isPass() && !(*iter).isResign())
     {
-      if (params->test_p2==0 || ((*iter).getColor()!=colfirst?firstlist:secondlist)->get((*iter).getPosition())==false)
+      if (params->rave_only_first_move==0 || ((*iter).getColor()!=colfirst?firstlist:secondlist)->get((*iter).getPosition())==false)
       {
         ((*iter).getColor()==colfirst?firstlist:secondlist)->set((*iter).getPosition());
         if (((*iter).getColor()==colfirst?earlyfirstlist:earlysecondlist)!=NULL)
