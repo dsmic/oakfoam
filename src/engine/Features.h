@@ -11,7 +11,7 @@
 #define SECONDLASTDIST_LEVELS 10
 #define CFGLASTDIST_LEVELS 10
 #define CFGSECONDLASTDIST_LEVELS 10
-#define NAKED_LEVELS 4
+#define NAKED_LEVELS 8
 
 #include <string>
 #include <set>

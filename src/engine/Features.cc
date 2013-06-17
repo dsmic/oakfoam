@@ -75,6 +75,10 @@ const std::string FEATURES_DEFAULT=
   "naked:2 1.0 \n"
   "naked:3 1.0 \n"
   "naked:4 1.0 \n"
+  "naked:5 1.0 \n"
+  "naked:6 1.0 \n"
+  "naked:7 1.0 \n"
+  "naked:8 1.0 \n"
   "pattern3x3:0x0000 0.3169 \n"
   "pattern3x3:0x0001 0.178076 \n"
   "pattern3x3:0x0002 0.265096 \n"
@@ -959,13 +963,21 @@ unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::B
     case Features::NAKED:
     {
       //only naked places freshly created are taken into account
-      int dist=board->getCircularDistance(move.getPosition(),board->getLastMove().getPosition());
-      if (dist>4) return 0;
-      if (board->isFiveEmptyGroupCenterFrom(move.getPosition())) return 3;
-      if (dist>2) return 0;
-      if (board->isThreeEmptyGroupCenterFrom(move.getPosition())) return 1;
-      if (board->isFourEmptyGroupCenterFrom(move.getPosition())) return 2;
-      if (board->isBent4EmptyGroupCenterFrom(move.getPosition())) return 4;
+      int dist=board->getRectDistance(move.getPosition(),board->getLastMove().getPosition());
+      if (dist<=4) 
+      {
+        if (board->isFiveEmptyGroupCenterFrom(move.getPosition())) return 3;
+        if (dist<=2) 
+        {
+        if (board->isThreeEmptyGroupCenterFrom(move.getPosition())) return 1;
+        if (board->isFourEmptyGroupCenterFrom(move.getPosition())) return 2;
+        if (board->isBent4EmptyGroupCenterFrom(move.getPosition())) return 4;
+        }
+      }
+      if (board->isThreeEmptyGroupCenterFrom(move.getPosition())) return 5;
+      if (board->isFourEmptyGroupCenterFrom(move.getPosition())) return 6;
+      if (board->isFiveEmptyGroupCenterFrom(move.getPosition())) return 7;
+      if (board->isBent4EmptyGroupCenterFrom(move.getPosition())) return 8;
       return 0;
     }
     case Features::PATTERN3X3:
