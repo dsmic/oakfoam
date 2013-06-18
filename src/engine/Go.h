@@ -718,6 +718,7 @@ namespace Go
       int getFiveEmptyGroupCenterFrom(int pos) const;
 
       bool isThreeEmptyGroupCenterFrom(int pos) const;
+      int  getSecondBent4Position(int pos) const;
       bool isBent4EmptyGroupCenterFrom(int pos) const;
       bool isFourEmptyGroupCenterFrom(int pos) const;
       bool isFiveEmptyGroupCenterFrom(int pos) const;

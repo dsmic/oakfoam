@@ -1924,9 +1924,17 @@ int Go::Board::getBent4EmptyGroupCenterFrom(int pos,bool onlycheck) const
   if (empnei==2 && this->getPseudoDistanceToBorder(pos)==1) // possibly at center
   {
     int empty,black,white,offboard;
+    int sum_touching_empties=0;
+    int op=getSecondBent4Position(pos);
+    if (this->touchingEmpty (op)!=1) return false;
     foreach_adjacent(pos,p,{
       if (this->getColor(p)==Go::EMPTY)
       {
+        if (this->getPseudoDistanceToBorder(p)==0 && this->touchingEmpty (p)!=2)
+          return false;
+        sum_touching_empties+=touchingEmpty(p);
+        if (sum_touching_empties>3)
+          return false;
         if (this->touchingEmpty(p)>2)
           return -1;
         else
@@ -2169,6 +2177,31 @@ bool Go::Board::isThreeEmptyGroupCenterFrom(int pos) const
   return false;
 }
 
+int Go::Board::getSecondBent4Position (int pos) const
+{
+  int x=Go::Position::pos2x(pos,size);
+  int y=Go::Position::pos2y(pos,size);
+  fprintf(stderr,"bent4 before %d %d\n",x,y);
+  if (x==1)
+    x=0;
+  else if (x==0)
+    x=1;
+  if (y==1)
+    y=0;
+  else if (y==0)
+    y=1;
+  if (x==size-1)
+    x=size-2;
+  else if (x==size-2)
+    x=size-1;
+  if (y==size-1)
+    y=size-2;
+  else if (y==size-2)
+    y=size-1;
+  fprintf(stderr,"bent4 after %d %d\n",x,y);
+  return Go::Position::xy2pos(x,y,size);
+}
+
 bool Go::Board::isBent4EmptyGroupCenterFrom(int pos) const
 {
   //fprintf(stderr,"test bent4 %s\n",Go::Position::pos2string(pos,size).c_str());
@@ -2181,9 +2214,17 @@ bool Go::Board::isBent4EmptyGroupCenterFrom(int pos) const
   if (empnei==2 && this->getPseudoDistanceToBorder(pos)==1) // possibly at center
   {
     int empty,black,white,offboard;
+    int sum_touching_empties=0;
+    int op=getSecondBent4Position(pos);
+    if (this->touchingEmpty (op)!=1) return false;
     foreach_adjacent(pos,p,{
       if (this->getColor(p)==Go::EMPTY)
       {
+        if (this->getPseudoDistanceToBorder(p)==0 && this->touchingEmpty (p)!=2)
+          return false;
+        sum_touching_empties+=touchingEmpty(p);
+        if (sum_touching_empties>3)
+          return false;
         if (this->touchingEmpty(p)>2)
           return false;
         else
