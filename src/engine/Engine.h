@@ -539,7 +539,8 @@ class Engine
     static void gtpListAllPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpLoadFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpSaveFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpSaveFeatureGammasInline(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpSaveFeatureCircularBinary(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpLoadFeatureCircularBinary(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpLoadCircPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpLoadCircPatternsNot(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpSaveCircPatternValues(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);

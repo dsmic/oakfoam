@@ -454,6 +454,11 @@ Pattern::CircularDictionary::CircularDictionary()
   }
 }
 
+Pattern::Circular::Circular(Pattern::CircularDictionary *dict , int sz): size(sz>PATTERN_CIRC_MAXSIZE?PATTERN_CIRC_MAXSIZE:sz) 
+{
+  ldict=dict;
+}
+
 Pattern::Circular::Circular(Pattern::CircularDictionary *dict, const Go::Board *board, int pos, int sz) : size(sz>PATTERN_CIRC_MAXSIZE?PATTERN_CIRC_MAXSIZE:sz)
 {
   ldict=dict;
@@ -793,5 +798,18 @@ void Pattern::Circular::convertToSmallestEquivalent(Pattern::CircularDictionary 
     //  fprintf(stderr,"missed: %s\n",alternative.toString(dict).c_str());
     alternative.rotateRight(dict);
   }
+}
+
+void Pattern::Circular::writeTo(std::ofstream &fout) const
+{
+  fout.write((char*)&size,sizeof(size)); 
+  fout.write((char*)&hash,sizeof(hash[0])*PATTERN_CIRC_32BITPARTS);
+}
+
+void Pattern::Circular::readFrom(std::ifstream &fin) const
+{
+  //must be set during init of the pattern!!
+  //fin.read((char*)&size,sizeof(size)); 
+  fin.read((char*)&hash,sizeof(hash[0])*PATTERN_CIRC_32BITPARTS);
 }
 

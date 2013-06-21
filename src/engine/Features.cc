@@ -1655,6 +1655,8 @@ Features::FeatureClass Features::getFeatureClassFromName(std::string name) const
     return Features::CFGLASTDIST;
   else if (name=="cfgsecondlastdist")
     return Features::CFGSECONDLASTDIST;
+  else if (name=="naked")
+    return Features::NAKED;
   else if (name=="pattern3x3")
     return Features::PATTERN3X3;
   else if (name=="circpatt")
@@ -1714,6 +1716,63 @@ bool Features::saveGammaFile(std::string filename)
   }
   fout.close();
   
+  return true;
+}
+
+bool Features::saveCircularBinary(std::string filename)
+{
+  if (circlevels==NULL)
+    return false;
+  std::ofstream fout(filename.c_str(), std::ios::out | std::ios::binary);
+  int num_circ_patterns=circlevels->size();
+  fout.write((char*)&num_circ_patterns,sizeof(num_circ_patterns));
+#ifdef with_unordered
+  std::unordered_map<Pattern::Circular,unsigned int,circHash>::iterator it;
+#else
+  std::map<Pattern::Circular,unsigned int>::iterator it;
+#endif
+  for (it=circlevels->begin();it!=circlevels->end();it++)
+  {
+    (it->first).writeTo(fout);
+    int level_tmp=(*circlevels)[it->first];
+    float gamma_tmp=(*circgammas)[level_tmp];
+    fout.write((char*)&gamma_tmp,sizeof(gamma_tmp));
+  }
+  fout.close();
+  return true;
+}
+
+bool Features::loadCircularBinary(std::string filename)
+{
+  if (circlevels!=NULL)
+    delete circlevels;
+#ifdef with_unordered
+  circlevels = new std::unordered_map<Pattern::Circular,unsigned int,circHash>();
+#else
+  circlevels = new std::map<Pattern::Circular,unsigned int>();
+#endif
+    
+  std::ifstream fin(filename.c_str(), std::ios::in | std::ios::binary);
+  int num_circ_patterns;
+  fin.read((char*)&num_circ_patterns,sizeof(num_circ_patterns));
+  circstrings->resize(num_circ_patterns+1);
+  circgammas->resize(num_circ_patterns+1);
+  for (int i=0;i<num_circ_patterns;i++)
+  {
+    int sz;
+    int level=i+1;
+    fin.read((char*)&sz,sizeof(sz));
+    Pattern::Circular pc=Pattern::Circular(circdict,sz);
+    pc.readFrom(fin);
+    float gamma_tmp;
+    fin.read((char*)&gamma_tmp,sizeof(gamma_tmp));
+    
+    (*circlevels)[pc] = level;
+    (*circgammas)[level]=gamma_tmp;
+    (*circstrings)[level]=pc.toString (circdict);
+    //fprintf(stderr,"circular %s %f\n",(*circstrings)[level].c_str(),(*circgammas)[level]);
+  }
+  fin.close();
   return true;
 }
 

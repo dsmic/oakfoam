@@ -34,6 +34,7 @@
 #include <list>
 #include <boost/cstdint.hpp>
 #include "Go.h"
+#include <fstream>
 
 /** Patterns.
  * Matching and manipulation of patterns.
@@ -274,6 +275,7 @@ namespace Pattern
   {
     public:
       /** Create a pattern from a given board position. */
+      Circular(Pattern::CircularDictionary *dict, int sz); //for binary read
       Circular(Pattern::CircularDictionary *dict, const Go::Board *board, int pos, int sz);
       Circular(Pattern::CircularDictionary *dict, std::string fromString);
       Circular(boost::uint32_t hash_tmp[PATTERN_CIRC_32BITPARTS],int size_tmp):size(size_tmp) {
@@ -319,7 +321,8 @@ namespace Pattern
        */
       void convertToSmallestEquivalent(Pattern::CircularDictionary *dict);
       std::size_t hashf() const {size_t t=0; for (int i=0;i<PATTERN_CIRC_32BITPARTS;i++) {t+=(2*i+1)*hash[i];}; return t+size*PATTERN_CIRC_32BITPARTS;};
-      
+      void writeTo(std::ofstream &fout) const;
+      void readFrom(std::ifstream &fin) const;
     private:
       Circular(int sz=0) : size(sz) {};
       

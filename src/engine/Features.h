@@ -155,6 +155,8 @@ class Features
     /** Load a file of gamma values. */
     bool loadGammaFile(std::string filename);
     bool saveGammaFile(std::string filename);
+    bool saveCircularBinary(std::string filename);
+    bool loadCircularBinary(std::string filename);
     bool saveGammaFileInline(std::string filename);
     bool loadCircFile(std::string filename,int numlines);
     bool loadCircFileNot(std::string filename,int numlines);

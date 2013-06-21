@@ -277,7 +277,8 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
     board->makeMove(move);
     playoutmoves.push_back(move);
     playoutmovescount++;
-    params->engine->ProbabilityMoveAs(move.getPosition(),playoutmovescount);
+    if (params->test_p4>0)
+      params->engine->ProbabilityMoveAs(move.getPosition(),playoutmovescount);
     if (move.isPass())
       (coltomove==Go::BLACK)? bpasses++ : wpasses++;
     if (movereasons!=NULL)
@@ -1052,37 +1053,38 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
   }
 
   //reweight random moves with probability measured
+  if (params->test_p4>0)
   {
-  int p=-1;
-  float prob=0;
-  for (int i=0;i<params->test_p4;i++)
-  {
-    int p_tmp=rand->getRandomInt(board->getPositionMax());
-    float prob_tmp=0;
-    if (board->validMove(Go::Move(col,p_tmp)))
-        prob_tmp=params->engine->getProbabilityMoveAt(p_tmp);
-    if (prob_tmp>prob)
+    int p=-1;
+    float prob=0;
+    for (int i=0;i<params->test_p4;i++)
     {
-      prob=prob_tmp;
-      p=p_tmp;
+      int p_tmp=rand->getRandomInt(board->getPositionMax());
+      float prob_tmp=0;
+      if (board->validMove(Go::Move(col,p_tmp)))
+          prob_tmp=params->engine->getProbabilityMoveAt(p_tmp);
+      if (prob_tmp>prob)
+      {
+        prob=prob_tmp;
+        p=p_tmp;
+      }
     }
-  }
-  if (p>=0)
-    {
-      if (doapproachmoves)
-        this->replaceWithApproachMove(settings,board,col,p);
-      if (board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p,passes))
-        {
-          move=Go::Move(col,p);
-          move.set_useforlgrf (true);
-          if (params->debug_on)
-            gtpe->getOutput()->printfDebug("[playoutmove]: %s random reweighted quick-pick\n",move.toString(board->getSize()).c_str());
-          if (reason!=NULL)
-            *reason="random reweighted quick-pick";
-          params->engine->statisticsPlus(Engine::RANDOM_REWEIGHTED_QUICK);
-          return;
-        }
-    }
+    if (p>=0)
+      {
+        if (doapproachmoves)
+          this->replaceWithApproachMove(settings,board,col,p);
+        if (board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p,passes))
+          {
+            move=Go::Move(col,p);
+            move.set_useforlgrf (true);
+            if (params->debug_on)
+              gtpe->getOutput()->printfDebug("[playoutmove]: %s random reweighted quick-pick\n",move.toString(board->getSize()).c_str());
+            if (reason!=NULL)
+              *reason="random reweighted quick-pick";
+            params->engine->statisticsPlus(Engine::RANDOM_REWEIGHTED_QUICK);
+            return;
+          }
+      }
   }  
   
   for (int i=0;i<10;i++)

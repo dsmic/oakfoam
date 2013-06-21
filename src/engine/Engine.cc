@@ -566,7 +566,8 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("listallpatterns",this,&Engine::gtpListAllPatterns);
   gtpe->addFunctionCommand("loadfeaturegammas",this,&Engine::gtpLoadFeatureGammas);
   gtpe->addFunctionCommand("savefeaturegammas",this,&Engine::gtpSaveFeatureGammas);
-  gtpe->addFunctionCommand("savefeaturegammasinline",this,&Engine::gtpSaveFeatureGammasInline);
+  gtpe->addFunctionCommand("savefeaturecircbinarc",this,&Engine::gtpSaveFeatureCircularBinary);
+  gtpe->addFunctionCommand("loadfeaturecircbinarc",this,&Engine::gtpLoadFeatureCircularBinary);
   gtpe->addFunctionCommand("loadcircpatterns",this,&Engine::gtpLoadCircPatterns);
   gtpe->addFunctionCommand("loadcircpatternsnot",this,&Engine::gtpLoadCircPatternsNot);
   gtpe->addFunctionCommand("savecircpatternvalues",this,&Engine::gtpSaveCircPatternValues);
@@ -1963,7 +1964,7 @@ void Engine::gtpSaveFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Comman
   }
 }
 
-void Engine::gtpSaveFeatureGammasInline(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+void Engine::gtpSaveFeatureCircularBinary(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
   
@@ -1977,18 +1978,48 @@ void Engine::gtpSaveFeatureGammasInline(void *instance, Gtp::Engine* gtpe, Gtp::
   
   std::string filename=cmd->getStringArg(0);
   
-  bool success=me->features->saveGammaFileInline(filename);
+  bool success=me->features->saveCircularBinary(filename);
   
   if (success)
   {
     gtpe->getOutput()->startResponse(cmd);
-    gtpe->getOutput()->printf("saveded features gamma file: %s",filename.c_str());
+    gtpe->getOutput()->printf("saveded binary circular pattern file: %s",filename.c_str());
     gtpe->getOutput()->endResponse();
   }
   else
   {
     gtpe->getOutput()->startResponse(cmd,false);
-    gtpe->getOutput()->printf("error saveing features gamma file: %s",filename.c_str());
+    gtpe->getOutput()->printf("error saveing binary circular pattern file: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+}
+
+void Engine::gtpLoadFeatureCircularBinary(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("need 1 arg");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  std::string filename=cmd->getStringArg(0);
+  
+  bool success=me->features->loadCircularBinary(filename);
+  
+  if (success)
+  {
+    gtpe->getOutput()->startResponse(cmd);
+    gtpe->getOutput()->printf("loaded binary circular pattern file: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+  else
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("error loading binary circular pattern file: %s",filename.c_str());
     gtpe->getOutput()->endResponse();
   }
 }
