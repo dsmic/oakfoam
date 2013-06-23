@@ -2181,7 +2181,7 @@ int Go::Board::getSecondBent4Position (int pos) const
 {
   int x=Go::Position::pos2x(pos,size);
   int y=Go::Position::pos2y(pos,size);
-  fprintf(stderr,"bent4 before %d %d\n",x,y);
+  //fprintf(stderr,"bent4 before %d %d\n",x,y);
   if (x==1)
     x=0;
   else if (x==0)
@@ -2198,7 +2198,7 @@ int Go::Board::getSecondBent4Position (int pos) const
     y=size-2;
   else if (y==size-2)
     y=size-1;
-  fprintf(stderr,"bent4 after %d %d\n",x,y);
+  //fprintf(stderr,"bent4 after %d %d\n",x,y);
   return Go::Position::xy2pos(x,y,size);
 }
 

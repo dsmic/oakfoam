@@ -702,6 +702,30 @@ Features::~Features()
   delete circlevels;
 }
 
+void Features::constructCircstrings() const
+{
+  size_t sz=circlevels->size();
+  //this would be the more correct test, but I am afraid to break old code!
+  //  if (circstrings->size()!=sz+1)
+  if (circstrings->size()>0)
+  {
+    //fprintf(stderr,"circular strings already loaded\n");
+    return; //already loaded
+  }
+  circstrings->resize(sz+1);
+#ifdef with_unordered
+  std::unordered_map<Pattern::Circular,unsigned int,circHash>::iterator it;
+#else
+  std::map<Pattern::Circular,unsigned int>::iterator it;
+#endif
+  for (it=circlevels->begin();it!=circlevels->end();it++)
+  {
+    int level_tmp=(*circlevels)[it->first];
+    (*circstrings)[level_tmp]=(it->first).toString(circdict);
+  }
+
+}
+
 unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove) const
 {
   if ((featclass!=Features::PASS && move.isPass()) || move.isResign())
@@ -1689,6 +1713,7 @@ bool Features::loadGammaFile(std::string filename)
 
 bool Features::saveGammaFile(std::string filename)
 {
+  constructCircstrings();
   std::ofstream fout(filename.c_str());
   
   if (!fout)
@@ -1755,7 +1780,7 @@ bool Features::loadCircularBinary(std::string filename)
   std::ifstream fin(filename.c_str(), std::ios::in | std::ios::binary);
   int num_circ_patterns;
   fin.read((char*)&num_circ_patterns,sizeof(num_circ_patterns));
-  circstrings->resize(num_circ_patterns+1);
+  //circstrings->resize(num_circ_patterns+1);
   circgammas->resize(num_circ_patterns+1);
   for (int i=0;i<num_circ_patterns;i++)
   {
@@ -1769,7 +1794,7 @@ bool Features::loadCircularBinary(std::string filename)
     
     (*circlevels)[pc] = level;
     (*circgammas)[level]=gamma_tmp;
-    (*circstrings)[level]=pc.toString (circdict);
+  //  (*circstrings)[level]=pc.toString (circdict);
     //fprintf(stderr,"circular %s %f\n",(*circstrings)[level].c_str(),(*circgammas)[level]);
   }
   fin.close();
@@ -1778,6 +1803,7 @@ bool Features::loadCircularBinary(std::string filename)
 
 bool Features::saveGammaFileInline(std::string filename)
 {
+  constructCircstrings();
   std::ofstream fout(filename.c_str());
   
   if (!fout)
@@ -2124,6 +2150,7 @@ bool Features::setFeatureGamma(Features::FeatureClass featclass, unsigned int le
 
 std::string Features::getMatchingFeaturesString(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool pretty) const
 {
+  constructCircstrings();
   std::ostringstream ss;
   unsigned int level,base;
   
@@ -2281,6 +2308,7 @@ std::string Features::getMatchingFeaturesString(Go::Board *board, Go::ObjectBoar
 
 std::string Features::getFeatureIdList() const
 {
+  constructCircstrings();
   std::ostringstream ss;
   unsigned int id=0;
   

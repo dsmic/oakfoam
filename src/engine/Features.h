@@ -209,6 +209,7 @@ class Features
 
     float *getStandardGamma(Features::FeatureClass featclass) const;
     void updatePatternIds();
+    void constructCircstrings() const;
 
     std::map<std::string,long int> circpatterns;
     std::map<std::string,long int> circpatternsnot;
