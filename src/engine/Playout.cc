@@ -1060,13 +1060,14 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     for (int i=0;i<params->test_p4;i++)
     {
       int p_tmp=rand->getRandomInt(board->getPositionMax());
-      float prob_tmp=0;
       if (board->validMove(Go::Move(col,p_tmp)))
-          prob_tmp=params->engine->getProbabilityMoveAt(p_tmp);
-      if (prob_tmp>prob)
       {
-        prob=prob_tmp;
-        p=p_tmp;
+        float prob_tmp=params->engine->getProbabilityMoveAt(p_tmp);
+        if (prob_tmp>prob)
+        {
+          prob=prob_tmp;
+          p=p_tmp;
+        }
       }
     }
     if (p>=0)

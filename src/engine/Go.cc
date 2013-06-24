@@ -147,6 +147,7 @@ bool Go::Group::isOneOfTwoLiberties(int pos) const
   return (ps>0 && (ps*lpsq)==(lps*lps));
 }
 
+
 int Go::Group::getOtherOneOfTwoLiberties(int pos) const
 {
   if (pseudoliberties>8 || this->inAtari())
@@ -449,11 +450,11 @@ Go::Color Go::Board::getScoredOwner(int pos) const
     return Go::EMPTY;
 }
 
-bool Go::Board::validMove(Go::Move move) const
-{
-  Go::BitBoard *validmoves=(move.getColor()==Go::BLACK?blackvalidmoves:whitevalidmoves);
-  return move.isPass() || move.isResign() || validmoves->get(move.getPosition());
-}
+//bool Go::Board::validMove(Go::Move move) const
+//{
+//  Go::BitBoard *validmoves=(move.getColor()==Go::BLACK?blackvalidmoves:whitevalidmoves);
+//  return move.isPass() || move.isResign() || validmoves->get(move.getPosition());
+//}
 
 bool Go::Board::validMoveCheck(Go::Move move) const
 {

@@ -512,6 +512,7 @@ namespace Go
        * If the group doesn't have two liberties, -1 is returned.
        */
       int getOtherOneOfTwoLiberties(int pos) const;
+      
       /** Get a list of the adjacent groups to this group. */
       std::list<int,Go::allocator_int> *getAdjacentGroups() { return &adjacentgroups; };
     
@@ -624,7 +625,11 @@ namespace Go
       /** Make a move on this board. */
       void makeMove(Go::Move move);
       /** Determine is the given move is a legal move. */
-      bool validMove(Go::Move move) const;
+      bool validMove(Go::Move move) const
+        {
+          Go::BitBoard *validmoves=(move.getColor()==Go::BLACK?blackvalidmoves:whitevalidmoves);
+          return move.isPass() || move.isResign() || validmoves->get(move.getPosition());
+        };
       
       /** Get the number of legal moves currently available. */
       int numOfValidMoves(Go::Color col) const { return (col==Go::BLACK?blackvalidmovecount:whitevalidmovecount); };
