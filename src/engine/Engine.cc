@@ -543,6 +543,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("genmove",this,&Engine::gtpGenMove);
   gtpe->addFunctionCommand("reg_genmove",this,&Engine::gtpRegGenMove);
   gtpe->addFunctionCommand("reg_ownerat",this,&Engine::gtpRegOwnerAt);
+  gtpe->addFunctionCommand("sg_compare_float",this,&Engine::gtpSgCompareFloat);
   gtpe->addFunctionCommand("kgs-genmove_cleanup",this,&Engine::gtpGenMoveCleanup);
   gtpe->addFunctionCommand("showboard",this,&Engine::gtpShowBoard);
   gtpe->addFunctionCommand("final_score",this,&Engine::gtpFinalScore);
@@ -890,7 +891,7 @@ void Engine::gtpRegGenMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   delete move;
   
   gtpe->getOutput()->startResponse(cmd);
-  gtpe->getOutput()->printVertex(vert);
+  gtpe->getOutput()->printVertexUpperCase(vert);
   gtpe->getOutput()->endResponse();
 }
 
@@ -1639,6 +1640,44 @@ void Engine::gtpRegOwnerAt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
       res="W";
     else
       res="B";
+  }
+
+  gtpe->getOutput()->startResponse(cmd,true);
+  gtpe->getOutput()->printf("%s",res.c_str());
+  gtpe->getOutput()->endResponse();
+  return;
+
+}
+
+void Engine::gtpSgCompareFloat(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  // usage sg_compare_float float name
+  Engine *me=(Engine*)instance;
+
+  if (cmd->numArgs()!=2)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("need 2 arg");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+
+  std::string treshholdstring=cmd->getStringArg(0);
+  std::string name=cmd->getStringArg(1);
+
+  float treshhold;
+  std::istringstream(treshholdstring)>>treshhold;
+
+  gtpe->getOutput()->printfDebug("values %f %f\n",treshhold,me->movetree->getRobustChild()->getRatio());
+  std::string res;
+  if (name.compare("uct_value")!=0)
+    res="name not supported";
+  else
+  {
+    if (me->movetree->getRobustChild()->getRatio()<treshhold)
+      res="-1";
+    else
+      res="+1";
   }
 
   gtpe->getOutput()->startResponse(cmd,true);
