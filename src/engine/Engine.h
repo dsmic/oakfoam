@@ -516,6 +516,7 @@ class Engine
     static void gtpGenMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpGenMoveCleanup(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpRegGenMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpRegOwnerAt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowBoard(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpFinalScore(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpFinalStatusList(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);

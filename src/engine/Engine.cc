@@ -542,6 +542,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("play",this,&Engine::gtpPlay);
   gtpe->addFunctionCommand("genmove",this,&Engine::gtpGenMove);
   gtpe->addFunctionCommand("reg_genmove",this,&Engine::gtpRegGenMove);
+  gtpe->addFunctionCommand("reg_ownerat",this,&Engine::gtpRegOwnerAt);
   gtpe->addFunctionCommand("kgs-genmove_cleanup",this,&Engine::gtpGenMoveCleanup);
   gtpe->addFunctionCommand("showboard",this,&Engine::gtpShowBoard);
   gtpe->addFunctionCommand("final_score",this,&Engine::gtpFinalScore);
@@ -1603,6 +1604,48 @@ void Engine::gtpPlayoutSGF_pos(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
     gtpe->getOutput()->printf("error writing sgf file: %s",sgffile.c_str());
     gtpe->getOutput()->endResponse();
   }
+}
+
+void Engine::gtpRegOwnerAt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  // usage reg_ownerat "Info String" treshhold Position
+  Engine *me=(Engine*)instance;
+
+  if (cmd->numArgs()!=3)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("need 3 arg");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+
+  std::string info=cmd->getStringArg(0);
+  std::string treshholdstring=cmd->getStringArg(1);
+  std::string where_wins=cmd->getStringArg(2);
+
+  int where=Go::Position::string2pos(where_wins,me->boardsize);
+
+  float treshhold;
+  std::istringstream(treshholdstring)>>treshhold;
+
+  float ownership=me->territorymap->getPositionOwner(where);
+
+  std::string res;
+  if (fabs(ownership)<treshhold)
+    res="Failed";
+  else
+  {
+    if (ownership<0)
+      res="W";
+    else
+      res="B";
+  }
+
+  gtpe->getOutput()->startResponse(cmd,true);
+  gtpe->getOutput()->printf("%s",res.c_str());
+  gtpe->getOutput()->endResponse();
+  return;
+
 }
 
 void Engine::gtpOutputSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
