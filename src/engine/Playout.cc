@@ -1186,7 +1186,7 @@ bool Playout::isBadMove(Worker::Settings *settings, Go::Board *board, Go::Color 
   Random *const rand=settings->rand;
 
   // below lines are a bit ridiculous and should rather be rewritten in a more readable manner
-  return (board->weakEye(col,pos) || (params->playout_avoid_selfatari && board->isSelfAtariOfSize(Go::Move(col,pos),params->playout_avoid_selfatari_size,params->playout_avoid_selfatari_complex))
+  return (board->weakEye(col,pos,params->test_p5!=0) || (params->playout_avoid_selfatari && board->isSelfAtariOfSize(Go::Move(col,pos),params->playout_avoid_selfatari_size,params->playout_avoid_selfatari_complex))
       || (p > 0.0 && rand->getRandomReal() < p && (board->getLastMove().isNormal() && this->hasLGRF1n(col,board->getLastMove().getPosition(),pos)))
       || (p > 0.0 && (passes>1 || rand->getRandomReal() < p) && (board->getLastMove().isPass() && this->isBadPassAnswer(col,pos)))
       || (p2 > 0.0 && (rand->getRandomReal() < p2) && this->hasLBM (col,pos)));

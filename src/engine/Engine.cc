@@ -126,7 +126,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","test_p2",&(params->test_p2),0.0);
   params->addParameter("playout","test_p3",&(params->test_p3),0.0);
   params->addParameter("playout","test_p4",&(params->test_p4),0.0);
-  params->addParameter("playout","test_p5",&(params->test_p5),1.0);
+  params->addParameter("playout","test_p5",&(params->test_p5),0.0);
   params->addParameter("playout","test_p6",&(params->test_p6),0.0);
   params->addParameter("playout","test_p7",&(params->test_p7),0.0);
   params->addParameter("playout","test_p8",&(params->test_p8),0.0);
@@ -1677,7 +1677,7 @@ void Engine::gtpSgCompareFloat(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
     if (me->movetree->getRobustChild()->getRatio()<treshhold)
       res="-1";
     else
-      res="+1";
+      res="1";
   }
 
   gtpe->getOutput()->startResponse(cmd,true);
@@ -3850,6 +3850,21 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     std::ostringstream ssun;
     if (params->mm_learn_enabled)
       learnFromTree (currentboard,movetree,&ssun,1);
+    else
+    {
+      ssun<<" un:(";
+      for (int nn=1;nn<=num_unpruned;nn++)
+      {
+        for(std::list<Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
+        {
+          if ((*iter)->getUnprunedNum()==nn && (*iter)->isPrimary() && !(*iter)->isPruned())
+          {
+            ssun<<(nn!=1?",":"")<<Go::Position::pos2string((*iter)->getMove().getPosition(),boardsize);
+          }
+        }
+      }
+    ssun<<")";
+    }
     ssun<<"st:(";
     for (int nn=0;nn<STATISTICS_NUM;nn++)
     {

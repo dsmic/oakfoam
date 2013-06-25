@@ -886,7 +886,7 @@ void Go::Board::mergeGroups(Go::Group *first, Go::Group *second)
   first->unionWith(second);
 }
 
-bool Go::Board::weakEye(Go::Color col, int pos) const
+bool Go::Board::weakEye(Go::Color col, int pos, bool veryweak) const
 {
   if (col==Go::EMPTY || col==Go::OFFBOARD || this->getColor(pos)!=Go::EMPTY)
     return false;
@@ -907,7 +907,7 @@ bool Go::Board::weakEye(Go::Color col, int pos) const
       if (this->getColor(p)==othercol)
       {
         othercols++;
-        if (onside || othercols>=2)
+        if ((onside || othercols>=2) && !veryweak)
           return false;
       }
     });

@@ -640,7 +640,7 @@ namespace Go
       /** Compute the current score. */
       float score(Parameters* params=NULL);
       /** Determine if the given position is a weak eye for the given color. */
-      bool weakEye(Go::Color col, int pos) const;
+      bool weakEye(Go::Color col, int pos, bool veryweak=0) const;
       /** Determine if the given position has an eye where two weak eyes are shared from two groups. */
       bool twoGroupEye(Go::Color col, int pos) const;
       /** Determine if the given position is surrounded by a single group of the given color. */
