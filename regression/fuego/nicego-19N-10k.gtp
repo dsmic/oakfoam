@@ -1,0 +1,97 @@
+param playouts_per_move 10000
+param playouts_per_move_max 10000
+param playouts_per_move_min 10000
+param memory_usage_max 12048
+param time_k 1
+param time_buffer 1
+param thread_count 8
+param rules_all_stones_alive 0
+loadfeaturegammas /home/detlef/gomill/trained_10000_100000_with_nakade.gamma
+param thread_count 8
+param ucb_c 0.2
+param playout_useless_move 1
+param playout_nearby_enabled 0
+param rave_moves 200
+param playout playout_poolrave_p 1.0
+param uct_rave_unprune_factor 146.0
+param uct_rave_unprune_multiply 1
+param uct_rave_unprune_decay 7.0
+param uct_criticality_unprune_factor 17.0
+param weight_score 0.01
+param playout_lgpf_enabled 0
+param playout_order 4
+param features_ladders 0
+param rave_moves_use 0.73
+param uct_rave_unprune_factor 124.0
+param playout_lgrf1o_enabled 0
+param playout_lgrf1_enabled 0
+param playout_lgrf2_enabled 0
+param playout_avoid_lbrf1_p 0.9
+param playout_lgrf1_safe_enabled 0
+param playout_lgrf2_safe_enabled 0
+param playout playout_lgrf_local 0
+param uct_progressive_widening_a 12.0
+param playout playout_lastatari_p 0.44
+param playout playout_anycapture_p 0.2
+param playout playout_patterns_p 0.6
+param playout_avoid_lbrf1_p 0.9
+param playout_avoid_lbmf_p 0.5
+param playout_avoid_lbrf1_p2 0.2
+param playout_avoid_lbmf_p2 0.4
+param playout_poolrave_criticality 0
+param playout_poolrave_enabled 0
+param playout playout_poolrave_k 60
+param playout_poolrave_min_playouts 43
+param playout playout_mercy_rule_enabled 0
+param playout playout_fill_weak_eyes 1
+param playout_random_approach_p 0.6
+param playout_random_weight_territory_n 4
+param playout_random_weight_territory_f0 0.7
+param playout_random_weight_territory_f 16.0
+param playout_nakade5_enabled 1
+param playout_nakade4_enabled 1
+param playout_nakade_bent4_enabled 1
+param playout_avoid_selfatari_complex 1
+param rave_init_wins 1
+param uct_preset_rave_f 0.51
+param uct_progressive_widening_a 32.0
+param uct_progressive_widening_b 1.4
+param uct_rave_unprune_factor 588.0
+param rave_moves 15
+param uct_rave_unprune_multiply 0
+param uct_criticality_unprune_multiply 0
+param uct_rave_unprune_factor 11.0
+param uct_criticality_unprune_factor 8.0
+param uct_progressive_widening_a 10.0
+param uct_progressive_widening_b 1.5
+param uct_progressive_bias_scaled 0
+param uct_progressive_bias_relative 0
+param uct_progressive_widening_init 3
+param uct_progressive_bias_h 0.05
+param uct_progressive_bias_exponent 0.58
+param ucb_c 0.17
+param uct_criticality_urgency_factor 3.0
+param uct_criticality_urgency_decay 0.1
+param uct_rave_unprune_factor 55.0
+param uct_criticality_unprune_factor 10.0
+param uct_criticality_rave_unprune_factor 8.4
+param uct_rave_unprune_decay 7.0
+param uct_progressive_widening_a 20.0
+param uct_factor_circpattern_exponent 0.5
+param features_pass_no_move_for_lastdist 1
+param uct_area_owner_factor_a 2.8
+param uct_area_owner_factor_b 0.1
+param uct_area_owner_factor_c 1.3
+param uct_criticality_rave_unprune_factor 0.0
+param uct_rave_unprune_factor 30.0
+param uct_criticality_unprune_factor 32.0
+param playout playout_anycapture_p 0.1
+param playout playout_patterns_p 0.95
+param playout playout_lastatari_p 0.5
+param playout_lastatari_captureattached_p 0.43
+param playout_random_approach_p 0.53
+param test_p2 1
+param uct_rave_unprune_factor 17.0
+param uct_progressive_bias_h 0.075
+param uct_progressive_bias_exponent 0.65
+param test_p4 50
