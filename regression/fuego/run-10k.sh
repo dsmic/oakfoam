@@ -28,4 +28,4 @@ echo "Saving output to '$OUTPUT'..."
 
 echo "describeengine" | $OAKFOAM > /dev/null
 
-gogui-regress -long -output $OUTPUT "$PROGRAM" $TESTS
+gogui-regress -long -output $OUTPUT "$PROGRAM" -gtpfile additional.parameter $TESTS
