@@ -1747,7 +1747,7 @@ bool Go::Board::isSelfAtariOfSize(Go::Move move, int minsize, bool complex) cons
   }
 }
 
-bool Go::Board::isAtari(Go::Move move) const
+bool Go::Board::isAtari(Go::Move move, int *groupsize) const
 {
   Go::Color col=move.getColor();
   int pos=move.getPosition();
@@ -1756,7 +1756,10 @@ bool Go::Board::isAtari(Go::Move move) const
     {
       Go::Group *group=this->getGroup(p);
       if (col!=group->getColor() && group->isOneOfTwoLiberties(pos))
+      {
+        if (groupsize) *groupsize=group->numOfStones();
         return true;
+      }
     }
   });
   return false;

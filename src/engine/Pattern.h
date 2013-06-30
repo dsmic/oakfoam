@@ -30,6 +30,24 @@
 +W?BWWB--- \
 "
 
+//pattern 9 fixed regression kgs.tst 90, did not harm against gnugo l0
+#define PATTERN_3x3_DEFAULTS2 " \
++*BWBEE??? \
++*BWEEE?E? \
++*BW?BE?E? \
++BBWWEE?E? \
++*BW?W???? \
+-*BW?WW?E? \
+-*BW?WE?W? \
+-*BW?WW?W? \
++*?B?WWwww \
++*BE?W?--- \
++*?B?bW--- \
++B?BW??_-- \
++W?BW?b--- \
++W?BWWB--- \
+"
+
 #include <string>
 #include <list>
 #include <boost/cstdint.hpp>
@@ -139,6 +157,7 @@ namespace Pattern
       bool loadPatternString(std::string patternstring);
       /** Load a the default patterns. */
       bool loadPatternDefaults() { return this->loadPatternString(PATTERN_3x3_DEFAULTS); };
+      bool loadPatternDefaults2() { return this->loadPatternString(PATTERN_3x3_DEFAULTS2); };
 
     private:
       unsigned char *const table; //assume sizeof(char)==1

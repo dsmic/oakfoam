@@ -295,7 +295,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   #endif
   
   patterntable=new Pattern::ThreeByThreeTable();
-  patterntable->loadPatternDefaults();
+  patterntable->loadPatternDefaults2();
   
   features=new Features(params);
   features->loadGammaDefaults();

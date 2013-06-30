@@ -703,7 +703,7 @@ namespace Go
       /** Determine is the given move is a self-atari of a group of a minimum size. */
       bool isSelfAtariOfSize(Go::Move move, int minsize=0, bool complex=false) const;
       /** Determine is the given move is an atari. */
-      bool isAtari(Go::Move move) const;
+      bool isAtari(Go::Move move, int *groupsize=NULL) const;
       /** Get the distance from the given position to the board edge. */
       int getDistanceToBorder(int pos) const;
       /** Get the manhattan distance between two positions. */

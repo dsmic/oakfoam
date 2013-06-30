@@ -7,6 +7,8 @@
 #include "Pattern.h"
 #include "Worker.h"
 
+#define WITH_P(A) (A>=1.0 || (A>0 && settings->rand->getRandomReal()<A))
+
 Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p) : params(prms)
 {
   params->tree_instances++;
@@ -1054,7 +1056,7 @@ Tree *Tree::getUrgentChild(Worker::Settings *settings)
   
   for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
   {
-    if ((*iter)->isPrimary() && !(*iter)->isPruned())
+    if ((*iter)->isPrimary() && (!(*iter)->isPruned() || WITH_P(params->test_p7)))
     {
       float urgency;
       

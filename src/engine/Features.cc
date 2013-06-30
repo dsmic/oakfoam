@@ -27,6 +27,8 @@ const std::string FEATURES_DEFAULT=
   "atari:1 1.66722 \n"
   "atari:2 2.99897 \n"
   "atari:3 0.5 \n" // hand-picked, after adding level
+  "atari:4 3.0 \n" // hand-picked, after adding level
+  "atari:5 6.0 \n" // hand-picked, after adding level
   "borderdist:1 1.29595 \n"
   "borderdist:2 1.06265 \n"
   "borderdist:3 1.82725 \n"
@@ -865,7 +867,8 @@ unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::B
     }
     case Features::ATARI:
     {
-      if (board->isAtari(move))
+      int groupsize=0;
+      if (board->isAtari(move,&groupsize))
       {
         if (params->features_ladders)
         {
@@ -884,7 +887,13 @@ unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::B
         if (board->isCurrentSimpleKo())
           return 2;
         else
+        {
+          if (groupsize>9)
+            return 5;
+          if (groupsize>4)
+            return 4;
           return 1;
+        }
       }
       else
         return 0;
