@@ -128,6 +128,48 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
     }
   }
 
+  float *white_gammas=NULL;
+  float *black_gammas=NULL;
+  if (params->playout_features_enabled)
+  {
+    //create an array of gamma values for black and for white
+    white_gammas=new float[board->getPositionMax()];
+    black_gammas=new float[board->getPositionMax()];
+    for (int i=0;i<board->getPositionMax();i++)
+    {
+      white_gammas[i]=0;
+      black_gammas[i]=0;
+    }
+    Tree * lastmove=playouttree;
+    for (int i=0;i<2;i++)
+    {
+      if (lastmove==NULL || lastmove->isRoot())
+        break;
+      lastmove=lastmove->getParent();
+      std::list<Tree*> *childrenTmp=lastmove->getChildren();
+      for(std::list<Tree*>::iterator iter=childrenTmp->begin();iter!=childrenTmp->end();++iter) 
+      { 
+        Go::Move move_tmp=(*iter)->getMove();
+        if (move_tmp.isNormal())
+        {
+          Go::Color c=move_tmp.getColor();
+          switch (c)
+          {
+            case Go::BLACK:
+              black_gammas[move_tmp.getPosition()]=(*iter)->getFeatureGamma();
+              break;
+            case Go::WHITE:
+              white_gammas[move_tmp.getPosition()]=(*iter)->getFeatureGamma();
+              break;
+            default:
+              break;
+          }
+        }
+      }
+      
+    }
+  }
+  
   // setup poolRAVE and its variants
   std::vector<int> pool;
   std::vector<int> poolother;
@@ -495,13 +537,18 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
       }
     }
   }
+
+  if (white_gammas!=NULL)
+      delete white_gammas;
+  if (black_gammas!=0)
+      delete black_gammas;
 }
 
-void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, float critarray[], int passes, std::vector<int> *pool, std::vector<int> *poolCR, std::string *reason, float *trylocal_p)
+void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, float critarray[], int passes, std::vector<int> *pool, std::vector<int> *poolCR, std::string *reason, float *trylocal_p, float *black_gammas, float *white_gammas)
 {
   int *posarray = new int[board->getPositionMax()];
   
-  this->getPlayoutMove(settings,board,col,move,posarray,critarray,passes,pool,poolCR,reason,trylocal_p);
+  this->getPlayoutMove(settings,board,col,move,posarray,critarray,passes,pool,poolCR,reason,trylocal_p, black_gammas, white_gammas);
   
   delete[] posarray;
 }
@@ -533,7 +580,7 @@ void Playout::checkUselessMove(Worker::Settings *settings, Go::Board *board, Go:
   }
 }
 
-void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, float critarray[], int passes, std::vector<int> *pool, std::vector<int> *poolcrit, std::string *reason, float *trylocal_p)
+void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, float critarray[], int passes, std::vector<int> *pool, std::vector<int> *poolcrit, std::string *reason, float *trylocal_p, float *black_gammas, float *white_gammas)
 {
   /* trylocal_p can be used to influence parameters from move to move in a playout. It starts with 1.0
    * 
@@ -906,15 +953,53 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
       }
     }
   }
-  
+
   if (params->playout_features_enabled)
   {
-    this->getFeatureMove(settings,board,col,move);
-    if (params->debug_on)
-      gtpe->getOutput()->printfDebug("[playoutmove]: %s features\n",move.toString(board->getSize()).c_str());
-    if (reason!=NULL)
-      *reason="features";
-    return;
+    if (params->test_p8>0)
+    {
+      bool doapproachmoves=(rand->getRandomReal()<params->playout_random_approach_p);
+      int p=-1;
+      float prob=0;
+      for (int i=0;i<params->test_p8;i++)
+      {
+        int p_tmp=rand->getRandomInt(board->getPositionMax());
+        if (board->validMove(Go::Move(col,p_tmp)))
+        {
+          float prob_tmp=board->getFeatureGamma(p);
+          if (prob_tmp>prob)
+          {
+            prob=prob_tmp;
+            p=p_tmp;
+          }
+        }
+      }
+      if (p>=0)
+      {
+        if (doapproachmoves)
+          this->replaceWithApproachMove(settings,board,col,p);
+        if (board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p,passes))
+        {
+          move=Go::Move(col,p);
+          move.set_useforlgrf (true);
+          if (params->debug_on)
+            gtpe->getOutput()->printfDebug("[playoutmove]: %s random reweighted quick-pick\n",move.toString(board->getSize()).c_str());
+          if (reason!=NULL)
+            *reason="random reweighted quick-pick";
+          params->engine->statisticsPlus(Engine::RANDOM_REWEIGHTED_QUICK);
+          return;
+        }
+      }
+    }
+    else
+    {
+      this->getFeatureMove(settings,board,col,move);
+      if (params->debug_on)
+        gtpe->getOutput()->printfDebug("[playoutmove]: %s features\n",move.toString(board->getSize()).c_str());
+      if (reason!=NULL)
+        *reason="features";
+      return;
+    }
   }
   
   random: // for playout_random_chance
