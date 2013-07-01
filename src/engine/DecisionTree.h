@@ -8,13 +8,42 @@
 //from "Parameters.h":
 class Parameters;
 
-/** Decision Tree for Feature Ensemble Method. */
+/** Decision Tree for Features. */
 class DecisionTree
 {
   public:
     enum Type
     {
       SPARSE
+    };
+
+    class SparseGraph
+    {
+      public:
+        SparseGraph(Go::Board *board);
+        ~SparseGraph();
+
+        unsigned int getNumNodes() { return nodes->size(); };
+        Go::Color getNodeStatus(unsigned int node) { return nodes->at(node)->col; };
+        int getNodeSize(unsigned int node) { return nodes->at(node)->size; };
+        int getNodeLiberties(unsigned int node) { return nodes->at(node)->liberties; };
+        int getEdgeWeight(unsigned int node1, unsigned int node2);
+
+        unsigned int addAuxNode(int pos);
+        void removeAuxNode();
+
+      private:
+        struct SparseNode
+        {
+          int pos;
+          Go::Color col;
+          int size;
+          int liberties;
+        };
+
+        Go::Board *board;
+        std::vector<SparseNode*> *nodes;
+        std::vector<std::vector<int>*> *edges;
     };
 
     ~DecisionTree();

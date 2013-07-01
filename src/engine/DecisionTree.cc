@@ -2163,3 +2163,114 @@ DecisionTree::Option::~Option()
   delete node;
 }
 
+DecisionTree::SparseGraph::SparseGraph(Go::Board *board)
+{
+  this->board = board;
+  nodes = new std::vector<DecisionTree::SparseGraph::SparseNode*>();
+  edges = new std::vector<std::vector<int>*>();
+
+  for (int p = 0; p < board->getPositionMax(); p++)
+  {
+    if (board->inGroup(p))
+    {
+      DecisionTree::SparseGraph::SparseNode *node = new DecisionTree::SparseGraph::SparseNode();
+
+      node->pos = p;
+      node->col = board->getColor(p);
+      node->size = 1;
+      Go::Group *group = board->getGroup(p);
+      if (group->inAtari())
+        node->liberties = 1;
+      else
+        node->liberties = group->numOfPseudoLiberties();
+
+      nodes->push_back(node);
+      edges->push_back(new std::vector<int>());
+    }
+  }
+
+  for (int i = -1; i >= -4; i--)
+  {
+    DecisionTree::SparseGraph::SparseNode *node = new DecisionTree::SparseGraph::SparseNode();
+
+    node->pos = i;
+    node->col = Go::OFFBOARD;
+    node->size = 0;
+    node->liberties = 0;
+
+    nodes->push_back(node);
+    edges->push_back(new std::vector<int>());
+  }
+
+  unsigned int N = nodes->size();
+  for (unsigned int i=0; i<N; i++)
+  {
+    int p1 = nodes->at(i)->pos;
+    for (unsigned int j=0; j<i; j++)
+    {
+      int p2 = nodes->at(j)->pos;
+      int d = DecisionTree::getDistance(board,p1,p2);
+      edges->at(i)->at(j) = d;
+    }
+  }
+}
+
+DecisionTree::SparseGraph::~SparseGraph()
+{
+  for (unsigned int i = 0; i < nodes->size(); i++)
+  {
+    delete nodes->at(i);
+    delete edges->at(i);
+  }
+  delete nodes;
+  delete edges;
+}
+
+int DecisionTree::SparseGraph::getEdgeWeight(unsigned int node1, unsigned int node2)
+{
+  if (node1 == node2)
+    return 0;
+  else if (node1 < node2)
+    return edges->at(node2)->at(node1);
+  else
+    return edges->at(node1)->at(node2);
+};
+
+unsigned int DecisionTree::SparseGraph::addAuxNode(int pos)
+{
+  DecisionTree::SparseGraph::SparseNode *node = new DecisionTree::SparseGraph::SparseNode();
+
+  node->pos = pos;
+  node->col = Go::EMPTY;
+  node->size = 0;
+  node->liberties = 0;
+
+  nodes->push_back(node);
+  edges->push_back(new std::vector<int>());
+
+  unsigned int N = nodes->size();
+  unsigned int i = N - 1;
+
+  for (unsigned int j=0; j<i; j++)
+  {
+    int p2 = nodes->at(j)->pos;
+    int d = DecisionTree::getDistance(board,pos,p2);
+    edges->at(i)->at(j) = d;
+  }
+
+  return i;
+}
+
+void DecisionTree::SparseGraph::removeAuxNode()
+{
+  // assume that the last node added is the aux node
+  unsigned int N = nodes->size();
+  unsigned int i = N - 1;
+
+  delete nodes->at(i);
+  delete edges->at(i);
+
+  nodes->resize(N-1);
+  edges->resize(N-1);
+}
+
