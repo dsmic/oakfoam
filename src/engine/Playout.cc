@@ -128,48 +128,6 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
     }
   }
 
-  float *white_gammas=NULL;
-  float *black_gammas=NULL;
-  if (params->playout_features_enabled)
-  {
-    //create an array of gamma values for black and for white
-    white_gammas=new float[board->getPositionMax()];
-    black_gammas=new float[board->getPositionMax()];
-    for (int i=0;i<board->getPositionMax();i++)
-    {
-      white_gammas[i]=0;
-      black_gammas[i]=0;
-    }
-    Tree * lastmove=playouttree;
-    for (int i=0;i<2;i++)
-    {
-      if (lastmove==NULL || lastmove->isRoot())
-        break;
-      lastmove=lastmove->getParent();
-      std::list<Tree*> *childrenTmp=lastmove->getChildren();
-      for(std::list<Tree*>::iterator iter=childrenTmp->begin();iter!=childrenTmp->end();++iter) 
-      { 
-        Go::Move move_tmp=(*iter)->getMove();
-        if (move_tmp.isNormal())
-        {
-          Go::Color c=move_tmp.getColor();
-          switch (c)
-          {
-            case Go::BLACK:
-              black_gammas[move_tmp.getPosition()]=(*iter)->getFeatureGamma();
-              break;
-            case Go::WHITE:
-              white_gammas[move_tmp.getPosition()]=(*iter)->getFeatureGamma();
-              break;
-            default:
-              break;
-          }
-        }
-      }
-      
-    }
-  }
-  
   // setup poolRAVE and its variants
   std::vector<int> pool;
   std::vector<int> poolother;
@@ -278,6 +236,55 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
     }
   }
 
+  if (params->playout_features_enabled>0)
+    board->updateFeatureGammas(true);
+
+  float *white_gammas=NULL;
+  float *black_gammas=NULL;
+  if (0) // not working yet:( ?? params->playout_features_enabled>0)
+  {
+    //create an array of gamma values for black and for white
+    white_gammas=new float[board->getPositionMax()];
+    black_gammas=new float[board->getPositionMax()];
+    for (int i=0;i<board->getPositionMax();i++)
+    {
+      white_gammas[i]=0;
+      black_gammas[i]=0;
+    }
+    Tree * lastmove=playouttree;
+    for (int i=0;i<2;i++)
+    {
+      if (lastmove==NULL || lastmove->isRoot())
+        break;
+      lastmove=lastmove->getParent();
+      fprintf(stderr,"lastmove %d %s\n",i,lastmove->getMove().toString(19).c_str());
+      std::list<Tree*> *childrenTmp=lastmove->getChildren();
+      for(std::list<Tree*>::iterator iter=childrenTmp->begin();iter!=childrenTmp->end();++iter) 
+      { 
+        Go::Move move_tmp=(*iter)->getMove();
+        if (move_tmp.isNormal())
+        {
+          Go::Color c=move_tmp.getColor();
+          switch (c)
+          {
+            case Go::BLACK:
+              //fprintf(stderr,"BLACK gamma %d %f\n",move_tmp.getPosition(),(*iter)->getFeatureGamma());
+              black_gammas[move_tmp.getPosition()]=(*iter)->getFeatureGamma();
+              break;
+            case Go::WHITE:
+              //fprintf(stderr,"WHITE gamma %d %f\n",move_tmp.getPosition(),(*iter)->getFeatureGamma());
+              white_gammas[move_tmp.getPosition()]=(*iter)->getFeatureGamma();
+              break;
+            default:
+              break;
+          }
+        }
+      }
+      
+    }
+  }
+  
+  
   Go::Color coltomove=board->nextToMove();
   Go::Move move=Go::Move(coltomove,Go::Move::PASS);
   int movesalready=board->getMovesMade();
@@ -296,14 +303,14 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
     bool resign;
     if (movereasons!=NULL)
     {
-      this->getPlayoutMove(settings,board,coltomove,move,posarray,critarray,(coltomove==Go::BLACK?bpasses:wpasses),(coltomove==poolcol?&pool:&poolcrit),&poolcrit,&reason,&trylocal_p);
+      this->getPlayoutMove(settings,board,coltomove,move,posarray,critarray,(coltomove==Go::BLACK?bpasses:wpasses),(coltomove==poolcol?&pool:&poolcrit),&poolcrit,&reason,&trylocal_p,black_gammas,white_gammas);
       //fprintf(stderr,"move test %s\n",move.toString (9).c_str());
       if (params->playout_useless_move)
         this->checkUselessMove(settings,board,coltomove,move,posarray,&reason);
     }
     else
     {
-      this->getPlayoutMove(settings,board,coltomove,move,posarray,critarray,(coltomove==Go::BLACK?bpasses:wpasses),(coltomove==poolcol?&pool:&poolcrit),&poolcrit,NULL,&trylocal_p);
+      this->getPlayoutMove(settings,board,coltomove,move,posarray,critarray,(coltomove==Go::BLACK?bpasses:wpasses),(coltomove==poolcol?&pool:&poolcrit),&poolcrit,NULL,&trylocal_p,black_gammas,white_gammas);
       //fprintf(stderr,"move test %s\n",move.toString (9).c_str());
       if (params->playout_useless_move)
         this->checkUselessMove(settings,board,coltomove,move,posarray);
@@ -542,13 +549,14 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
       delete white_gammas;
   if (black_gammas!=0)
       delete black_gammas;
+
 }
 
 void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, float critarray[], int passes, std::vector<int> *pool, std::vector<int> *poolCR, std::string *reason, float *trylocal_p, float *black_gammas, float *white_gammas)
 {
   int *posarray = new int[board->getPositionMax()];
   
-  this->getPlayoutMove(settings,board,col,move,posarray,critarray,passes,pool,poolCR,reason,trylocal_p, black_gammas, white_gammas);
+  this->getPlayoutMove(settings,board,col,move,posarray,critarray,passes,pool,poolCR,reason,trylocal_p,black_gammas,white_gammas);
   
   delete[] posarray;
 }
@@ -954,7 +962,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     }
   }
 
-  if (params->playout_features_enabled)
+  if (WITH_P(params->playout_features_enabled))
   {
     if (params->test_p8>0)
     {
@@ -966,7 +974,22 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
         int p_tmp=rand->getRandomInt(board->getPositionMax());
         if (board->validMove(Go::Move(col,p_tmp)))
         {
-          float prob_tmp=board->getFeatureGamma(p);
+          float prob_tmp=0;//=board->getFeatureGamma(p_tmp);
+          /*
+          //should be faster, but does not work yet:(
+           switch (col)
+          {
+            case Go::BLACK:
+              prob_tmp=black_gammas[p_tmp];
+              break;
+            case Go::WHITE:
+              prob_tmp=white_gammas[p_tmp];
+              break;
+            default:
+              break;
+          }
+          */
+          prob_tmp=board->getFeatureGamma(p_tmp);
           if (prob_tmp>prob)
           {
             prob=prob_tmp;
@@ -1690,9 +1713,11 @@ void Playout::getLast2LibAtariMove(Worker::Settings *settings, Go::Board *board,
 
   int *possiblemoves=posarray;
   int *possiblegroupsize=posarray+board->getSize()/2;  //not more than half of the board used here
+  int possiblemovescount_base=0;
   int possiblemovescount=0;
   int size=board->getSize();
   int bestlevel=1;
+  Go::Group *lastgroup=NULL;
   
   if (board->getLastMove().isNormal())
   {
@@ -1703,6 +1728,12 @@ void Playout::getLast2LibAtariMove(Worker::Settings *settings, Go::Board *board,
           if (board->inGroup(q))
           {
             Go::Group *group=board->getGroup(q);
+            if (lastgroup!=group && params->playout_last2libatari_allow_different_groups)
+            {
+              possiblemovescount_base=possiblemovescount;
+              bestlevel=1;
+            }
+            lastgroup=group;
             if (group!=NULL)
             {
               int s=group->getOtherOneOfTwoLiberties(p);
@@ -1717,7 +1748,7 @@ void Playout::getLast2LibAtariMove(Worker::Settings *settings, Go::Board *board,
                     if (lvl>bestlevel)
                     {
                       bestlevel=lvl;
-                      possiblemovescount=0;
+                      possiblemovescount=possiblemovescount_base;
                     }
                     possiblemoves[possiblemovescount]=p;
                     possiblegroupsize[possiblemovescount]=group->numOfStones();
@@ -1733,7 +1764,7 @@ void Playout::getLast2LibAtariMove(Worker::Settings *settings, Go::Board *board,
                     if (lvl>bestlevel)
                     {
                       bestlevel=lvl;
-                      possiblemovescount=0;
+                      possiblemovescount=possiblemovescount_base;
                     }
                     possiblemoves[possiblemovescount]=s;
                     possiblegroupsize[possiblemovescount]=group->numOfStones();
@@ -2471,8 +2502,8 @@ int Playout::getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group *
             Go::Group *othergroup=board->getGroup(p);
             //fprintf(stderr,"othergroup %p group %p  othergroup!=group %d inAtari %d\n",othergroup,group,othergroup!=group,othergroup->inAtari());
             //fprintf(stderr,"group %s othergroup %s\n",
-            //        Go::Move(group->getColor(),group->getPosition()).toString(19).c_str(),
-            //        Go::Move(othergroup->getColor(),othergroup->getPosition()).toString(19).c_str());
+             //       Go::Move(group->getColor(),group->getPosition()).toString(19).c_str(),
+             //       Go::Move(othergroup->getColor(),othergroup->getPosition()).toString(19).c_str());
             if (othergroup!=group && !othergroup->inAtari())
               stopsconnection=true;
           }

@@ -96,7 +96,7 @@ class Parameters
     /** Whether to use the features heuristic in playouts.
      * The feature gamma of a move over the sum of the gammas is the probability of that move being played.
      */
-    bool playout_features_enabled;
+    float playout_features_enabled;
     /** Whether to try to update the feature gammas incrementally. */
     bool playout_features_incremental;
     /** The probability of using the lastatari heuristic in playouts.
@@ -210,6 +210,7 @@ class Parameters
      * @see playout_last2libatari_enabled
      */
     bool playout_last2libatari_complex;
+    bool playout_last2libatari_allow_different_groups;
     /** Whether to use the poolRAVE modification. */
     bool playout_poolrave_enabled;
     /** Whether to use the poolCriticality modification.

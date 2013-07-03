@@ -22,9 +22,10 @@ reg_genmove w
 40 sg_compare_float 0.6 uct_value
 #? [-1]
 
-loadsgf sgf/kgs-games/game_2013-06-11_11:34:29.sgf 212
-50 reg_genmove w
-#? [J18|H18]*
+loadsgf sgf/kgs-games/game_2013-06-11_11:34:29.sgf 213
+reg_genmove b
+50 sg_compare_float 0.5 uct_value
+#? [1]*
 
 loadsgf sgf/kgs-games/game_2013-06-11_07:03:18.sgf 207
 reg_genmove w

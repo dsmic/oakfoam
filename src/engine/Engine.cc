@@ -90,6 +90,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","playout_lastcapture_enabled",&(params->playout_lastcapture_enabled),PLAYOUT_LASTCAPTURE_ENABLED);
   params->addParameter("playout","playout_last2libatari_enabled",&(params->playout_last2libatari_enabled),PLAYOUT_LAST2LIBATARI_ENABLED);
   params->addParameter("playout","playout_last2libatari_complex",&(params->playout_last2libatari_complex),PLAYOUT_LAST2LIBATARI_COMPLEX);
+  params->addParameter("playout","playout_last2libatari_allow_different_groups",&(params->playout_last2libatari_allow_different_groups),PLAYOUT_LAST2LIBATARI_ALLOW_DIFFERENT_GROUPS);
   params->addParameter("playout","playout_nakade_enabled",&(params->playout_nakade_enabled),PLAYOUT_NAKADE_ENABLED);
   params->addParameter("playout","playout_nakade4_enabled",&(params->playout_nakade4_enabled),PLAYOUT_NAKADE4_ENABLED);
   params->addParameter("playout","playout_nakade_bent4_enabled",&(params->playout_nakade_bent4_enabled),PLAYOUT_NAKADE_BENT4_ENABLED);
@@ -3978,8 +3979,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     *move=new Go::Move(col,Go::Move::PASS);
     Go::Board *playoutboard=currentboard->copy();
     playoutboard->turnSymmetryOff();
-    if (params->playout_features_enabled)
-      playoutboard->setFeatures(features,params->playout_features_incremental);
+    if (params->playout_features_enabled>0)
+      playoutboard->setFeatures(features,params->playout_features_incremental,params->test_p8==0);
     playout->getPlayoutMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,**move,NULL);
     if (params->playout_useless_move)
       playout->checkUselessMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,**move,(std::string *)NULL);
@@ -3992,8 +3993,8 @@ void Engine::getOnePlayoutMove(Go::Board *board, Go::Color col, Go::Move *move)
 {
   Go::Board *playoutboard=board->copy();
   playoutboard->turnSymmetryOff();
-  if (params->playout_features_enabled)
-    playoutboard->setFeatures(features,params->playout_features_incremental);
+  if (params->playout_features_enabled>0)
+    playoutboard->setFeatures(features,params->playout_features_incremental,params->test_p8==0);
   playout->getPlayoutMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,*move,NULL);
   if (params->playout_useless_move)
     playout->checkUselessMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,*move,(std::string *)NULL);
@@ -4707,8 +4708,8 @@ void Engine::doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::
   
   Go::Board *playoutboard=currentboard->copy();
   playoutboard->turnSymmetryOff();
-  if (params->playout_features_enabled)
-    playoutboard->setFeatures(features,params->playout_features_incremental);
+  if (params->playout_features_enabled>0)
+    playoutboard->setFeatures(features,params->playout_features_incremental,params->test_p8==0);
   if (params->rave_moves>0)
   {
     firstlist->clear();

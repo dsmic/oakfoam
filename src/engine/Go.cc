@@ -1455,9 +1455,9 @@ std::list<Go::Board::SymmetryTransform> Go::Board::getSymmetryTransformsFromPrim
   return list;
 }
 
-void Go::Board::updateFeatureGammas()
+void Go::Board::updateFeatureGammas(bool both)
 {
-  if (markchanges && features!=NULL)
+  if ((markchanges || both) && features!=NULL)
   {
     Go::ObjectBoard<int> *cfglastdist=NULL;
     Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
@@ -1495,13 +1495,27 @@ void Go::Board::updateFeatureGammas()
     }
     else
     {
-      (nexttomove==Go::BLACK?blacktotalgamma:whitetotalgamma)=0;
-      (nexttomove==Go::BLACK?blackgammas:whitegammas)->fill(0);
+      if (both)
+      {
+        blackgammas->fill(0);
+        whitegammas->fill(0);
+      }
+      else
+      {
+        (nexttomove==Go::BLACK?blacktotalgamma:whitetotalgamma)=0;
+        (nexttomove==Go::BLACK?blackgammas:whitegammas)->fill(0);
+      }
       lastchanges->clear();
       
       for (int p=0;p<sizedata;p++)
       {
-        this->updateFeatureGamma(cfglastdist,cfgsecondlastdist,nexttomove,p);
+        if (both)
+        {
+          this->updateFeatureGamma(cfglastdist,cfgsecondlastdist,Go::BLACK,p);
+          this->updateFeatureGamma(cfglastdist,cfgsecondlastdist,Go::WHITE,p);
+        }
+        else
+          this->updateFeatureGamma(cfglastdist,cfgsecondlastdist,nexttomove,p);
       }
     }
     

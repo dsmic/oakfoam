@@ -660,7 +660,7 @@ namespace Go
       void turnSymmetryOn() { symmetryupdated=true;currentsymmetry=this->computeSymmetry(); };
       
       /** Set the features for the board and whether the gamma values should be updated incrementally. */
-      void setFeatures(Features *feat, bool inc) { features=feat; incfeatures=inc; markchanges=true; this->refreshFeatureGammas(); };
+      void setFeatures(Features *feat, bool inc, bool mchanges=true) { features=feat; incfeatures=inc; markchanges=mchanges; this->refreshFeatureGammas(); };
       /** Get the sum ofthe gamma values for this board. */
       float getFeatureTotalGamma() const { return (nexttomove==Go::BLACK?blacktotalgamma:whitetotalgamma); };
       /** Get the gamma value for a position on this board. */
@@ -751,7 +751,8 @@ namespace Go
       bool isProbableWorkingLadder(Go::Group *group) const;
       /** Determine if the ladder that exists after the move is made works or is broken in most cases. */
       bool isProbableWorkingLadderAfter(Go::Group *group, Go::Move move) const;
-   
+      void updateFeatureGammas(bool both=false);
+      
     private:
       const int size;
       const int sizesq;
@@ -816,7 +817,6 @@ namespace Go
       bool isProbableWorkingLadder(Go::Group *group, int posA, int movepos=-1) const;
       
       void refreshFeatureGammas();
-      void updateFeatureGammas();
       void updateFeatureGamma(Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, int pos);
       void updateFeatureGamma(Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Color col, int pos);
   };
