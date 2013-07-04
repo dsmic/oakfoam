@@ -2095,18 +2095,19 @@ DecisionTree::SparseGraph::SparseGraph(Go::Board *board)
     node->liberties = 0;
 
     nodes->push_back(node);
-    edges->push_back(new std::vector<int>());
   }
 
   unsigned int N = nodes->size();
   for (unsigned int i=0; i<N; i++)
   {
+    edges->push_back(new std::vector<int>());
+
     int p1 = nodes->at(i)->pos;
     for (unsigned int j=0; j<i; j++)
     {
       int p2 = nodes->at(j)->pos;
       int d = DecisionTree::getDistance(board,p1,p2);
-      edges->at(i)->at(j) = d;
+      edges->at(i)->push_back(d);
     }
   }
 
@@ -2156,7 +2157,7 @@ unsigned int DecisionTree::SparseGraph::addAuxNode(int pos)
   {
     int p2 = nodes->at(j)->pos;
     int d = DecisionTree::getDistance(board,pos,p2);
-    edges->at(i)->at(j) = d;
+    edges->at(i)->push_back(d);
   }
 
   auxnode = i;
@@ -2196,7 +2197,8 @@ int DecisionTree::SparseGraph::compareNodes(unsigned int node1, unsigned int nod
 
 void DecisionTree::SparseGraph::compressChain()
 {
-  throw "TODO";
+  // throw "TODO";
+  //TODO: compression
 }
 
 DecisionTree::GraphCollection::GraphCollection(Go::Board *board)
