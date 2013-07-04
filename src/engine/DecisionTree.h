@@ -23,14 +23,20 @@ class DecisionTree
         SparseGraph(Go::Board *board);
         ~SparseGraph();
 
+        Go::Board *getBoard() { return board; };
         unsigned int getNumNodes() { return nodes->size(); };
+        int getNodePosition(unsigned int node) { return nodes->at(node)->pos; };
         Go::Color getNodeStatus(unsigned int node) { return nodes->at(node)->col; };
         int getNodeSize(unsigned int node) { return nodes->at(node)->size; };
         int getNodeLiberties(unsigned int node) { return nodes->at(node)->liberties; };
         int getEdgeWeight(unsigned int node1, unsigned int node2);
 
+        std::list<unsigned int> *getSortedNodesFromAux();
+
         unsigned int addAuxNode(int pos);
         void removeAuxNode();
+
+        void compressChain();
 
       private:
         struct SparseNode
@@ -44,6 +50,25 @@ class DecisionTree
         Go::Board *board;
         std::vector<SparseNode*> *nodes;
         std::vector<std::vector<int>*> *edges;
+        unsigned int auxnode;
+
+        int compareNodes(unsigned int node1, unsigned int node2, unsigned int ref);
+    };
+
+    class GraphCollection
+    {
+      public:
+        GraphCollection(Go::Board *board);
+        ~GraphCollection();
+
+        Go::Board *getBoard() { return board; };
+
+        SparseGraph *getSparseGraph(bool compressChain);
+
+      private:
+        Go::Board *board;
+        SparseGraph *sparseNone;
+        SparseGraph *sparseChain;
     };
 
     ~DecisionTree();
@@ -51,14 +76,15 @@ class DecisionTree
     std::string toString(bool ignorestats = false, int leafoffset = 0);
 
     Type getType() { return type; };
+    //TODO: add compress flags
     std::vector<std::string> *getAttrs() { return attrs; };
-    float getWeight(Go::Board *board, Go::Move move, bool updatetree = false);
-    std::list<int> *getLeafIds(Go::Board *board, Go::Move move);
+    float getWeight(GraphCollection *graphs, Go::Move move, bool updatetree = false);
+    std::list<int> *getLeafIds(GraphCollection *graphs, Go::Move move);
     void updateLeafIds();
     int getLeafCount() { return leafmap.size(); };
     void setLeafWeight(int id, float w);
-    void updateDescent(Go::Board *board, Go::Move move);
-    void updateDescent(Go::Board *board);
+    void updateDescent(GraphCollection *graphs, Go::Move move);
+    void updateDescent(GraphCollection *graphs);
     void getTreeStats(int &treenodes, int &leaves, int &maxdepth, float &avgdepth, int &maxnodes, float &avgnodes);
     std::string getLeafPath(int id);
 
@@ -66,11 +92,11 @@ class DecisionTree
     static std::list<DecisionTree*> *loadFile(Parameters *params, std::string filename);
     static bool saveFile(std::list<DecisionTree*> *trees, std::string filename, bool ignorestats = false);
 
-    static float getCollectionWeight(std::list<DecisionTree*> *trees, Go::Board *board, Go::Move move, bool updatetree = false);
-    static std::list<int> *getCollectionLeafIds(std::list<DecisionTree*> *trees, Go::Board *board, Go::Move move);
+    static float getCollectionWeight(std::list<DecisionTree*> *trees, GraphCollection *graphs, Go::Move move, bool updatetree = false);
+    static std::list<int> *getCollectionLeafIds(std::list<DecisionTree*> *trees, GraphCollection *graphs, Go::Move move);
     static int getCollectionLeafCount(std::list<DecisionTree*> *trees);
     static void setCollectionLeafWeight(std::list<DecisionTree*> *trees, int id, float w);
-    static void collectionUpdateDescent(std::list<DecisionTree*> *trees, Go::Board *board);
+    static void collectionUpdateDescent(std::list<DecisionTree*> *trees, GraphCollection *graphs);
     static std::string getCollectionLeafPath(std::list<DecisionTree*> *trees, int id);
   
   private:
@@ -217,9 +243,9 @@ class DecisionTree
 
     DecisionTree(Parameters *p, Type t, std::vector<std::string> *a, DecisionTree::Node *r);
 
-    std::list<Node*> *getLeafNodes(Go::Board *board, Go::Move move, bool updatetree);
-    std::list<Node*> *getSparseLeafNodes(Node *node, Go::Board *board, std::vector<int> *stones, bool invert, bool updatetree);
-    bool updateSparseNode(Node *node, Go::Board *board, std::vector<int> *stones, bool invert);
+    std::list<Node*> *getLeafNodes(GraphCollection *graphs, Go::Move move, bool updatetree);
+    std::list<Node*> *getSparseLeafNodes(Node *node, SparseGraph *graph, std::vector<unsigned int> *stones, bool invert, bool updatetree);
+    bool updateSparseNode(Node *node, SparseGraph *graph, std::vector<unsigned int> *stones, bool invert);
     unsigned int getMaxNode(Node *node);
 
     static float combineNodeWeights(std::list<Node*> *nodes);

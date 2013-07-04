@@ -1760,7 +1760,8 @@ void Engine::gtpFeatureMatchesAt(void *instance, Gtp::Engine* gtpe, Gtp::Command
   Go::ObjectBoard<int> *cfglastdist=NULL;
   Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
   me->features->computeCFGDist(board,&cfglastdist,&cfgsecondlastdist);
-  
+  DecisionTree::GraphCollection *graphs = new DecisionTree::GraphCollection(board);
+
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printf("Feature Matches for %s:\n",move.toString(board->getSize()).c_str());
   gtpe->getOutput()->printf("PASS:              %u\n",me->features->matchFeatureClass(Features::PASS,board,cfglastdist,cfgsecondlastdist,move));
@@ -1775,8 +1776,8 @@ void Engine::gtpFeatureMatchesAt(void *instance, Gtp::Engine* gtpe, Gtp::Command
   gtpe->getOutput()->printf("CFGSECONDLASTDIST: %u\n",me->features->matchFeatureClass(Features::CFGSECONDLASTDIST,board,cfglastdist,cfgsecondlastdist,move));
   gtpe->getOutput()->printf("PATTERN3X3:        0x%04x\n",me->features->matchFeatureClass(Features::PATTERN3X3,board,cfglastdist,cfgsecondlastdist,move));
   gtpe->getOutput()->printf("CIRCPATT:          %u\n",me->features->matchFeatureClass(Features::CIRCPATT,board,cfglastdist,cfgsecondlastdist,move));
-  float gamma=me->features->getMoveGamma(board,cfglastdist,cfgsecondlastdist,move);
-  float total=me->features->getBoardGamma(board,cfglastdist,cfgsecondlastdist,col);
+  float gamma=me->features->getMoveGamma(board,cfglastdist,cfgsecondlastdist,graphs,move);
+  float total=me->features->getBoardGamma(board,cfglastdist,cfgsecondlastdist,graphs,col);
   gtpe->getOutput()->printf("Gamma: %.2f/%.2f (%.2f)\n",gamma,total,gamma/total);
   gtpe->getOutput()->endResponse(true);
   
@@ -1784,6 +1785,7 @@ void Engine::gtpFeatureMatchesAt(void *instance, Gtp::Engine* gtpe, Gtp::Command
     delete cfglastdist;
   if (cfgsecondlastdist!=NULL)
     delete cfgsecondlastdist;
+  delete graphs;
 }
 
 void Engine::gtpFeatureProbDistribution(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
@@ -1796,8 +1798,9 @@ void Engine::gtpFeatureProbDistribution(void *instance, Gtp::Engine* gtpe, Gtp::
   Go::ObjectBoard<int> *cfglastdist=NULL;
   Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
   me->features->computeCFGDist(board,&cfglastdist,&cfgsecondlastdist);
+  DecisionTree::GraphCollection *graphs = new DecisionTree::GraphCollection(board);
   
-  float totalgamma=me->features->getBoardGamma(board,cfglastdist,cfgsecondlastdist,col);
+  float totalgamma=me->features->getBoardGamma(board,cfglastdist,cfgsecondlastdist,graphs,col);
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printString("\n");
@@ -1806,7 +1809,7 @@ void Engine::gtpFeatureProbDistribution(void *instance, Gtp::Engine* gtpe, Gtp::
     for (int x=0;x<me->boardsize;x++)
     {
       Go::Move move=Go::Move(col,Go::Position::xy2pos(x,y,me->boardsize)); 
-      float gamma=me->features->getMoveGamma(board,cfglastdist,cfgsecondlastdist,move);
+      float gamma=me->features->getMoveGamma(board,cfglastdist,cfgsecondlastdist,graphs,move);
       if (gamma<=0)
         gtpe->getOutput()->printf("\"\" ");
       else
@@ -1853,6 +1856,7 @@ void Engine::gtpFeatureProbDistribution(void *instance, Gtp::Engine* gtpe, Gtp::
     delete cfglastdist;
   if (cfgsecondlastdist!=NULL)
     delete cfgsecondlastdist;
+  delete graphs;
 }
 
 void Engine::gtpListAllPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
@@ -3215,7 +3219,9 @@ void Engine::gtpDTAt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   int pos=Go::Position::xy2pos(vert.x,vert.y,me->boardsize);
   Go::Move move=Go::Move(me->currentboard->nextToMove(),pos);
 
-  float w = DecisionTree::getCollectionWeight(&(me->decisiontrees), me->currentboard, move);
+  DecisionTree::GraphCollection *graphs = new DecisionTree::GraphCollection(me->currentboard);
+  float w = DecisionTree::getCollectionWeight(&(me->decisiontrees), graphs, move);
+  delete graphs;
 
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printf("weight for %s: %.2f",move.toString(me->boardsize).c_str(),w);
@@ -3226,7 +3232,10 @@ void Engine::gtpDTUpdate(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
   
-  DecisionTree::collectionUpdateDescent(&(me->decisiontrees),me->currentboard);
+  DecisionTree::GraphCollection *graphs = new DecisionTree::GraphCollection(me->currentboard);
+  DecisionTree::collectionUpdateDescent(&(me->decisiontrees),graphs);
+  delete graphs;
+
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printf("updated decision trees");
   gtpe->getOutput()->endResponse();
@@ -3261,13 +3270,14 @@ void Engine::gtpDTDistribution(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
   Go::Board *board = me->currentboard;
   Go::Color col = board->nextToMove();
 
+  DecisionTree::GraphCollection *graphs = new DecisionTree::GraphCollection(board);
   float weightmax = 0;
   for (int y=me->boardsize-1;y>=0;y--)
   {
     for (int x=0;x<me->boardsize;x++)
     {
       Go::Move move = Go::Move(col,Go::Position::xy2pos(x,y,me->boardsize)); 
-      float weight = DecisionTree::getCollectionWeight(&(me->decisiontrees), board, move);
+      float weight = DecisionTree::getCollectionWeight(&(me->decisiontrees), graphs, move);
       if (weight >= 0 && weight > weightmax)
         weightmax = weight;
     }
@@ -3280,7 +3290,7 @@ void Engine::gtpDTDistribution(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
     for (int x=0;x<me->boardsize;x++)
     {
       Go::Move move = Go::Move(col,Go::Position::xy2pos(x,y,me->boardsize)); 
-      float weight = DecisionTree::getCollectionWeight(&(me->decisiontrees), board, move);
+      float weight = DecisionTree::getCollectionWeight(&(me->decisiontrees), graphs, move);
       if (weight < 0)
         gtpe->getOutput()->printf("\"\" ");
       else
@@ -3321,6 +3331,7 @@ void Engine::gtpDTDistribution(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
     }
     gtpe->getOutput()->printf("\n");
   }
+  delete graphs;
 
   gtpe->getOutput()->endResponse(true);
 }
@@ -3502,6 +3513,8 @@ void Engine::learnFromTree(Go::Board *tmpboard, Tree *learntree, std::ostringstr
   Go::ObjectBoard<int> *cfglastdist=NULL;
   Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
   getFeatures()->computeCFGDist(tmpboard,&cfglastdist,&cfgsecondlastdist);
+  DecisionTree::GraphCollection *graphs = new DecisionTree::GraphCollection(currentboard);
+
   for (int nn=1;nn<=num_unpruned;nn++)
   {
     for(std::list<Tree*>::iterator iter=learntree->getChildren()->begin();iter!=learntree->getChildren()->end();++iter) 
@@ -3510,7 +3523,7 @@ void Engine::learnFromTree(Go::Board *tmpboard, Tree *learntree, std::ostringstr
       {
         *ssun<<(nn!=1?",":"")<<Go::Position::pos2string((*iter)->getMove().getPosition(),boardsize);
         //do not use getFeatureGamma of the tree, as this might be not exactly the order of the gammas to be trained
-        ordergamma.insert(std::make_pair(getFeatures()->getMoveGamma(tmpboard,cfglastdist,cfgsecondlastdist,(*iter)->getMove())+forcesort,(*iter)->getMove()));
+        ordergamma.insert(std::make_pair(getFeatures()->getMoveGamma(tmpboard,cfglastdist,cfgsecondlastdist,graphs,(*iter)->getMove())+forcesort,(*iter)->getMove()));
         ordervalue.insert(std::make_pair((*iter)->getPlayouts()+forcesort,(*iter)->getMove()));
         orderlearntree.insert(std::make_pair((*iter)->getPlayouts()+forcesort,(*iter)));
         forcesort+=0.001012321232123;
@@ -3524,7 +3537,7 @@ void Engine::learnFromTree(Go::Board *tmpboard, Tree *learntree, std::ostringstr
     {
       //ssun<<(nn!=1?",":"")<<Go::Position::pos2string((*iter)->getMove().getPosition(),boardsize);
       //do not use getFeatureGamma of the tree, as this might be not exactly the order of the gammas to be trained
-      ordergamma.insert(std::make_pair(getFeatures()->getMoveGamma(tmpboard,cfglastdist,cfgsecondlastdist,(*iter)->getMove())+forcesort,(*iter)->getMove()));
+      ordergamma.insert(std::make_pair(getFeatures()->getMoveGamma(tmpboard,cfglastdist,cfgsecondlastdist,graphs,(*iter)->getMove())+forcesort,(*iter)->getMove()));
       ordervalue.insert(std::make_pair(0.0+forcesort,(*iter)->getMove()));
       forcesort+=0.001012321232123;
     }
@@ -3576,6 +3589,12 @@ void Engine::learnFromTree(Go::Board *tmpboard, Tree *learntree, std::ostringstr
     //learnFromTree has to be called
     learnFromTree (nextboard,it_learntree->second,ssun,movenum+1);
   }
+
+  if (cfglastdist!=NULL)
+    delete cfglastdist;
+  if (cfgsecondlastdist!=NULL)
+    delete cfgsecondlastdist;
+  delete graphs;
 }
 
 void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
@@ -3797,8 +3816,6 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     *move=new Go::Move(col,Go::Move::PASS);
     Go::Board *playoutboard=currentboard->copy();
     playoutboard->turnSymmetryOff();
-    if (params->playout_features_enabled)
-      playoutboard->setFeatures(features,params->playout_features_incremental);
     playout->getPlayoutMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,**move,NULL);
     if (params->playout_useless_move)
       playout->checkUselessMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,**move,(std::string *)NULL);
@@ -3811,8 +3828,6 @@ void Engine::getOnePlayoutMove(Go::Board *board, Go::Color col, Go::Move *move)
 {
   Go::Board *playoutboard=board->copy();
   playoutboard->turnSymmetryOff();
-  if (params->playout_features_enabled)
-    playoutboard->setFeatures(features,params->playout_features_incremental);
   playout->getPlayoutMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,*move,NULL);
   if (params->playout_useless_move)
     playout->checkUselessMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,*move,(std::string *)NULL);
@@ -3833,7 +3848,11 @@ void Engine::makeMove(Go::Move move)
       this->mpiBroadcastCommand(MPICMD_MAKEMOVE,&tmp1,&tmp2);
     );
   #endif
+
 #define WITH_P(A) (A>=1.0 || (A>0 && threadpool->getThreadZero()->getSettings()->rand->getRandomReal()<A))  
+
+  DecisionTree::GraphCollection *graphs = new DecisionTree::GraphCollection(currentboard);
+
   if (WITH_P(params->features_output_competitions))
   {
     bool isawinner=true;
@@ -3844,7 +3863,7 @@ void Engine::makeMove(Go::Move move)
     if (params->features_output_competitions_mmstyle)
     {
       int p=move.getPosition();
-      std::string featurestring=features->getMatchingFeaturesString(currentboard,cfglastdist,cfgsecondlastdist,move,!params->features_output_competitions_mmstyle);
+      std::string featurestring=features->getMatchingFeaturesString(currentboard,cfglastdist,cfgsecondlastdist,graphs,move,!params->features_output_competitions_mmstyle);
       if (featurestring.length()>0)
       {
         gtpe->getOutput()->printfDebug("[features]:# competition (%d,%s)\n",(currentboard->getMovesMade()+1),Go::Position::pos2string(move.getPosition(),boardsize).c_str());
@@ -3866,7 +3885,7 @@ void Engine::makeMove(Go::Move move)
         Go::Move m=Go::Move(col,p);
         if (currentboard->validMove(m) || m==move)
         {
-          std::string featurestring=features->getMatchingFeaturesString(currentboard,cfglastdist,cfgsecondlastdist,m,!params->features_output_competitions_mmstyle);
+          std::string featurestring=features->getMatchingFeaturesString(currentboard,cfglastdist,cfgsecondlastdist,graphs,m,!params->features_output_competitions_mmstyle);
           if (featurestring.length()>0)
           {
             gtpe->getOutput()->printfDebug("[features]:%s",Go::Position::pos2string(p,boardsize).c_str());
@@ -3888,7 +3907,7 @@ void Engine::makeMove(Go::Move move)
             gtpe->getOutput()->printfDebug("*");
           else
             gtpe->getOutput()->printfDebug(":");
-          gtpe->getOutput()->printfDebug("%s",features->getMatchingFeaturesString(currentboard,cfglastdist,cfgsecondlastdist,m,!params->features_output_competitions_mmstyle).c_str());
+          gtpe->getOutput()->printfDebug("%s",features->getMatchingFeaturesString(currentboard,cfglastdist,cfgsecondlastdist,graphs,m,!params->features_output_competitions_mmstyle).c_str());
           gtpe->getOutput()->printfDebug("\n");
         }
       }
@@ -3950,7 +3969,7 @@ void Engine::makeMove(Go::Move move)
     for (std::list<DecisionTree*>::iterator iter=decisiontrees.begin();iter!=decisiontrees.end();++iter)
     {
       if (WITH_P(params->dt_update_prob))
-        (*iter)->updateDescent(currentboard);
+        (*iter)->updateDescent(graphs);
     }
   }
 
@@ -3958,7 +3977,7 @@ void Engine::makeMove(Go::Move move)
   {
     if (move.isNormal())
     {
-      std::list<int> *ids = DecisionTree::getCollectionLeafIds(&decisiontrees,currentboard,move);
+      std::list<int> *ids = DecisionTree::getCollectionLeafIds(&decisiontrees,graphs,move);
       if (ids != NULL)
       {
         gtpe->getOutput()->printfDebug("[dt]:#\n");
@@ -3977,7 +3996,7 @@ void Engine::makeMove(Go::Move move)
           Go::Move m=Go::Move(col,p);
           if (currentboard->validMove(m) || m==move)
           {
-            std::list<int> *ids = DecisionTree::getCollectionLeafIds(&decisiontrees,currentboard,m);
+            std::list<int> *ids = DecisionTree::getCollectionLeafIds(&decisiontrees,graphs,m);
             if (ids != NULL)
             {
               std::string idstring = "";
@@ -4017,7 +4036,7 @@ void Engine::makeMove(Go::Move move)
       Go::Move m = Go::Move(col,p);
       if (currentboard->validMove(m) || m==move)
       {
-        float w = features->getMoveGamma(currentboard,cfglastdist,cfgsecondlastdist,m);
+        float w = features->getMoveGamma(currentboard,cfglastdist,cfgsecondlastdist,graphs,m);
         weights[p] = w;
         if (w != -1)
           sumweights += w;
@@ -4030,7 +4049,7 @@ void Engine::makeMove(Go::Move move)
       Go::Move m = Go::Move(col,Go::Move::PASS);
       if (currentboard->validMove(m) || m==move)
       {
-        float w = features->getMoveGamma(currentboard,cfglastdist,cfgsecondlastdist,m);
+        float w = features->getMoveGamma(currentboard,cfglastdist,cfgsecondlastdist,graphs,m);
         weights[p] = w;
         if (w != -1)
           sumweights += w;
@@ -4141,7 +4160,7 @@ void Engine::makeMove(Go::Move move)
     {
       Go::Move m = Go::Move(col,p);
       if (currentboard->validMove(m) || m==move)
-        weights[p] = DecisionTree::getCollectionWeight(&decisiontrees,currentboard,m);
+        weights[p] = DecisionTree::getCollectionWeight(&decisiontrees,graphs,m);
       else
         weights[p] = -1;
     }
@@ -4188,6 +4207,8 @@ void Engine::makeMove(Go::Move move)
     gtpe->getOutput()->printfDebug("\n");
     gtpe->getOutput()->printfDebug("[dt_comparison]:matched at: %d\n",matchedat);
   }
+
+  delete graphs;
   
   currentboard->makeMove(move);
   movehistory->push_back(move);
@@ -4557,8 +4578,6 @@ void Engine::doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::
   
   Go::Board *playoutboard=currentboard->copy();
   playoutboard->turnSymmetryOff();
-  if (params->playout_features_enabled)
-    playoutboard->setFeatures(features,params->playout_features_incremental);
   if (params->rave_moves>0)
   {
     firstlist->clear();

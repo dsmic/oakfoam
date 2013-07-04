@@ -604,13 +604,6 @@ namespace Go
       /** Turn symmetry calculations on for this board. */
       void turnSymmetryOn() { symmetryupdated=true;currentsymmetry=this->computeSymmetry(); };
       
-      /** Set the features for the board and whether the gamma values should be updated incrementally. */
-      void setFeatures(Features *feat, bool inc) { features=feat; incfeatures=inc; markchanges=true; this->refreshFeatureGammas(); };
-      /** Get the sum ofthe gamma values for this board. */
-      float getFeatureTotalGamma() const { return (nexttomove==Go::BLACK?blacktotalgamma:whitetotalgamma); };
-      /** Get the gamma value for a position on this board. */
-      float getFeatureGamma(int pos) const { return (nexttomove==Go::BLACK?blackgammas:whitegammas)->get(pos); };
-      
       /** Determine if the given score is a win for the given color. */
       static bool isWinForColor(Go::Color col, float score);
 
@@ -707,12 +700,6 @@ namespace Go
       boost::object_pool<Go::Group> pool_group;
       bool markchanges;
       Go::BitBoard *lastchanges;
-      Features *features;
-      bool incfeatures;
-      float blacktotalgamma;
-      float whitetotalgamma;
-      Go::ObjectBoard<float> *blackgammas;
-      Go::ObjectBoard<float> *whitegammas;
       int blackcaptures,whitecaptures;
       bool lastcapture;
       
@@ -752,11 +739,6 @@ namespace Go
       
       void spreadScore(Go::Board::ScoreVertex *scoredata, int pos, Go::Color col);
       bool isProbableWorkingLadder(Go::Group *group, int posA, int movepos=-1) const;
-      
-      void refreshFeatureGammas();
-      void updateFeatureGammas();
-      void updateFeatureGamma(Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, int pos);
-      void updateFeatureGamma(Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Color col, int pos);
   };
 };
 

@@ -7,7 +7,6 @@
 #include <iomanip>
 #include "Parameters.h"
 //#include "Pattern.h"
-#include "DecisionTree.h"
 #include "Engine.h"
 
 //moved here, so it is not parsed any time feature.h is included
@@ -1253,7 +1252,7 @@ void Features::learnFeatureGamma(Features::FeatureClass featclass, unsigned int 
   }
 }
 
-float Features::getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove, bool usecircularpatterns) const
+float Features::getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, DecisionTree::GraphCollection *graphs, Go::Move move, bool checkforvalidmove, bool usecircularpatterns) const
 {
   float g=1.0;
   
@@ -1276,7 +1275,7 @@ float Features::getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist
 
   if (params->features_dt_use)
   {
-    float w = DecisionTree::getCollectionWeight(params->engine->getDecisionTrees(),board,move);
+    float w = DecisionTree::getCollectionWeight(params->engine->getDecisionTrees(),graphs,move);
     if (w != -1)
       g *= w;
   }
@@ -1521,7 +1520,7 @@ bool Features::learnMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdis
   return true;
 }
 
-float Features::getBoardGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Color col) const
+float Features::getBoardGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, DecisionTree::GraphCollection *graphs, Go::Color col) const
 {
   float total=0;
   
@@ -1529,16 +1528,16 @@ float Features::getBoardGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdis
   {
     Go::Move move=Go::Move(col,p);
     if (board->validMove(move))
-      total+=this->getMoveGamma(board,cfglastdist,cfgsecondlastdist,move,false);
+      total+=this->getMoveGamma(board,cfglastdist,cfgsecondlastdist,graphs,move,false);
   }
   
   Go::Move passmove=Go::Move(col,Go::Move::PASS);
-  total+=this->getMoveGamma(board,cfglastdist,cfgsecondlastdist,passmove,false);
+  total+=this->getMoveGamma(board,cfglastdist,cfgsecondlastdist,graphs,passmove,false);
   
   return total;
 }
 
-float Features::getBoardGammas(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Color col, Go::ObjectBoard<float> *gammas) const
+float Features::getBoardGammas(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, DecisionTree::GraphCollection *graphs, Go::Color col, Go::ObjectBoard<float> *gammas) const
 {
   float total=0;
   
@@ -1547,7 +1546,7 @@ float Features::getBoardGammas(Go::Board *board, Go::ObjectBoard<int> *cfglastdi
     Go::Move move=Go::Move(col,p);
     if (board->validMove(move))
     {
-      float gamma=this->getMoveGamma(board,cfglastdist,cfgsecondlastdist,move,false);;
+      float gamma=this->getMoveGamma(board,cfglastdist,cfgsecondlastdist,graphs,move,false);;
       gammas->set(p,gamma);
       total+=gamma;
     }
@@ -1555,7 +1554,7 @@ float Features::getBoardGammas(Go::Board *board, Go::ObjectBoard<int> *cfglastdi
   
   {
     Go::Move move=Go::Move(col,Go::Move::PASS);
-    float gamma=this->getMoveGamma(board,cfglastdist,cfgsecondlastdist,move,false);;
+    float gamma=this->getMoveGamma(board,cfglastdist,cfgsecondlastdist,graphs,move,false);;
     gammas->set(0,gamma);
     total+=gamma;
   }
@@ -2023,7 +2022,7 @@ bool Features::setFeatureGamma(Features::FeatureClass featclass, unsigned int le
   }
 }
 
-std::string Features::getMatchingFeaturesString(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool pretty) const
+std::string Features::getMatchingFeaturesString(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, DecisionTree::GraphCollection *graphs, Go::Move move, bool pretty) const
 {
   std::ostringstream ss;
   unsigned int level,base;
@@ -2152,7 +2151,7 @@ std::string Features::getMatchingFeaturesString(Go::Board *board, Go::ObjectBoar
 
   if (params->features_dt_use)
   {
-    std::list<int> *ids = DecisionTree::getCollectionLeafIds(params->engine->getDecisionTrees(),board,move);
+    std::list<int> *ids = DecisionTree::getCollectionLeafIds(params->engine->getDecisionTrees(),graphs,move);
     if (ids != NULL)
     {
       for (std::list<int>::iterator iter=ids->begin();iter!=ids->end();++iter)

@@ -65,12 +65,12 @@ unsigned int DecisionTree::getMaxNode(DecisionTree::Node *node)
   return this->getMaxNode(topnode) + (addnode?1:0);
 }
 
-float DecisionTree::getWeight(Go::Board *board, Go::Move move, bool updatetree)
+float DecisionTree::getWeight(DecisionTree::GraphCollection *graphs, Go::Move move, bool updatetree)
 {
-  if (!board->validMove(move) || !move.isNormal())
+  if (!graphs->getBoard()->validMove(move) || !move.isNormal())
     return -1;
 
-  std::list<DecisionTree::Node*> *nodes = this->getLeafNodes(board,move,updatetree);
+  std::list<DecisionTree::Node*> *nodes = this->getLeafNodes(graphs,move,updatetree);
   float w = -1;
   if (nodes != NULL)
   {
@@ -81,42 +81,43 @@ float DecisionTree::getWeight(Go::Board *board, Go::Move move, bool updatetree)
   return w;
 }
 
-void DecisionTree::updateDescent(Go::Board *board, Go::Move move)
+void DecisionTree::updateDescent(DecisionTree::GraphCollection *graphs, Go::Move move)
 {
-  std::list<DecisionTree::Node*> *nodes = this->getLeafNodes(board,move,true);
+  std::list<DecisionTree::Node*> *nodes = this->getLeafNodes(graphs,move,true);
   if (nodes != NULL)
     delete nodes;
 }
 
-void DecisionTree::updateDescent(Go::Board *board)
+void DecisionTree::updateDescent(DecisionTree::GraphCollection *graphs)
 {
+  Go::Board *board = graphs->getBoard();
   Go::Color col = board->nextToMove();
   for (int p=0; p<board->getPositionMax(); p++)
   {
     Go::Move move = Go::Move(col,p);
     if (board->validMove(move))
-      this->updateDescent(board,move);
+      this->updateDescent(graphs,move);
   }
 }
 
-void DecisionTree::collectionUpdateDescent(std::list<DecisionTree*> *trees, Go::Board *board)
+void DecisionTree::collectionUpdateDescent(std::list<DecisionTree*> *trees, DecisionTree::GraphCollection *graphs)
 {
   for (std::list<DecisionTree*>::iterator iter=trees->begin();iter!=trees->end();++iter)
   {
-    (*iter)->updateDescent(board);
+    (*iter)->updateDescent(graphs);
   }
 }
 
-float DecisionTree::getCollectionWeight(std::list<DecisionTree*> *trees, Go::Board *board, Go::Move move, bool updatetree)
+float DecisionTree::getCollectionWeight(std::list<DecisionTree*> *trees, DecisionTree::GraphCollection *graphs, Go::Move move, bool updatetree)
 {
   float weight = 1;
 
-  if (!board->validMove(move) || !move.isNormal())
+  if (!graphs->getBoard()->validMove(move) || !move.isNormal())
     return -1;
 
   for (std::list<DecisionTree*>::iterator iter=trees->begin();iter!=trees->end();++iter)
   {
-    float w = (*iter)->getWeight(board, move, updatetree);
+    float w = (*iter)->getWeight(graphs, move, updatetree);
     if (w == -1)
       return -1;
     weight *= w;
@@ -125,12 +126,12 @@ float DecisionTree::getCollectionWeight(std::list<DecisionTree*> *trees, Go::Boa
   return weight;
 }
 
-std::list<int> *DecisionTree::getLeafIds(Go::Board *board, Go::Move move)
+std::list<int> *DecisionTree::getLeafIds(DecisionTree::GraphCollection *graphs, Go::Move move)
 {
-  if (!board->validMove(move))
+  if (!graphs->getBoard()->validMove(move))
     return NULL;
 
-  std::list<DecisionTree::Node*> *nodes = this->getLeafNodes(board,move,false);
+  std::list<DecisionTree::Node*> *nodes = this->getLeafNodes(graphs,move,false);
   if (nodes == NULL)
     return NULL;
 
@@ -143,14 +144,14 @@ std::list<int> *DecisionTree::getLeafIds(Go::Board *board, Go::Move move)
   return ids;
 }
 
-std::list<int> *DecisionTree::getCollectionLeafIds(std::list<DecisionTree*> *trees, Go::Board *board, Go::Move move)
+std::list<int> *DecisionTree::getCollectionLeafIds(std::list<DecisionTree*> *trees, DecisionTree::GraphCollection *graphs, Go::Move move)
 {
   std::list<int> *collids = new std::list<int>();
   int offset = 0;
 
   for (std::list<DecisionTree*>::iterator iter=trees->begin();iter!=trees->end();++iter)
   {
-    std::list<int> *ids = (*iter)->getLeafIds(board, move);
+    std::list<int> *ids = (*iter)->getLeafIds(graphs, move);
     if (ids == NULL)
     {
       delete collids;
@@ -308,7 +309,7 @@ int DecisionTree::getDistance(Go::Board *board, int p1, int p2)
     return board->getRectDistance(p1,p2);
 }
 
-bool DecisionTree::updateSparseNode(DecisionTree::Node *node, Go::Board *board, std::vector<int> *stones, bool invert)
+bool DecisionTree::updateSparseNode(DecisionTree::Node *node, DecisionTree::SparseGraph *graph, std::vector<unsigned int> *stones, bool invert)
 {
   std::vector<DecisionTree::StatPerm*> *statperms = node->getStats()->getStatPerms();
   if (node->isLeaf()) // only update stats until the node is split
@@ -325,57 +326,39 @@ bool DecisionTree::updateSparseNode(DecisionTree::Node *node, Go::Board *board, 
       //fprintf(stderr,"[DT] SP type: '%s'\n",spt.c_str());
       if (spt=="NEW")
       {
+        unsigned int auxnode = stones->at(0);
+
         std::string cols = attrs->at(0);
         bool B = (cols.find('B') != std::string::npos);
         bool W = (cols.find('W') != std::string::npos);
         bool S = (cols.find('S') != std::string::npos);
-        int center = stones->at(0);
+        if (!B && !W && !S)
+        {
+          fprintf(stderr,"[DT] Error! Unknown attribute: '%s'\n",cols.c_str());
+          return false;
+        }
 
         bool resfound = false;
-        for (int s=0; s<resmax; s++)
+        for (int s=0; s<=resmax; s++)
         {
-          if (B || W)
+          for (unsigned int i=0; i<graph->getNumNodes(); i++)
           {
-            for (int ii=0; ii<board->getSize(); ii++)
+            bool valid = false;
+            if ((invert?W:B) && graph->getNodeStatus(i)==Go::BLACK)
+              valid = true;
+            else if ((invert?B:W) && graph->getNodeStatus(i)==Go::WHITE)
+              valid = true;
+            else if (S && graph->getNodeStatus(i)==Go::OFFBOARD)
+              valid = true;
+
+            if (valid)
             {
-              for (int jj=0; jj<board->getSize(); jj++)
-              {
-                int p = Go::Position::xy2pos(ii,jj,board->getSize());
-                Go::Color col = board->getColor(p);
-                if (((invert?W:B) && col==Go::BLACK) || ((invert?B:W) && col==Go::WHITE))
-                {
-                  if (DecisionTree::getDistance(board,center,p) <= s)
-                  {
-                    bool found = false;
-                    for (unsigned int iii=0; iii<stones->size(); iii++)
-                    {
-                      if (stones->at(iii) == p)
-                      {
-                        found = true;
-                        break;
-                      }
-                    }
-                    if (!found)
-                    {
-                      resfound = true;
-                      res = s;
-                      break;
-                    }
-                  }
-                }
-              }
-            }
-          }
-          else if (S)
-          {
-            for (int p=-1; p>=-4; p--)
-            {
-              if (DecisionTree::getDistance(board,center,p) <= s)
+              if (graph->getEdgeWeight(auxnode,i) <= s)
               {
                 bool found = false;
-                for (unsigned int ii=0; ii<stones->size(); ii++)
+                for (unsigned int j=0; j<stones->size(); j++)
                 {
-                  if (stones->at(ii) == p)
+                  if (stones->at(j) == i)
                   {
                     found = true;
                     break;
@@ -390,11 +373,7 @@ bool DecisionTree::updateSparseNode(DecisionTree::Node *node, Go::Board *board, 
               }
             }
           }
-          else
-          {
-            fprintf(stderr,"[DT] Error! Unknown attribute: '%s'\n",cols.c_str());
-            return false;
-          }
+
           if (resfound)
             break;
         }
@@ -408,7 +387,7 @@ bool DecisionTree::updateSparseNode(DecisionTree::Node *node, Go::Board *board, 
         int n0 = boost::lexical_cast<int>(attrs->at(0));
         int n1 = boost::lexical_cast<int>(attrs->at(1));
 
-        res = DecisionTree::getDistance(board,stones->at(n0),stones->at(n1));
+        res = graph->getEdgeWeight(stones->at(n0),stones->at(n1));
       }
       else if (spt=="ATTR")
       {
@@ -416,31 +395,11 @@ bool DecisionTree::updateSparseNode(DecisionTree::Node *node, Go::Board *board, 
         std::string type = attrs->at(0);
         int n = boost::lexical_cast<int>(attrs->at(1));
 
-        int p = stones->at(n);
-        if (p < 0) // side
-          res = 0;
-        else
-        {
-          if (type == "SIZE")
-          {
-            if (board->inGroup(p))
-              res = board->getGroup(p)->numOfStones();
-            else
-              res = 0;
-          }
-          else if (type == "LIB")
-          {
-            if (board->inGroup(p))
-            {
-              if (board->getGroup(p)->inAtari())
-                res = 1;
-              else
-                res = board->getGroup(p)->numOfPseudoLiberties();
-            }
-            else
-              res = 0;
-          }
-        }
+        int node = stones->at(n);
+        if (type == "SIZE")
+          res = graph->getNodeSize(node);
+        else if (type == "LIB")
+          res = graph->getNodeLiberties(node);
       }
       else
       {
@@ -592,18 +551,23 @@ float DecisionTree::percentageToVal(float p)
   return val;
 }
 
-std::list<DecisionTree::Node*> *DecisionTree::getLeafNodes(Go::Board *board, Go::Move move, bool updatetree)
+std::list<DecisionTree::Node*> *DecisionTree::getLeafNodes(DecisionTree::GraphCollection *graphs, Go::Move move, bool updatetree)
 {
   std::list<DecisionTree::Node*> *nodes = NULL;
 
-  std::vector<int> *stones = new std::vector<int>();
+  std::vector<unsigned int> *stones = new std::vector<unsigned int>();
   bool invert = (move.getColor() != Go::BLACK);
-  stones->push_back(move.getPosition());
 
   switch (type)
   {
     case SPARSE:
-      nodes = this->getSparseLeafNodes(root,board,stones,invert,updatetree);
+      DecisionTree::SparseGraph *graph = graphs->getSparseGraph(false); // TODO: compression param
+      unsigned int auxnode = graph->addAuxNode(move.getPosition());
+
+      stones->push_back(auxnode);
+      nodes = this->getSparseLeafNodes(root,graph,stones,invert,updatetree);
+
+      graph->removeAuxNode();
   }
 
   delete stones;
@@ -635,11 +599,11 @@ std::list<DecisionTree::Node*> *DecisionTree::getLeafNodes(Go::Board *board, Go:
   return nodes;
 }
 
-std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::Node *node, Go::Board *board, std::vector<int> *stones, bool invert, bool updatetree)
+std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::Node *node, DecisionTree::SparseGraph *graph, std::vector<unsigned int> *stones, bool invert, bool updatetree)
 {
   if (updatetree)
   {
-    if (!this->updateSparseNode(node,board,stones,invert))
+    if (!this->updateSparseNode(node,graph,stones,invert))
       return NULL;
   }
 
@@ -651,12 +615,10 @@ std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::N
   }
 
   DecisionTree::Query *q = node->getQuery();
-
-  //TODO: handle compress chains param
   
-  if (q->getLabel() == "NEW")
+  if (q->getLabel() == "NEW") // XXX: replace with SparseGraph::getSortedNodesFromAux()
   {
-    int center = stones->at(0);
+    unsigned int auxnode = stones->at(0);
 
     std::vector<std::string> *attrs = q->getAttrs();
     bool B = (attrs->at(0).find('B') != std::string::npos);
@@ -665,102 +627,82 @@ std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::N
     std::string valstr = attrs->at(1);
     int val = boost::lexical_cast<int>(valstr);
 
-    std::list<int> matches;
+    std::list<unsigned int> matches;
     for (int s=0; s<=val; s++)
     {
-      //XXX: need more efficient way of finding new nearby points?
-      if (B || W)
+      for (unsigned int i=0; i<graph->getNumNodes(); i++)
       {
-        for (int i=0; i<board->getSize(); i++)
+        bool valid = false;
+        if ((invert?W:B) && graph->getNodeStatus(i)==Go::BLACK)
+          valid = true;
+        else if ((invert?B:W) && graph->getNodeStatus(i)==Go::WHITE)
+          valid = true;
+        else if (S && graph->getNodeStatus(i)==Go::OFFBOARD)
+          valid = true;
+
+        if (valid)
         {
-          for (int j=0; j<board->getSize(); j++)
-          {
-            int p = Go::Position::xy2pos(i,j,board->getSize());
-            Go::Color col = board->getColor(p);
-            if (((invert?W:B) && col==Go::BLACK) || ((invert?B:W) && col==Go::WHITE))
-            {
-              if (DecisionTree::getDistance(board,center,p) <= s)
-              {
-                bool found = false;
-                for (unsigned int i=0; i<stones->size(); i++)
-                {
-                  if (stones->at(i) == p)
-                  {
-                    found = true;
-                    break;
-                  }
-                }
-                if (!found)
-                  matches.push_back(p);
-              }
-            }
-          }
-        }
-      }
-      if (S)
-      {
-        for (int p=-1; p>=-4; p--)
-        {
-          if (DecisionTree::getDistance(board,center,p) <= s)
+          if (graph->getEdgeWeight(auxnode,i) <= s)
           {
             bool found = false;
-            for (unsigned int i=0; i<stones->size(); i++)
+            for (unsigned int j=0; j<stones->size(); j++)
             {
-              if (stones->at(i) == p)
+              if (stones->at(j) == i)
               {
                 found = true;
                 break;
               }
             }
             if (!found)
-              matches.push_back(p);
+              matches.push_back(i);
           }
         }
       }
+
       if (matches.size() > 0)
         break;
     }
 
     if (matches.size() > 1) // try break ties (B...W...S)
     {
-      std::list<int> m;
-      for (std::list<int>::iterator iter=matches.begin();iter!=matches.end();++iter)
+      std::list<unsigned int> m;
+      for (std::list<unsigned int>::iterator iter=matches.begin();iter!=matches.end();++iter)
       {
-        int p = (*iter);
+        unsigned int n = (*iter);
         if (invert)
         {
-          if (p>=0 && board->getColor(p)==Go::WHITE)
-            m.push_back(p);
+          if (graph->getNodeStatus(n)==Go::WHITE)
+            m.push_back(n);
         }
         else
         {
-          if (p>=0 && board->getColor(p)==Go::BLACK)
-            m.push_back(p);
+          if (graph->getNodeStatus(n)==Go::BLACK)
+            m.push_back(n);
         }
       }
       if (m.size()==0)
       {
-        for (std::list<int>::iterator iter=matches.begin();iter!=matches.end();++iter)
+        for (std::list<unsigned int>::iterator iter=matches.begin();iter!=matches.end();++iter)
         {
-          int p = (*iter);
+          unsigned int n = (*iter);
           if (invert)
           {
-            if (p>=0 && board->getColor(p)==Go::BLACK)
-              m.push_back(p);
+            if (graph->getNodeStatus(n)==Go::BLACK)
+              m.push_back(n);
           }
           else
           {
-            if (p>=0 && board->getColor(p)==Go::WHITE)
-              m.push_back(p);
+            if (graph->getNodeStatus(n)==Go::WHITE)
+              m.push_back(n);
           }
         }
         if (m.size()==0)
         {
-          for (std::list<int>::iterator iter=matches.begin();iter!=matches.end();++iter)
+          for (std::list<unsigned int>::iterator iter=matches.begin();iter!=matches.end();++iter)
           {
-            int p = (*iter);
-            if (p<0) // side
-              m.push_back(p);
+            unsigned int n = (*iter);
+            if (graph->getNodeStatus(n)==Go::OFFBOARD)
+              m.push_back(n);
           }
         }
       }
@@ -768,20 +710,20 @@ std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::N
 
       if (matches.size() > 1) // still tied (dist to newest node)
       {
-        for (int i=stones->size()-1; i>0; i--) // implicitly checked distance to 0'th node
+        for (unsigned int i=stones->size()-1; i>0; i--) // implicitly checked distance to 0'th node
         {
-          int mindist = DecisionTree::getDistance(board,stones->at(i),matches.front());
-          for (std::list<int>::iterator iter=matches.begin();iter!=matches.end();++iter)
+          int mindist = graph->getEdgeWeight(stones->at(i),matches.front());
+          for (std::list<unsigned int>::iterator iter=matches.begin();iter!=matches.end();++iter)
           {
-            int dist = DecisionTree::getDistance(board,stones->at(i),(*iter));
+            int dist = graph->getEdgeWeight(stones->at(i),(*iter));
             if (dist < mindist)
               mindist = dist;
           }
 
-          std::list<int> m;
-          for (std::list<int>::iterator iter=matches.begin();iter!=matches.end();++iter)
+          std::list<unsigned int> m;
+          for (std::list<unsigned int>::iterator iter=matches.begin();iter!=matches.end();++iter)
           {
-            int dist = DecisionTree::getDistance(board,stones->at(i),(*iter));
+            int dist = graph->getEdgeWeight(stones->at(i),(*iter));
             if (dist == mindist)
               m.push_back((*iter));
           }
@@ -794,60 +736,38 @@ std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::N
         if (matches.size() > 1) // yet still tied (largest size)
         {
           int maxsize = 0;
-          for (std::list<int>::iterator iter=matches.begin();iter!=matches.end();++iter)
+          for (std::list<unsigned int>::iterator iter=matches.begin();iter!=matches.end();++iter)
           {
-            int p = (*iter);
-            int size = 0;
-            if (p>0 && board->inGroup(p))
-              size = board->getGroup(p)->numOfStones();
+            int size = graph->getNodeSize((*iter));
             if (size > maxsize)
               maxsize = size;
           }
 
-          std::list<int> m;
-          for (std::list<int>::iterator iter=matches.begin();iter!=matches.end();++iter)
+          std::list<unsigned int> m;
+          for (std::list<unsigned int>::iterator iter=matches.begin();iter!=matches.end();++iter)
           {
-            int p = (*iter);
-            int size = 0;
-            if (p>0 && board->inGroup(p))
-              size = board->getGroup(p)->numOfStones();
+            int size = graph->getNodeSize((*iter));
             if (size == maxsize)
-              m.push_back(p);
+              m.push_back((*iter));
           }
           matches = m;
 
           if (matches.size() > 1) // yet yet still tied (most liberties)
           {
             int maxlib = 0;
-            for (std::list<int>::iterator iter=matches.begin();iter!=matches.end();++iter)
+            for (std::list<unsigned int>::iterator iter=matches.begin();iter!=matches.end();++iter)
             {
-              int p = (*iter);
-              int lib = 0;
-              if (p>0 && board->inGroup(p))
-              {
-                if (board->getGroup(p)->inAtari())
-                  lib = 1;
-                else
-                  lib = board->getGroup(p)->numOfPseudoLiberties();
-              }
+              int lib = graph->getNodeLiberties((*iter));
               if (lib > maxlib)
                 maxlib = lib;
             }
 
-            std::list<int> m;
-            for (std::list<int>::iterator iter=matches.begin();iter!=matches.end();++iter)
+            std::list<unsigned int> m;
+            for (std::list<unsigned int>::iterator iter=matches.begin();iter!=matches.end();++iter)
             {
-              int p = (*iter);
-              int lib = 0;
-              if (p>0 && board->inGroup(p))
-              {
-                if (board->getGroup(p)->inAtari())
-                  lib = 1;
-                else
-                  lib = board->getGroup(p)->numOfPseudoLiberties();
-              }
+              int lib = graph->getNodeLiberties((*iter));
               if (lib == maxlib)
-                m.push_back(p);
+                m.push_back((*iter));
             }
             matches = m;
           }
@@ -859,27 +779,23 @@ std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::N
     if (matches.size() > 0)
     {
       std::list<DecisionTree::Node*> *nodes = NULL;
-      for (std::list<int>::iterator iter=matches.begin();iter!=matches.end();++iter)
+      for (std::list<unsigned int>::iterator iter=matches.begin();iter!=matches.end();++iter)
       {
         std::list<DecisionTree::Node*> *subnodes = NULL;
-        int newpos = (*iter);
-        Go::Color col;
-        if (newpos < 0) // side
-          col = Go::OFFBOARD;
-        else
-          col = board->getColor(newpos);
-        stones->push_back(newpos);
+        unsigned int newnode = (*iter);
+        Go::Color col = graph->getNodeStatus(newnode);
+        stones->push_back(newnode);
 
         std::vector<DecisionTree::Option*> *options = q->getOptions();
         for (unsigned int i=0; i<options->size(); i++)
         {
           std::string l = options->at(i)->getLabel();
           if (col==Go::BLACK && l==(invert?"W":"B"))
-            subnodes = this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert,updatetree);
+            subnodes = this->getSparseLeafNodes(options->at(i)->getNode(),graph,stones,invert,updatetree);
           else if (col==Go::WHITE && l==(invert?"B":"W"))
-            subnodes = this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert,updatetree);
+            subnodes = this->getSparseLeafNodes(options->at(i)->getNode(),graph,stones,invert,updatetree);
           else if (col==Go::OFFBOARD && l=="S")
-            subnodes = this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert,updatetree);
+            subnodes = this->getSparseLeafNodes(options->at(i)->getNode(),graph,stones,invert,updatetree);
         }
         stones->pop_back();
 
@@ -908,7 +824,7 @@ std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::N
       {
         std::string l = options->at(i)->getLabel();
         if (l=="N")
-          return this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert,updatetree);
+          return this->getSparseLeafNodes(options->at(i)->getNode(),graph,stones,invert,updatetree);
       }
       return NULL;
     }
@@ -921,7 +837,7 @@ std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::N
     bool eq = attrs->at(2) == "=";
     int val = boost::lexical_cast<int>(attrs->at(3));
 
-    int dist = DecisionTree::getDistance(board,stones->at(n0),stones->at(n1));
+    int dist = graph->getEdgeWeight(stones->at(n0),stones->at(n1));
     bool res;
     if (eq)
       res = dist == val;
@@ -933,9 +849,9 @@ std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::N
     {
       std::string l = options->at(i)->getLabel();
       if (res && l=="Y")
-        return this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert,updatetree);
+        return this->getSparseLeafNodes(options->at(i)->getNode(),graph,stones,invert,updatetree);
       else if (!res && l=="N")
-        return this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert,updatetree);
+        return this->getSparseLeafNodes(options->at(i)->getNode(),graph,stones,invert,updatetree);
     }
     return NULL;
   }
@@ -947,32 +863,12 @@ std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::N
     bool eq = attrs->at(2) == "=";
     int val = boost::lexical_cast<int>(attrs->at(3));
 
-    int p = stones->at(n);
+    unsigned int node = stones->at(n);
     int attr = 0;
-    if (p < 0) // side
-      attr = 0;
-    else
-    {
-      if (type == "SIZE")
-      {
-        if (board->inGroup(p))
-          attr = board->getGroup(p)->numOfStones();
-        else
-          attr = 0;
-      }
-      else if (type == "LIB")
-      {
-        if (board->inGroup(p))
-        {
-          if (board->getGroup(p)->inAtari())
-            attr = 1;
-          else
-            attr = board->getGroup(p)->numOfPseudoLiberties();
-        }
-        else
-          attr = 0;
-      }
-    }
+    if (type == "SIZE")
+      attr = graph->getNodeSize(node);
+    else if (type == "LIB")
+      attr = graph->getNodeLiberties(node);
 
     bool res;
     if (eq)
@@ -985,9 +881,9 @@ std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::N
     {
       std::string l = options->at(i)->getLabel();
       if (res && l=="Y")
-        return this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert,updatetree);
+        return this->getSparseLeafNodes(options->at(i)->getNode(),graph,stones,invert,updatetree);
       else if (!res && l=="N")
-        return this->getSparseLeafNodes(options->at(i)->getNode(),board,stones,invert,updatetree);
+        return this->getSparseLeafNodes(options->at(i)->getNode(),graph,stones,invert,updatetree);
     }
     return NULL;
   }
@@ -2213,6 +2109,8 @@ DecisionTree::SparseGraph::SparseGraph(Go::Board *board)
       edges->at(i)->at(j) = d;
     }
   }
+
+  auxnode = -1;
 }
 
 DecisionTree::SparseGraph::~SparseGraph()
@@ -2238,6 +2136,9 @@ int DecisionTree::SparseGraph::getEdgeWeight(unsigned int node1, unsigned int no
 
 unsigned int DecisionTree::SparseGraph::addAuxNode(int pos)
 {
+  if (auxnode != (unsigned int)-1)
+    throw "Aux node already present";
+
   DecisionTree::SparseGraph::SparseNode *node = new DecisionTree::SparseGraph::SparseNode();
 
   node->pos = pos;
@@ -2258,11 +2159,16 @@ unsigned int DecisionTree::SparseGraph::addAuxNode(int pos)
     edges->at(i)->at(j) = d;
   }
 
+  auxnode = i;
+
   return i;
 }
 
 void DecisionTree::SparseGraph::removeAuxNode()
 {
+  if (auxnode == (unsigned int)-1)
+    throw "Aux node not present";
+
   // assume that the last node added is the aux node
   unsigned int N = nodes->size();
   unsigned int i = N - 1;
@@ -2272,5 +2178,48 @@ void DecisionTree::SparseGraph::removeAuxNode()
 
   nodes->resize(N-1);
   edges->resize(N-1);
+
+  auxnode = -1;
+}
+
+std::list<unsigned int> *DecisionTree::SparseGraph::getSortedNodesFromAux()
+{
+  throw "TODO";
+  return NULL;
+}
+
+int DecisionTree::SparseGraph::compareNodes(unsigned int node1, unsigned int node2, unsigned int ref)
+{
+  throw "TODO";
+  return 0;
+}
+
+void DecisionTree::SparseGraph::compressChain()
+{
+  throw "TODO";
+}
+
+DecisionTree::GraphCollection::GraphCollection(Go::Board *board)
+{
+  this->board = board;
+
+  sparseNone = new DecisionTree::SparseGraph(board);
+
+  sparseChain = new DecisionTree::SparseGraph(board);
+  sparseChain->compressChain();
+}
+
+DecisionTree::GraphCollection::~GraphCollection()
+{
+  delete sparseNone;
+  delete sparseChain;
+}
+
+DecisionTree::SparseGraph *DecisionTree::GraphCollection::getSparseGraph(bool compressChain)
+{
+  if (compressChain)
+    return sparseChain;
+  else
+    return sparseNone;
 }
 

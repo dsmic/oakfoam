@@ -1339,6 +1339,7 @@ bool Tree::expandLeaf(Worker::Settings *settings)
     Go::ObjectBoard<int> *cfglastdist=NULL;
     Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
     params->engine->getFeatures()->computeCFGDist(startboard,&cfglastdist,&cfgsecondlastdist);
+    DecisionTree::GraphCollection *graphs = new DecisionTree::GraphCollection(startboard);
 
     //int now_unpruned=this->getUnprunedNum();
     //fprintf(stderr,"debugging %d\n",now_unpruned);
@@ -1346,7 +1347,7 @@ bool Tree::expandLeaf(Worker::Settings *settings)
     {
       if ((*iter)->isPrimary())
       {
-        float gamma=params->engine->getFeatures()->getMoveGamma(startboard,cfglastdist,cfgsecondlastdist,(*iter)->getMove(),true,true);
+        float gamma=params->engine->getFeatures()->getMoveGamma(startboard,cfglastdist,cfgsecondlastdist,graphs,(*iter)->getMove(),true,true);
         (*iter)->setFeatureGamma(gamma);
         //if ((*iter)->getMove().toString(params->board_size).compare("B:E1")==0)
         //  fprintf(stderr,"move %s %f\n",(*iter)->getMove().toString(params->board_size).c_str(),gamma);
@@ -1357,6 +1358,7 @@ bool Tree::expandLeaf(Worker::Settings *settings)
       delete cfglastdist;
     if (cfgsecondlastdist!=NULL)
       delete cfgsecondlastdist;
+    delete graphs;
     
     if (params->uct_progressive_widening_enabled)
     {

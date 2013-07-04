@@ -222,14 +222,6 @@ Go::Board::Board(int s)
   symmetryupdated=true;
   currentsymmetry=Go::Board::FULL;
   
-  features=NULL;
-  blacktotalgamma=0;
-  whitetotalgamma=0;
-  blackgammas=new Go::ObjectBoard<float>(s);
-  whitegammas=new Go::ObjectBoard<float>(s);
-  blackgammas->fill(0);
-  whitegammas->fill(0);
-  
   blackcaptures=0;
   whitecaptures=0;
   lastscoredata=NULL;
@@ -241,9 +233,6 @@ Go::Board::~Board()
   delete whitevalidmoves;
   
   delete lastchanges;
-  
-  delete blackgammas;
-  delete whitegammas;
   
   //XXX: memory will get freed when pool is destroyed
   /*for(std::list<Go::Group*,Go::allocator_groupptr>::iterator iter=groups.begin();iter!=groups.end();++iter) 
@@ -290,7 +279,6 @@ void Go::Board::copyOver(Go::Board *copyboard) const
   
   copyboard->symmetryupdated=this->symmetryupdated;
   copyboard->currentsymmetry=this->currentsymmetry;
-  copyboard->updateFeatureGammas();
   
   copyboard->blackcaptures=this->blackcaptures;
   copyboard->whitecaptures=this->whitecaptures;
@@ -545,7 +533,6 @@ void Go::Board::makeMove(Go::Move move)
     lastmove=move;
     if (symmetryupdated)
       this->updateSymmetry();
-    this->updateFeatureGammas();
     return;
   }
   
@@ -657,8 +644,6 @@ void Go::Board::makeMove(Go::Move move)
   
   if (symmetryupdated)
     this->updateSymmetry();
-  if (features!=NULL)
-    this->updateFeatureGammas();
 }
 
 void Go::Board::refreshValidMoves()
@@ -1452,106 +1437,6 @@ std::list<Go::Board::SymmetryTransform> Go::Board::getSymmetryTransformsFromPrim
   }
   
   return list;
-}
-
-void Go::Board::updateFeatureGammas()
-{
-  if (markchanges && features!=NULL)
-  {
-    Go::ObjectBoard<int> *cfglastdist=NULL;
-    Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
-    features->computeCFGDist(this,&cfglastdist,&cfgsecondlastdist);
-    
-    if (incfeatures)
-    {
-      //expand to 3x3 neighbourhood first
-      //assume only the 3x3 neighbourhood is relevant
-      //see: params->features_only_small
-      Go::BitBoard *changes3x3=new Go::BitBoard(size);
-      changes3x3->clear();
-      for (int p=0;p<sizedata;p++)
-      {
-        if (lastchanges->get(p))
-        {
-          changes3x3->set(p);
-          foreach_adjdiag(p,q,{
-            if (this->onBoard(q))
-              changes3x3->set(q);
-          });
-        }
-      }
-      
-      for (int p=0;p<sizedata;p++)
-      {
-        if (changes3x3->get(p))
-          this->updateFeatureGamma(cfglastdist,cfgsecondlastdist,p);
-      }
-      delete changes3x3;
-      
-      this->updateFeatureGamma(cfglastdist,cfgsecondlastdist,0); //pass
-      
-      lastchanges->clear();
-    }
-    else
-    {
-      (nexttomove==Go::BLACK?blacktotalgamma:whitetotalgamma)=0;
-      (nexttomove==Go::BLACK?blackgammas:whitegammas)->fill(0);
-      lastchanges->clear();
-      
-      for (int p=0;p<sizedata;p++)
-      {
-        this->updateFeatureGamma(cfglastdist,cfgsecondlastdist,nexttomove,p);
-      }
-    }
-    
-    if (cfglastdist!=NULL)
-      delete cfglastdist;
-    if (cfgsecondlastdist!=NULL)
-      delete cfgsecondlastdist;
-  }
-}
-
-void Go::Board::refreshFeatureGammas()
-{
-  blacktotalgamma=0;
-  whitetotalgamma=0;
-  blackgammas->fill(0);
-  whitegammas->fill(0);
-  lastchanges->clear();
-  
-  Go::ObjectBoard<int> *cfglastdist=NULL;
-  Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
-  features->computeCFGDist(this,&cfglastdist,&cfgsecondlastdist);
-  
-  for (int p=0;p<sizedata;p++)
-  {
-    this->updateFeatureGamma(cfglastdist,cfgsecondlastdist,p);
-  }
-  
-  if (cfglastdist!=NULL)
-    delete cfglastdist;
-  if (cfgsecondlastdist!=NULL)
-    delete cfgsecondlastdist;
-}
-
-void Go::Board::updateFeatureGamma(Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, int pos)
-{
-  this->updateFeatureGamma(cfglastdist,cfgsecondlastdist,Go::BLACK,pos);
-  this->updateFeatureGamma(cfglastdist,cfgsecondlastdist,Go::WHITE,pos);
-}
-
-void Go::Board::updateFeatureGamma(Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Color col, int pos)
-{
-  float oldgamma=(col==Go::BLACK?blackgammas:whitegammas)->get(pos);
-  float gamma;
-  if (pos==0) //pass
-    gamma=features->getMoveGamma(this,cfglastdist,cfgsecondlastdist,Go::Move(col,Go::Move::PASS));
-  else if (!this->weakEye(nexttomove,pos))
-    gamma=features->getMoveGamma(this,cfglastdist,cfgsecondlastdist,Go::Move(col,pos));
-  else
-    gamma=0;
-  (col==Go::BLACK?blackgammas:whitegammas)->set(pos,gamma);
-  (col==Go::BLACK?blacktotalgamma:whitetotalgamma)+=(gamma-oldgamma);
 }
 
 bool Go::Board::isCapture(Go::Move move) const

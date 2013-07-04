@@ -28,8 +28,8 @@ class Parameters;
   class CircularDictionary;
 };
 */
-
 #include "Pattern.h"
+#include "DecisionTree.h"
 
 /** ELO Features.
  * Class to manage extracting, learning, and using feature weights.
@@ -111,14 +111,14 @@ class Features
     /** Return the weight for a move.
      * The weight for a move is the product of matching feature weights for that move.
      */
-    float getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove=true, bool withcircularpatterns=true) const;
+    float getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, DecisionTree::GraphCollection *graphs, Go::Move move, bool checkforvalidmove=true, bool withcircularpatterns=true) const;
     bool learnMovesGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, std::map<float,Go::Move,std::greater<float> > ordervalue, std::map<int,float> move_gamma, float sum_gammas);
     bool learnMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, float learn_diff);
     int learnMoveGammaC(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, float learn_diff);
     /** Return the total of all gammas for the moves on a board. */
-    float getBoardGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Color col) const;
+    float getBoardGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, DecisionTree::GraphCollection *graphs, Go::Color col) const;
     /** Return the total of all gammas for the moves on a board and each move's weight in @p gammas. */
-    float getBoardGammas(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Color col, Go::ObjectBoard<float> *gammas) const;
+    float getBoardGammas(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, DecisionTree::GraphCollection *graphs, Go::Color col, Go::ObjectBoard<float> *gammas) const;
     /** Return the human-readable name for a feature class. */
     std::string getFeatureClassName(Features::FeatureClass featclass) const;
     /** Return the feature class, given a name. */
@@ -130,7 +130,7 @@ class Features
     int learnFeatureGammaC(Features::FeatureClass featclass, unsigned int level, float learn_diff);
     
     /** Return a string of all the matching features for a move. */ 
-    std::string getMatchingFeaturesString(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool pretty=true) const;
+    std::string getMatchingFeaturesString(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, DecisionTree::GraphCollection *graphs, Go::Move move, bool pretty=true) const;
     /** Return a list of all valid features and levels. */
     std::string getFeatureIdList() const;
     
