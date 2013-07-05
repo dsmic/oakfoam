@@ -55,7 +55,7 @@ unsigned int DecisionTree::getMaxNode(DecisionTree::Node *node)
   bool addnode = false;
   switch (type)
   {
-    case SPARSE:
+    case STONE:
       if (query->getLabel()=="NEW" && opt->getLabel()!="N")
         addnode = true;
       break;
@@ -260,7 +260,7 @@ void DecisionTree::Node::getTreeStats(DecisionTree::Type type, int depth, int no
       bool addnode = false;
       switch (type)
       {
-        case SPARSE:
+        case STONE:
           if (query->getLabel()=="NEW" && opt->getLabel()!="N")
             addnode = true;
           break;
@@ -309,7 +309,7 @@ int DecisionTree::getDistance(Go::Board *board, int p1, int p2)
     return board->getRectDistance(p1,p2);
 }
 
-bool DecisionTree::updateSparseNode(DecisionTree::Node *node, DecisionTree::SparseGraph *graph, std::vector<unsigned int> *stones, bool invert)
+bool DecisionTree::updateStoneNode(DecisionTree::Node *node, DecisionTree::StoneGraph *graph, std::vector<unsigned int> *stones, bool invert)
 {
   std::vector<DecisionTree::StatPerm*> *statperms = node->getStats()->getStatPerms();
   if (node->isLeaf()) // only update stats until the node is split
@@ -560,12 +560,12 @@ std::list<DecisionTree::Node*> *DecisionTree::getLeafNodes(DecisionTree::GraphCo
 
   switch (type)
   {
-    case SPARSE:
-      DecisionTree::SparseGraph *graph = graphs->getSparseGraph(false); // TODO: compression param
+    case STONE:
+      DecisionTree::StoneGraph *graph = graphs->getStoneGraph(false); // TODO: compression param
       unsigned int auxnode = graph->addAuxNode(move.getPosition());
 
       stones->push_back(auxnode);
-      nodes = this->getSparseLeafNodes(root,graph,stones,invert,updatetree);
+      nodes = this->getStoneLeafNodes(root,graph,stones,invert,updatetree);
 
       graph->removeAuxNode();
   }
@@ -599,11 +599,11 @@ std::list<DecisionTree::Node*> *DecisionTree::getLeafNodes(DecisionTree::GraphCo
   return nodes;
 }
 
-std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::Node *node, DecisionTree::SparseGraph *graph, std::vector<unsigned int> *stones, bool invert, bool updatetree)
+std::list<DecisionTree::Node*> *DecisionTree::getStoneLeafNodes(DecisionTree::Node *node, DecisionTree::StoneGraph *graph, std::vector<unsigned int> *stones, bool invert, bool updatetree)
 {
   if (updatetree)
   {
-    if (!this->updateSparseNode(node,graph,stones,invert))
+    if (!this->updateStoneNode(node,graph,stones,invert))
       return NULL;
   }
 
@@ -616,7 +616,7 @@ std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::N
 
   DecisionTree::Query *q = node->getQuery();
   
-  if (q->getLabel() == "NEW") // XXX: replace with SparseGraph::getSortedNodesFromAux()
+  if (q->getLabel() == "NEW") // TODO: replace with StoneGraph::getSortedNodesFromAux()
   {
     unsigned int auxnode = stones->at(0);
 
@@ -791,11 +791,11 @@ std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::N
         {
           std::string l = options->at(i)->getLabel();
           if (col==Go::BLACK && l==(invert?"W":"B"))
-            subnodes = this->getSparseLeafNodes(options->at(i)->getNode(),graph,stones,invert,updatetree);
+            subnodes = this->getStoneLeafNodes(options->at(i)->getNode(),graph,stones,invert,updatetree);
           else if (col==Go::WHITE && l==(invert?"B":"W"))
-            subnodes = this->getSparseLeafNodes(options->at(i)->getNode(),graph,stones,invert,updatetree);
+            subnodes = this->getStoneLeafNodes(options->at(i)->getNode(),graph,stones,invert,updatetree);
           else if (col==Go::OFFBOARD && l=="S")
-            subnodes = this->getSparseLeafNodes(options->at(i)->getNode(),graph,stones,invert,updatetree);
+            subnodes = this->getStoneLeafNodes(options->at(i)->getNode(),graph,stones,invert,updatetree);
         }
         stones->pop_back();
 
@@ -824,7 +824,7 @@ std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::N
       {
         std::string l = options->at(i)->getLabel();
         if (l=="N")
-          return this->getSparseLeafNodes(options->at(i)->getNode(),graph,stones,invert,updatetree);
+          return this->getStoneLeafNodes(options->at(i)->getNode(),graph,stones,invert,updatetree);
       }
       return NULL;
     }
@@ -849,9 +849,9 @@ std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::N
     {
       std::string l = options->at(i)->getLabel();
       if (res && l=="Y")
-        return this->getSparseLeafNodes(options->at(i)->getNode(),graph,stones,invert,updatetree);
+        return this->getStoneLeafNodes(options->at(i)->getNode(),graph,stones,invert,updatetree);
       else if (!res && l=="N")
-        return this->getSparseLeafNodes(options->at(i)->getNode(),graph,stones,invert,updatetree);
+        return this->getStoneLeafNodes(options->at(i)->getNode(),graph,stones,invert,updatetree);
     }
     return NULL;
   }
@@ -881,9 +881,9 @@ std::list<DecisionTree::Node*> *DecisionTree::getSparseLeafNodes(DecisionTree::N
     {
       std::string l = options->at(i)->getLabel();
       if (res && l=="Y")
-        return this->getSparseLeafNodes(options->at(i)->getNode(),graph,stones,invert,updatetree);
+        return this->getStoneLeafNodes(options->at(i)->getNode(),graph,stones,invert,updatetree);
       else if (!res && l=="N")
-        return this->getSparseLeafNodes(options->at(i)->getNode(),graph,stones,invert,updatetree);
+        return this->getStoneLeafNodes(options->at(i)->getNode(),graph,stones,invert,updatetree);
     }
     return NULL;
   }
@@ -1115,8 +1115,8 @@ std::list<DecisionTree*> *DecisionTree::parseString(Parameters *params, std::str
 
   Type type;
   std::string typestr = attrs->at(0);
-  if (typestr == "SPARSE")
-    type = SPARSE;
+  if (typestr == "STONE" || typestr=="SPARSE") // SPARSE is legacy
+    type = STONE;
   else
   {
     fprintf(stderr,"[DT] Error! Invalid type: '%s'\n",typestr.c_str());
@@ -1124,7 +1124,7 @@ std::list<DecisionTree*> *DecisionTree::parseString(Parameters *params, std::str
     return NULL;
   }
 
-  if (attrs->size()!=2 || attrs->at(0)!="SPARSE" || attrs->at(1)!="NOCOMP") //TODO: extend to more tree types
+  if (attrs->size()!=2 || type!=STONE || attrs->at(1)!="NOCOMP") //TODO: extend to more tree types
   {
     fprintf(stderr,"[DT] Error! Invalid attributes for tree\n");
     delete attrs;
@@ -1716,7 +1716,7 @@ void DecisionTree::Node::populateEmptyStats(DecisionTree::Type type, unsigned in
       bool addnode = false;
       switch (type)
       {
-        case SPARSE:
+        case STONE:
           if (query->getLabel()=="NEW" && opt->getLabel()!="N")
             addnode = true;
           break;
@@ -1752,7 +1752,7 @@ DecisionTree::Stats::Stats(DecisionTree::Type type, unsigned int maxnode)
 {
   switch (type)
   {
-    case SPARSE:
+    case STONE:
       statperms = new std::vector<DecisionTree::StatPerm*>();
       float rangemin = 0;
       float rangemax = 100;
@@ -2000,7 +2000,7 @@ DecisionTree::Query::Query(DecisionTree::Type type, std::string l, std::vector<s
   options = new std::vector<DecisionTree::Option*>();
   switch (type)
   {
-    case SPARSE:
+    case STONE:
       if (l=="NEW")
       {
         bool B = (attrs->at(0).find('B') != std::string::npos);
@@ -2059,17 +2059,17 @@ DecisionTree::Option::~Option()
   delete node;
 }
 
-DecisionTree::SparseGraph::SparseGraph(Go::Board *board)
+DecisionTree::StoneGraph::StoneGraph(Go::Board *board)
 {
   this->board = board;
-  nodes = new std::vector<DecisionTree::SparseGraph::SparseNode*>();
+  nodes = new std::vector<DecisionTree::StoneGraph::StoneNode*>();
   edges = new std::vector<std::vector<int>*>();
 
   for (int p = 0; p < board->getPositionMax(); p++)
   {
     if (board->inGroup(p))
     {
-      DecisionTree::SparseGraph::SparseNode *node = new DecisionTree::SparseGraph::SparseNode();
+      DecisionTree::StoneGraph::StoneNode *node = new DecisionTree::StoneGraph::StoneNode();
 
       node->pos = p;
       node->col = board->getColor(p);
@@ -2087,7 +2087,7 @@ DecisionTree::SparseGraph::SparseGraph(Go::Board *board)
 
   for (int i = -1; i >= -4; i--)
   {
-    DecisionTree::SparseGraph::SparseNode *node = new DecisionTree::SparseGraph::SparseNode();
+    DecisionTree::StoneGraph::StoneNode *node = new DecisionTree::StoneGraph::StoneNode();
 
     node->pos = i;
     node->col = Go::OFFBOARD;
@@ -2114,7 +2114,7 @@ DecisionTree::SparseGraph::SparseGraph(Go::Board *board)
   auxnode = -1;
 }
 
-DecisionTree::SparseGraph::~SparseGraph()
+DecisionTree::StoneGraph::~StoneGraph()
 {
   for (unsigned int i = 0; i < nodes->size(); i++)
   {
@@ -2125,7 +2125,7 @@ DecisionTree::SparseGraph::~SparseGraph()
   delete edges;
 }
 
-int DecisionTree::SparseGraph::getEdgeWeight(unsigned int node1, unsigned int node2)
+int DecisionTree::StoneGraph::getEdgeWeight(unsigned int node1, unsigned int node2)
 {
   if (node1 == node2)
     return 0;
@@ -2135,12 +2135,12 @@ int DecisionTree::SparseGraph::getEdgeWeight(unsigned int node1, unsigned int no
     return edges->at(node1)->at(node2);
 };
 
-unsigned int DecisionTree::SparseGraph::addAuxNode(int pos)
+unsigned int DecisionTree::StoneGraph::addAuxNode(int pos)
 {
   if (auxnode != (unsigned int)-1)
     throw "Aux node already present";
 
-  DecisionTree::SparseGraph::SparseNode *node = new DecisionTree::SparseGraph::SparseNode();
+  DecisionTree::StoneGraph::StoneNode *node = new DecisionTree::StoneGraph::StoneNode();
 
   node->pos = pos;
   node->col = Go::EMPTY;
@@ -2165,7 +2165,7 @@ unsigned int DecisionTree::SparseGraph::addAuxNode(int pos)
   return i;
 }
 
-void DecisionTree::SparseGraph::removeAuxNode()
+void DecisionTree::StoneGraph::removeAuxNode()
 {
   if (auxnode == (unsigned int)-1)
     throw "Aux node not present";
@@ -2183,19 +2183,19 @@ void DecisionTree::SparseGraph::removeAuxNode()
   auxnode = -1;
 }
 
-std::list<unsigned int> *DecisionTree::SparseGraph::getSortedNodesFromAux()
+std::list<unsigned int> *DecisionTree::StoneGraph::getSortedNodesFromAux()
 {
   throw "TODO";
   return NULL;
 }
 
-int DecisionTree::SparseGraph::compareNodes(unsigned int node1, unsigned int node2, unsigned int ref)
+int DecisionTree::StoneGraph::compareNodes(unsigned int node1, unsigned int node2, unsigned int ref)
 {
   throw "TODO";
   return 0;
 }
 
-void DecisionTree::SparseGraph::compressChain()
+void DecisionTree::StoneGraph::compressChain()
 {
   // throw "TODO";
   //TODO: compression
@@ -2205,23 +2205,23 @@ DecisionTree::GraphCollection::GraphCollection(Go::Board *board)
 {
   this->board = board;
 
-  sparseNone = new DecisionTree::SparseGraph(board);
+  stoneNone = new DecisionTree::StoneGraph(board);
 
-  sparseChain = new DecisionTree::SparseGraph(board);
-  sparseChain->compressChain();
+  stoneChain = new DecisionTree::StoneGraph(board);
+  stoneChain->compressChain();
 }
 
 DecisionTree::GraphCollection::~GraphCollection()
 {
-  delete sparseNone;
-  delete sparseChain;
+  delete stoneNone;
+  delete stoneChain;
 }
 
-DecisionTree::SparseGraph *DecisionTree::GraphCollection::getSparseGraph(bool compressChain)
+DecisionTree::StoneGraph *DecisionTree::GraphCollection::getStoneGraph(bool compressChain)
 {
   if (compressChain)
-    return sparseChain;
+    return stoneChain;
   else
-    return sparseNone;
+    return stoneNone;
 }
 

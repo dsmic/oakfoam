@@ -14,14 +14,14 @@ class DecisionTree
   public:
     enum Type
     {
-      SPARSE
+      STONE
     };
 
-    class SparseGraph
+    class StoneGraph
     {
       public:
-        SparseGraph(Go::Board *board);
-        ~SparseGraph();
+        StoneGraph(Go::Board *board);
+        ~StoneGraph();
 
         Go::Board *getBoard() { return board; };
         unsigned int getNumNodes() { return nodes->size(); };
@@ -39,7 +39,7 @@ class DecisionTree
         void compressChain();
 
       private:
-        struct SparseNode
+        struct StoneNode
         {
           int pos;
           Go::Color col;
@@ -48,7 +48,7 @@ class DecisionTree
         };
 
         Go::Board *board;
-        std::vector<SparseNode*> *nodes;
+        std::vector<StoneNode*> *nodes;
         std::vector<std::vector<int>*> *edges;
         unsigned int auxnode;
 
@@ -63,12 +63,12 @@ class DecisionTree
 
         Go::Board *getBoard() { return board; };
 
-        SparseGraph *getSparseGraph(bool compressChain);
+        StoneGraph *getStoneGraph(bool compressChain);
 
       private:
         Go::Board *board;
-        SparseGraph *sparseNone;
-        SparseGraph *sparseChain;
+        StoneGraph *stoneNone;
+        StoneGraph *stoneChain;
     };
 
     ~DecisionTree();
@@ -244,8 +244,8 @@ class DecisionTree
     DecisionTree(Parameters *p, Type t, std::vector<std::string> *a, DecisionTree::Node *r);
 
     std::list<Node*> *getLeafNodes(GraphCollection *graphs, Go::Move move, bool updatetree);
-    std::list<Node*> *getSparseLeafNodes(Node *node, SparseGraph *graph, std::vector<unsigned int> *stones, bool invert, bool updatetree);
-    bool updateSparseNode(Node *node, SparseGraph *graph, std::vector<unsigned int> *stones, bool invert);
+    std::list<Node*> *getStoneLeafNodes(Node *node, StoneGraph *graph, std::vector<unsigned int> *stones, bool invert, bool updatetree);
+    bool updateStoneNode(Node *node, StoneGraph *graph, std::vector<unsigned int> *stones, bool invert);
     unsigned int getMaxNode(Node *node);
 
     static float combineNodeWeights(std::list<Node*> *nodes);
