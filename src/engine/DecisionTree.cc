@@ -2073,8 +2073,8 @@ DecisionTree::SparseGraph::SparseGraph(Go::Board *board)
 
       node->pos = p;
       node->col = board->getColor(p);
-      node->size = 1;
       Go::Group *group = board->getGroup(p);
+      node->size = group->numOfStones();
       if (group->inAtari())
         node->liberties = 1;
       else
