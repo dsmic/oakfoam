@@ -911,10 +911,10 @@ void Tree::unPruneNow()
 
 float Tree::getUnPruneFactor(float *moveValues,float mean, int num) const
 {
-  float factor=1;
+  float factor=gamma/parent->getChildrenTotalFeatureGamma();
   if (params->uct_rave_unprune_decay>0)
   {
-    factor=log((1000.0*gamma*params->uct_rave_unprune_decay)/(parent->raveplayouts+params->uct_rave_unprune_decay)+1);
+    factor=log((1000.0*gamma*params->uct_rave_unprune_decay)/(parent->raveplayouts+params->uct_rave_unprune_decay)+1.0); 
     //ELO tests
     //
     // factor=gamma/parent->getChildrenTotalFeatureGamma()*exp(-parent->raveplayouts*params->uct_rave_unprune_decay);
@@ -944,8 +944,6 @@ float Tree::getUnPruneFactor(float *moveValues,float mean, int num) const
     //factor=pow(gamma,params->test_p6);
     
   }
-  else
-    factor=gamma/parent->getChildrenTotalFeatureGamma();
   //fprintf(stderr,"unprunefactore %f %f %f\n",gamma,parent->raveplayouts,factor);
   if (params->uct_criticality_unprune_factor>0 && (params->uct_criticality_siblings?parent->playouts:playouts)>(params->uct_criticality_min_playouts))
   {

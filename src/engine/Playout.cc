@@ -1716,7 +1716,7 @@ void Playout::getLast2LibAtariMove(Worker::Settings *settings, Go::Board *board,
   int possiblemovescount_base=0;
   int possiblemovescount=0;
   int size=board->getSize();
-  int bestlevel=1;
+  float bestlevel=1;
   Go::Group *lastgroup=NULL;
   
   if (board->getLastMove().isNormal())
@@ -1741,7 +1741,7 @@ void Playout::getLast2LibAtariMove(Worker::Settings *settings, Go::Board *board,
               {
                 if (board->validMove(Go::Move(col,p)))
                 {
-                  int lvl=this->getTwoLibertyMoveLevel(board,Go::Move(col,p),group); //*(params->test_p10+ rand->getRandomReal())
+                  float lvl=this->getTwoLibertyMoveLevel(board,Go::Move(col,p),group); //*(params->test_p10+ rand->getRandomReal())
                   //fprintf(stderr,"1 atlevel %s %d\n",Go::Move(col,p).toString (19).c_str(),lvl);
                   if (lvl>0 && lvl>=bestlevel)
                   {
@@ -1757,7 +1757,7 @@ void Playout::getLast2LibAtariMove(Worker::Settings *settings, Go::Board *board,
                 }
                 if (board->validMove(Go::Move(col,s)))
                 {
-                  int lvl=this->getTwoLibertyMoveLevel(board,Go::Move(col,s),group); //*(params->test_p10+ rand->getRandomReal())
+                  float lvl=this->getTwoLibertyMoveLevel(board,Go::Move(col,s),group); //*(params->test_p10+ rand->getRandomReal())
                   //fprintf(stderr,"2 atlevel %s %d\n",Go::Move(col,s).toString (19).c_str(),lvl);
                   if (lvl>0 && lvl>=bestlevel)
                   {
@@ -2483,7 +2483,7 @@ void Playout::clearLGPF(Go::Color col, int pos1, unsigned int hash, unsigned lon
   }
  }
 
-int Playout::getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group *group)
+float Playout::getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group *group)
 {
   if (params->playout_last2libatari_complex)
   {
@@ -2512,16 +2512,16 @@ int Playout::getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group *
         if (stopsconnection)
         {
           //fprintf(stderr,"9\n");
-          return board->touchingEmpty(move.getPosition())+9;
+          return board->touchingEmpty(move.getPosition())+9+params->test_p9*group->numOfStones();
         }
         else
         {
           //fprintf(stderr,"5\n");
-          return board->touchingEmpty(move.getPosition())+5;
+          return board->touchingEmpty(move.getPosition())+5+params->test_p9*group->numOfStones();
         }
       }
       else if (group->numOfStones()>1)
-        return board->touchingEmpty(move.getPosition())+1;
+        return board->touchingEmpty(move.getPosition())+1+params->test_p9*group->numOfStones();
       else
         return 0;
     }
@@ -2542,7 +2542,7 @@ int Playout::getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group *
           return 0;
       });
       
-      return 1;
+      return 1+params->test_p9*group->numOfStones();
     }
     else
       return 0;
