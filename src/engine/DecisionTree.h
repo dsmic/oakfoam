@@ -23,6 +23,8 @@ class DecisionTree
         StoneGraph(Go::Board *board);
         ~StoneGraph();
 
+        std::string toString();
+
         Go::Board *getBoard() { return board; };
         unsigned int getNumNodes() { return nodes->size(); };
         int getNodePosition(unsigned int node) { return nodes->at(node)->pos; };
@@ -53,6 +55,7 @@ class DecisionTree
         unsigned int auxnode;
 
         int compareNodes(unsigned int node1, unsigned int node2, unsigned int ref);
+        void mergeNodes(unsigned int n1, unsigned int n2);
     };
 
     class GraphCollection
@@ -76,7 +79,7 @@ class DecisionTree
     std::string toString(bool ignorestats = false, int leafoffset = 0);
 
     Type getType() { return type; };
-    //TODO: add compress flags
+    bool getCompressChain() { return compressChain; };
     std::vector<std::string> *getAttrs() { return attrs; };
     float getWeight(GraphCollection *graphs, Go::Move move, bool updatetree = false);
     std::list<int> *getLeafIds(GraphCollection *graphs, Go::Move move);
@@ -237,11 +240,12 @@ class DecisionTree
 
     Parameters *params;
     Type type;
+    bool compressChain;
     std::vector<std::string> *attrs;
     Node *root;
     std::vector<Node*> leafmap;
 
-    DecisionTree(Parameters *p, Type t, std::vector<std::string> *a, DecisionTree::Node *r);
+    DecisionTree(Parameters *p, Type t, bool cmpC, std::vector<std::string> *a, DecisionTree::Node *r);
 
     std::list<Node*> *getLeafNodes(GraphCollection *graphs, Go::Move move, bool updatetree);
     std::list<Node*> *getStoneLeafNodes(Node *node, StoneGraph *graph, std::vector<unsigned int> *stones, bool invert, bool updatetree);

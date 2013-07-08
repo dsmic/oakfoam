@@ -4,6 +4,7 @@
 #include <cmath>
 #include <fstream>
 #include <algorithm>
+#include <sstream>
 #include <boost/lexical_cast.hpp>
 #include "Parameters.h"
 #include "Engine.h"
@@ -12,10 +13,11 @@
 #define WHITESPACE " \t\r\n"
 #define COMMENT "#"
 
-DecisionTree::DecisionTree(Parameters *p, DecisionTree::Type t, std::vector<std::string> *a, DecisionTree::Node *r)
+DecisionTree::DecisionTree(Parameters *p, DecisionTree::Type t, bool cmpC, std::vector<std::string> *a, DecisionTree::Node *r)
 {
   params = p;
   type = t;
+  compressChain = cmpC;
   attrs = a;
   root = r;
   this->updateLeafIds();
@@ -561,7 +563,7 @@ std::list<DecisionTree::Node*> *DecisionTree::getLeafNodes(DecisionTree::GraphCo
   switch (type)
   {
     case STONE:
-      DecisionTree::StoneGraph *graph = graphs->getStoneGraph(false); // TODO: compression param
+      DecisionTree::StoneGraph *graph = graphs->getStoneGraph(this->getCompressChain());
       unsigned int auxnode = graph->addAuxNode(move.getPosition());
 
       stones->push_back(auxnode);
@@ -1114,7 +1116,9 @@ std::list<DecisionTree*> *DecisionTree::parseString(Parameters *params, std::str
     return NULL;
 
   Type type;
-  std::string typestr = attrs->at(0);
+  bool compressChain = false;
+
+  std::string typestr = attrs->at(0); // tree type must be first attribute
   if (typestr == "STONE" || typestr=="SPARSE") // SPARSE is legacy
     type = STONE;
   else
@@ -1124,11 +1128,10 @@ std::list<DecisionTree*> *DecisionTree::parseString(Parameters *params, std::str
     return NULL;
   }
 
-  if (attrs->size()!=2 || type!=STONE || attrs->at(1)!="NOCOMP") //TODO: extend to more tree types
+  for (unsigned int i=1; i<attrs->size(); i++)
   {
-    fprintf(stderr,"[DT] Error! Invalid attributes for tree\n");
-    delete attrs;
-    return NULL;
+    if (attrs->at(i) == "CHAINCOMP")
+      compressChain = true;
   }
 
   DecisionTree::Node *root = DecisionTree::parseNode(type,data,pos);
@@ -1149,7 +1152,7 @@ std::list<DecisionTree*> *DecisionTree::parseString(Parameters *params, std::str
 
   root->populateEmptyStats(type);
 
-  DecisionTree *dt = new DecisionTree(params,type,attrs,root);
+  DecisionTree *dt = new DecisionTree(params,type,compressChain,attrs,root);
   
   bool isnext = false;
   if (pos < data.size())
@@ -2081,7 +2084,6 @@ DecisionTree::StoneGraph::StoneGraph(Go::Board *board)
         node->liberties = group->numOfPseudoLiberties();
 
       nodes->push_back(node);
-      edges->push_back(new std::vector<int>());
     }
   }
 
@@ -2123,6 +2125,34 @@ DecisionTree::StoneGraph::~StoneGraph()
   }
   delete nodes;
   delete edges;
+}
+
+std::string DecisionTree::StoneGraph::toString()
+{
+  std::ostringstream ss;
+
+  for (unsigned int i = 0; i < (3+1 + 1+1 + 2+1 + 2+3); i++)
+    ss << " ";
+  for (unsigned int i = 0; i < this->getNumNodes(); i++)
+    ss << " " << std::setw(3)<<i;
+  ss << "\n";
+
+  for (unsigned int i = 0; i < this->getNumNodes(); i++)
+  {
+    ss << std::setw(3)<<i << " " << Go::colorToChar(this->getNodeStatus(i)) << " " << std::setw(2)<<this->getNodeSize(i) << " " << std::setw(2)<<this->getNodeLiberties(i) << "   ";
+  
+    for (unsigned int j = 0; j < this->getNumNodes(); j++)
+    {
+      if (i==j)
+        ss << "   -";
+      else
+        ss << " " << std::setw(3)<<this->getEdgeWeight(i,j);
+    }
+
+    ss << "\n";
+  }
+
+  return ss.str();
 }
 
 int DecisionTree::StoneGraph::getEdgeWeight(unsigned int node1, unsigned int node2)
@@ -2197,8 +2227,88 @@ int DecisionTree::StoneGraph::compareNodes(unsigned int node1, unsigned int node
 
 void DecisionTree::StoneGraph::compressChain()
 {
-  // throw "TODO";
-  //TODO: compression
+  bool change = true;
+  while (change)
+  {
+    change = false;
+    for (unsigned int i=0; i<this->getNumNodes(); i++)
+    {
+      Go::Color col = this->getNodeStatus(i);
+      if (col==Go::BLACK || col==Go::WHITE)
+      {
+        for (unsigned int j=i+1; j<this->getNumNodes(); j++)
+        {
+          int d = this->getEdgeWeight(i,j);
+          if (d==1 && this->getNodeStatus(i)==this->getNodeStatus(j))
+          {
+            this->mergeNodes(i,j);
+            change = true;
+            j--; // j was removed by the merge
+            continue;
+          }
+        }
+      }
+    }
+  }
+}
+
+void DecisionTree::StoneGraph::mergeNodes(unsigned int n1, unsigned int n2)
+{
+  if (n1==n2)
+    return;
+  else if (n2<n1)
+  {
+    this->mergeNodes(n2,n1);
+    return;
+  }
+
+  // No change to node1 required
+  // DecisionTree::StoneGraph::StoneNode *node1 = nodes->at(n1);
+  // DecisionTree::StoneGraph::StoneNode *node2 = nodes->at(n2);
+  // int pos = node1->pos;
+  // Go::Color col = node1->col;
+  // int size = node1->size; // no reduction required
+  // int liberties = node1->liberties; // no reduction required
+  
+  // Merge edges of n1 and n2
+  for (unsigned int i=0; i<n1; i++)
+  {
+    int dist1 = edges->at(n1)->at(i);
+    int dist2 = edges->at(n2)->at(i);
+
+    int mindist = (dist1<dist2?dist1:dist2);
+
+    edges->at(n1)->at(i) = mindist;
+  }
+
+  // Merge edges between n1 and n2
+  for (unsigned int i=n1+1; i<n2; i++)
+  {
+    int dist1 = edges->at(i)->at(n1);
+    int dist2 = edges->at(n2)->at(i);
+
+    int mindist = (dist1<dist2?dist1:dist2);
+
+    edges->at(i)->at(n1) = mindist;
+  }
+
+  // Merge edges after n2
+  for (unsigned int i=n2+1; i<nodes->size(); i++)
+  {
+    int dist1 = edges->at(i)->at(n1);
+    int dist2 = edges->at(i)->at(n2);
+
+    int mindist = (dist1<dist2?dist1:dist2);
+
+    edges->at(i)->at(n1) = mindist;
+    edges->at(i)->erase(edges->at(i)->begin()+n2);
+  }
+
+  delete nodes->at(n2);
+  nodes->erase(nodes->begin()+n2);
+
+  delete edges->at(n2);
+  edges->erase(edges->begin()+n2);
 }
 
 DecisionTree::GraphCollection::GraphCollection(Go::Board *board)
@@ -2209,6 +2319,9 @@ DecisionTree::GraphCollection::GraphCollection(Go::Board *board)
 
   stoneChain = new DecisionTree::StoneGraph(board);
   stoneChain->compressChain();
+
+  // fprintf(stderr,"stoneNone:\n%s\n",stoneNone->toString().c_str());
+  // fprintf(stderr,"stoneChain:\n%s\n",stoneChain->toString().c_str());
 }
 
 DecisionTree::GraphCollection::~GraphCollection()
