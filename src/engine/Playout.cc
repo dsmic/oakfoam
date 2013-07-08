@@ -2495,28 +2495,29 @@ float Playout::getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group
         Go::Color othercol=Go::otherColor(col);
         int size=board->getSize();
         bool stopsconnection=false;
-        //fprintf(stderr,"move %s\n",move.toString(19).c_str());
+        gtpe->getOutput()->printfDebug("move %s\n",move.toString(19).c_str());
         foreach_adjacent(move.getPosition(),p,{
           if (board->getColor(p)==othercol)
           {
             Go::Group *othergroup=board->getGroup(p);
-            //fprintf(stderr,"othergroup %p group %p  othergroup!=group %d inAtari %d\n",othergroup,group,othergroup!=group,othergroup->inAtari());
-            //fprintf(stderr,"group %s othergroup %s\n",
-             //       Go::Move(group->getColor(),group->getPosition()).toString(19).c_str(),
-             //       Go::Move(othergroup->getColor(),othergroup->getPosition()).toString(19).c_str());
-            if (othergroup!=group && !othergroup->inAtari())
+            gtpe->getOutput()->printfDebug("othergroup %p group %p  othergroup!=group %d inAtari %d\n",othergroup,group,othergroup!=group,othergroup->inAtari());
+            gtpe->getOutput()->printfDebug("group %s othergroup %s\n",
+                    Go::Move(group->getColor(),group->getPosition()).toString(19).c_str(),
+                    Go::Move(othergroup->getColor(),othergroup->getPosition()).toString(19).c_str());
+            //stops connection between groups of the same color
+            if (othergroup!=group && !othergroup->inAtari() && group->getColor()==othergroup->getColor())
               stopsconnection=true;
           }
         });
         
         if (stopsconnection)
         {
-          //fprintf(stderr,"9\n");
+          gtpe->getOutput()->printfDebug("lib2 value 9 + touching empty %d\n",board->touchingEmpty(move.getPosition()));
           return board->touchingEmpty(move.getPosition())+9+params->test_p9*group->numOfStones();
         }
         else
         {
-          //fprintf(stderr,"5\n");
+          gtpe->getOutput()->printfDebug("lib2 value 5 + touching empty %d\n",board->touchingEmpty(move.getPosition()));
           return board->touchingEmpty(move.getPosition())+5+params->test_p9*group->numOfStones();
         }
       }
