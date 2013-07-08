@@ -49,4 +49,9 @@ reg_genmove b
 100 sg_compare_float 0.5 uct_value
 #? [-1]*
 
+loadsgf sgf/kgs-games/game_2013-07-07_21:42:22.sgf 213
+reg_genmove b
+110 sg_compare_float 0.5 uct_value
+#? [-1]*
+
 #----------------------------------------------
