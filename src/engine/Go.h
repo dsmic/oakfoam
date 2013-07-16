@@ -752,6 +752,7 @@ namespace Go
       /** Determine if the ladder that exists after the move is made works or is broken in most cases. */
       bool isProbableWorkingLadderAfter(Go::Group *group, Go::Move move) const;
       void updateFeatureGammas(bool both=false);
+      inline int getPseudoLiberties(int pos) const { if (data[pos].group==NULL) return 0; else return data[pos].group->find()->numOfPseudoLiberties(); };
       
     private:
       const int size;
@@ -789,7 +790,6 @@ namespace Go
       inline Go::Group *getGroupWithoutFind(int pos) const { return data[pos].group; };
       inline void setColor(int pos, Go::Color col) { data[pos].color=col; if (markchanges) { lastchanges->set(pos); } };
       inline void setGroup(int pos, Go::Group *grp) { data[pos].group=grp; };
-      inline int getPseudoLiberties(int pos) const { if (data[pos].group==NULL) return 0; else return data[pos].group->find()->numOfPseudoLiberties(); };
       inline int getGroupSize(int pos) const { if (data[pos].group==NULL) return 0; else return data[pos].group->find()->numOfStones(); };
       
       bool touchingAtLeastOneEmpty(int pos) const;

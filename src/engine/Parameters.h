@@ -166,7 +166,11 @@ class Parameters
      */
     float playout_mercy_rule_factor;
 
+    /** dynkomi_enabled enables handicap related komi
+     *  recalc_dynkomi_enabled enables komi to keep the winrate near 50%
+     */
     bool dynkomi_enabled;
+    int recalc_dynkomi_limit;  //UnDo will have problems with this option!!
 
     bool mm_learn_enabled;
     float mm_learn_delta;

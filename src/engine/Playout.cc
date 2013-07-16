@@ -576,8 +576,9 @@ void Playout::checkUselessMove(Worker::Settings *settings, Go::Board *board, Go:
   Go::Move replacemove;
   this->checkEyeMove(settings,board,col,move,posarray,replacemove);
   // Below couldn't be disabled with parameter
-  // if (replacemove.isPass())
-  //   this->checkAntiEyeMove(settings,board,col,move,posarray,replacemove);
+  // But the default is checkUselessMove () disabled anyway!
+  if (replacemove.isPass())
+    this->checkAntiEyeMove(settings,board,col,move,posarray,replacemove);
   if (reason!=NULL && replacemove.isNormal())
     (*reason).append(" UselessEye");
   if (!replacemove.isPass())
@@ -821,15 +822,20 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
   if (WITH_P(params->playout_patterns_p))
   {
     this->getPatternMove(settings,board,col,move,posarray,passes);
-    if (!move.isPass())
+    if (WITH_P(params->test_p15) && board->validMove(move) && !this->isBadMove(settings,board,col,move.getPosition(),params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p,passes))
     {
-      if (params->debug_on)
-        gtpe->getOutput()->printfDebug("[playoutmove]: %s pattern\n",move.toString(board->getSize()).c_str());
-      if (reason!=NULL)
-      	*reason="pattern";
-      params->engine->statisticsPlus(Engine::PATTERN);
-      return;
+      if (!move.isPass())
+      {
+        if (params->debug_on)
+          gtpe->getOutput()->printfDebug("[playoutmove]: %s pattern\n",move.toString(board->getSize()).c_str());
+        if (reason!=NULL)
+        	*reason="pattern";
+        params->engine->statisticsPlus(Engine::PATTERN);
+        return;
+      }
     }
+    else
+      move=Go::Move(col,Go::Move::PASS);
   }
 
 //  notlocal:
@@ -1500,7 +1506,7 @@ void Playout::getPatternMove(Worker::Settings *settings, Go::Board *board, Go::C
     });
   }
 
-  if (board->getSecondLastMove().isNormal())
+  if (board->getSecondLastMove().isNormal() && WITH_P(params->test_p14))
   {
     int pos=board->getSecondLastMove().getPosition();
     int size=board->getSize();
@@ -1779,7 +1785,7 @@ void Playout::getLast2LibAtariMove(Worker::Settings *settings, Go::Board *board,
     });
   }
 
-  if (possiblemovescount>0)
+  if (possiblemovescount>0 && (bestlevel>1 || WITH_P(params->test_p13)))
   {
     int i=rand->getRandomInt(possiblemovescount);
     if (!this->isBadMove(settings,board,col,possiblemoves[i]))
@@ -1878,7 +1884,7 @@ void Playout::getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go:
           {
             if (lastgroup==NULL)
               lastgroup=group;
-            else if (lastgroup!=group)
+            else if (lastgroup!=group && lastgroup->getAtariPosition()!=group->getAtariPosition())
             {
               doubleatari=true;
               if (params->debug_on)
@@ -2495,6 +2501,7 @@ float Playout::getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group
         Go::Color othercol=Go::otherColor(col);
         int size=board->getSize();
         bool stopsconnection=false;
+        bool one_stone_atari_avoid=false;
         if (params->debug_on)
           gtpe->getOutput()->printfDebug("move %s\n",move.toString(19).c_str());
         foreach_adjacent(move.getPosition(),p,{
@@ -2502,7 +2509,7 @@ float Playout::getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group
           {
             Go::Group *othergroup=board->getGroup(p);
             if (params->debug_on)
-              gtpe->getOutput()->printfDebug("othergroup %p group %p  othergroup!=group %d inAtari %d\n",othergroup,group,othergroup!=group,othergroup->inAtari());
+              gtpe->getOutput()->printfDebug("othergroup %p group %p  othergroup!=group %d inAtari %d number of stones %d pseudoliberties %d\n",othergroup,group,othergroup!=group,othergroup->inAtari(),othergroup->numOfStones(),board->getPseudoLiberties(p));
             if (params->debug_on)
               gtpe->getOutput()->printfDebug("group %s othergroup %s\n",
                     Go::Move(group->getColor(),group->getPosition()).toString(19).c_str(),
@@ -2510,6 +2517,17 @@ float Playout::getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group
             //stops connection between groups of the same color
             if (othergroup!=group && !othergroup->inAtari() && group->getColor()==othergroup->getColor())
               stopsconnection=true;
+          }
+          else //extending a single own stone avoids atari later in the ladder
+          {
+            if (board->getColor(p)==col)
+            {
+              Go::Group *othergroup=board->getGroup(p);
+              if (params->debug_on && othergroup!=NULL)
+                gtpe->getOutput()->printfDebug("own color:: othergroup %p group %p  othergroup!=group %d inAtari %d number of stones %d pseudoliberties %d\n",othergroup,group,othergroup!=group,othergroup->inAtari(),othergroup->numOfStones(),board->getPseudoLiberties(p));
+              if (othergroup!=NULL && othergroup->numOfStones()==1 && board->getPseudoLiberties(p)==2)
+                one_stone_atari_avoid=true;
+            }
           }
         });
         
@@ -2522,8 +2540,8 @@ float Playout::getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group
         else
         {
           if (params->debug_on)
-            gtpe->getOutput()->printfDebug("lib2 value 5 + touching empty %d\n",board->touchingEmpty(move.getPosition()));
-          return board->touchingEmpty(move.getPosition())+5+params->test_p9*group->numOfStones();
+            gtpe->getOutput()->printfDebug("lib2 value 5 + touching empty %d avoid_atari %d\n",board->touchingEmpty(move.getPosition()),one_stone_atari_avoid);
+          return board->touchingEmpty(move.getPosition())+5+params->test_p9*group->numOfStones()+((one_stone_atari_avoid)?params->test_p12:0);
         }
       }
       else if (group->numOfStones()>1)

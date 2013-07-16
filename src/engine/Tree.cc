@@ -881,7 +881,35 @@ void Tree::updateUnPruneAt()
     scale=(1-params->uct_progressive_widening_c*this->getRatio());
   else
     scale=1;
-  unprunenextchildat=lastunprune+unprunebase*scale; //t(n+1)=t(n)+(a*b^n)*(1-c*p)
+  float bestfactor=-1;
+  float worstfactor=1e20;
+  if (params->test_p16>0)
+  {
+    for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
+    {
+      if ((*iter)->isPrimary() && !(*iter)->isSuperkoViolation())
+      {
+        if ((*iter)->isPruned())
+        {
+          if ((*iter)->getUnPruneFactor()>bestfactor)
+            bestfactor=(*iter)->getUnPruneFactor();
+        }
+        else
+        {
+          if ((*iter)->getUnPruneFactor()<worstfactor)
+            worstfactor=(*iter)->getUnPruneFactor();
+        }
+      }
+    }
+  }
+  float DistanceToWorst=1;
+  if (bestfactor>0 && worstfactor<1e20 && worstfactor>bestfactor)
+  {
+    DistanceToWorst=worstfactor/bestfactor;
+    DistanceToWorst=pow(DistanceToWorst,params->test_p16);
+    //DistanceToWorst=(DistanceToWorst-1.0)*params->test_p16+1.0;
+  }
+  unprunenextchildat=lastunprune+unprunebase*scale*DistanceToWorst; //t(n+1)=t(n)+(a*b^n)*(1-c*p)
 }
 
 void Tree::checkForUnPruning()

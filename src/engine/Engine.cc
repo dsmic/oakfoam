@@ -43,6 +43,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   currentboard=new Go::Board(boardsize);
   komi=7.5;
   komi_handicap=0;
+  recalc_dynkomi=0;
 
   params->tree_instances=0;
   
@@ -133,16 +134,16 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","test_p8",&(params->test_p8),0.0);
   params->addParameter("playout","test_p9",&(params->test_p9),0.0);
   params->addParameter("playout","test_p10",&(params->test_p10),0.0);
-  params->addParameter("playout","test_p11",&(params->test_p11),1.0);
-  params->addParameter("playout","test_p12",&(params->test_p12),1.0);
+  params->addParameter("playout","test_p11",&(params->test_p11),0.0);
+  params->addParameter("playout","test_p12",&(params->test_p12),0.0);
   params->addParameter("playout","test_p13",&(params->test_p13),1.0);
   params->addParameter("playout","test_p14",&(params->test_p14),1.0);
   params->addParameter("playout","test_p15",&(params->test_p15),1.0);
-  params->addParameter("playout","test_p16",&(params->test_p16),1.0);
-  params->addParameter("playout","test_p17",&(params->test_p17),1.0);
-  params->addParameter("playout","test_p18",&(params->test_p18),1.0);
-  params->addParameter("playout","test_p19",&(params->test_p19),1.0);
-  params->addParameter("playout","test_p20",&(params->test_p20),1.0);
+  params->addParameter("playout","test_p16",&(params->test_p16),0.0);
+  params->addParameter("playout","test_p17",&(params->test_p17),0.0);
+  params->addParameter("playout","test_p18",&(params->test_p18),0.0);
+  params->addParameter("playout","test_p19",&(params->test_p19),0.0);
+  params->addParameter("playout","test_p20",&(params->test_p20),0.0);
  
   params->addParameter("tree","ucb_c",&(params->ucb_c),UCB_C);
   params->addParameter("tree","ucb_init",&(params->ucb_init),UCB_INIT);
@@ -239,6 +240,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("tree","features_pass_no_move_for_lastdist",&(params->features_pass_no_move_for_lastdist),FEATURES_PASS_NO_MOVE_FOR_LASTDIST);
 
   params->addParameter("tree","dynkomi_enabled",&(params->dynkomi_enabled),true);
+  params->addParameter("tree","recalc_dynkomi_limit",&(params->recalc_dynkomi_limit),0);
   
   params->addParameter("tree","mm_learn_enabled",&(params->mm_learn_enabled),false);
   params->addParameter("tree","mm_learn_delta",&(params->mm_learn_delta),MM_LEARN_DELTA);
@@ -922,7 +924,7 @@ void Engine::gtpUndo(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   }
 }
 
-float Engine::getScoreKomi() const
+float Engine::getScoreKomi() 
 { 
 //own test, did not look too bad!!!
 //float dynamic_komi=7.5*komi_handicap*exp(-5.0*sqrt(komi_handicap)*(float)currentboard->getMovesMade()/boardsize/boardsize);
@@ -936,7 +938,28 @@ float Engine::getScoreKomi() const
     if (dynamic_komi<0)
       dynamic_komi=0;  //save the end game
   }
-  return komi+komi_handicap+dynamic_komi; 
+  if (params->recalc_dynkomi_limit>0)
+  {
+   switch (movetree->getRobustChild()->getMove().getColor())
+    {
+      case Go::BLACK:
+        recalc_dynkomi=movetree->getRobustChild()->getScoreMean()*params->test_p11;
+        //if (recalc_dynkomi<0) recalc_dynkomi=0;
+        break;
+      case Go::WHITE:
+        recalc_dynkomi=-movetree->getRobustChild()->getScoreMean()*params->test_p11;
+        //if (recalc_dynkomi>0) recalc_dynkomi=0;
+        break;
+      default:
+        break;
+    }
+    if (recalc_dynkomi>30) recalc_dynkomi=params->recalc_dynkomi_limit;
+    else
+      if (recalc_dynkomi<-params->recalc_dynkomi_limit) recalc_dynkomi=-params->recalc_dynkomi_limit;
+    return komi+komi_handicap+dynamic_komi+recalc_dynkomi;
+  }
+  else
+    return komi+komi_handicap+dynamic_komi;
 }
 
 float Engine::getHandiKomi() const
@@ -1613,35 +1636,30 @@ void Engine::gtpRegOwnerAt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   // usage reg_ownerat "Info String" treshhold Position
   Engine *me=(Engine*)instance;
 
-  if (cmd->numArgs()!=3)
+  if (cmd->numArgs()!=2)
   {
     gtpe->getOutput()->startResponse(cmd,false);
-    gtpe->getOutput()->printf("need 3 arg");
+    gtpe->getOutput()->printf("need 2 arg");
     gtpe->getOutput()->endResponse();
     return;
   }
 
-  std::string info=cmd->getStringArg(0);
-  std::string treshholdstring=cmd->getStringArg(1);
-  std::string where_wins=cmd->getStringArg(2);
+  std::string treshholdstring=cmd->getStringArg(0);
+  std::string where_wins=cmd->getStringArg(1);
 
   int where=Go::Position::string2pos(where_wins,me->boardsize);
 
-  float treshhold;
-  std::istringstream(treshholdstring)>>treshhold;
+  float treshold;
+  std::istringstream(treshholdstring)>>treshold;
 
   float ownership=me->territorymap->getPositionOwner(where);
 
+  gtpe->getOutput()->printfDebug("values %f %f\n",treshold,ownership);
   std::string res;
-  if (fabs(ownership)<treshhold)
-    res="Failed";
+  if (ownership<treshold)
+    res="-1";
   else
-  {
-    if (ownership<0)
-      res="W";
-    else
-      res="B";
-  }
+    res="1";
 
   gtpe->getOutput()->startResponse(cmd,true);
   gtpe->getOutput()->printf("%s",res.c_str());
@@ -3945,9 +3963,38 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     ss << " rd:"<<std::setprecision(3)<<ratiodelta;
     ss << " r2:"<<std::setprecision(2)<<params->uct_last_r2;
     ss << " fs:"<<std::setprecision(2)<<scoremean;
+    if (params->recalc_dynkomi_limit>0)  //do not accept loosing!
+    {
+      ss<< " dyn:"<<std::setprecision(1)<<recalc_dynkomi;
+      /*
+       * used if it is calculated from the last move
+       switch ((*move)->getColor())
+      {
+        case Go::BLACK:
+          //recalc_dynkomi+=scoremean/10.0;
+          recalc_dynkomi=scoremean/2.0;
+          if (recalc_dynkomi<0) recalc_dynkomi=0; //do not accept loosing
+          break;
+        case Go::WHITE:
+          //recalc_dynkomi-=scoremean/10.0;
+          recalc_dynkomi=-scoremean/2.0;
+          if (recalc_dynkomi>0) recalc_dynkomi=0; //do not accept loosing
+          break;
+        default:
+          break;
+      }
+      if (recalc_dynkomi>params->recalc_dynkomi_limit)
+        recalc_dynkomi=params->recalc_dynkomi_limit;
+      else
+        if (recalc_dynkomi<-params->recalc_dynkomi_limit)
+          recalc_dynkomi=-params->recalc_dynkomi_limit;
+      */
+    }
     ss << " fsd:"<<std::setprecision(2)<<scoresd;
     ss << " un:"<<best_unpruned<<"/"<<num_unpruned;
     ss << " bs:"<<bestsame;
+
+    
     
     Tree *pvtree=movetree->getRobustChild(true);
     if (pvtree!=NULL)
@@ -4448,6 +4495,7 @@ void Engine::clearBoard()
   params->cleanup_in_progress=false;
   isgamefinished=false;
   komi_handicap=0;
+  recalc_dynkomi=0;
 }
 
 void Engine::clearMoveTree()
@@ -4834,7 +4882,7 @@ void Engine::doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::
           ss << " r:" << std::setprecision(2)<<robustmove->getRatio();
           ss << " r2:" << std::setprecision(2)<<robustmove->secondBestPlayoutRatio();
           ss << ")";
-          Tree *bestratio=movetree->getBestRatioChild();
+          Tree *bestratio=movetree->getBestRatioChild(10);
           if (bestratio!=NULL)
           {
             if (robustmove==bestratio)

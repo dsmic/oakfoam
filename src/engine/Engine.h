@@ -296,7 +296,7 @@ class Engine
     void clearBoard();
     /** Get the current komi. */
     float getKomi() const { return komi; };
-    float getScoreKomi() const;
+    float getScoreKomi();
     float getHandiKomi() const;
     /** Set the current komi. */
     void setKomi(float k);
@@ -355,6 +355,7 @@ class Engine
     Go::Board *currentboard;
     float komi;
     float komi_handicap;
+    float recalc_dynkomi;
     int boardsize;
     Time *time;
     Tree *movetree;
