@@ -135,11 +135,13 @@ else
     init "Growing decision forest from $(echo "${DT_GAMES:-}" | wc -l) games"
     echo "${DT_GAMES:-}" > games-dt.dat
     rm -f "$DTFILE" # clear
-    ../../decisiontrees/dt-init.sh $DTFILE ${DT_FOREST_SIZE:-1} &>> $LOGFILE
+    ../../decisiontrees/dt-init.sh $DTFILE ${DT_FOREST_SIZE:-1} "${DT_TYPES:-STONE|NOCOMP}" &>> $LOGFILE
     echo "${DT_GAMES:-}" | ../../decisiontrees/dt-grow.sh $DTFILE 1 2>&1 | lastline
     check $?
     msg "Decision forest:"
-    msg "  Forest size:   ${DT_FOREST_SIZE:-1}"
+    msg "  Types:         ${DT_TYPES:-STONE|NOCOMP}"
+    msg "  Duplicates:    ${DT_FOREST_SIZE:-1}"
+    msg "  Forest size:    `cat $DTFILE | grep '(DT' | wc -l`"
     msg "  Leaves:        `cat $DTFILE | grep 'WEIGHT' | wc -l`"
   fi
 fi

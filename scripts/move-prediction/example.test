@@ -25,7 +25,7 @@ GAMES="`find "$GAMES_PATH" -name '*.sgf' | sort`"
 # boolean parameters (0:disabled, 1:enabled)
 PATT_3X3=0    # 3x3 patterns
 PATT_CIRC=0   # circular patterns
-DT=0          # decision trees
+DT=1          # decision trees
 TRAIN=1       # perform training (for pre-generated data)
 
 # use pre-generated data (-:disabled)
@@ -51,6 +51,7 @@ PATT_CIRC_START=3
 PATT_CIRC_END=15
 
 # decision trees
+DT_TYPES="STONE|NOCOMP STONE|CHAINCOMP"
 DT_FOREST_SIZE=2
 
 # testing
