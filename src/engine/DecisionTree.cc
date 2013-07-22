@@ -5,6 +5,7 @@
 #include <fstream>
 #include <algorithm>
 #include <sstream>
+#include <map>
 #include <boost/lexical_cast.hpp>
 #include "Parameters.h"
 #include "Engine.h"
@@ -618,7 +619,7 @@ std::list<DecisionTree::Node*> *DecisionTree::getStoneLeafNodes(DecisionTree::No
 
   DecisionTree::Query *q = node->getQuery();
   
-  if (q->getLabel() == "NEW") // TODO: replace with StoneGraph::getSortedNodesFromAux()
+  if (q->getLabel() == "NEW")
   {
     unsigned int auxnode = stones->at(0);
 
@@ -2163,7 +2164,7 @@ int DecisionTree::StoneGraph::getEdgeWeight(unsigned int node1, unsigned int nod
     return edges->at(node2)->at(node1);
   else
     return edges->at(node1)->at(node2);
-};
+}
 
 unsigned int DecisionTree::StoneGraph::addAuxNode(int pos)
 {
@@ -2186,7 +2187,7 @@ unsigned int DecisionTree::StoneGraph::addAuxNode(int pos)
   for (unsigned int j=0; j<i; j++)
   {
     int p2 = nodes->at(j)->pos;
-    int d = DecisionTree::getDistance(board,pos,p2);
+    int d = DecisionTree::getDistance(board,pos,p2); // TODO: fix this to work with compressed chains!!!
     edges->at(i)->push_back(d);
   }
 
@@ -2211,18 +2212,6 @@ void DecisionTree::StoneGraph::removeAuxNode()
   edges->resize(N-1);
 
   auxnode = -1;
-}
-
-std::list<unsigned int> *DecisionTree::StoneGraph::getSortedNodesFromAux()
-{
-  throw "TODO";
-  return NULL;
-}
-
-int DecisionTree::StoneGraph::compareNodes(unsigned int node1, unsigned int node2, unsigned int ref)
-{
-  throw "TODO";
-  return 0;
 }
 
 void DecisionTree::StoneGraph::compressChain()
@@ -2311,6 +2300,139 @@ void DecisionTree::StoneGraph::mergeNodes(unsigned int n1, unsigned int n2)
   edges->erase(edges->begin()+n2);
 }
 
+DecisionTree::IntersectionGraph::IntersectionGraph(Go::Board *board)
+{
+  this->board = board;
+  nodes = new std::vector<DecisionTree::IntersectionGraph::IntersectionNode*>();
+  distances = new std::vector<std::vector<int>*>();
+
+  std::map<int,unsigned int> lookupNodes;
+
+  for (int p = 0; p < board->getPositionMax(); p++)
+  {
+    if (board->onBoard(p))
+    {
+      DecisionTree::IntersectionGraph::IntersectionNode *node = new DecisionTree::IntersectionGraph::IntersectionNode();
+
+      node->pos = p;
+      node->col = board->getColor(p);
+      node->edges = new std::vector<DecisionTree::IntersectionGraph::IntersectionEdge*>();
+      node->size = 1; // TODO: change to region size
+      if (board->inGroup(p))
+      {
+        Go::Group *group = board->getGroup(p);
+        if (group->inAtari())
+          node->liberties = 1;
+        else
+          node->liberties = group->numOfPseudoLiberties();
+      }
+      else
+        node->liberties = 0;
+
+      nodes->push_back(node);
+      lookupNodes[p] = nodes->size()-1;
+    }
+  }
+
+  unsigned int N = nodes->size();
+
+  int size = board->getSize();
+  for (unsigned int i=0; i<N; i++)
+  {
+    int pos = nodes->at(i)->pos;
+    foreach_adjacent(pos,p,{
+      if (lookupNodes.count(p) > 0)
+      {
+        unsigned int j = lookupNodes[p];
+        if (i < j)
+        {
+          DecisionTree::IntersectionGraph::IntersectionEdge *edge = new DecisionTree::IntersectionGraph::IntersectionEdge();
+
+          edge->start = i;
+          edge->end = j;
+          edge->connectivity = 1;
+
+          nodes->at(i)->edges->push_back(edge);
+          nodes->at(j)->edges->push_back(edge);
+        }
+      }
+    });
+  }
+
+  for (unsigned int i=0; i<N; i++)
+  {
+    distances->push_back(new std::vector<int>());
+
+    int p1 = nodes->at(i)->pos;
+    for (unsigned int j=0; j<i; j++)
+    {
+      int p2 = nodes->at(j)->pos;
+      int d = board->getRectDistance(p1,p2);
+      distances->at(i)->push_back(d);
+    }
+  }
+
+  auxnode = -1;
+}
+
+DecisionTree::IntersectionGraph::~IntersectionGraph()
+{
+  for (unsigned int i = 0; i < nodes->size(); i++)
+  {
+    DecisionTree::IntersectionGraph::IntersectionNode *node = nodes->at(i);
+    for (unsigned int j = 0; j < node->edges->size(); j++)
+    {
+      DecisionTree::IntersectionGraph::IntersectionEdge *edge = node->edges->at(j);
+      if (edge->start == i)
+        delete edge;
+    }
+    delete node;
+    delete distances->at(i);
+  }
+  delete nodes;
+  delete distances;
+}
+
+int DecisionTree::IntersectionGraph::getEdgeDistance(unsigned int node1, unsigned int node2)
+{
+  if (node1 == node2)
+    return 0;
+  else if (node1 < node2)
+    return distances->at(node2)->at(node1);
+  else
+    return distances->at(node1)->at(node2);
+}
+
+DecisionTree::IntersectionGraph::IntersectionEdge *DecisionTree::IntersectionGraph::getEdge(unsigned int node1, unsigned node2)
+{
+  if (nodes->at(node1)->edges->size() > nodes->at(node2)->edges->size())
+    return this->getEdge(node1,node2);
+
+  std::vector<DecisionTree::IntersectionGraph::IntersectionEdge*> *edges = nodes->at(node1)->edges;
+  for (unsigned int i=0; i<edges->size(); i++)
+  {
+    DecisionTree::IntersectionGraph::IntersectionEdge *edge = edges->at(i);
+    if (edge->start == node2 || edge->end == node2) // we already know it has an endpoint at node1
+      return edge;
+  }
+
+  return NULL;
+}
+
+bool DecisionTree::IntersectionGraph::hasEdge(unsigned int node1, unsigned int node2)
+{
+  return this->getEdge(node1,node2) != NULL;
+}
+
+int DecisionTree::IntersectionGraph::getEdgeConnectivity(unsigned int node1, unsigned int node2)
+{
+  DecisionTree::IntersectionGraph::IntersectionEdge *edge = this->getEdge(node1,node2);
+  if (edge==NULL)
+    return 0;
+  else
+    return edge->connectivity;
+}
+
 DecisionTree::GraphCollection::GraphCollection(Go::Board *board)
 {
   this->board = board;
@@ -2320,6 +2442,10 @@ DecisionTree::GraphCollection::GraphCollection(Go::Board *board)
   stoneChain = new DecisionTree::StoneGraph(board);
   stoneChain->compressChain();
 
+  intersectionNone = new DecisionTree::IntersectionGraph(board);
+
+  // TODO: other intersection variations
+
   // fprintf(stderr,"stoneNone:\n%s\n",stoneNone->toString().c_str());
   // fprintf(stderr,"stoneChain:\n%s\n",stoneChain->toString().c_str());
 }
@@ -2328,6 +2454,8 @@ DecisionTree::GraphCollection::~GraphCollection()
 {
   delete stoneNone;
   delete stoneChain;
+
+  delete intersectionNone;
 }
 
 DecisionTree::StoneGraph *DecisionTree::GraphCollection::getStoneGraph(bool compressChain)
@@ -2336,5 +2464,10 @@ DecisionTree::StoneGraph *DecisionTree::GraphCollection::getStoneGraph(bool comp
     return stoneChain;
   else
     return stoneNone;
+}
+
+DecisionTree::IntersectionGraph *DecisionTree::GraphCollection::getIntersectionGraph(bool compressChain, bool compressEmpty)
+{
+  return intersectionNone; // TODO: other intersection variations
 }
 

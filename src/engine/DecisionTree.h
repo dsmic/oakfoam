@@ -14,7 +14,8 @@ class DecisionTree
   public:
     enum Type
     {
-      STONE
+      STONE,
+      INTERSECTION
     };
 
     class StoneGraph
@@ -27,13 +28,12 @@ class DecisionTree
 
         Go::Board *getBoard() { return board; };
         unsigned int getNumNodes() { return nodes->size(); };
+
         int getNodePosition(unsigned int node) { return nodes->at(node)->pos; };
         Go::Color getNodeStatus(unsigned int node) { return nodes->at(node)->col; };
         int getNodeSize(unsigned int node) { return nodes->at(node)->size; };
         int getNodeLiberties(unsigned int node) { return nodes->at(node)->liberties; };
         int getEdgeWeight(unsigned int node1, unsigned int node2);
-
-        std::list<unsigned int> *getSortedNodesFromAux();
 
         unsigned int addAuxNode(int pos);
         void removeAuxNode();
@@ -54,8 +54,58 @@ class DecisionTree
         std::vector<std::vector<int>*> *edges;
         unsigned int auxnode;
 
-        int compareNodes(unsigned int node1, unsigned int node2, unsigned int ref);
         void mergeNodes(unsigned int n1, unsigned int n2);
+    };
+
+    class IntersectionGraph
+    {
+      public:
+        IntersectionGraph(Go::Board *board);
+        ~IntersectionGraph();
+
+        std::string toString(); // TODO
+
+        Go::Board *getBoard() { return board; };
+        unsigned int getNumNodes() { return nodes->size(); };
+
+        int getNodePosition(unsigned int node) { return nodes->at(node)->pos; };
+        Go::Color getNodeStatus(unsigned int node) { return nodes->at(node)->col; };
+        int getNodeSize(unsigned int node) { return nodes->at(node)->size; };
+        int getNodeLiberties(unsigned int node) { return nodes->at(node)->liberties; };
+        bool hasEdge(unsigned int node1, unsigned int node2);
+        int getEdgeConnectivity(unsigned int node1, unsigned int node2);
+        int getEdgeDistance(unsigned int node1, unsigned int node2);
+
+        unsigned int addAuxNode(int pos); // TODO
+        void removeAuxNode(); // TODO
+
+        void compressChain(); // TODO
+        void compressEmpty(); // TODO
+
+      private:
+        struct IntersectionEdge
+        {
+          unsigned int start;
+          unsigned int end;
+          int connectivity;
+        };
+
+        struct IntersectionNode
+        {
+          int pos;
+          Go::Color col;
+          int size;
+          int liberties;
+          std::vector<IntersectionEdge*> *edges;
+        };
+
+        Go::Board *board;
+        std::vector<IntersectionNode*> *nodes;
+        std::vector<std::vector<int>*> *distances;
+        unsigned int auxnode;
+
+        void mergeNodes(unsigned int n1, unsigned int n2); // TODO
+        IntersectionEdge *getEdge(unsigned int node1, unsigned node2);
     };
 
     class GraphCollection
@@ -67,11 +117,13 @@ class DecisionTree
         Go::Board *getBoard() { return board; };
 
         StoneGraph *getStoneGraph(bool compressChain);
+        IntersectionGraph *getIntersectionGraph(bool compressChain, bool compressEmpty);
 
       private:
         Go::Board *board;
         StoneGraph *stoneNone;
         StoneGraph *stoneChain;
+        IntersectionGraph *intersectionNone;
     };
 
     ~DecisionTree();
