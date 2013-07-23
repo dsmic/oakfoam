@@ -63,7 +63,7 @@ class DecisionTree
         IntersectionGraph(Go::Board *board);
         ~IntersectionGraph();
 
-        std::string toString(); // TODO
+        std::string toString();
 
         Go::Board *getBoard() { return board; };
         unsigned int getNumNodes() { return nodes->size(); };
@@ -79,8 +79,8 @@ class DecisionTree
         unsigned int addAuxNode(int pos); // TODO
         void removeAuxNode(); // TODO
 
-        void compressChain(); // TODO
-        void compressEmpty(); // TODO
+        void compressChain() { this->compress(true); };
+        void compressEmpty() { this->compress(false); };
 
       private:
         struct IntersectionEdge
@@ -104,7 +104,8 @@ class DecisionTree
         std::vector<std::vector<int>*> *distances;
         unsigned int auxnode;
 
-        void mergeNodes(unsigned int n1, unsigned int n2); // TODO
+        void compress(bool chainnotempty);
+        void mergeNodes(unsigned int n1, unsigned int n2);
         IntersectionEdge *getEdge(unsigned int node1, unsigned node2);
     };
 
@@ -124,6 +125,9 @@ class DecisionTree
         StoneGraph *stoneNone;
         StoneGraph *stoneChain;
         IntersectionGraph *intersectionNone;
+        IntersectionGraph *intersectionChain;
+        IntersectionGraph *intersectionEmpty;
+        IntersectionGraph *intersectionBoth;
     };
 
     ~DecisionTree();

@@ -2386,11 +2386,56 @@ DecisionTree::IntersectionGraph::~IntersectionGraph()
       if (edge->start == i)
         delete edge;
     }
+    delete node->edges;
     delete node;
     delete distances->at(i);
   }
   delete nodes;
   delete distances;
+}
+
+std::string DecisionTree::IntersectionGraph::toString()
+{
+  std::ostringstream ss;
+
+  for (unsigned int i = 0; i < (3+1 + 1+1 + 2+1 + 2+3); i++)
+    ss << " ";
+  for (unsigned int i = 0; i < this->getNumNodes(); i++)
+    ss << " " << std::setw(3)<<i;
+  ss << "\n";
+
+  for (unsigned int i = 0; i < this->getNumNodes(); i++)
+  {
+    ss << std::setw(3)<<i << " " << Go::colorToChar(this->getNodeStatus(i)) << " " << std::setw(2)<<this->getNodeSize(i) << " " << std::setw(2)<<this->getNodeLiberties(i) << "   ";
+  
+    for (unsigned int j = 0; j < this->getNumNodes(); j++)
+    {
+      if (i==j)
+        ss << "   -";
+      else
+        ss << " " << std::setw(3)<<this->getEdgeDistance(i,j);
+    }
+
+    ss << "  ";
+    for (unsigned int j = 0; j < this->getNumNodes(); j++)
+    {
+      if (this->hasEdge(i,j))
+      {
+        ss << " " << j << ":" << this->getEdgeConnectivity(i,j);
+      }
+    }
+
+    // ss << " | " << nodes->at(i)->edges->size();
+    // for (unsigned int j = 0; j < nodes->at(i)->edges->size(); j++)
+    // {
+    //     DecisionTree::IntersectionGraph::IntersectionEdge *edge = nodes->at(i)->edges->at(j);
+    //     ss << " " << edge->start << "-" << edge->end << ":" << edge->connectivity;
+    // }
+
+    ss << "\n";
+  }
+
+  return ss.str();
 }
 
 int DecisionTree::IntersectionGraph::getEdgeDistance(unsigned int node1, unsigned int node2)
@@ -2405,8 +2450,11 @@ int DecisionTree::IntersectionGraph::getEdgeDistance(unsigned int node1, unsigne
 
 DecisionTree::IntersectionGraph::IntersectionEdge *DecisionTree::IntersectionGraph::getEdge(unsigned int node1, unsigned node2)
 {
+  if (node1 == node2)
+    return NULL;
+
   if (nodes->at(node1)->edges->size() > nodes->at(node2)->edges->size())
-    return this->getEdge(node1,node2);
+    return this->getEdge(node2,node1);
 
   std::vector<DecisionTree::IntersectionGraph::IntersectionEdge*> *edges = nodes->at(node1)->edges;
   for (unsigned int i=0; i<edges->size(); i++)
@@ -2433,6 +2481,179 @@ int DecisionTree::IntersectionGraph::getEdgeConnectivity(unsigned int node1, uns
     return edge->connectivity;
 }
 
+void DecisionTree::IntersectionGraph::compress(bool chainnotempty)
+{
+  bool change = true;
+  while (change)
+  {
+    change = false;
+    for (unsigned int i=0; i<this->getNumNodes(); i++)
+    {
+      Go::Color col = this->getNodeStatus(i);
+      if ((chainnotempty && (col==Go::BLACK || col==Go::WHITE)) || (!chainnotempty && col==Go::EMPTY))
+      {
+        for (unsigned int j=i+1; j<this->getNumNodes(); j++)
+        {
+          int d = this->getEdgeDistance(i,j);
+          if (d==1 && this->getNodeStatus(i)==this->getNodeStatus(j))
+          {
+            this->mergeNodes(i,j);
+            change = true;
+            j--; // j was removed by the merge
+            continue;
+          }
+        }
+      }
+    }
+  }
+}
+
+void DecisionTree::IntersectionGraph::mergeNodes(unsigned int n1, unsigned int n2)
+{
+  if (n1==n2)
+    return;
+  else if (n2<n1)
+  {
+    this->mergeNodes(n2,n1);
+    return;
+  }
+
+  // No change to node1 required
+  DecisionTree::IntersectionGraph::IntersectionNode *node1 = nodes->at(n1);
+  DecisionTree::IntersectionGraph::IntersectionNode *node2 = nodes->at(n2);
+  // int pos = node1->pos;
+  // Go::Color col = node1->col;
+  // int size = node1->size; // no reduction required
+  node1->size += node2->size; // TODO: update for future region size fix
+  // int liberties = node1->liberties; // no reduction required
+
+  // Merge edges of n1 and n2
+  std::vector<DecisionTree::IntersectionGraph::IntersectionEdge*> *edges1 = node1->edges;
+  std::vector<DecisionTree::IntersectionGraph::IntersectionEdge*> *edges2 = node2->edges;
+  std::vector<DecisionTree::IntersectionGraph::IntersectionEdge*> *newedges = new std::vector<DecisionTree::IntersectionGraph::IntersectionEdge*>();
+
+  for (unsigned int i=0; i<edges1->size(); i++)
+  {
+    DecisionTree::IntersectionGraph::IntersectionEdge *edge = edges1->at(i);
+    if (edge->start == n2 || edge->end == n2) // n1-n2 edge
+      continue;
+    else
+      newedges->push_back(edge);
+  }
+
+  unsigned int N1 = newedges->size();
+
+  for (unsigned int i=0; i<edges2->size(); i++)
+  {
+    DecisionTree::IntersectionGraph::IntersectionEdge *edge = edges2->at(i);
+    if (edge->start == n1 || edge->end == n1) // n1-n2 edge
+      delete edge;
+    else
+    {
+      unsigned int othernode = edge->start==n2 ? edge->end : edge->start;
+      DecisionTree::IntersectionGraph::IntersectionEdge *otheredge = NULL;
+      for (unsigned int j=0; j<N1; j++)
+      {
+        DecisionTree::IntersectionGraph::IntersectionEdge *e = newedges->at(j);
+        if (e->start == othernode || e->end == othernode)
+        {
+          otheredge = e;
+          break;
+        }
+      }
+
+      if (otheredge != NULL)
+      {
+        otheredge->connectivity += edge->connectivity;
+
+        std::vector<DecisionTree::IntersectionGraph::IntersectionEdge*> *otheredges = nodes->at(othernode)->edges;
+        for (unsigned int j=0; j<otheredges->size(); j++)
+        {
+          if (otheredges->at(j) == edge)
+          {
+            otheredges->erase(otheredges->begin()+j);
+            break;
+          }
+        }
+        
+        delete edge;
+      }
+      else
+      {
+        if (edge->start == n2)
+          edge->start = n1;
+        else if (edge->end == n2)
+          edge->end = n1;
+        newedges->push_back(edge);
+      }
+    }
+  }
+
+  delete edges1;
+  delete edges2;
+  node1->edges = newedges;
+
+  // Adjust edges to nodes after n2
+  for (unsigned int i=0; i<nodes->size(); i++)
+  {
+    if (i!=n2)
+    {
+      DecisionTree::IntersectionGraph::IntersectionNode *en1 = nodes->at(i);
+      for (unsigned int j=0; j<en1->edges->size(); j++)
+      {
+        DecisionTree::IntersectionGraph::IntersectionEdge *edge = en1->edges->at(j);
+        if (i == edge->start)
+        {
+          if (edge->start > n2)
+            edge->start--;
+          if (edge->end > n2)
+            edge->end--;
+        }
+      }
+    }
+  }
+  
+  // Merge distances of n1 and n2
+  for (unsigned int i=0; i<n1; i++)
+  {
+    int dist1 = distances->at(n1)->at(i);
+    int dist2 = distances->at(n2)->at(i);
+
+    int mindist = (dist1<dist2?dist1:dist2);
+
+    distances->at(n1)->at(i) = mindist;
+  }
+
+  // Merge distances between n1 and n2
+  for (unsigned int i=n1+1; i<n2; i++)
+  {
+    int dist1 = distances->at(i)->at(n1);
+    int dist2 = distances->at(n2)->at(i);
+
+    int mindist = (dist1<dist2?dist1:dist2);
+
+    distances->at(i)->at(n1) = mindist;
+  }
+
+  // Merge distances after n2
+  for (unsigned int i=n2+1; i<nodes->size(); i++)
+  {
+    int dist1 = distances->at(i)->at(n1);
+    int dist2 = distances->at(i)->at(n2);
+
+    int mindist = (dist1<dist2?dist1:dist2);
+
+    distances->at(i)->at(n1) = mindist;
+    distances->at(i)->erase(distances->at(i)->begin()+n2);
+  }
+
+  delete distances->at(n2);
+  distances->erase(distances->begin()+n2);
+
+  delete nodes->at(n2);
+  nodes->erase(nodes->begin()+n2);
+}
+
 DecisionTree::GraphCollection::GraphCollection(Go::Board *board)
 {
   this->board = board;
@@ -2444,10 +2665,22 @@ DecisionTree::GraphCollection::GraphCollection(Go::Board *board)
 
   intersectionNone = new DecisionTree::IntersectionGraph(board);
 
-  // TODO: other intersection variations
+  intersectionChain = new DecisionTree::IntersectionGraph(board);
+  intersectionChain->compressChain();
+
+  intersectionEmpty = new DecisionTree::IntersectionGraph(board);
+  intersectionEmpty->compressEmpty();
+
+  intersectionBoth = new DecisionTree::IntersectionGraph(board);
+  intersectionBoth->compressEmpty();
+  intersectionBoth->compressChain();
 
   // fprintf(stderr,"stoneNone:\n%s\n",stoneNone->toString().c_str());
   // fprintf(stderr,"stoneChain:\n%s\n",stoneChain->toString().c_str());
+  // fprintf(stderr,"intersectionNone:\n%s\n",intersectionNone->toString().c_str());
+  // fprintf(stderr,"intersectionChain:\n%s\n",intersectionChain->toString().c_str());
+  // fprintf(stderr,"intersectionEmpty:\n%s\n",intersectionEmpty->toString().c_str());
+  // fprintf(stderr,"intersectionBoth:\n%s\n",intersectionBoth->toString().c_str());
 }
 
 DecisionTree::GraphCollection::~GraphCollection()
@@ -2456,6 +2689,9 @@ DecisionTree::GraphCollection::~GraphCollection()
   delete stoneChain;
 
   delete intersectionNone;
+  delete intersectionChain;
+  delete intersectionEmpty;
+  delete intersectionBoth;
 }
 
 DecisionTree::StoneGraph *DecisionTree::GraphCollection::getStoneGraph(bool compressChain)
@@ -2468,6 +2704,19 @@ DecisionTree::StoneGraph *DecisionTree::GraphCollection::getStoneGraph(bool comp
 
 DecisionTree::IntersectionGraph *DecisionTree::GraphCollection::getIntersectionGraph(bool compressChain, bool compressEmpty)
 {
-  return intersectionNone; // TODO: other intersection variations
+  if (compressChain)
+  {
+    if (compressEmpty)
+      return intersectionBoth;
+    else
+      return intersectionChain;
+  }
+  else
+  {
+    if (compressEmpty)
+      return intersectionEmpty;
+    else
+      return intersectionNone;
+  }
 }
 
