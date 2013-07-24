@@ -495,7 +495,7 @@ float Tree::getVal(bool skiprave) const
   }
 }
 
-float Tree::KL_xLogx_y(float x, float y)
+float Tree::KL_xLogx_y(float x, float y) const
 {
   if (x>0 && y==0)
     return FLT_MAX/10.0;
@@ -504,19 +504,20 @@ float Tree::KL_xLogx_y(float x, float y)
   return x*log(x/y);
 }
 
-float Tree::KL_d(float p, float q)
+float Tree::KL_d(float p, float q) const
 {
   return KL_xLogx_y(p,q)+KL_xLogx_y(1.0-p,1.0-q);
 }
 
-float Tree::KL_max_q(float S, float N, float t)
+float Tree::KL_max_q(float S, float N, float t) const
 {
   float c=3;
-  
+  if (S<0) S=0;
+  if (S>N) S=N;
   if (N==0) return 1.0;  //this should not happen?!
   float q_min=S/N;
   float q_max=1.0;
-  for (int i=0;i<6;i++)
+  for (int i=0;i<15;i++)
   {
     float q=(q_min+q_max)/2.0;
     if (N*KL_d(S/N,q)<=log(t)+ c*log(log(t)))
@@ -558,7 +559,11 @@ float Tree::getUrgency(bool skiprave) const
 
   float val=this->getVal(skiprave)+uctbias;
 
-  
+  if (params->KL_ucb_enabled)
+  {
+    if (parent->getPlayouts()>0 && playouts>0) //otherwize only old val used! Not correct but safe?!
+      val=KL_max_q(this->getVal(skiprave)*playouts,playouts,parent->getPlayouts());
+  }
   if (params->weight_score>0)
     val+=params->weight_score*this->getScoreMean();
 

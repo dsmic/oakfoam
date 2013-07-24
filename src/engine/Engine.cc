@@ -152,7 +152,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
 
   params->addParameter("tree","bernoulli_a",&(params->bernoulli_a),BERNOULLI_A);
   params->addParameter("tree","bernoulli_b",&(params->bernoulli_b),BERNOULLI_B);
-  params->addParameter("tree","KL-ucb enabled",&(params->KL_ucb_enabled),KL_UCB_ENABLED);
+  params->addParameter("tree","kl_ucb_enabled",&(params->KL_ucb_enabled),KL_UCB_ENABLED );
   
   params->addParameter("tree","weight_score",&(params->weight_score),WEIGHT_SCORE);
   params->addParameter("tree","random_f",&(params->random_f),RANDOM_F);

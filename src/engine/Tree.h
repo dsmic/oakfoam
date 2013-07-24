@@ -324,8 +324,8 @@ class Tree
     void addCriticalityStats(bool winner, bool black, bool white);
     
     static float variance(int wins, int playouts);
-    float KL_d(float p, float q);
-    float KL_xLogx_y(float x, float y);
-    float KL_max_q(float S, float N, float t);
+    float KL_d(float p, float q) const;
+    float KL_xLogx_y(float x, float y) const;
+    float KL_max_q(float S, float N, float t) const;
 };
 #endif
