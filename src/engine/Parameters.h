@@ -145,6 +145,8 @@ class Parameters
     float playout_avoid_lbmf_p;
     float playout_avoid_lbrf1_p2;
     float playout_avoid_lbmf_p2;
+    float playout_avoid_bpr_p;
+    float playout_avoid_bpr_p2;
 
     //own followup moves, independent of the inbetween move of opponent
     bool playout_lgrf1o_enabled;
@@ -265,6 +267,7 @@ class Parameters
     // Under Construction
     float bernoulli_a;
     float bernoulli_b;
+    bool  KL_ucb_enabled;
     float weight_score;
     float random_f;
     

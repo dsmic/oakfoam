@@ -37,7 +37,7 @@ reg_genmove w
 
 loadsgf sgf/kgs-games/game_2013-06-11_06:04:21.sgf 209
 80 reg_genmove b
-#? [F19]*
+#? [F19]
 
 loadsgf sgf/kgs-games/game_2013-06-11_04:57:22.sgf 254
 reg_genmove b
@@ -60,7 +60,10 @@ reg_genmove w
 #? [-1]*
 
 130 reg_ownerat 0.2 R3
-#? [-1]*
+#? [1]*
+
+140 reg_ownerat 0.5 A8
+#? [1]
 
 
 #----------------------------------------------

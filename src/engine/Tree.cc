@@ -6,6 +6,7 @@
 #include "Engine.h"
 #include "Pattern.h"
 #include "Worker.h"
+#include <cfloat>
 
 #define WITH_P(A) (A>=1.0 || (A>0 && settings->rand->getRandomReal()<A))
 
@@ -494,6 +495,38 @@ float Tree::getVal(bool skiprave) const
   }
 }
 
+float Tree::KL_xLogx_y(float x, float y)
+{
+  if (x>0 && y==0)
+    return FLT_MAX/10.0;
+  if (x==0)
+    return 0;
+  return x*log(x/y);
+}
+
+float Tree::KL_d(float p, float q)
+{
+  return KL_xLogx_y(p,q)+KL_xLogx_y(1.0-p,1.0-q);
+}
+
+float Tree::KL_max_q(float S, float N, float t)
+{
+  float c=3;
+  
+  if (N==0) return 1.0;  //this should not happen?!
+  float q_min=S/N;
+  float q_max=1.0;
+  for (int i=0;i<6;i++)
+  {
+    float q=(q_min+q_max)/2.0;
+    if (N*KL_d(S/N,q)<=log(t)+ c*log(log(t)))
+      q_min=q;
+    else
+      q_max=q;
+  }
+  return q_min;
+}
+
 float Tree::getUrgency(bool skiprave) const
 {
   float uctbias;
@@ -524,6 +557,8 @@ float Tree::getUrgency(bool skiprave) const
     uctbias+=params->bernoulli_a*exp(-params->bernoulli_b*playouts);
 
   float val=this->getVal(skiprave)+uctbias;
+
+  
   if (params->weight_score>0)
     val+=params->weight_score*this->getScoreMean();
 
@@ -883,6 +918,8 @@ void Tree::updateUnPruneAt()
     scale=1;
   float bestfactor=-1;
   float worstfactor=1e20;
+  float sumunpruned=0;
+  int   numunpruned=0;
   if (params->test_p16>0)
   {
     for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
@@ -896,6 +933,8 @@ void Tree::updateUnPruneAt()
         }
         else
         {
+          sumunpruned+=(*iter)->getUnPruneFactor();
+          numunpruned++;
           if ((*iter)->getUnPruneFactor()<worstfactor)
             worstfactor=(*iter)->getUnPruneFactor();
         }
@@ -903,11 +942,16 @@ void Tree::updateUnPruneAt()
     }
   }
   float DistanceToWorst=1;
-  if (bestfactor>0 && worstfactor<1e20 && worstfactor>bestfactor)
-  {
-    DistanceToWorst=worstfactor/bestfactor;
-    DistanceToWorst=pow(DistanceToWorst,params->test_p16);
+  //if (bestfactor>0 && worstfactor<1e20 && worstfactor>bestfactor)
+  //{
+  //  DistanceToWorst=worstfactor/bestfactor;
+  //  DistanceToWorst=pow(DistanceToWorst,params->test_p16);
     //DistanceToWorst=(DistanceToWorst-1.0)*params->test_p16+1.0;
+  //}
+  if (bestfactor>0 && numunpruned>0)
+  {
+    DistanceToWorst=sumunpruned/numunpruned/bestfactor;
+    DistanceToWorst=(DistanceToWorst-1.0)*params->test_p16+1.0;
   }
   unprunenextchildat=lastunprune+unprunebase*scale*DistanceToWorst; //t(n+1)=t(n)+(a*b^n)*(1-c*p)
 }

@@ -384,8 +384,8 @@ float Go::Board::score(Parameters* params)
   {
     Go::Color col=scoredata[p].color;
     float v=1.0;
-//    if (params!=NULL && params->test_p3!=0.0)
-//      v=(1.0-params->test_p3)+params->test_p3*pow(params->engine->getTerritoryMap()->getPositionOwner(p),2);
+    if (params!=NULL && params->test_p17!=0.0)
+      v=(1.0-params->test_p17/2.0)+params->test_p17*fabs(params->engine->getTerritoryMap()->getPositionOwner(p));
     if (col==Go::BLACK)
       s+=v;
     else if (col==Go::WHITE)

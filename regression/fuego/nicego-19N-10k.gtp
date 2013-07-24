@@ -6,7 +6,7 @@ param time_k 1
 param time_buffer 1
 param thread_count 8
 param rules_all_stones_alive 0
-loadfeaturegammas /home/detlef/gomill/trained_10000_100000_with_nakade.gamma
+loadfeaturegammas /home/detlef/gomill/trained_10000_100000_with_nakade_4atari.gamma
 param thread_count 8
 param ucb_c 0.2
 param playout_useless_move 1
@@ -95,3 +95,6 @@ param uct_rave_unprune_factor 17.0
 param uct_progressive_bias_h 0.075
 param uct_progressive_bias_exponent 0.65
 param test_p4 50
+param recalc_dynkomi_limit 50
+param test_p11 0.1
+param playout_random_approach_p 1.0

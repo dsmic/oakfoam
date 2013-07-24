@@ -83,6 +83,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","playout_avoid_lbmf_p",&(params->playout_avoid_lbmf_p),PLAYOUT_AVOID_LBMF_P);
   params->addParameter("playout","playout_avoid_lbrf1_p2",&(params->playout_avoid_lbrf1_p2),PLAYOUT_AVOID_LBRF1_P2);
   params->addParameter("playout","playout_avoid_lbmf_p2",&(params->playout_avoid_lbmf_p2),PLAYOUT_AVOID_LBMF_P2);
+  params->addParameter("playout","playout_avoid_bpr_p",&(params->playout_avoid_bpr_p),PLAYOUT_AVOID_BPR_P);
+  params->addParameter("playout","playout_avoid_bpr_p2",&(params->playout_avoid_bpr_p2),PLAYOUT_AVOID_BPR_P2);
   params->addParameter("playout","playout_lgpf_enabled",&(params->playout_lgpf_enabled),PLAYOUT_LGPF_ENABLED);
   params->addParameter("playout","playout_atari_enabled",&(params->playout_atari_enabled),PLAYOUT_ATARI_ENABLED);
   params->addParameter("playout","playout_lastatari_p",&(params->playout_lastatari_p),PLAYOUT_LASTATARI_P);
@@ -150,6 +152,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
 
   params->addParameter("tree","bernoulli_a",&(params->bernoulli_a),BERNOULLI_A);
   params->addParameter("tree","bernoulli_b",&(params->bernoulli_b),BERNOULLI_B);
+  params->addParameter("tree","KL-ucb enabled",&(params->KL_ucb_enabled),KL_UCB_ENABLED);
+  
   params->addParameter("tree","weight_score",&(params->weight_score),WEIGHT_SCORE);
   params->addParameter("tree","random_f",&(params->random_f),RANDOM_F);
 
@@ -926,10 +930,10 @@ void Engine::gtpUndo(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 
 float Engine::getScoreKomi() 
 { 
-//own test, did not look too bad!!!
-//float dynamic_komi=7.5*komi_handicap*exp(-5.0*sqrt(komi_handicap)*(float)currentboard->getMovesMade()/boardsize/boardsize);
-//  if (dynamic_komi<5)
-//    dynamic_komi=0;  //save the end game
+  //own test, did not look too bad!!!
+  //float dynamic_komi=7.5*komi_handicap*exp(-5.0*sqrt(komi_handicap)*(float)currentboard->getMovesMade()/boardsize/boardsize);
+  //  if (dynamic_komi<5)
+  //    dynamic_komi=0;  //save the end game
   //Formula Petr Baudis dynamic komi (N=200 for 19x19 board scaled to smaller boards)
   float dynamic_komi=0;
   if (params->dynkomi_enabled)
@@ -937,29 +941,31 @@ float Engine::getScoreKomi()
     dynamic_komi=7.0*komi_handicap*(1-(float)currentboard->getMovesMade()/(boardsize*boardsize*200.0/19.0/19.0));
     if (dynamic_komi<0)
       dynamic_komi=0;  //save the end game
-  }
-  if (params->recalc_dynkomi_limit>0)
-  {
-   switch (movetree->getRobustChild()->getMove().getColor())
+
+    if (params->recalc_dynkomi_limit>0 && movetree!=NULL && movetree->getRobustChild()!=NULL)
     {
-      case Go::BLACK:
-        recalc_dynkomi=movetree->getRobustChild()->getScoreMean()*params->test_p11;
-        //if (recalc_dynkomi<0) recalc_dynkomi=0;
-        break;
-      case Go::WHITE:
-        recalc_dynkomi=-movetree->getRobustChild()->getScoreMean()*params->test_p11;
-        //if (recalc_dynkomi>0) recalc_dynkomi=0;
-        break;
-      default:
-        break;
-    }
-    if (recalc_dynkomi>30) recalc_dynkomi=params->recalc_dynkomi_limit;
+      switch (movetree->getRobustChild()->getMove().getColor())
+      {
+        case Go::BLACK:
+          recalc_dynkomi=movetree->getRobustChild()->getScoreMean()*params->test_p11;
+          //if (recalc_dynkomi<0) recalc_dynkomi=0;
+          break;
+        case Go::WHITE:
+          recalc_dynkomi=-movetree->getRobustChild()->getScoreMean()*params->test_p11;
+          //if (recalc_dynkomi>0) recalc_dynkomi=0;
+          break;
+        default:
+          break;
+      }
+      if (recalc_dynkomi>30) recalc_dynkomi=params->recalc_dynkomi_limit;
+      else
+        if (recalc_dynkomi<-params->recalc_dynkomi_limit) recalc_dynkomi=-params->recalc_dynkomi_limit;
+      return komi+komi_handicap+dynamic_komi+recalc_dynkomi;
+    } 
     else
-      if (recalc_dynkomi<-params->recalc_dynkomi_limit) recalc_dynkomi=-params->recalc_dynkomi_limit;
-    return komi+komi_handicap+dynamic_komi+recalc_dynkomi;
+      return komi+komi_handicap+dynamic_komi;
   }
-  else
-    return komi+komi_handicap+dynamic_komi;
+  return komi+komi_handicap;
 }
 
 float Engine::getHandiKomi() const
@@ -2979,8 +2985,8 @@ void Engine::gtpShowCriticality(void *instance, Gtp::Engine* gtpe, Gtp::Command*
 }
 
 //#define wf(A)   ((A-0.5>0)?(sqrt(2*(A-0.5))+1)/2.0:(1.0-sqrt(-2*(A-0.5)))/2.0)
-//#define wf(A)   A
-#define wf(A) pow(A,0.5)
+#define wf(A)   A
+//#define wf(A) pow(A,0.5)
 void Engine::gtpShowTerritory(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;

@@ -83,7 +83,7 @@ class Playout
     void checkEyeMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, Go::Move &replacemove);
     void checkAntiEyeMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, Go::Move &replacemove);
 
-    bool isBadMove(Worker::Settings *settings, Go::Board *board, Go::Color col, int pos, float p=0.0, float p2=0.0, int passes=0);
+    bool isBadMove(Worker::Settings *settings, Go::Board *board, Go::Color col, int pos, float lbr_p=0.0, float lbm_p=0.0, float lbpr_p=0.0, int passes=0);
     bool isEyeFillMove(Go::Board *board, Go::Color col, int pos);
     float getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group *group);
     
