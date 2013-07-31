@@ -724,7 +724,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
   
   if (params->playout_lastatari_p>0.0) //p is used in the getLastAtariMove function
   {
-    this->getLastAtariMove(settings,board,col,move,posarray);
+    this->getLastAtariMove(settings,board,col,move,posarray,params->test_p19);
     if (!move.isPass())
     {
       if (params->debug_on)
@@ -822,7 +822,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
   if (WITH_P(params->playout_patterns_p))
   {
     this->getPatternMove(settings,board,col,move,posarray,passes);
-    if (WITH_P(params->test_p15) && board->validMove(move) && !this->isBadMove(settings,board,col,move.getPosition(),params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes))
+    if (board->validMove(move) && !this->isBadMove(settings,board,col,move.getPosition(),params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes))
     {
       if (!move.isPass())
       {
@@ -1862,7 +1862,7 @@ void Playout::getLastCaptureMove(Worker::Settings *settings, Go::Board *board, G
   }
 }
 
-void Playout::getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray)
+void Playout::getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray,float p)
 {
   Random *const rand=settings->rand;
 
@@ -1955,7 +1955,7 @@ void Playout::getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go:
       if (group!=NULL && group->inAtari())
       {
         int liberty=group->getAtariPosition();
-        if (board->validMove(Go::Move(col,liberty)))
+        if ((WITH_P(p) || group->numOfStones()>1) && board->validMove(Go::Move(col,liberty)))
         {
           possiblemoves[possiblemovescount]=liberty;
           possiblemovescount++;

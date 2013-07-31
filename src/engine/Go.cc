@@ -1003,7 +1003,7 @@ bool Go::Board::strongEye(Go::Color col, int pos) const
   {
     Go::Group *group=NULL;
     foreach_adjacent(pos,p,{
-      if (this->getColor(p)!=col || this->getColor(p)==Go::EMPTY)
+      if ((this->getColor(p)!=col && this->getColor(p)!=Go::OFFBOARD) || this->getColor(p)==Go::EMPTY)
         return false;
       else if (this->inGroup(p))
       {
@@ -2103,6 +2103,9 @@ int Go::Board::getFiveEmptyGroupCenterFrom(int pos) const
       if (this->getColor(p)==Go::EMPTY)
       {
         this->countAdjacentColors(p,tmpempty,tmpblack,tmpwhite,tmpoffboard);
+        //fprintf(stderr,"tmpempty %d pos %d p %d\n",tmpempty,pos,p);
+        if (tmpempty>2) return -1;  //the form xxx
+                                    //         xx   has not 3 touching empties
         if (col==Go::EMPTY)
         {
           if (tmpblack>0 && tmpwhite>0)

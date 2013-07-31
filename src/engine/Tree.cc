@@ -511,7 +511,7 @@ float Tree::KL_d(float p, float q) const
 
 float Tree::KL_max_q(float S, float N, float t) const
 {
-  float c=3;
+  static float c=0;
   if (S<0) S=0;
   if (S>N) S=N;
   if (N==0) return 1.0;  //this should not happen?!
