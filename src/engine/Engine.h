@@ -346,7 +346,7 @@ class Engine
     Go::TerritoryMap *getTerritoryMap() const {return territorymap;}
     void ProbabilityMoveAs(int pos, int move_number) {if (pos>=0) probabilitymap->setMoveAsFirst(pos,move_number);}
     void ProbabilityClean() {probabilitymap->resetplayed();}
-    float getProbabilityMoveAt(int pos) {if (pos>=0) return probabilitymap->getMoveAs (pos); else return boardsize*boardsize;}
+    float getProbabilityMoveAt(int pos) {if (pos>=0) return probabilitymap->getMoveAs(pos)/boardsize/boardsize; else return 1.0;}
     float getCorrelation(int pos) const {return (correlationmap->get(pos)).getCorrelation();}
     float getOldMoveValue(Go::Move m);
     void getOnePlayoutMove(Go::Board *board, Go::Color col, Go::Move *move);

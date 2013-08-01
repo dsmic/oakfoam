@@ -922,7 +922,7 @@ void Tree::updateUnPruneAt()
   else
     scale=1;
   float bestfactor=-1;
-  float worstfactor=1e20;
+  //float worstfactor=1e20;
   float sumunpruned=0;
   int   numunpruned=0;
   if (params->test_p16>0)
@@ -940,8 +940,8 @@ void Tree::updateUnPruneAt()
         {
           sumunpruned+=(*iter)->getUnPruneFactor();
           numunpruned++;
-          if ((*iter)->getUnPruneFactor()<worstfactor)
-            worstfactor=(*iter)->getUnPruneFactor();
+          //if ((*iter)->getUnPruneFactor()<worstfactor)
+          //  worstfactor=(*iter)->getUnPruneFactor();
         }
       }
     }
@@ -956,7 +956,10 @@ void Tree::updateUnPruneAt()
   if (bestfactor>0 && numunpruned>0)
   {
     DistanceToWorst=sumunpruned/numunpruned/bestfactor;
-    DistanceToWorst=(DistanceToWorst-1.0)*params->test_p16+1.0;
+    if (DistanceToWorst<1.0)
+      DistanceToWorst=1.0;
+    else
+      DistanceToWorst=(DistanceToWorst-1.0)*params->test_p16+1.0;
   }
   unprunenextchildat=lastunprune+unprunebase*scale*DistanceToWorst; //t(n+1)=t(n)+(a*b^n)*(1-c*p)
 }

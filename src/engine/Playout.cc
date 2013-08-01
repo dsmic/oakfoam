@@ -1074,46 +1074,86 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     }
   }
   
-  if (params->playout_random_weight_territory_n>0)
+
+if (params->playout_random_weight_territory_n>0)
+{
+  int patternmove=-1;
+  float bestvalue=-1.0;
+
+  for (int i=0;i<params->playout_random_weight_territory_n;i++)
   {
-    int patternmove=-1;
-    float bestvalue=-1.0;
-    
-    for (int i=0;i<params->playout_random_weight_territory_n;i++)
+    int p=rand->getRandomInt(board->getPositionMax());
+    if (doapproachmoves)
+      this->replaceWithApproachMove(settings,board,col,p);
+    if (board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes))
     {
-      int p=rand->getRandomInt(board->getPositionMax());
-      if (doapproachmoves)
-        this->replaceWithApproachMove(settings,board,col,p);
-      if (board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes))
+      // only circular pattern
+      float v=params->engine->getTerritoryMap()->getPositionOwner(p);
+
+      if (col==Go::WHITE)
+        v=-v;
+      v+=params->playout_random_weight_territory_f1;  //shift the center
+      v=params->playout_random_weight_territory_f0*v + exp(-params->playout_random_weight_territory_f*v*v);
+      if (params->test_p18>0)
+        v+=params->test_p18*params->engine->getProbabilityMoveAt(p);
+      if (v>bestvalue)
       {
-        // only circular pattern
-        float v=params->engine->getTerritoryMap()->getPositionOwner(p);
-        
-        if (col==Go::WHITE)
-          v=-v;
-        v+=params->playout_random_weight_territory_f1;  //shift the center
-        v=params->playout_random_weight_territory_f0*v + exp(-params->playout_random_weight_territory_f*v*v);
-        if (v>bestvalue)
-        {
-          patternmove=p;
-          bestvalue=v;
-        }
+        patternmove=p;
+        bestvalue=v;
       }
     }
-    if (patternmove>=0)
+  }
+  if (patternmove>=0)
+  {
+    move=Go::Move(col,patternmove);
+    move.set_useforlgrf (true);
+    if (params->debug_on)
+      gtpe->getOutput()->printfDebug("[playoutmove]: %s random quick-pick with territory\n",move.toString(board->getSize()).c_str());
+    if (reason!=NULL)
+      *reason="random quick-pick with territory";
+    params->engine->statisticsPlus(Engine::RANDOM_QUICK_TERRITORY);
+    return;
+  }
+}
+
+
+//reweight random moves with probability measured
+if (params->test_p4>0)
+{
+  int p=-1;
+  float prob=0;
+  for (int i=0;i<params->test_p4;i++)
+  {
+    int p_tmp=rand->getRandomInt(board->getPositionMax());
+    if (board->validMove(Go::Move(col,p_tmp))&& !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes))
     {
-      move=Go::Move(col,patternmove);
+      float prob_tmp=params->engine->getProbabilityMoveAt(p_tmp);
+      if (prob_tmp>prob)
+      {
+        prob=prob_tmp;
+        p=p_tmp;
+      }
+    }
+  }
+  if (p>=0)
+  {
+    if (doapproachmoves)
+      this->replaceWithApproachMove(settings,board,col,p);
+    if (board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes))
+    {
+      move=Go::Move(col,p);
       move.set_useforlgrf (true);
       if (params->debug_on)
-        gtpe->getOutput()->printfDebug("[playoutmove]: %s random quick-pick with territory\n",move.toString(board->getSize()).c_str());
+        gtpe->getOutput()->printfDebug("[playoutmove]: %s random reweighted quick-pick\n",move.toString(board->getSize()).c_str());
       if (reason!=NULL)
-        *reason="random quick-pick with territory";
-      params->engine->statisticsPlus(Engine::RANDOM_QUICK_TERRITORY);
+        *reason="random reweighted quick-pick";
+      params->engine->statisticsPlus(Engine::RANDOM_REWEIGHTED_QUICK);
       return;
     }
   }
-  
-  if (params->playout_randomquick_bestcirc_n>0)
+}  
+
+if (params->playout_randomquick_bestcirc_n>0)
   {
     int patternmove=-1;
     float bestvalue=-1.0;
@@ -1165,42 +1205,6 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
       return;
     }
   }
-
-  //reweight random moves with probability measured
-  if (params->test_p4>0)
-  {
-    int p=-1;
-    float prob=0;
-    for (int i=0;i<params->test_p4;i++)
-    {
-      int p_tmp=rand->getRandomInt(board->getPositionMax());
-      if (board->validMove(Go::Move(col,p_tmp))&& !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes))
-      {
-        float prob_tmp=params->engine->getProbabilityMoveAt(p_tmp);
-        if (prob_tmp>prob)
-        {
-          prob=prob_tmp;
-          p=p_tmp;
-        }
-      }
-    }
-    if (p>=0)
-      {
-        if (doapproachmoves)
-          this->replaceWithApproachMove(settings,board,col,p);
-        if (board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes))
-          {
-            move=Go::Move(col,p);
-            move.set_useforlgrf (true);
-            if (params->debug_on)
-              gtpe->getOutput()->printfDebug("[playoutmove]: %s random reweighted quick-pick\n",move.toString(board->getSize()).c_str());
-            if (reason!=NULL)
-              *reason="random reweighted quick-pick";
-            params->engine->statisticsPlus(Engine::RANDOM_REWEIGHTED_QUICK);
-            return;
-          }
-      }
-  }  
   
   for (int i=0;i<10;i++)
   {
