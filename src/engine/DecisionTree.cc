@@ -586,17 +586,19 @@ bool DecisionTree::updateIntersectionNode(DecisionTree::Node *node, DecisionTree
         int n = boost::lexical_cast<int>(attrs->at(1));
 
         bool resfound = false;
-        std::vector<unsigned int> *adjnodes = graph->getAdjacentNodes(n);
+        std::vector<unsigned int> *adjnodes = graph->getAdjacentNodes(stones->at(n));
         if (adjnodes != NULL)
         {
           for (unsigned int i=0; i<adjnodes->size(); i++)
           {
+            unsigned int adjn = adjnodes->at(i);
+
             bool valid = false;
-            if ((invert?W:B) && graph->getNodeStatus(i)==Go::BLACK)
+            if ((invert?W:B) && graph->getNodeStatus(adjn)==Go::BLACK)
               valid = true;
-            else if ((invert?B:W) && graph->getNodeStatus(i)==Go::WHITE)
+            else if ((invert?B:W) && graph->getNodeStatus(adjn)==Go::WHITE)
               valid = true;
-            else if (E && graph->getNodeStatus(i)==Go::EMPTY)
+            else if (E && graph->getNodeStatus(adjn)==Go::EMPTY)
               valid = true;
 
             if (valid)
@@ -604,7 +606,7 @@ bool DecisionTree::updateIntersectionNode(DecisionTree::Node *node, DecisionTree
               bool found = false;
               for (unsigned int j=0; j<stones->size(); j++)
               {
-                if (stones->at(j) == i)
+                if (stones->at(j) == adjn)
                 {
                   found = true;
                   break;
@@ -1183,17 +1185,19 @@ std::list<DecisionTree::Node*> *DecisionTree::getIntersectionLeafNodes(DecisionT
     int n = boost::lexical_cast<int>(attrs->at(1));
 
     std::list<unsigned int> matches;
-    std::vector<unsigned int> *adjnodes = graph->getAdjacentNodes(n);
+    std::vector<unsigned int> *adjnodes = graph->getAdjacentNodes(stones->at(n));
     if (adjnodes != NULL)
     {
       for (unsigned int i=0; i<adjnodes->size(); i++)
       {
+        unsigned int adjn = adjnodes->at(i);
+
         bool valid = false;
-        if ((invert?W:B) && graph->getNodeStatus(i)==Go::BLACK)
+        if ((invert?W:B) && graph->getNodeStatus(adjn)==Go::BLACK)
           valid = true;
-        else if ((invert?B:W) && graph->getNodeStatus(i)==Go::WHITE)
+        else if ((invert?B:W) && graph->getNodeStatus(adjn)==Go::WHITE)
           valid = true;
-        else if (E && graph->getNodeStatus(i)==Go::EMPTY)
+        else if (E && graph->getNodeStatus(adjn)==Go::EMPTY)
           valid = true;
 
         if (valid)
@@ -1201,14 +1205,14 @@ std::list<DecisionTree::Node*> *DecisionTree::getIntersectionLeafNodes(DecisionT
           bool found = false;
           for (unsigned int j=0; j<stones->size(); j++)
           {
-            if (stones->at(j) == i)
+            if (stones->at(j) == adjn)
             {
               found = true;
               break;
             }
           }
           if (!found)
-            matches.push_back(i);
+            matches.push_back(adjn);
         }
       }
     }
@@ -1260,7 +1264,7 @@ std::list<DecisionTree::Node*> *DecisionTree::getIntersectionLeafNodes(DecisionT
 
       if (matches.size() > 1) // still tied (min dist to newest node)
       {
-        for (unsigned int i=stones->size()-1; i>=0; i--)
+        for (unsigned int i=stones->size()-1; i>=0 && i!=(unsigned int)-1; i--)
         {
           int mindist = graph->getEdgeDistance(stones->at(i),matches.front());
           for (std::list<unsigned int>::iterator iter=matches.begin();iter!=matches.end();++iter)
@@ -1285,7 +1289,7 @@ std::list<DecisionTree::Node*> *DecisionTree::getIntersectionLeafNodes(DecisionT
 
         if (matches.size() > 1) // still tied (max conn to newest node)
         {
-          for (unsigned int i=stones->size()-1; i>=0; i--)
+          for (unsigned int i=stones->size()-1; i>=0 && i!=(unsigned int)-1; i--)
           {
             int maxconn = graph->getEdgeConnectivity(stones->at(i),matches.front());
             for (std::list<unsigned int>::iterator iter=matches.begin();iter!=matches.end();++iter)
