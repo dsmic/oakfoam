@@ -75,9 +75,10 @@ class DecisionTree
         bool hasEdge(unsigned int node1, unsigned int node2);
         int getEdgeConnectivity(unsigned int node1, unsigned int node2);
         int getEdgeDistance(unsigned int node1, unsigned int node2);
+        std::vector<unsigned int> *getAdjacentNodes(unsigned int node);
 
-        unsigned int addAuxNode(int pos); // TODO
-        void removeAuxNode(); // TODO
+        unsigned int addAuxNode(int pos);
+        void removeAuxNode();
 
         void compressChain() { this->compress(true); };
         void compressEmpty() { this->compress(false); };
@@ -136,6 +137,7 @@ class DecisionTree
 
     Type getType() { return type; };
     bool getCompressChain() { return compressChain; };
+    bool getCompressEmpty() { return compressEmpty; };
     std::vector<std::string> *getAttrs() { return attrs; };
     float getWeight(GraphCollection *graphs, Go::Move move, bool updatetree = false);
     std::list<int> *getLeafIds(GraphCollection *graphs, Go::Move move);
@@ -296,16 +298,18 @@ class DecisionTree
 
     Parameters *params;
     Type type;
-    bool compressChain;
+    bool compressChain, compressEmpty;
     std::vector<std::string> *attrs;
     Node *root;
     std::vector<Node*> leafmap;
 
-    DecisionTree(Parameters *p, Type t, bool cmpC, std::vector<std::string> *a, DecisionTree::Node *r);
+    DecisionTree(Parameters *p, Type t, bool cmpC, bool cmpE, std::vector<std::string> *a, DecisionTree::Node *r);
 
     std::list<Node*> *getLeafNodes(GraphCollection *graphs, Go::Move move, bool updatetree);
     std::list<Node*> *getStoneLeafNodes(Node *node, StoneGraph *graph, std::vector<unsigned int> *stones, bool invert, bool updatetree);
+    std::list<Node*> *getIntersectionLeafNodes(Node *node, IntersectionGraph *graph, std::vector<unsigned int> *stones, bool invert, bool updatetree);
     bool updateStoneNode(Node *node, StoneGraph *graph, std::vector<unsigned int> *stones, bool invert);
+    bool updateIntersectionNode(Node *node, IntersectionGraph *graph, std::vector<unsigned int> *stones, bool invert);
     unsigned int getMaxNode(Node *node);
 
     static float combineNodeWeights(std::list<Node*> *nodes);

@@ -14,11 +14,12 @@
 #define WHITESPACE " \t\r\n"
 #define COMMENT "#"
 
-DecisionTree::DecisionTree(Parameters *p, DecisionTree::Type t, bool cmpC, std::vector<std::string> *a, DecisionTree::Node *r)
+DecisionTree::DecisionTree(Parameters *p, DecisionTree::Type t, bool cmpC, bool cmpE, std::vector<std::string> *a, DecisionTree::Node *r)
 {
   params = p;
   type = t;
   compressChain = cmpC;
+  compressEmpty = cmpE;
   attrs = a;
   root = r;
   this->updateLeafIds();
@@ -59,6 +60,7 @@ unsigned int DecisionTree::getMaxNode(DecisionTree::Node *node)
   switch (type)
   {
     case STONE:
+    case INTERSECTION:
       if (query->getLabel()=="NEW" && opt->getLabel()!="N")
         addnode = true;
       break;
@@ -264,6 +266,7 @@ void DecisionTree::Node::getTreeStats(DecisionTree::Type type, int depth, int no
       switch (type)
       {
         case STONE:
+        case INTERSECTION:
           if (query->getLabel()=="NEW" && opt->getLabel()!="N")
             addnode = true;
           break;
@@ -375,6 +378,9 @@ bool DecisionTree::updateStoneNode(DecisionTree::Node *node, DecisionTree::Stone
                 }
               }
             }
+
+            if (resfound)
+              break;
           }
 
           if (resfound)
@@ -545,6 +551,243 @@ bool DecisionTree::updateStoneNode(DecisionTree::Node *node, DecisionTree::Stone
   return true;
 }
 
+bool DecisionTree::updateIntersectionNode(DecisionTree::Node *node, DecisionTree::IntersectionGraph *graph, std::vector<unsigned int> *stones, bool invert)
+{
+  std::vector<DecisionTree::StatPerm*> *statperms = node->getStats()->getStatPerms();
+  if (node->isLeaf()) // only update stats until the node is split
+  {
+    for (unsigned int i=0; i<statperms->size(); i++)
+    {
+      DecisionTree::StatPerm *sp = statperms->at(i);
+
+      std::string spt = sp->getLabel();
+      std::vector<std::string> *attrs = sp->getAttrs();
+      int res = 0;
+      int resmin = sp->getRange()->getStart();
+      int resmax = sp->getRange()->getEnd();
+      //fprintf(stderr,"[DT] SP type: '%s'\n",spt.c_str());
+      if (spt=="NEW")
+      {
+        if (resmin!=0 || resmax!=1)
+        {
+          fprintf(stderr,"[DT] Error! Bad range (%d,%d), expected (0,1)\n",resmin,resmax);
+          return false;
+        }
+
+        std::string cols = attrs->at(0);
+        bool B = (cols.find('B') != std::string::npos);
+        bool W = (cols.find('W') != std::string::npos);
+        bool E = (cols.find('E') != std::string::npos);
+        if (!B && !W && !E)
+        {
+          fprintf(stderr,"[DT] Error! Unknown attribute: '%s'\n",cols.c_str());
+          return false;
+        }
+        int n = boost::lexical_cast<int>(attrs->at(1));
+
+        bool resfound = false;
+        std::vector<unsigned int> *adjnodes = graph->getAdjacentNodes(n);
+        if (adjnodes != NULL)
+        {
+          for (unsigned int i=0; i<adjnodes->size(); i++)
+          {
+            bool valid = false;
+            if ((invert?W:B) && graph->getNodeStatus(i)==Go::BLACK)
+              valid = true;
+            else if ((invert?B:W) && graph->getNodeStatus(i)==Go::WHITE)
+              valid = true;
+            else if (E && graph->getNodeStatus(i)==Go::EMPTY)
+              valid = true;
+
+            if (valid)
+            {
+              bool found = false;
+              for (unsigned int j=0; j<stones->size(); j++)
+              {
+                if (stones->at(j) == i)
+                {
+                  found = true;
+                  break;
+                }
+              }
+              if (!found)
+              {
+                resfound = true;
+                break;
+              }
+            }
+
+            if (resfound)
+              break;
+          }
+        }
+
+        if (adjnodes != NULL)
+          delete adjnodes;
+
+        res = resfound?1:0;
+      }
+      else if (spt=="EDGE")
+      {
+        std::vector<std::string> *attrs = sp->getAttrs();
+        std::string type = attrs->at(0);
+        int n0 = boost::lexical_cast<int>(attrs->at(1));
+        int n1 = boost::lexical_cast<int>(attrs->at(2));
+
+        if (type == "DIST")
+          res = graph->getEdgeDistance(stones->at(n0),stones->at(n1));
+        else if (type == "CONN")
+          res = graph->getEdgeConnectivity(stones->at(n0),stones->at(n1));
+      }
+      else if (spt=="ATTR")
+      {
+        std::vector<std::string> *attrs = sp->getAttrs();
+        std::string type = attrs->at(0);
+        int n = boost::lexical_cast<int>(attrs->at(1));
+
+        int node = stones->at(n);
+        if (type == "SIZE")
+          res = graph->getNodeSize(node);
+        else if (type == "LIB")
+          res = graph->getNodeLiberties(node);
+      }
+      else
+      {
+        fprintf(stderr,"[DT] Error! Unknown stat perm type: '%s'\n",spt.c_str());
+        return false;
+      }
+
+      if (res < resmin)
+        res = resmin;
+      else if (res > resmax)
+        res = resmax;
+      sp->getRange()->addVal(res,params->dt_range_divide);
+    }
+  }
+
+  if (node->isLeaf())
+  {
+    int descents = statperms->at(0)->getRange()->getThisVal();
+    if (descents >= params->dt_split_after && (descents%10)==0)
+    {
+      //fprintf(stderr,"DT split now!\n");
+
+      std::string bestlabel = "";
+      std::vector<std::string> *bestattrs = NULL;
+      float bestval = -1;
+
+      for (unsigned int i=0; i<statperms->size(); i++)
+      {
+        DecisionTree::StatPerm *sp = statperms->at(i);
+        DecisionTree::Range *range = sp->getRange();
+
+        float m = range->getExpectedMedian();
+        int m1 = floor(m);
+        int m2 = ceil(m);
+        float p1l = range->getExpectedPercentageLessThan(m1);
+        float p1e = range->getExpectedPercentageEquals(m1);
+        float p2l = (m1==m2?p1l:range->getExpectedPercentageLessThan(m2));
+        float p2e = (m1==m2?p1e:range->getExpectedPercentageEquals(m2));
+
+        float v1l = DecisionTree::percentageToVal(p1l);
+        float v2l = DecisionTree::percentageToVal(p2l);
+        float v1e = DecisionTree::percentageToVal(p1e);
+        float v2e = DecisionTree::percentageToVal(p2e);
+
+        /*fprintf(stderr,"DT stat: %s",sp->getLabel().c_str());
+        for (unsigned int j=0; j<sp->getAttrs()->size(); j++)
+          fprintf(stderr,"%c%s",(j==0?'[':'|'),sp->getAttrs()->at(j).c_str());
+        fprintf(stderr,"] \t %.3f %d %d %.3f %.3f %.3f %.3f\n",m,m1,m2,p1l,p1e,p2l,p2e);*/
+        //fprintf(stderr,"DT range:\n%s\n",range->toString().c_str());
+
+        bool foundbest = false;
+        int localm = 0;
+        bool lne = false;
+
+        if (sp->getLabel()=="NEW")
+        {
+          float v = DecisionTree::percentageToVal(range->getExpectedPercentageLessThan(1));
+          if (v > bestval)
+          {
+            bestval = v;
+            localm = 1;
+            foundbest = true;
+          }
+        }
+        else
+        {
+          if (v1l > bestval)
+          {
+            bestval = v1l;
+            localm = m1;
+            lne = true;
+            foundbest = true;
+          }
+          if (v2l > bestval)
+          {
+            bestval = v2l;
+            localm = m2;
+            lne = true;
+            foundbest = true;
+          }
+          if (v1e > bestval)
+          {
+            bestval = v1e;
+            localm = m1;
+            lne = false;
+            foundbest = true;
+          }
+          if (v2e > bestval)
+          {
+            bestval = v2e;
+            localm = m2;
+            lne = false;
+            foundbest = true;
+          }
+        }
+
+        if (foundbest)
+        {
+          bestlabel = sp->getLabel();
+          if (bestattrs != NULL)
+            delete bestattrs;
+          std::vector<std::string> *attrs = new std::vector<std::string>();
+          for (unsigned int j=0; j<sp->getAttrs()->size(); j++)
+          {
+            attrs->push_back(sp->getAttrs()->at(j));
+          }
+          if (bestlabel=="EDGE" || bestlabel=="ATTR")
+            attrs->push_back(lne?"<":"=");
+          if (bestlabel!="NEW")
+            attrs->push_back(boost::lexical_cast<std::string>(localm));
+          bestattrs = attrs;
+        }
+      }
+
+      if (bestval != -1)
+      {
+        if (bestval >= params->dt_split_threshold)
+        {
+          int maxnode = this->getMaxNode(node);
+
+          DecisionTree::Query *query = new DecisionTree::Query(type,bestlabel,bestattrs,maxnode);
+          query->setParent(node);
+          node->setQuery(query);
+
+          /*params->engine->getGtpEngine()->getOutput()->printfDebug("DT best stat: %s",bestlabel.c_str());
+          for (unsigned int j=0; j<bestattrs->size(); j++)
+            params->engine->getGtpEngine()->getOutput()->printfDebug("%c%s",(j==0?'[':'|'),bestattrs->at(j).c_str());
+          params->engine->getGtpEngine()->getOutput()->printfDebug("] %.2f\n",bestval);*/
+        }
+        else
+          delete bestattrs;
+      }
+    }
+  }
+
+  return true;
+}
+
 float DecisionTree::percentageToVal(float p)
 {
   float val = (p-0.5)/0.5;
@@ -564,13 +807,30 @@ std::list<DecisionTree::Node*> *DecisionTree::getLeafNodes(DecisionTree::GraphCo
   switch (type)
   {
     case STONE:
-      DecisionTree::StoneGraph *graph = graphs->getStoneGraph(this->getCompressChain());
-      unsigned int auxnode = graph->addAuxNode(move.getPosition());
+      {
+        DecisionTree::StoneGraph *graph = graphs->getStoneGraph(this->getCompressChain());
+        unsigned int auxnode = graph->addAuxNode(move.getPosition());
 
-      stones->push_back(auxnode);
-      nodes = this->getStoneLeafNodes(root,graph,stones,invert,updatetree);
+        stones->push_back(auxnode);
+        nodes = this->getStoneLeafNodes(root,graph,stones,invert,updatetree);
 
-      graph->removeAuxNode();
+        graph->removeAuxNode();
+
+        break;
+      }
+
+    case INTERSECTION:
+      {
+        DecisionTree::IntersectionGraph *graph = graphs->getIntersectionGraph(this->getCompressChain(), this->getCompressEmpty());
+        unsigned int auxnode = graph->addAuxNode(move.getPosition());
+
+        stones->push_back(auxnode);
+        nodes = this->getIntersectionLeafNodes(root,graph,stones,invert,updatetree);
+
+        graph->removeAuxNode();
+
+        break;
+      }
   }
 
   delete stones;
@@ -897,6 +1157,325 @@ std::list<DecisionTree::Node*> *DecisionTree::getStoneLeafNodes(DecisionTree::No
   }
 }
 
+std::list<DecisionTree::Node*> *DecisionTree::getIntersectionLeafNodes(DecisionTree::Node *node, DecisionTree::IntersectionGraph *graph, std::vector<unsigned int> *stones, bool invert, bool updatetree)
+{
+  if (updatetree)
+  {
+    if (!this->updateIntersectionNode(node,graph,stones,invert))
+      return NULL;
+  }
+
+  if (node->isLeaf())
+  {
+    std::list<DecisionTree::Node*> *list = new std::list<DecisionTree::Node*>();
+    list->push_back(node);
+    return list;
+  }
+
+  DecisionTree::Query *q = node->getQuery();
+  
+  if (q->getLabel() == "NEW")
+  {
+    std::vector<std::string> *attrs = q->getAttrs();
+    bool B = (attrs->at(0).find('B') != std::string::npos);
+    bool W = (attrs->at(0).find('W') != std::string::npos);
+    bool E = (attrs->at(0).find('E') != std::string::npos);
+    int n = boost::lexical_cast<int>(attrs->at(1));
+
+    std::list<unsigned int> matches;
+    std::vector<unsigned int> *adjnodes = graph->getAdjacentNodes(n);
+    if (adjnodes != NULL)
+    {
+      for (unsigned int i=0; i<adjnodes->size(); i++)
+      {
+        bool valid = false;
+        if ((invert?W:B) && graph->getNodeStatus(i)==Go::BLACK)
+          valid = true;
+        else if ((invert?B:W) && graph->getNodeStatus(i)==Go::WHITE)
+          valid = true;
+        else if (E && graph->getNodeStatus(i)==Go::EMPTY)
+          valid = true;
+
+        if (valid)
+        {
+          bool found = false;
+          for (unsigned int j=0; j<stones->size(); j++)
+          {
+            if (stones->at(j) == i)
+            {
+              found = true;
+              break;
+            }
+          }
+          if (!found)
+            matches.push_back(i);
+        }
+      }
+    }
+
+    if (matches.size() > 1) // try break ties (B...W...E)
+    {
+      std::list<unsigned int> m;
+      for (std::list<unsigned int>::iterator iter=matches.begin();iter!=matches.end();++iter)
+      {
+        unsigned int n = (*iter);
+        if (invert)
+        {
+          if (graph->getNodeStatus(n)==Go::WHITE)
+            m.push_back(n);
+        }
+        else
+        {
+          if (graph->getNodeStatus(n)==Go::BLACK)
+            m.push_back(n);
+        }
+      }
+      if (m.size()==0)
+      {
+        for (std::list<unsigned int>::iterator iter=matches.begin();iter!=matches.end();++iter)
+        {
+          unsigned int n = (*iter);
+          if (invert)
+          {
+            if (graph->getNodeStatus(n)==Go::BLACK)
+              m.push_back(n);
+          }
+          else
+          {
+            if (graph->getNodeStatus(n)==Go::WHITE)
+              m.push_back(n);
+          }
+        }
+        if (m.size()==0)
+        {
+          for (std::list<unsigned int>::iterator iter=matches.begin();iter!=matches.end();++iter)
+          {
+            unsigned int n = (*iter);
+            if (graph->getNodeStatus(n)==Go::EMPTY)
+              m.push_back(n);
+          }
+        }
+      }
+      matches = m;
+
+      if (matches.size() > 1) // still tied (min dist to newest node)
+      {
+        for (unsigned int i=stones->size()-1; i>=0; i--)
+        {
+          int mindist = graph->getEdgeDistance(stones->at(i),matches.front());
+          for (std::list<unsigned int>::iterator iter=matches.begin();iter!=matches.end();++iter)
+          {
+            int dist = graph->getEdgeDistance(stones->at(i),(*iter));
+            if (dist < mindist)
+              mindist = dist;
+          }
+
+          std::list<unsigned int> m;
+          for (std::list<unsigned int>::iterator iter=matches.begin();iter!=matches.end();++iter)
+          {
+            int dist = graph->getEdgeDistance(stones->at(i),(*iter));
+            if (dist == mindist)
+              m.push_back((*iter));
+          }
+          matches = m;
+
+          if (matches.size() == 1)
+            break;
+        }
+
+        if (matches.size() > 1) // still tied (max conn to newest node)
+        {
+          for (unsigned int i=stones->size()-1; i>=0; i--)
+          {
+            int maxconn = graph->getEdgeConnectivity(stones->at(i),matches.front());
+            for (std::list<unsigned int>::iterator iter=matches.begin();iter!=matches.end();++iter)
+            {
+              int conn = graph->getEdgeConnectivity(stones->at(i),(*iter));
+              if (conn > maxconn)
+                maxconn = conn;
+            }
+
+            std::list<unsigned int> m;
+            for (std::list<unsigned int>::iterator iter=matches.begin();iter!=matches.end();++iter)
+            {
+              int conn = graph->getEdgeConnectivity(stones->at(i),(*iter));
+              if (conn == maxconn)
+                m.push_back((*iter));
+            }
+            matches = m;
+
+            if (matches.size() == 1)
+              break;
+          }
+
+          if (matches.size() > 1) // yet still tied (largest size)
+          {
+            int maxsize = 0;
+            for (std::list<unsigned int>::iterator iter=matches.begin();iter!=matches.end();++iter)
+            {
+              int size = graph->getNodeSize((*iter));
+              if (size > maxsize)
+                maxsize = size;
+            }
+
+            std::list<unsigned int> m;
+            for (std::list<unsigned int>::iterator iter=matches.begin();iter!=matches.end();++iter)
+            {
+              int size = graph->getNodeSize((*iter));
+              if (size == maxsize)
+                m.push_back((*iter));
+            }
+            matches = m;
+
+            if (matches.size() > 1) // yet yet still tied (most liberties)
+            {
+              int maxlib = 0;
+              for (std::list<unsigned int>::iterator iter=matches.begin();iter!=matches.end();++iter)
+              {
+                int lib = graph->getNodeLiberties((*iter));
+                if (lib > maxlib)
+                  maxlib = lib;
+              }
+
+              std::list<unsigned int> m;
+              for (std::list<unsigned int>::iterator iter=matches.begin();iter!=matches.end();++iter)
+              {
+                int lib = graph->getNodeLiberties((*iter));
+                if (lib == maxlib)
+                  m.push_back((*iter));
+              }
+              matches = m;
+            }
+          }
+        }
+      }
+    }
+
+    //fprintf(stderr,"[DT] matches: %lu\n",matches.size());
+    if (matches.size() > 0)
+    {
+      std::list<DecisionTree::Node*> *nodes = NULL;
+      for (std::list<unsigned int>::iterator iter=matches.begin();iter!=matches.end();++iter)
+      {
+        std::list<DecisionTree::Node*> *subnodes = NULL;
+        unsigned int newnode = (*iter);
+        Go::Color col = graph->getNodeStatus(newnode);
+        stones->push_back(newnode);
+
+        std::vector<DecisionTree::Option*> *options = q->getOptions();
+        for (unsigned int i=0; i<options->size(); i++)
+        {
+          std::string l = options->at(i)->getLabel();
+          if (col==Go::BLACK && l==(invert?"W":"B"))
+            subnodes = this->getIntersectionLeafNodes(options->at(i)->getNode(),graph,stones,invert,updatetree);
+          else if (col==Go::WHITE && l==(invert?"B":"W"))
+            subnodes = this->getIntersectionLeafNodes(options->at(i)->getNode(),graph,stones,invert,updatetree);
+          else if (col==Go::EMPTY && l=="E")
+            subnodes = this->getIntersectionLeafNodes(options->at(i)->getNode(),graph,stones,invert,updatetree);
+        }
+        stones->pop_back();
+
+        if (subnodes == NULL)
+        {
+          if (nodes != NULL)
+            delete nodes;
+          return NULL;
+        }
+
+        if (nodes == NULL)
+          nodes = subnodes;
+        else
+        {
+          nodes->splice(nodes->begin(),*subnodes);
+          delete subnodes;
+        }
+      }
+
+      return nodes;
+    }
+    else
+    {
+      std::vector<DecisionTree::Option*> *options = q->getOptions();
+      for (unsigned int i=0; i<options->size(); i++)
+      {
+        std::string l = options->at(i)->getLabel();
+        if (l=="N")
+          return this->getIntersectionLeafNodes(options->at(i)->getNode(),graph,stones,invert,updatetree);
+      }
+      return NULL;
+    }
+  }
+  else if (q->getLabel() == "EDGE")
+  {
+    std::vector<std::string> *attrs = q->getAttrs();
+    std::string type = attrs->at(0);
+    int n0 = boost::lexical_cast<int>(attrs->at(1));
+    int n1 = boost::lexical_cast<int>(attrs->at(2));
+    bool eq = attrs->at(3) == "=";
+    int val = boost::lexical_cast<int>(attrs->at(4));
+
+    int dist = 0;
+    if (type == "DIST")
+      dist = graph->getEdgeDistance(stones->at(n0),stones->at(n1));
+    else if (type == "CONN")
+      dist = graph->getEdgeConnectivity(stones->at(n0),stones->at(n1));
+
+    bool res;
+    if (eq)
+      res = dist == val;
+    else
+      res = dist < val;
+
+    std::vector<DecisionTree::Option*> *options = q->getOptions();
+    for (unsigned int i=0; i<options->size(); i++)
+    {
+      std::string l = options->at(i)->getLabel();
+      if (res && l=="Y")
+        return this->getIntersectionLeafNodes(options->at(i)->getNode(),graph,stones,invert,updatetree);
+      else if (!res && l=="N")
+        return this->getIntersectionLeafNodes(options->at(i)->getNode(),graph,stones,invert,updatetree);
+    }
+    return NULL;
+  }
+  else if (q->getLabel() == "ATTR")
+  {
+    std::vector<std::string> *attrs = q->getAttrs();
+    std::string type = attrs->at(0);
+    int n = boost::lexical_cast<int>(attrs->at(1));
+    bool eq = attrs->at(2) == "=";
+    int val = boost::lexical_cast<int>(attrs->at(3));
+
+    unsigned int node = stones->at(n);
+    int attr = 0;
+    if (type == "SIZE")
+      attr = graph->getNodeSize(node);
+    else if (type == "LIB")
+      attr = graph->getNodeLiberties(node);
+
+    bool res;
+    if (eq)
+      res = attr == val;
+    else
+      res = attr < val;
+
+    std::vector<DecisionTree::Option*> *options = q->getOptions();
+    for (unsigned int i=0; i<options->size(); i++)
+    {
+      std::string l = options->at(i)->getLabel();
+      if (res && l=="Y")
+        return this->getIntersectionLeafNodes(options->at(i)->getNode(),graph,stones,invert,updatetree);
+      else if (!res && l=="N")
+        return this->getIntersectionLeafNodes(options->at(i)->getNode(),graph,stones,invert,updatetree);
+    }
+    return NULL;
+  }
+  else
+  {
+    fprintf(stderr,"[DT] Error! Invalid query type: '%s'\n",q->getLabel().c_str());
+    return NULL;
+  }
+}
+
 std::string DecisionTree::toString(bool ignorestats, int leafoffset)
 {
   std::string r = "(DT[";
@@ -1118,10 +1697,13 @@ std::list<DecisionTree*> *DecisionTree::parseString(Parameters *params, std::str
 
   Type type;
   bool compressChain = false;
+  bool compressEmpty = false;
 
   std::string typestr = attrs->at(0); // tree type must be first attribute
   if (typestr == "STONE" || typestr=="SPARSE") // SPARSE is legacy
     type = STONE;
+  else if (typestr == "INTERSECTION")
+    type = INTERSECTION;
   else
   {
     fprintf(stderr,"[DT] Error! Invalid type: '%s'\n",typestr.c_str());
@@ -1133,6 +1715,13 @@ std::list<DecisionTree*> *DecisionTree::parseString(Parameters *params, std::str
   {
     if (attrs->at(i) == "CHAINCOMP")
       compressChain = true;
+    else if (attrs->at(i) == "EMPTYCOMP")
+      compressEmpty = true;
+    else if (attrs->at(i) == "BOTHCOMP")
+    {
+      compressChain = true;
+      compressEmpty = true;
+    }
   }
 
   DecisionTree::Node *root = DecisionTree::parseNode(type,data,pos);
@@ -1153,7 +1742,7 @@ std::list<DecisionTree*> *DecisionTree::parseString(Parameters *params, std::str
 
   root->populateEmptyStats(type);
 
-  DecisionTree *dt = new DecisionTree(params,type,compressChain,attrs,root);
+  DecisionTree *dt = new DecisionTree(params,type,compressChain,compressEmpty,attrs,root);
   
   bool isnext = false;
   if (pos < data.size())
@@ -1721,6 +2310,7 @@ void DecisionTree::Node::populateEmptyStats(DecisionTree::Type type, unsigned in
       switch (type)
       {
         case STONE:
+        case INTERSECTION:
           if (query->getLabel()=="NEW" && opt->getLabel()!="N")
             addnode = true;
           break;
@@ -1757,14 +2347,70 @@ DecisionTree::Stats::Stats(DecisionTree::Type type, unsigned int maxnode)
   switch (type)
   {
     case STONE:
-      statperms = new std::vector<DecisionTree::StatPerm*>();
-      float rangemin = 0;
-      float rangemax = 100;
-
-      // ATTR
-      for (unsigned int i=0; i<=maxnode; i++)
       {
-        if (i>0) // don't need to keep stats on 0'th node
+        statperms = new std::vector<DecisionTree::StatPerm*>();
+        float rangemin = 0;
+        float rangemax = 100;
+
+        // ATTR
+        for (unsigned int i=0; i<=maxnode; i++)
+        {
+          if (i>0) // don't need to keep stats on 0'th node
+          {
+            {
+              std::vector<std::string> *attrs = new std::vector<std::string>();
+              attrs->push_back("LIB");
+              attrs->push_back(boost::lexical_cast<std::string>(i));
+              statperms->push_back(new DecisionTree::StatPerm("ATTR",attrs,new DecisionTree::Range(rangemin,rangemax)));
+            }
+            {
+              std::vector<std::string> *attrs = new std::vector<std::string>();
+              attrs->push_back("SIZE");
+              attrs->push_back(boost::lexical_cast<std::string>(i));
+              statperms->push_back(new DecisionTree::StatPerm("ATTR",attrs,new DecisionTree::Range(rangemin,rangemax)));
+            }
+          }
+        }
+
+        // DIST
+        for (unsigned int i=0; i<=maxnode; i++)
+        {
+          for (unsigned int j=i+1; j<=maxnode; j++)
+          {
+            std::vector<std::string> *attrs = new std::vector<std::string>();
+            attrs->push_back(boost::lexical_cast<std::string>(i));
+            attrs->push_back(boost::lexical_cast<std::string>(j));
+            statperms->push_back(new DecisionTree::StatPerm("DIST",attrs,new DecisionTree::Range(rangemin,rangemax)));
+          }
+
+        }
+
+        // NEW
+        std::string colslist = "BWS";
+        for (unsigned int i=1; i<((unsigned int)1<<colslist.size()); i++)
+        {
+          std::string cols = "";
+          for (unsigned int j=0; j<colslist.size(); j++)
+          {
+            if ((i>>j)&0x01)
+              cols += colslist[j];
+          }
+          std::vector<std::string> *attrs = new std::vector<std::string>();
+          attrs->push_back(cols);
+          statperms->push_back(new DecisionTree::StatPerm("NEW",attrs,new DecisionTree::Range(rangemin,rangemax)));
+        }
+
+        break;
+      }
+
+    case INTERSECTION:
+      {
+        statperms = new std::vector<DecisionTree::StatPerm*>();
+        float rangemin = 0;
+        float rangemax = 100;
+
+        // ATTR
+        for (unsigned int i=0; i<=maxnode; i++)
         {
           {
             std::vector<std::string> *attrs = new std::vector<std::string>();
@@ -1779,37 +2425,51 @@ DecisionTree::Stats::Stats(DecisionTree::Type type, unsigned int maxnode)
             statperms->push_back(new DecisionTree::StatPerm("ATTR",attrs,new DecisionTree::Range(rangemin,rangemax)));
           }
         }
-      }
 
-      // DIST
-      for (unsigned int i=0; i<=maxnode; i++)
-      {
-        for (unsigned int j=i+1; j<=maxnode; j++)
+        // EDGE
+        for (unsigned int i=0; i<=maxnode; i++)
         {
-          std::vector<std::string> *attrs = new std::vector<std::string>();
-          attrs->push_back(boost::lexical_cast<std::string>(i));
-          attrs->push_back(boost::lexical_cast<std::string>(j));
-          statperms->push_back(new DecisionTree::StatPerm("DIST",attrs,new DecisionTree::Range(rangemin,rangemax)));
+          for (unsigned int j=i+1; j<=maxnode; j++)
+          {
+            {
+              std::vector<std::string> *attrs = new std::vector<std::string>();
+              attrs->push_back("DIST");
+              attrs->push_back(boost::lexical_cast<std::string>(i));
+              attrs->push_back(boost::lexical_cast<std::string>(j));
+              statperms->push_back(new DecisionTree::StatPerm("EDGE",attrs,new DecisionTree::Range(rangemin,rangemax)));
+            }
+            {
+              std::vector<std::string> *attrs = new std::vector<std::string>();
+              attrs->push_back("CONN");
+              attrs->push_back(boost::lexical_cast<std::string>(i));
+              attrs->push_back(boost::lexical_cast<std::string>(j));
+              statperms->push_back(new DecisionTree::StatPerm("EDGE",attrs,new DecisionTree::Range(rangemin,rangemax)));
+            }
+          }
+
         }
 
-      }
-
-      // NEW
-      std::string colslist = "BWS";
-      for (unsigned int i=1; i<((unsigned int)1<<colslist.size()); i++)
-      {
-        std::string cols = "";
-        for (unsigned int j=0; j<colslist.size(); j++)
+        // NEW
+        for (unsigned int i=0; i<=maxnode; i++)
         {
-          if ((i>>j)&0x01)
-            cols += colslist[j];
+          std::string colslist = "BWE";
+          for (unsigned int j=1; j<((unsigned int)1<<colslist.size()); j++)
+          {
+            std::string cols = "";
+            for (unsigned int k=0; k<colslist.size(); k++)
+            {
+              if ((j>>k)&0x01)
+                cols += colslist[k];
+            }
+            std::vector<std::string> *attrs = new std::vector<std::string>();
+            attrs->push_back(cols);
+            attrs->push_back(boost::lexical_cast<std::string>(i));
+            statperms->push_back(new DecisionTree::StatPerm("NEW",attrs,new DecisionTree::Range(0,1)));
+          }
         }
-        std::vector<std::string> *attrs = new std::vector<std::string>();
-        attrs->push_back(cols);
-        statperms->push_back(new DecisionTree::StatPerm("NEW",attrs,new DecisionTree::Range(rangemin,rangemax)));
-      }
 
-      break;
+        break;
+      }
   }
 }
 
@@ -2019,6 +2679,27 @@ DecisionTree::Query::Query(DecisionTree::Type type, std::string l, std::vector<s
         options->push_back(new DecisionTree::Option(type,"N",maxnode));
       }
       else if (l=="DIST" || l=="ATTR")
+      {
+        options->push_back(new DecisionTree::Option(type,"Y",maxnode));
+        options->push_back(new DecisionTree::Option(type,"N",maxnode));
+      }
+      break;
+
+    case INTERSECTION:
+      if (l=="NEW")
+      {
+        bool B = (attrs->at(0).find('B') != std::string::npos);
+        bool W = (attrs->at(0).find('W') != std::string::npos);
+        bool E = (attrs->at(0).find('E') != std::string::npos);
+        if (B)
+          options->push_back(new DecisionTree::Option(type,"B",maxnode+1));
+        if (W)
+          options->push_back(new DecisionTree::Option(type,"W",maxnode+1));
+        if (E)
+          options->push_back(new DecisionTree::Option(type,"E",maxnode+1));
+        options->push_back(new DecisionTree::Option(type,"N",maxnode));
+      }
+      else if (l=="EDGE" || l=="ATTR")
       {
         options->push_back(new DecisionTree::Option(type,"Y",maxnode));
         options->push_back(new DecisionTree::Option(type,"N",maxnode));
@@ -2481,6 +3162,37 @@ int DecisionTree::IntersectionGraph::getEdgeConnectivity(unsigned int node1, uns
     return edge->connectivity;
 }
 
+unsigned int DecisionTree::IntersectionGraph::addAuxNode(int pos)
+{
+  if (auxnode != (unsigned int)-1)
+    throw "Aux node already present";
+
+  // Idea:
+  //  Do it as if a special aux node was added before compression
+  // Quick-fix for now:
+  //  Simply refer to the region that contains the relevant move's empty intersection
+  // TODO: update this code ?
+
+  for (unsigned int i=0; i<nodes->size(); i++)
+  {
+    if (nodes->at(i)->pos == pos)
+    {
+      auxnode = i;
+      return auxnode;
+    }
+  }
+
+  throw "Couldn't find empty intersection"; // TODO: fix
+}
+
+void DecisionTree::IntersectionGraph::removeAuxNode()
+{
+  if (auxnode == (unsigned int)-1)
+    throw "Aux node not present";
+
+  auxnode = -1; // TODO: must be updated if addAuxNode() is updated
+}
+
 void DecisionTree::IntersectionGraph::compress(bool chainnotempty)
 {
   bool change = true;
@@ -2652,6 +3364,23 @@ void DecisionTree::IntersectionGraph::mergeNodes(unsigned int n1, unsigned int n
 
   delete nodes->at(n2);
   nodes->erase(nodes->begin()+n2);
+}
+
+std::vector<unsigned int> *DecisionTree::IntersectionGraph::getAdjacentNodes(unsigned int node)
+{
+  std::vector<unsigned int> *adjnodes = new std::vector<unsigned int>();
+
+  std::vector<DecisionTree::IntersectionGraph::IntersectionEdge*> *edges = nodes->at(node)->edges;
+  for (unsigned int i=0; i<edges->size(); i++)
+  {
+    DecisionTree::IntersectionGraph::IntersectionEdge *edge = edges->at(i);
+    if (edge->start==node)
+      adjnodes->push_back(edge->end);
+    else
+      adjnodes->push_back(edge->start);
+  }
+
+  return adjnodes;
 }
 
 DecisionTree::GraphCollection::GraphCollection(Go::Board *board)
