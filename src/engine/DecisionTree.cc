@@ -2994,6 +2994,7 @@ DecisionTree::IntersectionGraph::IntersectionGraph(Go::Board *board)
   this->board = board;
   nodes = new std::vector<DecisionTree::IntersectionGraph::IntersectionNode*>();
   distances = new std::vector<std::vector<int>*>();
+  posregions = new std::map<int,int>();
 
   std::map<int,unsigned int> lookupNodes;
 
@@ -3019,7 +3020,9 @@ DecisionTree::IntersectionGraph::IntersectionGraph(Go::Board *board)
         node->liberties = 0;
 
       nodes->push_back(node);
-      lookupNodes[p] = nodes->size()-1;
+      unsigned int n = nodes->size() - 1;
+      lookupNodes[p] = n;
+      (*posregions)[p] = p;
     }
   }
 
@@ -3083,6 +3086,7 @@ DecisionTree::IntersectionGraph::~IntersectionGraph()
   }
   delete nodes;
   delete distances;
+  delete posregions;
 }
 
 std::string DecisionTree::IntersectionGraph::toString()
@@ -3182,17 +3186,19 @@ unsigned int DecisionTree::IntersectionGraph::addAuxNode(int pos)
   // Quick-fix for now:
   //  Simply refer to the region that contains the relevant move's empty intersection
   // TODO: update this code ?
+  
+  int regionpos = this->lookupPosition(pos);
 
   for (unsigned int i=0; i<nodes->size(); i++)
   {
-    if (nodes->at(i)->pos == pos)
+    if (nodes->at(i)->pos == regionpos)
     {
       auxnode = i;
       return auxnode;
     }
   }
 
-  throw "Couldn't find empty intersection"; // TODO: fix
+  return -1; // should never happen
 }
 
 void DecisionTree::IntersectionGraph::removeAuxNode()
@@ -3230,6 +3236,14 @@ void DecisionTree::IntersectionGraph::compress(bool chainnotempty)
   }
 }
 
+int DecisionTree::IntersectionGraph::lookupPosition(int pos)
+{
+  if (posregions->at(pos) == pos)
+    return pos;
+  else
+    return this->lookupPosition(posregions->at(pos)); // could use path compression
+}
+
 void DecisionTree::IntersectionGraph::mergeNodes(unsigned int n1, unsigned int n2)
 {
   if (n1==n2)
@@ -3240,7 +3254,6 @@ void DecisionTree::IntersectionGraph::mergeNodes(unsigned int n1, unsigned int n
     return;
   }
 
-  // No change to node1 required
   DecisionTree::IntersectionGraph::IntersectionNode *node1 = nodes->at(n1);
   DecisionTree::IntersectionGraph::IntersectionNode *node2 = nodes->at(n2);
   // int pos = node1->pos;
@@ -3248,6 +3261,11 @@ void DecisionTree::IntersectionGraph::mergeNodes(unsigned int n1, unsigned int n
   // int size = node1->size; // no reduction required
   node1->size += node2->size; // TODO: update for future region size fix
   // int liberties = node1->liberties; // no reduction required
+
+  // Merge regions (mostly for empty regions)
+  int p1 = this->lookupPosition(node1->pos);
+  int p2 = this->lookupPosition(node2->pos);
+  (*posregions)[p2] = p1;
 
   // Merge edges of n1 and n2
   std::vector<DecisionTree::IntersectionGraph::IntersectionEdge*> *edges1 = node1->edges;

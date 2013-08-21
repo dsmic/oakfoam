@@ -104,10 +104,13 @@ class DecisionTree
         std::vector<IntersectionNode*> *nodes;
         std::vector<std::vector<int>*> *distances;
         unsigned int auxnode;
+        std::map<int,int> *posregions;
 
         void compress(bool chainnotempty);
         void mergeNodes(unsigned int n1, unsigned int n2);
         IntersectionEdge *getEdge(unsigned int node1, unsigned node2);
+
+        int lookupPosition(int pos);
     };
 
     class GraphCollection
