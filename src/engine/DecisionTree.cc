@@ -801,6 +801,9 @@ float DecisionTree::percentageToVal(float p)
 
 std::list<DecisionTree::Node*> *DecisionTree::getLeafNodes(DecisionTree::GraphCollection *graphs, Go::Move move, bool updatetree)
 {
+  if (!move.isNormal())
+    return NULL;
+
   std::list<DecisionTree::Node*> *nodes = NULL;
 
   std::vector<unsigned int> *stones = new std::vector<unsigned int>();
