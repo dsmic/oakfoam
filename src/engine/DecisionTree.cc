@@ -1218,6 +1218,7 @@ std::list<DecisionTree::Node*> *DecisionTree::getIntersectionLeafNodes(DecisionT
             matches.push_back(adjn);
         }
       }
+      delete adjnodes;
     }
 
     if (matches.size() > 1) // try break ties (B...W...E)
@@ -3071,7 +3072,9 @@ DecisionTree::IntersectionGraph::~IntersectionGraph()
     for (unsigned int j = 0; j < node->edges->size(); j++)
     {
       DecisionTree::IntersectionGraph::IntersectionEdge *edge = node->edges->at(j);
-      if (edge->start == i)
+      if (edge->start == i && edge->end < i)
+        delete edge;
+      else if (edge->end == i && edge->start < i)
         delete edge;
     }
     delete node->edges;

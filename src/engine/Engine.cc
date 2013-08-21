@@ -389,8 +389,8 @@ Engine::~Engine()
   delete zobristtable;
   delete playout;
   delete territorymap;
-  delete blackOldMoves;
-  delete whiteOldMoves;
+  delete[] blackOldMoves;
+  delete[] whiteOldMoves;
   for (std::list<DecisionTree*>::iterator iter=decisiontrees.begin();iter!=decisiontrees.end();++iter)
   {
     delete (*iter);
@@ -4286,8 +4286,8 @@ void Engine::clearBoard()
   delete moveexplanations;
   delete hashtree;
   delete territorymap;
-  delete blackOldMoves;
-  delete whiteOldMoves;
+  delete[] blackOldMoves;
+  delete[] whiteOldMoves;
   
   if (newsize)
     delete zobristtable;
