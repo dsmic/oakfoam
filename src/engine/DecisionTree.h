@@ -4,6 +4,7 @@
 #include <string>
 #include <list>
 #include <vector>
+#include <map>
 #include "Go.h"
 //from "Parameters.h":
 class Parameters;
