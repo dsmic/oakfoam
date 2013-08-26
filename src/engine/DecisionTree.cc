@@ -2896,10 +2896,15 @@ unsigned int DecisionTree::StoneGraph::addAuxNode(int pos)
   for (unsigned int j=0; j<i; j++)
   {
     int p = nodes->at(j)->pos;
-    int rp = this->lookupPosition(p);
     int d = 0;
-    if (distMap.count(rp) > 0)
-      d = distMap[rp];
+    if (p < 0) // side
+      d = DecisionTree::getDistance(board,pos,p);
+    else
+    {
+      int rp = this->lookupPosition(p);
+      if (distMap.count(rp) > 0)
+        d = distMap[rp];
+    }
     edges->at(i)->push_back(d);
   }
 
