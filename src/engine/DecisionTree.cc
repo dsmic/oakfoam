@@ -2415,7 +2415,7 @@ DecisionTree::Stats::Stats(DecisionTree::Type type, unsigned int maxnode)
       {
         statperms = new std::vector<DecisionTree::StatPerm*>();
         float rangemin = 0;
-        float rangemax = 100;
+        float rangemax = 500;
 
         // ATTR
         for (unsigned int i=0; i<=maxnode; i++)
