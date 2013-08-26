@@ -54,8 +54,10 @@ class DecisionTree
         std::vector<StoneNode*> *nodes;
         std::vector<std::vector<int>*> *edges;
         unsigned int auxnode;
+        std::map<int,int> *posregions;
 
         void mergeNodes(unsigned int n1, unsigned int n2);
+        int lookupPosition(int pos);
     };
 
     class IntersectionGraph

@@ -2757,6 +2757,7 @@ DecisionTree::StoneGraph::StoneGraph(Go::Board *board)
   this->board = board;
   nodes = new std::vector<DecisionTree::StoneGraph::StoneNode*>();
   edges = new std::vector<std::vector<int>*>();
+  posregions = new std::map<int,int>();
 
   for (int p = 0; p < board->getPositionMax(); p++)
   {
@@ -2774,6 +2775,7 @@ DecisionTree::StoneGraph::StoneGraph(Go::Board *board)
         node->liberties = group->numOfPseudoLiberties();
 
       nodes->push_back(node);
+      (*posregions)[p] = p;
     }
   }
 
@@ -2815,6 +2817,7 @@ DecisionTree::StoneGraph::~StoneGraph()
   }
   delete nodes;
   delete edges;
+  delete posregions;
 }
 
 std::string DecisionTree::StoneGraph::toString()
@@ -2873,10 +2876,30 @@ unsigned int DecisionTree::StoneGraph::addAuxNode(int pos)
   unsigned int N = nodes->size();
   unsigned int i = N - 1;
 
+  std::map<int,int> distMap;
+  for (int p = 0; p < board->getPositionMax(); p++)
+  {
+    if (board->inGroup(p))
+    {
+      int d = DecisionTree::getDistance(board,pos,p);
+      int rp = this->lookupPosition(p);
+
+      int cdist = -1;
+      if (distMap.count(rp) > 0)
+        cdist = distMap[rp];
+
+      if (cdist==-1 || d<cdist)
+        distMap[rp] = d;
+    }
+  }
+
   for (unsigned int j=0; j<i; j++)
   {
-    int p2 = nodes->at(j)->pos;
-    int d = DecisionTree::getDistance(board,pos,p2); // TODO: fix this to work with compressed chains!!!
+    int p = nodes->at(j)->pos;
+    int rp = this->lookupPosition(p);
+    int d = 0;
+    if (distMap.count(rp) > 0)
+      d = distMap[rp];
     edges->at(i)->push_back(d);
   }
 
@@ -2930,6 +2953,14 @@ void DecisionTree::StoneGraph::compressChain()
   }
 }
 
+int DecisionTree::StoneGraph::lookupPosition(int pos)
+{
+  if (posregions->at(pos) == pos)
+    return pos;
+  else
+    return this->lookupPosition(posregions->at(pos)); // could use path compression
+}
+
 void DecisionTree::StoneGraph::mergeNodes(unsigned int n1, unsigned int n2)
 {
   if (n1==n2)
@@ -2940,14 +2971,18 @@ void DecisionTree::StoneGraph::mergeNodes(unsigned int n1, unsigned int n2)
     return;
   }
 
-  // No change to node1 required
-  // DecisionTree::StoneGraph::StoneNode *node1 = nodes->at(n1);
-  // DecisionTree::StoneGraph::StoneNode *node2 = nodes->at(n2);
+  DecisionTree::StoneGraph::StoneNode *node1 = nodes->at(n1);
+  DecisionTree::StoneGraph::StoneNode *node2 = nodes->at(n2);
   // int pos = node1->pos;
   // Go::Color col = node1->col;
   // int size = node1->size; // no reduction required
   // int liberties = node1->liberties; // no reduction required
-  
+
+  // Merge regions
+  int p1 = this->lookupPosition(node1->pos);
+  int p2 = this->lookupPosition(node2->pos);
+  (*posregions)[p2] = p1;
+
   // Merge edges of n1 and n2
   for (unsigned int i=0; i<n1; i++)
   {
