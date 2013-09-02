@@ -86,6 +86,8 @@ class DecisionTree
         void compressChain() { this->compress(true); };
         void compressEmpty() { this->compress(false); };
 
+        void updateRegionSizes(IntersectionGraph *a, IntersectionGraph *b, IntersectionGraph *c);
+
       private:
         struct IntersectionEdge
         {
@@ -114,6 +116,7 @@ class DecisionTree
         IntersectionEdge *getEdge(unsigned int node1, unsigned node2);
 
         int lookupPosition(int pos);
+        void updateRegionSizes(std::map<int,unsigned int> *lookupMap, IntersectionGraph *other);
     };
 
     class GraphCollection

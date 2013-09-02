@@ -3047,7 +3047,7 @@ DecisionTree::IntersectionGraph::IntersectionGraph(Go::Board *board)
       node->pos = p;
       node->col = board->getColor(p);
       node->edges = new std::vector<DecisionTree::IntersectionGraph::IntersectionEdge*>();
-      node->size = 1; // TODO: change to region size
+      node->size = 1;
       if (board->inGroup(p))
       {
         Go::Group *group = board->getGroup(p);
@@ -3220,12 +3220,6 @@ unsigned int DecisionTree::IntersectionGraph::addAuxNode(int pos)
 {
   if (auxnode != (unsigned int)-1)
     throw "Aux node already present";
-
-  // Idea:
-  //  Do it as if a special aux node was added before compression
-  // Quick-fix for now:
-  //  Simply refer to the region that contains the relevant move's empty intersection
-  // TODO: update this code ?
   
   int regionpos = this->lookupPosition(pos);
 
@@ -3246,7 +3240,7 @@ void DecisionTree::IntersectionGraph::removeAuxNode()
   if (auxnode == (unsigned int)-1)
     throw "Aux node not present";
 
-  auxnode = -1; // TODO: must be updated if addAuxNode() is updated
+  auxnode = -1;
 }
 
 void DecisionTree::IntersectionGraph::compress(bool chainnotempty)
@@ -3299,7 +3293,7 @@ void DecisionTree::IntersectionGraph::mergeNodes(unsigned int n1, unsigned int n
   // int pos = node1->pos;
   // Go::Color col = node1->col;
   // int size = node1->size; // no reduction required
-  node1->size += node2->size; // TODO: update for future region size fix
+  node1->size += node2->size;
   // int liberties = node1->liberties; // no reduction required
 
   // Merge regions (mostly for empty regions)
@@ -3434,6 +3428,38 @@ void DecisionTree::IntersectionGraph::mergeNodes(unsigned int n1, unsigned int n
   nodes->erase(nodes->begin()+n2);
 }
 
+void DecisionTree::IntersectionGraph::updateRegionSizes(IntersectionGraph *a, IntersectionGraph *b, IntersectionGraph *c)
+{
+  std::map<int,unsigned int> *lookupMap = new std::map<int,unsigned int>();
+
+  for (unsigned int i=0; i<nodes->size(); i++)
+  {
+    DecisionTree::IntersectionGraph::IntersectionNode *node = nodes->at(i);
+    (*lookupMap)[node->pos] = i;
+  }
+
+  if (a != NULL)
+    this->updateRegionSizes(lookupMap,a);
+  if (b != NULL)
+    this->updateRegionSizes(lookupMap,b);
+  if (c != NULL)
+    this->updateRegionSizes(lookupMap,c);
+
+  delete lookupMap;
+}
+
+void DecisionTree::IntersectionGraph::updateRegionSizes(std::map<int,unsigned int> *lookupMap, IntersectionGraph *other)
+{
+  for (unsigned int i=0; i<other->nodes->size(); i++)
+  {
+    DecisionTree::IntersectionGraph::IntersectionNode *node = other->nodes->at(i);
+
+    int regionpos = this->lookupPosition(node->pos);
+    unsigned int regionnode = lookupMap->at(regionpos);
+    node->size = nodes->at(regionnode)->size;
+  }
+}
+
 std::vector<unsigned int> *DecisionTree::IntersectionGraph::getAdjacentNodes(unsigned int node)
 {
   std::vector<unsigned int> *adjnodes = new std::vector<unsigned int>();
@@ -3471,6 +3497,8 @@ DecisionTree::GraphCollection::GraphCollection(Go::Board *board)
   intersectionBoth = new DecisionTree::IntersectionGraph(board);
   intersectionBoth->compressEmpty();
   intersectionBoth->compressChain();
+
+  intersectionBoth->updateRegionSizes(intersectionNone,intersectionChain,intersectionEmpty);
 
   // fprintf(stderr,"stoneNone:\n%s\n",stoneNone->toString().c_str());
   // fprintf(stderr,"stoneChain:\n%s\n",stoneChain->toString().c_str());
