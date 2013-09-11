@@ -277,7 +277,9 @@ class DecisionTree
     {
       public:
         Node(Stats *s, Query *q);
+        Node(Query *q);
         Node(Stats *s, float w);
+        Node(float w);
         ~Node();
 
         std::string toString(int indent = 0, bool ignorestats = false, int leafoffset = 0);
@@ -311,6 +313,7 @@ class DecisionTree
     std::vector<std::string> *attrs;
     Node *root;
     std::vector<Node*> leafmap;
+    bool statsallocated;
 
     DecisionTree(Parameters *p, Type t, bool cmpC, bool cmpE, std::vector<std::string> *a, DecisionTree::Node *r);
 

@@ -22,6 +22,7 @@ DecisionTree::DecisionTree(Parameters *p, DecisionTree::Type t, bool cmpC, bool 
   compressEmpty = cmpE;
   attrs = a;
   root = r;
+  statsallocated = false;
   this->updateLeafIds();
 }
 
@@ -804,6 +805,12 @@ std::list<DecisionTree::Node*> *DecisionTree::getLeafNodes(DecisionTree::GraphCo
   if (!move.isNormal())
     return NULL;
 
+  if (updatetree && !statsallocated)
+  {
+    root->populateEmptyStats(this->getType());
+    statsallocated = true;
+  }
+
   std::list<DecisionTree::Node*> *nodes = NULL;
 
   std::vector<unsigned int> *stones = new std::vector<unsigned int>();
@@ -1486,6 +1493,8 @@ std::list<DecisionTree::Node*> *DecisionTree::getIntersectionLeafNodes(DecisionT
 
 std::string DecisionTree::toString(bool ignorestats, int leafoffset)
 {
+  this->updateLeafIds();
+
   std::string r = "(DT[";
   for (unsigned int i=0;i<attrs->size();i++)
   {
@@ -1506,11 +1515,12 @@ std::string DecisionTree::Node::toString(int indent, bool ignorestats, int leafo
 {
   std::string r = "";
 
-  if (ignorestats)
+  if (ignorestats || stats == NULL)
   {
-    for (int i=0;i<indent;i++)
-      r += " ";
-    r += "(STATS:)\n";
+    // empty (STATS:) not required
+    // for (int i=0;i<indent;i++)
+    //   r += " ";
+    // r += "(STATS:)\n";
   }
   else
     r += stats->toString(indent);
@@ -1748,7 +1758,7 @@ std::list<DecisionTree*> *DecisionTree::parseString(Parameters *params, std::str
   }
   pos++;
 
-  root->populateEmptyStats(type);
+  // root->populateEmptyStats(type); // lazy allocation
 
   DecisionTree *dt = new DecisionTree(params,type,compressChain,compressEmpty,attrs,root);
   
@@ -1823,30 +1833,34 @@ std::vector<std::string> *DecisionTree::parseAttrs(std::string data, unsigned lo
 
 DecisionTree::Node *DecisionTree::parseNode(DecisionTree::Type type, std::string data, unsigned long &pos)
 {
-  DecisionTree::Stats *stats = DecisionTree::parseStats(data,pos);
-  if (stats == NULL)
-    return NULL;
+  if (data.substr(pos,7) == "(STATS:") // legacy stats parsing
+  {
+    if (data.substr(pos,8) == "(STATS:)") // empty stats: lazy allocation
+      pos += 8;
+    else
+    {
+      fprintf(stderr,"[DT] Error! Stats parsing is deprecated\n");
+      return NULL;
+    }
+  }
+  // else: assume no stats are present
 
   if (data.substr(pos,8) == "(WEIGHT[")
   {
     pos += 8;
     float *num = DecisionTree::parseNumber(data,pos);
     if (num == NULL)
-    {
-      delete stats;
       return NULL;
-    }
 
     if (data.substr(pos,2) != "])")
     {
       fprintf(stderr,"[DT] Error! Expected '])' at '%s'\n",data.substr(pos).c_str());
-      delete stats;
       delete num;
       return NULL;
     }
     pos += 2;
 
-    DecisionTree::Node *node = new DecisionTree::Node(stats,*num);
+    DecisionTree::Node *node = new DecisionTree::Node(*num);
     //fprintf(stderr,"[DT] !!!\n");
 
     delete num;
@@ -1857,7 +1871,6 @@ DecisionTree::Node *DecisionTree::parseNode(DecisionTree::Type type, std::string
     if (data[pos] != '(')
     {
       fprintf(stderr,"[DT] Error! Expected '(' at '%s'\n",data.substr(pos).c_str());
-      delete stats;
       return NULL;
     }
     pos++;
@@ -1871,29 +1884,23 @@ DecisionTree::Node *DecisionTree::parseNode(DecisionTree::Type type, std::string
     if (label.length() == 0)
     {
       fprintf(stderr,"[DT] Error! Unexpected '%c' at '%s'\n",data[pos],data.substr(pos).c_str());
-      delete stats;
       return NULL;
     }
 
     if (data[pos] != '[')
     {
       fprintf(stderr,"[DT] Error! Expected '[' at '%s'\n",data.substr(pos).c_str());
-      delete stats;
       return NULL;
     }
     pos++;
 
     std::vector<std::string> *attrs = DecisionTree::parseAttrs(data,pos);
     if (attrs == NULL)
-    {
-      delete stats;
       return NULL;
-    }
 
     std::vector<DecisionTree::Option*> *options = DecisionTree::parseOptions(type,data,pos);
     if (options == NULL)
     {
-      delete stats;
       delete attrs;
       return NULL;
     }
@@ -1901,13 +1908,12 @@ DecisionTree::Node *DecisionTree::parseNode(DecisionTree::Type type, std::string
     if (data[pos] != ')')
     {
       fprintf(stderr,"[DT] Error! Expected ')' at '%s'\n",data.substr(pos).c_str());
-      delete stats;
       return NULL;
     }
     pos++;
 
     DecisionTree::Query *query = new DecisionTree::Query(label,attrs,options);
-    return new DecisionTree::Node(stats,query);
+    return new DecisionTree::Node(query);
   }
 }
 
@@ -2284,6 +2290,17 @@ DecisionTree::Node::Node(Stats *s, Query *q)
   query->setParent(this);
 }
 
+DecisionTree::Node::Node(Query *q)
+{
+  parent = NULL;
+  stats = NULL;
+  query = q;
+  leafid = -1;
+  weight = 0;
+
+  query->setParent(this);
+}
+
 DecisionTree::Node::Node(Stats *s, float w)
 {
   parent = NULL;
@@ -2293,18 +2310,29 @@ DecisionTree::Node::Node(Stats *s, float w)
   weight = w;
 }
 
+DecisionTree::Node::Node(float w)
+{
+  parent = NULL;
+  stats = NULL;
+  query = NULL;
+  leafid = -1;
+  weight = w;
+}
+
 DecisionTree::Node::~Node()
 {
-  delete stats;
+  if (stats != NULL)
+    delete stats;
   if (query != NULL)
     delete query;
 }
 
 void DecisionTree::Node::populateEmptyStats(DecisionTree::Type type, unsigned int maxnode)
 {
-  if (stats->getStatPerms()->size() == 0)
+  if (stats == NULL || stats->getStatPerms()->size() == 0)
   {
-    delete stats;
+    if (stats != NULL)
+      delete stats;
     stats = new DecisionTree::Stats(type,maxnode);
   }
 
