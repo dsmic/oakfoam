@@ -299,6 +299,8 @@ class DecisionTree
         void populateLeafIds(std::vector<Node*> &leafmap);
         void getTreeStats(Type type, int depth, int nodes, int &treenodes, int &leaves, int &maxdepth, int &sumdepth, int &maxnodes, int &sumnodes);
 
+        void clearStats() { delete stats; stats = NULL; };
+
       private:
         Option *parent;
         Stats *stats;

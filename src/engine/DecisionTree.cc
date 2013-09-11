@@ -318,9 +318,9 @@ int DecisionTree::getDistance(Go::Board *board, int p1, int p2)
 
 bool DecisionTree::updateStoneNode(DecisionTree::Node *node, DecisionTree::StoneGraph *graph, std::vector<unsigned int> *stones, bool invert)
 {
-  std::vector<DecisionTree::StatPerm*> *statperms = node->getStats()->getStatPerms();
   if (node->isLeaf()) // only update stats until the node is split
   {
+    std::vector<DecisionTree::StatPerm*> *statperms = node->getStats()->getStatPerms();
     for (unsigned int i=0; i<statperms->size(); i++)
     {
       DecisionTree::StatPerm *sp = statperms->at(i);
@@ -427,6 +427,7 @@ bool DecisionTree::updateStoneNode(DecisionTree::Node *node, DecisionTree::Stone
 
   if (node->isLeaf())
   {
+    std::vector<DecisionTree::StatPerm*> *statperms = node->getStats()->getStatPerms();
     int descents = statperms->at(0)->getRange()->getThisVal();
     if (descents >= params->dt_split_after && (descents%10)==0)
     {
@@ -542,6 +543,9 @@ bool DecisionTree::updateStoneNode(DecisionTree::Node *node, DecisionTree::Stone
           for (unsigned int j=0; j<bestattrs->size(); j++)
             params->engine->getGtpEngine()->getOutput()->printfDebug("%c%s",(j==0?'[':'|'),bestattrs->at(j).c_str());
           params->engine->getGtpEngine()->getOutput()->printfDebug("] %.2f\n",bestval);*/
+
+          // free stats memory
+          node->clearStats();
         }
         else
           delete bestattrs;
@@ -554,9 +558,9 @@ bool DecisionTree::updateStoneNode(DecisionTree::Node *node, DecisionTree::Stone
 
 bool DecisionTree::updateIntersectionNode(DecisionTree::Node *node, DecisionTree::IntersectionGraph *graph, std::vector<unsigned int> *stones, bool invert)
 {
-  std::vector<DecisionTree::StatPerm*> *statperms = node->getStats()->getStatPerms();
   if (node->isLeaf()) // only update stats until the node is split
   {
+    std::vector<DecisionTree::StatPerm*> *statperms = node->getStats()->getStatPerms();
     for (unsigned int i=0; i<statperms->size(); i++)
     {
       DecisionTree::StatPerm *sp = statperms->at(i);
@@ -670,6 +674,7 @@ bool DecisionTree::updateIntersectionNode(DecisionTree::Node *node, DecisionTree
 
   if (node->isLeaf())
   {
+    std::vector<DecisionTree::StatPerm*> *statperms = node->getStats()->getStatPerms();
     int descents = statperms->at(0)->getRange()->getThisVal();
     if (descents >= params->dt_split_after && (descents%10)==0)
     {
@@ -781,6 +786,9 @@ bool DecisionTree::updateIntersectionNode(DecisionTree::Node *node, DecisionTree
           for (unsigned int j=0; j<bestattrs->size(); j++)
             params->engine->getGtpEngine()->getOutput()->printfDebug("%c%s",(j==0?'[':'|'),bestattrs->at(j).c_str());
           params->engine->getGtpEngine()->getOutput()->printfDebug("] %.2f\n",bestval);*/
+
+          // free stats memory
+          node->clearStats();
         }
         else
           delete bestattrs;
@@ -2333,7 +2341,10 @@ void DecisionTree::Node::populateEmptyStats(DecisionTree::Type type, unsigned in
   {
     if (stats != NULL)
       delete stats;
-    stats = new DecisionTree::Stats(type,maxnode);
+    if (this->isLeaf()) // no need to collect stats on internal nodes
+      stats = new DecisionTree::Stats(type,maxnode);
+    else
+      stats = NULL;
   }
 
   if (query != NULL)
