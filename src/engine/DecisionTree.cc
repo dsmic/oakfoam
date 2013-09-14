@@ -328,8 +328,8 @@ bool DecisionTree::updateStoneNode(DecisionTree::Node *node, DecisionTree::Stone
       std::string spt = sp->getLabel();
       std::vector<std::string> *attrs = sp->getAttrs();
       int res = 0;
-      int resmin = sp->getRange()->getStart();
-      int resmax = sp->getRange()->getEnd();
+      int resmin = sp->getDescents()->getStart();
+      int resmax = sp->getDescents()->getEnd();
       //fprintf(stderr,"[DT] SP type: '%s'\n",spt.c_str());
       if (spt=="NEW")
       {
@@ -421,134 +421,27 @@ bool DecisionTree::updateStoneNode(DecisionTree::Node *node, DecisionTree::Stone
         res = resmin;
       else if (res > resmax)
         res = resmax;
-      sp->getRange()->addVal(res,params->dt_range_divide);
+      sp->getDescents()->addVal(res);
     }
   }
 
   if (node->isLeaf())
   {
     std::vector<DecisionTree::StatPerm*> *statperms = node->getStats()->getStatPerms();
-    int descents = statperms->at(0)->getRange()->getThisVal();
+    int descents = statperms->at(0)->getDescents()->getSum();
     if (descents >= params->dt_split_after && (descents%10)==0)
     {
       //fprintf(stderr,"DT split now!\n");
 
-      std::string bestlabel = "";
-      std::vector<std::string> *bestattrs = NULL;
-      float bestval = -1;
-
-      for (unsigned int i=0; i<statperms->size(); i++)
+      int maxnode = this->getMaxNode(node);
+      DecisionTree::Query *query = node->getStats()->getBestQuery(type,maxnode,params->dt_split_threshold);
+      if (query != NULL)
       {
-        DecisionTree::StatPerm *sp = statperms->at(i);
-        DecisionTree::Range *range = sp->getRange();
+        query->setParent(node);
+        node->setQuery(query);
 
-        float m = range->getExpectedMedian();
-        int m1 = floor(m);
-        int m2 = ceil(m);
-        float p1l = range->getExpectedPercentageLessThan(m1);
-        float p1e = range->getExpectedPercentageEquals(m1);
-        float p2l = (m1==m2?p1l:range->getExpectedPercentageLessThan(m2));
-        float p2e = (m1==m2?p1e:range->getExpectedPercentageEquals(m2));
-
-        float v1l = DecisionTree::percentageToVal(p1l);
-        float v2l = DecisionTree::percentageToVal(p2l);
-        float v1e = DecisionTree::percentageToVal(p1e);
-        float v2e = DecisionTree::percentageToVal(p2e);
-
-        /*fprintf(stderr,"DT stat: %s",sp->getLabel().c_str());
-        for (unsigned int j=0; j<sp->getAttrs()->size(); j++)
-          fprintf(stderr,"%c%s",(j==0?'[':'|'),sp->getAttrs()->at(j).c_str());
-        fprintf(stderr,"] \t %.3f %d %d %.3f %.3f %.3f %.3f\n",m,m1,m2,p1l,p1e,p2l,p2e);*/
-        //fprintf(stderr,"DT range:\n%s\n",range->toString().c_str());
-
-        bool foundbest = false;
-        int localm = 0;
-        bool lne = false;
-
-        if (sp->getLabel()=="NEW")
-        {
-          if (v1l > bestval)
-          {
-            bestval = v1l;
-            localm = m1-1;
-            foundbest = true;
-          }
-          if (v2l > bestval)
-          {
-            bestval = v2l;
-            localm = m2-1;
-            foundbest = true;
-          }
-        }
-        else
-        {
-          if (v1l > bestval)
-          {
-            bestval = v1l;
-            localm = m1;
-            lne = true;
-            foundbest = true;
-          }
-          if (v2l > bestval)
-          {
-            bestval = v2l;
-            localm = m2;
-            lne = true;
-            foundbest = true;
-          }
-          if (v1e > bestval)
-          {
-            bestval = v1e;
-            localm = m1;
-            lne = false;
-            foundbest = true;
-          }
-          if (v2e > bestval)
-          {
-            bestval = v2e;
-            localm = m2;
-            lne = false;
-            foundbest = true;
-          }
-        }
-
-        if (foundbest)
-        {
-          bestlabel = sp->getLabel();
-          if (bestattrs != NULL)
-            delete bestattrs;
-          std::vector<std::string> *attrs = new std::vector<std::string>();
-          for (unsigned int j=0; j<sp->getAttrs()->size(); j++)
-          {
-            attrs->push_back(sp->getAttrs()->at(j));
-          }
-          if (bestlabel=="DIST" || bestlabel=="ATTR")
-            attrs->push_back(lne?"<":"=");
-          attrs->push_back(boost::lexical_cast<std::string>(localm));
-          bestattrs = attrs;
-        }
-      }
-
-      if (bestval != -1)
-      {
-        if (bestval >= params->dt_split_threshold)
-        {
-          int maxnode = this->getMaxNode(node);
-
-          DecisionTree::Query *query = new DecisionTree::Query(type,bestlabel,bestattrs,maxnode);
-          query->setParent(node);
-          node->setQuery(query);
-
-          /*params->engine->getGtpEngine()->getOutput()->printfDebug("DT best stat: %s",bestlabel.c_str());
-          for (unsigned int j=0; j<bestattrs->size(); j++)
-            params->engine->getGtpEngine()->getOutput()->printfDebug("%c%s",(j==0?'[':'|'),bestattrs->at(j).c_str());
-          params->engine->getGtpEngine()->getOutput()->printfDebug("] %.2f\n",bestval);*/
-
-          // free stats memory
-          node->clearStats();
-        }
-        else
-          delete bestattrs;
+        // free stats memory
+        node->clearStats();
       }
     }
   }
@@ -568,8 +461,8 @@ bool DecisionTree::updateIntersectionNode(DecisionTree::Node *node, DecisionTree
       std::string spt = sp->getLabel();
       std::vector<std::string> *attrs = sp->getAttrs();
       int res = 0;
-      int resmin = sp->getRange()->getStart();
-      int resmax = sp->getRange()->getEnd();
+      int resmin = sp->getDescents()->getStart();
+      int resmax = sp->getDescents()->getEnd();
       //fprintf(stderr,"[DT] SP type: '%s'\n",spt.c_str());
       if (spt=="NEW")
       {
@@ -668,130 +561,27 @@ bool DecisionTree::updateIntersectionNode(DecisionTree::Node *node, DecisionTree
         res = resmin;
       else if (res > resmax)
         res = resmax;
-      sp->getRange()->addVal(res,params->dt_range_divide);
+      sp->getDescents()->addVal(res);
     }
   }
 
   if (node->isLeaf())
   {
     std::vector<DecisionTree::StatPerm*> *statperms = node->getStats()->getStatPerms();
-    int descents = statperms->at(0)->getRange()->getThisVal();
+    int descents = statperms->at(0)->getDescents()->getSum();
     if (descents >= params->dt_split_after && (descents%10)==0)
     {
       //fprintf(stderr,"DT split now!\n");
 
-      std::string bestlabel = "";
-      std::vector<std::string> *bestattrs = NULL;
-      float bestval = -1;
-
-      for (unsigned int i=0; i<statperms->size(); i++)
+      int maxnode = this->getMaxNode(node);
+      DecisionTree::Query *query = node->getStats()->getBestQuery(type,maxnode,params->dt_split_threshold);
+      if (query != NULL)
       {
-        DecisionTree::StatPerm *sp = statperms->at(i);
-        DecisionTree::Range *range = sp->getRange();
+        query->setParent(node);
+        node->setQuery(query);
 
-        float m = range->getExpectedMedian();
-        int m1 = floor(m);
-        int m2 = ceil(m);
-        float p1l = range->getExpectedPercentageLessThan(m1);
-        float p1e = range->getExpectedPercentageEquals(m1);
-        float p2l = (m1==m2?p1l:range->getExpectedPercentageLessThan(m2));
-        float p2e = (m1==m2?p1e:range->getExpectedPercentageEquals(m2));
-
-        float v1l = DecisionTree::percentageToVal(p1l);
-        float v2l = DecisionTree::percentageToVal(p2l);
-        float v1e = DecisionTree::percentageToVal(p1e);
-        float v2e = DecisionTree::percentageToVal(p2e);
-
-        /*fprintf(stderr,"DT stat: %s",sp->getLabel().c_str());
-        for (unsigned int j=0; j<sp->getAttrs()->size(); j++)
-          fprintf(stderr,"%c%s",(j==0?'[':'|'),sp->getAttrs()->at(j).c_str());
-        fprintf(stderr,"] \t %.3f %d %d %.3f %.3f %.3f %.3f\n",m,m1,m2,p1l,p1e,p2l,p2e);*/
-        //fprintf(stderr,"DT range:\n%s\n",range->toString().c_str());
-
-        bool foundbest = false;
-        int localm = 0;
-        bool lne = false;
-
-        if (sp->getLabel()=="NEW")
-        {
-          float v = DecisionTree::percentageToVal(range->getExpectedPercentageLessThan(1));
-          if (v > bestval)
-          {
-            bestval = v;
-            localm = 1;
-            foundbest = true;
-          }
-        }
-        else
-        {
-          if (v1l > bestval)
-          {
-            bestval = v1l;
-            localm = m1;
-            lne = true;
-            foundbest = true;
-          }
-          if (v2l > bestval)
-          {
-            bestval = v2l;
-            localm = m2;
-            lne = true;
-            foundbest = true;
-          }
-          if (v1e > bestval)
-          {
-            bestval = v1e;
-            localm = m1;
-            lne = false;
-            foundbest = true;
-          }
-          if (v2e > bestval)
-          {
-            bestval = v2e;
-            localm = m2;
-            lne = false;
-            foundbest = true;
-          }
-        }
-
-        if (foundbest)
-        {
-          bestlabel = sp->getLabel();
-          if (bestattrs != NULL)
-            delete bestattrs;
-          std::vector<std::string> *attrs = new std::vector<std::string>();
-          for (unsigned int j=0; j<sp->getAttrs()->size(); j++)
-          {
-            attrs->push_back(sp->getAttrs()->at(j));
-          }
-          if (bestlabel=="EDGE" || bestlabel=="ATTR")
-            attrs->push_back(lne?"<":"=");
-          if (bestlabel!="NEW")
-            attrs->push_back(boost::lexical_cast<std::string>(localm));
-          bestattrs = attrs;
-        }
-      }
-
-      if (bestval != -1)
-      {
-        if (bestval >= params->dt_split_threshold)
-        {
-          int maxnode = this->getMaxNode(node);
-
-          DecisionTree::Query *query = new DecisionTree::Query(type,bestlabel,bestattrs,maxnode);
-          query->setParent(node);
-          node->setQuery(query);
-
-          /*params->engine->getGtpEngine()->getOutput()->printfDebug("DT best stat: %s",bestlabel.c_str());
-          for (unsigned int j=0; j<bestattrs->size(); j++)
-            params->engine->getGtpEngine()->getOutput()->printfDebug("%c%s",(j==0?'[':'|'),bestattrs->at(j).c_str());
-          params->engine->getGtpEngine()->getOutput()->printfDebug("] %.2f\n",bestval);*/
-
-          // free stats memory
-          node->clearStats();
-        }
-        else
-          delete bestattrs;
+        // free stats memory
+        node->clearStats();
       }
     }
   }
@@ -1654,7 +1444,7 @@ std::string DecisionTree::StatPerm::toString(int indent)
   }
   r += "]\n";
 
-  r += range->toString(indent+2);
+  r += descents->toString(indent+2);
 
   for (int i=0;i<indent;i++)
     r += " ";
@@ -1674,24 +1464,13 @@ std::string DecisionTree::Range::toString(int indent)
   r += ":";
   r += boost::lexical_cast<std::string>(end);
   r += "[";
-  r += boost::lexical_cast<std::string>(val);
-  r += "]";
-
-  if (left==NULL && right==NULL)
-    r += ")\n";
-  else
+  for (int i = start; i <= end; i++)
   {
-    r += "\n";
-
-    if (left != NULL)
-      r += left->toString(indent+2);
-    if (right != NULL)
-      r += right->toString(indent+2);
-
-    for (int i=0;i<indent;i++)
-      r += " ";
-    r += ")\n";
+    r += boost::lexical_cast<std::string>(this->getEquals(i));
+    if (i < end)
+      r += ":";
   }
+  r += "])\n";
 
   return r;
 }
@@ -2084,55 +1863,19 @@ DecisionTree::Range *DecisionTree::parseRange(std::string data, unsigned long &p
   }
   pos++;
 
-  if (data[pos] == '(')
+  //TODO: update ?
+
+  if (data[pos] != ')')
   {
-    DecisionTree::Range *left = DecisionTree::parseRange(data,pos);
-    if (left == NULL)
-    {
-      delete ps;
-      delete pe;
-      delete pv;
-      return NULL;
-    }
-
-    DecisionTree::Range *right = DecisionTree::parseRange(data,pos);
-    if (right == NULL)
-    {
-      delete ps;
-      delete pe;
-      delete pv;
-      delete left;
-      return NULL;
-    }
-
-    if (data[pos] != ')')
-    {
-      fprintf(stderr,"[DT] Error! Expected ')' at '%s'\n",data.substr(pos).c_str());
-      delete ps;
-      delete pe;
-      delete pv;
-      delete left;
-      delete right;
-      return NULL;
-    }
-    pos++;
-
-    return new DecisionTree::Range(*ps,*pe,*pv,left,right);
+    fprintf(stderr,"[DT] Error! Expected ')' at '%s'\n",data.substr(pos).c_str());
+    delete ps;
+    delete pe;
+    delete pv;
+    return NULL;
   }
-  else
-  {
-    if (data[pos] != ')')
-    {
-      fprintf(stderr,"[DT] Error! Expected ')' at '%s'\n",data.substr(pos).c_str());
-      delete ps;
-      delete pe;
-      delete pv;
-      return NULL;
-    }
-    pos++;
+  pos++;
 
-    return new DecisionTree::Range(*ps,*pe,*pv);
-  }
+  return new DecisionTree::Range(*ps,*pe);
 }
 
 std::vector<DecisionTree::Option*> *DecisionTree::parseOptions(DecisionTree::Type type, std::string data, unsigned long &pos)
@@ -2529,164 +2272,184 @@ DecisionTree::Stats::~Stats()
   delete statperms;
 }
 
-DecisionTree::StatPerm::StatPerm(std::string l, std::vector<std::string> *a, Range *r)
+DecisionTree::StatPerm::StatPerm(std::string l, std::vector<std::string> *a, Range *d)
 {
   label = l;
   attrs = a;
-  range = r;
+  descents = d;
 }
 
 DecisionTree::StatPerm::~StatPerm()
 {
   delete attrs;
-  delete range;
+  delete descents;
 }
 
-DecisionTree::Range::Range(int s, int e, int v, Range *l, Range *r)
+float DecisionTree::StatPerm::getQuality(bool lne, int v)
+{
+  //TODO: add other criteria
+  float t = descents->getSum();
+  if (t == 0)
+    return 0;
+
+  float p = 1;
+  if (lne)
+    p = descents->getLessThan(v);
+  else
+    p = descents->getEquals(v);
+  p /= t;
+
+  float q = 2*(p-0.5);
+  if (q < 0)
+    q = -q;
+  q = 1 - q;
+
+  if (q >= 0)
+    return q;
+  else
+    return 0;
+}
+
+DecisionTree::Query *DecisionTree::Stats::getBestQuery(Type type, int maxnode, float threshold)
+{
+  float bestquality = -1;
+  std::string bestlabel = "";
+  std::vector<std::string> *bestattrs = NULL;
+
+  // fprintf(stderr,"[DT] find best in:\n%s\n",this->toString(0).c_str());
+
+  std::vector<DecisionTree::StatPerm*> *statperms = this->getStatPerms();
+  for (unsigned int i=0; i<statperms->size(); i++)
+  {
+    DecisionTree::StatPerm *sp = statperms->at(i);
+
+    if (type == DecisionTree::INTERSECTION && sp->getLabel()=="NEW")
+    {
+      float q = sp->getQuality(true,1);
+      if (q > bestquality)
+      {
+        bestquality = q;
+        bestlabel = sp->getLabel();
+        if (bestattrs != NULL)
+          delete bestattrs;
+        std::vector<std::string> *attrs = new std::vector<std::string>();
+        for (unsigned int j=0; j<sp->getAttrs()->size(); j++)
+        {
+          attrs->push_back(sp->getAttrs()->at(j));
+        }
+      }
+    }
+    else
+    {
+      int min = sp->getDescents()->getStart();
+      int max = sp->getDescents()->getEnd() + 1;
+      bool foundbest = false;
+      int bestval = 0;
+      bool bestlne = false;
+
+      for (int v = min; v <= max; v++)
+      {
+        float ql = sp->getQuality(true,v);
+        if (ql > bestquality)
+        {
+          foundbest = true;
+          bestquality = ql;
+          bestval = v;
+          bestlne = true;
+        }
+
+        if (sp->getLabel() != "NEW")
+        {
+          float qe = sp->getQuality(false,v);
+          if (qe > bestquality)
+          {
+            foundbest = true;
+            bestquality = qe;
+            bestval = v;
+            bestlne = false;
+          }
+        }
+      }
+
+      if (foundbest)
+      {
+        bestlabel = sp->getLabel();
+        if (bestattrs != NULL)
+          delete bestattrs;
+        std::vector<std::string> *attrs = new std::vector<std::string>();
+        for (unsigned int j=0; j<sp->getAttrs()->size(); j++)
+        {
+          attrs->push_back(sp->getAttrs()->at(j));
+        }
+        if (bestlabel=="NEW")
+          attrs->push_back(boost::lexical_cast<std::string>(bestval-1));
+        else
+        {
+          attrs->push_back(bestlne?"<":"=");
+          attrs->push_back(boost::lexical_cast<std::string>(bestval));
+        }
+        bestattrs = attrs;
+      }
+    }
+  }
+
+  if (bestquality > threshold)
+  {
+    // fprintf(stderr,"[DT] best stat: %s",bestlabel.c_str());
+    // for (unsigned int j=0; j<bestattrs->size(); j++)
+    //   fprintf(stderr,"%c%s",(j==0?'[':'|'),bestattrs->at(j).c_str());
+    // fprintf(stderr,"] %.2f\n",bestquality);
+
+    return new DecisionTree::Query(type,bestlabel,bestattrs,maxnode);
+  }
+  else
+  {
+    if (bestattrs != NULL)
+      delete bestattrs;
+    return NULL;
+  }
+}
+
+DecisionTree::Range::Range(int s, int e)
 {
   start = s;
   end = e;
-  val = v;
-  parent = NULL;
-  left = l;
-  right = r;
-
-  left->setParent(this);
-  right->setParent(this);
-}
-
-DecisionTree::Range::Range(int s, int e, int v)
-{
-  start = s;
-  end = e;
-  val = v;
-  parent = NULL;
-  left = NULL;
-  right = NULL;
+  sum = 0;
+  data = new int[e-s+1];
+  for (int i = 0; i < (e-s+1); i++)
+    data[i] = 0;
 }
 
 DecisionTree::Range::~Range()
 {
-  if (left != NULL)
-    delete left;
-  if (right != NULL)
-    delete right;
+  delete[] data;
 }
 
-void DecisionTree::Range::addVal(int v, int div)
+void DecisionTree::Range::addVal(int v)
 {
   if (v<start || v>end)
     return;
 
-  if (this->isTerminal() && start!=end && (val>div || this->isRoot()))
-  {
-    int mid = start + (end - start)/2; //XXX: consider choosing mid according to a log scale
-    left = new DecisionTree::Range(start,mid);
-    right = new DecisionTree::Range(mid+1,end);
-    left->setParent(this);
-    right->setParent(this);
-  }
-
-  val++;
-
-  if (left!=NULL)
-    left->addVal(v,div);
-  if (right!=NULL)
-    right->addVal(v,div);
+  data[v-start]++;
+  sum++;
 }
 
-float DecisionTree::Range::getExpectedMedian(float vl, float vr)
+int DecisionTree::Range::getEquals(int v)
 {
-  if (left==NULL || right==NULL)
-  {
-    float t = vl + val + vr;
-    float rem = 0.5 - vl/t;
-    if (rem <= 0)
-      return start;
-    else if (rem >= 1)
-      return end;
-    else
-    {
-      float p = rem * val/t;
-      return start + p*(end-start);
-    }
-  }
-  else
-  {
-    float s = 1.0f * (left->val + right->val)/val; // scale factor for next level
-    float l = s*vl + left->val; // left val relative to next level
-    float r = s*vr + right->val; // right val relative to next level
-    if (l == r)
-      return start + 0.5f*(end-start);
-    else if (l > r)
-      return left->getExpectedMedian(s*vl,r);
-    else
-      return right->getExpectedMedian(l,s*vr);
-  }
+  if (v<start || v>end)
+    return 0;
+
+  return data[v-start];
 }
 
-float DecisionTree::Range::getExpectedPercentageLessThan(int v)
+int DecisionTree::Range::getLessThan(int v)
 {
-  if (left==NULL || right==NULL)
+  int t = 0;
+  for (int i = start; i <= v && i <=end; i++)
   {
-    if (v <= start)
-      return 0;
-    else if (v > end)
-      return 1;
-    else
-      return 1.0f * (v-start)/(end-start+1);
+    t += data[i-start];
   }
-  else
-  {
-    int t = left->val + right->val;
-    if (t==0)
-      return 1.0f * (v-start)/(end-start+1);
-
-    if (v <= left->end)
-    {
-      float p = left->getExpectedPercentageLessThan(v);
-      return p * left->val/t;
-    }
-    else if (v >= right->start)
-    {
-      float p = right->getExpectedPercentageLessThan(v);
-      return 1.0f * left->val/t + p * right->val/t;
-    }
-    else
-      return 1.0f * (v-start)/(end-start+1);
-  }
-}
-
-float DecisionTree::Range::getExpectedPercentageEquals(int v)
-{
-  if (left==NULL || right==NULL)
-  {
-    if (v < start)
-      return 0;
-    else if (v > end)
-      return 0;
-    else
-      return 1.0f/(end-start+1);
-  }
-  else
-  {
-    int t = left->val + right->val;
-    if (t==0)
-      return 1.0f/(end-start+1);
-
-    if (v <= left->end)
-    {
-      float p = left->getExpectedPercentageEquals(v);
-      return p * left->val/t;
-    }
-    else if (v >= right->start)
-    {
-      float p = right->getExpectedPercentageEquals(v);
-      return p * right->val/t;
-    }
-    else
-      return 1.0f/(end-start+1);
-  }
+  return t;
 }
 
 DecisionTree::Query::Query(std::string l, std::vector<std::string> *a, std::vector<Option*> *o)

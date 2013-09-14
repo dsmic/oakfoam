@@ -173,48 +173,46 @@ class DecisionTree
     class Range
     {
       public:
-        Range(int s, int e, int v, Range *l, Range *r);
-        Range(int s, int e, int v = 0);
+        Range(int s, int e);
         ~Range();
 
         std::string toString(int indent = 0);
-        bool isRoot() { return parent==NULL; };
-        Range *getParent() { return parent; };
-        void setParent(Range *p) { parent = p; };
-        bool isTerminal() { return left==NULL && right==NULL; };
         int getStart() { return start; };
         int getEnd() { return end; };
-        void addVal(int v, int div);
-        int getThisVal() { return val; };
-        float getExpectedMedian() { return this->getExpectedMedian(0,0); };
-        float getExpectedPercentageLessThan(int v);
-        float getExpectedPercentageEquals(int v);
+        void addVal(int v);
+        int getSum() { return sum; };
+
+        int getEquals(int v);
+        int getLessThan(int v);
+        int getLessThanEquals(int v) { return this->getEquals(v) + this->getLessThan(v); };
 
       private:
-        int start, end, val;
-        Range *parent;
-        Range *left;
-        Range *right;
-
-        float getExpectedMedian(float vl, float vr);
+        int start, end, sum;
+        int *data;
     };
 
     class StatPerm
     {
       public:
-        StatPerm(std::string l, std::vector<std::string> *a, Range *r);
+        StatPerm(std::string l, std::vector<std::string> *a, Range *d);
         ~StatPerm();
 
         std::string toString(int indent = 0);
         std::string getLabel() { return label; };
         std::vector<std::string> *getAttrs() { return attrs; };
-        Range *getRange() { return range; };
+
+        Range *getDescents() { return descents; };
+
+        float getQuality(bool lne, int v);
 
       private:
         std::string label;
         std::vector<std::string> *attrs;
-        Range *range;
+        Range *descents;
     };
+
+    class Node;
+    class Query;
 
     class Stats
     {
@@ -226,12 +224,11 @@ class DecisionTree
         std::string toString(int indent = 0);
         std::vector<StatPerm*> *getStatPerms() { return statperms; };
 
+        Query *getBestQuery(Type type, int maxnode, float threshold);
+
       private:
         std::vector<StatPerm*> *statperms;
     };
-
-    class Node;
-    class Query;
 
     class Option
     {

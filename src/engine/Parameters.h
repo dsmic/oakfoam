@@ -593,8 +593,6 @@ class Parameters
      * Split values are in the range [0,1], with a larger value indicating a better split.
      */
     float dt_split_threshold;
-    /** Number of range additions before dividing a range. */
-    int dt_range_divide;
     /** Whether to return only a single leaf node from each decision tree.
      * In practice, the leaf node with the smallest leaf id will be used.
      */
