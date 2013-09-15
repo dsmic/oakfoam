@@ -2445,7 +2445,7 @@ int DecisionTree::Range::getEquals(int v)
 int DecisionTree::Range::getLessThan(int v)
 {
   int t = 0;
-  for (int i = start; i <= v && i <=end; i++)
+  for (int i = start; i < v && i <=end; i++)
   {
     t += data[i-start];
   }
