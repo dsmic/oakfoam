@@ -3232,7 +3232,7 @@ void Engine::gtpDTUpdate(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   Engine *me=(Engine*)instance;
   
   DecisionTree::GraphCollection *graphs = new DecisionTree::GraphCollection(me->currentboard);
-  DecisionTree::collectionUpdateDescent(&(me->decisiontrees),graphs);
+  DecisionTree::collectionUpdateDescent(&(me->decisiontrees),graphs,Go::Move(me->currentboard->nextToMove(),Go::Move::PASS));
   delete graphs;
 
   gtpe->getOutput()->startResponse(cmd);
@@ -3850,7 +3850,7 @@ void Engine::makeMove(Go::Move move)
 
 #define WITH_P(A) (A>=1.0 || (A>0 && threadpool->getThreadZero()->getSettings()->rand->getRandomReal()<A))  
 
-  DecisionTree::GraphCollection *graphs = new DecisionTree::GraphCollection(currentboard);
+  DecisionTree::GraphCollection *graphs = NULL;
 
   if (WITH_P(params->features_output_competitions))
   {
@@ -3858,6 +3858,9 @@ void Engine::makeMove(Go::Move move)
     Go::ObjectBoard<int> *cfglastdist=NULL;
     Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
     features->computeCFGDist(currentboard,&cfglastdist,&cfgsecondlastdist);
+
+    if (graphs == NULL)
+      graphs = new DecisionTree::GraphCollection(currentboard);
     
     if (params->features_output_competitions_mmstyle)
     {
@@ -3965,15 +3968,21 @@ void Engine::makeMove(Go::Move move)
 
   if (params->dt_update_prob > 0)
   {
+    if (graphs == NULL)
+      graphs = new DecisionTree::GraphCollection(currentboard);
+
     for (std::list<DecisionTree*>::iterator iter=decisiontrees.begin();iter!=decisiontrees.end();++iter)
     {
       if (WITH_P(params->dt_update_prob))
-        (*iter)->updateDescent(graphs);
+        (*iter)->updateDescent(graphs,move);
     }
   }
 
   if (WITH_P(params->dt_output_mm))
   {
+    if (graphs == NULL)
+      graphs = new DecisionTree::GraphCollection(currentboard);
+
     if (move.isNormal())
     {
       std::list<int> *ids = DecisionTree::getCollectionLeafIds(&decisiontrees,graphs,move);
@@ -4027,6 +4036,9 @@ void Engine::makeMove(Go::Move move)
     Go::ObjectBoard<int> *cfglastdist=NULL;
     Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
     features->computeCFGDist(currentboard,&cfglastdist,&cfgsecondlastdist);
+
+    if (graphs == NULL)
+      graphs = new DecisionTree::GraphCollection(currentboard);
 
     float weights[currentboard->getPositionMax()+1]; // +1 for pass
     float sumweights = 0;
@@ -4154,6 +4166,9 @@ void Engine::makeMove(Go::Move move)
     Go::Color col = move.getColor();
     int matchedat = 0;
 
+    if (graphs == NULL)
+      graphs = new DecisionTree::GraphCollection(currentboard);
+
     float weights[currentboard->getPositionMax()];
     for (int p=0;p<currentboard->getPositionMax();p++)
     {
@@ -4207,7 +4222,8 @@ void Engine::makeMove(Go::Move move)
     gtpe->getOutput()->printfDebug("[dt_comparison]:matched at: %d\n",matchedat);
   }
 
-  delete graphs;
+  if (graphs != NULL)
+    delete graphs;
   
   currentboard->makeMove(move);
   movehistory->push_back(move);

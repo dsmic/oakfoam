@@ -148,13 +148,13 @@ class DecisionTree
     bool getCompressChain() { return compressChain; };
     bool getCompressEmpty() { return compressEmpty; };
     std::vector<std::string> *getAttrs() { return attrs; };
-    float getWeight(GraphCollection *graphs, Go::Move move, bool updatetree = false);
+    float getWeight(GraphCollection *graphs, Go::Move move, bool updatetree = false, bool win = false);
     std::list<int> *getLeafIds(GraphCollection *graphs, Go::Move move);
     void updateLeafIds();
     int getLeafCount() { return leafmap.size(); };
     void setLeafWeight(int id, float w);
-    void updateDescent(GraphCollection *graphs, Go::Move move);
-    void updateDescent(GraphCollection *graphs);
+    void updateDescent(GraphCollection *graphs, Go::Move move, bool win);
+    void updateDescent(GraphCollection *graphs, Go::Move winmove);
     void getTreeStats(int &treenodes, int &leaves, int &maxdepth, float &avgdepth, int &maxnodes, float &avgnodes);
     std::string getLeafPath(int id);
 
@@ -166,7 +166,7 @@ class DecisionTree
     static std::list<int> *getCollectionLeafIds(std::list<DecisionTree*> *trees, GraphCollection *graphs, Go::Move move);
     static int getCollectionLeafCount(std::list<DecisionTree*> *trees);
     static void setCollectionLeafWeight(std::list<DecisionTree*> *trees, int id, float w);
-    static void collectionUpdateDescent(std::list<DecisionTree*> *trees, GraphCollection *graphs);
+    static void collectionUpdateDescent(std::list<DecisionTree*> *trees, GraphCollection *graphs, Go::Move winmove);
     static std::string getCollectionLeafPath(std::list<DecisionTree*> *trees, int id);
   
   private:
@@ -194,7 +194,7 @@ class DecisionTree
     class StatPerm
     {
       public:
-        StatPerm(std::string l, std::vector<std::string> *a, Range *d);
+        StatPerm(std::string l, std::vector<std::string> *a, Range *d, Range *w);
         ~StatPerm();
 
         std::string toString(int indent = 0);
@@ -202,13 +202,15 @@ class DecisionTree
         std::vector<std::string> *getAttrs() { return attrs; };
 
         Range *getDescents() { return descents; };
+        Range *getWins() { return wins; };
 
         float getQuality(bool lne, int v);
 
       private:
         std::string label;
         std::vector<std::string> *attrs;
-        Range *descents;
+        Range *descents, *wins;
+        //TODO: add stats for each child
     };
 
     class Node;
@@ -316,16 +318,16 @@ class DecisionTree
 
     DecisionTree(Parameters *p, Type t, bool cmpC, bool cmpE, std::vector<std::string> *a, DecisionTree::Node *r);
 
-    std::list<Node*> *getLeafNodes(GraphCollection *graphs, Go::Move move, bool updatetree);
-    std::list<Node*> *getStoneLeafNodes(Node *node, StoneGraph *graph, std::vector<unsigned int> *stones, bool invert, bool updatetree);
-    std::list<Node*> *getIntersectionLeafNodes(Node *node, IntersectionGraph *graph, std::vector<unsigned int> *stones, bool invert, bool updatetree);
-    bool updateStoneNode(Node *node, StoneGraph *graph, std::vector<unsigned int> *stones, bool invert);
-    bool updateIntersectionNode(Node *node, IntersectionGraph *graph, std::vector<unsigned int> *stones, bool invert);
+    std::list<Node*> *getLeafNodes(GraphCollection *graphs, Go::Move move, bool updatetree, bool win);
+    std::list<Node*> *getStoneLeafNodes(Node *node, StoneGraph *graph, std::vector<unsigned int> *stones, bool invert, bool updatetree, bool win);
+    std::list<Node*> *getIntersectionLeafNodes(Node *node, IntersectionGraph *graph, std::vector<unsigned int> *stones, bool invert, bool updatetree, bool win);
+    bool updateStoneNode(Node *node, StoneGraph *graph, std::vector<unsigned int> *stones, bool invert, bool win);
+    bool updateIntersectionNode(Node *node, IntersectionGraph *graph, std::vector<unsigned int> *stones, bool invert, bool win);
     unsigned int getMaxNode(Node *node);
 
     static float combineNodeWeights(std::list<Node*> *nodes);
     static int getDistance(Go::Board *board, int p1, int p2);
-    static float percentageToVal(float p);
+    static float computeQueryQuality(int d0, int w0, int d1, int w1, int d2 = -1, int w2 = -1, int d3 = -1, int w3 = -1);
 
     static std::string stripWhitespace(std::string in);
     static std::string stripComments(std::string in);
