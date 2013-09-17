@@ -282,6 +282,11 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("other","auto_save_sgf",&(params->auto_save_sgf),false);
   params->addParameter("other","auto_save_sgf_prefix",&(params->auto_save_sgf_prefix),"");
 
+  std::list<std::string> *spoptions = new std::list<std::string>();
+  spoptions->push_back("descents");
+  params->addParameter("other","dt_selection_policy",&(params->dt_selection_policy_string),spoptions,"descents",&Engine::updateParameterWrapper,this);
+  params->dt_selection_policy = Parameters::SP_DESCENTS;
+
   params->addParameter("other","dt_update_prob",&(params->dt_update_prob),0.00);
   params->addParameter("other","dt_split_after",&(params->dt_split_after),1000);
   params->addParameter("other","dt_split_threshold",&(params->dt_split_threshold),0.00);
@@ -527,6 +532,15 @@ void Engine::updateParameter(std::string id)
       params->playouts_per_move_max=params->playouts_per_move;
     if (params->playouts_per_move<params->playouts_per_move_min)
       params->playouts_per_move_min=params->playouts_per_move;
+  }
+  else if (id=="dt_selection_policy")
+  {
+    if (params->dt_selection_policy_string == "winloss")
+      params->dt_selection_policy = Parameters::SP_WINLOSS;
+    else if (params->dt_selection_policy_string == "weightedwinloss")
+      params->dt_selection_policy = Parameters::SP_WEIGHTEDWINLOSS;
+    else
+      params->dt_selection_policy = Parameters::SP_DESCENTS;
   }
 }
 

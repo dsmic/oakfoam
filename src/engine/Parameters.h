@@ -585,6 +585,17 @@ class Parameters
     /** The filename prefix for the outputted SGFs. */
     std::string auto_save_sgf_prefix;
 
+    /** Query selection policies for growing decision trees. */
+    enum QuerySelectionPolicy
+    {
+      SP_WINLOSS,
+      SP_WEIGHTEDWINLOSS,
+      SP_DESCENTS
+    };
+    /** String representation of the current query selection policy. */
+    std::string dt_selection_policy_string;
+    /** Current query selection policy. */
+    Parameters::QuerySelectionPolicy dt_selection_policy;
     /** Probability that the decision trees are updated after a move. */
     float dt_update_prob;
     /** Number of descents that must occur before a decision tree node is split. */

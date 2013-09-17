@@ -204,7 +204,7 @@ class DecisionTree
         Range *getDescents() { return descents; };
         Range *getWins() { return wins; };
 
-        float getQuality(bool lne, int v);
+        float getQuality(Parameters *params, bool lne, int v);
 
       private:
         std::string label;
@@ -226,7 +226,7 @@ class DecisionTree
         std::string toString(int indent = 0);
         std::vector<StatPerm*> *getStatPerms() { return statperms; };
 
-        Query *getBestQuery(Type type, int maxnode, float threshold);
+        Query *getBestQuery(Parameters *params, Type type, int maxnode, float threshold);
 
       private:
         std::vector<StatPerm*> *statperms;
@@ -327,7 +327,7 @@ class DecisionTree
 
     static float combineNodeWeights(std::list<Node*> *nodes);
     static int getDistance(Go::Board *board, int p1, int p2);
-    static float computeQueryQuality(int d0, int w0, int d1, int w1, int d2 = -1, int w2 = -1, int d3 = -1, int w3 = -1);
+    static float computeQueryQuality(Parameters *params, int d0, int w0, int d1, int w1, int d2 = -1, int w2 = -1, int d3 = -1, int w3 = -1);
 
     static std::string stripWhitespace(std::string in);
     static std::string stripComments(std::string in);
