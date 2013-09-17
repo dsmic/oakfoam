@@ -136,6 +136,9 @@ else
     echo "${DT_GAMES:-}" > games-dt.dat
     rm -f "$DTFILE" # clear
     ../../decisiontrees/dt-init.sh $DTFILE ${DT_FOREST_SIZE:-1} "${DT_TYPES:-STONE|NOCOMP}" &>> $LOGFILE
+    export DT_SELECTION_POLICY=${DT_SELECTION_POLICY:-descents}
+    export DT_UPDATE_PROB=${DT_UPDATE_PROB:-0.10}
+    export DT_SPLIT_AFTER=${DT_SPLIT_AFTER:-1000}
     echo "${DT_GAMES:-}" | ../../decisiontrees/dt-grow.sh $DTFILE 1 2>&1 | lastline
     check $?
     msg "Decision forest:"
