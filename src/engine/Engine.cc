@@ -284,6 +284,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
 
   std::list<std::string> *spoptions = new std::list<std::string>();
   spoptions->push_back("descents");
+  spoptions->push_back("winloss");
+  spoptions->push_back("weightedwinloss");
   params->addParameter("other","dt_selection_policy",&(params->dt_selection_policy_string),spoptions,"descents",&Engine::updateParameterWrapper,this);
   params->dt_selection_policy = Parameters::SP_DESCENTS;
 

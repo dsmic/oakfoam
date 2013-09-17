@@ -62,7 +62,7 @@ RESDIR="results_`date +%F_%T`"
 mkdir $RESDIR
 cd $RESDIR
 LOGFILE="test.log"
-msg "Writting results to '`pwd`'"
+msg "Writing results to '`pwd`'"
 
 init "Loading parameters"
   if (( $# < 1 )); then
@@ -142,10 +142,13 @@ else
     echo "${DT_GAMES:-}" | ../../decisiontrees/dt-grow.sh $DTFILE 1 2>&1 | lastline
     check $?
     msg "Decision forest:"
-    msg "  Types:         ${DT_TYPES:-STONE|NOCOMP}"
-    msg "  Duplicates:    ${DT_FOREST_SIZE:-1}"
-    msg "  Forest size:    `cat $DTFILE | grep '(DT' | wc -l`"
-    msg "  Leaves:        `cat $DTFILE | grep 'WEIGHT' | wc -l`"
+    msg "  Types:               ${DT_TYPES:-STONE|NOCOMP}"
+    msg "  Duplicates:          ${DT_FOREST_SIZE:-1}"
+    msg "  Forest size:         `cat $DTFILE | grep '(DT' | wc -l`"
+    msg "  Update probability:  ${DT_UPDATE_PROB}"
+    msg "  Selection period:    ${DT_SPLIT_AFTER}"
+    msg "  Selection policy:    ${DT_SELECTION_POLICY}"
+    msg "  Leaves:              `cat $DTFILE | grep 'WEIGHT' | wc -l`"
   fi
 fi
 

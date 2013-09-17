@@ -194,7 +194,7 @@ class DecisionTree
     class StatPerm
     {
       public:
-        StatPerm(std::string l, std::vector<std::string> *a, Range *d, Range *w);
+        StatPerm(std::string l, std::vector<std::string> *a, Range *d, Range *w, Range *d2 = NULL, Range *w2 = NULL, Range *d3 = NULL, Range *w3 = NULL);
         ~StatPerm();
 
         std::string toString(int indent = 0);
@@ -203,6 +203,10 @@ class DecisionTree
 
         Range *getDescents() { return descents; };
         Range *getWins() { return wins; };
+        Range *getDescents2() { return descents2; };
+        Range *getWins2() { return wins2; };
+        Range *getDescents3() { return descents3; };
+        Range *getWins3() { return wins3; };
 
         float getQuality(Parameters *params, bool lne, int v);
 
@@ -210,7 +214,7 @@ class DecisionTree
         std::string label;
         std::vector<std::string> *attrs;
         Range *descents, *wins;
-        //TODO: add stats for each child
+        Range *descents2, *wins2, *descents3, *wins3;
     };
 
     class Node;

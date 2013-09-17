@@ -328,8 +328,11 @@ bool DecisionTree::updateStoneNode(DecisionTree::Node *node, DecisionTree::Stone
       std::string spt = sp->getLabel();
       std::vector<std::string> *attrs = sp->getAttrs();
       int res = 0;
+      int res2 = -1;
+      int res3 = -1;
       int resmin = sp->getDescents()->getStart();
       int resmax = sp->getDescents()->getEnd();
+
       //fprintf(stderr,"[DT] SP type: '%s'\n",spt.c_str());
       if (spt=="NEW")
       {
@@ -345,17 +348,23 @@ bool DecisionTree::updateStoneNode(DecisionTree::Node *node, DecisionTree::Stone
           return false;
         }
 
-        bool resfound = false;
+        bool resfoundB = false;
+        bool resfoundW = false;
+        bool resfoundS = false;
+        int resB = resmax;
+        int resW = resmax;
+        int resS = resmax;
         for (int s=0; s<=resmax; s++)
         {
           for (unsigned int i=0; i<graph->getNumNodes(); i++)
           {
             bool valid = false;
-            if ((invert?W:B) && graph->getNodeStatus(i)==Go::BLACK)
+            Go::Color col = graph->getNodeStatus(i);
+            if ((invert?W:B) && col==Go::BLACK)
               valid = true;
-            else if ((invert?B:W) && graph->getNodeStatus(i)==Go::WHITE)
+            else if ((invert?B:W) && col==Go::WHITE)
               valid = true;
-            else if (S && graph->getNodeStatus(i)==Go::OFFBOARD)
+            else if (S && col==Go::OFFBOARD)
               valid = true;
 
             if (valid)
@@ -373,23 +382,63 @@ bool DecisionTree::updateStoneNode(DecisionTree::Node *node, DecisionTree::Stone
                 }
                 if (!found)
                 {
-                  resfound = true;
-                  res = s;
-                  break;
+                  if (!resfoundB && col==(invert?Go::WHITE:Go::BLACK))
+                  {
+                    resfoundB = true;
+                    resB = s;
+                  }
+                  else if (!resfoundW && col==(invert?Go::BLACK:Go::WHITE))
+                  {
+                    resfoundW = true;
+                    resW = s;
+                  }
+                  else if (!resfoundS && col==Go::OFFBOARD)
+                  {
+                    resfoundS = true;
+                    resS = s;
+                  }
                 }
               }
             }
-
-            if (resfound)
-              break;
           }
 
-          if (resfound)
+          if (resfoundB && resfoundW && resfoundS)
             break;
         }
 
-        if (!resfound)
-          res = resmax;
+        if (!resfoundB)
+          resB = resmax;
+        if (!resfoundW)
+          resW = resmax;
+        if (!resfoundS)
+          resS = resmax;
+
+        if (resB <= resW)
+          resW = resmax;
+        if (resW <= resS)
+          resS = resmax;
+
+        if (B && W)
+        {
+          res = resB;
+          res2 = resW;
+          if (S)
+            res3 = resS;
+        }
+        else if (B)
+        {
+          res = resB;
+          if (S)
+            res2 = resS;
+        }
+        else if (W)
+        {
+          res = resW;
+          if (S)
+            res2 = resS;
+        }
+        else if (S)
+          res = resS;
       }
       else if (spt=="DIST")
       {
@@ -421,9 +470,22 @@ bool DecisionTree::updateStoneNode(DecisionTree::Node *node, DecisionTree::Stone
         res = resmin;
       else if (res > resmax)
         res = resmax;
+
       sp->getDescents()->addVal(res);
       if (win)
         sp->getWins()->addVal(res);
+      if (res2 != -1)
+      {
+        sp->getDescents2()->addVal(res2);
+        if (win)
+          sp->getWins2()->addVal(res2);
+      }
+      if (res3 != -1)
+      {
+        sp->getDescents3()->addVal(res3);
+        if (win)
+          sp->getWins3()->addVal(res3);
+      }
     }
   }
 
@@ -463,8 +525,11 @@ bool DecisionTree::updateIntersectionNode(DecisionTree::Node *node, DecisionTree
       std::string spt = sp->getLabel();
       std::vector<std::string> *attrs = sp->getAttrs();
       int res = 0;
+      int res2 = -1;
+      int res3 = -1;
       int resmin = sp->getDescents()->getStart();
       int resmax = sp->getDescents()->getEnd();
+
       //fprintf(stderr,"[DT] SP type: '%s'\n",spt.c_str());
       if (spt=="NEW")
       {
@@ -485,7 +550,9 @@ bool DecisionTree::updateIntersectionNode(DecisionTree::Node *node, DecisionTree
         }
         int n = boost::lexical_cast<int>(attrs->at(1));
 
-        bool resfound = false;
+        bool resfoundB = false;
+        bool resfoundW = false;
+        bool resfoundE = false;
         std::vector<unsigned int> *adjnodes = graph->getAdjacentNodes(stones->at(n));
         if (adjnodes != NULL)
         {
@@ -494,11 +561,12 @@ bool DecisionTree::updateIntersectionNode(DecisionTree::Node *node, DecisionTree
             unsigned int adjn = adjnodes->at(i);
 
             bool valid = false;
-            if ((invert?W:B) && graph->getNodeStatus(adjn)==Go::BLACK)
+            Go::Color col = graph->getNodeStatus(adjn);
+            if ((invert?W:B) && col==Go::BLACK)
               valid = true;
-            else if ((invert?B:W) && graph->getNodeStatus(adjn)==Go::WHITE)
+            else if ((invert?B:W) && col==Go::WHITE)
               valid = true;
-            else if (E && graph->getNodeStatus(adjn)==Go::EMPTY)
+            else if (E && col==Go::EMPTY)
               valid = true;
 
             if (valid)
@@ -514,12 +582,16 @@ bool DecisionTree::updateIntersectionNode(DecisionTree::Node *node, DecisionTree
               }
               if (!found)
               {
-                resfound = true;
-                break;
+                if (!resfoundB && col==(invert?Go::WHITE:Go::BLACK))
+                  resfoundB = true;
+                else if (!resfoundW && col==(invert?Go::BLACK:Go::WHITE))
+                  resfoundW = true;
+                else if (!resfoundE && col==Go::EMPTY)
+                  resfoundE = true;
               }
             }
 
-            if (resfound)
+            if (resfoundB && resfoundW && resfoundE)
               break;
           }
         }
@@ -527,7 +599,26 @@ bool DecisionTree::updateIntersectionNode(DecisionTree::Node *node, DecisionTree
         if (adjnodes != NULL)
           delete adjnodes;
 
-        res = resfound?1:0;
+        if (B)
+        {
+          res = resfoundB?1:0;
+          if (W)
+          {
+            res2 = resfoundW?1-res:0;
+            if (E)
+              res3 = resfoundE?1-res-res2:0;
+          }
+          else if (E)
+            res2 = resfoundE?1-res:0;
+        }
+        else if (W)
+        {
+          res = resfoundW?1:0;
+          if (E)
+            res2 = resfoundE?1-res:0;
+        }
+        else if (E)
+          res = resfoundE?1:0;
       }
       else if (spt=="EDGE")
       {
@@ -563,9 +654,22 @@ bool DecisionTree::updateIntersectionNode(DecisionTree::Node *node, DecisionTree
         res = resmin;
       else if (res > resmax)
         res = resmax;
+
       sp->getDescents()->addVal(res);
       if (win)
         sp->getWins()->addVal(res);
+      if (res2 != -1)
+      {
+        sp->getDescents2()->addVal(res2);
+        if (win)
+          sp->getWins2()->addVal(res2);
+      }
+      if (res3 != -1)
+      {
+        sp->getDescents3()->addVal(res3);
+        if (win)
+          sp->getWins3()->addVal(res3);
+      }
     }
   }
 
@@ -1324,13 +1428,13 @@ float DecisionTree::computeQueryQuality(Parameters *params, int d0, int w0, int 
         q = 0;
 
         if (d0 > 0)
-          q += d0/D * fabs(r0 - R);
+          q += ((float)d0)/D * fabs(r0 - R);
         if (d1 > 0)
-          q += d1/D * fabs(r1 - R);
+          q += ((float)d1)/D * fabs(r1 - R);
         if (d2 > 0)
-          q += d2/D * fabs(r2 - R);
+          q += ((float)d2)/D * fabs(r2 - R);
         if (d3 > 0)
-          q += d3/D * fabs(r3 - R);
+          q += ((float)d3)/D * fabs(r3 - R);
 
         break;
       }
@@ -1341,7 +1445,7 @@ float DecisionTree::computeQueryQuality(Parameters *params, int d0, int w0, int 
       }
   }
 
-  // fprintf(stderr,"[DT] quality of %d(%d:%d)[%.2f] %d(%d:%d)[%.2f] %d(%d:%d)[%.2f] %d(%d:%d)[%.2f] %d(%d:%d)[%.2f] = %.2f\n",D,W,L,R,d0,w0,l0,r0,d1,w1,l1,r1,d2,w2,l2,r2,d3,w3,l3,r3,q);
+  // fprintf(stderr,"[DT] quality of %d(%d:%d)[%.2f] %d(%d:%d)[%.2f] %d(%d:%d)[%.2f] %d(%d:%d)[%.2f] %d(%d:%d)[%.2f] = %.4f\n",D,W,L,R,d0,w0,l0,r0,d1,w1,l1,r1,d2,w2,l2,r2,d3,w3,l3,r3,q);
   return q;
 }
 
@@ -1502,6 +1606,16 @@ std::string DecisionTree::StatPerm::toString(int indent)
 
   r += descents->toString(indent+2);
   r += wins->toString(indent+2);
+  if (descents2 != NULL)
+  {
+    r += descents2->toString(indent+2);
+    r += wins2->toString(indent+2);
+  }
+  if (descents3 != NULL)
+  {
+    r += descents3->toString(indent+2);
+    r += wins3->toString(indent+2);
+  }
 
   for (int i=0;i<indent;i++)
     r += " ";
@@ -2246,7 +2360,34 @@ DecisionTree::Stats::Stats(DecisionTree::Type type, unsigned int maxnode)
           }
           std::vector<std::string> *attrs = new std::vector<std::string>();
           attrs->push_back(cols);
-          statperms->push_back(new DecisionTree::StatPerm("NEW",attrs,new DecisionTree::Range(rangemin,rangemax),new DecisionTree::Range(rangemin,rangemax)));
+
+          int children = cols.size() + 1;
+          if (children == 4)
+          {
+            DecisionTree::Range *d1 = new DecisionTree::Range(rangemin,rangemax);
+            DecisionTree::Range *w1 = new DecisionTree::Range(rangemin,rangemax);
+            DecisionTree::Range *d2 = new DecisionTree::Range(rangemin,rangemax);
+            DecisionTree::Range *w2 = new DecisionTree::Range(rangemin,rangemax);
+            DecisionTree::Range *d3 = new DecisionTree::Range(rangemin,rangemax);
+            DecisionTree::Range *w3 = new DecisionTree::Range(rangemin,rangemax);
+            statperms->push_back(new DecisionTree::StatPerm("NEW",attrs,d1,w1,d2,w2,d3,w3));
+          }
+          else if (children == 3)
+          {
+            DecisionTree::Range *d1 = new DecisionTree::Range(rangemin,rangemax);
+            DecisionTree::Range *w1 = new DecisionTree::Range(rangemin,rangemax);
+            DecisionTree::Range *d2 = new DecisionTree::Range(rangemin,rangemax);
+            DecisionTree::Range *w2 = new DecisionTree::Range(rangemin,rangemax);
+            statperms->push_back(new DecisionTree::StatPerm("NEW",attrs,d1,w1,d2,w2));
+          }
+          else if (children == 2)
+          {
+            DecisionTree::Range *d1 = new DecisionTree::Range(rangemin,rangemax);
+            DecisionTree::Range *w1 = new DecisionTree::Range(rangemin,rangemax);
+            statperms->push_back(new DecisionTree::StatPerm("NEW",attrs,d1,w1));
+          }
+          else
+            delete attrs;
         }
 
         break;
@@ -2313,7 +2454,34 @@ DecisionTree::Stats::Stats(DecisionTree::Type type, unsigned int maxnode)
             std::vector<std::string> *attrs = new std::vector<std::string>();
             attrs->push_back(cols);
             attrs->push_back(boost::lexical_cast<std::string>(i));
-            statperms->push_back(new DecisionTree::StatPerm("NEW",attrs,new DecisionTree::Range(0,1),new DecisionTree::Range(0,1)));
+
+            int children = cols.size() + 1;
+            if (children == 4)
+            {
+              DecisionTree::Range *d1 = new DecisionTree::Range(0,1);
+              DecisionTree::Range *w1 = new DecisionTree::Range(0,1);
+              DecisionTree::Range *d2 = new DecisionTree::Range(0,1);
+              DecisionTree::Range *w2 = new DecisionTree::Range(0,1);
+              DecisionTree::Range *d3 = new DecisionTree::Range(0,1);
+              DecisionTree::Range *w3 = new DecisionTree::Range(0,1);
+              statperms->push_back(new DecisionTree::StatPerm("NEW",attrs,d1,w1,d2,w2,d3,w3));
+            }
+            else if (children == 3)
+            {
+              DecisionTree::Range *d1 = new DecisionTree::Range(0,1);
+              DecisionTree::Range *w1 = new DecisionTree::Range(0,1);
+              DecisionTree::Range *d2 = new DecisionTree::Range(0,1);
+              DecisionTree::Range *w2 = new DecisionTree::Range(0,1);
+              statperms->push_back(new DecisionTree::StatPerm("NEW",attrs,d1,w1,d2,w2));
+            }
+            else if (children == 2)
+            {
+              DecisionTree::Range *d1 = new DecisionTree::Range(0,1);
+              DecisionTree::Range *w1 = new DecisionTree::Range(0,1);
+              statperms->push_back(new DecisionTree::StatPerm("NEW",attrs,d1,w1));
+            }
+            else
+              delete attrs;
           }
         }
 
@@ -2331,12 +2499,16 @@ DecisionTree::Stats::~Stats()
   delete statperms;
 }
 
-DecisionTree::StatPerm::StatPerm(std::string l, std::vector<std::string> *a, Range *d, Range *w)
+DecisionTree::StatPerm::StatPerm(std::string l, std::vector<std::string> *a, Range *d, Range *w, Range *d2, Range *w2, Range *d3, Range *w3)
 {
   label = l;
   attrs = a;
   descents = d;
   wins = w;
+  descents2 = d2;
+  wins2 = w2;
+  descents3 = d3;
+  wins3 = w3;
 }
 
 DecisionTree::StatPerm::~StatPerm()
@@ -2344,32 +2516,71 @@ DecisionTree::StatPerm::~StatPerm()
   delete attrs;
   delete descents;
   delete wins;
+  delete descents2;
+  delete wins2;
+  delete descents3;
+  delete wins3;
 }
 
 float DecisionTree::StatPerm::getQuality(Parameters *params, bool lne, int v)
 {
-  //TODO: update to work with k-ary queries
-
   int D = descents->getSum();
   int W = wins->getSum();
 
-  int d0 = 0;
-  int w0 = 0;
+  int d1 = 0;
+  int w1 = 0;
+  int d2 = 0;
+  int w2 = 0;
+  int d3 = 0;
+  int w3 = 0;
+
   if (lne)
   {
-    d0 = descents->getLessThan(v);
-    w0 = wins->getLessThan(v);
+    d1 = descents->getLessThan(v);
+    w1 = wins->getLessThan(v);
+    if (descents2 != NULL)
+    {
+      d2 = descents2->getLessThan(v);
+      w2 = wins2->getLessThan(v);
+    }
+    if (descents3 != NULL)
+    {
+      d3 = descents3->getLessThan(v);
+      w3 = wins3->getLessThan(v);
+    }
   }
   else
   {
-    d0 = descents->getEquals(v);
-    w0 = wins->getEquals(v);
+    d1 = descents->getEquals(v);
+    w1 = wins->getEquals(v);
+    if (descents2 != NULL)
+    {
+      d2 = descents2->getEquals(v);
+      w2 = wins2->getEquals(v);
+    }
+    if (descents3 != NULL)
+    {
+      d3 = descents3->getEquals(v);
+      w3 = wins3->getEquals(v);
+    }
   }
 
-  int d1 = D - d0;
-  int w1 = W - w0;
+  int d0 = D - d1 - d2 - d3;
+  int w0 = W - w1 - w2 - w3;
 
-  return DecisionTree::computeQueryQuality(params,d0,w0,d1,w1);
+  if (descents2 == NULL)
+  {
+    d2 = -1;
+    w2 = -1;
+  }
+  if (descents3 == NULL)
+  {
+    d3 = -1;
+    w3 = -1;
+  }
+
+  // fprintf(stderr,"[DT] qq[v=%d]: %d,%d %d,%d %d,%d %d,%d\n",v,d0,w0,d1,w1,d2,w2,d3,w3);
+  return DecisionTree::computeQueryQuality(params,d0,w0,d1,w1,d2,w2,d3,w3);
 }
 
 DecisionTree::Query *DecisionTree::Stats::getBestQuery(Parameters *params, Type type, int maxnode)
@@ -2387,7 +2598,7 @@ DecisionTree::Query *DecisionTree::Stats::getBestQuery(Parameters *params, Type 
 
     if (type == DecisionTree::INTERSECTION && sp->getLabel()=="NEW")
     {
-      float q = sp->getQuality(params,true,1);
+      float q = sp->getQuality(params,false,1);
       if (q > bestquality || bestattrs == NULL)
       {
         bestquality = q;
@@ -2404,12 +2615,12 @@ DecisionTree::Query *DecisionTree::Stats::getBestQuery(Parameters *params, Type 
     else
     {
       int min = sp->getDescents()->getStart();
-      int max = sp->getDescents()->getEnd() + 1;
+      int max = sp->getDescents()->getEnd();
       bool foundbest = false;
       int bestval = 0;
       bool bestlne = false;
 
-      for (int v = min; v <= max; v++)
+      for (int v = min; v < max; v++) // max is used to group not found
       {
         float ql = sp->getQuality(params,true,v);
         if (ql > bestquality || bestattrs == NULL)
@@ -2460,7 +2671,7 @@ DecisionTree::Query *DecisionTree::Stats::getBestQuery(Parameters *params, Type 
     // fprintf(stderr,"[DT] best stat: %s",bestlabel.c_str());
     // for (unsigned int j=0; j<bestattrs->size(); j++)
     //   fprintf(stderr,"%c%s",(j==0?'[':'|'),bestattrs->at(j).c_str());
-    // fprintf(stderr,"] %.2f\n",bestquality);
+    // fprintf(stderr,"] %.4f\n",bestquality);
 
     return new DecisionTree::Query(type,bestlabel,bestattrs,maxnode);
   }
