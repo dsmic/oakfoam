@@ -436,7 +436,7 @@ bool DecisionTree::updateStoneNode(DecisionTree::Node *node, DecisionTree::Stone
       //fprintf(stderr,"DT split now!\n");
 
       int maxnode = this->getMaxNode(node);
-      DecisionTree::Query *query = node->getStats()->getBestQuery(params,type,maxnode,params->dt_split_threshold);
+      DecisionTree::Query *query = node->getStats()->getBestQuery(params,type,maxnode);
       if (query != NULL)
       {
         query->setParent(node);
@@ -578,7 +578,7 @@ bool DecisionTree::updateIntersectionNode(DecisionTree::Node *node, DecisionTree
       //fprintf(stderr,"DT split now!\n");
 
       int maxnode = this->getMaxNode(node);
-      DecisionTree::Query *query = node->getStats()->getBestQuery(params,type,maxnode,params->dt_split_threshold);
+      DecisionTree::Query *query = node->getStats()->getBestQuery(params,type,maxnode);
       if (query != NULL)
       {
         query->setParent(node);
@@ -1301,16 +1301,21 @@ float DecisionTree::computeQueryQuality(Parameters *params, int d0, int w0, int 
   // int L = l0 + l1 + ((l2==-1)?0:l2) + ((l3==-1)?0:l3);
   float R = (D <= 0) ? -1 : ((float)W) / D;
 
-  //TODO: remove constants
   float q = 0;
   switch (params->dt_selection_policy)
   {
     case Parameters::SP_WINLOSS:
       {
-        if (d0 > 0 && d1 > 0)
-          q = 100 * fabs(r0 - r1);
-        else
-          q = 0;
+        q = 0;
+
+        if (d0 > 0)
+          q += fabs(r0 - R);
+        if (d1 > 0)
+          q += fabs(r1 - R);
+        if (d2 > 0)
+          q += fabs(r2 - R);
+        if (d3 > 0)
+          q += fabs(r3 - R);
 
         break;
       }
@@ -1319,13 +1324,13 @@ float DecisionTree::computeQueryQuality(Parameters *params, int d0, int w0, int 
         q = 0;
 
         if (d0 > 0)
-          q += 1000.0 * d0/D * fabs(r0 - R);
+          q += d0/D * fabs(r0 - R);
         if (d1 > 0)
-          q += 1000.0 * d1/D * fabs(r1 - R);
+          q += d1/D * fabs(r1 - R);
         if (d2 > 0)
-          q += 1000.0 * d2/D * fabs(r2 - R);
+          q += d2/D * fabs(r2 - R);
         if (d3 > 0)
-          q += 1000.0 * d3/D * fabs(r3 - R);
+          q += d3/D * fabs(r3 - R);
 
         break;
       }
@@ -2367,7 +2372,7 @@ float DecisionTree::StatPerm::getQuality(Parameters *params, bool lne, int v)
   return DecisionTree::computeQueryQuality(params,d0,w0,d1,w1);
 }
 
-DecisionTree::Query *DecisionTree::Stats::getBestQuery(Parameters *params, Type type, int maxnode, float threshold)
+DecisionTree::Query *DecisionTree::Stats::getBestQuery(Parameters *params, Type type, int maxnode)
 {
   float bestquality = -1;
   std::string bestlabel = "";
@@ -2383,7 +2388,7 @@ DecisionTree::Query *DecisionTree::Stats::getBestQuery(Parameters *params, Type 
     if (type == DecisionTree::INTERSECTION && sp->getLabel()=="NEW")
     {
       float q = sp->getQuality(params,true,1);
-      if (q > bestquality)
+      if (q > bestquality || bestattrs == NULL)
       {
         bestquality = q;
         bestlabel = sp->getLabel();
@@ -2407,7 +2412,7 @@ DecisionTree::Query *DecisionTree::Stats::getBestQuery(Parameters *params, Type 
       for (int v = min; v <= max; v++)
       {
         float ql = sp->getQuality(params,true,v);
-        if (ql > bestquality)
+        if (ql > bestquality || bestattrs == NULL)
         {
           foundbest = true;
           bestquality = ql;
@@ -2418,7 +2423,7 @@ DecisionTree::Query *DecisionTree::Stats::getBestQuery(Parameters *params, Type 
         if (sp->getLabel() != "NEW")
         {
           float qe = sp->getQuality(params,false,v);
-          if (qe > bestquality)
+          if (qe > bestquality || bestattrs == NULL)
           {
             foundbest = true;
             bestquality = qe;
@@ -2450,7 +2455,7 @@ DecisionTree::Query *DecisionTree::Stats::getBestQuery(Parameters *params, Type 
     }
   }
 
-  if (bestquality > threshold)
+  if (bestattrs != NULL)
   {
     // fprintf(stderr,"[DT] best stat: %s",bestlabel.c_str());
     // for (unsigned int j=0; j<bestattrs->size(); j++)

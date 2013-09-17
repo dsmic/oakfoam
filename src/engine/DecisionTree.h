@@ -226,7 +226,7 @@ class DecisionTree
         std::string toString(int indent = 0);
         std::vector<StatPerm*> *getStatPerms() { return statperms; };
 
-        Query *getBestQuery(Parameters *params, Type type, int maxnode, float threshold);
+        Query *getBestQuery(Parameters *params, Type type, int maxnode);
 
       private:
         std::vector<StatPerm*> *statperms;

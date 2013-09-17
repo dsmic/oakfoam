@@ -600,10 +600,6 @@ class Parameters
     float dt_update_prob;
     /** Number of descents that must occur before a decision tree node is split. */
     int dt_split_after;
-    /** Minimum value required to make a decision tree split.
-     * Split values are in the range [0,1], with a larger value indicating a better split.
-     */
-    float dt_split_threshold;
     /** Whether to return only a single leaf node from each decision tree.
      * In practice, the leaf node with the smallest leaf id will be used.
      */

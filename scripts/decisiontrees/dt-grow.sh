@@ -23,8 +23,6 @@ fi
 echo "dtload \"$DTFILE\"" >> $TEMPGTP
 echo 'param dt_update_prob 0.10' >> $TEMPGTP
 echo 'param dt_split_after 1000' >> $TEMPGTP
-echo 'param dt_split_threshold 0.40' >> $TEMPGTP
-echo 'param dt_range_divide 10' >> $TEMPGTP
 echo 'param undo_enable 0' >> $TEMPGTP # so gogui-adapter doesn't send undo commands
 
 i=0
