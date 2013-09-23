@@ -2,6 +2,7 @@
 
 #include <cstdio>
 #include <cmath>
+#include <limits>
 #include <fstream>
 #include <algorithm>
 #include <sstream>
@@ -1390,10 +1391,10 @@ std::list<DecisionTree::Node*> *DecisionTree::getIntersectionLeafNodes(DecisionT
 
 float DecisionTree::computeQueryQuality(Parameters *params, int d0, int w0, int d1, int w1, int d2, int w2, int d3, int w3)
 {
-  // int l0 = d0 - w0;
-  // int l1 = d1 - w1;
-  // int l2 = (d2 == -1) ? -1 : d2 - w2;
-  // int l3 = (d3 == -1) ? -1 : d3 - w3;
+  int l0 = d0 - w0;
+  int l1 = d1 - w1;
+  int l2 = (d2 == -1) ? -1 : d2 - w2;
+  int l3 = (d3 == -1) ? -1 : d3 - w3;
 
   float r0 = (d0 <= 0) ? -1 : ((float)w0) / d0;
   float r1 = (d1 <= 0) ? -1 : ((float)w1) / d1;
@@ -1402,47 +1403,57 @@ float DecisionTree::computeQueryQuality(Parameters *params, int d0, int w0, int 
 
   int D = d0 + d1 + ((d2==-1)?0:d2) + ((d3==-1)?0:d3);
   int W = w0 + w1 + ((w2==-1)?0:w2) + ((w3==-1)?0:w3);
-  // int L = l0 + l1 + ((l2==-1)?0:l2) + ((l3==-1)?0:l3);
+  int L = l0 + l1 + ((l2==-1)?0:l2) + ((l3==-1)?0:l3);
   float R = (D <= 0) ? -1 : ((float)W) / D;
 
-  float q = 0;
-  switch (params->dt_selection_policy)
+  float q = -std::numeric_limits<float>::infinity();
+  int dnz = (d0>0?1:0) + (d1>0?1:0) + (d2>0?1:0) + (d3>0?1:0);
+  if (dnz >= 2) // must be at least 1 descent to 2 children
   {
-    case Parameters::SP_WINLOSS:
-      {
-        q = 0;
+    switch (params->dt_selection_policy)
+    {
+      case Parameters::SP_WINLOSS:
+        {
+          if (W==0 || L==0) // must be some wins or losses to separate
+            break;
 
-        if (d0 > 0)
-          q += fabs(r0 - R);
-        if (d1 > 0)
-          q += fabs(r1 - R);
-        if (d2 > 0)
-          q += fabs(r2 - R);
-        if (d3 > 0)
-          q += fabs(r3 - R);
+          q = 0;
 
-        break;
-      }
-    case Parameters::SP_WEIGHTEDWINLOSS:
-      {
-        q = 0;
+          if (d0 > 0)
+            q += fabs(r0 - R);
+          if (d1 > 0)
+            q += fabs(r1 - R);
+          if (d2 > 0)
+            q += fabs(r2 - R);
+          if (d3 > 0)
+            q += fabs(r3 - R);
 
-        if (d0 > 0)
-          q += ((float)d0)/D * fabs(r0 - R);
-        if (d1 > 0)
-          q += ((float)d1)/D * fabs(r1 - R);
-        if (d2 > 0)
-          q += ((float)d2)/D * fabs(r2 - R);
-        if (d3 > 0)
-          q += ((float)d3)/D * fabs(r3 - R);
+          break;
+        }
+      case Parameters::SP_WEIGHTEDWINLOSS:
+        {
+          if (W==0 || L==0) // must be some wins or losses to separate
+            break;
 
-        break;
-      }
-    case Parameters::SP_DESCENTS:
-      {
-        q = 1 - 2*fabs(((float)d0)/D - 0.5);
-        break;
-      }
+          q = 0;
+
+          if (d0 > 0)
+            q += ((float)d0)/D * fabs(r0 - R);
+          if (d1 > 0)
+            q += ((float)d1)/D * fabs(r1 - R);
+          if (d2 > 0)
+            q += ((float)d2)/D * fabs(r2 - R);
+          if (d3 > 0)
+            q += ((float)d3)/D * fabs(r3 - R);
+
+          break;
+        }
+      case Parameters::SP_DESCENTS:
+        {
+          q = 1 - 2*fabs(((float)d0)/D - 0.5);
+          break;
+        }
+    }
   }
 
   // fprintf(stderr,"[DT] quality of %d(%d:%d)[%.2f] %d(%d:%d)[%.2f] %d(%d:%d)[%.2f] %d(%d:%d)[%.2f] %d(%d:%d)[%.2f] = %.4f\n",D,W,L,R,d0,w0,l0,r0,d1,w1,l1,r1,d2,w2,l2,r2,d3,w3,l3,r3,q);
@@ -2585,7 +2596,7 @@ float DecisionTree::StatPerm::getQuality(Parameters *params, bool lne, int v)
 
 DecisionTree::Query *DecisionTree::Stats::getBestQuery(Parameters *params, Type type, int maxnode)
 {
-  float bestquality = -1;
+  float bestquality = -std::numeric_limits<float>::max();
   std::string bestlabel = "";
   std::vector<std::string> *bestattrs = NULL;
 
@@ -2599,7 +2610,7 @@ DecisionTree::Query *DecisionTree::Stats::getBestQuery(Parameters *params, Type 
     if (type == DecisionTree::INTERSECTION && sp->getLabel()=="NEW")
     {
       float q = sp->getQuality(params,false,1);
-      if (q > bestquality || bestattrs == NULL)
+      if (q > bestquality)
       {
         bestquality = q;
         bestlabel = sp->getLabel();
@@ -2623,7 +2634,7 @@ DecisionTree::Query *DecisionTree::Stats::getBestQuery(Parameters *params, Type 
       for (int v = min; v < max; v++) // max is used to group not found
       {
         float ql = sp->getQuality(params,true,v);
-        if (ql > bestquality || bestattrs == NULL)
+        if (ql > bestquality)
         {
           foundbest = true;
           bestquality = ql;
@@ -2634,7 +2645,7 @@ DecisionTree::Query *DecisionTree::Stats::getBestQuery(Parameters *params, Type 
         if (sp->getLabel() != "NEW")
         {
           float qe = sp->getQuality(params,false,v);
-          if (qe > bestquality || bestattrs == NULL)
+          if (qe > bestquality)
           {
             foundbest = true;
             bestquality = qe;
@@ -2666,7 +2677,7 @@ DecisionTree::Query *DecisionTree::Stats::getBestQuery(Parameters *params, Type 
     }
   }
 
-  if (bestattrs != NULL)
+  if (bestattrs != NULL && bestquality > -std::numeric_limits<float>::max())
   {
     // fprintf(stderr,"[DT] best stat: %s",bestlabel.c_str());
     // for (unsigned int j=0; j<bestattrs->size(); j++)
