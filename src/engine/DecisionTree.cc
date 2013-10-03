@@ -218,6 +218,54 @@ std::string DecisionTree::getCollectionLeafPath(std::list<DecisionTree*> *trees,
   return "";
 }
 
+DecisionTree::GraphTypes DecisionTree::getCollectionTypes(std::list<DecisionTree*> *trees)
+{
+  DecisionTree::GraphTypes types;
+
+  types.stoneNone = false;
+  types.stoneChain = false;
+  types.intersectionNone = false;
+  types.intersectionChain = false;
+  types.intersectionEmpty = false;
+  types.intersectionBoth = false;
+
+  for (std::list<DecisionTree*>::iterator iter=trees->begin();iter!=trees->end();++iter)
+  {
+    DecisionTree *tree = (*iter);
+    switch (tree->getType())
+    {
+      case STONE:
+        {
+          if (tree->getCompressChain())
+            types.stoneChain = true;
+          else
+            types.stoneNone = true;
+          break;
+        }
+      case INTERSECTION:
+        {
+          if (tree->getCompressChain())
+          {
+            if (tree->getCompressEmpty())
+              types.intersectionBoth = true;
+            else
+              types.intersectionChain = true;
+          }
+          else
+          {
+            if (tree->getCompressEmpty())
+              types.intersectionEmpty = true;
+            else
+              types.intersectionNone = true;
+          }
+          break;
+        }
+    }
+  }
+
+  return types;
+}
+
 float DecisionTree::combineNodeWeights(std::list<DecisionTree::Node*> *nodes)
 {
   float weight = 1;
@@ -3563,28 +3611,58 @@ std::vector<unsigned int> *DecisionTree::IntersectionGraph::getAdjacentNodes(uns
   return adjnodes;
 }
 
-DecisionTree::GraphCollection::GraphCollection(Go::Board *board)
+DecisionTree::GraphCollection::GraphCollection(GraphTypes types, Go::Board *board)
 {
   this->board = board;
 
-  stoneNone = new DecisionTree::StoneGraph(board);
+  if (types.stoneNone)
+  {
+    stoneNone = new DecisionTree::StoneGraph(board);
+  }
+  else
+    stoneNone = NULL;
 
-  stoneChain = new DecisionTree::StoneGraph(board);
-  stoneChain->compressChain();
+  if (types.stoneChain)
+  {
+    stoneChain = new DecisionTree::StoneGraph(board);
+    stoneChain->compressChain();
+  }
+  else
+    stoneChain = NULL;
 
-  intersectionNone = new DecisionTree::IntersectionGraph(board);
+  if (types.intersectionNone)
+  {
+    intersectionNone = new DecisionTree::IntersectionGraph(board);
+  }
+  else
+    intersectionNone = NULL;
 
-  intersectionChain = new DecisionTree::IntersectionGraph(board);
-  intersectionChain->compressChain();
+  if (types.intersectionChain)
+  {
+    intersectionChain = new DecisionTree::IntersectionGraph(board);
+    intersectionChain->compressChain();
+  }
+  else
+    intersectionChain = NULL;
 
-  intersectionEmpty = new DecisionTree::IntersectionGraph(board);
-  intersectionEmpty->compressEmpty();
+  if (types.intersectionEmpty)
+  {
+    intersectionEmpty = new DecisionTree::IntersectionGraph(board);
+    intersectionEmpty->compressEmpty();
+  }
+  else
+    intersectionEmpty = NULL;
 
-  intersectionBoth = new DecisionTree::IntersectionGraph(board);
-  intersectionBoth->compressEmpty();
-  intersectionBoth->compressChain();
+  if (types.intersectionBoth || types.intersectionEmpty || types.intersectionChain || types.intersectionNone) // also used to update regions for other types
+  {
+    intersectionBoth = new DecisionTree::IntersectionGraph(board);
+    intersectionBoth->compressEmpty();
+    intersectionBoth->compressChain();
 
-  intersectionBoth->updateRegionSizes(intersectionNone,intersectionChain,intersectionEmpty);
+    intersectionBoth->updateRegionSizes(intersectionNone,intersectionChain,intersectionEmpty);
+  }
+  else
+    intersectionBoth = NULL;
 
   // fprintf(stderr,"stoneNone:\n%s\n",stoneNone->toString().c_str());
   // fprintf(stderr,"stoneChain:\n%s\n",stoneChain->toString().c_str());

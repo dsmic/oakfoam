@@ -1251,7 +1251,7 @@ void Playout::getFeatureMove(Worker::Settings *settings, Go::Board *board, Go::C
   Go::ObjectBoard<int> *cfglastdist=NULL;
   Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
   params->engine->getFeatures()->computeCFGDist(board,&cfglastdist,&cfgsecondlastdist);
-  DecisionTree::GraphCollection *graphs = new DecisionTree::GraphCollection(board);
+  DecisionTree::GraphCollection *graphs = new DecisionTree::GraphCollection(DecisionTree::getCollectionTypes(params->engine->getDecisionTrees()),board);
 
   Go::ObjectBoard<float> *gammas = new Go::ObjectBoard<float>(board->getSize());
   float totalgamma=params->engine->getFeatures()->getBoardGammas(board,cfglastdist,cfgsecondlastdist,graphs,col,gammas);

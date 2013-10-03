@@ -1339,7 +1339,7 @@ bool Tree::expandLeaf(Worker::Settings *settings)
     Go::ObjectBoard<int> *cfglastdist=NULL;
     Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
     params->engine->getFeatures()->computeCFGDist(startboard,&cfglastdist,&cfgsecondlastdist);
-    DecisionTree::GraphCollection *graphs = new DecisionTree::GraphCollection(startboard);
+    DecisionTree::GraphCollection *graphs = new DecisionTree::GraphCollection(DecisionTree::getCollectionTypes(params->engine->getDecisionTrees()),startboard);
 
     //int now_unpruned=this->getUnprunedNum();
     //fprintf(stderr,"debugging %d\n",now_unpruned);

@@ -119,10 +119,20 @@ class DecisionTree
         void updateRegionSizes(std::map<int,unsigned int> *lookupMap, IntersectionGraph *other);
     };
 
+    struct GraphTypes
+    {
+      bool stoneNone;
+      bool stoneChain;
+      bool intersectionNone;
+      bool intersectionChain;
+      bool intersectionEmpty;
+      bool intersectionBoth;
+    };
+
     class GraphCollection
     {
       public:
-        GraphCollection(Go::Board *board);
+        GraphCollection(GraphTypes types, Go::Board *board);
         ~GraphCollection();
 
         Go::Board *getBoard() { return board; };
@@ -168,6 +178,7 @@ class DecisionTree
     static void setCollectionLeafWeight(std::list<DecisionTree*> *trees, int id, float w);
     static void collectionUpdateDescent(std::list<DecisionTree*> *trees, GraphCollection *graphs, Go::Move winmove);
     static std::string getCollectionLeafPath(std::list<DecisionTree*> *trees, int id);
+    static GraphTypes getCollectionTypes(std::list<DecisionTree*> *trees);
   
   private:
     class Range
