@@ -140,12 +140,23 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","test_p12",&(params->test_p12),0.0);
   params->addParameter("playout","test_p13",&(params->test_p13),1.0);
   params->addParameter("playout","test_p14",&(params->test_p14),1.0);
-  params->addParameter("playout","test_p15",&(params->test_p15),1.0);
+  params->addParameter("playout","test_p15",&(params->test_p15),0.0);
   params->addParameter("playout","test_p16",&(params->test_p16),0.0);
   params->addParameter("playout","test_p17",&(params->test_p17),0.0);
   params->addParameter("playout","test_p18",&(params->test_p18),0.0);
   params->addParameter("playout","test_p19",&(params->test_p19),1.0);
   params->addParameter("playout","test_p20",&(params->test_p20),0.0);
+  params->addParameter("playout","test_p20",&(params->test_p20),0.0);
+  params->addParameter("playout","test_p21",&(params->test_p21),0.0);
+  params->addParameter("playout","test_p22",&(params->test_p22),1.0);
+  params->addParameter("playout","test_p23",&(params->test_p23),0.0);
+  params->addParameter("playout","test_p24",&(params->test_p24),1.0);
+  params->addParameter("playout","test_p25",&(params->test_p25),0.0);
+  params->addParameter("playout","test_p26",&(params->test_p26),0.0);
+  params->addParameter("playout","test_p27",&(params->test_p27),0.0);
+  params->addParameter("playout","test_p28",&(params->test_p28),0.0);
+  params->addParameter("playout","test_p29",&(params->test_p29),0.0);
+  params->addParameter("playout","test_p30",&(params->test_p30),0.0);
  
   params->addParameter("tree","ucb_c",&(params->ucb_c),UCB_C);
   params->addParameter("tree","ucb_init",&(params->ucb_init),UCB_INIT);
@@ -198,6 +209,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("tree","uct_criticality_rave_unprune_factor",&(params->uct_criticality_rave_unprune_factor),UCT_CRITICALITY_RAVE_UNPRUNE_FACTOR);
   params->addParameter("tree","uct_prior_unprune_factor",&(params->uct_prior_unprune_factor),UCT_PRIOR_UNPRUNE_FACTOR);
   params->addParameter("tree","uct_rave_unprune_factor",&(params->uct_rave_unprune_factor),UCT_RAVE_UNPRUNE_FACTOR);
+  params->addParameter("tree","uct_rave_other_unprune_factor",&(params->uct_rave_other_unprune_factor),UCT_RAVE_OTHER_UNPRUNE_FACTOR);
   params->addParameter("tree","uct_earlyrave_unprune_factor",&(params->uct_earlyrave_unprune_factor),UCT_EARLYRAVE_UNPRUNE_FACTOR);
   params->addParameter("tree","uct_rave_unprune_decay",&(params->uct_rave_unprune_decay),UCT_RAVE_UNPRUNE_DECAY);
   params->addParameter("tree","uct_rave_unprune_multiply",&(params->uct_rave_unprune_multiply),UCT_RAVE_UNPRUNE_MULTIPLY);
@@ -2152,13 +2164,14 @@ void Engine::gtpLoadCircPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command
   
   if (success)
   {
-    #ifdef HAVE_MPI
-      if (me->mpirank==0)
-      {
-        me->mpiBroadcastCommand(MPICMD_LOADFEATUREGAMMAS);
-        me->mpiBroadcastString(filename);
-      }
-    #endif
+    //MPI code missing here!!!!
+    //#ifdef HAVE_MPI
+    //  if (me->mpirank==0)
+    //  {
+    //    me->mpiBroadcastCommand(MPICMD_LOADFEATUREGAMMAS);
+    //    me->mpiBroadcastString(filename);
+    //  }
+    //#endif
     
     gtpe->getOutput()->startResponse(cmd);
     gtpe->getOutput()->printf("loaded circpatterns file: %s",filename.c_str());
@@ -5129,10 +5142,13 @@ void Engine::doSlowUpdate()
             Go::Color othercol=Go::otherColor(col);
             
             bool founddead=false;
-            foreach_adjacent(pos,p,{
+            if (pos>=0)
+            {
+              foreach_adjacent(pos,p,{
               if (currentboard->getColor(p)==othercol && !currentboard->isAlive(territorymap,params->territory_threshold,p))
                 founddead=true;
-            });
+              });
+            }
             
             if (founddead)
             {

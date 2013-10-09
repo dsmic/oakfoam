@@ -37,6 +37,8 @@ Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p) : params(
   pruned=false;
   prunedchildren=0;
   gamma=0;
+  gamma_local_part=0;
+  stones_around=0;
   childrentotalgamma=0;
   maxchildgamma=0;
   unprunenextchildat=0;
@@ -485,13 +487,16 @@ float Tree::getVal(bool skiprave) const
     //  fprintf(stderr,"%5.0f %5.0f %5.2f\n",raveplayouts,playouts,alpha);
     //float alpha=exp(-pow((float)playouts/params->rave_moves,params->test_p1));
     //float alpha=1.0/pow(playouts*params->test_p6+params->test_p7,params->test_p8);
+    float rave_here=(1-params->test_p26)*this->getRAVERatio()+params->test_p26*this->getRAVERatioOther();
+    if (raveplayoutsother==0)
+      rave_here=this->getRAVERatio();
     if (alpha<=0)
       return this->getRatio();
     else if (alpha>=1)
-      return this->getRAVERatio();
+      return rave_here;
     else
       //return this->getEARLYRAVERatio()*alpha + this->getRatio()*(1-alpha);
-      return this->getRAVERatio()*alpha + this->getRatio()*(1-alpha);
+      return rave_here*alpha + this->getRatio()*(1-alpha);
   }
 }
 
@@ -574,7 +579,7 @@ float Tree::getUrgency(bool skiprave) const
   if (params->test_p3>0)
     val-=params->test_p3*this->getScoreSD()/params->board_size/params->board_size;
   
-  if (params->uct_criticality_urgency_factor>0 && (params->uct_criticality_siblings?parent->playouts:playouts)>(params->uct_criticality_min_playouts))
+  if (params->uct_criticality_urgency_factor>0 && ((params->uct_criticality_siblings||params->test_p25>0)?parent->playouts:playouts)>(params->uct_criticality_min_playouts))
   {
     if (params->uct_criticality_urgency_decay>0.0)
       val+=params->uct_criticality_urgency_factor*this->getCriticality()*exp(-(float)playouts*params->uct_criticality_urgency_decay);// /pow((playouts+1),params->uct_criticality_urgency_decay); //added log 01.1.2013
@@ -834,15 +839,16 @@ void Tree::unPruneNextChild()
         mean=sum/num;
     }
     //float unprune_select_p=(float)rand()/RAND_MAX;
+    float local_prob=(float)rand()/RAND_MAX;
     for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
     {
       if ((*iter)->isPrimary() && !(*iter)->isSuperkoViolation())
       {
         if ((*iter)->isPruned())
         {
-          if ((*iter)->getUnPruneFactor()>bestfactor || bestchild==NULL)
+          if ((*iter)->getUnPruneFactor(moveValues,mean,num,local_prob)>bestfactor || bestchild==NULL)
           {
-            bestfactor=(*iter)->getUnPruneFactor(moveValues,mean,num);
+            bestfactor=(*iter)->getUnPruneFactor(moveValues,mean,num,local_prob);
             bestchild=(*iter);
           }
           //  fprintf(stderr,"%s %5.3f %5.3f (%5.0f) %5.3f",(*iter)->getMove().toString(params->board_size).c_str(),(*iter)->getUnPruneFactor(),(*iter)->getRAVERatio(),(*iter)->getRAVEPlayouts(),(*iter)->getFeatureGamma());
@@ -925,6 +931,7 @@ void Tree::updateUnPruneAt()
   //float worstfactor=1e20;
   float sumunpruned=0;
   int   numunpruned=0;
+  float local_prob=(float)rand()/RAND_MAX;
   if (params->test_p16>0)
   {
     for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
@@ -933,12 +940,12 @@ void Tree::updateUnPruneAt()
       {
         if ((*iter)->isPruned())
         {
-          if ((*iter)->getUnPruneFactor()>bestfactor)
-            bestfactor=(*iter)->getUnPruneFactor();
+          if ((*iter)->getUnPruneFactor(NULL,0,0,local_prob)>bestfactor)
+            bestfactor=(*iter)->getUnPruneFactor(NULL,0,0,local_prob);
         }
         else
         {
-          sumunpruned+=(*iter)->getUnPruneFactor();
+          sumunpruned+=(*iter)->getUnPruneFactor(NULL,0,0,local_prob);
           numunpruned++;
           //if ((*iter)->getUnPruneFactor()<worstfactor)
           //  worstfactor=(*iter)->getUnPruneFactor();
@@ -989,12 +996,17 @@ void Tree::unPruneNow()
   unprunemutex.unlock();
 }
 
-float Tree::getUnPruneFactor(float *moveValues,float mean, int num) const
+float Tree::getUnPruneFactor(float *moveValues,float mean, int num, float prob_local) const
 {
-  float factor=gamma/parent->getChildrenTotalFeatureGamma();
+  float local_part=1;
+  if (params->test_p23 > 0 && prob_local > 0)
+    local_part=(gamma_local_part-1.0)*(1.0-pow(prob_local,params->test_p23))+1.0;
+
+  float factor=gamma/parent->getChildrenTotalFeatureGamma()/local_part;
+  
   if (params->uct_rave_unprune_decay>0)
   {
-    factor=log((1000.0*gamma*params->uct_rave_unprune_decay)/(parent->raveplayouts+params->uct_rave_unprune_decay)+1.0); 
+    factor=log((1000.0*gamma/local_part*params->uct_rave_unprune_decay)/(parent->raveplayouts+params->uct_rave_unprune_decay)+1.0); 
     //ELO tests
     //
     // factor=gamma/parent->getChildrenTotalFeatureGamma()*exp(-parent->raveplayouts*params->uct_rave_unprune_decay);
@@ -1025,7 +1037,7 @@ float Tree::getUnPruneFactor(float *moveValues,float mean, int num) const
     
   }
   //fprintf(stderr,"unprunefactore %f %f %f\n",gamma,parent->raveplayouts,factor);
-  if (params->uct_criticality_unprune_factor>0 && (params->uct_criticality_siblings?parent->playouts:playouts)>(params->uct_criticality_min_playouts))
+  if (params->uct_criticality_unprune_factor>0 && ((params->uct_criticality_siblings||params->test_p25>0)?parent->playouts:playouts)>(params->uct_criticality_min_playouts))
   {
     if (params->uct_criticality_unprune_multiply)
       factor*=(1+params->uct_criticality_unprune_factor*this->getCriticality());
@@ -1037,12 +1049,20 @@ float Tree::getUnPruneFactor(float *moveValues,float mean, int num) const
     //fprintf(stderr,"prior wins? %f %f %f\n",wins,playouts,this->getRatio());
     factor*=wins*params->uct_prior_unprune_factor;
   }
-  if (params->uct_rave_unprune_factor>0 && this->getRAVEPlayouts ()>1)
+  if (params->uct_rave_unprune_factor>0 && this->getRAVEPlayouts ()>params->test_p24)
   {
     if (params->uct_rave_unprune_multiply)
       factor*=(1+params->uct_rave_unprune_factor*this->getRAVERatio());
     else
       factor+=params->uct_rave_unprune_factor*this->getRAVERatio();
+  }
+
+  if (params->uct_rave_other_unprune_factor>0 && this->getRAVEPlayoutsOther()>1)
+  {
+    if (params->uct_rave_unprune_multiply)
+      factor*=(1+params->uct_rave_other_unprune_factor*this->getRAVERatioOther());
+    else
+      factor+=params->uct_rave_other_unprune_factor*this->getRAVERatioOther();
   }
 
 
@@ -1056,12 +1076,17 @@ float Tree::getUnPruneFactor(float *moveValues,float mean, int num) const
   //optimized_settings +='param uct_area_owner_factor_a 2.8\n'
   //optimized_settings +='param uct_area_owner_factor_b 0.1\n'
   //optimized_settings +='param uct_area_owner_factor_c 1.3\n'
-  factor+=params->uct_area_owner_factor_a*exp(-pow(params->uct_area_owner_factor_c*(terrOwn-params->uct_area_owner_factor_b),2));
+
+  float StoneDensity=1.0+(float)stones_around*params->test_p20;
+  
+  if (params->test_p20==0.0) StoneDensity=1;
+  
+  factor+=StoneDensity*params->uct_area_owner_factor_a*exp(-pow(params->uct_area_owner_factor_c*(terrOwn-params->uct_area_owner_factor_b),2));
 
   //factor+=(params->uct_area_owner_factor_a+params->uct_area_owner_factor_b*terrOwn+params->uct_area_owner_factor_c*terrOwn*terrOwn)*exp(-pow(params->test_p1*terrOwn,2));
   float terrCovar=params->engine->getCorrelation(move.getPosition());
   if (terrCovar <0) terrCovar=0;
-  factor+=params->test_p1*terrCovar;
+  factor+=params->test_p20*params->test_p1*terrCovar;
   
   if (params->uct_earlyrave_unprune_factor>0 && this->getEARLYRAVEPlayouts ()>1)
   {
@@ -1440,8 +1465,14 @@ bool Tree::expandLeaf(Worker::Settings *settings)
     {
       if ((*iter)->isPrimary())
       {
-        float gamma=params->engine->getFeatures()->getMoveGamma(startboard,cfglastdist,cfgsecondlastdist,(*iter)->getMove(),true,true);
+        float gamma_local_part=0;
+        float gamma=params->engine->getFeatures()->getMoveGamma(startboard,cfglastdist,cfgsecondlastdist,(*iter)->getMove(),true,true,&gamma_local_part);
         (*iter)->setFeatureGamma(gamma);
+        (*iter)->setFeatureGammaLocalPart(gamma_local_part);
+        Pattern::Circular pattcirc = Pattern::Circular(params->engine->getFeatures()->getCircDict(),startboard,(*iter)->getMove().getPosition(),5);
+        int NumNonOffboard=pattcirc.countNonOffboard(params->engine->getFeatures()->getCircDict());
+        int NumStones=pattcirc.countStones(params->engine->getFeatures()->getCircDict());
+        (*iter)->setStonesAround((float)NumStones/NumNonOffboard);
         //if ((*iter)->getMove().toString(params->board_size).compare("B:E1")==0)
         //  fprintf(stderr,"move %s %f\n",(*iter)->getMove().toString(params->board_size).c_str(),gamma);
       }
@@ -1575,6 +1606,11 @@ void Tree::setFeatureGamma(float g)
     if (gamma>(parent->maxchildgamma))
       parent->maxchildgamma=gamma;
   }
+}
+
+void Tree::setStonesAround(float g)
+{
+  stones_around=g;
 }
 
 void Tree::pruneSuperkoViolations()
@@ -1712,7 +1748,7 @@ void Tree::updateCriticality(Go::Board *board, Go::Color wincol)
     return;
   //fprintf(stderr,"[crit_up]: %d %d\n",this->isRoot(),params->uct_criticality_siblings);
   
-  if (params->uct_criticality_siblings)
+  if (params->uct_criticality_siblings||params->test_p25>0) //force slibings here, even if in criticality turned off:)
   {
     for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
     {
@@ -1731,7 +1767,7 @@ void Tree::updateCriticality(Go::Board *board, Go::Color wincol)
     return;
   else
   {
-    if (!(params->uct_criticality_siblings) && move.isNormal())
+    if (!(params->uct_criticality_siblings||params->test_p25>0) && move.isNormal())
     {
       int pos=move.getPosition();
       bool black=(board->getScoredOwner(pos)==Go::BLACK);

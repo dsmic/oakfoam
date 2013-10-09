@@ -318,6 +318,8 @@ namespace Pattern
       
       /** Count the number of stones to get an idea of the uniqunes of the pattern */
       int countStones(Pattern::CircularDictionary *dict);
+      int countNonEmpty(Pattern::CircularDictionary *dict);
+      int countNonOffboard(Pattern::CircularDictionary *dict);
       
       /** Determine if two patterns are equal. */
       bool operator==(const Pattern::Circular other) const;

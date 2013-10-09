@@ -189,7 +189,7 @@ class Parameters
     float test_p9;
     float test_p10;
 
-     float test_p11;
+    float test_p11;
     float test_p12;
     float test_p13;
     float test_p14;
@@ -199,6 +199,17 @@ class Parameters
     float test_p18;
     float test_p19;
     float test_p20;
+    
+    float test_p21;
+    float test_p22;
+    float test_p23;
+    float test_p24;
+    float test_p25;
+    float test_p26;
+    float test_p27;
+    float test_p28;
+    float test_p29;
+    float test_p30;
     
 
     
@@ -397,6 +408,7 @@ class Parameters
      */
     float uct_prior_unprune_factor;
     float uct_rave_unprune_factor;
+    float uct_rave_other_unprune_factor;
     float uct_earlyrave_unprune_factor;
     float uct_rave_unprune_decay;
     /** Parameter for RAVE unpruning.

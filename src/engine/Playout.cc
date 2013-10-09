@@ -134,7 +134,7 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
   std::vector<int> poolcrit;
   Go::Color poolcol=Go::EMPTY;
   float *critarray=NULL;
-  if (params->playout_criticality_random_n>0)
+  if (params->playout_criticality_random_n>0 || params->test_p15>0)
   {
     Tree *pooltree=playouttree;
     critarray=new float[board->getPositionMax()];
@@ -1047,13 +1047,8 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
         this->replaceWithApproachMove(settings,board,col,p);
       if (board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes))
       {
-        // only circular pattern
         float v=critarray[p];
         
-        if (col==Go::WHITE)
-          v=-v;
-        v+=params->playout_random_weight_territory_f1;  //shift the center
-        v=params->playout_random_weight_territory_f0*v + exp(-params->playout_random_weight_territory_f*v*v);
         if (v>bestvalue)
         {
           patternmove=p;
@@ -1066,10 +1061,10 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
       move=Go::Move(col,patternmove);
       move.set_useforlgrf (true);
       if (params->debug_on)
-        gtpe->getOutput()->printfDebug("[playoutmove]: %s random quick-pick with territory\n",move.toString(board->getSize()).c_str());
+        gtpe->getOutput()->printfDebug("[playoutmove]: %s random quick-pick with criticakity\n",move.toString(board->getSize()).c_str());
       if (reason!=NULL)
-        *reason="random quick-pick with territory";
-      params->engine->statisticsPlus(Engine::RANDOM_QUICK_TERRITORY);
+        *reason="random quick-pick with criticakity";
+      //params->engine->statisticsPlus(Engine::RANDOM_QUICK_TERRITORY);
       return;
     }
   }
@@ -1089,13 +1084,19 @@ if (params->playout_random_weight_territory_n>0)
     {
       // only circular pattern
       float v=params->engine->getTerritoryMap()->getPositionOwner(p);
-
+        
       if (col==Go::WHITE)
         v=-v;
       v+=params->playout_random_weight_territory_f1;  //shift the center
-      v=params->playout_random_weight_territory_f0*v + exp(-params->playout_random_weight_territory_f*v*v);
+      v=params->playout_random_weight_territory_f0*v + 1.0 + params->test_p22*exp(-params->playout_random_weight_territory_f*v*v);
       if (params->test_p18>0)
         v+=params->test_p18*params->engine->getProbabilityMoveAt(p);
+      if (params->test_p15>0 && critarray!=NULL)
+        v+=params->test_p15*critarray[p];
+      if (params->test_p11>0 && (board->getDistanceToBorder(p)==1 || board->getDistanceToBorder(p)==2))
+        v+=params->test_p11;
+      if (params->test_p21>0 && board->surroundingEmpty(p)==8)
+        v+=params->test_p21;
       if (v>bestvalue)
       {
         patternmove=p;
@@ -1503,8 +1504,10 @@ void Playout::getPatternMove(Worker::Settings *settings, Go::Board *board, Go::C
         }
         else
         {
-          if (rand->getRandomReal()*params->playout_patterns_gammas_p < patterngammas->getGamma(pattern))
+          pattern=Pattern::ThreeByThree::smallestEquivalent(pattern);
+          if (patterngammas->hasGamma(pattern) && params->test_p6*rand->getRandomReal()+params->playout_patterns_gammas_p < patterngammas->getGamma(pattern))
           {
+            //fprintf(stderr,"patterngamma %f\n",patterngammas->getGamma(pattern));
             patternmoves[patternmovescount]=p;
             patternmovescount++;
           }
@@ -1755,7 +1758,8 @@ void Playout::getLast2LibAtariMove(Worker::Settings *settings, Go::Board *board,
                 if (board->validMove(Go::Move(col,p)))
                 {
                   float lvl=this->getTwoLibertyMoveLevel(board,Go::Move(col,p),group); //*(params->test_p10+ rand->getRandomReal())
-                  //fprintf(stderr,"1 atlevel %s %d\n",Go::Move(col,p).toString (19).c_str(),lvl);
+                  if (params->debug_on)
+                    gtpe->getOutput()->printfDebug("1 atlevel %s %f\n",Go::Move(col,p).toString (size).c_str(),lvl);
                   if (lvl>0 && lvl>=bestlevel)
                   {
                     if (lvl>bestlevel)
@@ -1771,7 +1775,8 @@ void Playout::getLast2LibAtariMove(Worker::Settings *settings, Go::Board *board,
                 if (board->validMove(Go::Move(col,s)))
                 {
                   float lvl=this->getTwoLibertyMoveLevel(board,Go::Move(col,s),group); //*(params->test_p10+ rand->getRandomReal())
-                  //fprintf(stderr,"2 atlevel %s %d\n",Go::Move(col,s).toString (19).c_str(),lvl);
+                  if (params->debug_on)
+                    gtpe->getOutput()->printfDebug("2 atlevel %s %f\n",Go::Move(col,s).toString (size).c_str(),lvl);
                   if (lvl>0 && lvl>=bestlevel)
                   {
                     if (lvl>bestlevel)
@@ -1800,7 +1805,8 @@ void Playout::getLast2LibAtariMove(Worker::Settings *settings, Go::Board *board,
       if (!board->isSelfAtari(Go::Move(col,possiblemoves[i])))
         move=Go::Move(col,possiblemoves[i]);
       
-      //fprintf(stderr,"2libok %s\n",move.toString(size).c_str());
+       if (params->debug_on)
+          gtpe->getOutput()->printfDebug("2libok %s\n",move.toString(size).c_str());
       //board->isSelfAtariOfSize(Go::Move(col,possiblemoves[i]),params->playout_avoid_selfatari_size);
     }
   }
@@ -2500,7 +2506,7 @@ float Playout::getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group
 {
   if (params->playout_last2libatari_complex)
   {
-    if (!board->isSelfAtari(move) && group->numOfStones()>1) //a single ladder block at the boards was used as 2 lib string, this should not harm, as single stones should not be extended by this rule
+    if (!board->isSelfAtari(move) && (group->numOfStones()>1||board->isAtari(move))) //a single ladder block at the boards was used as 2 lib string, this should not harm, as single stones should not be extended by this rule
     {
       if (board->isAtari(move))
       {

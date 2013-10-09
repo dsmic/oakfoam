@@ -511,6 +511,32 @@ int Pattern::Circular::countStones(Pattern::CircularDictionary *dict)
   return numStones;
 }
       
+int Pattern::Circular::countNonEmpty(Pattern::CircularDictionary *dict)
+{
+  int numStones=0;
+  int l=dict->getBaseOffset(size+1);
+     
+  for (int i=0;i<l;i++)
+  {
+    if (this->getColor(i)!=Go::EMPTY) numStones++;
+  }
+
+  return numStones;
+}
+      
+int Pattern::Circular::countNonOffboard(Pattern::CircularDictionary *dict)
+{
+  int numStones=0;
+  int l=dict->getBaseOffset(size+1);
+     
+  for (int i=0;i<l;i++)
+  {
+    if (this->getColor(i)!=Go::OFFBOARD) numStones++;
+  }
+
+  return numStones;
+}
+      
 int Pattern::Circular::hashColor(Go::Color col)
 {
   switch (col)

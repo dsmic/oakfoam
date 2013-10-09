@@ -1321,23 +1321,26 @@ void Features::learnFeatureGamma(Features::FeatureClass featclass, unsigned int 
   }
 }
 
-float Features::getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove, bool usecircularpatterns) const
+float Features::getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove, bool usecircularpatterns, float *gamma_local_part) const
 {
   float g=1.0;
   
   if (checkforvalidmove && !board->validMove(move))
     return 0;
-  
+
+  g*=this->getFeatureGamma(Features::LASTDIST,this->matchFeatureClass(Features::LASTDIST,board,cfglastdist,cfgsecondlastdist,move,false));
+  g*=this->getFeatureGamma(Features::SECONDLASTDIST,this->matchFeatureClass(Features::SECONDLASTDIST,board,cfglastdist,cfgsecondlastdist,move,false));
+  g*=this->getFeatureGamma(Features::CFGLASTDIST,this->matchFeatureClass(Features::CFGLASTDIST,board,cfglastdist,cfgsecondlastdist,move,false));
+  g*=this->getFeatureGamma(Features::CFGSECONDLASTDIST,this->matchFeatureClass(Features::CFGSECONDLASTDIST,board,cfglastdist,cfgsecondlastdist,move,false));
+
+  if (gamma_local_part!=NULL)
+    *gamma_local_part=g;
   g*=this->getFeatureGamma(Features::PASS,this->matchFeatureClass(Features::PASS,board,cfglastdist,cfgsecondlastdist,move,false));
   g*=this->getFeatureGamma(Features::CAPTURE,this->matchFeatureClass(Features::CAPTURE,board,cfglastdist,cfgsecondlastdist,move,false));
   g*=this->getFeatureGamma(Features::EXTENSION,this->matchFeatureClass(Features::EXTENSION,board,cfglastdist,cfgsecondlastdist,move,false));
   g*=this->getFeatureGamma(Features::SELFATARI,this->matchFeatureClass(Features::SELFATARI,board,cfglastdist,cfgsecondlastdist,move,false));
   g*=(1.0+params->test_p10)*this->getFeatureGamma(Features::ATARI,this->matchFeatureClass(Features::ATARI,board,cfglastdist,cfgsecondlastdist,move,false));
   g*=this->getFeatureGamma(Features::BORDERDIST,this->matchFeatureClass(Features::BORDERDIST,board,cfglastdist,cfgsecondlastdist,move,false));
-  g*=this->getFeatureGamma(Features::LASTDIST,this->matchFeatureClass(Features::LASTDIST,board,cfglastdist,cfgsecondlastdist,move,false));
-  g*=this->getFeatureGamma(Features::SECONDLASTDIST,this->matchFeatureClass(Features::SECONDLASTDIST,board,cfglastdist,cfgsecondlastdist,move,false));
-  g*=this->getFeatureGamma(Features::CFGLASTDIST,this->matchFeatureClass(Features::CFGLASTDIST,board,cfglastdist,cfgsecondlastdist,move,false));
-  g*=this->getFeatureGamma(Features::CFGSECONDLASTDIST,this->matchFeatureClass(Features::CFGSECONDLASTDIST,board,cfglastdist,cfgsecondlastdist,move,false));
   g*=this->getFeatureGamma(Features::PATTERN3X3,this->matchFeatureClass(Features::PATTERN3X3,board,cfglastdist,cfgsecondlastdist,move,false));
   if (circlevels->size()>0)
     g*=this->getFeatureGamma(Features::CIRCPATT,this->matchFeatureClass(Features::CIRCPATT,board,cfglastdist,cfgsecondlastdist,move,false));
@@ -1743,7 +1746,8 @@ bool Features::saveGammaFile(std::string filename)
     
   for (i=0;i<PATTERN_3x3_GAMMAS;i++) if (patterngammas->getGamma (i)>0) {fout<<"pattern3x3:0x"<<std::hex<<std::setw(4)<<std::setfill('0')<<i<<" "<<patterngammas->getGamma (i)<<" \n";};
   std::map<unsigned int,std::string>::iterator it;
-  for (i=0;i<circstrings->size();i++)
+//  fprintf(stderr,"circsize %d\n",circstrings->size());
+  for (i=0;i+1<circstrings->size();i++)  //+1 is a work around, empty is not correct
   {
     //int circid=it->first;
     fout<<"circpatt:"<<(*circstrings)[i]<<" "<<(*circgammas)[i]<<" \n";

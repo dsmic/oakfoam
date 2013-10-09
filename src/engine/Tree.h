@@ -88,6 +88,9 @@ class Tree
     
     /** Set the feature gamma value for this node. */
     void setFeatureGamma(float g);
+    void setFeatureGammaLocalPart(float g) {gamma_local_part=g;};
+    void setStonesAround(float g);
+    int getStonesAround() {return stones_around;};
     /** Get the feature gamma value for this node. */
     float getFeatureGamma() const { return gamma; };
     /** Get the sum of the children's gamma values. */
@@ -120,7 +123,7 @@ class Tree
     /** Get the ratio of wins to playouts. */
     float getRatio() const;
     /** Get the unprune factor, used for determining the order to unprune nodes in. */
-    float getUnPruneFactor(float *moveValues=NULL, float mean=0, int num=0) const;
+    float getUnPruneFactor(float *moveValues=NULL, float mean=0, int num=0, float prob_local=0) const;
     /** Get the score mean. */
     float getScoreMean() const;
     /** Get the score standard deviation. */
@@ -298,7 +301,8 @@ class Tree
     int unprunednum;
     unsigned int prunedchildren;
     unsigned int unprunedchildren;
-    float gamma,childrentotalgamma,maxchildgamma;
+    float gamma,childrentotalgamma,maxchildgamma,gamma_local_part;
+    float stones_around;
     float lastunprune,unprunenextchildat;
     float unprunebase;
     int ownedblack,ownedwhite,ownedwinner;
