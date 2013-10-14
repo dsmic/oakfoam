@@ -343,6 +343,8 @@ class DecisionTree
     static float combineNodeWeights(std::list<Node*> *nodes);
     static int getDistance(Go::Board *board, int p1, int p2);
     static float computeQueryQuality(Parameters *params, int d0, int w0, int d1, int w1, int d2 = -1, int w2 = -1, int d3 = -1, int w3 = -1);
+    static float sortedQueryQuality(Parameters *params, int d0, int w0, int d1, int w1, int d2 = -1, int w2 = -1, int d3 = -1, int w3 = -1);
+    static void swapChildren(int &d0, int &w0, float &r0, int &d1, int &w1, float &r1);
 
     static std::string stripWhitespace(std::string in);
     static std::string stripComments(std::string in);

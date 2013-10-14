@@ -1437,6 +1437,49 @@ std::list<DecisionTree::Node*> *DecisionTree::getIntersectionLeafNodes(DecisionT
   }
 }
 
+void DecisionTree::swapChildren(int &d0, int &w0, float &r0, int &d1, int &w1, float &r1)
+{
+  int ti = d0;
+  d0 = d1;
+  d1 = ti;
+
+  ti = w0;
+  w0 = w1;
+  w1 = ti;
+
+  float tf = r0;
+  r0 = r1;
+  r1 = tf;
+}
+
+float DecisionTree::sortedQueryQuality(Parameters *params, int d0, int w0, int d1, int w1, int d2, int w2, int d3, int w3)
+{
+  float r0 = (d0 <= 0) ? -1 : ((float)w0) / d0;
+  float r1 = (d1 <= 0) ? -1 : ((float)w1) / d1;
+  float r2 = (d2 <= 0) ? -1 : ((float)w2) / d2;
+  float r3 = (d3 <= 0) ? -1 : ((float)w3) / d3;
+
+  // resolve r0
+  if (r0 < r1)
+    DecisionTree::swapChildren(d0,w0,r0,d1,w1,r1);
+  if (r2!=-1 && r0 < r2)
+    DecisionTree::swapChildren(d0,w0,r0,d2,w2,r2);
+  if (r3!=-1 && r0 < r3)
+    DecisionTree::swapChildren(d0,w0,r0,d3,w3,r3);
+
+  // resolve r1
+  if (r2!=-1 && r1 < r2)
+    DecisionTree::swapChildren(d1,w1,r1,d2,w2,r2);
+  if (r3!=-1 && r1 < r3)
+    DecisionTree::swapChildren(d1,w1,r1,d3,w3,r3);
+
+  // resolve r2
+  if (r2!=-1 && r3!=-1  && r2 < r3)
+    DecisionTree::swapChildren(d2,w2,r2,d3,w3,r3);
+
+  return DecisionTree::computeQueryQuality(params,d0,w0,d1,w1,d2,w2,d3,w3);
+}
+
 float DecisionTree::computeQueryQuality(Parameters *params, int d0, int w0, int d1, int w1, int d2, int w2, int d3, int w3)
 {
   int l0 = d0 - w0;
@@ -1454,13 +1497,38 @@ float DecisionTree::computeQueryQuality(Parameters *params, int d0, int w0, int 
   int L = l0 + l1 + ((l2==-1)?0:l2) + ((l3==-1)?0:l3);
   float R = (D <= 0) ? -1 : ((float)W) / D;
 
+  float pd0 = (d0 <= 0) ? -1 : ((float)d0) / D;
+  float pd1 = (d1 <= 0) ? -1 : ((float)d1) / D;
+  float pd2 = (d2 <= 0) ? -1 : ((float)d2) / D;
+  float pd3 = (d3 <= 0) ? -1 : ((float)d3) / D;
+
+  float pw0 = (d0 <= 0) ? -1 : ((float)w0) / W;
+  float pw1 = (d1 <= 0) ? -1 : ((float)w1) / W;
+  float pw2 = (d2 <= 0) ? -1 : ((float)w2) / W;
+  float pw3 = (d3 <= 0) ? -1 : ((float)w3) / W;
+
+  float pl0 = (d0 <= 0) ? -1 : ((float)l0) / L;
+  float pl1 = (d1 <= 0) ? -1 : ((float)l1) / L;
+  float pl2 = (d2 <= 0) ? -1 : ((float)l2) / L;
+  float pl3 = (d3 <= 0) ? -1 : ((float)l3) / L;
+
+  bool sorted = true;
+  if (r0 < r1)
+    sorted = false;
+  else if (r2!=-1 && r1 < r2)
+    sorted = false;
+  else if (r2!=-1 && r3!=-1 && r2 < r3)
+    sorted = false;
+
+  int C = 2 + (d2==-1?0:1) + (d3==-1?0:1);
+
   float q = -std::numeric_limits<float>::infinity();
   int dnz = (d0>0?1:0) + (d1>0?1:0) + (d2>0?1:0) + (d3>0?1:0);
   if (dnz >= 2) // must be at least 1 descent to 2 children
   {
     switch (params->dt_selection_policy)
     {
-      case Parameters::SP_WINLOSS:
+      case Parameters::SP_WIN_LOSS_SEPARATE:
         {
           if (W==0 || L==0) // must be some wins or losses to separate
             break;
@@ -1478,7 +1546,7 @@ float DecisionTree::computeQueryQuality(Parameters *params, int d0, int w0, int 
 
           break;
         }
-      case Parameters::SP_WEIGHTEDWINLOSS:
+      case Parameters::SP_WEIGHTED_WIN_LOSS_SEPARATE:
         {
           if (W==0 || L==0) // must be some wins or losses to separate
             break;
@@ -1486,17 +1554,288 @@ float DecisionTree::computeQueryQuality(Parameters *params, int d0, int w0, int 
           q = 0;
 
           if (d0 > 0)
-            q += ((float)d0)/D * fabs(r0 - R);
+            q += pd0 * fabs(r0 - R);
           if (d1 > 0)
-            q += ((float)d1)/D * fabs(r1 - R);
+            q += pd1 * fabs(r1 - R);
           if (d2 > 0)
-            q += ((float)d2)/D * fabs(r2 - R);
+            q += pd2 * fabs(r2 - R);
           if (d3 > 0)
-            q += ((float)d3)/D * fabs(r3 - R);
+            q += pd3 * fabs(r3 - R);
 
           break;
         }
-      case Parameters::SP_DESCENTS:
+      case Parameters::SP_WINRATE_ENTROPY:
+        {
+          if (W==0 || L==0) // must be some wins or losses to separate
+            break;
+
+          if (sorted)
+          {
+            q = 0;
+
+            if (C==2)
+              q = log(r0) + log(1 - r1);
+            else if (C==3)
+            {
+              float W1 = log(r0);
+              float W2 = W1 + log(r1);
+              float L1 = log(1 - r2);
+              float L2 = L1 + log(1 - r1);
+
+              q = W1 + L1;
+              if ((W1 + L2) > q)
+                q = W1 + L2;
+              if ((W2 + L1) > q)
+                q = W2 + L1;
+            }
+            else // C==4
+            {
+              float W1 = log(r0);
+              float W2 = W1 + log(r1);
+              float W3 = W2 + log(r2);
+              float L1 = log(1 - r3);
+              float L2 = L1 + log(1 - r2);
+              float L3 = L2 + log(1 - r1);
+
+              q = W1 + L1;
+              if ((W1 + L2) > q)
+                q = W1 + L2;
+              if ((W1 + L3) > q)
+                q = W1 + L3;
+              if ((W2 + L1) > q)
+                q = W2 + L1;
+              if ((W2 + L2) > q)
+                q = W2 + L2;
+              if ((W3 + L1) > q)
+                q = W3 + L1;
+            }
+          }
+          else
+            q = DecisionTree::sortedQueryQuality(params,d0,w0,d1,w1,d2,w2,d3,w3);
+
+          break;
+        }
+      case Parameters::SP_WEIGHTED_WINRATE_ENTROPY:
+        {
+          if (W==0 || L==0) // must be some wins or losses to separate
+            break;
+
+          if (sorted)
+          {
+            q = 0;
+
+            if (C==2)
+              q = pd0*log(r0) + pd1*log(1 - r1);
+            else if (C==3)
+            {
+              float W1 = pd0*log(r0);
+              float W2 = W1 + pd1*log(r1);
+              float L1 = pd2*log(1 - r2);
+              float L2 = L1 + pd1*log(1 - r1);
+
+              q = W1 + L1;
+              if ((W1 + L2) > q)
+                q = W1 + L2;
+              if ((W2 + L1) > q)
+                q = W2 + L1;
+            }
+            else // C==4
+            {
+              float W1 = pd0*log(r0);
+              float W2 = W1 + pd1*log(r1);
+              float W3 = W2 + pd2*log(r2);
+              float L1 = pd3*log(1 - r3);
+              float L2 = L1 + pd2*log(1 - r2);
+              float L3 = L2 + pd1*log(1 - r1);
+
+              q = W1 + L1;
+              if ((W1 + L2) > q)
+                q = W1 + L2;
+              if ((W1 + L3) > q)
+                q = W1 + L3;
+              if ((W2 + L1) > q)
+                q = W2 + L1;
+              if ((W2 + L2) > q)
+                q = W2 + L2;
+              if ((W3 + L1) > q)
+                q = W3 + L1;
+            }
+          }
+          else
+            q = DecisionTree::sortedQueryQuality(params,d0,w0,d1,w1,d2,w2,d3,w3);
+
+          break;
+        }
+      case Parameters::SP_CLASSIFICATION_SEPARATE:
+        {
+          if (W==0 || L==0) // must be some wins or losses to separate
+            break;
+
+          if (sorted)
+          {
+            q = 0;
+
+            if (C==2)
+              q = (float)(w0 + l1) / (d0 + d1);
+            else if (C==3)
+            {
+              float W1n = w0;
+              float W1d = d0;
+              float W2n = W1n + w1;
+              float W2d = W1d + d1;
+              float L1n = w2;
+              float L1d = d2;
+              float L2n = W1n + w1;
+              float L2d = W1d + d1;
+
+              q = (W1n + L1n)/(W1d + L1d);
+              if ((W1n + L2n)/(W1d + L2d) > q)
+                q = (W1n + L2n)/(W1d + L2d);
+              if ((W2n + L1n)/(W2d + L1d) > q)
+                q = (W2n + L1n)/(W2d + L1d);
+            }
+            else // C==4
+            {
+              float W1n = w0;
+              float W1d = d0;
+              float W2n = W1n + w1;
+              float W2d = W1d + d1;
+              float W3n = W2n + w2;
+              float W3d = W2d + d2;
+              float L1n = w3;
+              float L1d = d3;
+              float L2n = W1n + w2;
+              float L2d = W1d + d2;
+              float L3n = W2n + w1;
+              float L3d = W2d + d1;
+
+              q = (W1n + L1n)/(W1d + L1d);
+              if ((W1n + L2n)/(W1d + L2d) > q)
+                q = (W1n + L2n)/(W1d + L2d);
+              if ((W1n + L3n)/(W1d + L3d) > q)
+                q = (W1n + L3n)/(W1d + L3d);
+              if ((W2n + L1n)/(W2d + L1d) > q)
+                q = (W2n + L1n)/(W2d + L1d);
+              if ((W2n + L2n)/(W2d + L2d) > q)
+                q = (W2n + L2n)/(W2d + L2d);
+              if ((W3n + L1n)/(W3d + L1d) > q)
+                q = (W3n + L1n)/(W3d + L1d);
+            }
+          }
+          else
+            q = DecisionTree::sortedQueryQuality(params,d0,w0,d1,w1,d2,w2,d3,w3);
+
+          break;
+        }
+      case Parameters::SP_ROBUST_DESCENT_SPLIT:
+        {
+          q = 0;
+          float cr = 1.0 / C;
+
+          if (d0 >= 0)
+            q -= fabs(cr - pd0);
+          if (d1 >= 0)
+            q -= fabs(cr - pd1);
+          if (d2 >= 0)
+            q -= fabs(cr - pd2);
+          if (d3 >= 0)
+            q -= fabs(cr - pd3);
+
+          break;
+        }
+      case Parameters::SP_ROBUST_WIN_SPLIT:
+        {
+          q = 0;
+          float cr = 1.0 / C;
+
+          if (d0 >= 0)
+            q -= fabs(cr - pw0);
+          if (d1 >= 0)
+            q -= fabs(cr - pw1);
+          if (d2 >= 0)
+            q -= fabs(cr - pw2);
+          if (d3 >= 0)
+            q -= fabs(cr - pw3);
+
+          break;
+        }
+      case Parameters::SP_ROBUST_LOSS_SPLIT:
+        {
+          q = 0;
+          float cr = 1.0 / C;
+
+          if (d0 >= 0)
+            q -= fabs(cr - pl0);
+          if (d1 >= 0)
+            q -= fabs(cr - pl1);
+          if (d2 >= 0)
+            q -= fabs(cr - pl2);
+          if (d3 >= 0)
+            q -= fabs(cr - pl3);
+
+          break;
+        }
+      case Parameters::SP_ENTROPY_DESCENT_SPLIT:
+        {
+          q = 0;
+
+          if (d0 >= 0)
+            q -= pd0 * log(pd0);
+          if (d1 >= 0)
+            q -= pd1 * log(pd1);
+          if (d2 >= 0)
+            q -= pd2 * log(pd2);
+          if (d3 >= 0)
+            q -= pd3 * log(pd3);
+
+          break;
+        }
+      case Parameters::SP_ENTROPY_WIN_SPLIT:
+        {
+          q = 0;
+
+          if (d0 >= 0)
+            q -= pw0 * log(pw0);
+          if (d1 >= 0)
+            q -= pw1 * log(pw1);
+          if (d2 >= 0)
+            q -= pw2 * log(pw2);
+          if (d3 >= 0)
+            q -= pw3 * log(pw3);
+
+          break;
+        }
+      case Parameters::SP_ENTROPY_LOSS_SPLIT:
+        {
+          q = 0;
+
+          if (d0 >= 0)
+            q -= pl0 * log(pl0);
+          if (d1 >= 0)
+            q -= pl1 * log(pl1);
+          if (d2 >= 0)
+            q -= pl2 * log(pl2);
+          if (d3 >= 0)
+            q -= pl3 * log(pl3);
+
+          break;
+        }
+      case Parameters::SP_WINRATE_SPLIT:
+        {
+          q = 0;
+
+          if (d0 >= 0)
+            q -= fabs(r0 - R);
+          if (d1 >= 0)
+            q -= fabs(r1 - R);
+          if (d2 >= 0)
+            q -= fabs(r2 - R);
+          if (d3 >= 0)
+            q -= fabs(r3 - R);
+
+          break;
+        }
+      case Parameters::SP_DESCENT_SPLIT:
         {
           q = 1 - 2*fabs(((float)d0)/D - 0.5);
           break;

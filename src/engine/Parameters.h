@@ -588,9 +588,19 @@ class Parameters
     /** Query selection policies for growing decision trees. */
     enum QuerySelectionPolicy
     {
-      SP_WINLOSS,
-      SP_WEIGHTEDWINLOSS,
-      SP_DESCENTS
+      SP_WIN_LOSS_SEPARATE,
+      SP_WEIGHTED_WIN_LOSS_SEPARATE,
+      SP_WINRATE_ENTROPY,
+      SP_WEIGHTED_WINRATE_ENTROPY,
+      SP_CLASSIFICATION_SEPARATE,
+      SP_ROBUST_DESCENT_SPLIT,
+      SP_ROBUST_WIN_SPLIT,
+      SP_ROBUST_LOSS_SPLIT,
+      SP_ENTROPY_DESCENT_SPLIT,
+      SP_ENTROPY_WIN_SPLIT,
+      SP_ENTROPY_LOSS_SPLIT,
+      SP_WINRATE_SPLIT,
+      SP_DESCENT_SPLIT
     };
     /** String representation of the current query selection policy. */
     std::string dt_selection_policy_string;

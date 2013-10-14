@@ -283,11 +283,21 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("other","auto_save_sgf_prefix",&(params->auto_save_sgf_prefix),"");
 
   std::list<std::string> *spoptions = new std::list<std::string>();
-  spoptions->push_back("descents");
-  spoptions->push_back("winloss");
-  spoptions->push_back("weightedwinloss");
-  params->addParameter("other","dt_selection_policy",&(params->dt_selection_policy_string),spoptions,"descents",&Engine::updateParameterWrapper,this);
-  params->dt_selection_policy = Parameters::SP_DESCENTS;
+  spoptions->push_back("descent_split");
+  spoptions->push_back("robust_descent_split");
+  spoptions->push_back("robust_win_split");
+  spoptions->push_back("robust_loss_split");
+  spoptions->push_back("entropy_descent_split");
+  spoptions->push_back("entropy_win_split");
+  spoptions->push_back("entropy_loss_split");
+  spoptions->push_back("winrate_split");
+  spoptions->push_back("win_loss_separate");
+  spoptions->push_back("weighted_win_loss_separate");
+  spoptions->push_back("winrate_entropy");
+  spoptions->push_back("weighted_winrate_entropy");
+  spoptions->push_back("classification_separate");
+  params->addParameter("other","dt_selection_policy",&(params->dt_selection_policy_string),spoptions,"descent_split",&Engine::updateParameterWrapper,this);
+  params->dt_selection_policy = Parameters::SP_DESCENT_SPLIT;
 
   params->addParameter("other","dt_update_prob",&(params->dt_update_prob),0.00);
   params->addParameter("other","dt_split_after",&(params->dt_split_after),1000);
@@ -536,12 +546,32 @@ void Engine::updateParameter(std::string id)
   }
   else if (id=="dt_selection_policy")
   {
-    if (params->dt_selection_policy_string == "winloss")
-      params->dt_selection_policy = Parameters::SP_WINLOSS;
-    else if (params->dt_selection_policy_string == "weightedwinloss")
-      params->dt_selection_policy = Parameters::SP_WEIGHTEDWINLOSS;
+    if (params->dt_selection_policy_string == "win_loss_separate")
+      params->dt_selection_policy = Parameters::SP_WIN_LOSS_SEPARATE;
+    else if (params->dt_selection_policy_string == "weighted_win_loss_separate")
+      params->dt_selection_policy = Parameters::SP_WEIGHTED_WIN_LOSS_SEPARATE;
+    else if (params->dt_selection_policy_string == "winrate_entropy")
+      params->dt_selection_policy = Parameters::SP_WINRATE_ENTROPY;
+    else if (params->dt_selection_policy_string == "weighted_winrate_entropy")
+      params->dt_selection_policy = Parameters::SP_WEIGHTED_WINRATE_ENTROPY;
+    else if (params->dt_selection_policy_string == "classification_separate")
+      params->dt_selection_policy = Parameters::SP_CLASSIFICATION_SEPARATE;
+    else if (params->dt_selection_policy_string == "robust_descent_split")
+      params->dt_selection_policy = Parameters::SP_ROBUST_DESCENT_SPLIT;
+    else if (params->dt_selection_policy_string == "robust_win_split")
+      params->dt_selection_policy = Parameters::SP_ROBUST_WIN_SPLIT;
+    else if (params->dt_selection_policy_string == "robust_loss_split")
+      params->dt_selection_policy = Parameters::SP_ROBUST_LOSS_SPLIT;
+    else if (params->dt_selection_policy_string == "entropy_descent_split")
+      params->dt_selection_policy = Parameters::SP_ENTROPY_DESCENT_SPLIT;
+    else if (params->dt_selection_policy_string == "entropy_win_split")
+      params->dt_selection_policy = Parameters::SP_ENTROPY_WIN_SPLIT;
+    else if (params->dt_selection_policy_string == "entropy_loss_split")
+      params->dt_selection_policy = Parameters::SP_ENTROPY_LOSS_SPLIT;
+    else if (params->dt_selection_policy_string == "winrate_split")
+      params->dt_selection_policy = Parameters::SP_WINRATE_SPLIT;
     else
-      params->dt_selection_policy = Parameters::SP_DESCENTS;
+      params->dt_selection_policy = Parameters::SP_DESCENT_SPLIT;
   }
 }
 
