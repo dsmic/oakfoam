@@ -1523,14 +1523,20 @@ float DecisionTree::computeQueryQuality(Parameters *params, int d0, int w0, int 
   int C = 2 + (d2==-1?0:1) + (d3==-1?0:1);
 
   float q = -std::numeric_limits<float>::infinity();
-  int dnz = (d0>0?1:0) + (d1>0?1:0) + (d2>0?1:0) + (d3>0?1:0);
-  if (dnz >= 2) // must be at least 1 descent to 2 children
+
+  // sensibility conditions
+  bool sens1 = (d0==-1||d0<D) && (d1==-1||d1<D) && (d2==-1||d2<D) && (d3==-1||d3<D); // all descents must not be down one child
+  bool sens2 = W>1 && L>1; // must be some wins and losses
+  bool sens3 = (w0==-1||w0<W) && (w1==-1||w1<W) && (w2==-1||w2<W) && (w3==-1||w3<W); // all wins must not be down one child
+  bool sens4 = (l0==-1||l0<L) && (l1==-1||l1<L) && (l2==-1||l2<L) && (l3==-1||l3<L); // all losses must not be down one child
+
+  if (sens1)
   {
     switch (params->dt_selection_policy)
     {
       case Parameters::SP_WIN_LOSS_SEPARATE:
         {
-          if (W==0 || L==0) // must be some wins or losses to separate
+          if (!sens2)
             break;
 
           q = 0;
@@ -1548,7 +1554,7 @@ float DecisionTree::computeQueryQuality(Parameters *params, int d0, int w0, int 
         }
       case Parameters::SP_WEIGHTED_WIN_LOSS_SEPARATE:
         {
-          if (W==0 || L==0) // must be some wins or losses to separate
+          if (!sens2)
             break;
 
           q = 0;
@@ -1566,7 +1572,7 @@ float DecisionTree::computeQueryQuality(Parameters *params, int d0, int w0, int 
         }
       case Parameters::SP_WINRATE_ENTROPY:
         {
-          if (W==0 || L==0) // must be some wins or losses to separate
+          if (!sens2)
             break;
 
           if (sorted)
@@ -1617,7 +1623,7 @@ float DecisionTree::computeQueryQuality(Parameters *params, int d0, int w0, int 
         }
       case Parameters::SP_WEIGHTED_WINRATE_ENTROPY:
         {
-          if (W==0 || L==0) // must be some wins or losses to separate
+          if (!sens2)
             break;
 
           if (sorted)
@@ -1668,7 +1674,7 @@ float DecisionTree::computeQueryQuality(Parameters *params, int d0, int w0, int 
         }
       case Parameters::SP_CLASSIFICATION_SEPARATE:
         {
-          if (W==0 || L==0) // must be some wins or losses to separate
+          if (!sens2)
             break;
 
           if (sorted)
@@ -1745,6 +1751,9 @@ float DecisionTree::computeQueryQuality(Parameters *params, int d0, int w0, int 
         }
       case Parameters::SP_ROBUST_WIN_SPLIT:
         {
+          if (!sens3)
+            break;
+
           q = 0;
           float cr = 1.0 / C;
 
@@ -1761,6 +1770,9 @@ float DecisionTree::computeQueryQuality(Parameters *params, int d0, int w0, int 
         }
       case Parameters::SP_ROBUST_LOSS_SPLIT:
         {
+          if (!sens4)
+            break;
+
           q = 0;
           float cr = 1.0 / C;
 
@@ -1792,6 +1804,9 @@ float DecisionTree::computeQueryQuality(Parameters *params, int d0, int w0, int 
         }
       case Parameters::SP_ENTROPY_WIN_SPLIT:
         {
+          if (!sens3)
+            break;
+
           q = 0;
 
           if (d0 >= 0)
@@ -1807,6 +1822,9 @@ float DecisionTree::computeQueryQuality(Parameters *params, int d0, int w0, int 
         }
       case Parameters::SP_ENTROPY_LOSS_SPLIT:
         {
+          if (!sens4)
+            break;
+
           q = 0;
 
           if (d0 >= 0)
@@ -1822,6 +1840,9 @@ float DecisionTree::computeQueryQuality(Parameters *params, int d0, int w0, int 
         }
       case Parameters::SP_WINRATE_SPLIT:
         {
+          if (!sens2)
+            break;
+
           q = 0;
 
           if (d0 >= 0)
