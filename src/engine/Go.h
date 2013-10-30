@@ -9,6 +9,8 @@
 #include <boost/pool/object_pool.hpp>
 #include <boost/cstdint.hpp>
 
+#include "../gtp/Gtp.h"
+
 //can be set or unordered_set last is faster
 #define ourset unordered_set
 
@@ -136,6 +138,16 @@ namespace Go
     int dx=abs(x1-x2);
     int dy=abs(y1-y2);
     return dx+dy;
+  };
+
+  inline static int maxDist(int x1, int y1, int x2, int y2)
+  {
+    int dx=abs(x1-x2);
+    int dy=abs(y1-y2);
+    if (dx>dy)
+      return dx;
+    else
+      return dy;
   };
 
   /** Get the circular distance between two points. */
@@ -623,7 +635,7 @@ namespace Go
       inline bool onBoard(int pos) const { return (data[pos].color!=Go::OFFBOARD); };
       
       /** Make a move on this board. */
-      void makeMove(Go::Move move);
+      void makeMove(Go::Move move,Gtp::Engine* gtpe=NULL);
       /** Determine is the given move is a legal move. */
       bool validMove(Go::Move move) const
         {
@@ -707,6 +719,7 @@ namespace Go
       /** Get the distance from the given position to the board edge. */
       int getDistanceToBorder(int pos) const;
       /** Get the manhattan distance between two positions. */
+      int getMaxDistance(int pos1, int pos2) const;
       int getRectDistance(int pos1, int pos2) const;
       int getPseudoDistanceToBorder(int pos) const;
       /** Get the circular distance between two positions. */

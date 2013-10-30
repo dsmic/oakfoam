@@ -10,6 +10,10 @@
 #include "DecisionTree.h"
 #include "Engine.h"
 
+#define playpatterndim 4
+const int playpattern[playpatterndim][playpatterndim]={{0,1,2,3},{4,7,7,7},{5,7,7,7},{6,7,7,7}};
+const int playpatternnum=7;
+
 //moved here, so it is not parsed any time feature.h is included
 const std::string FEATURES_DEFAULT=
   "pass:1 0.950848 \n"
@@ -656,7 +660,11 @@ Features::Features(Parameters *prms) : params(prms)
 {
   patterngammas=new Pattern::ThreeByThreeGammas();
   patternids=new Pattern::ThreeByThreeGammas();
-  
+  patterngammas_playout=(float *)malloc(sizeof(float)*PATTERN_3x3_GAMMAS*playpatternnum);
+  for (int i=0;i<PATTERN_3x3_GAMMAS*playpatternnum;i++)
+  {
+    patterngammas_playout[i]=-1;
+  }
   for (int i=0;i<PASS_LEVELS;i++)
     gammas_pass[i]=1.0;
   for (int i=0;i<CAPTURE_LEVELS;i++)
@@ -698,6 +706,7 @@ Features::~Features()
 {
   delete patterngammas;
   delete patternids;
+  delete patterngammas_playout;
   delete circdict;
   delete circgammas;
   delete circstrings;
@@ -1060,6 +1069,13 @@ float Features::getFeatureGamma(Features::FeatureClass featclass, unsigned int l
     else
       return 1.0;
   }
+  else if (featclass==Features::PATTERN3X3playout)
+  {
+    if (patterngammas_playout[level]>0)
+      return patterngammas_playout[level];
+    else
+      return 1.0;
+  }
   else if (featclass==Features::CIRCPATT)
   {
     if (circgammas->size()>level)
@@ -1082,6 +1098,20 @@ float Features::getFeatureGamma(Features::FeatureClass featclass, unsigned int l
       return 1.0;
   }
 }
+
+float Features::getFeatureGammaPlayoutPattern(unsigned int pattern, int MaxLast, int MaxSecondLast) const
+{
+  MaxLast--;
+  MaxSecondLast--;
+  if (MaxLast>=playpatterndim) MaxLast=playpatterndim-1;
+  if (MaxSecondLast>=playpatterndim) MaxSecondLast=playpatterndim-1;
+  unsigned int level=pattern*playpatternnum+playpattern[MaxLast][MaxSecondLast];
+  if (patterngammas_playout[level]>0)
+      return patterngammas_playout[level];
+    else
+      return 1.0;  //? in this case 1.0 might not be a good idea, if a pattern is never played in the games.....
+}
+    
 
 int Features::learnFeatureGammaC(Features::FeatureClass featclass, unsigned int level, float learn_diff)
 {
@@ -1695,6 +1725,8 @@ Features::FeatureClass Features::getFeatureClassFromName(std::string name) const
     return Features::NAKADE;
   else if (name=="pattern3x3")
     return Features::PATTERN3X3;
+  else if (name=="pattern3x3playout")
+    return Features::PATTERN3X3playout;
   else if (name=="circpatt")
     return Features::CIRCPATT;
   else
@@ -2142,6 +2174,12 @@ bool Features::setFeatureGamma(Features::FeatureClass featclass, unsigned int le
     (*circgammas)[level] = gamma;
     return true;
   }
+  else if (featclass==Features::PATTERN3X3playout)
+  {
+    //fprintf(stderr,"debug\n");
+    patterngammas_playout[level]=gamma;
+    return true;
+  }
   else if (featclass==Features::PATTERN3X3)
   {
     patterngammas->setGamma(level,gamma);
@@ -2161,14 +2199,31 @@ bool Features::setFeatureGamma(Features::FeatureClass featclass, unsigned int le
   }
 }
 
-std::string Features::getMatchingFeaturesString(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool pretty) const
+std::string Features::getMatchingFeaturesString(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool pretty, bool playout) const
 {
   constructCircstrings();
   std::ostringstream ss;
   unsigned int level,base;
   
   base=0;
-  
+  if (playout)
+  {
+    //this should only be used, if in playout pattern moves are triggered. The check should be done before!
+    unsigned int id0=PASS_LEVELS+CAPTURE_LEVELS+EXTENSION_LEVELS+SELFATARI_LEVELS+ATARI_LEVELS+BORDERDIST_LEVELS+LASTDIST_LEVELS+SECONDLASTDIST_LEVELS+CFGLASTDIST_LEVELS+CFGSECONDLASTDIST_LEVELS+NAKADE_LEVELS;
+    int level1=board->getMaxDistance(board->getLastMove().getPosition(),move.getPosition())-1;
+    int level2=board->getMaxDistance(board->getSecondLastMove().getPosition(),move.getPosition())-1;
+    long level=this->matchFeatureClass(Features::PATTERN3X3,board,cfglastdist,cfgsecondlastdist,move);
+    if (level1>=playpatterndim) level1=playpatterndim-1;
+    if (level2>=playpatterndim) level2=playpatterndim-1;
+    if (patterngammas->hasGamma(level) && playpattern[level1][level2]<playpatternnum && !move.isPass() && !move.isResign())
+    {
+     if (pretty)
+      ss<<" pattern3x3playout:0x"<<std::hex<<std::setw(5)<<std::setfill('0')<<level*playpatternnum+playpattern[level1][level2];
+     else
+      ss<<" "<<((int)patternids->getGamma(level)-id0)*playpatternnum+playpattern[level1][level2];
+    }
+    return ss.str();
+  }
   level=this->matchFeatureClass(Features::PASS,board,cfglastdist,cfgsecondlastdist,move);
   if (level>0)
   {
@@ -2319,11 +2374,31 @@ std::string Features::getMatchingFeaturesString(Go::Board *board, Go::ObjectBoar
   return ss.str();
 }
 
-std::string Features::getFeatureIdList() const
+std::string Features::getFeatureIdList(bool playout) const
 {
   constructCircstrings();
   std::ostringstream ss;
   unsigned int id=0;
+  if (playout)
+  {
+    unsigned int id0=PASS_LEVELS+CAPTURE_LEVELS+EXTENSION_LEVELS+SELFATARI_LEVELS+ATARI_LEVELS+BORDERDIST_LEVELS+LASTDIST_LEVELS+SECONDLASTDIST_LEVELS+CFGLASTDIST_LEVELS+CFGSECONDLASTDIST_LEVELS+NAKADE_LEVELS;
+    for (unsigned int level=0;level<PATTERN_3x3_GAMMAS;level++)
+    {
+        if (patterngammas->hasGamma(level))  //this list is done with patterngammas, as only they are collected by the harvest scripts
+        {
+          for (int level1=0;level1<4;level1++)
+            for (int level2=0;level2<4;level2++)
+            if (playpattern[level1][level2]<playpatternnum)
+            {
+              if (id/playpatternnum+id0==patternids->getGamma(level))
+                ss<<std::dec<<(id++)<<" pattern3x3playout:0x"<<std::hex<<std::setw(5)<<std::setfill('0')<<level*playpatternnum+playpattern[level1][level2]<<"\n";
+              else
+                fprintf(stderr,"WARNING! pattern id mismatch %d\n",id);
+            }
+        }
+    }
+    return ss.str();
+  }
   
   for (unsigned int level=1;level<=PASS_LEVELS;level++)
     ss<<(id++)<<" pass:"<<level<<"\n";
@@ -2365,7 +2440,7 @@ std::string Features::getFeatureIdList() const
       if (id==patternids->getGamma(level))
         ss<<std::dec<<(id++)<<" pattern3x3:0x"<<std::hex<<std::setw(4)<<std::setfill('0')<<level<<"\n";
       else
-        fprintf(stderr,"WARNING! pattern id mismatch");
+        fprintf(stderr,"WARNING! pattern id mismatch %d\n",id);
     }
   }
 
@@ -2377,7 +2452,7 @@ std::string Features::getFeatureIdList() const
 
 void Features::updatePatternIds()
 {
-  unsigned int id=PASS_LEVELS+CAPTURE_LEVELS+EXTENSION_LEVELS+SELFATARI_LEVELS+ATARI_LEVELS+BORDERDIST_LEVELS+LASTDIST_LEVELS+SECONDLASTDIST_LEVELS+CFGLASTDIST_LEVELS+CFGSECONDLASTDIST_LEVELS;
+  unsigned int id=PASS_LEVELS+CAPTURE_LEVELS+EXTENSION_LEVELS+SELFATARI_LEVELS+ATARI_LEVELS+BORDERDIST_LEVELS+LASTDIST_LEVELS+SECONDLASTDIST_LEVELS+CFGLASTDIST_LEVELS+CFGSECONDLASTDIST_LEVELS+NAKADE_LEVELS;
   
   for (unsigned int level=0;level<PATTERN_3x3_GAMMAS;level++)
   {

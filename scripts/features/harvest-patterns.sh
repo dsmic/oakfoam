@@ -21,6 +21,7 @@ fi
 
 GAME=$1
 
+set +e
 echo -e "loadsgf \"$GAME\"" | gogui-adapter "$OAKFOAMLOG" > /dev/null
 MOVES=`cat $TEMPOUTPUT | grep "^play " | wc -l`
 rm -f $TEMPOUTPUT
@@ -32,6 +33,7 @@ do
 done
 
 echo -e $CMDS | $PROGRAM | grep "^= 0x" | sed "s/= //;s/ /\\n/g" | grep "^0x" >> $TEMPOUTPUT
+set -e
 
 cat $TEMPOUTPUT | sort | uniq -c | sort -rn
 

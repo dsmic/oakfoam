@@ -110,6 +110,7 @@ class Features
       NAKADE,
       PATTERN3X3,
       CIRCPATT,
+      PATTERN3X3playout,
       INVALID
     };
     
@@ -124,6 +125,7 @@ class Features
     unsigned int matchFeatureClass(Features::FeatureClass featclass, Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove=true) const;
     /** Return the gamma weight for a specific feature and level. */
     float getFeatureGamma(Features::FeatureClass featclass, unsigned int level) const;
+    float getFeatureGammaPlayoutPattern(unsigned int pattern, int MaxLast, int MaxSecondLast) const;
     /** Return the weight for a move.
      * The weight for a move is the product of matching feature weights for that move.
      */
@@ -146,9 +148,9 @@ class Features
     int learnFeatureGammaC(Features::FeatureClass featclass, unsigned int level, float learn_diff);
     
     /** Return a string of all the matching features for a move. */ 
-    std::string getMatchingFeaturesString(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool pretty=true) const;
+    std::string getMatchingFeaturesString(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool pretty=true, bool playout=false) const;
     /** Return a list of all valid features and levels. */
-    std::string getFeatureIdList() const;
+    std::string getFeatureIdList(bool playout=false) const;
     
     /** Load a gamma value from a line. */
     bool loadGammaLine(std::string line);
@@ -186,6 +188,7 @@ class Features
     Parameters *const params;
     Pattern::ThreeByThreeGammas *patterngammas;
     Pattern::ThreeByThreeGammas *patternids;
+    float *patterngammas_playout;
     float gammas_pass[PASS_LEVELS];
     float gammas_capture[CAPTURE_LEVELS];
     float gammas_extension[EXTENSION_LEVELS];

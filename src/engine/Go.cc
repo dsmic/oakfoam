@@ -513,7 +513,7 @@ bool Go::Board::validMoveCheck(Go::Move move) const
   }
 }
 
-void Go::Board::makeMove(Go::Move move)
+void Go::Board::makeMove(Go::Move move, Gtp::Engine* gtpe)
 {
   if (nexttomove!=move.getColor())
   {
@@ -553,6 +553,11 @@ void Go::Board::makeMove(Go::Move move)
   if (!this->validMove(move))
   {
     fprintf(stderr,"invalid move at %d,%d\n",move.getX(size),move.getY(size));
+    if (gtpe)
+    {
+      gtpe->getOutput()->printfDebug ("invalid move at %d,%d\n",move.getX(size),move.getY(size));
+      gtpe->getOutput()->printString(this->toString());
+    }
     throw Go::Exception("invalid move");
   }
   
@@ -1805,6 +1810,16 @@ int Go::Board::getRectDistance(int pos1, int pos2) const
   int y2=Go::Position::pos2y(pos2,size);
   
   return Go::rectDist(x1,y1,x2,y2);
+}
+
+int Go::Board::getMaxDistance(int pos1, int pos2) const
+{
+  int x1=Go::Position::pos2x(pos1,size);
+  int y1=Go::Position::pos2y(pos1,size);
+  int x2=Go::Position::pos2x(pos2,size);
+  int y2=Go::Position::pos2y(pos2,size);
+  
+  return Go::maxDist(x1,y1,x2,y2);
 }
 
 int Go::Board::getPseudoDistanceToBorder(int pos) const

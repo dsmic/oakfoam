@@ -89,7 +89,7 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
       if (params->playout_lgpf_enabled)
         movehashes5x5.push_back(Pattern::FiveByFiveBorder::makeHash(board,(*iter).getPosition()));
     }
-    board->makeMove((*iter));
+    board->makeMove((*iter),gtpe);
     treemovescount++;
     if (movereasons!=NULL)
       movereasons->push_back("given");
@@ -1504,10 +1504,14 @@ void Playout::getPatternMove(Worker::Settings *settings, Go::Board *board, Go::C
         }
         else
         {
+          int MaxSecondLast=board->getMaxDistance(p,board->getSecondLastMove().getPosition());
           pattern=Pattern::ThreeByThree::smallestEquivalent(pattern);
-          if (patterngammas->hasGamma(pattern) && params->test_p6*rand->getRandomReal()+params->playout_patterns_gammas_p < patterngammas->getGamma(pattern))
+          //if (patterngammas->hasGamma(pattern) && params->test_p6*rand->getRandomReal()+params->playout_patterns_gammas_p < patterngammas->getGamma(pattern))
+          if (params->test_p6*rand->getRandomReal()+params->playout_patterns_gammas_p < params->engine->getFeatures()->getFeatureGammaPlayoutPattern(pattern,1,MaxSecondLast))
           {
             //fprintf(stderr,"patterngamma %f\n",patterngammas->getGamma(pattern));
+            if (params->debug_on)
+              fprintf(stderr,"patterngamma %i %i %s %f\n",1,MaxSecondLast,Go::Move(col,p).toString(board->getSize()).c_str(),params->engine->getFeatures()->getFeatureGammaPlayoutPattern(pattern,1,MaxSecondLast));
             patternmoves[patternmovescount]=p;
             patternmovescount++;
           }
@@ -1516,7 +1520,7 @@ void Playout::getPatternMove(Worker::Settings *settings, Go::Board *board, Go::C
     });
   }
 
-  if (board->getSecondLastMove().isNormal() && WITH_P(params->test_p14))
+  if (board->getSecondLastMove().isNormal() && (WITH_P(params->test_p14) || (WITH_P(params->test_p27) && board->getMaxDistance(board->getSecondLastMove().getPosition(),board->getLastMove().getPosition())==1)))
   {
     int pos=board->getSecondLastMove().getPosition();
     int size=board->getSize();
@@ -1528,10 +1532,27 @@ void Playout::getPatternMove(Worker::Settings *settings, Go::Board *board, Go::C
         if (col==Go::WHITE)
           pattern=Pattern::ThreeByThree::invert(pattern);
         
-        if (patterntable->isPattern(pattern))
+        if (params->playout_patterns_gammas_p==0.0)
         {
-          patternmoves[patternmovescount]=p;
-          patternmovescount++;
+          if (patterntable->isPattern(pattern))
+          {
+            patternmoves[patternmovescount]=p;
+            patternmovescount++;
+          }
+          }
+        else
+        {
+          int MaxLast=board->getMaxDistance(p,board->getLastMove().getPosition());
+          pattern=Pattern::ThreeByThree::smallestEquivalent(pattern);
+          //if (patterngammas->hasGamma(pattern) && params->test_p6*rand->getRandomReal()+params->playout_patterns_gammas_p < patterngammas->getGamma(pattern))
+          if (params->test_p6*rand->getRandomReal()+params->playout_patterns_gammas_p < params->engine->getFeatures()->getFeatureGammaPlayoutPattern(pattern,MaxLast,1))
+          {
+            //fprintf(stderr,"patterngamma %f\n",patterngammas->getGamma(pattern));
+            if (params->debug_on)
+              fprintf(stderr,"patterngamma %i %i %s %f\n",MaxLast,1,Go::Move(col,p).toString(board->getSize()).c_str(),params->engine->getFeatures()->getFeatureGammaPlayoutPattern(pattern,MaxLast,1));
+            patternmoves[patternmovescount]=p;
+            patternmovescount++;
+          }
         }
       }
     });

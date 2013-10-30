@@ -579,6 +579,7 @@ class Parameters
      * @see features_output_competitions
      */
     bool features_output_competitions_mmstyle;
+    bool features_output_for_playout;
     /** Whether to output a comparison of each move made with the features' ordering.
      * Used to measure feature accuracy.
      */

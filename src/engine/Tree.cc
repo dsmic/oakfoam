@@ -488,6 +488,8 @@ float Tree::getVal(bool skiprave) const
     //float alpha=exp(-pow((float)playouts/params->rave_moves,params->test_p1));
     //float alpha=1.0/pow(playouts*params->test_p6+params->test_p7,params->test_p8);
     float rave_here=(1-params->test_p26)*this->getRAVERatio()+params->test_p26*this->getRAVERatioOther();
+    if (raveplayoutsother==ravewinsother)
+      rave_here=this->getRAVERatio();  //in this case the other move is probably not allowed (only rave_init_wins)
     if (raveplayoutsother==0)
       rave_here=this->getRAVERatio();
     if (alpha<=0)
@@ -1060,9 +1062,17 @@ float Tree::getUnPruneFactor(float *moveValues,float mean, int num, float prob_l
   if (params->uct_rave_other_unprune_factor>0 && this->getRAVEPlayoutsOther()>1)
   {
     if (params->uct_rave_unprune_multiply)
-      factor*=(1+params->uct_rave_other_unprune_factor*this->getRAVERatioOther());
+    {
+      if (raveplayoutsother!=ravewinsother) //otherwize probably not allowed move and the ratio comes from init_rave_wins
+        factor*=(1+params->uct_rave_other_unprune_factor*this->getRAVERatioOther());
+      else
+        factor*=(1+params->uct_rave_other_unprune_factor*this->getRAVERatio());        
+    }
     else
-      factor+=params->uct_rave_other_unprune_factor*this->getRAVERatioOther();
+      if (raveplayoutsother!=ravewinsother) //otherwize probably not allowed move and the ratio comes from init_rave_wins
+        factor+=params->uct_rave_other_unprune_factor*this->getRAVERatioOther();
+      else
+        factor+=params->uct_rave_other_unprune_factor*this->getRAVERatio();
   }
 
 

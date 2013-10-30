@@ -291,6 +291,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   
   params->addParameter("other","features_only_small",&(params->features_only_small),false);
   params->addParameter("other","features_output_competitions",&(params->features_output_competitions),0.0);
+  params->addParameter("other","features_output_for_playout",&(params->features_output_for_playout),false);
   params->addParameter("other","features_output_competitions_mmstyle",&(params->features_output_competitions_mmstyle),false);
   params->addParameter("other","features_ordered_comparison",&(params->features_ordered_comparison),false);
   params->addParameter("other","features_circ_list",&(params->features_circ_list),0.0);
@@ -2312,7 +2313,7 @@ void Engine::gtpListFeatureIds(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
   Engine *me=(Engine*)instance;
   
   gtpe->getOutput()->startResponse(cmd);
-  gtpe->getOutput()->printf("\n%s",me->features->getFeatureIdList().c_str());
+  gtpe->getOutput()->printf("\n%s",me->features->getFeatureIdList(me->params->features_output_for_playout).c_str());
   gtpe->getOutput()->endResponse(true);
 }
 
@@ -4092,7 +4093,7 @@ void Engine::makeMove(Go::Move move)
     if (params->features_output_competitions_mmstyle)
     {
       int p=move.getPosition();
-      std::string featurestring=features->getMatchingFeaturesString(currentboard,cfglastdist,cfgsecondlastdist,move,!params->features_output_competitions_mmstyle);
+      std::string featurestring=features->getMatchingFeaturesString(currentboard,cfglastdist,cfgsecondlastdist,move,!params->features_output_competitions_mmstyle,params->features_output_for_playout);
       if (featurestring.length()>0)
       {
         gtpe->getOutput()->printfDebug("[features]:# competition (%d,%s)\n",(currentboard->getMovesMade()+1),Go::Position::pos2string(move.getPosition(),boardsize).c_str());
@@ -4114,7 +4115,7 @@ void Engine::makeMove(Go::Move move)
         Go::Move m=Go::Move(col,p);
         if (currentboard->validMove(m) || m==move)
         {
-          std::string featurestring=features->getMatchingFeaturesString(currentboard,cfglastdist,cfgsecondlastdist,m,!params->features_output_competitions_mmstyle);
+          std::string featurestring=features->getMatchingFeaturesString(currentboard,cfglastdist,cfgsecondlastdist,m,!params->features_output_competitions_mmstyle,params->features_output_for_playout);
           if (featurestring.length()>0)
           {
             gtpe->getOutput()->printfDebug("[features]:%s",Go::Position::pos2string(p,boardsize).c_str());
@@ -4136,7 +4137,7 @@ void Engine::makeMove(Go::Move move)
             gtpe->getOutput()->printfDebug("*");
           else
             gtpe->getOutput()->printfDebug(":");
-          gtpe->getOutput()->printfDebug("%s",features->getMatchingFeaturesString(currentboard,cfglastdist,cfgsecondlastdist,m,!params->features_output_competitions_mmstyle).c_str());
+          gtpe->getOutput()->printfDebug("%s",features->getMatchingFeaturesString(currentboard,cfglastdist,cfgsecondlastdist,m,!params->features_output_competitions_mmstyle,params->features_output_for_playout).c_str());
           gtpe->getOutput()->printfDebug("\n");
         }
       }
