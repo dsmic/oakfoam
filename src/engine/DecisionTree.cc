@@ -1502,15 +1502,37 @@ float DecisionTree::computeQueryQuality(Parameters *params, int d0, int w0, int 
   float pd2 = (d2 <= 0) ? -1 : ((float)d2) / D;
   float pd3 = (d3 <= 0) ? -1 : ((float)d3) / D;
 
-  float pw0 = (d0 <= 0) ? -1 : ((float)w0) / W;
-  float pw1 = (d1 <= 0) ? -1 : ((float)w1) / W;
-  float pw2 = (d2 <= 0) ? -1 : ((float)w2) / W;
-  float pw3 = (d3 <= 0) ? -1 : ((float)w3) / W;
+  float pw0, pw1, pw2, pw3;
+  if (W > 0)
+  {
+    pw0 = (d0 <= 0) ? -1 : ((float)w0) / W;
+    pw1 = (d1 <= 0) ? -1 : ((float)w1) / W;
+    pw2 = (d2 <= 0) ? -1 : ((float)w2) / W;
+    pw3 = (d3 <= 0) ? -1 : ((float)w3) / W;
+  }
+  else
+  {
+    pw0 = -1;
+    pw1 = -1;
+    pw2 = -1;
+    pw3 = -1;
+  }
 
-  float pl0 = (d0 <= 0) ? -1 : ((float)l0) / L;
-  float pl1 = (d1 <= 0) ? -1 : ((float)l1) / L;
-  float pl2 = (d2 <= 0) ? -1 : ((float)l2) / L;
-  float pl3 = (d3 <= 0) ? -1 : ((float)l3) / L;
+  float pl0, pl1, pl2, pl3;
+  if (L > 0)
+  {
+    pl0 = (d0 <= 0) ? -1 : ((float)l0) / L;
+    pl1 = (d1 <= 0) ? -1 : ((float)l1) / L;
+    pl2 = (d2 <= 0) ? -1 : ((float)l2) / L;
+    pl3 = (d3 <= 0) ? -1 : ((float)l3) / L;
+  }
+  else
+  {
+    pl0 = -1;
+    pl1 = -1;
+    pl2 = -1;
+    pl3 = -1;
+  }
 
   bool sorted = true;
   if (r0 < r1)
@@ -1791,13 +1813,13 @@ float DecisionTree::computeQueryQuality(Parameters *params, int d0, int w0, int 
         {
           q = 0;
 
-          if (d0 >= 0)
+          if (pd0 > 0)
             q -= pd0 * log(pd0);
-          if (d1 >= 0)
+          if (pd1 > 0)
             q -= pd1 * log(pd1);
-          if (d2 >= 0)
+          if (pd2 > 0)
             q -= pd2 * log(pd2);
-          if (d3 >= 0)
+          if (pd3 > 0)
             q -= pd3 * log(pd3);
 
           break;
@@ -1809,13 +1831,13 @@ float DecisionTree::computeQueryQuality(Parameters *params, int d0, int w0, int 
 
           q = 0;
 
-          if (d0 >= 0)
+          if (pw0 > 0)
             q -= pw0 * log(pw0);
-          if (d1 >= 0)
+          if (pw1 > 0)
             q -= pw1 * log(pw1);
-          if (d2 >= 0)
+          if (pw2 > 0)
             q -= pw2 * log(pw2);
-          if (d3 >= 0)
+          if (pw3 > 0)
             q -= pw3 * log(pw3);
 
           break;
@@ -1827,13 +1849,13 @@ float DecisionTree::computeQueryQuality(Parameters *params, int d0, int w0, int 
 
           q = 0;
 
-          if (d0 >= 0)
+          if (pl0 > 0)
             q -= pl0 * log(pl0);
-          if (d1 >= 0)
+          if (pl1 > 0)
             q -= pl1 * log(pl1);
-          if (d2 >= 0)
+          if (pl2 > 0)
             q -= pl2 * log(pl2);
-          if (d3 >= 0)
+          if (pl3 > 0)
             q -= pl3 * log(pl3);
 
           break;
