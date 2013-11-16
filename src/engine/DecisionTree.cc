@@ -1454,10 +1454,20 @@ void DecisionTree::swapChildren(int &d0, int &w0, float &r0, int &d1, int &w1, f
 
 float DecisionTree::sortedQueryQuality(Parameters *params, int d0, int w0, int d1, int w1, int d2, int w2, int d3, int w3)
 {
+  // Sort outcomes by winrate, with empty outcomes at the end
+
   float r0 = (d0 <= 0) ? -1 : ((float)w0) / d0;
   float r1 = (d1 <= 0) ? -1 : ((float)w1) / d1;
   float r2 = (d2 <= 0) ? -1 : ((float)w2) / d2;
   float r3 = (d3 <= 0) ? -1 : ((float)w3) / d3;
+
+  // find first non-empty outcome for r0
+  if (r0==-1)
+    DecisionTree::swapChildren(d0,w0,r0,d1,w1,r1);
+  if (r0==-1)
+    DecisionTree::swapChildren(d0,w0,r0,d2,w2,r2);
+  if (r0==-1) // shouldn't ever go this far
+    DecisionTree::swapChildren(d0,w0,r0,d3,w3,r3);
 
   // resolve r0
   if (r0 < r1)
@@ -1467,11 +1477,21 @@ float DecisionTree::sortedQueryQuality(Parameters *params, int d0, int w0, int d
   if (r3!=-1 && r0 < r3)
     DecisionTree::swapChildren(d0,w0,r0,d3,w3,r3);
 
+  // find first non-empty outcome for r1
+  if (r1==-1)
+    DecisionTree::swapChildren(d1,w1,r1,d2,w2,r2);
+  if (r1==-1)
+    DecisionTree::swapChildren(d1,w1,r1,d3,w3,r3);
+
   // resolve r1
   if (r2!=-1 && r1 < r2)
     DecisionTree::swapChildren(d1,w1,r1,d2,w2,r2);
   if (r3!=-1 && r1 < r3)
     DecisionTree::swapChildren(d1,w1,r1,d3,w3,r3);
+
+  // find first non-empty outcome for r2
+  if (r2==-1)
+    DecisionTree::swapChildren(d2,w2,r2,d3,w3,r3);
 
   // resolve r2
   if (r2!=-1 && r3!=-1  && r2 < r3)
@@ -1599,44 +1619,17 @@ float DecisionTree::computeQueryQuality(Parameters *params, int d0, int w0, int 
 
           if (sorted)
           {
-            q = 0;
+            float W = log(r0);
 
-            if (C==2)
-              q = log(r0) + log(1 - r1);
-            else if (C==3)
-            {
-              float W1 = log(r0);
-              float W2 = W1 + log(r1);
-              float L1 = log(1 - r2);
-              float L2 = L1 + log(1 - r1);
+            float L = 0;
+            if (r3!=-1)
+              L = log(1 - r3);
+            else if (r2!=-1)
+              L = log(1 - r2);
+            else
+              L = log(1 - r1);
 
-              q = W1 + L1;
-              if ((W1 + L2) > q)
-                q = W1 + L2;
-              if ((W2 + L1) > q)
-                q = W2 + L1;
-            }
-            else // C==4
-            {
-              float W1 = log(r0);
-              float W2 = W1 + log(r1);
-              float W3 = W2 + log(r2);
-              float L1 = log(1 - r3);
-              float L2 = L1 + log(1 - r2);
-              float L3 = L2 + log(1 - r1);
-
-              q = W1 + L1;
-              if ((W1 + L2) > q)
-                q = W1 + L2;
-              if ((W1 + L3) > q)
-                q = W1 + L3;
-              if ((W2 + L1) > q)
-                q = W2 + L1;
-              if ((W2 + L2) > q)
-                q = W2 + L2;
-              if ((W3 + L1) > q)
-                q = W3 + L1;
-            }
+            q = W + L;
           }
           else
             q = DecisionTree::sortedQueryQuality(params,d0,w0,d1,w1,d2,w2,d3,w3);
@@ -1648,49 +1641,50 @@ float DecisionTree::computeQueryQuality(Parameters *params, int d0, int w0, int 
           if (!sens2)
             break;
 
-          if (sorted)
+          float wr0 = r0>0?(pd0 * log(r0)):1;
+          float wr1 = r1>0?(pd1 * log(r1)):1;
+          float wr2 = r2>0?(pd2 * log(r2)):1;
+          float wr3 = r3>0?(pd3 * log(r3)):1;
+
+          float W = 1;
+          int Wc = -1;
+          if (W==1 || (wr0<1 && wr0>W))
           {
-            q = 0;
-
-            if (C==2)
-              q = pd0*log(r0) + pd1*log(1 - r1);
-            else if (C==3)
-            {
-              float W1 = pd0*log(r0);
-              float W2 = W1 + pd1*log(r1);
-              float L1 = pd2*log(1 - r2);
-              float L2 = L1 + pd1*log(1 - r1);
-
-              q = W1 + L1;
-              if ((W1 + L2) > q)
-                q = W1 + L2;
-              if ((W2 + L1) > q)
-                q = W2 + L1;
-            }
-            else // C==4
-            {
-              float W1 = pd0*log(r0);
-              float W2 = W1 + pd1*log(r1);
-              float W3 = W2 + pd2*log(r2);
-              float L1 = pd3*log(1 - r3);
-              float L2 = L1 + pd2*log(1 - r2);
-              float L3 = L2 + pd1*log(1 - r1);
-
-              q = W1 + L1;
-              if ((W1 + L2) > q)
-                q = W1 + L2;
-              if ((W1 + L3) > q)
-                q = W1 + L3;
-              if ((W2 + L1) > q)
-                q = W2 + L1;
-              if ((W2 + L2) > q)
-                q = W2 + L2;
-              if ((W3 + L1) > q)
-                q = W3 + L1;
-            }
+            W = wr0;
+            Wc = 0;
           }
-          else
-            q = DecisionTree::sortedQueryQuality(params,d0,w0,d1,w1,d2,w2,d3,w3);
+          if (W==1 || (wr1<1 && wr1>W))
+          {
+            W = wr1;
+            Wc = 1;
+          }
+          if (W==1 || (wr2<1 && wr2>W))
+          {
+            W = wr2;
+            Wc = 2;
+          }
+          if (W==1 || (wr3<1 && wr3>W))
+          {
+            W = wr3;
+            Wc = 3;
+          }
+
+          float lr0 = (r0!=-1 && r0<1 && Wc!=0)?(pd0 * log(1 - r0)):1;
+          float lr1 = (r1!=-1 && r1<1 && Wc!=1)?(pd1 * log(1 - r1)):1;
+          float lr2 = (r2!=-1 && r2<1 && Wc!=2)?(pd2 * log(1 - r2)):1;
+          float lr3 = (r3!=-1 && r3<1 && Wc!=3)?(pd3 * log(1 - r3)):1;
+
+          float L = 1;
+          if (L==1 || (lr0<1 && lr0>L))
+            L = lr0;
+          if (L==1 || (lr1<1 && lr1>L))
+            L = lr1;
+          if (L==1 || (lr2<1 && lr2>L))
+            L = lr2;
+          if (L==1 || (lr3<1 && lr3>L))
+            L = lr3;
+
+          q = W + L;
 
           break;
         }
@@ -1703,9 +1697,11 @@ float DecisionTree::computeQueryQuality(Parameters *params, int d0, int w0, int 
           {
             q = 0;
 
-            if (C==2)
+            int neC = (d0>0?1:0) + (d1>0?1:0) + (d2>0?1:0) + (d3>0?1:0);
+
+            if (neC==2)
               q = (float)(w0 + l1) / (d0 + d1);
-            else if (C==3)
+            else if (neC==3)
             {
               float W1n = w0;
               float W1d = d0;
