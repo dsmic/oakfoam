@@ -7,7 +7,7 @@ cd `dirname "$0"`
 
 function msg_short
 {
-  echo "${1:-}" | tee -a $LOGFILE >&2
+  echo "${1:-}" | tee -a $LOGFILE | tee -a $STATUSFILE >&2
 }
 
 function msg
@@ -20,7 +20,7 @@ function msg
 function init
 { 
   DATE=`date +%F_%T`
-  echo -en "[$DATE] ${1:-Working}..." | awk '{printf "%-70s",$0}' | tee -a $LOGFILE >&2
+  echo -en "[$DATE] ${1:-Working}..." | awk '{printf "%-70s",$0}' | tee -a $LOGFILE | tee -a $STATUSFILE >&2
   echo >> $LOGFILE
   tput sc
 }
@@ -58,10 +58,12 @@ function lastline
 
 trap 'check 1' ERR
 
-RESDIR="results_`date +%F_%T`"
-mkdir $RESDIR
+# RESDIR="results_`date +%F_%T`"
+# mkdir $RESDIR
+RESDIR="$(mktemp -d results_$(date +%F)_XXXX)"
 cd $RESDIR
 LOGFILE="test.log"
+STATUSFILE="test.status"
 msg "Writing results to '`pwd`'"
 
 init "Loading parameters"
@@ -70,13 +72,13 @@ init "Loading parameters"
     check 1
   fi
 
-  if ! test -e ${OLDPWD}/${1}; then
+  if ! test -e "${OLDPWD}/${1}"; then
     echo "Parameter file '$1' not found" >> $LOGFILE
     check 1
   fi
 
-  cp ${OLDPWD}/${1} params.test
-  source ${OLDPWD}/${1}
+  cp "${OLDPWD}/${1}" params.test
+  source "${OLDPWD}/${1}"
 check $?
 
 INITGAMMAS="init.gamma"
