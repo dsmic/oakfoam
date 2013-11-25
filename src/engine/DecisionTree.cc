@@ -1636,6 +1636,42 @@ float DecisionTree::computeQueryQuality(Parameters *params, int d0, int w0, int 
 
           break;
         }
+      case Parameters::SP_SYMMETRIC_SEPARATE:
+        {
+          if (!sens2)
+            break;
+
+          q = 0;
+
+          if (d0 > 0)
+            q -= r0<R? r0/R : (1-r0)/(1-R);
+          if (d1 > 0)
+            q -= r1<R? r1/R : (1-r1)/(1-R);
+          if (d2 > 0)
+            q -= r2<R? r2/R : (1-r2)/(1-R);
+          if (d3 > 0)
+            q -= r3<R? r3/R : (1-r3)/(1-R);
+
+          break;
+        }
+      case Parameters::SP_WEIGHTED_SYMMETRIC_SEPARATE:
+        {
+          if (!sens2)
+            break;
+
+          q = 0;
+
+          if (d0 > 0)
+            q -= pd0*(r0<R? r0/R : (1-r0)/(1-R));
+          if (d1 > 0)
+            q -= pd1*(r1<R? r1/R : (1-r1)/(1-R));
+          if (d2 > 0)
+            q -= pd2*(r2<R? r2/R : (1-r2)/(1-R));
+          if (d3 > 0)
+            q -= pd3*(r3<R? r3/R : (1-r3)/(1-R));
+
+          break;
+        }
       case Parameters::SP_WEIGHTED_WINRATE_ENTROPY:
         {
           if (!sens2)

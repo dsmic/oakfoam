@@ -293,6 +293,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   spoptions->push_back("winrate_split");
   spoptions->push_back("win_loss_separate");
   spoptions->push_back("weighted_win_loss_separate");
+  spoptions->push_back("symmetric_separate");
+  spoptions->push_back("weighted_symmetric_separate");
   spoptions->push_back("winrate_entropy");
   spoptions->push_back("weighted_winrate_entropy");
   spoptions->push_back("classification_separate");
@@ -554,6 +556,10 @@ void Engine::updateParameter(std::string id)
       params->dt_selection_policy = Parameters::SP_WINRATE_ENTROPY;
     else if (params->dt_selection_policy_string == "weighted_winrate_entropy")
       params->dt_selection_policy = Parameters::SP_WEIGHTED_WINRATE_ENTROPY;
+    else if (params->dt_selection_policy_string == "symmetric_separate")
+      params->dt_selection_policy = Parameters::SP_SYMMETRIC_SEPARATE;
+    else if (params->dt_selection_policy_string == "weighted_symmetric_separate")
+      params->dt_selection_policy = Parameters::SP_WEIGHTED_SYMMETRIC_SEPARATE;
     else if (params->dt_selection_policy_string == "classification_separate")
       params->dt_selection_policy = Parameters::SP_CLASSIFICATION_SEPARATE;
     else if (params->dt_selection_policy_string == "robust_descent_split")

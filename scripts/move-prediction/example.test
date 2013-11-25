@@ -53,7 +53,10 @@ PATT_CIRC_END=15
 # decision trees
 DT_TYPES="STONE|NOCOMP STONE|CHAINCOMP"
 DT_FOREST_SIZE=2
-DT_SELECTION_POLICY="descents"
+# possible policies:
+#   descent_split robust_descent_split robust_win_split robust_loss_split entropy_descent_split entropy_win_split entropy_loss_split winrate_split
+#   win_loss_separate weighted_win_loss_separate symmetric_separate weighted_symmetric_separate winrate_entropy weighted_winrate_entropy classification_separate
+DT_SELECTION_POLICY="descent_split"
 DT_UPDATE_PROB=0.10
 DT_SPLIT_AFTER=1000
 
