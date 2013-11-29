@@ -38,6 +38,8 @@ class DecisionTree
 
         unsigned int addAuxNode(int pos);
         void removeAuxNode();
+        unsigned int getAuxNode() { return auxnode; };
+        int getAuxPos() { return auxpos; };
 
         void compressChain();
 
@@ -54,6 +56,7 @@ class DecisionTree
         std::vector<StoneNode*> *nodes;
         std::vector<std::vector<int>*> *edges;
         unsigned int auxnode;
+        int auxpos;
         std::map<int,int> *posregions;
 
         void mergeNodes(unsigned int n1, unsigned int n2);
@@ -82,6 +85,8 @@ class DecisionTree
 
         unsigned int addAuxNode(int pos);
         void removeAuxNode();
+        unsigned int getAuxNode() { return auxnode; };
+        int getAuxPos() { return auxpos; };
 
         void compressChain() { this->compress(true); };
         void compressEmpty() { this->compress(false); };
@@ -109,6 +114,7 @@ class DecisionTree
         std::vector<IntersectionNode*> *nodes;
         std::vector<std::vector<int>*> *distances;
         unsigned int auxnode;
+        int auxpos;
         std::map<int,int> *posregions;
 
         void compress(bool chainnotempty);

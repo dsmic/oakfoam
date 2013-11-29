@@ -767,12 +767,18 @@ std::list<DecisionTree::Node*> *DecisionTree::getLeafNodes(DecisionTree::GraphCo
     case STONE:
       {
         DecisionTree::StoneGraph *graph = graphs->getStoneGraph(this->getCompressChain());
-        unsigned int auxnode = graph->addAuxNode(move.getPosition());
+
+        if (move.getPosition()!=graph->getAuxPos())
+        {
+          if (graph->getAuxNode()!=(unsigned int)-1)
+            graph->removeAuxNode();
+
+          graph->addAuxNode(move.getPosition());
+        }
+        unsigned int auxnode = graph->getAuxNode();
 
         stones->push_back(auxnode);
         nodes = this->getStoneLeafNodes(root,graph,stones,invert,updatetree,win);
-
-        graph->removeAuxNode();
 
         break;
       }
@@ -780,12 +786,18 @@ std::list<DecisionTree::Node*> *DecisionTree::getLeafNodes(DecisionTree::GraphCo
     case INTERSECTION:
       {
         DecisionTree::IntersectionGraph *graph = graphs->getIntersectionGraph(this->getCompressChain(), this->getCompressEmpty());
-        unsigned int auxnode = graph->addAuxNode(move.getPosition());
+
+        if (move.getPosition()!=graph->getAuxPos())
+        {
+          if (graph->getAuxNode()!=(unsigned int)-1)
+            graph->removeAuxNode();
+
+          graph->addAuxNode(move.getPosition());
+        }
+        unsigned int auxnode = graph->getAuxNode();
 
         stones->push_back(auxnode);
         nodes = this->getIntersectionLeafNodes(root,graph,stones,invert,updatetree,win);
-
-        graph->removeAuxNode();
 
         break;
       }
@@ -3354,6 +3366,7 @@ DecisionTree::StoneGraph::StoneGraph(Go::Board *board)
   }
 
   auxnode = -1;
+  auxpos = -1;
 }
 
 DecisionTree::StoneGraph::~StoneGraph()
@@ -3457,6 +3470,7 @@ unsigned int DecisionTree::StoneGraph::addAuxNode(int pos)
   }
 
   auxnode = i;
+  auxpos = pos;
 
   return i;
 }
@@ -3653,6 +3667,7 @@ DecisionTree::IntersectionGraph::IntersectionGraph(Go::Board *board)
   }
 
   auxnode = -1;
+  auxpos = -1;
 }
 
 DecisionTree::IntersectionGraph::~IntersectionGraph()
@@ -3776,6 +3791,7 @@ unsigned int DecisionTree::IntersectionGraph::addAuxNode(int pos)
     if (nodes->at(i)->pos == regionpos)
     {
       auxnode = i;
+      auxpos = pos;
       return auxnode;
     }
   }
