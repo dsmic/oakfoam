@@ -2140,7 +2140,7 @@ int Go::Board::getFiveEmptyGroupCenterFrom(int pos) const
       }
     });
     if (black>0 && white>0)
-      fprintf(stderr,"should not happen!\n");
+      fprintf(stderr,"should not happen1!\n");
     int numattached=black+white+offboard;
     // XXX
     // XX   Form has exactly 10 pseudo touches other forms not (hopefully:)
@@ -2397,7 +2397,7 @@ bool Go::Board::isFiveEmptyGroupCenterFrom(int pos) const
       }
     });
     if (black>0 && white>0)
-      fprintf(stderr,"should not happen!\n");
+      fprintf(stderr,"should not happen2!\n");
     int numattached=black+white+offboard;
     // XXX
     // XX   Form has exactly 10 pseudo touches other forms not (hopefully:)

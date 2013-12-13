@@ -12,7 +12,7 @@
 
 #define playpatterndim 4
 const int playpattern[playpatterndim][playpatterndim]={{0,1,2,3},{4,7,7,7},{5,7,7,7},{6,7,7,7}};
-const int playpatternnum=7;
+const int playpatternnum=8;
 
 //moved here, so it is not parsed any time feature.h is included
 const std::string FEATURES_DEFAULT=
@@ -2215,13 +2215,27 @@ std::string Features::getMatchingFeaturesString(Go::Board *board, Go::ObjectBoar
     long level=this->matchFeatureClass(Features::PATTERN3X3,board,cfglastdist,cfgsecondlastdist,move);
     if (level1>=playpatterndim) level1=playpatterndim-1;
     if (level2>=playpatterndim) level2=playpatterndim-1;
-    if (patterngammas->hasGamma(level) && playpattern[level1][level2]<playpatternnum && !move.isPass() && !move.isResign())
+    if (playpattern[level1][level2]<playpatternnum && !move.isPass())
     {
-     if (pretty)
-      ss<<" pattern3x3playout:0x"<<std::hex<<std::setw(5)<<std::setfill('0')<<level*playpatternnum+playpattern[level1][level2];
-     else
-      ss<<" "<<((int)patternids->getGamma(level)-id0)*playpatternnum+playpattern[level1][level2];
+      if (patterngammas->hasGamma(level) &&  !move.isResign())
+      {
+       if (pretty)
+        ss<<" pattern3x3playout:0x"<<std::hex<<std::setw(5)<<std::setfill('0')<<level*playpatternnum+playpattern[level1][level2];
+       else
+        ss<<" "<<((int)patternids->getGamma(level)-id0)*playpatternnum+playpattern[level1][level2];
+      }
     }
+    //else
+    //{
+    //  if (!move.isResign())
+    //  {
+    //    //this is not a move around last and secondlas move
+    //    if (pretty)
+    //      ss<<" pattern3x3playout:0x"<<std::hex<<std::setw(5)<<std::setfill('0')<<0;
+    //    else
+    //      ss<<" "<<((int)patternids->getGamma(0)-id0)*playpatternnum+0;
+    //  }
+    //}
     return ss.str();
   }
   level=this->matchFeatureClass(Features::PASS,board,cfglastdist,cfgsecondlastdist,move);
@@ -2388,13 +2402,18 @@ std::string Features::getFeatureIdList(bool playout) const
         {
           for (int level1=0;level1<4;level1++)
             for (int level2=0;level2<4;level2++)
-            if (playpattern[level1][level2]<playpatternnum)
+            if (playpattern[level1][level2]<playpatternnum-1)
             {
               if (id/playpatternnum+id0==patternids->getGamma(level))
                 ss<<std::dec<<(id++)<<" pattern3x3playout:0x"<<std::hex<<std::setw(5)<<std::setfill('0')<<level*playpatternnum+playpattern[level1][level2]<<"\n";
               else
                 fprintf(stderr,"WARNING! pattern id mismatch %d\n",id);
             }
+          if (id/playpatternnum+id0==patternids->getGamma(level)) //now the last patternids are only one
+            ss<<std::dec<<(id++)<<" pattern3x3playout:0x"<<std::hex<<std::setw(5)<<std::setfill('0')<<level*playpatternnum+(playpatternnum-1)<<"\n";
+          else
+            fprintf(stderr,"WARNING! pattern id mismatch %d\n",id);
+            
         }
     }
     return ss.str();

@@ -62,8 +62,15 @@ ${MMFEATURES}
 
 echo "$MMHEADER" > $TEMPMM
 
+touch $TEMPGTP
+
+#if availible preload the better configuration, used for playout training, as trigger of patternmove is important there
+if test -x /home/detlef/gomill/preconfig.gtp; then
+  cat /home/detlef/gomill/preconfig.gtp >$TEMPGTP
+fi
+
 #here is a probability to introduce (1.0) it says with which probability a move is taken for the data base. set to 1 for original behaviour
-echo -e "loadfeaturegammas ${INITIALPATTERNGAMMAS}\nparam features_output_competitions 0.1\nparam features_output_competitions_mmstyle 1\n${SMALLONLY}" > $TEMPGTP
+echo -e "loadfeaturegammas ${INITIALPATTERNGAMMAS}\nparam features_output_competitions 0.3\nparam features_output_competitions_mmstyle 1\n${SMALLONLY}" >> $TEMPGTP
 echo "param features_ladders $LADDERS" >> $TEMPGTP
 echo "param features_output_for_playout $FORPLAYOUT" >> $TEMPGTP
 

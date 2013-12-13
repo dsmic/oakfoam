@@ -154,10 +154,19 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","test_p25",&(params->test_p25),0.0);
   params->addParameter("playout","test_p26",&(params->test_p26),0.0);
   params->addParameter("playout","test_p27",&(params->test_p27),0.0);
-  params->addParameter("playout","test_p28",&(params->test_p28),0.0);
+  params->addParameter("playout","test_p28",&(params->test_p28),1.0);
   params->addParameter("playout","test_p29",&(params->test_p29),0.0);
   params->addParameter("playout","test_p30",&(params->test_p30),0.0);
- 
+  params->addParameter("playout","test_p31",&(params->test_p31),0.0);
+  params->addParameter("playout","test_p32",&(params->test_p32),0.0);
+  params->addParameter("playout","test_p33",&(params->test_p33),0.0);
+  params->addParameter("playout","test_p34",&(params->test_p34),0.0);
+  params->addParameter("playout","test_p35",&(params->test_p35),0.0);
+  params->addParameter("playout","test_p36",&(params->test_p36),0.0);
+  params->addParameter("playout","test_p37",&(params->test_p37),0.0);
+  params->addParameter("playout","test_p38",&(params->test_p38),0.0);
+  params->addParameter("playout","test_p39",&(params->test_p39),0.0);
+  
   params->addParameter("tree","ucb_c",&(params->ucb_c),UCB_C);
   params->addParameter("tree","ucb_init",&(params->ucb_init),UCB_INIT);
 
@@ -4083,7 +4092,22 @@ void Engine::makeMove(Go::Move move)
     );
   #endif
 #define WITH_P(A) (A>=1.0 || (A>0 && threadpool->getThreadZero()->getSettings()->rand->getRandomReal()<A))  
-  if (WITH_P(params->features_output_competitions))
+
+  bool playoutmove_triggered=true;
+  if (params->features_output_for_playout)
+  { 
+    Go::Color col=move.getColor();
+    Go::Move movetmp=Go::Move(col,Go::Move::PASS);
+    Go::Board *playoutboard=currentboard->copy();
+    playoutboard->turnSymmetryOff();
+    if (params->playout_features_enabled>0)
+      playoutboard->setFeatures(features,params->playout_features_incremental,params->test_p8==0);
+    playout->getPlayoutMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,movetmp,NULL);
+    if (!movetmp.isPass())
+      playoutmove_triggered=false;
+    delete playoutboard;
+  }  
+  if (WITH_P(params->features_output_competitions) && playoutmove_triggered)
   {
     bool isawinner=true;
     Go::ObjectBoard<int> *cfglastdist=NULL;
@@ -4102,7 +4126,17 @@ void Engine::makeMove(Go::Move move)
         gtpe->getOutput()->printfDebug("\n");
       }
       else
-        isawinner=false; 
+      { //should be not used at the moment, as all strings get a feature value, was used for calculating not attached feature value before
+      if (!params->features_output_for_playout)
+        isawinner=false;
+      else
+        {
+          gtpe->getOutput()->printfDebug("[features]:# competition (%d,%s)\n",(currentboard->getMovesMade()+1),"NN");
+          gtpe->getOutput()->printfDebug("[features]:%s*","NN");
+          gtpe->getOutput()->printfDebug("%s"," 0");
+          gtpe->getOutput()->printfDebug("\n");
+        }
+      }
     }
     else
       gtpe->getOutput()->printfDebug("[features]:# competition (%d,%s)\n",(currentboard->getMovesMade()+1),Go::Position::pos2string(move.getPosition(),boardsize).c_str());
@@ -4110,6 +4144,7 @@ void Engine::makeMove(Go::Move move)
     if (isawinner)
     {
       Go::Color col=move.getColor();
+      std::string notnearbymove="[features]:NN: 0\n";
       for (int p=0;p<currentboard->getPositionMax();p++)
       {
         Go::Move m=Go::Move(col,p);
@@ -4126,8 +4161,15 @@ void Engine::makeMove(Go::Move move)
             gtpe->getOutput()->printfDebug("%s",featurestring.c_str());
             gtpe->getOutput()->printfDebug("\n");
           }
+          else if (params->features_output_for_playout && m==move)
+          { //should be not used at the moment, as all strings get a feature value, was used for calculating not attached feature value before
+            //not nearby move is winner
+            notnearbymove="[features]:" + Go::Position::pos2string(p,boardsize) + "* 0\n";
+          }
         }
       }
+      if (params->features_output_for_playout)
+        gtpe->getOutput()->printfDebug(notnearbymove);  //the not nearby move is added with mm id 0(not used otherwize)
       {
         Go::Move m=Go::Move(col,Go::Move::PASS);
         if (currentboard->validMove(m) || m==move)

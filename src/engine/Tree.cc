@@ -1009,6 +1009,8 @@ float Tree::getUnPruneFactor(float *moveValues,float mean, int num, float prob_l
   if (params->uct_rave_unprune_decay>0)
   {
     factor=log((1000.0*gamma/local_part*params->uct_rave_unprune_decay)/(parent->raveplayouts+params->uct_rave_unprune_decay)+1.0); 
+    if (params->uct_rave_unprune_decay>=1000000) //to disable without changing to old factor...
+      factor=log((1000.0*gamma/local_part)+1.0); 
     //ELO tests
     //
     // factor=gamma/parent->getChildrenTotalFeatureGamma()*exp(-parent->raveplayouts*params->uct_rave_unprune_decay);

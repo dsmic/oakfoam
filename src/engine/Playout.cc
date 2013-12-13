@@ -818,6 +818,12 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
       return;
     }
   }
+
+  if (params->features_output_for_playout)
+  {
+    move=Go::Move(col,Go::Move::PASS);
+    return ;  //used for training of playout patterns 3x3. If returned PASS the pattern move is triggered!
+  }
   
   if (WITH_P(params->playout_patterns_p))
   {
@@ -1075,13 +1081,15 @@ if (params->playout_random_weight_territory_n>0)
   int patternmove=-1;
   float bestvalue=-1.0;
 
-  for (int i=0;i<params->playout_random_weight_territory_n;i++)
+  int count_legal_moves=0;
+  for (int i=0;i<params->playout_random_weight_territory_n*5;i++)
   {
     int p=rand->getRandomInt(board->getPositionMax());
     if (doapproachmoves)
       this->replaceWithApproachMove(settings,board,col,p);
     if (board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes))
     {
+      count_legal_moves++;
       // only circular pattern
       float v=params->engine->getTerritoryMap()->getPositionOwner(p);
         
@@ -1097,12 +1105,26 @@ if (params->playout_random_weight_territory_n>0)
         v+=params->test_p11;
       if (params->test_p21>0 && board->surroundingEmpty(p)==8)
         v+=params->test_p21;
+      if (params->test_p31>0 && board->isAtari(Go::Move(col,p)))
+        v+=params->test_p31;
+      if (params->test_p29>0)
+      {
+        unsigned int pattern=Pattern::ThreeByThree::makeHash(board,p);
+        if (col==Go::WHITE)
+          pattern=Pattern::ThreeByThree::invert(pattern);
+        pattern=Pattern::ThreeByThree::smallestEquivalent(pattern);
+        int MaxSecondLast=board->getMaxDistance(p,board->getSecondLastMove().getPosition());
+        int MaxLast=board->getMaxDistance(p,board->getLastMove().getPosition());
+        v+=params->test_p29*pow(params->engine->getFeatures()->getFeatureGammaPlayoutPattern(pattern,MaxLast,MaxSecondLast),params->test_p30);
+      }
       if (v>bestvalue)
       {
         patternmove=p;
         bestvalue=v;
       }
     }
+    if (count_legal_moves >= params->playout_random_weight_territory_n)
+      break;
   }
   if (patternmove>=0)
   {
@@ -1478,7 +1500,14 @@ void Playout::getPatternMove(Worker::Settings *settings, Go::Board *board, Go::C
   Random *const rand=settings->rand;
   Pattern::ThreeByThreeTable *const patterntable=params->engine->getPatternTable();
   Pattern::ThreeByThreeGammas *const patterngammas=params->engine->getFeatures()->getPatternGammas();
-
+  float *patternmovesgamma;
+  if (params->playout_patterns_gammas_p>0)
+  {
+    patternmovesgamma=new float[17];
+    for (int i=0;i<17;i++)
+      patternmovesgamma[i]=0;
+  }
+    
   int *patternmoves=posarray;
   int patternmovescount=0;
   
@@ -1486,7 +1515,6 @@ void Playout::getPatternMove(Worker::Settings *settings, Go::Board *board, Go::C
   {
     int pos=board->getLastMove().getPosition();
     int size=board->getSize();
-    
     foreach_adjdiag(pos,p,{
       if (board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p2,params->playout_avoid_lbmf_p2, params->playout_avoid_bpr_p2, passes))
       {
@@ -1507,6 +1535,7 @@ void Playout::getPatternMove(Worker::Settings *settings, Go::Board *board, Go::C
           int MaxSecondLast=board->getMaxDistance(p,board->getSecondLastMove().getPosition());
           pattern=Pattern::ThreeByThree::smallestEquivalent(pattern);
           //if (patterngammas->hasGamma(pattern) && params->test_p6*rand->getRandomReal()+params->playout_patterns_gammas_p < patterngammas->getGamma(pattern))
+          /*//This was not significantly weaker than the move complicated solution impemented at the moment
           if (params->test_p6*rand->getRandomReal()+params->playout_patterns_gammas_p < params->engine->getFeatures()->getFeatureGammaPlayoutPattern(pattern,1,MaxSecondLast))
           {
             //fprintf(stderr,"patterngamma %f\n",patterngammas->getGamma(pattern));
@@ -1515,18 +1544,28 @@ void Playout::getPatternMove(Worker::Settings *settings, Go::Board *board, Go::C
             patternmoves[patternmovescount]=p;
             patternmovescount++;
           }
+          */
+            if (params->debug_on)
+              fprintf(stderr,"patterngamma %i %i %s %f\n",1,MaxSecondLast,Go::Move(col,p).toString(board->getSize()).c_str(),params->engine->getFeatures()->getFeatureGammaPlayoutPattern(pattern,1,MaxSecondLast));
+            patternmoves[patternmovescount]=p;
+            patternmovesgamma[patternmovescount]=params->engine->getFeatures()->getFeatureGammaPlayoutPattern(pattern,1,MaxSecondLast);
+            patternmovescount++;
         }
       }
     });
   }
-
-  if (board->getSecondLastMove().isNormal() && (WITH_P(params->test_p14) || (WITH_P(params->test_p27) && board->getMaxDistance(board->getSecondLastMove().getPosition(),board->getLastMove().getPosition())==1)))
+  int pcnow=patternmovescount;
+  
+  if (board->getSecondLastMove().isNormal() && (WITH_P(params->test_p14) || (params->playout_patterns_gammas_p>0) || (WITH_P(params->test_p27) && board->getMaxDistance(board->getSecondLastMove().getPosition(),board->getLastMove().getPosition())==1)))
   {
     int pos=board->getSecondLastMove().getPosition();
     int size=board->getSize();
     
     foreach_adjdiag(pos,p,{
-      if (board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p2,params->playout_avoid_lbmf_p2, params->playout_avoid_bpr_p2, passes))
+      bool found=false;
+      for (int j=0;j<pcnow;j++)
+        if (p==patternmoves[j]) found=true; //remove double entries
+      if (!found && board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p2,params->playout_avoid_lbmf_p2, params->playout_avoid_bpr_p2, passes))
       {
         unsigned int pattern=Pattern::ThreeByThree::makeHash(board,p);
         if (col==Go::WHITE)
@@ -1545,6 +1584,7 @@ void Playout::getPatternMove(Worker::Settings *settings, Go::Board *board, Go::C
           int MaxLast=board->getMaxDistance(p,board->getLastMove().getPosition());
           pattern=Pattern::ThreeByThree::smallestEquivalent(pattern);
           //if (patterngammas->hasGamma(pattern) && params->test_p6*rand->getRandomReal()+params->playout_patterns_gammas_p < patterngammas->getGamma(pattern))
+          /* //This was not significantly weaker than the move complicated solution impemented at the moment
           if (params->test_p6*rand->getRandomReal()+params->playout_patterns_gammas_p < params->engine->getFeatures()->getFeatureGammaPlayoutPattern(pattern,MaxLast,1))
           {
             //fprintf(stderr,"patterngamma %f\n",patterngammas->getGamma(pattern));
@@ -1553,15 +1593,52 @@ void Playout::getPatternMove(Worker::Settings *settings, Go::Board *board, Go::C
             patternmoves[patternmovescount]=p;
             patternmovescount++;
           }
+          */
+            if (params->debug_on)
+              fprintf(stderr,"patterngamma %i %i %s %f\n",MaxLast,1,Go::Move(col,p).toString(board->getSize()).c_str(),params->engine->getFeatures()->getFeatureGammaPlayoutPattern(pattern,MaxLast,1));
+            patternmoves[patternmovescount]=p;
+            patternmovesgamma[patternmovescount]=params->engine->getFeatures()->getFeatureGammaPlayoutPattern(pattern,MaxLast,1);
+            patternmovescount++;
+          
         }
       }
     });
   }
   
-  if (patternmovescount>0)
+  if (patternmovescount>0 && params->playout_patterns_gammas_p==0)
   {
     int i=rand->getRandomInt(patternmovescount);
     move=Go::Move(col,patternmoves[i]);
+  }
+  if (params->playout_patterns_gammas_p>0)
+  {
+    patternmoves[patternmovescount]=Go::Move::PASS;
+    patternmovesgamma[patternmovescount]=params->playout_patterns_gammas_p;
+    patternmovescount++;
+    if (patternmovescount>17)
+      fprintf(stderr,"Should not happen!!!\n");
+    float gammasum=0;
+#define scalegamma(A) (pow((A)+1,params->test_p28)-1)
+    for (int i=0;i<patternmovescount;i++)
+    {
+      //for (int j=0;j<i;j++)
+      //  if (patternmoves[i]==patternmoves[j]) patternmovesgamma[i]=0; //remove double entries
+      gammasum+=scalegamma(patternmovesgamma[i]);
+    }
+    float gammatest=rand->getRandomReal()*gammasum;
+    gammasum=0;
+    int ii;
+    for (ii=0;ii<patternmovescount;ii++)
+      {
+        gammasum+=scalegamma(patternmovesgamma[ii]);
+        if (gammasum>gammatest)
+          break;
+      }
+    if (ii==patternmovescount-1)
+      move=Go::Move(col,Go::Move::PASS);
+    else
+      move=Go::Move(col,patternmoves[ii]);
+  delete patternmovesgamma;
   }
 }
 

@@ -128,7 +128,7 @@ init "Training on $(echo "${TRAIN_GAMES:-}" | wc -l) games"
 (echo "${TRAIN_GAMES:-}" | ../../features/train-gammas.sh $INITGAMMAS large ${DTFILE:--} ${NONPATT_LADDERS:-0} ${FORPLAYOUT:-0} > $TRAINEDGAMMAS) 2>&1 | lastline
 check $?
 
-rm -f $INITGAMMAS
+#rm -f $INITGAMMAS
 
 # plot weights?
 

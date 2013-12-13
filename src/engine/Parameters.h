@@ -211,6 +211,15 @@ class Parameters
     float test_p29;
     float test_p30;
     
+    float test_p31;
+    float test_p32;
+    float test_p33;
+    float test_p34;
+    float test_p35;
+    float test_p36;
+    float test_p37;
+    float test_p38;
+    float test_p39;
 
     
     /** Skip all playout heuristics with this probability.
