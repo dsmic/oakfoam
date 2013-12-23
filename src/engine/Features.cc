@@ -694,6 +694,9 @@ unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::B
   
   if (checkforvalidmove && !board->validMove(move))
     return 0;
+
+  if (!params->features_tactical && (featclass!=Features::PATTERN3X3) && (featclass!=Features::CIRCPATT))
+    return 0; // disable tactical features
   
   switch (featclass)
   {
@@ -861,6 +864,8 @@ unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::B
     }
     case Features::LASTDIST:
     {
+      if (params->features_history_agnostic)
+        return 0;
       if (board->getLastMove().isResign() || (!params->features_pass_no_move_for_lastdist && board->getLastMove().isPass()))
         return 0;
       //this returned 0 in case of pass before. This lead playing bad after a pass, as it
@@ -894,6 +899,8 @@ unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::B
     }
     case Features::SECONDLASTDIST:
     {
+      if (params->features_history_agnostic)
+        return 0;
       if (board->getSecondLastMove().isPass() || board->getSecondLastMove().isResign())
         return 0;
       //ignore second last, if last was pass
@@ -913,6 +920,8 @@ unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::B
     }
     case Features::CFGLASTDIST:
     {
+      if (params->features_history_agnostic)
+        return 0;
       if (board->getLastMove().isPass() || board->getLastMove().isResign())
         return 0;
       
@@ -930,6 +939,8 @@ unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::B
     }
     case Features::CFGSECONDLASTDIST:
     {
+      if (params->features_history_agnostic)
+        return 0;
       if (board->getLastMove().isPass() || board->getLastMove().isResign())
         return 0;
       

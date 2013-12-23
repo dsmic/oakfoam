@@ -159,7 +159,7 @@ TRAINEDGAMMAS="trained.gamma"
 if (( ${TRAIN:-1} != 0 )); then
   init "Training on $(echo "${TRAIN_GAMES:-}" | wc -l) games"
   echo "${TRAIN_GAMES:-}" > games-train.dat
-  (echo "${TRAIN_GAMES:-}" | ../../features/train-gammas.sh $INITGAMMAS large ${DTFILE:--} ${NONPATT_LADDERS:-0} > $TRAINEDGAMMAS) 2>&1 | lastline
+  (echo "${TRAIN_GAMES:-}" | ../../features/train-gammas.sh $INITGAMMAS large ${DTFILE:--} ${NONPATT_LADDERS:-0} ${TACTICAL:-1} ${HISTORY_AGNOSTIC:-0} > $TRAINEDGAMMAS) 2>&1 | lastline
   check $?
 else
   cp $INITGAMMAS $TRAINEDGAMMAS

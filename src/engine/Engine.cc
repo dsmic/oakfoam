@@ -271,6 +271,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("other","undo_enable",&(params->undo_enable),true);
   
   params->addParameter("other","features_only_small",&(params->features_only_small),false);
+  params->addParameter("other","features_tactical",&(params->features_tactical),true);
+  params->addParameter("other","features_history_agnostic",&(params->features_history_agnostic),false);
   params->addParameter("other","features_output_competitions",&(params->features_output_competitions),0.0);
   params->addParameter("other","features_output_competitions_mmstyle",&(params->features_output_competitions_mmstyle),false);
   params->addParameter("other","features_ordered_comparison",&(params->features_ordered_comparison),false);

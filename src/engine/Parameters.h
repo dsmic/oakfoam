@@ -569,6 +569,10 @@ class Parameters
     bool features_ordered_comparison_move_num;
     /** Whether to try take ladders into account with features. */
     bool features_ladders;
+    /** Whether to enable tactical features. */
+    bool features_tactical;
+    /** Whether to only use history-agnostic features. */
+    bool features_history_agnostic;
     /** Whether to use decision trees with features. */
     bool features_dt_use;
     /** Probability that the circular patterns are listed after a move. */

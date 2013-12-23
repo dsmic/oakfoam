@@ -23,6 +23,7 @@ GAMES_PATH="/data/go/games/gogod/"
 GAMES="`find "$GAMES_PATH" -name '*.sgf' | sort`"
 
 # boolean parameters (0:disabled, 1:enabled)
+TACTICAL=1    # tactical
 PATT_3X3=0    # 3x3 patterns
 PATT_CIRC=0   # circular patterns
 DT=1          # decision trees
@@ -39,7 +40,8 @@ PATT_CIRC_GAMES="`get_games_excl_test 10`"
 DT_GAMES="`get_games_excl_test 10`"
 TRAIN_GAMES="`get_games_excl_test 10`"
 
-# non-pattern
+# tactical
+HISTORY_AGNOSTIC=0
 NONPATT_LADDERS=0
 
 # 3x3 patterns

@@ -30,6 +30,8 @@ DTFILE=${3:--}
 # fi
 
 LADDERS=${4:-0}
+TACTICAL=${5:-1}
+HISTORY_AGNOSTIC=${6:-0}
 
 if ! test -x $WD/../../oakfoam; then
   echo "File $WD/../oakfoam not found" >&2
@@ -65,6 +67,8 @@ echo "$MMHEADER" > $TEMPMM
 #here is a probability to introduce (1.0) it says with which probability a move is taken for the data base. set to 1 for original behaviour
 echo -e "loadfeaturegammas ${INITIALPATTERNGAMMAS}\nparam features_output_competitions 0.1\nparam features_output_competitions_mmstyle 1\n${SMALLONLY}" > $TEMPGTP
 echo "param features_ladders $LADDERS" >> $TEMPGTP
+echo "param features_tactical $TACTICAL" >> $TEMPGTP
+echo "param features_history_agnostic $HISTORY_AGNOSTIC" >> $TEMPGTP
 echo 'param undo_enable 0' >> $TEMPGTP # so gogui-adapter doesn't send undo commands
 
 if [ "$DTFILE" != "-" ]; then
