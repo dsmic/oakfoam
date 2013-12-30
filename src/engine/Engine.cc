@@ -159,9 +159,9 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","test_p30",&(params->test_p30),0.0);
   params->addParameter("playout","test_p31",&(params->test_p31),0.0);
   params->addParameter("playout","test_p32",&(params->test_p32),0.0);
-  params->addParameter("playout","test_p33",&(params->test_p33),0.0);
-  params->addParameter("playout","test_p34",&(params->test_p34),0.0);
-  params->addParameter("playout","test_p35",&(params->test_p35),0.0);
+  params->addParameter("playout","test_p33",&(params->test_p33),1.0);
+  params->addParameter("playout","test_p34",&(params->test_p34),1.0);
+  params->addParameter("playout","test_p35",&(params->test_p35),1.0);
   params->addParameter("playout","test_p36",&(params->test_p36),0.0);
   params->addParameter("playout","test_p37",&(params->test_p37),0.0);
   params->addParameter("playout","test_p38",&(params->test_p38),0.0);

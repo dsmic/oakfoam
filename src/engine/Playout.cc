@@ -298,19 +298,20 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
   int kodelay=(board->isCurrentSimpleKo()?3:0); // if a ko occurs near the end of a playout, carry on for a bit
 
   float trylocal_p=1.0;
+  bool earlymoves=true;
   while (board->getPassesPlayed()<2 || kodelay>0)
   {
     bool resign;
     if (movereasons!=NULL)
     {
-      this->getPlayoutMove(settings,board,coltomove,move,posarray,critarray,(coltomove==Go::BLACK?bpasses:wpasses),(coltomove==poolcol?&pool:&poolcrit),&poolcrit,&reason,&trylocal_p,black_gammas,white_gammas);
+      this->getPlayoutMove(settings,board,coltomove,move,posarray,critarray,(coltomove==Go::BLACK?bpasses:wpasses),(coltomove==poolcol?&pool:&poolcrit),&poolcrit,&reason,&trylocal_p,black_gammas,white_gammas,&earlymoves);
       //fprintf(stderr,"move test %s\n",move.toString (9).c_str());
       if (params->playout_useless_move)
         this->checkUselessMove(settings,board,coltomove,move,posarray,&reason);
     }
     else
     {
-      this->getPlayoutMove(settings,board,coltomove,move,posarray,critarray,(coltomove==Go::BLACK?bpasses:wpasses),(coltomove==poolcol?&pool:&poolcrit),&poolcrit,NULL,&trylocal_p,black_gammas,white_gammas);
+      this->getPlayoutMove(settings,board,coltomove,move,posarray,critarray,(coltomove==Go::BLACK?bpasses:wpasses),(coltomove==poolcol?&pool:&poolcrit),&poolcrit,NULL,&trylocal_p,black_gammas,white_gammas,&earlymoves);
       //fprintf(stderr,"move test %s\n",move.toString (9).c_str());
       if (params->playout_useless_move)
         this->checkUselessMove(settings,board,coltomove,move,posarray);
@@ -552,11 +553,11 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
 
 }
 
-void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, float critarray[], int passes, std::vector<int> *pool, std::vector<int> *poolCR, std::string *reason, float *trylocal_p, float *black_gammas, float *white_gammas)
+void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, float critarray[], int passes, std::vector<int> *pool, std::vector<int> *poolCR, std::string *reason, float *trylocal_p, float *black_gammas, float *white_gammas, bool *earlymoves)
 {
   int *posarray = new int[board->getPositionMax()];
   
-  this->getPlayoutMove(settings,board,col,move,posarray,critarray,passes,pool,poolCR,reason,trylocal_p,black_gammas,white_gammas);
+  this->getPlayoutMove(settings,board,col,move,posarray,critarray,passes,pool,poolCR,reason,trylocal_p,black_gammas,white_gammas,earlymoves);
   
   delete[] posarray;
 }
@@ -589,7 +590,7 @@ void Playout::checkUselessMove(Worker::Settings *settings, Go::Board *board, Go:
   }
 }
 
-void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, float critarray[], int passes, std::vector<int> *pool, std::vector<int> *poolcrit, std::string *reason, float *trylocal_p, float *black_gammas, float *white_gammas)
+void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, float critarray[], int passes, std::vector<int> *pool, std::vector<int> *poolcrit, std::string *reason, float *trylocal_p, float *black_gammas, float *white_gammas, bool *earlymoves)
 {
   /* trylocal_p can be used to influence parameters from move to move in a playout. It starts with 1.0
    * 
@@ -736,7 +737,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     }
   }
   
-  if ((params->playout_order==0 || params->playout_order>3) && params->playout_lastcapture_enabled)
+  if ((params->playout_order==0 || params->playout_order>3) && params->playout_lastcapture_enabled && (WITH_P(params->test_p33)||*earlymoves))
   {
     this->getLastCaptureMove(settings,board,col,move,posarray);
     if (!move.isPass())
@@ -750,7 +751,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     }
   }
 
-  if (params->playout_last2libatari_enabled)
+  if (params->playout_last2libatari_enabled && (WITH_P(params->test_p34)||*earlymoves))
   {
     this->getLast2LibAtariMove(settings,board,col,move,posarray);
     if (!move.isPass())
@@ -777,7 +778,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     }
   }
 
-  if (params->playout_nakade_enabled)
+  if (params->playout_nakade_enabled && WITH_P(params->test_p35))
   {
     this->getNakadeMove(settings,board,col,move,posarray);
     //fprintf(stderr,"move nakade %s\n",move.toString (9).c_str());
@@ -791,6 +792,9 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
       return;
     }
   }
+
+  if (move.isPass())
+    *earlymoves=false;
 
   if (params->playout_nearby_enabled)
   {
@@ -1079,10 +1083,10 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
 if (params->playout_random_weight_territory_n>0)
 {
   int patternmove=-1;
-  float bestvalue=-1.0;
+  float bestvalue=-10000.0;
 
   int count_legal_moves=0;
-  for (int i=0;i<params->playout_random_weight_territory_n*5;i++)
+  for (int i=0;i<params->playout_random_weight_territory_n*(params->test_p32+1);i++)
   {
     int p=rand->getRandomInt(board->getPositionMax());
     if (doapproachmoves)
@@ -1115,7 +1119,7 @@ if (params->playout_random_weight_territory_n>0)
         pattern=Pattern::ThreeByThree::smallestEquivalent(pattern);
         int MaxSecondLast=board->getMaxDistance(p,board->getSecondLastMove().getPosition());
         int MaxLast=board->getMaxDistance(p,board->getLastMove().getPosition());
-        v+=params->test_p29*pow(params->engine->getFeatures()->getFeatureGammaPlayoutPattern(pattern,MaxLast,MaxSecondLast),params->test_p30);
+        v+=params->test_p29*log(params->engine->getFeatures()->getFeatureGammaPlayoutPattern(pattern,MaxLast,MaxSecondLast)+exp(-1.0));
       }
       if (v>bestvalue)
       {
@@ -1145,7 +1149,8 @@ if (params->test_p4>0)
 {
   int p=-1;
   float prob=0;
-  for (int i=0;i<params->test_p4;i++)
+  int count=0;
+  for (int i=0;i<params->test_p4*(params->test_p36+1);i++)
   {
     int p_tmp=rand->getRandomInt(board->getPositionMax());
     if (board->validMove(Go::Move(col,p_tmp))&& !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes))
@@ -1156,6 +1161,9 @@ if (params->test_p4>0)
         prob=prob_tmp;
         p=p_tmp;
       }
+      count++;
+      if (count>=params->test_p4)
+        break;
     }
   }
   if (p>=0)
@@ -1970,7 +1978,7 @@ void Playout::getLastCaptureMove(Worker::Settings *settings, Go::Board *board, G
   }
 }
 
-void Playout::getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray,float p)
+void Playout::getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray,float pp)
 {
   Random *const rand=settings->rand;
 
@@ -2063,7 +2071,7 @@ void Playout::getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go:
       if (group!=NULL && group->inAtari())
       {
         int liberty=group->getAtariPosition();
-        if ((WITH_P(p) || group->numOfStones()>1) && board->validMove(Go::Move(col,liberty)))
+        if ((WITH_P(pp) || group->numOfStones()>1) && board->validMove(Go::Move(col,liberty)))
         {
           possiblemoves[possiblemovescount]=liberty;
           possiblemovescount++;

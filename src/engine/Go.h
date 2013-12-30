@@ -224,6 +224,35 @@ namespace Go
       bool *const data;
   };
 
+  /** Board with a bit for each position. */
+  class IntBoard
+  {
+    public:
+      /** Create an instance with given board size. */
+      IntBoard(int s);
+      ~IntBoard();
+      
+      /** Get the value of a position. */
+      inline bool get(int pos) const { return data[pos]; };
+      /** Set the value of a position. */
+      inline void set(int pos, int val=1) { data[pos]=val; };
+      /** Clear a position.
+       * Set the position to false.
+       */
+      inline void clear(int pos) { this->set(pos,0); };
+      /** Fill the whole board with a given value. */
+      inline void fill(int val) { for (int i=0;i<sizedata;i++) data[i]=val; };
+      /** Clear the whole board. */
+      inline void clear() { this->fill(0); };
+
+      /** Create a copy of this board. */
+      Go::BitBoard *copy() const;
+      
+    private:
+      const int size,sizesq,sizedata;
+      int *const data;
+  };
+
   class CorrelationData
   {
     public:

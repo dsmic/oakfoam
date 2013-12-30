@@ -135,7 +135,7 @@ float Tree::getRAVERatio() const
   if (raveplayouts>0 && getMove().isNormal())
     return (float)ravewins/raveplayouts;
   else
-    return 0;
+    return 0.01;
 }
 
 float Tree::getEARLYRAVERatio() const
@@ -574,9 +574,34 @@ float Tree::getUrgency(bool skiprave) const
   if (params->weight_score>0)
     val+=params->weight_score*this->getScoreMean();
 
-  if (params->uct_progressive_bias_enabled)
+  if (params->uct_progressive_bias_enabled && params->test_p38==0) //p38 turns this off, as it is replaced by pachi style bias
     val+=this->getProgressiveBias();
 
+  if (params->test_p38>0) //progressive bias as pre wins and games, comes closer to pachi style
+  {
+    float pre_games=1;
+    float pre_wins=1;
+    float sign=-1;
+    if (gamma>1.0)
+    {
+      sign=1;
+      pre_wins=params->test_p38*pow(log(gamma),params->uct_progressive_bias_exponent);
+      pre_games=pre_wins;
+    }
+    else if (gamma>0.0)
+    {
+      pre_wins=0;
+      pre_games=params->test_p38*(-pow(log(gamma),params->uct_progressive_bias_exponent));
+    }
+    val=//(params->test_p37/2.0+pre_wins+playouts*this->getVal(skiprave))/(params->test_p37+pre_games+playouts)
+
+      this->getVal(skiprave)+10.0+
+      sign*pow(fabs(log(gamma))*params->test_p38,params->uct_progressive_bias_exponent)/pow(playouts+1,params->test_p37)+
+      exp(-params->test_p39*playouts)+ //first moves after unprunning need to be played first, otherwize the ucb takes long?!
+          +uctbias + params->weight_score*this->getScoreMean() + biasbonus/pow(playouts+1,params->test_p37);
+  }
+  
+  
   //risc penalty
   if (params->test_p3>0)
     val-=params->test_p3*this->getScoreSD()/params->board_size/params->board_size;
