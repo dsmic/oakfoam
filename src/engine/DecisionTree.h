@@ -171,7 +171,7 @@ class DecisionTree
     void setLeafWeight(int id, float w);
     void updateDescent(GraphCollection *graphs, Go::Move move, bool win);
     void updateDescent(GraphCollection *graphs, Go::Move winmove);
-    void getTreeStats(int &treenodes, int &leaves, int &maxdepth, float &avgdepth, int &maxnodes, float &avgnodes);
+    void getTreeStats(int &treenodes, int &leaves, int &maxdepth, int &sumdepth, int &sumsqdepth, int &maxnodes, int &sumnodes, int &sumsqnodes, float &sumlogweights, float &sumsqlogweights);
     std::string getLeafPath(int id);
 
     static std::list<DecisionTree*> *parseString(Parameters *params, std::string rawdata, unsigned long pos = 0);
@@ -317,7 +317,7 @@ class DecisionTree
 
         void populateEmptyStats(Type type, unsigned int maxnode = 0);
         void populateLeafIds(std::vector<Node*> &leafmap);
-        void getTreeStats(Type type, int depth, int nodes, int &treenodes, int &leaves, int &maxdepth, int &sumdepth, int &maxnodes, int &sumnodes);
+        void getTreeStats(Type type, int depth, int nodes, int &treenodes, int &leaves, int &maxdepth, int &sumdepth, int &sumsqdepth, int &maxnodes, int &sumnodes, int &sumsqnodes, float &sumlogweights, float &sumsqlogweights);
 
         void clearStats() { delete stats; stats = NULL; };
 

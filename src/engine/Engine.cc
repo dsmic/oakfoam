@@ -3394,6 +3394,18 @@ void Engine::gtpDTStats(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printf("decision trees stats:");
+
+  int forest_treenodes=0;
+  int forest_leaves=0;
+  int forest_maxdepth=0;
+  int forest_sumdepth=0;
+  int forest_sumsqdepth=0;
+  int forest_maxnodes=0;
+  int forest_sumnodes=0;
+  int forest_sumsqnodes=0;
+  float forest_sumlogweights=0;
+  float forest_sumsqlogweights=0;
+
   for (std::list<DecisionTree*>::iterator iter=me->decisiontrees.begin();iter!=me->decisiontrees.end();++iter)
   {
     std::vector<std::string> *attrs = (*iter)->getAttrs();
@@ -3408,19 +3420,68 @@ void Engine::gtpDTStats(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     int treenodes;
     int leaves;
     int maxdepth;
-    float avgdepth;
+    int sumdepth;
+    int sumsqdepth;
     int maxnodes;
-    float avgnodes;
-    (*iter)->getTreeStats(treenodes,leaves,maxdepth,avgdepth,maxnodes,avgnodes);
+    int sumnodes;
+    int sumsqnodes;
+    float sumlogweights;
+    float sumsqlogweights;
+    (*iter)->getTreeStats(treenodes,leaves,maxdepth,sumdepth,sumsqdepth,maxnodes,sumnodes,sumsqnodes,sumlogweights,sumsqlogweights);
+    forest_treenodes += treenodes;
+    forest_leaves += leaves;
+    forest_sumdepth += sumdepth;
+    forest_sumsqdepth += sumsqdepth;
+    forest_sumnodes += sumnodes;
+    forest_sumsqnodes += sumsqnodes;
+    forest_sumlogweights += sumlogweights;
+    forest_sumsqlogweights += sumsqlogweights;
+    if (maxdepth > forest_maxdepth)
+      forest_maxdepth = maxdepth;
+    if (maxnodes > forest_maxnodes)
+      forest_maxnodes = maxnodes;
+
+    float avgdepth = (float)sumdepth/leaves;
+    float avgnodes = (float)sumnodes/leaves;
+
+    float vardepth = (float)sumsqdepth/leaves - avgdepth*avgdepth;
+    float varnodes = (float)sumsqnodes/leaves - avgnodes*avgnodes;
+
+    float avglogweight = sumlogweights/leaves;
+    float varlogweights = sumsqlogweights/leaves - avglogweight*avglogweight;
 
     gtpe->getOutput()->printf("\nStats for DT[%s]:\n",attrstr.c_str());
     gtpe->getOutput()->printf("  Nodes: %d\n",treenodes);
     gtpe->getOutput()->printf("  Leaves: %d\n",leaves);
     gtpe->getOutput()->printf("  Max Depth: %d\n",maxdepth);
     gtpe->getOutput()->printf("  Avg Depth: %.2f\n",avgdepth);
+    gtpe->getOutput()->printf("  Var Depth: %.2f\n",vardepth);
     gtpe->getOutput()->printf("  Max Nodes: %d\n",maxnodes);
     gtpe->getOutput()->printf("  Avg Nodes: %.2f\n",avgnodes);
+    gtpe->getOutput()->printf("  Var Nodes: %.2f\n",varnodes);
+    gtpe->getOutput()->printf("  Var LW: %.3f\n",varlogweights);
   }
+
+  float forest_avgdepth = (float)forest_sumdepth/forest_leaves;
+  float forest_avgnodes = (float)forest_sumnodes/forest_leaves;
+
+  float forest_vardepth = (float)forest_sumsqdepth/forest_leaves - forest_avgdepth*forest_avgdepth;
+  float forest_varnodes = (float)forest_sumsqnodes/forest_leaves - forest_avgnodes*forest_avgnodes;
+
+  float forest_avglogweight = forest_sumlogweights/forest_leaves;
+  float forest_varlogweights = forest_sumsqlogweights/forest_leaves - forest_avglogweight*forest_avglogweight;
+
+  gtpe->getOutput()->printf("\nStats for forest:\n");
+  gtpe->getOutput()->printf("  Nodes: %d\n",forest_treenodes);
+  gtpe->getOutput()->printf("  Leaves: %d\n",forest_leaves);
+  gtpe->getOutput()->printf("  Max Depth: %d\n",forest_maxdepth);
+  gtpe->getOutput()->printf("  Avg Depth: %.2f\n",forest_avgdepth);
+  gtpe->getOutput()->printf("  Var Depth: %.2f\n",forest_vardepth);
+  gtpe->getOutput()->printf("  Max Nodes: %d\n",forest_maxnodes);
+  gtpe->getOutput()->printf("  Avg Nodes: %.2f\n",forest_avgnodes);
+  gtpe->getOutput()->printf("  Var Nodes: %.2f\n",forest_varnodes);
+  gtpe->getOutput()->printf("  Var LW: %.3f\n",forest_varlogweights);
+
   gtpe->getOutput()->endResponse(true);
 }
 

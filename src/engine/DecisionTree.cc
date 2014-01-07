@@ -276,21 +276,23 @@ float DecisionTree::combineNodeWeights(std::list<DecisionTree::Node*> *nodes)
   return weight;
 }
 
-void DecisionTree::getTreeStats(int &treenodes, int &leaves, int &maxdepth, float &avgdepth, int &maxnodes, float &avgnodes)
+void DecisionTree::getTreeStats(int &treenodes, int &leaves, int &maxdepth, int &sumdepth, int &sumsqdepth, int &maxnodes, int &sumnodes, int &sumsqnodes, float &sumlogweights, float &sumsqlogweights)
 {
   treenodes = 0;
   leaves = 0;
   maxdepth = 0;
-  int sumdepth = 0;
+  sumdepth = 0;
+  sumsqdepth = 0;
   maxnodes = 0;
-  int sumnodes = 0;
+  sumnodes = 0;
+  sumsqnodes = 0;
+  sumlogweights = 0;
+  sumsqlogweights = 0;
 
-  root->getTreeStats(type,1,1,treenodes,leaves,maxdepth,sumdepth,maxnodes,sumnodes);
-  avgdepth = (float)sumdepth/leaves;
-  avgnodes = (float)sumnodes/leaves;
+  root->getTreeStats(type,1,1,treenodes,leaves,maxdepth,sumdepth,sumsqdepth,maxnodes,sumnodes,sumsqnodes,sumlogweights,sumsqlogweights);
 }
 
-void DecisionTree::Node::getTreeStats(DecisionTree::Type type, int depth, int nodes, int &treenodes, int &leaves, int &maxdepth, int &sumdepth, int &maxnodes, int &sumnodes)
+void DecisionTree::Node::getTreeStats(DecisionTree::Type type, int depth, int nodes, int &treenodes, int &leaves, int &maxdepth, int &sumdepth, int &sumsqdepth, int &maxnodes, int &sumnodes, int &sumsqnodes, float &sumlogweights, float &sumsqlogweights)
 {
   treenodes++;
 
@@ -301,10 +303,16 @@ void DecisionTree::Node::getTreeStats(DecisionTree::Type type, int depth, int no
     if (depth > maxdepth)
       maxdepth = depth;
     sumdepth += depth;
+    sumsqdepth += depth*depth;
 
     if (nodes > maxnodes)
       maxnodes = nodes;
     sumnodes += nodes;
+    sumsqnodes += nodes*nodes;
+
+    float logweight = log(weight);
+    sumlogweights += logweight;
+    sumsqlogweights += logweight*logweight;
   }
   else if (query!=NULL)
   {
@@ -321,7 +329,7 @@ void DecisionTree::Node::getTreeStats(DecisionTree::Type type, int depth, int no
             addnode = true;
           break;
       }
-      opt->getNode()->getTreeStats(type,depth+1,nodes+(addnode?1:0),treenodes,leaves,maxdepth,sumdepth,maxnodes,sumnodes);
+      opt->getNode()->getTreeStats(type,depth+1,nodes+(addnode?1:0),treenodes,leaves,maxdepth,sumdepth,sumsqdepth,maxnodes,sumnodes,sumsqnodes,sumlogweights,sumsqlogweights);
     }
   }
 }
