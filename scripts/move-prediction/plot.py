@@ -126,6 +126,12 @@ elif plottype == 'stages-mp': # stages of move prediction
   if 'errk' in jd.keys():
     errk = float(jd['errk'])
 
+  table = []
+  # table.append(range(xmin,xmax+1))
+  table.append(range(xmin+stage/2,xmax+1,stage))
+  tablelabels = []
+  tablelabels.append('Center of game stage')
+
   c = 0
   for f in jd['data']:
     with open(f['file'], 'rb') as csvfile:
@@ -169,7 +175,32 @@ elif plottype == 'stages-mp': # stages of move prediction
         plt.fill_between(x, err1, err2, alpha = 0.2, color = col)
         # plt.errorbar(x, z, yerr = err, fmt='.', color = col)
 
+      td = []
+      xi = 0
+      for i in table[0]:
+        while i > x[xi]:
+          xi += 1
+        td.append(y[xi])
+      table.append(td)
+      tablelabels.append(lbl)
+
   plt.legend(loc=4)
+
+  sys.stdout.write('# ' + jd['title'] + '\n')
+
+  tt = len(tablelabels)
+  for i in range(tt):
+    sys.stdout.write('# ' + ('     | ')*i + ' '*5 + '+' + ('-'*7)*(tt-i-1) + '- %d: ' % i + tablelabels[i] +'\n')
+  sys.stdout.write('#' + (' |----|')*tt + '\n')
+
+  for i in range(len(table[0])):
+    sys.stdout.write(' ')
+    for j in range(len(table)):
+      if j == 0:
+        sys.stdout.write(' %6d' % table[j][i])
+      else:
+        sys.stdout.write(' %6.3f' % table[j][i])
+    sys.stdout.write('\n')
 
 elif plottype == 'stages-le': # stages of mean log-evidence
   fig = plt.figure()
