@@ -239,6 +239,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("tree","uct_area_owner_factor_a",&(params->uct_area_owner_factor_a),UCT_AREA_OWNER_FACTOR_A);
   params->addParameter("tree","uct_area_owner_factor_b",&(params->uct_area_owner_factor_b),UCT_AREA_OWNER_FACTOR_B);
   params->addParameter("tree","uct_area_owner_factor_c",&(params->uct_area_owner_factor_c),UCT_AREA_OWNER_FACTOR_C);
+  params->addParameter("tree","uct_area_correlation_statistics",&(params->uct_area_correlation_statistics),UCT_AREA_CORRELATION_STATISTICS);
   params->addParameter("tree","uct_reprune_factor",&(params->uct_reprune_factor),UCT_REPRUNE_FACTOR);
   params->addParameter("tree","uct_factor_circpattern",&(params->uct_factor_circpattern),UCT_FACTOR_CIRCPATTERN);
   params->addParameter("tree","uct_factor_circpattern_exponent",&(params->uct_factor_circpattern_exponent),UCT_FACTOR_CIRCPATTERN_EXPONENT);
@@ -351,6 +352,12 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   hashtree=new Go::ZobristTree();
   
   territorymap=new Go::TerritoryMap(boardsize);
+  area_correlation_map=new Go::TerritoryMap*[currentboard->getPositionMax()*2];
+#warning "memory allocated for area_correlation_map"
+  for (int i=0;i<currentboard->getPositionMax()*2;i++)
+  {
+    area_correlation_map[i]=new Go::TerritoryMap(boardsize);
+  }
   probabilitymap=new Go::MoveProbabilityMap(boardsize);
   correlationmap=new Go::ObjectBoard<Go::CorrelationData>(boardsize);
   
@@ -420,6 +427,11 @@ Engine::~Engine()
   delete patterntable;
   if (movetree!=NULL)
     delete movetree;
+  for (int i=0;i<currentboard->getPositionMax()*2;i++)
+  {
+    delete area_correlation_map[i];
+  }
+  delete area_correlation_map;
   delete currentboard;
   delete movehistory;
   delete moveexplanations;
@@ -438,6 +450,7 @@ Engine::~Engine()
   {
     delete (*iter);
   }
+  
 }
 
 void Engine::run(bool web_inf, std::string web_addr, int web_port)
@@ -651,6 +664,8 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("dobenchmark",this,&Engine::gtpDoBenchmark);
   gtpe->addFunctionCommand("showcriticality",this,&Engine::gtpShowCriticality);
   gtpe->addFunctionCommand("showterritory",this,&Engine::gtpShowTerritory);
+  gtpe->addFunctionCommand("showterritoryat",this,&Engine::gtpShowTerritoryAt);
+  
   gtpe->addFunctionCommand("showmoveprobability",this,&Engine::gtpShowMoveProbability);
   gtpe->addFunctionCommand("showcorrelationmap",this,&Engine::gtpShowCorrelationMap);
   gtpe->addFunctionCommand("showratios",this,&Engine::gtpShowRatios);
@@ -698,6 +713,7 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("loadfeaturegammas %%r","Load Feature Gammas","none");
   gtpe->addAnalyzeCommand("showcriticality","Show Criticality","cboard");
   gtpe->addAnalyzeCommand("showterritory","Show Territory","dboard");
+  gtpe->addAnalyzeCommand("showterritoryat %%p %%c","Show Territory At","dboard");
   gtpe->addAnalyzeCommand("showmoveprobability","Show Move Probability","dboard");
   gtpe->addAnalyzeCommand("showcorrelationmap","Show Correlation","dboard");
   gtpe->addAnalyzeCommand("showtreelivegfx","Show Tree Live Gfx","gfx");
@@ -3058,6 +3074,66 @@ void Engine::gtpShowTerritory(void *instance, Gtp::Engine* gtpe, Gtp::Command* c
   gtpe->getOutput()->endResponse(true);
 }
 
+void Engine::gtpShowTerritoryAt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  if (cmd->numArgs()!=2)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("color vertex is required");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  Gtp::Vertex vert = cmd->getVertexArg(0);
+  Gtp::Color gtpcol = cmd->getColorArg(1);
+  int color_offset=0;
+  if (gtpcol==Gtp::BLACK)
+    color_offset=me->currentboard->getPositionMax();
+  
+  if (vert.x==-3 && vert.y==-3)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("invalid vertex");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+
+  int showpos=Go::Position::xy2pos(vert.x,vert.y,me->boardsize);
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("\n");
+  float territorycount=0;
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      int pos=Go::Position::xy2pos(x,y,me->boardsize);
+      float tmp=me->area_correlation_map[showpos+color_offset]->getPositionOwner(pos);
+      //if (tmp>0.2) territorycount++;
+      //if (tmp<-0.2) territorycount--;
+      if (tmp<0)
+        territorycount-=wf(-tmp);
+      else
+        territorycount+=wf(tmp);
+      if (tmp<0)
+        gtpe->getOutput()->printf("%.2f ",-wf(-tmp));
+      else
+        gtpe->getOutput()->printf("%.2f ",wf(tmp));  
+    }
+    gtpe->getOutput()->printf("\n");
+  }
+
+  if (territorycount-me->getHandiKomi()>0)
+    gtpe->getOutput()->printf("Territory %.1f Komi %.1f B+%.1f (with ScoreKomi %.1f) (%.1f)\n",
+      territorycount,me->getHandiKomi(),territorycount-me->getHandiKomi(),territorycount-me->getScoreKomi(),me->getScoreKomi());
+  else
+    gtpe->getOutput()->printf("Territory %.1f Komi %.1f W+%.1f (with ScoreKomi %.1f) (%.1f)\n",
+      territorycount,me->getHandiKomi(),-(territorycount-me->getHandiKomi()),-(territorycount-me->getScoreKomi()),me->getScoreKomi());
+    
+  gtpe->getOutput()->endResponse(true);
+}
+
 void Engine::gtpShowMoveProbability(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
@@ -4466,6 +4542,10 @@ void Engine::makeMove(Go::Move move)
   params->uct_slow_update_last=0;
   params->uct_slow_debug_last=0;
   territorymap->decay(params->territory_decayfactor);
+
+  for (int i=0;i<currentboard->getPositionMax()*2;i++)
+    area_correlation_map[i]->decay(params->territory_decayfactor);
+  
   //was memory leak
   //blackOldMoves=new float[currentboard->getPositionMax()];
   //whiteOldMoves=new float[currentboard->getPositionMax()];
@@ -4527,6 +4607,11 @@ void Engine::clearBoard()
     MPIRANK0_ONLY(this->mpiBroadcastCommand(MPICMD_CLEARBOARD););
   #endif
   bool newsize=(zobristtable->getSize()!=boardsize);
+  for (int i=0;i<currentboard->getPositionMax()*2;i++)
+  {
+    delete area_correlation_map[i];
+  }
+  delete area_correlation_map;
   delete currentboard;
   delete movehistory;
   delete moveexplanations;
@@ -4544,6 +4629,13 @@ void Engine::clearBoard()
   moveexplanations = new std::list<std::string>();
   hashtree=new Go::ZobristTree();
   territorymap=new Go::TerritoryMap(boardsize);
+  area_correlation_map=new Go::TerritoryMap*[currentboard->getPositionMax()*2];
+#warning "memory allocated for area_correlation_map"
+  for (int i=0;i<currentboard->getPositionMax()*2;i++)
+  {
+    area_correlation_map[i]=new Go::TerritoryMap(boardsize);
+  }
+
   probabilitymap=new Go::MoveProbabilityMap (boardsize);
   correlationmap=new Go::ObjectBoard<Go::CorrelationData>(boardsize);
   blackOldMoves=new float[currentboard->getPositionMax()];
@@ -4815,6 +4907,10 @@ void Engine::doPlayout(Worker::Settings *settings, Go::IntBoard *firstlist, Go::
     return;
   }
   std::list<Go::Move> playoutmoves=playouttree->getMovesFromRoot();
+  std::list<Go::Move> playoutmoves_only_tree;
+  if (params->uct_area_correlation_statistics)
+    playoutmoves_only_tree=playouttree->getMovesFromRoot();
+  
   if (playoutmoves.size()==0)
   {
     if (params->debug_on)
@@ -4862,7 +4958,19 @@ void Engine::doPlayout(Worker::Settings *settings, Go::IntBoard *firstlist, Go::
     playouttree->addLose(finalscore);
   
   playoutboard->updateTerritoryMap(territorymap);
-
+  if (params->uct_area_correlation_statistics)
+  {
+    //do not count as tree move, if not at least 2 more moves in the tree
+    if (!playoutmoves_only_tree.empty())
+      playoutmoves_only_tree.pop_back();
+    if (!playoutmoves_only_tree.empty())
+      playoutmoves_only_tree.pop_back();
+    
+    for(std::list<Go::Move>::iterator iter=playoutmoves_only_tree.begin();iter!=playoutmoves_only_tree.end();++iter)
+      {
+        playoutboard->updateTerritoryMap(area_correlation_map[iter->getPosition()+(iter->getColor()==Go::BLACK?playoutboard->getPositionMax():0)]);
+      }
+  }
   //here with with firstlist and secondlist the correlationmap can be updated
   if (col==Go::BLACK)
     playoutboard->updateCorrelationMap(correlationmap,firstlist,secondlist);

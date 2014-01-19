@@ -67,6 +67,7 @@
 #define UCT_AREA_OWNER_FACTOR_A 0.00
 #define UCT_AREA_OWNER_FACTOR_B 0.33333
 #define UCT_AREA_OWNER_FACTOR_C 1.00
+#define UCT_AREA_CORRELATION_STATISTICS false
 #define UCT_REPRUNE_FACTOR 0.00
 #define UCT_FACTOR_CIRCPATTERN 0.00
 #define UCT_FACTOR_CIRCPATTERN_EXPONENT 1.00
@@ -376,6 +377,7 @@ class Engine
     volatile bool stoppondering;
     Worker::Pool *threadpool;
     Go::TerritoryMap *territorymap;
+    Go::TerritoryMap **area_correlation_map;
     Go::MoveProbabilityMap *probabilitymap;
     Go::ObjectBoard<Go::CorrelationData> *correlationmap;
     
@@ -602,6 +604,7 @@ class Engine
     static void gtpDoBenchmark(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowCriticality(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowTerritory(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpShowTerritoryAt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowMoveProbability(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowCorrelationMap(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowRatios(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);

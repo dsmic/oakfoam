@@ -451,6 +451,8 @@ class Parameters
     float uct_area_owner_factor_a;
     float uct_area_owner_factor_b;
     float uct_area_owner_factor_c;
+
+    bool uct_area_correlation_statistics;
     
     
     /** Constant for decaying tree statistics.
