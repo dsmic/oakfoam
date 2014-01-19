@@ -246,7 +246,7 @@ namespace Go
       inline void clear() { this->fill(0); };
 
       /** Create a copy of this board. */
-      Go::BitBoard *copy() const;
+      Go::IntBoard *copy() const;
       
     private:
       const int size,sizesq,sizedata;
@@ -777,7 +777,7 @@ namespace Go
       Go::Color getScoredOwner(int pos) const;
       /** Update the given territory map. */
       void updateTerritoryMap(Go::TerritoryMap *tmap) const;
-      void updateCorrelationMap(Go::ObjectBoard<Go::CorrelationData> *correlationmap, Go::BitBoard *blacklist,Go::BitBoard *whitelist);
+      void updateCorrelationMap(Go::ObjectBoard<Go::CorrelationData> *correlationmap, Go::IntBoard *blacklist,Go::IntBoard *whitelist);
       /** Determine if a stone is alive, according to the given territory map and threshold. */
       bool isAlive(Go::TerritoryMap *tmap, float threshold, int pos) const;
       /** Get the territory score using the given territory map and threshold. */

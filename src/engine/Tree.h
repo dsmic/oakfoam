@@ -169,13 +169,13 @@ class Tree
     /** Add a number of prior losses to this node. */
     void addPriorLoses(int n);
     /** Add a RAVE win to this node. */
-    void addRAVEWin(bool early);
+    void addRAVEWin(bool early,float weight=1.0);
     /** Add a RAVE loss to this node. */
-    void addRAVELose(bool early);
+    void addRAVELose(bool early,float weight=1.0);
     /** Add a RAVE win for the other color to this node. */
-    void addRAVEWinOther(bool early);
+    void addRAVEWinOther(bool early,float weight=1.0);
     /** Add a RAVE loss for the other color to this node. */
-    void addRAVELoseOther(bool early);
+    void addRAVELoseOther(bool early,float weight=1.0);
     
     /** Add a number of RAVE wins to this node. */
     void addRAVEWins(int n,bool early);
@@ -210,7 +210,7 @@ class Tree
     /** Get the child with the best ratio. */
     Tree *getBestRatioChild(float playoutthreshold=0) const;
     /** Update RAVE values for the path from this node to the root of the tree. */
-    void updateRAVE(Go::Color wincol,Go::BitBoard *blacklist,Go::BitBoard *whitelist,bool early);
+    void updateRAVE(Go::Color wincol,Go::IntBoard *blacklist,Go::IntBoard *whitelist,bool early);
     /** Prune any superko violations. */
     void pruneSuperkoViolations();
     

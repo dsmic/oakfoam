@@ -484,7 +484,7 @@ class Engine
     void chooseSubTree(Go::Move move);
     
     void doNPlayouts(int n);
-    void doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::BitBoard *secondlist, Go::BitBoard *earlyfirstlist, Go::BitBoard *earlysecondlist);
+    void doPlayout(Worker::Settings *settings, Go::IntBoard *firstlist, Go::IntBoard *secondlist, Go::IntBoard *earlyfirstlist, Go::IntBoard *earlysecondlist);
     void displayPlayoutLiveGfx(int totalplayouts=-1, bool livegfx=true);
     void doSlowUpdate();
     

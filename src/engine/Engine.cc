@@ -167,6 +167,17 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","test_p38",&(params->test_p38),0.0);
   params->addParameter("playout","test_p39",&(params->test_p39),0.0);
   
+  params->addParameter("playout","test_p40",&(params->test_p40),1.0);
+  params->addParameter("playout","test_p41",&(params->test_p41),0.0);
+  params->addParameter("playout","test_p42",&(params->test_p42),0.0);
+  params->addParameter("playout","test_p43",&(params->test_p43),0.0);
+  params->addParameter("playout","test_p44",&(params->test_p44),0.0);
+  params->addParameter("playout","test_p45",&(params->test_p45),0.0);
+  params->addParameter("playout","test_p46",&(params->test_p46),0.0);
+  params->addParameter("playout","test_p47",&(params->test_p47),0.0);
+  params->addParameter("playout","test_p48",&(params->test_p48),0.0);
+  params->addParameter("playout","test_p49",&(params->test_p49),0.0);
+  
   params->addParameter("tree","ucb_c",&(params->ucb_c),UCB_C);
   params->addParameter("tree","ucb_init",&(params->ucb_init),UCB_INIT);
 
@@ -4781,7 +4792,7 @@ void Engine::doNPlayouts(int n)
   }
 }
 
-void Engine::doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::BitBoard *secondlist, Go::BitBoard *earlyfirstlist, Go::BitBoard *earlysecondlist)
+void Engine::doPlayout(Worker::Settings *settings, Go::IntBoard *firstlist, Go::IntBoard *secondlist, Go::IntBoard *earlyfirstlist, Go::IntBoard *earlysecondlist)
 {
   //bool givenfirstlist,givensecondlist;
   Go::Color col=currentboard->nextToMove();
@@ -5131,10 +5142,10 @@ void Engine::ponderThread(Worker::Settings *settings)
     this->allowContinuedPlay();
     params->uct_slow_update_last=0;
     
-    Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
-    Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
-    Go::BitBoard *earlyfirstlist=new Go::BitBoard(boardsize);
-    Go::BitBoard *earlysecondlist=new Go::BitBoard(boardsize);
+    Go::IntBoard *firstlist=new Go::IntBoard(boardsize);
+    Go::IntBoard *secondlist=new Go::IntBoard(boardsize);
+    Go::IntBoard *earlyfirstlist=new Go::IntBoard(boardsize);
+    Go::IntBoard *earlysecondlist=new Go::IntBoard(boardsize);
     long playouts;
     
     while (!stoppondering && !stopthinking && (playouts=(long)movetree->getPlayouts())<(params->pondering_playouts_max))
@@ -5250,10 +5261,10 @@ void Engine::generateThread(Worker::Settings *settings)
   else
     time_allocated=0;
   
-  Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
-  Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
-  Go::BitBoard *earlyfirstlist=new Go::BitBoard(boardsize);
-  Go::BitBoard *earlysecondlist=new Go::BitBoard(boardsize);
+  Go::IntBoard *firstlist=new Go::IntBoard(boardsize);
+  Go::IntBoard *secondlist=new Go::IntBoard(boardsize);
+  Go::IntBoard *earlyfirstlist=new Go::IntBoard(boardsize);
+  Go::IntBoard *earlysecondlist=new Go::IntBoard(boardsize);
   
   while ((totalplayouts=(long)(movetree->getPlayouts()-params->uct_initial_playouts))<(params->playouts_per_move_max))
   {
@@ -5359,10 +5370,10 @@ void Engine::generateThread(Worker::Settings *settings)
 void Engine::doNPlayoutsThread(Worker::Settings *settings)
 {
   int livegfxupdate=0;
-  Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
-  Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
-  Go::BitBoard *earlyfirstlist=new Go::BitBoard(boardsize);
-  Go::BitBoard *earlysecondlist=new Go::BitBoard(boardsize);
+  Go::IntBoard *firstlist=new Go::IntBoard(boardsize);
+  Go::IntBoard *secondlist=new Go::IntBoard(boardsize);
+  Go::IntBoard *earlyfirstlist=new Go::IntBoard(boardsize);
+  Go::IntBoard *earlysecondlist=new Go::IntBoard(boardsize);
   long totalplayouts;
   
   while ((totalplayouts=(long)(movetree->getPlayouts()-params->uct_initial_playouts))<(params->playouts_per_move))

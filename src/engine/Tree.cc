@@ -10,6 +10,9 @@
 
 #define WITH_P(A) (A>=1.0 || (A>0 && settings->rand->getRandomReal()<A))
 
+//power with sign
+#define pmpow(A,B) (((A)>=0)?pow(A,B):(-pow(-(A),B)))
+
 Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p) : params(prms)
 {
   params->tree_instances++;
@@ -276,7 +279,7 @@ void Tree::addPriorLoses(int n)
   }
 }
 
-void Tree::addRAVEWin(bool early)
+void Tree::addRAVEWin(bool early,float weight)
 {
   //boost::mutex::scoped_lock lock(updatemutex);
   if (early)
@@ -286,12 +289,12 @@ void Tree::addRAVEWin(bool early)
   }
   else
   {
-    ravewins++;
-    raveplayouts++;
+    ravewins+=weight;
+    raveplayouts+=weight;
   }
 }
 
-void Tree::addRAVELose(bool early)
+void Tree::addRAVELose(bool early,float weight)
 {
   //boost::mutex::scoped_lock lock(updatemutex);
   if (early)
@@ -300,11 +303,11 @@ void Tree::addRAVELose(bool early)
   }
   else
   {
-    raveplayouts++;
+    raveplayouts+=weight;
   }
 }
 
-void Tree::addRAVEWinOther(bool early)
+void Tree::addRAVEWinOther(bool early,float weight)
 {
   //boost::mutex::scoped_lock lock(updatemutex);
   if (early) 
@@ -314,18 +317,18 @@ void Tree::addRAVEWinOther(bool early)
   }
   else
   {
-    ravewinsother++;
-    raveplayoutsother++;
+    ravewinsother+=weight;
+    raveplayoutsother+=weight;
   }
 }
 
-void Tree::addRAVELoseOther(bool early)
+void Tree::addRAVELoseOther(bool early,float weight)
 {
   //boost::mutex::scoped_lock lock(updatemutex);
   if (early)
     earlyraveplayoutsother++;
   else
-    raveplayoutsother++;
+    raveplayoutsother+=weight;
 }
 
 void Tree::addRAVEWins(int n,bool early)
@@ -1066,6 +1069,8 @@ float Tree::getUnPruneFactor(float *moveValues,float mean, int num, float prob_l
     
   }
   //fprintf(stderr,"unprunefactore %f %f %f\n",gamma,parent->raveplayouts,factor);
+  if (params->test_p41>0)
+    factor=pow(factor,params->test_p41);
   if (params->uct_criticality_unprune_factor>0 && ((params->uct_criticality_siblings||params->test_p25>0)?parent->playouts:playouts)>(params->uct_criticality_min_playouts))
   {
     if (params->uct_criticality_unprune_multiply)
@@ -1083,7 +1088,8 @@ float Tree::getUnPruneFactor(float *moveValues,float mean, int num, float prob_l
     if (params->uct_rave_unprune_multiply)
       factor*=(1+params->uct_rave_unprune_factor*this->getRAVERatio());
     else
-      factor+=params->uct_rave_unprune_factor*this->getRAVERatio();
+      factor+=params->uct_rave_unprune_factor*(pmpow(this->getRAVERatio()-(1.0-parent->getRatio()),params->test_p40)+1);
+   //    factor+=params->uct_rave_unprune_factor*this->getRAVERatio();
   }
 
   if (params->uct_rave_other_unprune_factor>0 && this->getRAVEPlayoutsOther()>1)
@@ -1538,7 +1544,7 @@ bool Tree::expandLeaf(Worker::Settings *settings)
   return true;
 }
 
-void Tree::updateRAVE(Go::Color wincol,Go::BitBoard *blacklist,Go::BitBoard *whitelist,bool early)
+void Tree::updateRAVE(Go::Color wincol,Go::IntBoard *blacklist,Go::IntBoard *whitelist,bool early)
 {
   if (params->rave_moves<=0)
     return;
@@ -1567,42 +1573,49 @@ void Tree::updateRAVE(Go::Color wincol,Go::BitBoard *blacklist,Go::BitBoard *whi
       {
         Go::Color col=(*iter)->getMove().getColor();
         int pos=(*iter)->getMove().getPosition();
-        
-        if ((col==Go::BLACK?blacklist:whitelist)->get(pos))
+        int ravenum=(col==Go::BLACK?blacklist:whitelist)->get(pos);
+        if (ravenum>0)
         {
+          float raveweight=1;
+          //if (!early) raveweight=exp(-params->test_p30*ravenum);
+          if (!early) raveweight=pow(ravenum,-params->test_p30);
+          
           if ((*iter)->isPrimary())
           {
             if (col==wincol)
-              (*iter)->addRAVEWin(early);
+              (*iter)->addRAVEWin(early,raveweight);
             else
-              (*iter)->addRAVELose(early);
+              (*iter)->addRAVELose(early,raveweight);
           }
           else
           {
             Tree *primary=(*iter)->getPrimary();
             if (col==wincol)
-              primary->addRAVEWin(early);
+              primary->addRAVEWin(early,raveweight);
             else
-              primary->addRAVELose(early);
+              primary->addRAVELose(early,raveweight);
           }
         }
         //check for the other color
-        if ((col==Go::WHITE?blacklist:whitelist)->get(pos))
+        ravenum=(col==Go::WHITE?blacklist:whitelist)->get(pos);
+        if (ravenum)
         {
+          float raveweight=1;
+          if (!early) raveweight=exp(-params->test_p30*ravenum);
           if ((*iter)->isPrimary())
           {
             if (Go::otherColor(col)==wincol)
-              (*iter)->addRAVEWinOther(early);
+              (*iter)->addRAVEWinOther(early,raveweight);
             else
-              (*iter)->addRAVELoseOther(early);
+              (*iter)->addRAVELoseOther(early,raveweight);
           }
           else
           {
             Tree *primary=(*iter)->getPrimary();
             if (Go::otherColor(col)==wincol)
-              primary->addRAVEWinOther(early);
+              primary->addRAVEWinOther(early,raveweight);
             else
-              primary->addRAVELoseOther(early);
+              primary->addRAVELoseOther(early,raveweight);
           }
         }
       }

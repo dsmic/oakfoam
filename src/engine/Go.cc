@@ -32,6 +32,32 @@ Go::BitBoard::~BitBoard()
   delete[] data;
 }
 
+Go::IntBoard::IntBoard(int s)
+  : size(s),
+    sizesq(s*s),
+    sizedata(1+(s+1)*(s+2)),
+    data(new int[sizedata])
+{
+  for (int i=0;i<sizedata;i++)
+    data[i]=false;
+}
+
+Go::IntBoard *Go::IntBoard::copy() const
+{
+  Go::IntBoard *copyboard;
+  copyboard=new Go::IntBoard(size);
+  
+  for (int i=0;i<sizedata;i++)
+    copyboard->set(i,data[i]);  
+  return copyboard;
+}
+
+
+Go::IntBoard::~IntBoard()
+{
+  delete[] data;
+}
+
 std::string Go::Position::pos2string(int pos, int boardsize)
 {
   if (pos==-1)
@@ -2705,7 +2731,7 @@ void Go::Board::updateTerritoryMap(Go::TerritoryMap *tmap) const
   }
 }
 
-void Go::Board::updateCorrelationMap(Go::ObjectBoard<Go::CorrelationData> *cmap, Go::BitBoard *blacklist,Go::BitBoard *whitelist)
+void Go::Board::updateCorrelationMap(Go::ObjectBoard<Go::CorrelationData> *cmap, Go::IntBoard *blacklist,Go::IntBoard *whitelist)
 {
   if (cmap==NULL) return;
   if (lastscoredata!=NULL)

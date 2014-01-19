@@ -64,7 +64,7 @@ Playout::~Playout()
     delete[] lgrf2count;
 }
 
-void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &finalscore, Tree *playouttree, std::list<Go::Move> &playoutmoves, Go::Color colfirst, Go::BitBoard *firstlist, Go::BitBoard *secondlist, Go::BitBoard *earlyfirstlist, Go::BitBoard *earlysecondlist, std::list<std::string> *movereasons)
+void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &finalscore, Tree *playouttree, std::list<Go::Move> &playoutmoves, Go::Color colfirst, Go::IntBoard *firstlist, Go::IntBoard *secondlist, Go::IntBoard *earlyfirstlist, Go::IntBoard *earlysecondlist, std::list<std::string> *movereasons)
 {
   std::list<unsigned int> movehashes3x3;
   std::list<unsigned long> movehashes5x5;
@@ -336,9 +336,9 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
     int p=move.getPosition();
     if ((coltomove==colfirst?firstlist:secondlist)!=NULL && !move.isPass() && !move.isResign())
     {
-      if (params->test_p2==0 || (coltomove!=colfirst?firstlist:secondlist)->get(p)==false)
+      if (params->test_p2==0 || (coltomove!=colfirst?firstlist:secondlist)->get(p)==0)
       {
-        (coltomove==colfirst?firstlist:secondlist)->set(p);
+        (coltomove==colfirst?firstlist:secondlist)->set(p,playoutmovescount);
         if ((coltomove==colfirst?earlyfirstlist:earlysecondlist)!=NULL && params->rave_moves_use>0 && playoutmovescount < (board->getSize()*board->getSize()-treemovescount)*params->rave_moves_use)
           (coltomove==colfirst?earlyfirstlist:earlysecondlist)->set(p);
       }
@@ -723,7 +723,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
 //  if (trylocal_p!=NULL && !WITH_P(*trylocal_p))
 //    goto notlocal;
   
-  if (params->playout_lastatari_p>0.0) //p is used in the getLastAtariMove function
+  if (params->playout_lastatari_p>0.0 && (WITH_P(params->test_p34)||*earlymoves)) //p is used in the getLastAtariMove function
   {
     this->getLastAtariMove(settings,board,col,move,posarray,params->test_p19);
     if (!move.isPass())
@@ -1624,7 +1624,10 @@ void Playout::getPatternMove(Worker::Settings *settings, Go::Board *board, Go::C
     patternmovesgamma[patternmovescount]=params->playout_patterns_gammas_p;
     patternmovescount++;
     if (patternmovescount>17)
+    {
+      patternmovescount=17;
       fprintf(stderr,"Should not happen!!!\n");
+    }
     float gammasum=0;
 #define scalegamma(A) (pow((A)+1,params->test_p28)-1)
     for (int i=0;i<patternmovescount;i++)
