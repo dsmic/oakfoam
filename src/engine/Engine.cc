@@ -665,6 +665,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("showcriticality",this,&Engine::gtpShowCriticality);
   gtpe->addFunctionCommand("showterritory",this,&Engine::gtpShowTerritory);
   gtpe->addFunctionCommand("showterritoryat",this,&Engine::gtpShowTerritoryAt);
+  gtpe->addFunctionCommand("showterritoryerror",this,&Engine::gtpShowTerritoryError);
   
   gtpe->addFunctionCommand("showmoveprobability",this,&Engine::gtpShowMoveProbability);
   gtpe->addFunctionCommand("showcorrelationmap",this,&Engine::gtpShowCorrelationMap);
@@ -714,6 +715,7 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("showcriticality","Show Criticality","cboard");
   gtpe->addAnalyzeCommand("showterritory","Show Territory","dboard");
   gtpe->addAnalyzeCommand("showterritoryat %%p %%c","Show Territory At","dboard");
+  gtpe->addAnalyzeCommand("showterritoryerror","Show Territory Error","dboard");
   gtpe->addAnalyzeCommand("showmoveprobability","Show Move Probability","dboard");
   gtpe->addAnalyzeCommand("showcorrelationmap","Show Correlation","dboard");
   gtpe->addAnalyzeCommand("showtreelivegfx","Show Tree Live Gfx","gfx");
@@ -3074,6 +3076,31 @@ void Engine::gtpShowTerritory(void *instance, Gtp::Engine* gtpe, Gtp::Command* c
   gtpe->getOutput()->endResponse(true);
 }
 
+float Engine::getAreaCorrelation(Go::Move m)
+{
+  int showpos=m.getPosition();
+  int color_offset=0;
+  if (m.getColor()==Go::BLACK)
+    color_offset=currentboard->getPositionMax();
+
+  float sqrsum=0;
+  float sqrsumcol=0;
+  float playouts=area_correlation_map[showpos+color_offset]->getPlayouts();
+  for (int y=boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<boardsize;x++)
+    {
+      int pos=Go::Position::xy2pos(x,y,boardsize);
+      float tmp=area_correlation_map[showpos+color_offset]->getPositionOwner(pos)-territorymap->getPositionOwner(pos);
+      tmp*=playouts/(playouts+20); // 20 should become a parameter!
+      sqrsum+=tmp*tmp;
+      if ((m.getColor()==Go::BLACK && tmp>0) || (m.getColor()==Go::WHITE && tmp<0))
+        sqrsumcol+=tmp*tmp;
+    }
+  }
+  return sqrt(sqrsumcol)/boardsize/boardsize;
+}
+
 void Engine::gtpShowTerritoryAt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
@@ -3104,12 +3131,19 @@ void Engine::gtpShowTerritoryAt(void *instance, Gtp::Engine* gtpe, Gtp::Command*
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printString("\n");
   float territorycount=0;
+  float sqrsum=0;
+  float sqrsumcol=0;
+  float playouts=me->area_correlation_map[showpos+color_offset]->getPlayouts();
   for (int y=me->boardsize-1;y>=0;y--)
   {
     for (int x=0;x<me->boardsize;x++)
     {
       int pos=Go::Position::xy2pos(x,y,me->boardsize);
-      float tmp=me->area_correlation_map[showpos+color_offset]->getPositionOwner(pos);
+      float tmp=me->area_correlation_map[showpos+color_offset]->getPositionOwner(pos)-me->territorymap->getPositionOwner(pos);
+      tmp*=playouts/(playouts+20); // 20 should become a parameter!
+      sqrsum+=tmp*tmp;
+      if ((gtpcol==Gtp::BLACK && tmp>0) || (gtpcol==Gtp::WHITE && tmp<0))
+        sqrsumcol+=tmp*tmp;
       //if (tmp>0.2) territorycount++;
       //if (tmp<-0.2) territorycount--;
       if (tmp<0)
@@ -3124,13 +3158,53 @@ void Engine::gtpShowTerritoryAt(void *instance, Gtp::Engine* gtpe, Gtp::Command*
     gtpe->getOutput()->printf("\n");
   }
 
-  if (territorycount-me->getHandiKomi()>0)
-    gtpe->getOutput()->printf("Territory %.1f Komi %.1f B+%.1f (with ScoreKomi %.1f) (%.1f)\n",
-      territorycount,me->getHandiKomi(),territorycount-me->getHandiKomi(),territorycount-me->getScoreKomi(),me->getScoreKomi());
-  else
-    gtpe->getOutput()->printf("Territory %.1f Komi %.1f W+%.1f (with ScoreKomi %.1f) (%.1f)\n",
-      territorycount,me->getHandiKomi(),-(territorycount-me->getHandiKomi()),-(territorycount-me->getScoreKomi()),me->getScoreKomi());
-    
+  Go::Move m=Go::Move((gtpcol==Gtp::BLACK)?Go::BLACK:Go::WHITE,showpos);
+    gtpe->getOutput()->printf("Playouts %f meandiff %f meandiff color %f check %f\n",
+                 playouts,sqrt(sqrsum)/me->boardsize/me->boardsize,sqrt(sqrsumcol)/me->boardsize/me->boardsize,me->getAreaCorrelation(m));
+
+    gtpe->getOutput()->endResponse(true);
+}
+
+void Engine::gtpShowTerritoryError(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("\n");
+
+  float maxerror=0.00000001;
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      int pos=Go::Position::xy2pos(x,y,me->boardsize);
+      Go::Move m1=Go::Move(Go::BLACK,pos);
+      Go::Move m2=Go::Move(Go::WHITE,pos);
+      
+      float tmp=me->getAreaCorrelation(m1)+me->getAreaCorrelation(m2);
+      if (tmp>maxerror) maxerror=tmp;
+      
+    }
+  }
+
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      int pos=Go::Position::xy2pos(x,y,me->boardsize);
+      Go::Move m1=Go::Move(Go::BLACK,pos);
+      Go::Move m2=Go::Move(Go::WHITE,pos);
+      
+      float tmp1=me->getAreaCorrelation(m1);
+      float tmp2=me->getAreaCorrelation(m2);
+      if (tmp2>tmp1)
+        gtpe->getOutput()->printf("%.2f ",-(tmp2+tmp1)/maxerror);
+      else
+        gtpe->getOutput()->printf("%.2f ",(tmp2+tmp1)/maxerror);
+    }
+    gtpe->getOutput()->printf("\n");
+  }
+  gtpe->getOutput()->printf("maxvalue %f\n",maxerror);
   gtpe->getOutput()->endResponse(true);
 }
 

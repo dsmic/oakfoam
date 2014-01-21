@@ -436,6 +436,7 @@ namespace Go
       float getPositionOwner(int pos) const;
       /** Decay the statistics. */
       void decay(float factor);
+      float getPlayouts() {return boards;};
       
     private:
       const int size, sizedata;

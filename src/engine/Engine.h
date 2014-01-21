@@ -350,6 +350,7 @@ class Engine
     void ProbabilityClean() {probabilitymap->resetplayed();}
     float getProbabilityMoveAt(int pos) {if (pos>=0) return probabilitymap->getMoveAs(pos)/boardsize/boardsize; else return 1.0;}
     float getCorrelation(int pos) const {return (correlationmap->get(pos)).getCorrelation();}
+    float getAreaCorrelation(Go::Move m);
     float getOldMoveValue(Go::Move m);
     void getOnePlayoutMove(Go::Board *board, Go::Color col, Go::Move *move);
 
@@ -605,6 +606,7 @@ class Engine
     static void gtpShowCriticality(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowTerritory(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowTerritoryAt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpShowTerritoryError(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowMoveProbability(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowCorrelationMap(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowRatios(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
