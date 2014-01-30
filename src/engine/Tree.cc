@@ -1154,6 +1154,9 @@ float Tree::getUnPruneFactor(float *moveValues,float mean, int num, float prob_l
       factor*=1+params->engine->getOldMoveValue(move)*params->uct_oldmove_unprune_factor; //use the old values, which are not in the tree anymore 
     }
   }
+
+  if (params->test_p42>0)
+    factor+=params->test_p42*params->engine->getAreaCorrelation(move);
   return factor;
 }
 

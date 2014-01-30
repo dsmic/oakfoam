@@ -3079,6 +3079,7 @@ void Engine::gtpShowTerritory(void *instance, Gtp::Engine* gtpe, Gtp::Command* c
 float Engine::getAreaCorrelation(Go::Move m)
 {
   int showpos=m.getPosition();
+  if (showpos<0) return 0;
   int color_offset=0;
   if (m.getColor()==Go::BLACK)
     color_offset=currentboard->getPositionMax();
@@ -3092,7 +3093,7 @@ float Engine::getAreaCorrelation(Go::Move m)
     {
       int pos=Go::Position::xy2pos(x,y,boardsize);
       float tmp=area_correlation_map[showpos+color_offset]->getPositionOwner(pos)-territorymap->getPositionOwner(pos);
-      tmp*=playouts/(playouts+20); // 20 should become a parameter!
+      tmp*=playouts/(playouts+params->test_p43); 
       sqrsum+=tmp*tmp;
       if ((m.getColor()==Go::BLACK && tmp>0) || (m.getColor()==Go::WHITE && tmp<0))
         sqrsumcol+=tmp*tmp;
@@ -3140,7 +3141,7 @@ void Engine::gtpShowTerritoryAt(void *instance, Gtp::Engine* gtpe, Gtp::Command*
     {
       int pos=Go::Position::xy2pos(x,y,me->boardsize);
       float tmp=me->area_correlation_map[showpos+color_offset]->getPositionOwner(pos)-me->territorymap->getPositionOwner(pos);
-      tmp*=playouts/(playouts+20); // 20 should become a parameter!
+      tmp*=playouts/(playouts+me->params->test_p43); 
       sqrsum+=tmp*tmp;
       if ((gtpcol==Gtp::BLACK && tmp>0) || (gtpcol==Gtp::WHITE && tmp<0))
         sqrsumcol+=tmp*tmp;
@@ -5042,7 +5043,8 @@ void Engine::doPlayout(Worker::Settings *settings, Go::IntBoard *firstlist, Go::
     
     for(std::list<Go::Move>::iterator iter=playoutmoves_only_tree.begin();iter!=playoutmoves_only_tree.end();++iter)
       {
-        playoutboard->updateTerritoryMap(area_correlation_map[iter->getPosition()+(iter->getColor()==Go::BLACK?playoutboard->getPositionMax():0)]);
+        if (iter->getPosition()>=0)
+          playoutboard->updateTerritoryMap(area_correlation_map[iter->getPosition()+(iter->getColor()==Go::BLACK?playoutboard->getPositionMax():0)]);
       }
   }
   //here with with firstlist and secondlist the correlationmap can be updated

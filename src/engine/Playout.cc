@@ -14,6 +14,8 @@
 
 #define WITH_P(A) (A>=1.0 || (A>0 && rand->getRandomReal()<A))
 
+long int debugint;
+
 Playout::Playout(Parameters *prms) : params(prms)
 {
   gtpe=params->engine->getGtpEngine();
@@ -1620,7 +1622,7 @@ void Playout::getPatternMove(Worker::Settings *settings, Go::Board *board, Go::C
   }
   if (params->playout_patterns_gammas_p>0)
   {
-    patternmoves[patternmovescount]=Go::Move::PASS;
+    patternmoves[patternmovescount]=-1; //PASS move
     patternmovesgamma[patternmovescount]=params->playout_patterns_gammas_p;
     patternmovescount++;
     if (patternmovescount>17)
@@ -1645,7 +1647,8 @@ void Playout::getPatternMove(Worker::Settings *settings, Go::Board *board, Go::C
         if (gammasum>gammatest)
           break;
       }
-    if (ii==patternmovescount-1)
+    debugint=ii;
+    if (ii>=patternmovescount-1)
       move=Go::Move(col,Go::Move::PASS);
     else
       move=Go::Move(col,patternmoves[ii]);
