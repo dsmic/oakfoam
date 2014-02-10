@@ -795,7 +795,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     }
   }
 
-  if (move.isPass())
+  if (move.isPass()&&earlymoves!=NULL)
     *earlymoves=false;
 
   if (params->playout_nearby_enabled)
@@ -1342,12 +1342,16 @@ bool Playout::isBadMove(Worker::Settings *settings, Go::Board *board, Go::Color 
       || (lbpr_p > 0.0 && (passes>1 || rand->getRandomReal() < lbpr_p) && (board->getLastMove().isPass() && this->isBadPassAnswer(col,pos)))
       || (lbm_p > 0.0 && (rand->getRandomReal() < lbm_p) && this->hasLBM (col,pos)));
   if (debug && params->debug_on)
-    gtpe->getOutput()->printfDebug("[badmove triggered]: %s pass\n",Go::Move(col,pos).toString(board->getSize()).c_str());
+    gtpe->getOutput()->printfDebug("[badmove triggered]: %s pass weakey %d selfatari %d\n",Go::Move(col,pos).toString(board->getSize()).c_str(),board->weakEye(col,pos,params->test_p5!=0),board->isSelfAtariOfSize(Go::Move(col,pos),params->playout_avoid_selfatari_size,params->playout_avoid_selfatari_complex));
   return debug;
 }
 
 bool Playout::isEyeFillMove(Go::Board *board, Go::Color col, int pos)
 {
+  if (params->debug_on)
+    gtpe->getOutput()->printfDebug("[ifEyeFillMove triggered]: %s pass strongeye %d selfatari %d twoGroupEye %d\n",
+                                   Go::Move(col,pos).toString(board->getSize()).c_str(),board->strongEye(col,pos),board->isSelfAtariOfSize(Go::Move(col,pos),2) , board->twoGroupEye(col,pos) );
+    
   return (board->strongEye(col,pos) || board->isSelfAtariOfSize(Go::Move(col,pos),2) || board->twoGroupEye(col,pos));
 }
 

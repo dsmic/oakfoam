@@ -1675,7 +1675,7 @@ bool Go::Board::isSelfAtariOfSize(Go::Move move, int minsize, bool complex) cons
   Go::Color col=move.getColor();
   int pos=move.getPosition();
 
-  if (this->touchingEmpty(pos)>1)
+  if (this->touchingEmpty(pos)>1 || this->isCapture(move))
     return false;
 
   int libpos=-1;

@@ -578,7 +578,12 @@ float Tree::getUrgency(bool skiprave) const
     val+=params->weight_score*this->getScoreMean();
 
   if (params->uct_progressive_bias_enabled && params->test_p38==0) //p38 turns this off, as it is replaced by pachi style bias
-    val+=this->getProgressiveBias();
+  {
+    if (params->test_p44==0 || parent->getPlayouts()==0)
+      val+=this->getProgressiveBias();
+    else
+      val+=this->getProgressiveBias()*((params->test_p44+parent->getPlayouts())/(parent->getPlayouts()));
+  }
 
   if (params->test_p38>0) //progressive bias as pre wins and games, comes closer to pachi style
   {
@@ -1635,7 +1640,7 @@ float Tree::getProgressiveBias() const
     bias/=parent->getMaxChildFeatureGamma();
   bias=pow(bias,params->uct_progressive_bias_exponent);
   //return (bias+biasbonus)*exp(-(float)playouts/params->uct_progressive_bias_moves); // /pow(playouts+1,params->uct_criticality_urgency_decay);
-  //return (bias+biasbonus)/pow(playouts+1,params->test_p4);
+  return (bias+biasbonus)/pow(playouts+1,params->test_p45);
   return (bias+biasbonus)/(playouts+1);
 }
 
