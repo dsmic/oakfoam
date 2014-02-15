@@ -33,14 +33,15 @@ class Random;
 #define P_SW (P_S+P_W)
 #define P_SE (P_S+P_E)
 
+//changed ordering to hopefully hit the cache better 2/15/2014
 #define foreach_adjacent(__pos, __adjpos, __body) \
   { \
     int __intpos = __pos; \
     int __adjpos; \
-    __adjpos = __intpos+P_N; { __body }; \
-    __adjpos = __intpos+P_S; { __body }; \
     __adjpos = __intpos+P_E; { __body }; \
     __adjpos = __intpos+P_W; { __body }; \
+    __adjpos = __intpos+P_S; { __body }; \
+    __adjpos = __intpos+P_N; { __body }; \
   }
 
 #define foreach_onandadj(__pos, __adjpos, __body) \
@@ -48,34 +49,34 @@ class Random;
     int __intpos = __pos; \
     int __adjpos; \
     __adjpos = __intpos; { __body }; \
-    __adjpos = __intpos+P_N; { __body }; \
-    __adjpos = __intpos+P_S; { __body }; \
     __adjpos = __intpos+P_E; { __body }; \
     __adjpos = __intpos+P_W; { __body }; \
+    __adjpos = __intpos+P_S; { __body }; \
+    __adjpos = __intpos+P_N; { __body }; \
   }
 
 #define foreach_adjdiag(__pos, __adjpos, __body) \
   { \
     int __intpos = __pos; \
     int __adjpos; \
-    __adjpos = __intpos+P_N; { __body }; \
-    __adjpos = __intpos+P_S; { __body }; \
     __adjpos = __intpos+P_E; { __body }; \
     __adjpos = __intpos+P_W; { __body }; \
-    __adjpos = __intpos+P_NE; { __body }; \
+    __adjpos = __intpos+P_SW; { __body }; \
+    __adjpos = __intpos+P_S; { __body }; \
     __adjpos = __intpos+P_SE; { __body }; \
     __adjpos = __intpos+P_NW; { __body }; \
-    __adjpos = __intpos+P_SW; { __body }; \
+    __adjpos = __intpos+P_N; { __body }; \
+    __adjpos = __intpos+P_NE; { __body }; \
   }
 
 #define foreach_diagonal(__pos, __adjpos, __body) \
   { \
     int __intpos = __pos; \
     int __adjpos; \
-    __adjpos = __intpos+P_NE; { __body }; \
+    __adjpos = __intpos+P_SW; { __body }; \
     __adjpos = __intpos+P_SE; { __body }; \
     __adjpos = __intpos+P_NW; { __body }; \
-    __adjpos = __intpos+P_SW; { __body }; \
+    __adjpos = __intpos+P_NE; { __body }; \
   }
 
 /** Go-related objects. */
@@ -332,6 +333,8 @@ namespace Go
       inline Go::Color getColor() const {return color;};
       /** Get the position of this move. */
       inline int getPosition() const {return pos;};
+
+//this does not look ok?!
       /** Get the x-coordinate of this move. */
       inline int getX(int boardsize) const {return (this->isPass()||this->isResign()?pos:Go::Position::pos2x(pos,boardsize));};
       /** Get the y-coordinate of this move. */
@@ -501,13 +504,13 @@ namespace Go
       /** Set the parent group for this group. */
       void setParent(Go::Group *p) { parent=p; };
       /** Get the root group for this group. */
-      Go::Group *find() const
+      inline Go::Group *find() 
       {
         if (parent==NULL)
           return (Go::Group *)this;
         else
-          //return (parent=parent->find());
-          return parent->find();
+          return (parent=parent->find());
+          //return parent->find();
       };
       /** Merge two groups.
        * Assumed that both groups are roots.

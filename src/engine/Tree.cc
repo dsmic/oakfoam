@@ -622,7 +622,7 @@ float Tree::getUrgency(bool skiprave) const
       val+=params->uct_criticality_urgency_factor*this->getCriticality();
   }
   
-  return val;
+  return val+1.0;  //avoid negative urgency!!!
 }
 
 std::list<Go::Move> Tree::getMovesFromRoot() const
@@ -694,7 +694,14 @@ std::string Tree::toSGFString() const
     }
     ss<<"Urgency: "<<this->getUrgency()<<"\n";
     if (!this->isLeaf())
+    {
       ss<<"Pruned: "<<prunedchildren<<"/"<<children->size()<<"("<<(children->size()-prunedchildren)<<")\n";
+      for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
+      {
+        ss<<(*iter)->getMove().toString(params->board_size)<<" UPF"<<(*iter)->getUnPruneFactor()<<" gamma"<<(*iter)->getFeatureGamma()<<" rave"<<(*iter)->getRAVERatio()<<"other "<<(*iter)->getRAVERatioOther()<<" crit"<<(*iter)->getCriticality()<<"\n";
+      }
+    
+    }
     else if (this->isTerminal())
       ss<<"Terminal Node\n";
     else
@@ -718,6 +725,19 @@ std::string Tree::toSGFString() const
     ss<<"Score SD: "<<"("<<this->getScoreSD()<<")\n";
     if (params->uct_decay_alpha!=1 || params->uct_decay_k!=0)
         ss<<"Decayed Playouts: "<<decayedplayouts<<"\n";
+    if (!this->isLeaf())
+      {
+        ss<<"Pruned: "<<prunedchildren<<"/"<<children->size()<<"("<<(children->size()-prunedchildren)<<")\n";
+        for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
+        {
+          ss<<(*iter)->getMove().toString(params->board_size)<<" UPF"<<(*iter)->getUnPruneFactor()<<" gamma"<<(*iter)->getFeatureGamma()<<" rave"<<(*iter)->getRAVERatio()<<"other "<<(*iter)->getRAVERatioOther()<<" crit"<<(*iter)->getCriticality()<<"\n";
+        }
+      
+      }
+      else if (this->isTerminal())
+        ss<<"Terminal Node\n";
+      else
+      ss<<"Leaf Node\n";
     ss<<"]";
   }
   
@@ -1088,12 +1108,13 @@ float Tree::getUnPruneFactor(float *moveValues,float mean, int num, float prob_l
     //fprintf(stderr,"prior wins? %f %f %f\n",wins,playouts,this->getRatio());
     factor*=wins*params->uct_prior_unprune_factor;
   }
-  if (params->uct_rave_unprune_factor>0 && this->getRAVEPlayouts ()>params->test_p24)
+  if (params->uct_rave_unprune_factor>0 && this->getRAVEPlayouts ()>=params->test_p24)
   {
     if (params->uct_rave_unprune_multiply)
       factor*=(1+params->uct_rave_unprune_factor*this->getRAVERatio());
     else
-      factor+=params->uct_rave_unprune_factor*(pmpow(this->getRAVERatio()-(1.0-parent->getRatio()),params->test_p40)+1);
+      factor+=params->uct_rave_unprune_factor*(((this->getRAVERatio()-(1.0-parent->getRatio()))*this->getRAVEPlayouts()/(this->getRAVEPlayouts()+1000))+1);
+      //factor+=params->uct_rave_unprune_factor*(pmpow(this->getRAVERatio()-(1.0-parent->getRatio()),params->test_p40)+1);
    //    factor+=params->uct_rave_unprune_factor*this->getRAVERatio();
   }
 
@@ -1604,9 +1625,25 @@ void Tree::updateRAVE(Go::Color wincol,Go::IntBoard *blacklist,Go::IntBoard *whi
               primary->addRAVELose(early,raveweight);
           }
         }
+        if (ravenum<0)
+        {  //marked as bad move during playout, therefore counted as rave loss
+          float raveweight=1;
+          //if (!early) raveweight=exp(-params->test_p30*ravenum);
+          if (!early) raveweight=pow(-ravenum,-params->test_p30);
+          
+          if ((*iter)->isPrimary())
+          {
+            (*iter)->addRAVELose(early,raveweight);
+          }
+          else
+          {
+            Tree *primary=(*iter)->getPrimary();
+            primary->addRAVELose(early,raveweight);
+          }
+        }
         //check for the other color
         ravenum=(col==Go::WHITE?blacklist:whitelist)->get(pos);
-        if (ravenum)
+        if (ravenum>0)
         {
           float raveweight=1;
           if (!early) raveweight=exp(-params->test_p30*ravenum);
@@ -1626,6 +1663,23 @@ void Tree::updateRAVE(Go::Color wincol,Go::IntBoard *blacklist,Go::IntBoard *whi
               primary->addRAVELoseOther(early,raveweight);
           }
         }
+        if (ravenum<0)
+        {  //marked as bad move during playout, therefore counted as rave loss
+          float raveweight=1;
+          //if (!early) raveweight=exp(-params->test_p30*ravenum);
+          if (!early) raveweight=pow(-ravenum,-params->test_p30);
+          
+          if ((*iter)->isPrimary())
+          {
+            (*iter)->addRAVELoseOther(early,raveweight);
+          }
+          else
+          {
+            Tree *primary=(*iter)->getPrimary();
+            primary->addRAVELoseOther(early,raveweight);
+          }
+        }
+        
       }
     }
   }

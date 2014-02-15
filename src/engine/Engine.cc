@@ -150,7 +150,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","test_p21",&(params->test_p21),0.0);
   params->addParameter("playout","test_p22",&(params->test_p22),1.0);
   params->addParameter("playout","test_p23",&(params->test_p23),0.0);
-  params->addParameter("playout","test_p24",&(params->test_p24),1.0);
+  params->addParameter("playout","test_p24",&(params->test_p24),0.0);
   params->addParameter("playout","test_p25",&(params->test_p25),0.0);
   params->addParameter("playout","test_p26",&(params->test_p26),0.0);
   params->addParameter("playout","test_p27",&(params->test_p27),0.0);

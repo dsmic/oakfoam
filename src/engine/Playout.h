@@ -34,7 +34,7 @@ class Playout
      */
     void doPlayout(Worker::Settings *settings, Go::Board *board, float &finalscore, Tree *playouttree, std::list<Go::Move> &playoutmoves, Go::Color colfirst, Go::IntBoard *firstlist, Go::IntBoard *secondlist, Go::IntBoard *earlyfirstlist, Go::IntBoard *earlysecondlist, std::list<std::string> *movereasons=NULL);
     /** Get a playout move for a given situation. */
-    void getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, float critarray[], int passes=0, std::vector<int> *pool=NULL, std::vector<int> *poolcrit=NULL, std::string *reason=NULL,float *trylocal_p=NULL, float *black_gammas=NULL, float *white_gammas=NULL, bool *earlymoves=NULL);
+    void getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, float critarray[], int passes=0, std::vector<int> *pool=NULL, std::vector<int> *poolcrit=NULL, std::string *reason=NULL,float *trylocal_p=NULL, float *black_gammas=NULL, float *white_gammas=NULL, bool *earlymoves=NULL,Go::IntBoard *firstlist=NULL,int playoutmovescount=0, bool *nonlocalmove=NULL);
     /** Check for a useless move according to the Crazy Stone heuristic.
      * @todo Consider incorporating this into getPlayoutMove()
      */
@@ -61,7 +61,7 @@ class Playout
     
     int lgrfpositionmax;
     
-    void getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, float critarray[], int passes=0, std::vector<int> *pool=NULL, std::vector<int> *poolcrit=NULL, std::string *reason=NULL,float *trylocal_p=NULL,float *black_gammas=NULL,float *white_gammas=NULL, bool *earlymoves=NULL);
+    void getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, float critarray[], int passes=0, std::vector<int> *pool=NULL, std::vector<int> *poolcrit=NULL, std::string *reason=NULL,float *trylocal_p=NULL,float *black_gammas=NULL,float *white_gammas=NULL, bool *earlymoves=NULL,Go::IntBoard *firstlist=NULL,int playoutmovescount=0, bool *nonlocalmove=NULL);
     void checkUselessMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, std::string *reason=NULL);
     void getPoolRAVEMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, std::vector<int> *pool=NULL);
     void getLGRF2Move(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move);
@@ -83,7 +83,7 @@ class Playout
     void checkEyeMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, Go::Move &replacemove);
     void checkAntiEyeMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, Go::Move &replacemove);
 
-    bool isBadMove(Worker::Settings *settings, Go::Board *board, Go::Color col, int pos, float lbr_p=0.0, float lbm_p=0.0, float lbpr_p=0.0, int passes=0);
+    bool isBadMove(Worker::Settings *settings, Go::Board *board, Go::Color col, int pos, float lbr_p=0.0, float lbm_p=0.0, float lbpr_p=0.0, int passes=0, Go::IntBoard *firstlist=NULL, int playoutmovescount=0);
     bool isEyeFillMove(Go::Board *board, Go::Color col, int pos);
     float getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group *group);
     

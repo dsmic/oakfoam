@@ -304,16 +304,17 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
   while (board->getPassesPlayed()<2 || kodelay>0)
   {
     bool resign;
+    bool nonlocalmove=false;
     if (movereasons!=NULL)
     {
-      this->getPlayoutMove(settings,board,coltomove,move,posarray,critarray,(coltomove==Go::BLACK?bpasses:wpasses),(coltomove==poolcol?&pool:&poolcrit),&poolcrit,&reason,&trylocal_p,black_gammas,white_gammas,&earlymoves);
+      this->getPlayoutMove(settings,board,coltomove,move,posarray,critarray,(coltomove==Go::BLACK?bpasses:wpasses),(coltomove==poolcol?&pool:&poolcrit),&poolcrit,&reason,&trylocal_p,black_gammas,white_gammas,&earlymoves,(coltomove==colfirst?firstlist:secondlist),playoutmovescount+1,&nonlocalmove);
       //fprintf(stderr,"move test %s\n",move.toString (9).c_str());
       if (params->playout_useless_move)
         this->checkUselessMove(settings,board,coltomove,move,posarray,&reason);
     }
     else
     {
-      this->getPlayoutMove(settings,board,coltomove,move,posarray,critarray,(coltomove==Go::BLACK?bpasses:wpasses),(coltomove==poolcol?&pool:&poolcrit),&poolcrit,NULL,&trylocal_p,black_gammas,white_gammas,&earlymoves);
+      this->getPlayoutMove(settings,board,coltomove,move,posarray,critarray,(coltomove==Go::BLACK?bpasses:wpasses),(coltomove==poolcol?&pool:&poolcrit),&poolcrit,NULL,&trylocal_p,black_gammas,white_gammas,&earlymoves,(coltomove==colfirst?firstlist:secondlist),playoutmovescount+1,&nonlocalmove);
       //fprintf(stderr,"move test %s\n",move.toString (9).c_str());
       if (params->playout_useless_move)
         this->checkUselessMove(settings,board,coltomove,move,posarray);
@@ -338,7 +339,7 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
     int p=move.getPosition();
     if ((coltomove==colfirst?firstlist:secondlist)!=NULL && !move.isPass() && !move.isResign())
     {
-      if (params->test_p2==0 || (coltomove!=colfirst?firstlist:secondlist)->get(p)==0)
+      if ((params->test_p2==0 || (coltomove!=colfirst?firstlist:secondlist)->get(p)==0) && (params->test_p46!=0 && nonlocalmove))
       {
         (coltomove==colfirst?firstlist:secondlist)->set(p,playoutmovescount);
         if ((coltomove==colfirst?earlyfirstlist:earlysecondlist)!=NULL && params->rave_moves_use>0 && playoutmovescount < (board->getSize()*board->getSize()-treemovescount)*params->rave_moves_use)
@@ -555,7 +556,7 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
 
 }
 
-void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, float critarray[], int passes, std::vector<int> *pool, std::vector<int> *poolCR, std::string *reason, float *trylocal_p, float *black_gammas, float *white_gammas, bool *earlymoves)
+void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, float critarray[], int passes, std::vector<int> *pool, std::vector<int> *poolCR, std::string *reason, float *trylocal_p, float *black_gammas, float *white_gammas, bool *earlymoves, Go::IntBoard *firstlist,int playoutmovescount, bool *nonlocalmove)
 {
   int *posarray = new int[board->getPositionMax()];
   
@@ -592,7 +593,7 @@ void Playout::checkUselessMove(Worker::Settings *settings, Go::Board *board, Go:
   }
 }
 
-void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, float critarray[], int passes, std::vector<int> *pool, std::vector<int> *poolcrit, std::string *reason, float *trylocal_p, float *black_gammas, float *white_gammas, bool *earlymoves)
+void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, float critarray[], int passes, std::vector<int> *pool, std::vector<int> *poolcrit, std::string *reason, float *trylocal_p, float *black_gammas, float *white_gammas, bool *earlymoves, Go::IntBoard *firstlist,int playoutmovescount, bool *nonlocalmove)
 {
   /* trylocal_p can be used to influence parameters from move to move in a playout. It starts with 1.0
    * 
@@ -852,6 +853,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
 
 //  notlocal:
 //  if (trylocal_p!=NULL) *trylocal_p*=params->test_p1;
+  if (nonlocalmove && !move.isPass()) *nonlocalmove=true;
   
   if (WITH_P(params->playout_anycapture_p))
   {
@@ -1331,19 +1333,22 @@ if (params->playout_randomquick_bestcirc_n>0)
     *reason="pass";
 }
 
-bool Playout::isBadMove(Worker::Settings *settings, Go::Board *board, Go::Color col, int pos, float lbr_p, float lbm_p, float lbpr_p, int passes)
+bool Playout::isBadMove(Worker::Settings *settings, Go::Board *board, Go::Color col, int pos, float lbr_p, float lbm_p, float lbpr_p, int passes, Go::IntBoard *firstlist, int playoutmovescount)
 {
   if (pos<0) return false;
   Random *const rand=settings->rand;
 
   // below lines are a bit ridiculous and should rather be rewritten in a more readable manner
-  bool debug= (board->weakEye(col,pos,params->test_p5!=0) || (params->playout_avoid_selfatari && board->isSelfAtariOfSize(Go::Move(col,pos),params->playout_avoid_selfatari_size,params->playout_avoid_selfatari_complex))
+  bool isBad= (board->weakEye(col,pos,params->test_p5!=0) || (params->playout_avoid_selfatari && board->isSelfAtariOfSize(Go::Move(col,pos),params->playout_avoid_selfatari_size,params->playout_avoid_selfatari_complex))
       || (lbr_p > 0.0 && rand->getRandomReal() < lbr_p && (board->getLastMove().isNormal() && this->hasLGRF1n(col,board->getLastMove().getPosition(),pos)))
       || (lbpr_p > 0.0 && (passes>1 || rand->getRandomReal() < lbpr_p) && (board->getLastMove().isPass() && this->isBadPassAnswer(col,pos)))
       || (lbm_p > 0.0 && (rand->getRandomReal() < lbm_p) && this->hasLBM (col,pos)));
-  if (debug && params->debug_on)
+  if (isBad && params->debug_on)
     gtpe->getOutput()->printfDebug("[badmove triggered]: %s pass weakey %d selfatari %d\n",Go::Move(col,pos).toString(board->getSize()).c_str(),board->weakEye(col,pos,params->test_p5!=0),board->isSelfAtariOfSize(Go::Move(col,pos),params->playout_avoid_selfatari_size,params->playout_avoid_selfatari_complex));
-  return debug;
+
+  if (isBad && firstlist!=NULL && firstlist->get(pos)==0)
+    firstlist->set(pos,-playoutmovescount);
+  return isBad;
 }
 
 bool Playout::isEyeFillMove(Go::Board *board, Go::Color col, int pos)
@@ -1578,7 +1583,7 @@ void Playout::getPatternMove(Worker::Settings *settings, Go::Board *board, Go::C
     foreach_adjdiag(pos,p,{
       bool found=false;
       for (int j=0;j<pcnow;j++)
-        if (p==patternmoves[j]) found=true; //remove double entries
+        if (p==patternmoves[j]) {found=true; break;} //remove double entries
       if (!found && board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p2,params->playout_avoid_lbmf_p2, params->playout_avoid_bpr_p2, passes))
       {
         unsigned int pattern=Pattern::ThreeByThree::makeHash(board,p);
