@@ -673,7 +673,8 @@ namespace Go
       bool validMove(Go::Move move) const
         {
           Go::BitBoard *validmoves=(move.getColor()==Go::BLACK?blackvalidmoves:whitevalidmoves);
-          return move.isPass() || move.isResign() || validmoves->get(move.getPosition());
+          //return move.isPass() || move.isResign() || validmoves->get(move.getPosition());
+          return (move.getPosition()<0) || validmoves->get(move.getPosition()); //faster and more correct, as no neg value allowed for get call!!!
         };
       
       /** Get the number of legal moves currently available. */
@@ -691,7 +692,10 @@ namespace Go
       /** Determine if the given position is surrounded by a single group of the given color. */
       bool strongEye(Go::Color col, int pos) const;
       /** Get the number of empty positions orthogonally adjacent to the given position. */
-      int touchingEmpty(int pos) const;
+      int touchingEmpty(int pos) const {int lib=0; foreach_adjacent(pos,p,{if (this->getColor(p)==Go::EMPTY) lib++;});
+  
+  return lib;
+};
       int diagonalEmpty(int pos) const;
       /** Get the number of empty positions in the eight positions surrounding the given position. */
       int surroundingEmpty(int pos) const;
@@ -744,7 +748,7 @@ namespace Go
       /** Determine is the given move is an extension. */
       bool isExtension(Go::Move move) const;
       /** Determine is the given move is a self-atari. */
-      bool isSelfAtari(Go::Move move) const;
+      bool isSelfAtari(Go::Move move) const {return this->isSelfAtariOfSize(move,0);};
       /** Determine is the given move is a self-atari of a group of a minimum size. */
       bool isSelfAtariOfSize(Go::Move move, int minsize=0, bool complex=false) const;
       /** Determine is the given move is an atari. */

@@ -178,6 +178,17 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","test_p48",&(params->test_p48),0.0);
   params->addParameter("playout","test_p49",&(params->test_p49),0.0);
   
+  params->addParameter("playout","test_p50",&(params->test_p50),0.0);
+  params->addParameter("playout","test_p51",&(params->test_p51),1.0);
+  params->addParameter("playout","test_p52",&(params->test_p52),0.0);
+  params->addParameter("playout","test_p53",&(params->test_p53),0.0);
+  params->addParameter("playout","test_p54",&(params->test_p54),0.0);
+  params->addParameter("playout","test_p55",&(params->test_p55),0.0);
+  params->addParameter("playout","test_p56",&(params->test_p56),0.0);
+  params->addParameter("playout","test_p57",&(params->test_p57),0.0);
+  params->addParameter("playout","test_p58",&(params->test_p58),0.0);
+  params->addParameter("playout","test_p59",&(params->test_p59),0.0);
+  
   params->addParameter("tree","ucb_c",&(params->ucb_c),UCB_C);
   params->addParameter("tree","ucb_init",&(params->ucb_init),UCB_INIT);
 
@@ -4219,7 +4230,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     playoutboard->turnSymmetryOff();
     if (params->playout_features_enabled>0)
       playoutboard->setFeatures(features,params->playout_features_incremental,params->test_p8==0);
-    playout->getPlayoutMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,**move,NULL);
+    playout->getPlayoutMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,**move,NULL,NULL);
     if (params->playout_useless_move)
       playout->checkUselessMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,**move,(std::string *)NULL);
     delete playoutboard;
@@ -4233,7 +4244,7 @@ void Engine::getOnePlayoutMove(Go::Board *board, Go::Color col, Go::Move *move)
   playoutboard->turnSymmetryOff();
   if (params->playout_features_enabled>0)
     playoutboard->setFeatures(features,params->playout_features_incremental,params->test_p8==0);
-  playout->getPlayoutMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,*move,NULL);
+  playout->getPlayoutMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,*move,NULL,NULL);
   if (params->playout_useless_move)
     playout->checkUselessMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,*move,(std::string *)NULL);
   delete playoutboard;
@@ -4264,7 +4275,7 @@ void Engine::makeMove(Go::Move move)
     playoutboard->turnSymmetryOff();
     if (params->playout_features_enabled>0)
       playoutboard->setFeatures(features,params->playout_features_incremental,params->test_p8==0);
-    playout->getPlayoutMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,movetmp,NULL);
+    playout->getPlayoutMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,movetmp,NULL,NULL);
     if (!movetmp.isPass())
       playoutmove_triggered=false;
     delete playoutboard;

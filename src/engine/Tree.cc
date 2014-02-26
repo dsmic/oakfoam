@@ -582,24 +582,25 @@ float Tree::getUrgency(bool skiprave) const
     if (params->test_p44==0 || parent->getPlayouts()==0)
       val+=this->getProgressiveBias();
     else
-      val+=this->getProgressiveBias()*((params->test_p44+parent->getPlayouts())/(parent->getPlayouts()));
+      val+=(log(1000.0*this->getProgressiveBias()+1.0)+params->test_p49*this->getCriticality ())*(params->test_p44/(pow(parent->getPlayouts(),params->test_p51)+1.0));
+      //val+=(log(this->getProgressiveBias()+0.1)-log(0.1)+params->test_p49*this->getCriticality ())*(params->test_p44/(parent->getPlayouts()+1.0));
   }
 
   if (params->test_p38>0) //progressive bias as pre wins and games, comes closer to pachi style
   {
-    float pre_games=1;
-    float pre_wins=1;
+    //float pre_games=1;
+    //float pre_wins=1;
     float sign=-1;
     if (gamma>1.0)
     {
       sign=1;
-      pre_wins=params->test_p38*pow(log(gamma),params->uct_progressive_bias_exponent);
-      pre_games=pre_wins;
+      //pre_wins=params->test_p38*pow(log(gamma),params->uct_progressive_bias_exponent);
+      //pre_games=pre_wins;
     }
     else if (gamma>0.0)
     {
-      pre_wins=0;
-      pre_games=params->test_p38*(-pow(log(gamma),params->uct_progressive_bias_exponent));
+      //pre_wins=0;
+      //pre_games=params->test_p38*(-pow(log(gamma),params->uct_progressive_bias_exponent));
     }
     val=//(params->test_p37/2.0+pre_wins+playouts*this->getVal(skiprave))/(params->test_p37+pre_games+playouts)
 
@@ -1063,7 +1064,7 @@ float Tree::getUnPruneFactor(float *moveValues,float mean, int num, float prob_l
   {
     factor=log((1000.0*gamma/local_part*params->uct_rave_unprune_decay)/(parent->raveplayouts+params->uct_rave_unprune_decay)+1.0); 
     if (params->uct_rave_unprune_decay>=1000000) //to disable without changing to old factor...
-      factor=log((1000.0*gamma/local_part)+1.0); 
+      factor=log((1000.0*gamma/local_part)+1.0);
     //ELO tests
     //
     // factor=gamma/parent->getChildrenTotalFeatureGamma()*exp(-parent->raveplayouts*params->uct_rave_unprune_decay);
@@ -1694,6 +1695,7 @@ float Tree::getProgressiveBias() const
     bias/=parent->getMaxChildFeatureGamma();
   bias=pow(bias,params->uct_progressive_bias_exponent);
   //return (bias+biasbonus)*exp(-(float)playouts/params->uct_progressive_bias_moves); // /pow(playouts+1,params->uct_criticality_urgency_decay);
+  if (params->test_p44>0) return (bias+biasbonus);
   return (bias+biasbonus)/pow(playouts+1,params->test_p45);
   return (bias+biasbonus)/(playouts+1);
 }

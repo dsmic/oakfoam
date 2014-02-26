@@ -1112,6 +1112,32 @@ float Features::getFeatureGammaPlayoutPattern(unsigned int pattern, int MaxLast,
       return 1.0;  //? in this case 1.0 might not be a good idea, if a pattern is never played in the games.....
 }
     
+float Features::getFeatureGammaPlayoutCircPattern(Go::Board *board, Go::Move move) const
+{
+  Go::Color col=move.getColor();
+  int pos=move.getPosition();
+  
+  Pattern::Circular pattcirc = Pattern::Circular(circdict,board,pos,PATTERN_CIRC_MAXSIZE);
+  if (col == Go::WHITE)
+    pattcirc.invert();
+  pattcirc.convertToSmallestEquivalent(circdict);
+
+  unsigned int level=0;
+  for (int s=PATTERN_CIRC_MAXSIZE;s>=3;s--)
+  {
+    Pattern::Circular pc = pattcirc.getSubPattern(circdict,s);
+    if (circlevels->count(pc)>0)
+    {
+      level = (*circlevels)[pc];
+      break;
+    }
+  }
+  if (circgammas->size()>level)
+      return (*circgammas)[level];
+    else
+      return 1.0;
+}
+    
 
 int Features::learnFeatureGammaC(Features::FeatureClass featclass, unsigned int level, float learn_diff)
 {

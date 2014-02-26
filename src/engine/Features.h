@@ -126,7 +126,8 @@ class Features
     /** Return the gamma weight for a specific feature and level. */
     float getFeatureGamma(Features::FeatureClass featclass, unsigned int level) const;
     float getFeatureGammaPlayoutPattern(unsigned int pattern, int MaxLast, int MaxSecondLast) const;
-    /** Return the weight for a move.
+    float getFeatureGammaPlayoutCircPattern(Go::Board *board, Go::Move move) const;
+      /** Return the weight for a move.
      * The weight for a move is the product of matching feature weights for that move.
      */
     float getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove=true, bool withcircularpatterns=true, float *gamma_local_part=NULL) const;

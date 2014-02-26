@@ -736,17 +736,18 @@ void Go::Board::removeValidMove(Go::Move move)
   }
 }
 
-int Go::Board::touchingEmpty(int pos) const
-{
-  int lib=0;
+//moved to Go.h
+//int Go::Board::touchingEmpty(int pos) const
+//{
+//  int lib=0;
   
-  foreach_adjacent(pos,p,{
-    if (this->getColor(p)==Go::EMPTY)
-      lib++;
-  });
+//  foreach_adjacent(pos,p,{
+//    if (this->getColor(p)==Go::EMPTY)
+//      lib++;
+//  });
   
-  return lib;
-}
+//  return lib;
+//}
 
 int Go::Board::diagonalEmpty(int pos) const
 {
@@ -1608,7 +1609,7 @@ bool Go::Board::isCapture(Go::Move move) const
     if (this->inGroup(p))
     {
       Go::Group *group=this->getGroup(p);
-      if (group->inAtari() && col!=group->getColor())
+      if (col!=group->getColor() && group->inAtari())
         return true;
     }
   });
@@ -1665,10 +1666,11 @@ bool Go::Board::isExtension(Go::Move move) const
     return false;
 }
 
-bool Go::Board::isSelfAtari(Go::Move move) const
-{
-  return this->isSelfAtariOfSize(move,0);
-}
+//moved to Go.h
+//bool Go::Board::isSelfAtari(Go::Move move) const
+//{
+//  return this->isSelfAtariOfSize(move,0);
+//}
 
 bool Go::Board::isSelfAtariOfSize(Go::Move move, int minsize, bool complex) const
 {
@@ -1692,10 +1694,10 @@ bool Go::Board::isSelfAtariOfSize(Go::Move move, int minsize, bool complex) cons
       Go::Group *group=this->getGroup(p);
       if (col==group->getColor())
       {
-        attach_group_pos=p;
-        usedneighbours++;
         if (!(group->inAtari() || group->isOneOfTwoLiberties(pos)))
           return false; // attached group has more than two libs
+        attach_group_pos=p;
+        usedneighbours++;
         bool found=false;
         for (int i=0;i<groups_used_num;i++)
         {
