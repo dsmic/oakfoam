@@ -92,8 +92,9 @@ void Tree::addChild(Tree *node)
   if (move.getColor()==node->move.getColor() && (children->size()==0 || children->back()->move.getColor()!=node->move.getColor()))
     fprintf(stderr,"WARNING! Expecting alternating colors in tree\n");
   
-  children->push_back(node);
+//order changed, was not thread save ?!
   node->parent=this;
+  children->push_back(node);
 }
 
 float Tree::getScoreMean() const
@@ -571,7 +572,7 @@ float Tree::getUrgency(bool skiprave) const
 
   if (params->KL_ucb_enabled)
   {
-    if (parent->getPlayouts()>0 && playouts>0) //otherwize only old val used! Not correct but safe?!
+    if (parent!=NULL && parent->getPlayouts()>0 && playouts>0) //otherwize only old val used! Not correct but safe?!
       val=KL_max_q(this->getVal(skiprave)*playouts,playouts,parent->getPlayouts());
   }
   if (params->weight_score>0)
@@ -579,10 +580,10 @@ float Tree::getUrgency(bool skiprave) const
 
   if (params->uct_progressive_bias_enabled && params->test_p38==0) //p38 turns this off, as it is replaced by pachi style bias
   {
-    if (params->test_p44==0 || parent->getPlayouts()==0)
+    if (params->test_p44==0 || (parent!=NULL && parent->getPlayouts()==0))
       val+=this->getProgressiveBias();
     else
-      val+=(log(1000.0*this->getProgressiveBias()+1.0)+params->test_p49*this->getCriticality ())*(params->test_p44/(pow(parent->getPlayouts(),params->test_p51)+1.0));
+      val+=(log(1000.0*this->getProgressiveBias()+1.0)+params->test_p49*this->getCriticality ())*(params->test_p44/(pow((parent!=NULL)?parent->getPlayouts():0,params->test_p51)+1.0));
       //val+=(log(this->getProgressiveBias()+0.1)-log(0.1)+params->test_p49*this->getCriticality ())*(params->test_p44/(parent->getPlayouts()+1.0));
   }
 
