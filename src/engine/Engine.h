@@ -225,6 +225,7 @@ namespace Pattern
 #include "Playout.h"
 #include "Benson.h"
 #include "Worker.h"
+
 //from "DecisionTree.h":
 class DecisionTree;
 #include "../gtp/Gtp.h"
@@ -233,6 +234,14 @@ class DecisionTree;
   class Web;
 #endif
 
+class MoveCircHash
+{
+  public:
+    std::size_t operator() (const MoveCirc& b) const
+    {
+      return b.hashf();
+    }
+};
 
   
 
@@ -355,6 +364,37 @@ class Engine
     void getOnePlayoutMove(Go::Board *board, Go::Color col, Go::Move *move);
 
     void addpresetplayout(float p) {presetplayouts+=p; presetnum++;}
+    
+    std::set <Tree*>  * addMoveCirc(MoveCirc *m, Tree *t)  
+      { 
+        std::set <Tree*> *tt=&circ_move[*m];
+        tt->insert(t);
+        return tt;
+      }
+    void removeMoveCirc(MoveCirc *m, Tree *t)  
+    {
+      if (m!=NULL && circ_move.count(*m)>0)
+      {
+        circ_move[*m].erase(t);
+        if (circ_move[*m].size()==0)
+          circ_move.erase(*m);
+      }
+    }
+    int countMoveCirc(MoveCirc *m) 
+    {
+      if (m!=NULL && circ_move.count(*m)>0)
+      {
+        return circ_move[*m].size();
+      }
+      return 0;
+    }
+    std::set <Tree*>  * getMoveCirc(MoveCirc *m)
+    {
+      if (m!=NULL && circ_move.count(*m)>0)
+        return &circ_move[*m];
+      return NULL;
+    }
+    
   private:
     Gtp::Engine *gtpe;
     std::string longname;
@@ -381,7 +421,12 @@ class Engine
     Go::TerritoryMap **area_correlation_map;
     Go::MoveProbabilityMap *probabilitymap;
     Go::ObjectBoard<Go::CorrelationData> *correlationmap;
-    
+
+    #ifdef with_unordered
+      std::unordered_map <MoveCirc,std::set <Tree*>,MoveCircHash> circ_move;
+    #else
+      std::map <MoveCirc,std::set <Tree*>> circ_move;
+    #endif
     long statistics[STATISTICS_NUM];
 
     bool isgamefinished;

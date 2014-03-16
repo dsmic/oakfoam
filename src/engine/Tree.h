@@ -9,6 +9,7 @@
 #include <string>
 #include <boost/thread/mutex.hpp>
 #include "Go.h"
+#include "Pattern.h"
 //from "Parameters.h":
 class Parameters;
 //from "Worker.h":
@@ -16,6 +17,8 @@ namespace Worker
 {
   class Settings;
 };
+
+class MoveCirc;
 
 /** MCTS Tree. */
 class Tree
@@ -278,7 +281,14 @@ class Tree
     #endif
 
     std::list<Tree*> *getChildren() {return children;}
-    
+    int countMoveCirc(); 
+    int countMoveCirc2() {return (eq_moves!=NULL)?eq_moves->size():0;}
+    void setMoveCirc(MoveCirc *m,std::set <Tree*> *e) 
+     {
+       if (movecirc!=NULL || eq_moves!=NULL) fprintf(stderr,"should not happen\n");
+       movecirc=m;
+       eq_moves=e;
+     }
   private:
     Tree *parent;
     std::list<Tree*> *children;
@@ -331,5 +341,43 @@ class Tree
     float KL_d(float p, float q) const;
     float KL_xLogx_y(float x, float y) const;
     float KL_max_q(float S, float N, float t) const;
+
+    MoveCirc *movecirc;
+    std::set <Tree*> *eq_moves;
 };
+
+class MoveCirc
+{
+  public:
+    /** Determine if two are equal. */
+      MoveCirc(Pattern::Circular m_circ, Go::Move m_m):circ(m_circ.getHash(),m_circ.getSize()),m(m_m.getColor(),m_m.getPosition()) {deleted=0;};
+      bool operator==(const MoveCirc other) const {return (m==other.m && circ==other.circ);};
+      /** Determine if two are unequal. */
+      bool operator!=(const MoveCirc other) const { return !(*this == other); };
+      /** Determine if one is smaller than another. */
+      bool operator<(const MoveCirc other) const { 
+        if (m.getColor()<other.m.getColor()) return true;
+        if (m.getColor()>other.m.getColor()) return false;
+        if (m.getPosition()<other.m.getPosition()) return true;
+        if (m.getPosition()>other.m.getPosition()) return false;
+        if (circ<other.circ) return true; else return false;
+      };
+      /** Determine if one is smaller than another. */
+      bool operator<(const MoveCirc *other) const { 
+        if (m.getColor()<other->m.getColor()) return true;
+        if (m.getColor()>other->m.getColor()) return false;
+        if (m.getPosition()<other->m.getPosition()) return true;
+        if (m.getPosition()>other->m.getPosition()) return false;
+        if (circ<other->circ) return true; else return false;
+      };
+      std::size_t hashf() const {return circ.hashf()+m.getPosition()*13+((m.getColor()==Go::WHITE)?17:0);}; //quick and dirty hash
+
+    Pattern::Circular circ;
+    Go::Move m;
+
+  private:
+    unsigned int deleted; //used for reference counting, if deleted==t.getSize() no is used
+};
+
+
 #endif

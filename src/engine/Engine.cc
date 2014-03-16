@@ -4101,6 +4101,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     int   best_unpruned=0;
     float ratiodelta=-1;
     bool bestsame=false;
+    int eq_moves=0;
+    int eq_moves2=0;
     if (besttree==NULL)
     {
       fprintf(stderr,"WARNING! No move found!\n");
@@ -4110,11 +4112,15 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     {
       *move=new Go::Move(col,Go::Move::RESIGN);
       bestratio=besttree->getRatio();
+      eq_moves=besttree->countMoveCirc();
+      eq_moves2=besttree->countMoveCirc2();
     }
     else
     {
       *move=new Go::Move(col,besttree->getMove().getPosition());
       bestratio=besttree->getRatio();
+      eq_moves=besttree->countMoveCirc();
+      eq_moves2=besttree->countMoveCirc2();
       scoresd=besttree->getScoreSD();
       scoremean=besttree->getScoreMean();
       best_unpruned=besttree->getUnprunedNum();
@@ -4165,6 +4171,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     ss << " rd:"<<std::setprecision(3)<<ratiodelta;
     ss << " r2:"<<std::setprecision(2)<<params->uct_last_r2;
     ss << " fs:"<<std::setprecision(2)<<scoremean;
+    ss << " eq:"<<eq_moves;
+    ss << " eq2:"<<eq_moves2;
     if (params->recalc_dynkomi_limit>0)  //do not accept loosing!
     {
       ss<< " dyn:"<<std::setprecision(1)<<recalc_dynkomi;

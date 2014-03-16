@@ -74,6 +74,8 @@ Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p) : params(
         fprintf(stderr,"WARNING! unexpected parent color\n");
     }
   }
+  movecirc=NULL;
+  eq_moves=NULL;
 }
 
 Tree::~Tree()
@@ -85,6 +87,8 @@ Tree::~Tree()
   children->clear();
   delete children;
   params->tree_instances--;
+  if (movecirc!=NULL) params->engine->removeMoveCirc(movecirc,this);
+  if (movecirc!=NULL) delete movecirc;
 }
 
 void Tree::addChild(Tree *node)
@@ -1543,6 +1547,19 @@ bool Tree::expandLeaf(Worker::Settings *settings)
         float gamma=params->engine->getFeatures()->getMoveGamma(startboard,cfglastdist,cfgsecondlastdist,(*iter)->getMove(),true,true,&gamma_local_part);
         (*iter)->setFeatureGamma(gamma);
         (*iter)->setFeatureGammaLocalPart(gamma_local_part);
+
+        if (params->test_p55>0)
+        {
+          Pattern::CircularDictionary *circdict= params->engine->getFeatures()->getCircDict();
+          Pattern::Circular pattcirc_for_move = Pattern::Circular(circdict,startboard,(*iter)->getMove().getPosition(),PATTERN_CIRC_MAXSIZE);
+          //may be not necessary, as we are at the identical move!!
+          pattcirc_for_move.convertToSmallestEquivalent(circdict);
+          MoveCirc *movecirc_tmp = new MoveCirc(pattcirc_for_move,(*iter)->getMove());
+          std::set <Tree*> *eq_moves_tmp=params->engine->addMoveCirc(movecirc_tmp,(*iter));
+          (*iter)->setMoveCirc(movecirc_tmp,eq_moves_tmp);
+        }
+
+        
         Pattern::Circular pattcirc = Pattern::Circular(params->engine->getFeatures()->getCircDict(),startboard,(*iter)->getMove().getPosition(),5);
         int NumNonOffboard=pattcirc.countNonOffboard(params->engine->getFeatures()->getCircDict());
         int NumStones=pattcirc.countStones(params->engine->getFeatures()->getCircDict());
@@ -2011,6 +2028,16 @@ void Tree::resetNode()
   #endif
 }
 
+int Tree::countMoveCirc() 
+{
+  if (movecirc==NULL)
+    fprintf(stderr,"movecirc NULL\n");
+  if (movecirc!=NULL && params->engine->getMoveCirc(movecirc)!=eq_moves)
+    fprintf(stderr,"should not happen %p %p\n",params->engine->getMoveCirc(movecirc),eq_moves);
+  return params->engine->countMoveCirc(movecirc);
+}
+
+
 #ifdef HAVE_MPI
 
 void Tree::resetMpiDiff()
@@ -2034,5 +2061,6 @@ void Tree::fetchMpiDiff(float &plts, float &wns)
   wns=wins-mpi_lastwins;
   this->resetMpiDiff();
 }
+
 #endif
 
