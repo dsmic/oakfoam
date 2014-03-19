@@ -19,6 +19,10 @@ namespace Worker
 };
 
 class MoveCirc;
+typedef struct
+{
+  float parent_playouts,parent_wins,playouts,wins;
+} tree_result;
 
 /** MCTS Tree. */
 class Tree
@@ -283,6 +287,28 @@ class Tree
     std::list<Tree*> *getChildren() {return children;}
     int countMoveCirc(); 
     int countMoveCirc2() {return (eq_moves!=NULL)?eq_moves->size():0;}
+    tree_result getTreeResult() {tree_result r={0,0,0,0}; if (parent!=NULL) r.parent_playouts=parent->getPlayouts(); r.parent_wins=parent->getWins(); r.playouts=playouts; r.wins=wins; return r;} 
+    tree_result sumOtherTreeResults() 
+      {
+        tree_result r={0,0,0,0};
+        if (eq_moves==NULL) return r;
+        for(std::set<Tree*>::iterator iter=eq_moves->begin();iter!=eq_moves->end();++iter) 
+        {
+          if ((*iter)!=this)
+          {
+            tree_result r_tmp=(*iter)->getTreeResult();
+            r.parent_playouts+=r_tmp.parent_playouts;
+            r.parent_wins+=r_tmp.parent_wins;
+            r.playouts+=r_tmp.playouts;
+            r.wins+=r_tmp.wins;
+          }
+        }
+        return r;
+      }
+    
+    std::set <Tree*> * get_eq_moves() {return eq_moves;}
+    float getTreeResultsUnpruneFactor() const;
+      
     void setMoveCirc(MoveCirc *m,std::set <Tree*> *e) 
      {
        if (movecirc!=NULL || eq_moves!=NULL) fprintf(stderr,"should not happen\n");

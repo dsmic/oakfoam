@@ -1057,6 +1057,27 @@ void Tree::unPruneNow()
   unprunemutex.unlock();
 }
 
+float Tree::getTreeResultsUnpruneFactor() const
+{
+  if (parent==NULL) return 0;
+  if (eq_moves==NULL) return 0;
+  tree_result result={0,0,0,0};
+  for(std::set<Tree*>::iterator iter=eq_moves->begin();iter!=eq_moves->end();++iter) 
+     {
+       if ((*iter)->getParent()==NULL) break;
+       std::set <Tree*> *eq_moves2=(*iter)->getParent()->get_eq_moves();
+       if (eq_moves2==NULL) break;
+       bool found=false;
+       for(std::set<Tree*>::iterator iter2=eq_moves2->begin();iter!=eq_moves2->end();++iter2)
+       {
+         if ((*iter2)==this) {found=true; break;}
+       }
+       tree_result tmp=(*iter)->getTreeResult();
+       if (found) {result.playouts+=tmp.playouts; result.parent_playouts+=tmp.parent_playouts;}
+     }
+   return result.playouts/result.parent_playouts;     
+}
+
 float Tree::getUnPruneFactor(float *moveValues,float mean, int num, float prob_local) const
 {
   float local_part=1;
@@ -1189,6 +1210,12 @@ float Tree::getUnPruneFactor(float *moveValues,float mean, int num, float prob_l
 
   if (params->test_p42>0)
     factor+=params->test_p42*params->engine->getAreaCorrelation(move);
+
+  if (params->test_p55>0)
+  {
+    float tmp=this->getTreeResultsUnpruneFactor();
+    factor+=params->test_p55*((tmp-params->test_p56>0)?tmp-params->test_p56:0);
+  }
   return factor;
 }
 
