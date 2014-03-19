@@ -1068,12 +1068,15 @@ float Tree::getTreeResultsUnpruneFactor() const
        std::set <Tree*> *eq_moves2=(*iter)->getParent()->get_eq_moves();
        if (eq_moves2==NULL) break;
        bool found=false;
-       for(std::set<Tree*>::iterator iter2=eq_moves2->begin();iter!=eq_moves2->end();++iter2)
+       for(std::set<Tree*>::iterator iter2=eq_moves2->begin();iter2!=eq_moves2->end();++iter2)
        {
          if ((*iter2)==this) {found=true; break;}
        }
        tree_result tmp=(*iter)->getTreeResult();
-       if (found) {result.playouts+=tmp.playouts; result.parent_playouts+=tmp.parent_playouts;}
+       if (found) 
+       {
+         result.playouts+=tmp.playouts; result.parent_playouts+=tmp.parent_playouts;
+       }
      }
    return result.playouts/result.parent_playouts;     
 }
