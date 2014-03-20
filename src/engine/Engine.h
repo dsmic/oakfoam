@@ -365,20 +365,29 @@ class Engine
 
     void addpresetplayout(float p) {presetplayouts+=p; presetnum++;}
     
-    std::set <Tree*>  * addMoveCirc(MoveCirc *m, Tree *t)  
+    EqMoves  * addMoveCirc(MoveCirc *m, Tree *t)  
       { 
-        std::set <Tree*> *tt=&circ_move[*m];
+        lock_move_circ.lock();
+        EqMoves *tt=&circ_move[*m];
+        tt->lock();
         tt->insert(t);
+        tt->unlock();
+        lock_move_circ.unlock();
         return tt;
       }
     void removeMoveCirc(MoveCirc *m, Tree *t)  
     {
+      lock_move_circ.lock();
       if (m!=NULL && circ_move.count(*m)>0)
       {
+        circ_move[*m].lock();
         circ_move[*m].erase(t);
         if (circ_move[*m].size()==0)
           circ_move.erase(*m);
+        else
+          circ_move[*m].unlock();
       }
+      lock_move_circ.unlock();
     }
     int countMoveCirc(MoveCirc *m) 
     {
@@ -388,7 +397,7 @@ class Engine
       }
       return 0;
     }
-    std::set <Tree*>  * getMoveCirc(MoveCirc *m)
+    EqMoves  * getMoveCirc(MoveCirc *m)
     {
       if (m!=NULL && circ_move.count(*m)>0)
         return &circ_move[*m];
@@ -423,12 +432,14 @@ class Engine
     Go::ObjectBoard<Go::CorrelationData> *correlationmap;
 
     #ifdef with_unordered
-      std::unordered_map <MoveCirc,std::set <Tree*>,MoveCircHash> circ_move;
+      std::unordered_map <MoveCirc,EqMoves,MoveCircHash> circ_move;
     #else
-      std::map <MoveCirc,std::set <Tree*>> circ_move;
+      std::map <MoveCirc,EqMoves> circ_move;
     #endif
     long statistics[STATISTICS_NUM];
+    boost::mutex lock_move_circ;
 
+    
     bool isgamefinished;
     std::list<DecisionTree*> decisiontrees;
 

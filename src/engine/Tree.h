@@ -24,6 +24,25 @@ typedef struct
   float parent_playouts,parent_wins,playouts,wins;
 } tree_result;
 
+class Tree;
+
+class EqMoves
+{
+  public:
+    std::set<Tree*>::iterator begin() {return eq_moves.begin();}
+    std::set<Tree*>::iterator end() {return eq_moves.end();}
+    std::set<Tree*>::size_type size() {return eq_moves.size();}
+    void insert(Tree *t) {eq_moves.insert(t);}
+    void erase(Tree *t) {eq_moves.erase(t);}
+    void lock() {lock_eq_moves.lock();}
+    bool try_lock() {return lock_eq_moves.try_lock();}
+    void unlock() {lock_eq_moves.unlock();}
+    ~EqMoves() {lock_eq_moves.unlock();}
+  private:
+    std::set <Tree*> eq_moves;
+    boost::mutex lock_eq_moves;
+};
+
 /** MCTS Tree. */
 class Tree
 {
@@ -292,6 +311,7 @@ class Tree
       {
         tree_result r={0,0,0,0};
         if (eq_moves==NULL) return r;
+        eq_moves->lock();
         for(std::set<Tree*>::iterator iter=eq_moves->begin();iter!=eq_moves->end();++iter) 
         {
           if ((*iter)!=this)
@@ -303,13 +323,14 @@ class Tree
             r.wins+=r_tmp.wins;
           }
         }
+        eq_moves->unlock();
         return r;
       }
     
-    std::set <Tree*> * get_eq_moves() {return eq_moves;}
+    EqMoves * get_eq_moves() {return eq_moves;}
     float getTreeResultsUnpruneFactor() const;
       
-    void setMoveCirc(MoveCirc *m,std::set <Tree*> *e) 
+    void setMoveCirc(MoveCirc *m,EqMoves *e) 
      {
        if (movecirc!=NULL || eq_moves!=NULL) fprintf(stderr,"should not happen\n");
        movecirc=m;
@@ -369,7 +390,7 @@ class Tree
     float KL_max_q(float S, float N, float t) const;
 
     MoveCirc *movecirc;
-    std::set <Tree*> *eq_moves;
+    EqMoves *eq_moves;
 };
 
 class MoveCirc

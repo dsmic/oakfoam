@@ -4819,7 +4819,8 @@ void Engine::chooseSubTree(Go::Move move)
     this->clearMoveTree();
     return;
   }
-  
+
+  fprintf(stderr,"before devorceChild\n");
   movetree->divorceChild(subtree);
 
   //keep the childrens values

@@ -1062,23 +1062,28 @@ float Tree::getTreeResultsUnpruneFactor() const
   if (parent==NULL) return 0;
   if (eq_moves==NULL) return 0;
   tree_result result={0,0,0,0};
+  eq_moves->lock();
   for(std::set<Tree*>::iterator iter=eq_moves->begin();iter!=eq_moves->end();++iter) 
      {
-       if ((*iter)->getParent()==NULL) break;
-       std::set <Tree*> *eq_moves2=(*iter)->getParent()->get_eq_moves();
+       Tree* t_tmp=(*iter)->getParent();
+       if (t_tmp==NULL) break;
+       EqMoves *eq_moves2=t_tmp->get_eq_moves();
        if (eq_moves2==NULL) break;
+       if (!eq_moves2->try_lock()) break;
        bool found=false;
        for(std::set<Tree*>::iterator iter2=eq_moves2->begin();iter2!=eq_moves2->end();++iter2)
        {
          if ((*iter2)==this) {found=true; break;}
        }
+       eq_moves2->unlock();
        tree_result tmp=(*iter)->getTreeResult();
        if (found) 
        {
          result.playouts+=tmp.playouts; result.parent_playouts+=tmp.parent_playouts;
        }
      }
-   return result.playouts/result.parent_playouts;     
+  eq_moves->unlock();
+  return result.playouts/result.parent_playouts;     
 }
 
 float Tree::getUnPruneFactor(float *moveValues,float mean, int num, float prob_local) const
@@ -1585,7 +1590,7 @@ bool Tree::expandLeaf(Worker::Settings *settings)
           //may be not necessary, as we are at the identical move!!
           pattcirc_for_move.convertToSmallestEquivalent(circdict);
           MoveCirc *movecirc_tmp = new MoveCirc(pattcirc_for_move,(*iter)->getMove());
-          std::set <Tree*> *eq_moves_tmp=params->engine->addMoveCirc(movecirc_tmp,(*iter));
+          EqMoves *eq_moves_tmp=params->engine->addMoveCirc(movecirc_tmp,(*iter));
           (*iter)->setMoveCirc(movecirc_tmp,eq_moves_tmp);
         }
 
