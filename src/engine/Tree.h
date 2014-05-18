@@ -172,7 +172,7 @@ class Tree
      * This is the node value combined with a biases.
      * Biases can be from UCB, progressive bias or criticality bias.
      */
-    float getUrgency(bool skiprave=false) const;
+    float getUrgency(bool skiprave=false, Tree * robustchild=NULL) const;
     
     /** Add a child to this node. */
     void addChild(Tree *node);
@@ -358,7 +358,7 @@ class Tree
     int unprunednum;
     unsigned int prunedchildren;
     unsigned int unprunedchildren;
-    float gamma,childrentotalgamma,maxchildgamma,gamma_local_part;
+    float gamma,childrentotalgamma,maxchildgamma,gamma_local_part,childrenlogtotalchildgamma;
     float stones_around;
     float lastunprune,unprunenextchildat;
     float unprunebase;
@@ -383,6 +383,8 @@ class Tree
     void updateUnPruneAt();
     
     void addCriticalityStats(bool winner, bool black, bool white);
+    //ownership, only black is +1, only white -1
+    float getOwnership() const {return ((float)(ownedblack-ownedwhite))/(ownedblack+ownedwhite);}
     
     static float variance(int wins, int playouts);
     float KL_d(float p, float q) const;

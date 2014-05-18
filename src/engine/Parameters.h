@@ -243,6 +243,17 @@ class Parameters
     float test_p58;
     float test_p59;
 
+    float test_p60;
+    float test_p61;
+    float test_p62;
+    float test_p63;
+    float test_p64;
+    float test_p65;
+    float test_p66;
+    float test_p67;
+    float test_p68;
+    float test_p69;
+
     
     /** Skip all playout heuristics with this probability.
      * Set to zero to disable.

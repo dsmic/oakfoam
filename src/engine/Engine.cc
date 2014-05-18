@@ -189,6 +189,17 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","test_p58",&(params->test_p58),0.0);
   params->addParameter("playout","test_p59",&(params->test_p59),0.0);
   
+  params->addParameter("playout","test_p60",&(params->test_p60),1.0);
+  params->addParameter("playout","test_p61",&(params->test_p61),0.0);
+  params->addParameter("playout","test_p62",&(params->test_p62),0.0);
+  params->addParameter("playout","test_p63",&(params->test_p63),0.0);
+  params->addParameter("playout","test_p64",&(params->test_p64),0.0);
+  params->addParameter("playout","test_p65",&(params->test_p65),0.0);
+  params->addParameter("playout","test_p66",&(params->test_p66),0.0);
+  params->addParameter("playout","test_p67",&(params->test_p67),0.0);
+  params->addParameter("playout","test_p68",&(params->test_p68),0.0);
+  params->addParameter("playout","test_p69",&(params->test_p69),1.0);
+  
   params->addParameter("tree","ucb_c",&(params->ucb_c),UCB_C);
   params->addParameter("tree","ucb_init",&(params->ucb_init),UCB_INIT);
 
@@ -1961,7 +1972,8 @@ void Engine::gtpFeatureMatchesAt(void *instance, Gtp::Engine* gtpe, Gtp::Command
   gtpe->getOutput()->printf("CIRCPATT:          %u\n",me->features->matchFeatureClass(Features::CIRCPATT,board,cfglastdist,cfgsecondlastdist,move));
   float gamma=me->features->getMoveGamma(board,cfglastdist,cfgsecondlastdist,move);
   float total=me->features->getBoardGamma(board,cfglastdist,cfgsecondlastdist,col);
-  gtpe->getOutput()->printf("Gamma: %.2f/%.2f (%.2f)\n",gamma,total,gamma/total);
+  float totallog=me->features->getBoardGamma(board,cfglastdist,cfgsecondlastdist,col,true);
+  gtpe->getOutput()->printf("Gamma: %.2f/%.2f (%.2f) log %.2f\n",gamma,total,gamma/total,totallog);
   gtpe->getOutput()->endResponse(true);
   
   if (cfglastdist!=NULL)

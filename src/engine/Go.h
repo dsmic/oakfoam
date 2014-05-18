@@ -747,6 +747,7 @@ namespace Go
       bool isCapture(Go::Move move) const;
       /** Determine is the given move is an extension. */
       bool isExtension(Go::Move move) const;
+      bool isExtension2lib(Go::Move move, bool checkother=true) const;
       /** Determine is the given move is a self-atari. */
       bool isSelfAtari(Go::Move move) const {return this->isSelfAtariOfSize(move,0);};
       /** Determine is the given move is a self-atari of a group of a minimum size. */

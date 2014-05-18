@@ -737,7 +737,7 @@ void Features::constructCircstrings() const
 
 }
 
-unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove) const
+unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove, Pattern::Circular *pattcirc_p) const
 {
   if ((featclass!=Features::PASS && move.isPass()) || move.isResign())
     return 0;
@@ -859,7 +859,12 @@ unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::B
         return 1;
       }
       else
-        return 0;
+      {
+        if (board->isExtension2lib(move))
+          return 3;
+        else
+          return 0;
+      }
     }
     case Features::SELFATARI:
     {
@@ -1039,7 +1044,7 @@ unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::B
       Go::Color col=move.getColor();
       int pos=move.getPosition();
       
-      Pattern::Circular pattcirc = Pattern::Circular(circdict,board,pos,PATTERN_CIRC_MAXSIZE);
+      Pattern::Circular pattcirc = (pattcirc_p==NULL)?Pattern::Circular(circdict,board,pos,PATTERN_CIRC_MAXSIZE):pattcirc_p->copy();
       if (col == Go::WHITE)
         pattcirc.invert();
       pattcirc.convertToSmallestEquivalent(circdict);
@@ -1377,7 +1382,7 @@ void Features::learnFeatureGamma(Features::FeatureClass featclass, unsigned int 
   }
 }
 
-float Features::getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove, bool usecircularpatterns, float *gamma_local_part) const
+float Features::getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove, bool usecircularpatterns, float *gamma_local_part, Pattern::Circular *pattcirc_p) const
 {
   float g=1.0;
   
@@ -1399,7 +1404,7 @@ float Features::getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist
   g*=this->getFeatureGamma(Features::BORDERDIST,this->matchFeatureClass(Features::BORDERDIST,board,cfglastdist,cfgsecondlastdist,move,false));
   g*=this->getFeatureGamma(Features::PATTERN3X3,this->matchFeatureClass(Features::PATTERN3X3,board,cfglastdist,cfgsecondlastdist,move,false));
   if (circlevels->size()>0)
-    g*=this->getFeatureGamma(Features::CIRCPATT,this->matchFeatureClass(Features::CIRCPATT,board,cfglastdist,cfgsecondlastdist,move,false));
+    g*=this->getFeatureGamma(Features::CIRCPATT,this->matchFeatureClass(Features::CIRCPATT,board,cfglastdist,cfgsecondlastdist,move,false,pattcirc_p));
 
   if (params->features_dt_use)
   {
@@ -1648,19 +1653,34 @@ bool Features::learnMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdis
   return true;
 }
 
-float Features::getBoardGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Color col) const
+float Features::getBoardGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Color col, bool logarithm) const
 {
   float total=0;
   
-  for (int p=0;p<board->getPositionMax();p++)
+  if (logarithm==false)
   {
-    Go::Move move=Go::Move(col,p);
-    if (board->validMove(move))
-      total+=this->getMoveGamma(board,cfglastdist,cfgsecondlastdist,move,false);
+    for (int p=0;p<board->getPositionMax();p++)
+    {
+      Go::Move move=Go::Move(col,p);
+      if (board->validMove(move))
+        total+=this->getMoveGamma(board,cfglastdist,cfgsecondlastdist,move,false);
+    }
+    
+    Go::Move passmove=Go::Move(col,Go::Move::PASS);
+    total+=this->getMoveGamma(board,cfglastdist,cfgsecondlastdist,passmove,false);
   }
-  
-  Go::Move passmove=Go::Move(col,Go::Move::PASS);
-  total+=this->getMoveGamma(board,cfglastdist,cfgsecondlastdist,passmove,false);
+  else
+  {
+    for (int p=0;p<board->getPositionMax();p++)
+    {
+      Go::Move move=Go::Move(col,p);
+      if (board->validMove(move))
+        total+=log(this->getMoveGamma(board,cfglastdist,cfgsecondlastdist,move,false)+1.0);
+    }
+    
+    Go::Move passmove=Go::Move(col,Go::Move::PASS);
+    total+=log(this->getMoveGamma(board,cfglastdist,cfgsecondlastdist,passmove,false)+1.0);
+  }
   
   return total;
 }

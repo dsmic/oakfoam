@@ -1666,6 +1666,91 @@ bool Go::Board::isExtension(Go::Move move) const
     return false;
 }
 
+bool Go::Board::isExtension2lib(Go::Move move,bool checkother) const
+{
+  Go::Color col=move.getColor();
+  int pos=move.getPosition();
+  //fprintf(stderr,"checkother %d pos %d\n",checkother,pos);
+  bool foundgrouphas2lib=false;
+  int foundconnectingliberties=0;
+  int libpos=-1;
+  int libpos2=-1;
+  bool foundotherextension=false;
+  foreach_adjacent(pos,p,{
+    if (this->inGroup(p))
+    {
+      Go::Group *group=this->getGroup(p);
+      if (col==group->getColor())
+      {
+        if (group->isOneOfTwoLiberties(pos))
+          foundgrouphas2lib=true;
+        //else 
+        if (foundconnectingliberties<3)
+        {
+          int otherlib=group->getOtherOneOfTwoLiberties(pos);
+   //       if (checkother && otherlib!=-1) fprintf(stderr,"pos %d otherlib %d extension %d\n",pos,otherlib,isExtension2lib(Go::Move(col,otherlib),false));
+          if (!checkother || otherlib==-1 || !isExtension2lib(Go::Move(col,otherlib),false))
+          {
+   //         fprintf(stderr,"doing checkother %d otherlib %d\n",checkother,otherlib);
+            if (otherlib!=-1)
+            {
+              if (foundconnectingliberties==0)
+              {
+                foundconnectingliberties=1;
+                libpos=otherlib;
+              }
+              else if (libpos!=otherlib)
+              {
+                if (libpos2==-1) 
+                {
+                  libpos2=otherlib;
+                  foundconnectingliberties++;
+                }
+                else if (libpos2!=otherlib)
+                  foundconnectingliberties++;
+              }
+            }
+            else
+              foundconnectingliberties=3; //not sure, at least 2 but better overestimate extension chance
+          }
+          else 
+          {
+         //   fprintf(stderr,"not doing checkother %d otherlib %d\n",checkother,otherlib);
+            foundotherextension=true;
+          }
+        }
+      }
+    }
+    else if (this->onBoard(p) && foundconnectingliberties<3)
+    {
+      if (foundconnectingliberties==0)
+      {
+        foundconnectingliberties=1;
+        libpos=p;
+      }
+      else if (libpos!=p)
+      {
+        if (libpos2==-1)
+        {
+          libpos2=p;
+          foundconnectingliberties++;
+        }
+        else if (libpos2!=p)
+            foundconnectingliberties++;
+      }
+    }
+  });
+ // if (foundgrouphas2lib && foundconnectingliberties>=3 && !foundotherextension)
+ //   fprintf(stderr,"pos %d otherextension %d return true\n",pos,foundotherextension);
+ // else
+ //   fprintf(stderr,"pos %d otherextension %d return false\n",pos,foundotherextension);
+    
+  if (foundgrouphas2lib && foundconnectingliberties>=3 && !foundotherextension)
+    return true;
+  else
+    return false;
+}
+
 //moved to Go.h
 //bool Go::Board::isSelfAtari(Go::Move move) const
 //{

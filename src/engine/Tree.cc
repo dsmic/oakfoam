@@ -43,6 +43,7 @@ Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p) : params(
   gamma_local_part=0;
   stones_around=0;
   childrentotalgamma=0;
+  childrenlogtotalchildgamma=0;
   maxchildgamma=0;
   unprunenextchildat=0;
   lastunprune=0;
@@ -489,6 +490,7 @@ float Tree::getVal(bool skiprave) const
     //float alpha=(float)(ravemoves-playouts)/params->rave_moves;
 
     float alpha=(float)raveplayouts/(raveplayouts + playouts + (float)(raveplayouts*playouts)/params->rave_moves);
+    alpha=pow(alpha,params->test_p60);
     //float alpha=exp(-pow((float)playouts/params->rave_moves,params->test_p1));
     //float alpha=params->test_p2/(exp(pow((float)playouts/params->rave_moves,params->test_p1))+params->test_p2);
     //if (alpha<0.5)
@@ -543,7 +545,7 @@ float Tree::KL_max_q(float S, float N, float t) const
   return q_min;
 }
 
-float Tree::getUrgency(bool skiprave) const
+float Tree::getUrgency(bool skiprave, Tree * robustchild) const
 {
   float uctbias;
   if (this->isTerminal())
@@ -587,8 +589,26 @@ float Tree::getUrgency(bool skiprave) const
     if (params->test_p44==0 || (parent!=NULL && parent->getPlayouts()==0))
       val+=this->getProgressiveBias();
     else
-      val+=(log(1000.0*this->getProgressiveBias()+1.0)+params->test_p49*this->getCriticality ())*(params->test_p44/(pow((parent!=NULL)?parent->getPlayouts():0,params->test_p51)+1.0));
+    {
+      float tmp=0;
+      float playouts_use=(parent!=NULL)?parent->getPlayouts():0;
+      if (params->test_p65 && robustchild!=NULL)
+      {
+        playouts_use=robustchild->getPlayouts();
+      }
+      if (params->test_p57>0)
+      {
+        tmp=log(this->getTreeResultsUnpruneFactor());
+        tmp=params->test_p57*((tmp-exp(params->test_p56)>0)?tmp-exp(params->test_p56):0);
+      }
+      if (params->test_p62 >0)
+      {
+        tmp+=params->test_p62*exp(-params->test_p63*pow( this->getOwnership() - params->test_p64 ,2));
+      }
+      val+=(log(1000.0*this->getProgressiveBias()+1.0)+params->test_p49*this->getCriticality ()
+            +tmp)*(params->test_p44/(pow(playouts_use,params->test_p51)+1.0));
       //val+=(log(this->getProgressiveBias()+0.1)-log(0.1)+params->test_p49*this->getCriticality ())*(params->test_p44/(parent->getPlayouts()+1.0));
+    }
   }
 
   if (params->test_p38>0) //progressive bias as pre wins and games, comes closer to pachi style
@@ -964,7 +984,8 @@ void Tree::unPruneNextChild()
         fprintf(stderr,"WARNING! unpruned running total doesn't match (%u:%u)\n",unpruned,unprunedchildren);
       bestchild->setUnprunedNum(unpruned+1);
       unprunedchildren++;
-      unprunebase=params->uct_progressive_widening_a*pow(params->uct_progressive_widening_b,unpruned);
+      float correct_b=childrenlogtotalchildgamma;//(childrenlogtotalchildgamma-params->test_p67>0)?childrenlogtotalchildgamma-params->test_p67 : 0;
+      unprunebase=params->uct_progressive_widening_a*pow(params->uct_progressive_widening_b-params->test_p66*correct_b,unpruned);
       lastunprune=this->unPruneMetric();
       this->updateUnPruneAt();
       prunedchildren--;
@@ -993,7 +1014,7 @@ void Tree::updateUnPruneAt()
   float sumunpruned=0;
   int   numunpruned=0;
   float local_prob=(float)rand()/RAND_MAX;
-  if (params->test_p16>0)
+  if (params->test_p16>0 || params->test_p58>0)
   {
     for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
     {
@@ -1029,7 +1050,10 @@ void Tree::updateUnPruneAt()
     else
       DistanceToWorst=(DistanceToWorst-1.0)*params->test_p16+1.0;
   }
-  unprunenextchildat=lastunprune+unprunebase*scale*DistanceToWorst; //t(n+1)=t(n)+(a*b^n)*(1-c*p)
+  if (params->test_p58>0)
+    unprunenextchildat=lastunprune+unprunebase*scale*(1-((bestfactor>1)?params->test_p58*(log(bestfactor)-log(1)):0)); //t(n+1)=t(n)+(a*b^n)*(1-c*p)
+  else
+    unprunenextchildat=lastunprune+unprunebase*scale*DistanceToWorst; //t(n+1)=t(n)+(a*b^n)*(1-c*p)
 }
 
 void Tree::checkForUnPruning()
@@ -1065,6 +1089,7 @@ float Tree::getTreeResultsUnpruneFactor() const
   eq_moves->lock();
   for(std::set<Tree*>::iterator iter=eq_moves->begin();iter!=eq_moves->end();++iter) 
      {
+       if ((*iter)==this) break;
        Tree* t_tmp=(*iter)->getParent();
        if (t_tmp==NULL) break;
        EqMoves *eq_moves2=t_tmp->get_eq_moves();
@@ -1083,7 +1108,7 @@ float Tree::getTreeResultsUnpruneFactor() const
        }
      }
   eq_moves->unlock();
-  return result.playouts/result.parent_playouts;     
+  return (result.playouts+1)/(result.parent_playouts+20);     
 }
 
 float Tree::getUnPruneFactor(float *moveValues,float mean, int num, float prob_local) const
@@ -1172,7 +1197,8 @@ float Tree::getUnPruneFactor(float *moveValues,float mean, int num, float prob_l
 
   factor+=params->uct_criticality_rave_unprune_factor*this->getRAVERatio()*this->getCriticality();
 
-  float terrOwn=params->engine->getTerritoryMap()->getPositionOwner(move.getPosition());
+  float terrOwn=(params->test_p61>0)?this->getOwnership() : params->engine->getTerritoryMap()->getPositionOwner(move.getPosition());
+  
   if (move.getColor()==Go::WHITE)
     terrOwn=-terrOwn;
 
@@ -1221,8 +1247,8 @@ float Tree::getUnPruneFactor(float *moveValues,float mean, int num, float prob_l
 
   if (params->test_p55>0)
   {
-    float tmp=this->getTreeResultsUnpruneFactor();
-    factor+=params->test_p55*((tmp-params->test_p56>0)?tmp-params->test_p56:0);
+    float tmp=log(this->getTreeResultsUnpruneFactor());
+    factor+=params->test_p55*((tmp-exp(params->test_p56)>0)?tmp-exp(params->test_p56):0);
   }
   return factor;
 }
@@ -1269,6 +1295,8 @@ Tree *Tree::getUrgentChild(Worker::Settings *settings)
   
   if (!superkoprunedchildren && playouts>(params->rules_superko_prune_after))
     this->pruneSuperkoViolations();
+  Tree * robustchild=NULL;
+  if (params->test_p65>0) robustchild=getRobustChild();
   
   for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
   {
@@ -1277,10 +1305,10 @@ Tree *Tree::getUrgentChild(Worker::Settings *settings)
       float urgency;
       
       if ((*iter)->getPlayouts()==0 && (*iter)->getRAVEPlayouts()==0)
-        urgency=(*iter)->getUrgency(skiprave)+(settings->rand->getRandomReal()/1000);
+        urgency=(*iter)->getUrgency(skiprave,robustchild)+(settings->rand->getRandomReal()/1000);
       else
       {
-        urgency=(*iter)->getUrgency(skiprave);
+        urgency=(*iter)->getUrgency(skiprave,robustchild);
         if (params->random_f>0)
           urgency-=params->random_f*log(settings->rand->getRandomReal());
         if (params->debug_on)
@@ -1579,19 +1607,25 @@ bool Tree::expandLeaf(Worker::Settings *settings)
       if ((*iter)->isPrimary())
       {
         float gamma_local_part=0;
-        float gamma=params->engine->getFeatures()->getMoveGamma(startboard,cfglastdist,cfgsecondlastdist,(*iter)->getMove(),true,true,&gamma_local_part);
-        (*iter)->setFeatureGamma(gamma);
-        (*iter)->setFeatureGammaLocalPart(gamma_local_part);
-
-        if (params->test_p55>0)
+        Pattern::Circular *pattcirc_for_move =NULL;
+        if (params->test_p55>0 || params->test_p57>0)
         {
           Pattern::CircularDictionary *circdict= params->engine->getFeatures()->getCircDict();
-          Pattern::Circular pattcirc_for_move = Pattern::Circular(circdict,startboard,(*iter)->getMove().getPosition(),PATTERN_CIRC_MAXSIZE);
+          //does this expensive construction twice, should be optimized later
+          pattcirc_for_move = new Pattern::Circular(circdict,startboard,(*iter)->getMove().getPosition(),PATTERN_CIRC_MAXSIZE);
+        }
+        float gammal=params->engine->getFeatures()->getMoveGamma(startboard,cfglastdist,cfgsecondlastdist,(*iter)->getMove(),true,true,&gamma_local_part,pattcirc_for_move);
+        (*iter)->setFeatureGamma(gammal);
+        (*iter)->setFeatureGammaLocalPart(gamma_local_part);
+
+        if (params->test_p55>0 || params->test_p57>0)
+        {
           //may be not necessary, as we are at the identical move!!
-          pattcirc_for_move.convertToSmallestEquivalent(circdict);
-          MoveCirc *movecirc_tmp = new MoveCirc(pattcirc_for_move,(*iter)->getMove());
+          //pattcirc_for_move.convertToSmallestEquivalent(circdict);
+          MoveCirc *movecirc_tmp = new MoveCirc(*pattcirc_for_move,(*iter)->getMove());
           EqMoves *eq_moves_tmp=params->engine->addMoveCirc(movecirc_tmp,(*iter));
           (*iter)->setMoveCirc(movecirc_tmp,eq_moves_tmp);
+          if (pattcirc_for_move) delete pattcirc_for_move;
         }
 
         
@@ -1766,10 +1800,11 @@ bool Tree::isSuperkoViolationWith(Go::ZobristHash h) const
 
 void Tree::setFeatureGamma(float g)
 {
-  gamma=g;
+  gamma=g+params->test_p59;
   if (!this->isRoot())
   {
     parent->childrentotalgamma+=gamma;
+    parent->childrenlogtotalchildgamma+=(log(gamma+1.0)>params->test_p67)? 1 : 0;
     if (gamma>(parent->maxchildgamma))
       parent->maxchildgamma=gamma;
   }
