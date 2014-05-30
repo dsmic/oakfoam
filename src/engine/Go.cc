@@ -1685,13 +1685,13 @@ bool Go::Board::isExtension2lib(Go::Move move,bool checkother) const
         if (group->isOneOfTwoLiberties(pos))
           foundgrouphas2lib=true;
         //else 
-        if (foundconnectingliberties<3)
+        if (checkother || foundconnectingliberties<3)
         {
           int otherlib=group->getOtherOneOfTwoLiberties(pos);
-   //       if (checkother && otherlib!=-1) fprintf(stderr,"pos %d otherlib %d extension %d\n",pos,otherlib,isExtension2lib(Go::Move(col,otherlib),false));
+          //if (checkother && otherlib!=-1) fprintf(stderr,"pos %d otherlib %d extension %d\n",pos,otherlib,isExtension2lib(Go::Move(col,otherlib),false));
           if (!checkother || otherlib==-1 || !isExtension2lib(Go::Move(col,otherlib),false))
           {
-   //         fprintf(stderr,"doing checkother %d otherlib %d\n",checkother,otherlib);
+            //fprintf(stderr,"doing checkother %d otherlib %d\n",checkother,otherlib);
             if (otherlib!=-1)
             {
               if (foundconnectingliberties==0)
@@ -1715,7 +1715,7 @@ bool Go::Board::isExtension2lib(Go::Move move,bool checkother) const
           }
           else 
           {
-         //   fprintf(stderr,"not doing checkother %d otherlib %d\n",checkother,otherlib);
+            //fprintf(stderr,"not doing checkother %d otherlib %d\n",checkother,otherlib);
             foundotherextension=true;
           }
         }
@@ -1740,10 +1740,10 @@ bool Go::Board::isExtension2lib(Go::Move move,bool checkother) const
       }
     }
   });
- // if (foundgrouphas2lib && foundconnectingliberties>=3 && !foundotherextension)
- //   fprintf(stderr,"pos %d otherextension %d return true\n",pos,foundotherextension);
- // else
- //   fprintf(stderr,"pos %d otherextension %d return false\n",pos,foundotherextension);
+  //if (foundgrouphas2lib && foundconnectingliberties>=3 && !foundotherextension)
+  //  fprintf(stderr,"pos %d otherextension %d return true\n",pos,foundotherextension);
+  //else
+  //  fprintf(stderr,"pos %d otherextension %d return false\n",pos,foundotherextension);
     
   if (foundgrouphas2lib && foundconnectingliberties>=3 && !foundotherextension)
     return true;

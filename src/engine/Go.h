@@ -544,7 +544,7 @@ namespace Go
       inline void removePseudoLiberty(int pos) { pseudoliberties--; libpossum-=pos; libpossumsq-=pos*pos; };
       inline void removePseudoEnd() { pseudoends--;};
       /** Determine if this group is in atari. */
-      inline bool inAtari() const { return (pseudoliberties>0 && (pseudoliberties*libpossumsq)==(libpossum*libpossum)); };
+      inline bool inAtari() const { return ((pseudoliberties*libpossumsq)==(libpossum*libpossum) && pseudoliberties>0); };  //pseudoliberties==0 should not happen?!
       /** Get the last remaining postion of a group in atari.
        * If the group is not in atari, -1 is returned.
        */

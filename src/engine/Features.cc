@@ -904,7 +904,7 @@ unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::B
         {
           if (groupsize>9)
             return 5;
-          if (groupsize>4)
+          if (groupsize>2)  //was >4 during training, but value not very different from <=4 one
             return 4;
           return 1;
         }
