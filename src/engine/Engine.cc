@@ -5333,9 +5333,18 @@ void Engine::ponder()
       return;
 
     //fprintf(stderr,"pondering starting!\n");
+    #ifdef HAVE_MPI
+      MPIRANK0_ONLY(
+        unsigned int tmp1=0;// not used (unsigned int)col;
+        this->mpiBroadcastCommand(MPICMD_PONDER,&tmp1);
+      );
+    #endif
     this->allowContinuedPlay();
     params->uct_slow_update_last=0;
     stopthinking=false;
+    #ifdef HAVE_MPI
+      params->mpi_last_update=MPI::Wtime();
+    #endif
     
     params->uct_initial_playouts=(int)movetree->getPlayouts();
     params->thread_job=Parameters::TJ_PONDER;
@@ -5355,8 +5364,16 @@ void Engine::ponderThread(Worker::Settings *settings)
   if (params->move_policy==Parameters::MP_UCT || params->move_policy==Parameters::MP_ONEPLY)
   {
     //fprintf(stderr,"pondering starting!\n");
+    #ifdef HAVE_MPI
+      bool mpi_inform_others=true;
+      bool mpi_rank_other=(mpirank!=0);
+      //int mpi_update_num=0;
+    #else
+      bool mpi_rank_other=false;
+    #endif
     this->allowContinuedPlay();
     params->uct_slow_update_last=0;
+    stopthinking=false;
     
     Go::IntBoard *firstlist=new Go::IntBoard(boardsize);
     Go::IntBoard *secondlist=new Go::IntBoard(boardsize);
@@ -5366,22 +5383,49 @@ void Engine::ponderThread(Worker::Settings *settings)
     
     while (!stoppondering && !stopthinking && (playouts=(long)movetree->getPlayouts())<(params->pondering_playouts_max))
     {
-      if (movetree->isTerminalResult())
-      {
-        stopthinking=true;
-        break;
-      }
+      //if (movetree->isTerminalResult())
+      //{
+      //  stopthinking=true;
+      //  break;
+      //}
       
       params->uct_slow_debug_last=0; // don't print out debug info when pondering
       this->doPlayout(settings,firstlist,secondlist,earlyfirstlist,earlysecondlist);
       playouts++;
+      #ifdef HAVE_MPI
+      if (settings->thread->getID()==0 && mpiworldsize>1 && MPI::Wtime()>(params->mpi_last_update+params->mpi_update_period))
+      {
+        //mpi_update_num++;
+        //gtpe->getOutput()->printfDebug("update (%d) at %lf (rank: %d) start\n",mpi_update_num,MPI::Wtime(),mpirank);
+        
+        mpi_inform_others=this->mpiSyncUpdate();
+        
+        params->mpi_last_update=MPI::Wtime();
+        
+        if (!mpi_inform_others)
+        {
+          params->early_stop_occured=true;
+          break;
+        }
+      }
+      #endif
     }
-    
+
+    #ifdef HAVE_MPI
+    if (!mpi_rank_other && (stoppondering || stopthinking)) 
+      this->mpiBroadcastCommand(MPICMD_STOP_PONDER_THINK);
+    #endif
+      
     delete firstlist;
     delete secondlist;
     delete earlyfirstlist;
     delete earlysecondlist;
     //fprintf(stderr,"pondering done! %d %.0f\n",playouts,movetree->getPlayouts());
+    #ifdef HAVE_MPI
+    //gtpe->getOutput()->printfDebug("genmove on rank %d stopping... (inform: %d)\n",mpirank,mpi_inform_others);
+    if (settings->thread->getID()==0 && mpiworldsize>1 && mpi_inform_others)
+      this->mpiSyncUpdate(true);
+    #endif
   }
 }
 
@@ -5824,6 +5868,13 @@ void Engine::mpiCommandHandler()
         this->mpiRecvBroadcastedArgs(&tmp1);
         this->mpiGenMove((Go::Color)tmp1);
         break;
+      case MPICMD_PONDER:
+        this->mpiRecvBroadcastedArgs(&tmp1);
+        this->mpiPonder((Go::Color)tmp1);
+        break;
+      case MPICMD_STOP_PONDER_THINK:
+        this->mpiStopPonderThink();
+        break;
       case MPICMD_QUIT:
       default:
         running=false;
@@ -5931,6 +5982,35 @@ void Engine::mpiGenMove(Go::Color col)
   
   params->uct_initial_playouts=startplayouts;
   params->thread_job=Parameters::TJ_GENMOVE;
+  threadpool->startAll();
+  threadpool->waitAll();
+  
+  //gtpe->getOutput()->printfDebug("genmove on rank %d done.\n",mpirank);
+}
+
+void Engine::mpiStopPonderThink()
+{
+  stoppondering=true;
+  stopthinking=true;
+}
+
+void Engine::mpiPonder(Go::Color col)
+{
+  //gtpe->getOutput()->printfDebug("genmove on rank %d starting...\n",mpirank);
+ // currentboard->setNextToMove(col);
+  
+  movetree->pruneSuperkoViolations();
+  this->allowContinuedPlay();
+  this->updateTerritoryScoringInTree();
+  params->uct_slow_update_last=0;
+  params->uct_slow_debug_last=0;
+  params->uct_last_r2=-1;
+  
+  int startplayouts=(int)movetree->getPlayouts();
+  params->mpi_last_update=MPI::Wtime();
+  
+  params->uct_initial_playouts=startplayouts;
+  params->thread_job=Parameters::TJ_PONDER;
   threadpool->startAll();
   threadpool->waitAll();
   
