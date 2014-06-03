@@ -5359,6 +5359,7 @@ void Engine::ponder()
 void Engine::ponderThread(Worker::Settings *settings)
 {
   stoppondering=false;
+  stopthinking=false;
   if (!(params->pondering_enabled) || (currentboard->getMovesMade()<=0) || (currentboard->getPassesPlayed()>=2) || (currentboard->getLastMove().isResign()) || (book->getMoves(boardsize,movehistory).size()>0))
     return;
   
@@ -5421,9 +5422,11 @@ void Engine::ponderThread(Worker::Settings *settings)
     #ifdef HAVE_MPI
     gtpe->getOutput()->printfDebug("ponder on rank %d stopping... (inform: %d) threadid %d\n",mpirank,mpi_inform_others,settings->thread->getID());
     if (settings->thread->getID()==0 && !mpi_rank_other && mpiworldsize>1 && mpi_inform_others)
+    {
+      stoppondering=true;
       this->mpiSyncUpdate(true);
-    if (settings->thread->getID()==0 && !mpi_rank_other && (stoppondering || stopthinking)) 
-      this->mpiBroadcastCommand(MPICMD_STOP_PONDER);
+      stoppondering=false;
+    }
     #endif
   }
 }
@@ -5872,9 +5875,6 @@ void Engine::mpiCommandHandler()
         this->mpiRecvBroadcastedArgs(&tmp1);
         this->mpiPonder((Go::Color)tmp1);
         break;
-      case MPICMD_STOP_PONDER:
-        this->mpiStopPonder();
-        break;
       case MPICMD_QUIT:
       default:
         running=false;
@@ -5882,7 +5882,6 @@ void Engine::mpiCommandHandler()
     };
   }
 }
-
 
 void Engine::mpiBroadcastCommand(Engine::MPICommand cmd, unsigned int *arg1, unsigned int *arg2, unsigned int *arg3)
 {
@@ -5986,12 +5985,6 @@ void Engine::mpiGenMove(Go::Color col)
   threadpool->waitAll();
   
   //gtpe->getOutput()->printfDebug("genmove on rank %d done.\n",mpirank);
-}
-
-void Engine::mpiStopPonder()
-{
-  gtpe->getOutput()->printfDebug("stopponder on rank %d received\n",mpirank);
-  stoppondering=true;
 }
 
 void Engine::mpiPonder(Go::Color col)
