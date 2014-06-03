@@ -491,7 +491,7 @@ class Engine
         MPICMD_CLEARTREE,
         MPICMD_GENMOVE,
         MPICMD_PONDER,
-        MPICMD_STOP_PONDER_THINK
+        MPICMD_STOP_PONDER
       };
       
       class MpiHashTable
@@ -534,7 +534,7 @@ class Engine
       std::string mpiRecvString(int srcrank);
       void mpiGenMove(Go::Color col);
       void mpiPonder(Go::Color col);
-      void mpiStopPonderThink();
+      void mpiStopPonder();
       bool mpiSyncUpdate(bool stop=false);
       void mpiBuildDerivedTypes();
       void mpiFreeDerivedTypes();

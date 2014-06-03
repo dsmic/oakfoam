@@ -2100,8 +2100,8 @@ void Tree::resetNode()
 
 int Tree::countMoveCirc() 
 {
-  if (movecirc==NULL)
-    fprintf(stderr,"movecirc NULL\n");
+ // if (movecirc==NULL)
+ //   fprintf(stderr,"movecirc NULL\n");
   if (movecirc!=NULL && params->engine->getMoveCirc(movecirc)!=eq_moves)
     fprintf(stderr,"should not happen %p %p\n",params->engine->getMoveCirc(movecirc),eq_moves);
   return params->engine->countMoveCirc(movecirc);

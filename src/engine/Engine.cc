@@ -4832,7 +4832,7 @@ void Engine::chooseSubTree(Go::Move move)
     return;
   }
 
-  fprintf(stderr,"before devorceChild\n");
+// fprintf(stderr,"before devorceChild\n");
   movetree->divorceChild(subtree);
 
   //keep the childrens values
@@ -5332,7 +5332,7 @@ void Engine::ponder()
     if (this->getTreeMemoryUsage()>(params->memory_usage_max*1024*1024))
       return;
 
-    //fprintf(stderr,"pondering starting!\n");
+    fprintf(stderr,"pondering starting!\n");
     #ifdef HAVE_MPI
       MPIRANK0_ONLY(
         unsigned int tmp1=0;// not used (unsigned int)col;
@@ -5352,18 +5352,19 @@ void Engine::ponder()
     threadpool->waitAll();
     if (movetree->isTerminalResult())
       gtpe->getOutput()->printfDebug("SOLVED! found 100%% sure result after %d plts!\n",(int)movetree->getPlayouts()-params->uct_initial_playouts);
-    //fprintf(stderr,"pondering done! %d %.0f\n",playouts,movetree->getPlayouts());
+    fprintf(stderr,"pondering done! after all threads %.0f\n",movetree->getPlayouts());
   }
 }
 
 void Engine::ponderThread(Worker::Settings *settings)
 {
+  stoppondering=false;
   if (!(params->pondering_enabled) || (currentboard->getMovesMade()<=0) || (currentboard->getPassesPlayed()>=2) || (currentboard->getLastMove().isResign()) || (book->getMoves(boardsize,movehistory).size()>0))
     return;
   
   if (params->move_policy==Parameters::MP_UCT || params->move_policy==Parameters::MP_ONEPLY)
   {
-    //fprintf(stderr,"pondering starting!\n");
+    fprintf(stderr,"pondering thread starting! %d rank %d stoppondering %d stopthinking %d\n",settings->thread->getID(),mpirank,stoppondering,stopthinking);
     #ifdef HAVE_MPI
       bool mpi_inform_others=true;
       bool mpi_rank_other=(mpirank!=0);
@@ -5411,20 +5412,18 @@ void Engine::ponderThread(Worker::Settings *settings)
       #endif
     }
 
-    #ifdef HAVE_MPI
-    if (!mpi_rank_other && (stoppondering || stopthinking)) 
-      this->mpiBroadcastCommand(MPICMD_STOP_PONDER_THINK);
-    #endif
       
     delete firstlist;
     delete secondlist;
     delete earlyfirstlist;
     delete earlysecondlist;
-    //fprintf(stderr,"pondering done! %d %.0f\n",playouts,movetree->getPlayouts());
+    fprintf(stderr,"pondering done! %ld %.0f stopthinking %d stoppondering %d playouts %d\n",playouts,movetree->getPlayouts(),stopthinking,stoppondering,playouts);
     #ifdef HAVE_MPI
-    //gtpe->getOutput()->printfDebug("genmove on rank %d stopping... (inform: %d)\n",mpirank,mpi_inform_others);
-    if (settings->thread->getID()==0 && mpiworldsize>1 && mpi_inform_others)
+    gtpe->getOutput()->printfDebug("ponder on rank %d stopping... (inform: %d) threadid %d\n",mpirank,mpi_inform_others,settings->thread->getID());
+    if (settings->thread->getID()==0 && !mpi_rank_other && mpiworldsize>1 && mpi_inform_others)
       this->mpiSyncUpdate(true);
+    if (settings->thread->getID()==0 && !mpi_rank_other && (stoppondering || stopthinking)) 
+      this->mpiBroadcastCommand(MPICMD_STOP_PONDER);
     #endif
   }
 }
@@ -5506,6 +5505,7 @@ void Engine::generateThread(Worker::Settings *settings)
   #ifdef HAVE_MPI
     bool mpi_inform_others=true;
     bool mpi_rank_other=(mpirank!=0);
+    if (mpi_rank_other) stopthinking=false;
     //int mpi_update_num=0;
   #else
     bool mpi_rank_other=false;
@@ -5872,8 +5872,8 @@ void Engine::mpiCommandHandler()
         this->mpiRecvBroadcastedArgs(&tmp1);
         this->mpiPonder((Go::Color)tmp1);
         break;
-      case MPICMD_STOP_PONDER_THINK:
-        this->mpiStopPonderThink();
+      case MPICMD_STOP_PONDER:
+        this->mpiStopPonder();
         break;
       case MPICMD_QUIT:
       default:
@@ -5988,15 +5988,16 @@ void Engine::mpiGenMove(Go::Color col)
   //gtpe->getOutput()->printfDebug("genmove on rank %d done.\n",mpirank);
 }
 
-void Engine::mpiStopPonderThink()
+void Engine::mpiStopPonder()
 {
+  gtpe->getOutput()->printfDebug("stopponder on rank %d received\n",mpirank);
   stoppondering=true;
-  stopthinking=true;
 }
 
 void Engine::mpiPonder(Go::Color col)
 {
-  //gtpe->getOutput()->printfDebug("genmove on rank %d starting...\n",mpirank);
+  //fprintf(stderr,"ponder on rank %d starting...\n",mpirank);
+  gtpe->getOutput()->printfDebug("ponder on rank %d starting...\n",mpirank);
  // currentboard->setNextToMove(col);
   
   movetree->pruneSuperkoViolations();
@@ -6012,9 +6013,10 @@ void Engine::mpiPonder(Go::Color col)
   params->uct_initial_playouts=startplayouts;
   params->thread_job=Parameters::TJ_PONDER;
   threadpool->startAll();
-  threadpool->waitAll();
+  threadpool->waitAll(); // Here it makes it impossible to interrupt, as it is not listening to mpi commands
   
-  //gtpe->getOutput()->printfDebug("genmove on rank %d done.\n",mpirank);
+  fprintf(stderr,"ponder on rank %d done.\n",mpirank);
+  gtpe->getOutput()->printfDebug("ponder on rank %d done.\n",mpirank);
 }
 
 void Engine::mpiBuildDerivedTypes()
@@ -6128,6 +6130,14 @@ bool Engine::mpiSyncUpdate(bool stop)
   
   //TODO: should consider replacing first 2 mpi cmds with 1
   MPI::COMM_WORLD.Allreduce(&localcount,&maxcount,1,MPI::INT,MPI::MIN);
+
+  //inform others about stopthinking and stoppondering events
+  int stopping[2]={stopthinking,stoppondering};
+  int resstopping[2];
+  MPI::COMM_WORLD.Allreduce(&stopping,&resstopping,2,MPI::INT,MPI::MAX);
+  stopthinking=resstopping[0];
+  stoppondering=resstopping[1];
+
   if (maxcount==0)
   {
     //gtpe->getOutput()->printfDebug("sync (rank: %d) stopping\n",mpirank);
