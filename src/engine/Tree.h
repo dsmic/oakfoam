@@ -236,7 +236,7 @@ class Tree
     /** Get the child with the best ratio. */
     Tree *getBestRatioChild(float playoutthreshold=0) const;
     /** Update RAVE values for the path from this node to the root of the tree. */
-    void updateRAVE(Go::Color wincol,Go::IntBoard *blacklist,Go::IntBoard *whitelist,bool early);
+    void updateRAVE(Go::Color wincol,Go::IntBoard *blacklist,Go::IntBoard *whitelist,bool early, Go::Board *scoredboard);
     /** Prune any superko violations. */
     void pruneSuperkoViolations();
     
@@ -275,6 +275,8 @@ class Tree
     void updateCriticality(Go::Board *board, Go::Color wincol);
     /** Get the criticality for this node. */
     float getCriticality() const;
+    float getSelfOwner() const;
+    float ownselfblack,ownselfwhite,ownotherblack,ownotherwhite,ownercount;
     
     /** Get the territory owner statistics for this node. */
     float getTerritoryOwner() const;

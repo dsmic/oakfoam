@@ -70,7 +70,7 @@ class Playout
     void getLGPFMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray);
     void getFeatureMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move);
     void getAnyCaptureMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray);
-    void getPatternMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, int passes);
+    void getPatternMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, int passes, float critarray[]=NULL);
     void getFillBoardMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, int passes, std::string *reason);
     void getFillBoardMoveBestPattern(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, int passes, std::string *reason);
     void getNakadeMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray);
@@ -83,7 +83,7 @@ class Playout
     void checkEyeMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, Go::Move &replacemove);
     void checkAntiEyeMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, Go::Move &replacemove);
 
-    bool isBadMove(Worker::Settings *settings, Go::Board *board, Go::Color col, int pos, float lbr_p=0.0, float lbm_p=0.0, float lbpr_p=0.0, int passes=0, Go::IntBoard *firstlist=NULL, int playoutmovescount=0);
+    bool isBadMove(Worker::Settings *settings, Go::Board *board, Go::Color col, int pos, float lbr_p=0.0, float lbm_p=0.0, float lbpr_p=0.0, int passes=0, Go::IntBoard *firstlist=NULL, int playoutmovescount=0, float critarray[]=NULL);
     bool isEyeFillMove(Go::Board *board, Go::Color col, int pos);
     float getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group *group);
     

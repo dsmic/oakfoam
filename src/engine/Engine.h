@@ -670,6 +670,7 @@ class Engine
     static void gtpShowRatios(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowUnPrune(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowUnPruneColor(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpShowOwnRatios(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowRAVERatios(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowRAVERatiosColor(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowRAVERatiosOther(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);

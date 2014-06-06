@@ -694,6 +694,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("showratios",this,&Engine::gtpShowRatios);
   gtpe->addFunctionCommand("showunprune",this,&Engine::gtpShowUnPrune);
   gtpe->addFunctionCommand("showunprunecolor",this,&Engine::gtpShowUnPruneColor);
+  gtpe->addFunctionCommand("showownratios",this,&Engine::gtpShowOwnRatios);
   gtpe->addFunctionCommand("showraveratios",this,&Engine::gtpShowRAVERatios);
   gtpe->addFunctionCommand("showraveratioscolor",this,&Engine::gtpShowRAVERatiosColor);
   gtpe->addFunctionCommand("showraveratiosother",this,&Engine::gtpShowRAVERatiosOther);
@@ -726,6 +727,7 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("showratios","Show Ratios","sboard");
   gtpe->addAnalyzeCommand("showunprune","Show UnpruneFactor","sboard");
   gtpe->addAnalyzeCommand("showunprunecolor","Show UnpruneFactor (color display)","cboard");
+  gtpe->addAnalyzeCommand("showownratios","Show Own Ratios","sboard");
   gtpe->addAnalyzeCommand("showraveratios","Show RAVE Ratios","sboard");
   gtpe->addAnalyzeCommand("showraveratioscolor","Show RAVE Ratios (color display)","cboard");
   gtpe->addAnalyzeCommand("showraveratiosother","Show RAVE Ratios (other color)","sboard");
@@ -1306,6 +1308,36 @@ void Engine::gtpShowUnPrune(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd
 
   gtpe->getOutput()->endResponse(true);
 }
+
+void Engine::gtpShowOwnRatios(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  Go::Color col=me->currentboard->nextToMove();
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("\n");
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      int pos=Go::Position::xy2pos(x,y,me->boardsize);
+      Go::Move move=Go::Move(col,pos);
+      Tree *tree=me->movetree->getChild(move);
+      if (tree!=NULL)
+      {
+        float ratio=tree->getSelfOwner();
+        gtpe->getOutput()->printf("\"%.2f\"",ratio);
+      }
+      else
+        gtpe->getOutput()->printf("\"\"");
+    }
+    gtpe->getOutput()->printf("\n");
+  }
+
+  gtpe->getOutput()->endResponse(true);
+}
+
+
 
 void Engine::gtpShowRAVERatios(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
@@ -3026,7 +3058,6 @@ void Engine::gtpShowCriticality(void *instance, Gtp::Engine* gtpe, Gtp::Command*
       {
         float crit=tree->getCriticality();
         float plts=(me->params->uct_criticality_siblings?me->movetree->getPlayouts():tree->getPlayouts());
-        //fprintf(stderr,"%f\n",crit);
         if (crit==0 && (!move.isNormal() || plts==0))
           gtpe->getOutput()->printf("\"\" ");
         else
@@ -5132,13 +5163,13 @@ void Engine::doPlayout(Worker::Settings *settings, Go::IntBoard *firstlist, Go::
       Go::Color wincol=(blackwin?Go::BLACK:Go::WHITE);
       
       if (col==Go::BLACK)
-        playouttree->updateRAVE(wincol,firstlist,secondlist,false);
+        playouttree->updateRAVE(wincol,firstlist,secondlist,false,playoutboard);
       else
-        playouttree->updateRAVE(wincol,secondlist,firstlist,false);
+        playouttree->updateRAVE(wincol,secondlist,firstlist,false,playoutboard);
       if (col==Go::BLACK)
-        playouttree->updateRAVE(wincol,earlyfirstlist,earlysecondlist,true);
+        playouttree->updateRAVE(wincol,earlyfirstlist,earlysecondlist,true,NULL);
       else
-        playouttree->updateRAVE(wincol,earlysecondlist,earlyfirstlist,true);
+        playouttree->updateRAVE(wincol,earlysecondlist,earlyfirstlist,true,NULL);
     }
   }
   

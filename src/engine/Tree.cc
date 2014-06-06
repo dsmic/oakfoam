@@ -61,6 +61,12 @@ Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p) : params(
   decayedwins=0;
   decayedplayouts=0;
   unprunednum=0;
+
+  ownselfblack=0;
+  ownselfwhite=0;
+  ownotherblack=0;
+  ownotherwhite=0;
+  ownercount=0;
   
   #ifdef HAVE_MPI
     this->resetMpiDiff();
@@ -1661,7 +1667,7 @@ bool Tree::expandLeaf(Worker::Settings *settings)
   return true;
 }
 
-void Tree::updateRAVE(Go::Color wincol,Go::IntBoard *blacklist,Go::IntBoard *whitelist,bool early)
+void Tree::updateRAVE(Go::Color wincol,Go::IntBoard *blacklist,Go::IntBoard *whitelist,bool early, Go::Board *scoredboard)
 {
   if (params->rave_moves<=0)
     return;
@@ -1670,7 +1676,7 @@ void Tree::updateRAVE(Go::Color wincol,Go::IntBoard *blacklist,Go::IntBoard *whi
   
   if (!this->isRoot())
   {
-    parent->updateRAVE(wincol,blacklist,whitelist,early);
+    parent->updateRAVE(wincol,blacklist,whitelist,early, scoredboard);
 
     if (this->getMove().isNormal())
     {
@@ -1691,6 +1697,15 @@ void Tree::updateRAVE(Go::Color wincol,Go::IntBoard *blacklist,Go::IntBoard *whi
         Go::Color col=(*iter)->getMove().getColor();
         int pos=(*iter)->getMove().getPosition();
         int ravenum=(col==Go::BLACK?blacklist:whitelist)->get(pos);
+        if (scoredboard!=NULL)
+        {
+          //fprintf(stderr, "%s ScoredOwner %d black %d white %d\n",move.toString(9).c_str(),scoredboard->getScoredOwner(pos),blacklist->get(pos),whitelist->get(pos));
+          if (scoredboard->getScoredOwner(pos)==Go::BLACK && blacklist->get(pos)!=0) (*iter)->ownselfblack++;
+          if (scoredboard->getScoredOwner(pos)==Go::WHITE && whitelist->get(pos)!=0) (*iter)->ownselfwhite++;
+          if (scoredboard->getScoredOwner(pos)==Go::WHITE && blacklist->get(pos)!=0) (*iter)->ownotherblack++;
+          if (scoredboard->getScoredOwner(pos)==Go::BLACK && whitelist->get(pos)!=0) (*iter)->ownotherwhite++;
+          (*iter)->ownercount++;
+        }  
         if (ravenum>0)
         {
           float raveweight=1;
@@ -1994,6 +2009,21 @@ void Tree::addCriticalityStats(bool winner, bool black, bool white)
     ownedwhite++;
 }
 
+float Tree::getSelfOwner() const
+{
+  if (!move.isNormal() || (params->uct_criticality_siblings && this->isRoot()))
+    return 0;
+  fprintf(stderr, "%s ownercount %f ownselfblack %f ownotherblack %f ownselfwhite %f ownotherwhite %f\n",move.toString(19).c_str(),ownercount,ownselfblack,ownotherblack,ownselfwhite,ownotherwhite);
+  if (move.getColor()==Go::BLACK)
+  {
+    return ((float)ownselfblack+1)/(ownotherblack+1);
+  }
+  else
+  {
+    return ((float)ownselfwhite+1)/(ownotherwhite+1);
+  }
+}
+
 float Tree::getCriticality() const
 {
   if (!move.isNormal() || (params->uct_criticality_siblings && this->isRoot()))
@@ -2092,6 +2122,12 @@ void Tree::resetNode()
   hasTerminalWin=false;
   decayedwins=0;
   decayedplayouts=0;
+
+  ownselfblack=0;
+  ownselfwhite=0;
+  ownotherblack=0;
+  ownotherwhite=0;
+  ownercount=0;
   
   #ifdef HAVE_MPI
     this->resetMpiDiff();

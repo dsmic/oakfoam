@@ -138,7 +138,7 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
   float *critarray=NULL;
   float *b_ravearray=NULL;
   float *w_ravearray=NULL;
-  if (params->playout_criticality_random_n>0 || params->test_p15>0 || params->test_p47>0)
+  if (params->playout_criticality_random_n>0 || params->test_p15>0 || params->test_p47>0 || params->test_p68>0)
   {
     Tree *pooltree=playouttree;
     critarray=new float[board->getPositionMax()];
@@ -351,7 +351,7 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
     int p=move.getPosition();
     if ((coltomove==colfirst?firstlist:secondlist)!=NULL && !move.isPass() && !move.isResign())
     {
-      if ((params->test_p2==0 || (coltomove!=colfirst?firstlist:secondlist)->get(p)==0) && (params->test_p46!=0 && nonlocalmove))
+      if ((params->test_p2==0 || (coltomove!=colfirst?firstlist:secondlist)->get(p)==0) && (params->test_p46!=0 || nonlocalmove))
       {
         (coltomove==colfirst?firstlist:secondlist)->set(p,playoutmovescount);
         if ((coltomove==colfirst?earlyfirstlist:earlysecondlist)!=NULL && params->rave_moves_use>0 && playoutmovescount < (board->getSize()*board->getSize()-treemovescount)*params->rave_moves_use)
@@ -850,8 +850,8 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
   
   if (WITH_P(params->playout_patterns_p))
   {
-    this->getPatternMove(settings,board,col,move,posarray,passes);
-    if (board->validMove(move) && !this->isBadMove(settings,board,col,move.getPosition(),params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes))
+    this->getPatternMove(settings,board,col,move,posarray,passes,critarray);
+    if (board->validMove(move) && !this->isBadMove(settings,board,col,move.getPosition(),params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes, NULL, 0, critarray))
     {
       if (!move.isPass())
       {
@@ -889,7 +889,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
   {
     ncirc++;
     int p=rand->getRandomInt(board->getPositionMax());
-    if (board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes))
+    if (board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes, NULL, 0, critarray))
     {
       Pattern::Circular pattcirc=Pattern::Circular(params->engine->getCircDict(),board,p,params->engine->getCircSize());
       if (col==Go::WHITE)
@@ -1037,7 +1037,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
       {
         if (doapproachmoves)
           this->replaceWithApproachMove(settings,board,col,p);
-        if (board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes))
+        if (board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes, NULL, 0, critarray))
         {
           move=Go::Move(col,p);
           move.set_useforlgrf (true);
@@ -1075,7 +1075,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
       int p=rand->getRandomInt(board->getPositionMax());
       if (doapproachmoves)
         this->replaceWithApproachMove(settings,board,col,p);
-      if (board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes))
+      if (board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes, NULL, 0, critarray))
       {
         float v=critarray[p];
         
@@ -1111,7 +1111,7 @@ if (params->playout_random_weight_territory_n>0)
     int p=rand->getRandomInt(board->getPositionMax());
     if (doapproachmoves)
       this->replaceWithApproachMove(settings,board,col,p);
-    if (board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes))
+    if (board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes, NULL, 0, critarray))
     {
       count_legal_moves++;
       // only circular pattern
@@ -1180,7 +1180,7 @@ if (params->test_p4>0)
   for (int i=0;i<params->test_p4*(params->test_p36+1);i++)
   {
     int p_tmp=rand->getRandomInt(board->getPositionMax());
-    if (board->validMove(Go::Move(col,p_tmp))&& !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes))
+    if (board->validMove(Go::Move(col,p_tmp))&& !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes, NULL, 0, critarray))
     {
       float prob_tmp=params->engine->getProbabilityMoveAt(p_tmp);
       if (prob_tmp>prob)
@@ -1197,7 +1197,7 @@ if (params->test_p4>0)
   {
     if (doapproachmoves)
       this->replaceWithApproachMove(settings,board,col,p);
-    if (board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes))
+    if (board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes, NULL, 0, critarray))
     {
       move=Go::Move(col,p);
       move.set_useforlgrf (true);
@@ -1221,7 +1221,7 @@ if (params->playout_randomquick_bestcirc_n>0)
       int p=rand->getRandomInt(board->getPositionMax());
       if (doapproachmoves)
         this->replaceWithApproachMove(settings,board,col,p);
-      if (board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes))
+      if (board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes, NULL, 0, critarray))
       {
         // only circular pattern
         Pattern::Circular pattcirc=Pattern::Circular(params->engine->getCircDict(),board,p,params->engine->getCircSize());
@@ -1269,7 +1269,7 @@ if (params->playout_randomquick_bestcirc_n>0)
     int p=rand->getRandomInt(board->getPositionMax());
     if (doapproachmoves)
       this->replaceWithApproachMove(settings,board,col,p);
-    if (board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes))
+    if (board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes, NULL, 0, critarray))
     {
       move=Go::Move(col,p);
       move.set_useforlgrf (true);
@@ -1314,7 +1314,7 @@ if (params->playout_randomquick_bestcirc_n>0)
     if (rp>=board->getPositionMax()) rp-=board->getPositionMax();
     if (doapproachmoves)
       this->replaceWithApproachMove(settings,board,col,rp);
-    if (validmoves->get(rp) && !this->isBadMove(settings,board,col,rp,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes))
+    if (validmoves->get(rp) && !this->isBadMove(settings,board,col,rp,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes, NULL, 0, critarray))
     {
       move=Go::Move(col,rp);
       move.set_useforlgrf (true);
@@ -1356,7 +1356,7 @@ if (params->playout_randomquick_bestcirc_n>0)
     *reason="pass";
 }
 
-bool Playout::isBadMove(Worker::Settings *settings, Go::Board *board, Go::Color col, int pos, float lbr_p, float lbm_p, float lbpr_p, int passes, Go::IntBoard *firstlist, int playoutmovescount)
+bool Playout::isBadMove(Worker::Settings *settings, Go::Board *board, Go::Color col, int pos, float lbr_p, float lbm_p, float lbpr_p, int passes, Go::IntBoard *firstlist, int playoutmovescount, float critarray[])
 {
   if (pos<0) return false;
   Random *const rand=settings->rand;
@@ -1366,11 +1366,16 @@ bool Playout::isBadMove(Worker::Settings *settings, Go::Board *board, Go::Color 
       || (lbr_p > 0.0 && rand->getRandomReal() < lbr_p && (board->getLastMove().isNormal() && this->hasLGRF1n(col,board->getLastMove().getPosition(),pos)))
       || (lbpr_p > 0.0 && (passes>1 || rand->getRandomReal() < lbpr_p) && (board->getLastMove().isPass() && this->isBadPassAnswer(col,pos)))
       || (lbm_p > 0.0 && (rand->getRandomReal() < lbm_p) && this->hasLBM (col,pos)));
+
+  if (!isBad && params->test_p68>0 && critarray!=NULL && critarray[pos]<params->test_p69 && rand->getRandomReal() < params->test_p68)
+    isBad=true;
+  
   if (isBad && params->debug_on)
     gtpe->getOutput()->printfDebug("[badmove triggered]: %s pass weakey %d selfatari %d\n",Go::Move(col,pos).toString(board->getSize()).c_str(),board->weakEye(col,pos,params->test_p5!=0),board->isSelfAtariOfSize(Go::Move(col,pos),params->playout_avoid_selfatari_size,params->playout_avoid_selfatari_complex));
 
   if (isBad && firstlist!=NULL && firstlist->get(pos)==0)
     firstlist->set(pos,-playoutmovescount);
+  
   return isBad;
 }
 
@@ -1537,7 +1542,7 @@ void Playout::getAnyCaptureMove(Worker::Settings *settings, Go::Board *board, Go
   }
 }
 
-void Playout::getPatternMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, int passes)
+void Playout::getPatternMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, int passes, float critarray[])
 {
   Random *const rand=settings->rand;
   Pattern::ThreeByThreeTable *const patterntable=params->engine->getPatternTable();
@@ -1558,7 +1563,7 @@ void Playout::getPatternMove(Worker::Settings *settings, Go::Board *board, Go::C
     int pos=board->getLastMove().getPosition();
     int size=board->getSize();
     foreach_adjdiag(pos,p,{
-      if (board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p2,params->playout_avoid_lbmf_p2, params->playout_avoid_bpr_p2, passes))
+      if (board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p2,params->playout_avoid_lbmf_p2, params->playout_avoid_bpr_p2, passes, NULL, 0, critarray))
       {
         unsigned int pattern=Pattern::ThreeByThree::makeHash(board,p);
         if (col==Go::WHITE)
@@ -1607,7 +1612,7 @@ void Playout::getPatternMove(Worker::Settings *settings, Go::Board *board, Go::C
       bool found=false;
       for (int j=0;j<pcnow;j++)
         if (p==patternmoves[j]) {found=true; break;} //remove double entries
-      if (!found && board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p2,params->playout_avoid_lbmf_p2, params->playout_avoid_bpr_p2, passes))
+      if (!found && board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p2,params->playout_avoid_lbmf_p2, params->playout_avoid_bpr_p2, passes, NULL, 0, critarray))
       {
         unsigned int pattern=Pattern::ThreeByThree::makeHash(board,p);
         if (col==Go::WHITE)
