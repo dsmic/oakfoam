@@ -135,13 +135,13 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
   std::vector<int> poolother;
   std::vector<int> poolcrit;
   Go::Color poolcol=Go::EMPTY;
-  float *critarray=NULL;
+  critstruct *critarray=NULL;
   float *b_ravearray=NULL;
   float *w_ravearray=NULL;
   if (params->playout_criticality_random_n>0 || params->test_p15>0 || params->test_p47>0 || params->test_p68>0)
   {
     Tree *pooltree=playouttree;
-    critarray=new float[board->getPositionMax()];
+    critarray=new critstruct[board->getPositionMax()];
     b_ravearray=new float[board->getPositionMax()];
     w_ravearray=new float[board->getPositionMax()];
     if (playouttree!=NULL)
@@ -154,12 +154,14 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
     if (pooltree!=NULL)
     {
       for (int i=0;i<board->getPositionMax ();i++)
-        critarray[i]=0;
+        critarray[i]={0,0,0};
       for(std::list<Tree*>::iterator iter=pooltree->getChildren()->begin();iter!=pooltree->getChildren()->end();++iter) 
         {
           if (!(*iter)->getMove().isPass())
           {
-            critarray[(*iter)->getMove().getPosition()]=(*iter)->getCriticality();
+            critarray[(*iter)->getMove().getPosition()].crit=(*iter)->getCriticality();
+			      critarray[(*iter)->getMove().getPosition()].ownblack=(*iter)->getOwnBlack();
+			      critarray[(*iter)->getMove().getPosition()].ownwhite=(*iter)->getOwnWhite();
 			      if ((*iter)->getMove().getColor()==Go::BLACK)
 				    {
 				      b_ravearray[(*iter)->getMove().getPosition()]=(*iter)->getRAVERatio();
@@ -572,7 +574,7 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
 
 }
 
-void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, float critarray[], float ravearray[], int passes, std::vector<int> *pool, std::vector<int> *poolCR, std::string *reason, float *trylocal_p, float *black_gammas, float *white_gammas, bool *earlymoves, Go::IntBoard *firstlist,int playoutmovescount, bool *nonlocalmove)
+void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, critstruct critarray[], float ravearray[], int passes, std::vector<int> *pool, std::vector<int> *poolCR, std::string *reason, float *trylocal_p, float *black_gammas, float *white_gammas, bool *earlymoves, Go::IntBoard *firstlist,int playoutmovescount, bool *nonlocalmove)
 {
   int *posarray = new int[board->getPositionMax()];
   
@@ -609,7 +611,7 @@ void Playout::checkUselessMove(Worker::Settings *settings, Go::Board *board, Go:
   }
 }
 
-void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, float critarray[], float ravearray[], int passes, std::vector<int> *pool, std::vector<int> *poolcrit, std::string *reason, float *trylocal_p, float *black_gammas, float *white_gammas, bool *earlymoves, Go::IntBoard *firstlist,int playoutmovescount, bool *nonlocalmove)
+void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, critstruct critarray[], float ravearray[], int passes, std::vector<int> *pool, std::vector<int> *poolcrit, std::string *reason, float *trylocal_p, float *black_gammas, float *white_gammas, bool *earlymoves, Go::IntBoard *firstlist,int playoutmovescount, bool *nonlocalmove)
 {
   /* trylocal_p can be used to influence parameters from move to move in a playout. It starts with 1.0
    * 
@@ -1077,7 +1079,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
         this->replaceWithApproachMove(settings,board,col,p);
       if (board->validMove(Go::Move(col,p)) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes, NULL, 0, critarray))
       {
-        float v=critarray[p];
+        float v=critarray[p].crit;
         
         if (v>bestvalue)
         {
@@ -1124,7 +1126,7 @@ if (params->playout_random_weight_territory_n>0)
       if (params->test_p18>0)
         v+=params->test_p18*params->engine->getProbabilityMoveAt(p);
       if (params->test_p15>0 && critarray!=NULL)
-        v+=params->test_p15*critarray[p];
+        v+=params->test_p15*critarray[p].crit;
       if (params->test_p47>0 && ravearray!=NULL)
         v+=params->test_p47*ravearray[p];
       
@@ -1356,7 +1358,7 @@ if (params->playout_randomquick_bestcirc_n>0)
     *reason="pass";
 }
 
-bool Playout::isBadMove(Worker::Settings *settings, Go::Board *board, Go::Color col, int pos, float lbr_p, float lbm_p, float lbpr_p, int passes, Go::IntBoard *firstlist, int playoutmovescount, float critarray[])
+bool Playout::isBadMove(Worker::Settings *settings, Go::Board *board, Go::Color col, int pos, float lbr_p, float lbm_p, float lbpr_p, int passes, Go::IntBoard *firstlist, int playoutmovescount, critstruct critarray[])
 {
   if (pos<0) return false;
   Random *const rand=settings->rand;
@@ -1367,7 +1369,7 @@ bool Playout::isBadMove(Worker::Settings *settings, Go::Board *board, Go::Color 
       || (lbpr_p > 0.0 && (passes>1 || rand->getRandomReal() < lbpr_p) && (board->getLastMove().isPass() && this->isBadPassAnswer(col,pos)))
       || (lbm_p > 0.0 && (rand->getRandomReal() < lbm_p) && this->hasLBM (col,pos)));
 
-  if (!isBad && params->test_p68>0 && critarray!=NULL && critarray[pos]<params->test_p69 && rand->getRandomReal() < params->test_p68)
+  if (!isBad && params->test_p68>0 && critarray!=NULL && ((col==Go::BLACK)?critarray[pos].ownblack:critarray[pos].ownwhite)<params->test_p69 && rand->getRandomReal() > params->test_p68)
     isBad=true;
   
   if (isBad && params->debug_on)
@@ -1542,7 +1544,7 @@ void Playout::getAnyCaptureMove(Worker::Settings *settings, Go::Board *board, Go
   }
 }
 
-void Playout::getPatternMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, int passes, float critarray[])
+void Playout::getPatternMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, int passes, critstruct critarray[])
 {
   Random *const rand=settings->rand;
   Pattern::ThreeByThreeTable *const patterntable=params->engine->getPatternTable();

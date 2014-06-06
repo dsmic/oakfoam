@@ -274,6 +274,8 @@ class Tree
     /** Update the criticality for this node and the path to the root. */
     void updateCriticality(Go::Board *board, Go::Color wincol);
     /** Get the criticality for this node. */
+    float getOwnWhite();
+    float getOwnBlack();
     float getCriticality() const;
     float getSelfOwner() const;
     float ownselfblack,ownselfwhite,ownotherblack,ownotherwhite,ownercount;

@@ -2024,6 +2024,15 @@ float Tree::getSelfOwner() const
   }
 }
 
+float Tree::getOwnBlack()
+{
+  return ((float)ownselfblack+1)/(ownotherblack+1);
+}
+float Tree::getOwnWhite()
+{
+  return ((float)ownselfwhite+1)/(ownotherwhite+1);
+}
+
 float Tree::getCriticality() const
 {
   if (!move.isNormal() || (params->uct_criticality_siblings && this->isRoot()))
