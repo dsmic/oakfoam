@@ -36,10 +36,14 @@ Go::IntBoard::IntBoard(int s)
   : size(s),
     sizesq(s*s),
     sizedata(1+(s+1)*(s+2)),
-    data(new int[sizedata])
+    data(new int[sizedata]),
+    bdata(new bool[sizedata])
 {
   for (int i=0;i<sizedata;i++)
-    data[i]=false;
+  {
+    data[i]=0;
+    bdata[i]=false;
+  }
 }
 
 Go::IntBoard *Go::IntBoard::copy() const

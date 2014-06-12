@@ -234,9 +234,10 @@ namespace Go
       ~IntBoard();
       
       /** Get the value of a position. */
-      inline bool get(int pos) const { return data[pos]; };
+      inline int get(int pos) const { return data[pos]; };
+      inline bool getb(int pos) const { return bdata[pos]; };
       /** Set the value of a position. */
-      inline void set(int pos, int val=1) { data[pos]=val; };
+      inline void set(int pos, int val=1, bool b=false) { data[pos]=val; bdata[pos]=b;};
       /** Clear a position.
        * Set the position to false.
        */
@@ -252,6 +253,7 @@ namespace Go
     private:
       const int size,sizesq,sizedata;
       int *const data;
+      bool *const bdata;
   };
 
   class CorrelationData

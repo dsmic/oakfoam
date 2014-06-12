@@ -16,6 +16,8 @@ namespace Worker
 typedef struct 
 {
   float crit;
+  float ownselfblack;
+  float ownselfwhite;
   float ownblack;
   float ownwhite;
 } critstruct;

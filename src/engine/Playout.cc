@@ -142,27 +142,44 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
   {
     Tree *pooltree=playouttree;
     critarray=new critstruct[board->getPositionMax()];
+    for (int i=0;i<board->getPositionMax ();i++)
+        critarray[i]={0,0,0,0,0};
     b_ravearray=new float[board->getPositionMax()];
     w_ravearray=new float[board->getPositionMax()];
     if (playouttree!=NULL)
     {
-      while (!pooltree->isRoot() && pooltree->getRAVEPlayouts()<params->playout_poolrave_min_playouts)
+      while (!pooltree->isRoot() && (pooltree->getRAVEPlayouts()<params->playout_poolrave_min_playouts || pooltree->isLeaf()))
         pooltree=pooltree->getParent();
       if (pooltree->getRAVEPlayouts()<params->playout_poolrave_min_playouts)
         pooltree=NULL;
     }
+    else 
+      fprintf(stderr,"playouttree==NULL\n");
+    //if (pooltree==NULL)
+    //  fprintf(stderr,"pooltree==NULL\n");
     if (pooltree!=NULL)
     {
-      for (int i=0;i<board->getPositionMax ();i++)
-        critarray[i]={0,0,0};
+      //fprintf(stderr,"poolrave %f number children %d\n",pooltree->getRAVEPlayouts(),pooltree->getChildren()->size());
       for(std::list<Tree*>::iterator iter=pooltree->getChildren()->begin();iter!=pooltree->getChildren()->end();++iter) 
         {
           if (!(*iter)->getMove().isPass())
           {
             critarray[(*iter)->getMove().getPosition()].crit=(*iter)->getCriticality();
-			      critarray[(*iter)->getMove().getPosition()].ownblack=(*iter)->getOwnBlack();
-			      critarray[(*iter)->getMove().getPosition()].ownwhite=(*iter)->getOwnWhite();
-			      if ((*iter)->getMove().getColor()==Go::BLACK)
+			      critarray[(*iter)->getMove().getPosition()].ownselfblack=(*iter)->getOwnSelfBlack();
+			      critarray[(*iter)->getMove().getPosition()].ownselfwhite=(*iter)->getOwnSelfWhite();
+			      critarray[(*iter)->getMove().getPosition()].ownblack=(*iter)->getOwnRatio(Go::BLACK);
+			      critarray[(*iter)->getMove().getPosition()].ownblack=(*iter)->getOwnRatio(Go::WHITE);
+			     /*
+             fprintf(stderr,"move %s %d crit %f ownblack %f ownwhite %f ownrationb %f ownrationw %f\n",
+                    (*iter)->getMove().toString(19).c_str(),(*iter)->getMove().getPosition(),
+                    critarray[(*iter)->getMove().getPosition()].crit,
+                    critarray[(*iter)->getMove().getPosition()].ownselfblack,
+                    critarray[(*iter)->getMove().getPosition()].ownselfwhite,
+                    (*iter)->getOwnRatio(Go::BLACK),
+                    (*iter)->getOwnRatio(Go::WHITE)
+                    );
+            */
+            if ((*iter)->getMove().getColor()==Go::BLACK)
 				    {
 				      b_ravearray[(*iter)->getMove().getPosition()]=(*iter)->getRAVERatio();
 				      w_ravearray[(*iter)->getMove().getPosition()]=(*iter)->getRAVERatioOther();
@@ -181,7 +198,7 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
     Tree *pooltree=playouttree;
     if (playouttree!=NULL)
     {
-      while (!pooltree->isRoot() && pooltree->getRAVEPlayouts()<params->playout_poolrave_min_playouts)
+      while (!pooltree->isRoot() && (pooltree->getRAVEPlayouts()<params->playout_poolrave_min_playouts || pooltree->isLeaf()))
         pooltree=pooltree->getParent();
       if (pooltree->getRAVEPlayouts()<params->playout_poolrave_min_playouts)
         pooltree=NULL;
@@ -355,7 +372,8 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
     {
       if ((params->test_p2==0 || (coltomove!=colfirst?firstlist:secondlist)->get(p)==0) && (params->test_p46!=0 || nonlocalmove))
       {
-        (coltomove==colfirst?firstlist:secondlist)->set(p,playoutmovescount);
+        //if (p==228 || p==231) fprintf(stderr,"add a move %s %d\n",Go::Move(coltomove,p).toString(19).c_str(),nonlocalmove);
+        (coltomove==colfirst?firstlist:secondlist)->set(p,playoutmovescount,nonlocalmove);
         if ((coltomove==colfirst?earlyfirstlist:earlysecondlist)!=NULL && params->rave_moves_use>0 && playoutmovescount < (board->getSize()*board->getSize()-treemovescount)*params->rave_moves_use)
           (coltomove==colfirst?earlyfirstlist:earlysecondlist)->set(p);
       }
@@ -625,6 +643,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
    4. Non local learned moves as lgpf might be
    5. Non local moves as random ...
    */
+  //fprintf(stderr,"playoutmove\n");
   Random *const rand=settings->rand;
   int ncirc=0;
 
@@ -849,6 +868,11 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     move=Go::Move(col,Go::Move::PASS);
     return ;  //used for training of playout patterns 3x3. If returned PASS the pattern move is triggered!
   }
+
+
+  if (nonlocalmove) *nonlocalmove=true;
+  
+  //fprintf(stderr,"should be nonlocal\n");
   
   if (WITH_P(params->playout_patterns_p))
   {
@@ -871,7 +895,6 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
 
 //  notlocal:
 //  if (trylocal_p!=NULL) *trylocal_p*=params->test_p1;
-  if (nonlocalmove && !move.isPass()) *nonlocalmove=true;
   
   if (WITH_P(params->playout_anycapture_p))
   {
@@ -1369,8 +1392,32 @@ bool Playout::isBadMove(Worker::Settings *settings, Go::Board *board, Go::Color 
       || (lbpr_p > 0.0 && (passes>1 || rand->getRandomReal() < lbpr_p) && (board->getLastMove().isPass() && this->isBadPassAnswer(col,pos)))
       || (lbm_p > 0.0 && (rand->getRandomReal() < lbm_p) && this->hasLBM (col,pos)));
 
-  if (!isBad && params->test_p68>0 && critarray!=NULL && ((col==Go::BLACK)?critarray[pos].ownblack:critarray[pos].ownwhite)<params->test_p69 && rand->getRandomReal() > params->test_p68)
+  /*
+   if (critarray)
+  {
+    if (pos==228||pos==231)
+      fprintf(stderr,"%s %f %d ",Go::Move(col,pos).toString(19).c_str(),(col==Go::BLACK)?critarray[pos].ownselfblack:critarray[pos].ownselfwhite,isBad);
+  }
+*/
+
+  //maybe one must take into account, the getOwnRatio(), simelar to criticality!!!
+  
+  if (!isBad && params->test_p68>0 && critarray!=NULL 
+      && ((col==Go::BLACK)?critarray[pos].ownselfblack:critarray[pos].ownselfwhite)>0 
+      && ((col==Go::BLACK)?critarray[pos].ownselfblack:critarray[pos].ownselfwhite)<params->test_p69
+     // && ((col==Go::BLACK)?critarray[pos].ownratio:(1-critarray[pos].ownratio))>params->test_p69
+      && rand->getRandomReal() > params->test_p68)
     isBad=true;
+  /*
+   if (critarray && (pos==228||pos==231))
+  {
+    fprintf(stderr,"after %d\n",isBad);
+  //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  // only debugging !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  //  isBad=true;
+  //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  }
+*/
   
   if (isBad && params->debug_on)
     gtpe->getOutput()->printfDebug("[badmove triggered]: %s pass weakey %d selfatari %d\n",Go::Move(col,pos).toString(board->getSize()).c_str(),board->weakEye(col,pos,params->test_p5!=0),board->isSelfAtariOfSize(Go::Move(col,pos),params->playout_avoid_selfatari_size,params->playout_avoid_selfatari_complex));

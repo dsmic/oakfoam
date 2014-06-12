@@ -66,6 +66,9 @@ Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p) : params(
   ownselfwhite=0;
   ownotherblack=0;
   ownotherwhite=0;
+  ownnobody=0;
+  ownblack=0;
+  ownwhite=0;
   ownercount=0;
   
   #ifdef HAVE_MPI
@@ -1700,10 +1703,14 @@ void Tree::updateRAVE(Go::Color wincol,Go::IntBoard *blacklist,Go::IntBoard *whi
         if (scoredboard!=NULL)
         {
           //fprintf(stderr, "%s ScoredOwner %d black %d white %d\n",move.toString(9).c_str(),scoredboard->getScoredOwner(pos),blacklist->get(pos),whitelist->get(pos));
-          if (scoredboard->getScoredOwner(pos)==Go::BLACK && blacklist->get(pos)!=0) (*iter)->ownselfblack++;
-          if (scoredboard->getScoredOwner(pos)==Go::WHITE && whitelist->get(pos)!=0) (*iter)->ownselfwhite++;
-          if (scoredboard->getScoredOwner(pos)==Go::WHITE && blacklist->get(pos)!=0) (*iter)->ownotherblack++;
-          if (scoredboard->getScoredOwner(pos)==Go::BLACK && whitelist->get(pos)!=0) (*iter)->ownotherwhite++;
+          if (scoredboard->getScoredOwner(pos)==Go::BLACK && blacklist->get(pos)!=0 && blacklist->getb(pos)) (*iter)->ownselfblack++;
+          if (scoredboard->getScoredOwner(pos)==Go::WHITE && whitelist->get(pos)!=0 && whitelist->getb(pos)) (*iter)->ownselfwhite++;
+          if (scoredboard->getScoredOwner(pos)==Go::WHITE && blacklist->get(pos)!=0 && blacklist->getb(pos)) (*iter)->ownotherblack++;
+          if (scoredboard->getScoredOwner(pos)==Go::BLACK && whitelist->get(pos)!=0 && whitelist->getb(pos)) (*iter)->ownotherwhite++;
+          if (scoredboard->getScoredOwner(pos)==Go::EMPTY                          ) (*iter)->ownnobody++;
+
+          if (scoredboard->getScoredOwner(pos)==Go::BLACK) (*iter)->ownblack++;
+          if (scoredboard->getScoredOwner(pos)==Go::WHITE) (*iter)->ownwhite++;
           (*iter)->ownercount++;
         }  
         if (ravenum>0)
@@ -2013,7 +2020,7 @@ float Tree::getSelfOwner() const
 {
   if (!move.isNormal() || (params->uct_criticality_siblings && this->isRoot()))
     return 0;
-  fprintf(stderr, "%s ownercount %f ownselfblack %f ownotherblack %f ownselfwhite %f ownotherwhite %f\n",move.toString(19).c_str(),ownercount,ownselfblack,ownotherblack,ownselfwhite,ownotherwhite);
+  fprintf(stderr, "%s %d ownercount %f ownselfblack %f ownotherblack %f ownselfwhite %f ownotherwhite %f ownnobody %f\n",move.toString(19).c_str(),move.getPosition(),ownercount,ownselfblack,ownotherblack,ownselfwhite,ownotherwhite,ownnobody);
   if (move.getColor()==Go::BLACK)
   {
     return ((float)ownselfblack+1)/(ownotherblack+1);
@@ -2024,13 +2031,22 @@ float Tree::getSelfOwner() const
   }
 }
 
-float Tree::getOwnBlack()
+float Tree::getOwnSelfBlack()
 {
   return ((float)ownselfblack+1)/(ownotherblack+1);
 }
-float Tree::getOwnWhite()
+float Tree::getOwnSelfWhite()
 {
   return ((float)ownselfwhite+1)/(ownotherwhite+1);
+}
+float Tree::getOwnRatio(Go::Color col)
+{
+  //             ownblack              /          ownwhite
+  if (ownercount-ownnobody<=0) return 0.5;
+  if (col==Go::BLACK)
+    return ((float)ownblack)/(ownercount);
+  else
+    return ((float)ownwhite)/(ownercount);
 }
 
 float Tree::getCriticality() const
@@ -2136,6 +2152,9 @@ void Tree::resetNode()
   ownselfwhite=0;
   ownotherblack=0;
   ownotherwhite=0;
+  ownnobody=0;
+  ownblack=0;
+  ownwhite=0;
   ownercount=0;
   
   #ifdef HAVE_MPI

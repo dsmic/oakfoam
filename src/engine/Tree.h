@@ -274,11 +274,12 @@ class Tree
     /** Update the criticality for this node and the path to the root. */
     void updateCriticality(Go::Board *board, Go::Color wincol);
     /** Get the criticality for this node. */
-    float getOwnWhite();
-    float getOwnBlack();
+    float getOwnSelfWhite();
+    float getOwnSelfBlack();
+    float getOwnRatio(Go::Color col=Go::BLACK);
     float getCriticality() const;
     float getSelfOwner() const;
-    float ownselfblack,ownselfwhite,ownotherblack,ownotherwhite,ownercount;
+    float ownselfblack,ownselfwhite,ownotherblack,ownotherwhite,ownnobody,ownblack,ownwhite,ownercount;
     
     /** Get the territory owner statistics for this node. */
     float getTerritoryOwner() const;
