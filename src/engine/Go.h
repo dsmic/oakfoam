@@ -11,8 +11,8 @@
 
 #include "../gtp/Gtp.h"
 
-//can be set or unordered_set last is faster
-#define ourset unordered_set
+//can be set or unordered_set last is faster (this was probably wrong, it is only faster if fetch by value is needed, and only one is needed in erase(group))
+#define ourset set
 
 //from "Features.h":
 class Features;
@@ -83,14 +83,17 @@ class Random;
 namespace Go
 {
   /** The memory allocator used for int's. */
-  typedef std::allocator<int> allocator_int;
+  //typedef std::allocator<int> allocator_int;
   //typedef boost::fast_pool_allocator<int> allocator_int;
   class Group;
   /** The memory allocator used for Go::Group pointers. */
   typedef std::allocator<Go::Group*> allocator_groupptr;
   //typedef boost::fast_pool_allocator<Go::Group*> allocator_groupptr;
   /** A list of int's, using the specified memory allocator. */
-  typedef std::list<int,Go::allocator_int> list_int;
+
+  // 15.6.2014 fast_pool is much slower!!
+  //typedef std::list<int,boost::fast_pool_allocator<int>> list_int;
+  typedef std::list<int> list_int;
 
   /** Go colors. */
   enum Color
@@ -558,10 +561,11 @@ namespace Go
       /** Get the other of the last two liberties.
        * If the group doesn't have two liberties, -1 is returned.
        */
-      int getOtherOneOfTwoLiberties(int pos) const;
+      int getOtherOneOfTwoLiberties(int pos) const  __attribute__((hot));
       
       /** Get a list of the adjacent groups to this group. */
-      std::list<int,Go::allocator_int> *getAdjacentGroups() { return &adjacentgroups; };
+      //std::list<int,Go::allocator_int> *getAdjacentGroups() { return &adjacentgroups; };
+      list_int *getAdjacentGroups() { return &adjacentgroups; };
     
     private:
       Go::Board *const board;
@@ -577,7 +581,7 @@ namespace Go
       int libpossum;
       int libpossumsq;
       
-      std::list<int,Go::allocator_int> adjacentgroups;
+      list_int adjacentgroups;
   };
   
   /** Go board. */
@@ -850,7 +854,7 @@ namespace Go
       void refreshGroups();
       void spreadGroup(int pos, Go::Group *group);
       int removeGroup(Go::Group *group);
-      void spreadRemoveStones(Go::Color col, int pos, std::list<int,Go::allocator_int> *possiblesuicides);
+      void spreadRemoveStones(Go::Color col, int pos, list_int *possiblesuicides);
       void mergeGroups(Go::Group *first, Go::Group *second);
       
       bool validMoveCheck(Go::Move move) const;

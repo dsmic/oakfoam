@@ -43,7 +43,7 @@ class Playout
      */
     void doPlayout(Worker::Settings *settings, Go::Board *board, float &finalscore, Tree *playouttree, std::list<Go::Move> &playoutmoves, Go::Color colfirst, Go::IntBoard *firstlist, Go::IntBoard *secondlist, Go::IntBoard *earlyfirstlist, Go::IntBoard *earlysecondlist, std::list<std::string> *movereasons=NULL);
     /** Get a playout move for a given situation. */
-    void getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, critstruct critarray[], float ravearray[], int passes=0, std::vector<int> *pool=NULL, std::vector<int> *poolcrit=NULL, std::string *reason=NULL,float *trylocal_p=NULL, float *black_gammas=NULL, float *white_gammas=NULL, bool *earlymoves=NULL,Go::IntBoard *firstlist=NULL,int playoutmovescount=0, bool *nonlocalmove=NULL);
+    void getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, critstruct critarray[], float ravearray[], int passes=0, std::vector<int> *pool=NULL, std::vector<int> *poolcrit=NULL, std::string *reason=NULL,float *trylocal_p=NULL, float *black_gammas=NULL, float *white_gammas=NULL, bool *earlymoves=NULL,Go::IntBoard *firstlist=NULL,int playoutmovescount=0, bool *nonlocalmove=NULL)  __attribute__((hot));
     /** Check for a useless move according to the Crazy Stone heuristic.
      * @todo Consider incorporating this into getPlayoutMove()
      */
@@ -79,11 +79,11 @@ class Playout
     void getLGPFMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray);
     void getFeatureMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move);
     void getAnyCaptureMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray);
-    void getPatternMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, int passes, critstruct critarray[]=NULL);
+    void getPatternMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, int passes, critstruct critarray[]=NULL)  __attribute__((hot));
     void getFillBoardMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, int passes, std::string *reason);
     void getFillBoardMoveBestPattern(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, int passes, std::string *reason);
     void getNakadeMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray);
-    void getLast2LibAtariMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray);
+    void getLast2LibAtariMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray)  __attribute__((hot));
     void getLastCaptureMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray);
     void getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray,float p);
     void getAtariMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray);
@@ -92,7 +92,7 @@ class Playout
     void checkEyeMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, Go::Move &replacemove);
     void checkAntiEyeMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, Go::Move &replacemove);
 
-    bool isBadMove(Worker::Settings *settings, Go::Board *board, Go::Color col, int pos, float lbr_p=0.0, float lbm_p=0.0, float lbpr_p=0.0, int passes=0, Go::IntBoard *firstlist=NULL, int playoutmovescount=0, critstruct critarray[]=NULL);
+    bool isBadMove(Worker::Settings *settings, Go::Board *board, Go::Color col, int pos, float lbr_p=0.0, float lbm_p=0.0, float lbpr_p=0.0, int passes=0, Go::IntBoard *firstlist=NULL, int playoutmovescount=0, critstruct critarray[]=NULL)  __attribute__((hot));
     bool isEyeFillMove(Go::Board *board, Go::Color col, int pos);
     float getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group *group);
     

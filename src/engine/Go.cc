@@ -861,23 +861,23 @@ int Go::Board::removeGroup(Go::Group *group)
   
   groups.erase(group);
   
-  std::list<int,Go::allocator_int> *possiblesuicides = new std::list<int,Go::allocator_int>();
+  list_int *possiblesuicides = new list_int();
   
   this->spreadRemoveStones(groupcol,pos,possiblesuicides);
   
-  for(std::list<int,Go::allocator_int>::iterator iter=possiblesuicides->begin();iter!=possiblesuicides->end();++iter)
+  for(list_int::iterator iter=possiblesuicides->begin();iter!=possiblesuicides->end();++iter)
   {
     if (!this->validMoveCheck(Go::Move(groupcol,(*iter)))) 
       this->removeValidMove(Go::Move(groupcol,(*iter)));
   }
   
-  possiblesuicides->resize(0);  //what's the idea of this??
+//  possiblesuicides->resize(0);  //what's the idea of this??
   delete possiblesuicides;
   
   return s;
 }
 
-void Go::Board::spreadRemoveStones(Go::Color col, int pos, std::list<int,Go::allocator_int> *possiblesuicides)
+void Go::Board::spreadRemoveStones(Go::Color col, int pos, list_int *possiblesuicides)
 {
   Go::Color othercol=Go::otherColor(col);
   //Go::Group *group=this->getGroupWithoutFind(pos); //see destroy() below
@@ -962,10 +962,10 @@ bool Go::Board::twoGroupEye(Go::Color col, int pos) const
   Go::Group *groups_used[4];
   int groups_used_num=0;
   foreach_adjacent(pos,p,{
-    if (this->inGroup(p))
+    if (this->inGroup(p) && col==this->getColor(p))
     {
       Go::Group *group=this->getGroup(p);
-      if (col==group->getColor())
+      //if (col==group->getColor())
       {
         bool found=false;
         for (int i=0;i<groups_used_num;i++)
@@ -1610,10 +1610,11 @@ bool Go::Board::isCapture(Go::Move move) const
   Go::Color col=move.getColor();
   int pos=move.getPosition();
   foreach_adjacent(pos,p,{
-    if (this->inGroup(p))
+    if (this->inGroup(p) && col!=this->getColor(p))
     {
       Go::Group *group=this->getGroup(p);
-      if (col!=group->getColor() && group->inAtari())
+      if (//col!=group->getColor() && 
+          group->inAtari())
         return true;
     }
   });
@@ -1628,10 +1629,10 @@ bool Go::Board::isExtension(Go::Move move) const
   int foundconnectingliberties=0;
   int libpos=-1;
   foreach_adjacent(pos,p,{
-    if (this->inGroup(p))
+    if (this->inGroup(p) && this->getColor(p)==col)
     {
       Go::Group *group=this->getGroup(p);
-      if (col==group->getColor())
+      //if (col==group->getColor())
       {
         if (group->inAtari())
           foundgroupinatari=true;
@@ -1681,10 +1682,10 @@ bool Go::Board::isExtension2lib(Go::Move move,bool checkother) const
   int libpos2=-1;
   bool foundotherextension=false;
   foreach_adjacent(pos,p,{
-    if (this->inGroup(p))
+    if (this->inGroup(p) && this->getColor(p)==col)
     {
       Go::Group *group=this->getGroup(p);
-      if (col==group->getColor())
+      //if (col==group->getColor())
       {
         if (group->isOneOfTwoLiberties(pos))
           foundgrouphas2lib=true;
@@ -1888,10 +1889,11 @@ bool Go::Board::isAtari(Go::Move move, int *groupsize) const
   Go::Color col=move.getColor();
   int pos=move.getPosition();
   foreach_adjacent(pos,p,{
-    if (this->inGroup(p))
+    if (this->inGroup(p) && this->getColor(p)!=col)
     {
       Go::Group *group=this->getGroup(p);
-      if (col!=group->getColor() && group->isOneOfTwoLiberties(pos))
+      if (//col!=group->getColor() && 
+          group->isOneOfTwoLiberties(pos))
       {
         if (groupsize) *groupsize=group->numOfStones();
         return true;

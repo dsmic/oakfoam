@@ -2688,11 +2688,11 @@ void Engine::gtpListAdjacentGroupsOf(void *instance, Gtp::Engine* gtpe, Gtp::Com
   
   if (group!=NULL)
   {
-    std::list<int,Go::allocator_int> *adjacentgroups=group->getAdjacentGroups();
+    Go::list_int *adjacentgroups=group->getAdjacentGroups();
     
     gtpe->getOutput()->startResponse(cmd);
     gtpe->getOutput()->printf("list of size %d:\n",adjacentgroups->size());
-    for(std::list<int,Go::allocator_int>::iterator iter=adjacentgroups->begin();iter!=adjacentgroups->end();++iter)
+    for(Go::list_int::iterator iter=adjacentgroups->begin();iter!=adjacentgroups->end();++iter)
     {
       if (me->currentboard->inGroup((*iter)))
         gtpe->getOutput()->printf("%s\n",Go::Position::pos2string((*iter),me->boardsize).c_str());

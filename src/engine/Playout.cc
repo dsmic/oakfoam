@@ -1717,7 +1717,10 @@ void Playout::getPatternMove(Worker::Settings *settings, Go::Board *board, Go::C
       fprintf(stderr,"Should not happen!!!\n");
     }
     float gammasum=0;
-#define scalegamma(A) (pow((A)+1,params->test_p28)-1)
+// very slow, if needed one should pre scale the gammas in the file!!!!!! test_p28 was 0.7
+//#define scalegamma(A) (pow((A)+1.0,params->test_p28)-1.0)
+//#define scalegamma(A) (exp(log((A)+1.0)*params->test_p28)-1.0)
+#define scalegamma(A) (A)    
     for (int i=0;i<patternmovescount;i++)
     {
       //for (int j=0;j<i;j++)
@@ -2122,7 +2125,10 @@ void Playout::getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go:
                   {
                     int liberty=othergroup->getAtariPosition();
                     bool iscaptureorconnect=board->isCapture(Go::Move(col,liberty)) || board->isExtension(Go::Move(col,liberty)); // Why is the check for capture here?
-                    if (board->validMove(Go::Move(col,liberty)) && iscaptureorconnect && WITH_P(pow(params->playout_lastatari_captureattached_p,1/group->numOfStones ())))
+                    //fprintf(stderr,"debug %f %d\n",pow(params->playout_lastatari_captureattached_p,1/group->numOfStones ()),group->numOfStones ());
+                    // was a bug in there && WITH_P(pow(params->playout_lastatari_captureattached_p,1/group->numOfStones ()))
+                    // as 1/group-> was integer and only 0 or 1. Thefore replaced, but should be checked once again
+                    if (board->validMove(Go::Move(col,liberty)) && iscaptureorconnect && (group->numOfStones()>1 || WITH_P(params->playout_lastatari_captureattached_p)))
                     {
                       if (possiblemovescount<board->getPositionMax())
                       {
@@ -2144,7 +2150,7 @@ void Playout::getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go:
             int liberty=group->getAtariPosition();
             bool iscaptureorconnect=board->isCapture(Go::Move(col,liberty)) || board->isExtension(Go::Move(col,liberty)); // Why is the check for capture here?
             //fprintf(stderr,"la: %s %s %d %d %d\n",Go::Position::pos2string(p,size).c_str(),Go::Position::pos2string(liberty,size).c_str(),board->isCapture(Go::Move(col,liberty)),board->isExtension(Go::Move(col,liberty)),board->isSelfAtari(Go::Move(col,liberty)));
-            if (!atarigroupfound && board->validMove(Go::Move(col,liberty)) && iscaptureorconnect && WITH_P(pow(params->playout_lastatari_p,1/group->numOfStones ())))
+            if (!atarigroupfound && board->validMove(Go::Move(col,liberty)) && iscaptureorconnect && (group->numOfStones()>1 || WITH_P(params->playout_lastatari_p)))
             {
               if (possiblemovescount<board->getPositionMax())
               {
