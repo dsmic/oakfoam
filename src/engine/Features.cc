@@ -10,9 +10,9 @@
 #include "DecisionTree.h"
 #include "Engine.h"
 
-#define playpatterndim 4
-const int playpattern[playpatterndim][playpatterndim]={{0,1,2,3},{4,7,7,7},{5,7,7,7},{6,7,7,7}};
-const int playpatternnum=8;
+//#define playpatterndim 4
+//const int playpattern[playpatterndim][playpatterndim]={{0,1,2,3},{4,7,7,7},{5,7,7,7},{6,7,7,7}};
+//const int playpatternnum=8;
 
 //moved here, so it is not parsed any time feature.h is included
 const std::string FEATURES_DEFAULT=
@@ -1102,19 +1102,6 @@ float Features::getFeatureGamma(Features::FeatureClass featclass, unsigned int l
     else
       return 1.0;
   }
-}
-
-float Features::getFeatureGammaPlayoutPattern(unsigned int pattern, int MaxLast, int MaxSecondLast) const
-{
-  MaxLast--;
-  MaxSecondLast--;
-  if (MaxLast>=playpatterndim) MaxLast=playpatterndim-1;
-  if (MaxSecondLast>=playpatterndim) MaxSecondLast=playpatterndim-1;
-  unsigned int level=pattern*playpatternnum+playpattern[MaxLast][MaxSecondLast];
-  if (patterngammas_playout[level]>0)
-      return patterngammas_playout[level];
-    else
-      return 1.0;  //? in this case 1.0 might not be a good idea, if a pattern is never played in the games.....
 }
     
 float Features::getFeatureGammaPlayoutCircPattern(Go::Board *board, Go::Move move) const

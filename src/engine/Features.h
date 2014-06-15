@@ -37,6 +37,8 @@ class Parameters;
 
 #include "Pattern.h"
 
+#define playpatterndim 4
+    
 /** ELO Features.
  * Class to manage extracting, learning, and using feature weights.
  *
@@ -125,7 +127,18 @@ class Features
     unsigned int matchFeatureClass(Features::FeatureClass featclass, Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove=true, Pattern::Circular *pattcirc_p=NULL) const;
     /** Return the gamma weight for a specific feature and level. */
     float getFeatureGamma(Features::FeatureClass featclass, unsigned int level) const;
-    float getFeatureGammaPlayoutPattern(unsigned int pattern, int MaxLast, int MaxSecondLast) const;
+    float getFeatureGammaPlayoutPattern(unsigned int pattern, int MaxLast, int MaxSecondLast)  const
+      {
+        MaxLast--;
+        MaxSecondLast--;
+        if (MaxLast>=playpatterndim) MaxLast=playpatterndim-1;
+        if (MaxSecondLast>=playpatterndim) MaxSecondLast=playpatterndim-1;
+        unsigned int level=pattern*playpatternnum+playpattern[MaxLast][MaxSecondLast];
+        if (patterngammas_playout[level]>0)
+            return patterngammas_playout[level];
+          else
+            return 1.0;  //? in this case 1.0 might not be a good idea, if a pattern is never played in the games.....
+      };
     float getFeatureGammaPlayoutCircPattern(Go::Board *board, Go::Move move) const;
       /** Return the weight for a move.
      * The weight for a move is the product of matching feature weights for that move.
@@ -221,6 +234,9 @@ class Features
     int circpatternsize;
     long int num_circmoves;
     long int num_circmoves_not;
+    const int playpattern[playpatterndim][playpatterndim]={{0,1,2,3},{4,7,7,7},{5,7,7,7},{6,7,7,7}};
+    const int playpatternnum=8;
+
 };
 
 #endif
