@@ -941,7 +941,6 @@ int Go::Board::removeGroup(Go::Group *group)
   Go::Color groupcol=group->getColor();
   
   groups.erase(group);
-  //pool_group.destroy(group);  // would be ok, but would not delete most groups anyway due to find group
   
   list_int *possiblesuicides = new list_int();
   
@@ -965,6 +964,8 @@ void Go::Board::spreadRemoveStones(Go::Color col, int pos, list_int *possiblesui
   //Go::Group *group=this->getGroupWithoutFind(pos); //see destroy() below
   
   this->setColor(pos,Go::EMPTY);
+  pool_group.destroy(data[pos].group); //5% speed up, as the pool is now used!
+
   this->setGroup(pos,NULL);
   if (col==Go::BLACK)
     blackcaptures++;

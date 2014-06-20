@@ -529,8 +529,8 @@ namespace Go
         pseudoborderdist+=othergroup->pseudoborderdist;
         libpossum+=othergroup->libpossum;
         libpossumsq+=othergroup->libpossumsq;
-        //adjacentgroups.splice(adjacentgroups.end(),*othergroup->getAdjacentGroups());
-        adjacentgroups.insert(adjacentgroups.end(),othergroup->getAdjacentGroups()->begin(),othergroup->getAdjacentGroups()->end());
+        adjacentgroups.splice(adjacentgroups.end(),*othergroup->getAdjacentGroups());
+        //adjacentgroups.insert(adjacentgroups.end(),othergroup->getAdjacentGroups()->begin(),othergroup->getAdjacentGroups()->end());
         //adjacentgroups.insert(othergroup->getAdjacentGroups()->begin(),othergroup->getAdjacentGroups()->end());
         
       };
