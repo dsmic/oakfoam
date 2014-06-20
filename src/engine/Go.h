@@ -2,7 +2,7 @@
 #define DEF_OAKFOAM_GO_H
 
 #include <string>
-#include <list>
+#include <forward_list>
 #include <unordered_set>
 #include <boost/pool/pool.hpp>
 #include <boost/pool/pool_alloc.hpp>
@@ -12,7 +12,7 @@
 #include "../gtp/Gtp.h"
 
 //can be set or unordered_set last is faster (this was probably wrong, it is only faster if fetch by value is needed, and only one is needed in erase(group))
-#define ourset set
+#define ourset unordered_set
 
 //from "Features.h":
 class Features;
@@ -504,7 +504,7 @@ namespace Go
       /** Get the color of this group. */
       Go::Color getColor() const {return color;};
       /** Get the position of the key stone of this position. */
-      int getPosition() const {return position;};
+      inline int getPosition() const {return position;};
      
       /** Set the parent group for this group. */
       void setParent(Go::Group *p) { parent=p; };
@@ -529,7 +529,10 @@ namespace Go
         pseudoborderdist+=othergroup->pseudoborderdist;
         libpossum+=othergroup->libpossum;
         libpossumsq+=othergroup->libpossumsq;
-        adjacentgroups.splice(adjacentgroups.end(),*othergroup->getAdjacentGroups());
+        //adjacentgroups.splice(adjacentgroups.end(),*othergroup->getAdjacentGroups());
+        adjacentgroups.insert(adjacentgroups.end(),othergroup->getAdjacentGroups()->begin(),othergroup->getAdjacentGroups()->end());
+        //adjacentgroups.insert(othergroup->getAdjacentGroups()->begin(),othergroup->getAdjacentGroups()->end());
+        
       };
       /** Determine if this group is a root. */
       inline bool isRoot() const { return (parent==NULL); };
@@ -555,7 +558,7 @@ namespace Go
        */
       inline int getAtariPosition() const { if (this->inAtari()) return libpossum/pseudoliberties; else return -1; };
       /** Add the orthogonally adjacent empty pseudo liberties. */
-      void addTouchingEmpties();
+      inline void addTouchingEmpties();
       /** Determine if given position is one of the last two liberties. */
       bool isOneOfTwoLiberties(int pos) const;
       /** Get the other of the last two liberties.
@@ -676,13 +679,19 @@ namespace Go
       /** Make a move on this board. */
       void makeMove(Go::Move move,Gtp::Engine* gtpe=NULL);
       /** Determine is the given move is a legal move. */
-      bool validMove(Go::Move move) const
+      inline bool validMove(Go::Move move) const
         {
           Go::BitBoard *validmoves=(move.getColor()==Go::BLACK?blackvalidmoves:whitevalidmoves);
           //return move.isPass() || move.isResign() || validmoves->get(move.getPosition());
           return (move.getPosition()<0) || validmoves->get(move.getPosition()); //faster and more correct, as no neg value allowed for get call!!!
         };
-      
+      inline bool validMove(Go::Color col, int pos) const
+        {
+          Go::BitBoard *validmoves=(col==Go::BLACK?blackvalidmoves:whitevalidmoves);
+          //return move.isPass() || move.isResign() || validmoves->get(move.getPosition());
+          return (pos<0) || validmoves->get(pos); //faster and more correct, as no neg value allowed for get call!!!
+        };
+       
       /** Get the number of legal moves currently available. */
       int numOfValidMoves(Go::Color col) const { return (col==Go::BLACK?blackvalidmovecount:whitevalidmovecount); };
       int numOfValidMoves() const {return (blackvalidmovecount+whitevalidmovecount)/2;}
@@ -858,10 +867,13 @@ namespace Go
       void mergeGroups(Go::Group *first, Go::Group *second);
       
       bool validMoveCheck(Go::Move move) const;
+      bool validMoveCheck(Go::Color col, int pos) const;
       void refreshValidMoves();
       void refreshValidMoves(Go::Color col);
       void addValidMove(Go::Move move);
+      void addValidMove(Go::Color col, int pos);
       void removeValidMove(Go::Move move);
+      void removeValidMove(Go::Color col, int pos);
       
       bool hasSymmetryVertical() const;
       bool hasSymmetryHorizontal() const;

@@ -13,9 +13,27 @@ class Random
     unsigned long getSeed() const { return seed; };
     
     /** Generate a random integer. */
-    unsigned long getRandomInt();
+    inline unsigned long getRandomInt()
+      {
+        //Park-Miller "Minimal Standard" PRNG
+        
+        unsigned long hi, lo;
+        
+        lo= 16807 * (seed & 0xffff);
+        hi= 16807 * (seed >> 16);
+        
+        lo+= (hi & 0x7fff) << 16;
+        lo+= hi >> 15;
+        
+        if (lo >= 0x7FFFFFFF) lo-=0x7FFFFFFF;
+
+        return (seed=lo);
+      };
     /** Generate a random integer in a range. */
-    unsigned long getRandomInt(unsigned long max);
+    inline unsigned long getRandomInt(unsigned long max)
+      {
+        return this->getRandomInt() % max; //XXX: not uniform, but good enough
+      };
     /** Generate with distribution function. */
     unsigned long getRandomInt(unsigned long max, float a);
     /** Generate a random float in the range (0,1). */

@@ -4132,7 +4132,10 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     ssun<<"st:(";
     for (int nn=0;nn<STATISTICS_NUM;nn++)
     {
-      ssun<<(nn!=0?",":"");
+      //ssun<<((nn!=0)?",":"");
+      if (nn!=0) ssun<<",";
+      //ssun<<nn;
+      //ssun<<"-";
       ssun<<getStatistics (nn);
     }
     ssun<<")";
@@ -5412,7 +5415,7 @@ void Engine::ponderThread(Worker::Settings *settings)
     Go::IntBoard *secondlist=new Go::IntBoard(boardsize);
     Go::IntBoard *earlyfirstlist=new Go::IntBoard(boardsize);
     Go::IntBoard *earlysecondlist=new Go::IntBoard(boardsize);
-    long playouts;
+    long playouts=0;
     
     while (!stoppondering && !stopthinking && (playouts=(long)movetree->getPlayouts())<(params->pondering_playouts_max))
     {
@@ -5449,7 +5452,7 @@ void Engine::ponderThread(Worker::Settings *settings)
     delete secondlist;
     delete earlyfirstlist;
     delete earlysecondlist;
-    fprintf(stderr,"pondering done! %ld %.0f stopthinking %d stoppondering %d playouts %d\n",playouts,movetree->getPlayouts(),stopthinking,stoppondering,playouts);
+    fprintf(stderr,"pondering done! %ld %.0f stopthinking %d stoppondering %d playouts %ld\n",playouts,movetree->getPlayouts(),stopthinking,stoppondering,playouts);
     #ifdef HAVE_MPI
     gtpe->getOutput()->printfDebug("ponder on rank %d stopping... (inform: %d) threadid %d\n",mpirank,mpi_inform_others,settings->thread->getID());
     if (settings->thread->getID()==0 && !mpi_rank_other && mpiworldsize>1 && mpi_inform_others)
@@ -6229,7 +6232,7 @@ bool Engine::mpiSyncUpdate(bool stop)
       }
       else
       {
-        bool foundnode=false;
+//        bool foundnode=false;
         std::list<Tree*> *parentnodes=mpihashtable.lookup(msg->parenthash);
         if (parentnodes!=NULL)
         {
@@ -6241,7 +6244,7 @@ bool Engine::mpiSyncUpdate(bool stop)
               {
                 (*iter2)->addMpiDiff(msg->playouts,msg->wins);
                 mpihashtable.add(msg->hash,(*iter2));
-                foundnode=true;
+//                foundnode=true;
                 //fprintf(stderr,"added hash: 0x%016Lx\n",msg->hash);
               }
             }

@@ -155,7 +155,7 @@ void Go::Group::addTouchingEmpties()
   });
 }
 
-bool Go::Group::isOneOfTwoLiberties(int pos) const
+inline bool Go::Group::isOneOfTwoLiberties(int pos) const
 {
   if (pseudoliberties>8 || this->inAtari())
     return false;
@@ -178,7 +178,7 @@ bool Go::Group::isOneOfTwoLiberties(int pos) const
 }
 
 
-int Go::Group::getOtherOneOfTwoLiberties(int pos) const
+inline int Go::Group::getOtherOneOfTwoLiberties(int pos) const
 {
   if (pseudoliberties>8 || this->inAtari())
     return -1;
@@ -486,6 +486,63 @@ Go::Color Go::Board::getScoredOwner(int pos) const
 //  return move.isPass() || move.isResign() || validmoves->get(move.getPosition());
 //}
 
+bool Go::Board::validMoveCheck(Go::Color col, int pos) const
+{
+  if (pos<0)
+    return true;
+  
+  if (this->getColor(pos)!=Go::EMPTY)
+    return false;
+  else if (touchingAtLeastOneEmpty(pos))
+    return true;
+  else
+  {
+    //int pos=move.getPosition();
+    //Go::Color col=move.getColor();
+    Go::Color othercol=Go::otherColor(col);
+    bool isvalid=false;
+    int captures=0;
+    
+    foreach_adjacent(pos,p,{
+      if (this->getColor(p)==col || this->getColor(p)==othercol)
+        this->getGroup(p)->removePseudoLiberty(pos);
+      if (this->getColor(p)==col)
+        this->getGroup(p)->removePseudoEnd();
+    });
+    
+    foreach_adjacent(pos,p,{
+      if (this->getColor(p)==col && this->getPseudoLiberties(p)>0)
+        isvalid=true;
+      else if (this->getColor(p)==othercol && this->getPseudoLiberties(p)==0)
+      {
+        captures+=this->getGroupSize(p);
+        if (captures>1)
+          isvalid=true;
+      }
+    });
+    
+    foreach_adjacent(pos,p,{
+      if (this->getColor(p)==col || this->getColor(p)==othercol)
+        this->getGroup(p)->addPseudoLiberty(pos);
+      if (this->getColor(p)==col)
+        this->getGroup(p)->addPseudoEnd();
+    });
+    
+    if (isvalid)
+      return true;
+    
+    if (captures==1)
+    {
+      if (pos==simpleko)
+        return false;
+      else
+        return true;
+    }
+    
+    return false;
+  }
+}
+
 bool Go::Board::validMoveCheck(Go::Move move) const
 {
   if (move.isPass() || move.isResign())
@@ -556,8 +613,8 @@ void Go::Board::makeMove(Go::Move move, Gtp::Engine* gtpe)
   {
     int kopos=simpleko;
     simpleko=-1;
-    if (this->validMoveCheck(Go::Move(move.getColor(),kopos)))
-      this->addValidMove(Go::Move(move.getColor(),kopos));
+    if (this->validMoveCheck(move.getColor(),kopos))
+      this->addValidMove(move.getColor(),kopos);
     if (markchanges)
       lastchanges->set(kopos);
   }
@@ -609,7 +666,7 @@ void Go::Board::makeMove(Go::Move move, Gtp::Engine* gtpe)
   
   this->setColor(pos,col);
   
-  Go::Group *thisgroup=pool_group.construct(this,pos);
+  Go::Group *thisgroup=pool_group.construct(this,pos);  
   this->setGroup(pos,thisgroup);
   groups.insert(thisgroup);
   
@@ -656,39 +713,39 @@ void Go::Board::makeMove(Go::Move move, Gtp::Engine* gtpe)
         if (othergroup->inAtari())
         {
           int liberty=othergroup->getAtariPosition();
-          this->addValidMove(Go::Move(col,liberty));
-          if (this->touchingEmpty(liberty)==0 && !this->validMoveCheck(Go::Move(othercol,liberty)))
-            this->removeValidMove(Go::Move(othercol,liberty));
+          this->addValidMove(col,liberty);
+          if (this->touchingEmpty(liberty)==0 && !this->validMoveCheck(othercol,liberty))
+            this->removeValidMove(othercol,liberty);
         }
       }
     }
   });
   
-  this->removeValidMove(Go::Move(Go::BLACK,pos));
-  this->removeValidMove(Go::Move(Go::WHITE,pos));
+  this->removeValidMove(Go::BLACK,pos);
+  this->removeValidMove(Go::WHITE,pos);
   
   if (thisgroup->inAtari())
   {
     int liberty=thisgroup->getAtariPosition();
-    if (this->touchingEmpty(liberty)==0 && !this->validMoveCheck(Go::Move(col,liberty)))
-      this->removeValidMove(Go::Move(col,liberty));
-    if (this->validMoveCheck(Go::Move(othercol,liberty)))
-      this->addValidMove(Go::Move(othercol,liberty));
+    if (this->touchingEmpty(liberty)==0 && !this->validMoveCheck(col,liberty))
+      this->removeValidMove(col,liberty);
+    if (this->validMoveCheck(othercol,liberty))
+      this->addValidMove(othercol,liberty);
   }
   
   foreach_adjacent(pos,p,{
     if (this->getColor(p)==Go::EMPTY)
     {
-      if (!this->validMoveCheck(Go::Move(othercol,p)))
-        this->removeValidMove(Go::Move(othercol,p));
+      if (!this->validMoveCheck(othercol,p))
+        this->removeValidMove(othercol,p);
     }
   });
   
   if (posko>=0 && thisgroup->inAtari())
   {
     simpleko=posko;
-    if (!this->validMoveCheck(Go::Move(othercol,simpleko)))
-      this->removeValidMove(Go::Move(othercol,simpleko));
+    if (!this->validMoveCheck(othercol,simpleko))
+      this->removeValidMove(othercol,simpleko);
   }
   
   if (symmetryupdated)
@@ -711,8 +768,8 @@ void Go::Board::refreshValidMoves(Go::Color col)
   for (int p=0;p<sizedata;p++)
   {
     validmoves->clear(p);
-    if (this->validMoveCheck(Go::Move(col,p)))
-      this->addValidMove(Go::Move(col,p));
+    if (this->validMoveCheck(col,p))
+      this->addValidMove(col,p);
   }
 }
 
@@ -728,6 +785,18 @@ void Go::Board::addValidMove(Go::Move move)
   }
 }
 
+void Go::Board::addValidMove(Go::Color col, int pos)
+{
+  Go::BitBoard *validmoves=(col==Go::BLACK?blackvalidmoves:whitevalidmoves);
+  int *validmovecount=(col==Go::BLACK?&blackvalidmovecount:&whitevalidmovecount);
+  
+  if (!validmoves->get(pos))
+  {
+    validmoves->set(pos);
+    (*validmovecount)++;
+  }
+}
+
 void Go::Board::removeValidMove(Go::Move move)
 {
   Go::BitBoard *validmoves=(move.getColor()==Go::BLACK?blackvalidmoves:whitevalidmoves);
@@ -736,6 +805,18 @@ void Go::Board::removeValidMove(Go::Move move)
   if (validmoves->get(move.getPosition()))
   {
     validmoves->clear(move.getPosition());
+    (*validmovecount)--;
+  }
+}
+
+void Go::Board::removeValidMove(Go::Color col, int pos)
+{
+  Go::BitBoard *validmoves=(col==Go::BLACK?blackvalidmoves:whitevalidmoves);
+  int *validmovecount=(col==Go::BLACK?&blackvalidmovecount:&whitevalidmovecount);
+  
+  if (validmoves->get(pos))
+  {
+    validmoves->clear(pos);
     (*validmovecount)--;
   }
 }
@@ -860,6 +941,7 @@ int Go::Board::removeGroup(Go::Group *group)
   Go::Color groupcol=group->getColor();
   
   groups.erase(group);
+  //pool_group.destroy(group);  // would be ok, but would not delete most groups anyway due to find group
   
   list_int *possiblesuicides = new list_int();
   
@@ -867,8 +949,8 @@ int Go::Board::removeGroup(Go::Group *group)
   
   for(list_int::iterator iter=possiblesuicides->begin();iter!=possiblesuicides->end();++iter)
   {
-    if (!this->validMoveCheck(Go::Move(groupcol,(*iter)))) 
-      this->removeValidMove(Go::Move(groupcol,(*iter)));
+    if (!this->validMoveCheck(groupcol,(*iter))) 
+      this->removeValidMove(groupcol,(*iter));
   }
   
 //  possiblesuicides->resize(0);  //what's the idea of this??
@@ -898,7 +980,7 @@ void Go::Board::spreadRemoveStones(Go::Color col, int pos, list_int *possiblesui
       if (othergroup->inAtari())
       {
         int liberty=othergroup->getAtariPosition();
-        this->addValidMove(Go::Move(othercol,liberty));
+        this->addValidMove(othercol,liberty);
         possiblesuicides->push_back(liberty);
       }
       othergroup->addPseudoLiberty(pos);
@@ -906,8 +988,8 @@ void Go::Board::spreadRemoveStones(Go::Color col, int pos, list_int *possiblesui
     }
   });
   
-  this->addValidMove(Go::Move(othercol,pos));
-  this->addValidMove(Go::Move(col,pos));
+  this->addValidMove(othercol,pos);
+  this->addValidMove(col,pos);
   
   //XXX: memory will get freed when pool is destroyed
   //pool_group.destroy(group);
@@ -2980,6 +3062,8 @@ bool Go::Board::isProbableWorkingLadder(Go::Group *group, int posA, int movepos)
   {
     adjacentgroups->sort();
     adjacentgroups->unique();
+    //std::sort(adjacentgroups->begin(),adjacentgroups->end());
+    //std::uni(adjacentgroups->begin(),adjacentgroups->end());
   }
   for(Go::list_int::iterator iter=adjacentgroups->begin();iter!=adjacentgroups->end();++iter)
   {

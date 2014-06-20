@@ -1717,7 +1717,8 @@ void Tree::updateRAVE(Go::Color wincol,Go::IntBoard *blacklist,Go::IntBoard *whi
         {
           float raveweight=1;
           //if (!early) raveweight=exp(-params->test_p30*ravenum);
-          if (!early) raveweight=pow(ravenum,-params->test_p30);
+          //if (!early) raveweight=pow(ravenum,-params->test_p30);
+          if (!early) raveweight=1.0/(ravenum*params->test_p30+1);
           
           if ((*iter)->isPrimary())
           {
@@ -1739,7 +1740,8 @@ void Tree::updateRAVE(Go::Color wincol,Go::IntBoard *blacklist,Go::IntBoard *whi
         {  //marked as bad move during playout, therefore counted as rave loss
           float raveweight=1;
           //if (!early) raveweight=exp(-params->test_p30*ravenum);
-          if (!early) raveweight=pow(-ravenum,-params->test_p30);
+          //if (!early) raveweight=pow(-ravenum,-params->test_p30); //this was not sufficently tested and slow
+          if (!early) raveweight=1.0/(-ravenum*params->test_p30+1);
           
           if ((*iter)->isPrimary())
           {
@@ -1756,7 +1758,9 @@ void Tree::updateRAVE(Go::Color wincol,Go::IntBoard *blacklist,Go::IntBoard *whi
         if (ravenum>0)
         {
           float raveweight=1;
-          if (!early) raveweight=exp(-params->test_p30*ravenum);
+          //if (!early) raveweight=exp(-params->test_p30*ravenum);
+          //if (!early) raveweight=pow(ravenum,-params->test_p30);
+          if (!early) raveweight=1.0/(ravenum*params->test_p30+1);
           if ((*iter)->isPrimary())
           {
             if (Go::otherColor(col)==wincol)
@@ -1777,7 +1781,8 @@ void Tree::updateRAVE(Go::Color wincol,Go::IntBoard *blacklist,Go::IntBoard *whi
         {  //marked as bad move during playout, therefore counted as rave loss
           float raveweight=1;
           //if (!early) raveweight=exp(-params->test_p30*ravenum);
-          if (!early) raveweight=pow(-ravenum,-params->test_p30);
+          //if (!early) raveweight=pow(-ravenum,-params->test_p30);
+          if (!early) raveweight=1.0/(-ravenum*params->test_p30+1);
           
           if ((*iter)->isPrimary())
           {
