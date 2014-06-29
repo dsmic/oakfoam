@@ -20,6 +20,8 @@ typedef struct
   float ownselfwhite;
   float ownblack;
   float ownwhite;
+  bool  isbadwhite; //marked if in one playout was bad, so that not many times with low prob lead to always move
+  bool  isbadblack; 
 } critstruct;
 
 /** Playouts. */

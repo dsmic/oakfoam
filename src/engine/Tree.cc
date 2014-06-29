@@ -616,6 +616,8 @@ float Tree::getUrgency(bool skiprave, Tree * robustchild) const
       }
       val+=(log(1000.0*this->getProgressiveBias()+1.0)+params->test_p49*this->getCriticality ()
             +tmp)*(params->test_p44/(pow(playouts_use,params->test_p51)+1.0));
+      if (params->debug_on)
+          fprintf(stderr,"                                                            CalcUrg val: %f criticality %f playouts_use %f\n",val,this->getCriticality(),playouts_use);
       //val+=(log(this->getProgressiveBias()+0.1)-log(0.1)+params->test_p49*this->getCriticality ())*(params->test_p44/(parent->getPlayouts()+1.0));
     }
   }
@@ -929,7 +931,8 @@ void Tree::unPruneNextChild()
         mean=sum/num;
     }
     //float unprune_select_p=(float)rand()/RAND_MAX;
-    float local_prob=(float)rand()/RAND_MAX;
+    float local_prob=0;
+    if (params->test_p23 > 0) local_prob=(float)rand()/RAND_MAX;
     for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
     {
       if ((*iter)->isPrimary() && !(*iter)->isSuperkoViolation())
@@ -1022,7 +1025,8 @@ void Tree::updateUnPruneAt()
   //float worstfactor=1e20;
   float sumunpruned=0;
   int   numunpruned=0;
-  float local_prob=(float)rand()/RAND_MAX;
+  float local_prob=0;
+  if (params->test_p23 > 0) local_prob=(float)rand()/RAND_MAX;
   if (params->test_p16>0 || params->test_p58>0)
   {
     for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
@@ -1971,6 +1975,25 @@ Tree *Tree::getBestRatioChild(float playoutthreshold) const
   return besttree;
 }
 
+Tree *Tree::getBestUrgencyChild(float playoutthreshold) const
+{
+  Tree *besttree=NULL;
+  float bestratio=0;
+  
+  for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
+  {
+    if (((*iter)->getRatio()>bestratio && (*iter)->getPlayouts()>playoutthreshold) || (*iter)->isTerminalWin())
+    {
+      besttree=(*iter);
+      bestratio=(*iter)->getUrgency();
+      if (besttree->isTerminalWin())
+        break;
+    }
+  }
+  
+  return besttree;
+}
+
 void Tree::updateCriticality(Go::Board *board, Go::Color wincol)
 {
   if (params->uct_criticality_unprune_factor==0 && params->uct_criticality_urgency_factor==0 && params->playout_poolrave_criticality==0)
@@ -2021,11 +2044,11 @@ void Tree::addCriticalityStats(bool winner, bool black, bool white)
     ownedwhite++;
 }
 
-float Tree::getSelfOwner() const
+float Tree::getSelfOwner(int size) const
 {
   if (!move.isNormal() || (params->uct_criticality_siblings && this->isRoot()))
     return 0;
-  fprintf(stderr, "%s %d ownercount %f ownselfblack %f ownotherblack %f ownselfwhite %f ownotherwhite %f ownnobody %f\n",move.toString(19).c_str(),move.getPosition(),ownercount,ownselfblack,ownotherblack,ownselfwhite,ownotherwhite,ownnobody);
+  fprintf(stderr, "%s %d ownercount %f ownselfblack %f ownotherblack %f ownselfwhite %f ownotherwhite %f ownnobody %f\n",move.toString(size).c_str(),move.getPosition(),ownercount,ownselfblack,ownotherblack,ownselfwhite,ownotherwhite,ownnobody);
   if (move.getColor()==Go::BLACK)
   {
     return ((float)ownselfblack+1)/(ownotherblack+1);
@@ -2038,11 +2061,11 @@ float Tree::getSelfOwner() const
 
 float Tree::getOwnSelfBlack()
 {
-  return ((float)ownselfblack+1)/(ownotherblack+1);
+  return ((float)ownselfblack)/(ownotherblack+0.1);
 }
 float Tree::getOwnSelfWhite()
 {
-  return ((float)ownselfwhite+1)/(ownotherwhite+1);
+  return ((float)ownselfwhite)/(ownotherwhite+0.1);
 }
 float Tree::getOwnRatio(Go::Color col)
 {

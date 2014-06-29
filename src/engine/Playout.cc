@@ -168,17 +168,22 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
 			      critarray[(*iter)->getMove().getPosition()].ownselfblack=(*iter)->getOwnSelfBlack();
 			      critarray[(*iter)->getMove().getPosition()].ownselfwhite=(*iter)->getOwnSelfWhite();
 			      critarray[(*iter)->getMove().getPosition()].ownblack=(*iter)->getOwnRatio(Go::BLACK);
-			      critarray[(*iter)->getMove().getPosition()].ownblack=(*iter)->getOwnRatio(Go::WHITE);
-			     /*
-             fprintf(stderr,"move %s %d crit %f ownblack %f ownwhite %f ownrationb %f ownrationw %f\n",
-                    (*iter)->getMove().toString(19).c_str(),(*iter)->getMove().getPosition(),
+			      critarray[(*iter)->getMove().getPosition()].ownwhite=(*iter)->getOwnRatio(Go::WHITE);
+            critarray[(*iter)->getMove().getPosition()].isbadblack=false;
+            critarray[(*iter)->getMove().getPosition()].isbadwhite=false;
+            
+            if (params->debug_on)
+            {
+              fprintf(stderr,"move %s %d crit %f ownblack %f ownwhite %f ownrationb %f ownrationw %f\n",
+                    (*iter)->getMove().toString(board->getSize()).c_str(),(*iter)->getMove().getPosition(),
                     critarray[(*iter)->getMove().getPosition()].crit,
                     critarray[(*iter)->getMove().getPosition()].ownselfblack,
                     critarray[(*iter)->getMove().getPosition()].ownselfwhite,
-                    (*iter)->getOwnRatio(Go::BLACK),
-                    (*iter)->getOwnRatio(Go::WHITE)
-                    );
-            */
+                    critarray[(*iter)->getMove().getPosition()].ownblack,
+                    critarray[(*iter)->getMove().getPosition()].ownwhite
+                      );
+            (*iter)->displayOwnerCounts();
+            }
             if ((*iter)->getMove().getColor()==Go::BLACK)
 				    {
 				      b_ravearray[(*iter)->getMove().getPosition()]=(*iter)->getRAVERatio();
@@ -357,7 +362,9 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
       if (params->playout_lgpf_enabled)
         movehashes5x5.push_back(Pattern::FiveByFiveBorder::makeHash(board,move.getPosition()));
     }
-    
+
+    if (params->debug_on)
+      fprintf(stderr,"playout makeMove %s\n",move.toString (board->getSize()).c_str()); 
     board->makeMove(move);
     playoutmoves.push_back(move);
     playoutmovescount++;
@@ -1205,7 +1212,9 @@ if (params->test_p4>0)
   for (int i=0;i<params->test_p4*(params->test_p36+1);i++)
   {
     int p_tmp=rand->getRandomInt(board->getPositionMax());
-    if (board->validMove(col,p_tmp)&& !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes, NULL, 0, critarray))
+    if (doapproachmoves)
+      this->replaceWithApproachMove(settings,board,col,p_tmp);
+    if (board->validMove(col,p_tmp)&& !this->isBadMove(settings,board,col,p_tmp,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes, NULL, 0, critarray))
     {
       float prob_tmp=params->engine->getProbabilityMoveAt(p_tmp);
       if (prob_tmp>prob)
@@ -1220,9 +1229,7 @@ if (params->test_p4>0)
   }
   if (p>=0)
   {
-    if (doapproachmoves)
-      this->replaceWithApproachMove(settings,board,col,p);
-    if (board->validMove(col,p) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes, NULL, 0, critarray))
+    //if (board->validMove(col,p) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes, NULL, 0, critarray))
     {
       move=Go::Move(col,p);
       move.set_useforlgrf (true);
@@ -1289,7 +1296,7 @@ if (params->playout_randomquick_bestcirc_n>0)
     }
   }
   
-  if (params->test_p4==0)
+  if (params->test_p4==0)  //improved ramdomness, if test_p4 used this should have the same effect
   {
     for (int i=0;i<10;i++)
     {
@@ -1332,17 +1339,25 @@ if (params->playout_randomquick_bestcirc_n>0)
     int r=rand->getRandomInt(possiblemovescount);
     move=Go::Move(col,possiblemoves[r]);
   }*/
-  
-  int r=rand->getRandomInt(board->getPositionMax());
-  int d=rand->getRandomInt(1)*2-1;
-  for (int p=0;p<board->getPositionMax();p++)
+
+  //const int directions[6]={-4,-2,-1,1,2,4}; //no even board sizes, therefore powers of 2 should be safe
+  //int d=directions[rand->getRandomInt(6)];
+  //int d=rand->getRandomInt(2)*2-1;
+
+  int rp_tmp=rand->getRandomInt(board->getPositionMax());
+  int NextPrime=board->getNextPrimePositionMax();
+  int d=rand->getRandomInt(NextPrime);
+  //fprintf(stderr,"d= %d rp= %d np= %d\n",d,d,NextPrime);
+  for (int p=0;p<NextPrime;p++)
   {
-    int rp=(r+p*d);
-    if (rp<0) rp+=board->getPositionMax();
-    if (rp>=board->getPositionMax()) rp-=board->getPositionMax();
-    if (doapproachmoves)
+    //int rp=(r+p*d);
+    rp_tmp+=d;
+    // only positive d here: if (rp<0) rp+=NextPrime;
+    if (rp_tmp>=NextPrime) rp_tmp-=NextPrime;
+    int rp=rp_tmp; // approach moves can change rp !!!! random wrong then!!!
+    if (rp<board->getPositionMax() && doapproachmoves)
       this->replaceWithApproachMove(settings,board,col,rp);
-    if (validmoves->get(rp) && !this->isBadMove(settings,board,col,rp,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes, NULL, 0, critarray))
+    if (rp<board->getPositionMax() && validmoves->get(rp) && !this->isBadMove(settings,board,col,rp,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes, NULL, 0, critarray))
     {
       move=Go::Move(col,rp);
       move.set_useforlgrf (true);
@@ -1358,12 +1373,15 @@ if (params->playout_randomquick_bestcirc_n>0)
   if (params->playout_fill_weak_eyes)
   {
     //filling weak eyes, if not selfatari and no other move was possible
-    for (int p=0;p<board->getPositionMax();p++)
+    for (int p=0;p<NextPrime;p++)
     {
-      int rp=(r+p*d);
-      if (rp<0) rp+=board->getPositionMax();
-      if (rp>=board->getPositionMax()) rp-=board->getPositionMax();
-      if (validmoves->get(rp) && !this->isEyeFillMove(board,col,rp))
+      //int rp=(r+p*d);
+      rp_tmp+=d;
+      // only positive d here: if (rp<0) rp+=NextPrime;
+      if (rp_tmp>=NextPrime) rp_tmp-=NextPrime;
+      int rp=rp_tmp; // approach moves can change rp !!!! random wrong then!!! (not here at the moment)
+    
+      if (rp<board->getPositionMax() && validmoves->get(rp) && !this->isEyeFillMove(board,col,rp))
       {
         move=Go::Move(col,rp);
         if (params->debug_on)
@@ -1395,24 +1413,27 @@ bool Playout::isBadMove(Worker::Settings *settings, Go::Board *board, Go::Color 
       || (lbpr_p > 0.0 && (passes>1 || rand->getRandomReal() < lbpr_p) && (board->getLastMove().isPass() && this->isBadPassAnswer(col,pos)))
       || (lbm_p > 0.0 && (rand->getRandomReal() < lbm_p) && this->hasLBM (col,pos)));
 
-  /*
-   if (critarray)
+  
+   if (params->debug_on && critarray)
   {
-    if (pos==228||pos==231)
-      fprintf(stderr,"%s %f %d ",Go::Move(col,pos).toString(19).c_str(),(col==Go::BLACK)?critarray[pos].ownselfblack:critarray[pos].ownselfwhite,isBad);
+    if (pos==22||pos==11)
+      fprintf(stderr,"%s %f %d ",Go::Move(col,pos).toString(board->getSize()).c_str(),(col==Go::BLACK)?critarray[pos].ownselfblack:critarray[pos].ownselfwhite,isBad);
   }
-*/
+
 
   //maybe one must take into account, the getOwnRatio(), simelar to criticality!!!
   
-  if (!isBad && params->test_p68>0 && critarray!=NULL 
+  if (critarray!=NULL && ((!isBad && params->test_p68>0
       && ((col==Go::BLACK)?critarray[pos].ownselfblack:critarray[pos].ownselfwhite)>0 
       && ((col==Go::BLACK)?critarray[pos].ownselfblack:critarray[pos].ownselfwhite)<params->test_p69
      // && ((col==Go::BLACK)?critarray[pos].ownratio:(1-critarray[pos].ownratio))>params->test_p69
       && rand->getRandomReal() > params->test_p68)
+      || ((col==Go::BLACK)?critarray[pos].isbadblack:critarray[pos].isbadwhite)))
+  {
     isBad=true;
-  /*
-   if (critarray && (pos==228||pos==231))
+    ((col==Go::BLACK)?critarray[pos].isbadblack:critarray[pos].isbadwhite)=true;
+  }
+   if (params->debug_on && critarray && (pos==22||pos==11))
   {
     fprintf(stderr,"after %d\n",isBad);
   //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1420,7 +1441,7 @@ bool Playout::isBadMove(Worker::Settings *settings, Go::Board *board, Go::Color 
   //  isBad=true;
   //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
   }
-*/
+
   
   if (isBad && params->debug_on)
     gtpe->getOutput()->printfDebug("[badmove triggered]: %s pass weakey %d selfatari %d\n",Go::Move(col,pos).toString(board->getSize()).c_str(),board->weakEye(col,pos,params->test_p5!=0),board->isSelfAtariOfSize(Go::Move(col,pos),params->playout_avoid_selfatari_size,params->playout_avoid_selfatari_complex));
@@ -2002,16 +2023,20 @@ void Playout::getLast2LibAtariMove(Worker::Settings *settings, Go::Board *board,
     });
   }
 
-  if (possiblemovescount>0 && (bestlevel>1 || WITH_P(params->test_p13)))
+  if (possiblemovescount>0 && (bestlevel>1 || WITH_P(params->test_p13)) && (bestlevel>2 || params->test_p71==0))
   {
     int i=rand->getRandomInt(possiblemovescount);
     if (!this->isBadMove(settings,board,col,possiblemoves[i]))
     {
       if (!board->isSelfAtari(Go::Move(col,possiblemoves[i])))
         move=Go::Move(col,possiblemoves[i]);
-      
+       //printf("\a");
        if (params->debug_on)
-          gtpe->getOutput()->printfDebug("2libok %s\n",move.toString(size).c_str());
+      {
+          gtpe->getOutput()->printfDebug("2libok %s %f\n",move.toString(size).c_str(),bestlevel);
+          if (bestlevel<3)
+            fprintf(stderr,"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+      }
       //board->isSelfAtariOfSize(Go::Move(col,possiblemoves[i]),params->playout_avoid_selfatari_size);
     }
   }
@@ -2041,7 +2066,7 @@ void Playout::getLastCaptureMove(Worker::Settings *settings, Go::Board *board, G
               //std::sort(adjacentgroups->begin(),adjacentgroups->end());
               //std::unique(adjacentgroups->begin(),adjacentgroups->end());
           }
-          for(Go::list_int::iterator iter=adjacentgroups->begin();iter!=adjacentgroups->end();++iter)
+          for(Go::list_int::iterator iter=adjacentgroups->begin();iter!=adjacentgroups->end();)
           {
             if (board->inGroup((*iter)))
             {
@@ -2059,12 +2084,60 @@ void Playout::getLastCaptureMove(Worker::Settings *settings, Go::Board *board, G
                   }
                 }
               }
+            iter++;
             }
             else
             {
-              Go::list_int::iterator tmp=iter;
-              --iter;
-              adjacentgroups->erase(tmp);
+              //Go::list_int::iterator tmp=iter;
+              //--iter;
+              iter=adjacentgroups->erase(iter);
+            }
+          }
+        }
+      }
+    });
+  }
+  if (params->test_p70>0 && board->getSecondLastMove().isNormal())
+  {
+    foreach_adjacent(board->getSecondLastMove().getPosition(),p,{
+      if (board->inGroup(p))
+      {
+        Go::Group *group=board->getGroup(p);
+        if (group!=NULL && group->inAtari())
+        {
+          Go::list_int *adjacentgroups=group->getAdjacentGroups();
+          if (adjacentgroups->size()>(unsigned int)board->getPositionMax())
+          {
+              adjacentgroups->sort();
+              adjacentgroups->unique();
+              //std::sort(adjacentgroups->begin(),adjacentgroups->end());
+              //std::unique(adjacentgroups->begin(),adjacentgroups->end());
+          }
+          for(Go::list_int::iterator iter=adjacentgroups->begin();iter!=adjacentgroups->end();)
+          {
+            if (board->inGroup((*iter)))
+            {
+              Go::Group *othergroup=board->getGroup((*iter));
+              if (othergroup->inAtari())
+              {
+                int liberty=othergroup->getAtariPosition();
+                bool iscaptureorconnect=board->isCapture(Go::Move(col,liberty)) || board->isExtension(Go::Move(col,liberty)); // Why is the check for capture here?
+                if (board->validMove(col,liberty) && iscaptureorconnect)
+                {
+                  if (possiblemovescount<board->getPositionMax())
+                  {
+                    possiblemoves[possiblemovescount]=liberty;
+                    possiblemovescount++;
+                  }
+                }
+              }
+            iter++;
+            }
+            else
+            {
+              //Go::list_int::iterator tmp=iter;
+              //--iter;
+              iter=adjacentgroups->erase(iter);
             }
           }
         }
@@ -2124,7 +2197,7 @@ void Playout::getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go:
                 //std::sort(adjacentgroups->begin(),adjacentgroups->end());
                 //std::unique(adjacentgroups->begin(),adjacentgroups->end());
               }
-              for(Go::list_int::iterator iter=adjacentgroups->begin();iter!=adjacentgroups->end();++iter)
+              for(Go::list_int::iterator iter=adjacentgroups->begin();iter!=adjacentgroups->end();)
               {
                 if (board->inGroup((*iter)))
                 {
@@ -2146,12 +2219,13 @@ void Playout::getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go:
                       }
                     }
                   }
+                iter++;
                 }
                 else
                 {
-                  Go::list_int::iterator tmp=iter;
-                  --iter;
-                  adjacentgroups->erase(tmp);
+                  //Go::list_int::iterator tmp=iter;
+                  //--iter;
+                  iter=adjacentgroups->erase(iter);
                 }
               }
             }
@@ -2759,18 +2833,40 @@ float Playout::getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group
         if (stopsconnection)
         {
           if (params->debug_on)
-            gtpe->getOutput()->printfDebug("lib2 value 9 + touching empty %d\n",board->touchingEmpty(move.getPosition()));
-          return board->touchingEmpty(move.getPosition())+9+params->test_p9*group->numOfStones();
+            gtpe->getOutput()->printfDebug("lib2 value 11 + touching empty %d\n",board->touchingEmpty(move.getPosition()));
+          return board->touchingEmpty(move.getPosition())+11+params->test_p9*group->numOfStones();
         }
         else
         {
           if (params->debug_on)
-            gtpe->getOutput()->printfDebug("lib2 value 5 + touching empty %d avoid_atari %d\n",board->touchingEmpty(move.getPosition()),one_stone_atari_avoid);
-          return board->touchingEmpty(move.getPosition())+5+params->test_p9*group->numOfStones()+((one_stone_atari_avoid)?params->test_p12:0);
+            gtpe->getOutput()->printfDebug("lib2 value 7 + touching empty %d avoid_atari %d\n",board->touchingEmpty(move.getPosition()),one_stone_atari_avoid);
+          return board->touchingEmpty(move.getPosition())+7+params->test_p9*group->numOfStones()+((one_stone_atari_avoid)?params->test_p12:0);
         }
       }
       else if (group->numOfStones()>1)
-        return board->touchingEmpty(move.getPosition())+1+params->test_p9*group->numOfStones();
+      {
+        bool doesconnection=false;
+        int size=board->getSize();
+        if (params->test_p71>0 && board->touchingEmpty(move.getPosition())<2)
+        {
+          foreach_adjacent(move.getPosition(),p,{
+            if (board->getColor(p)==move.getColor())
+            {
+              Go::Group *othergroup=board->getGroup(p);
+              if (params->debug_on)
+                gtpe->getOutput()->printfDebug("othergroup %p group %p  othergroup!=group %d inAtari %d number of stones %d pseudoliberties %d\n",othergroup,group,othergroup!=group,othergroup->inAtari(),othergroup->numOfStones(),board->getPseudoLiberties(p));
+              if (params->debug_on)
+                gtpe->getOutput()->printfDebug("group %s othergroup %s\n",
+                      Go::Move(group->getColor(),group->getPosition()).toString(19).c_str(),
+                      Go::Move(othergroup->getColor(),othergroup->getPosition()).toString(19).c_str());
+              //stops connection between groups of the same color
+              if (othergroup!=group && !othergroup->inAtari() && group->getColor()==othergroup->getColor())
+                doesconnection=true;
+            }
+          });
+        }
+        return board->touchingEmpty(move.getPosition())+1+((doesconnection)?2:0)+params->test_p9*group->numOfStones();
+      }
       else
         return 0;
     }

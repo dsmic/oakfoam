@@ -155,7 +155,7 @@ void Go::Group::addTouchingEmpties()
   });
 }
 
-inline bool Go::Group::isOneOfTwoLiberties(int pos) const
+bool Go::Group::isOneOfTwoLiberties(int pos) const
 {
   if (pseudoliberties>8 || this->inAtari())
     return false;
@@ -178,7 +178,7 @@ inline bool Go::Group::isOneOfTwoLiberties(int pos) const
 }
 
 
-inline int Go::Group::getOtherOneOfTwoLiberties(int pos) const
+int Go::Group::getOtherOneOfTwoLiberties(int pos) const
 {
   if (pseudoliberties>8 || this->inAtari())
     return -1;
@@ -209,6 +209,8 @@ Go::Board::Board(int s)
     sizedata(1+(s+1)*(s+2)),
     data(new Go::Vertex[sizedata])
 {
+  const int nextprimes[26]={3,7,13,23,31,43,59,73,97,113,137,157,191,211,241,277,307,347,383,421,463,509,557,601,653,709};
+  nextprime=nextprimes[s];
   markchanges=false;
   lastchanges=new Go::BitBoard(size);
   lastcapture=false;
@@ -696,6 +698,8 @@ void Go::Board::makeMove(Go::Move move, Gtp::Engine* gtpe)
       
       thisgroup->getAdjacentGroups()->push_back(p);
       othergroup->getAdjacentGroups()->push_back(pos);
+      //thisgroup->getAdjacentGroups()->insert(p);
+      //othergroup->getAdjacentGroups()->insert(pos);
       
       if (othergroup->numOfPseudoLiberties()==0)
       {
@@ -908,6 +912,7 @@ void Go::Board::refreshGroups()
         {
           //Go::Group *othergroup=this->getGroup(q);
           group->getAdjacentGroups()->push_back(q);
+          //group->getAdjacentGroups()->insert(q);
           //othergroup->getAdjacentGroups()->push_back(p);
         }
       });
@@ -942,18 +947,18 @@ int Go::Board::removeGroup(Go::Group *group)
   
   groups.erase(group);
   
-  list_int *possiblesuicides = new list_int();
+  list_int possiblesuicides;//*possiblesuicides = new list_int();
   
-  this->spreadRemoveStones(groupcol,pos,possiblesuicides);
+  this->spreadRemoveStones(groupcol,pos,&possiblesuicides);
   
-  for(list_int::iterator iter=possiblesuicides->begin();iter!=possiblesuicides->end();++iter)
+  for(list_int::iterator iter=possiblesuicides.begin();iter!=possiblesuicides.end();++iter)
   {
     if (!this->validMoveCheck(groupcol,(*iter))) 
       this->removeValidMove(groupcol,(*iter));
   }
   
 //  possiblesuicides->resize(0);  //what's the idea of this??
-  delete possiblesuicides;
+  //delete possiblesuicides;
   
   return s;
 }
@@ -983,6 +988,7 @@ void Go::Board::spreadRemoveStones(Go::Color col, int pos, list_int *possiblesui
         int liberty=othergroup->getAtariPosition();
         this->addValidMove(othercol,liberty);
         possiblesuicides->push_back(liberty);
+        //possiblesuicides->insert(liberty);
       }
       othergroup->addPseudoLiberty(pos);
       // not here: othergroup->addPseudoEnd();
@@ -1688,7 +1694,7 @@ void Go::Board::updateFeatureGamma(Go::ObjectBoard<int> *cfglastdist, Go::Object
   (col==Go::BLACK?blacktotalgamma:whitetotalgamma)+=(gamma-oldgamma);
 }
 
-bool Go::Board::isCapture(Go::Move move) const
+/*bool Go::Board::isCapture(Go::Move move) const
 {
   Go::Color col=move.getColor();
   int pos=move.getPosition();
@@ -1703,6 +1709,7 @@ bool Go::Board::isCapture(Go::Move move) const
   });
   return false;
 }
+*/
 
 bool Go::Board::isExtension(Go::Move move) const
 {
@@ -1845,7 +1852,8 @@ bool Go::Board::isExtension2lib(Go::Move move,bool checkother) const
 //  return this->isSelfAtariOfSize(move,0);
 //}
 
-bool Go::Board::isSelfAtariOfSize(Go::Move move, int minsize, bool complex) const
+/*
+ inline bool Go::Board::isSelfAtariOfSize(Go::Move move, int minsize, bool complex) const
 {
   Go::Color col=move.getColor();
   int pos=move.getPosition();
@@ -1938,10 +1946,10 @@ bool Go::Board::isSelfAtariOfSize(Go::Move move, int minsize, bool complex) cons
     if (groupsize==5 && pseudoends!=10)
       return true; //do only play XXX
                    //             XX   form
-    /*
-     * 
-     * bent 4 handling in the corner not ok     
-    */ 
+    ///
+    //  
+    //  bent 4 handling in the corner not ok     
+    // 
     //fprintf(stderr,"debug boardsize must be 9 selfatari 4 or 5 at %s with attached %s\n",move.toString (9).c_str(),Go::Position::pos2string(attach_group_pos,9).c_str());
     if (groupsize==4)
     {
@@ -1966,6 +1974,7 @@ bool Go::Board::isSelfAtariOfSize(Go::Move move, int minsize, bool complex) cons
     return false;
   }
 }
+*/
 
 bool Go::Board::isAtari(Go::Move move, int *groupsize) const
 {
@@ -2024,7 +2033,8 @@ int Go::Board::getMaxDistance(int pos1, int pos2) const
   return Go::maxDist(x1,y1,x2,y2);
 }
 
-int Go::Board::getPseudoDistanceToBorder(int pos) const
+/*
+ int Go::Board::getPseudoDistanceToBorder(int pos) const
 {
   int x=Go::Position::pos2x(pos,size);
   int y=Go::Position::pos2y(pos,size);
@@ -2040,7 +2050,7 @@ int Go::Board::getPseudoDistanceToBorder(int pos) const
   
   return distx+disty;
 }
-
+*/
 int Go::Board::getCircularDistance(int pos1, int pos2) const
 {
   int x1=Go::Position::pos2x(pos1,size);

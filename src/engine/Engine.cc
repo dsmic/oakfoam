@@ -199,6 +199,17 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","test_p67",&(params->test_p67),0.0);
   params->addParameter("playout","test_p68",&(params->test_p68),0.0);
   params->addParameter("playout","test_p69",&(params->test_p69),1.0);
+
+  params->addParameter("playout","test_p70",&(params->test_p70),0.0);
+  params->addParameter("playout","test_p71",&(params->test_p71),0.0);
+  params->addParameter("playout","test_p72",&(params->test_p72),0.0);
+  params->addParameter("playout","test_p73",&(params->test_p73),0.0);
+  params->addParameter("playout","test_p74",&(params->test_p74),0.0);
+  params->addParameter("playout","test_p75",&(params->test_p75),0.0);
+  params->addParameter("playout","test_p76",&(params->test_p76),0.0);
+  params->addParameter("playout","test_p77",&(params->test_p77),0.0);
+  params->addParameter("playout","test_p78",&(params->test_p78),0.0);
+  params->addParameter("playout","test_p79",&(params->test_p79),0.0);
   
   params->addParameter("tree","ucb_c",&(params->ucb_c),UCB_C);
   params->addParameter("tree","ucb_init",&(params->ucb_init),UCB_INIT);
@@ -1325,7 +1336,7 @@ void Engine::gtpShowOwnRatios(void *instance, Gtp::Engine* gtpe, Gtp::Command* c
       Tree *tree=me->movetree->getChild(move);
       if (tree!=NULL)
       {
-        float ratio=tree->getSelfOwner();
+        float ratio=tree->getSelfOwner(me->boardsize);
         gtpe->getOutput()->printf("\"%.2f\"",ratio);
       }
       else
@@ -5065,6 +5076,9 @@ void Engine::doPlayout(Worker::Settings *settings, Go::IntBoard *firstlist, Go::
   //  secondlist=new Go::BitBoard(boardsize);
   
   Go::Board *playoutboard=currentboard->copy();
+  //Go::Board *playoutboard=pool_board.construct(currentboard->getSize());
+  //currentboard->copyOver(playoutboard);
+
   playoutboard->turnSymmetryOff();
   if (params->playout_features_enabled>0)
     playoutboard->setFeatures(features,params->playout_features_incremental,params->test_p8==0);
@@ -5169,10 +5183,13 @@ void Engine::doPlayout(Worker::Settings *settings, Go::IntBoard *firstlist, Go::
         playouttree->updateRAVE(wincol,firstlist,secondlist,false,playoutboard);
       else
         playouttree->updateRAVE(wincol,secondlist,firstlist,false,playoutboard);
-      if (col==Go::BLACK)
-        playouttree->updateRAVE(wincol,earlyfirstlist,earlysecondlist,true,NULL);
-      else
-        playouttree->updateRAVE(wincol,earlysecondlist,earlyfirstlist,true,NULL);
+      if (params->uct_earlyrave_unprune_factor>0)
+      {
+        if (col==Go::BLACK)
+          playouttree->updateRAVE(wincol,earlyfirstlist,earlysecondlist,true,NULL);
+        else
+          playouttree->updateRAVE(wincol,earlysecondlist,earlyfirstlist,true,NULL);
+      }
     }
   }
   
@@ -5204,6 +5221,7 @@ void Engine::doPlayout(Worker::Settings *settings, Go::IntBoard *firstlist, Go::
           ss << " (rm:" << Go::Position::pos2string(robustmove->getMove().getPosition(),boardsize);
           ss << " r:" << std::setprecision(2)<<robustmove->getRatio();
           ss << " r2:" << std::setprecision(2)<<robustmove->secondBestPlayoutRatio();
+          ss << " p:" << std::setprecision(2)<<robustmove->getPlayouts();
           ss << ")";
           Tree *bestratio=movetree->getBestRatioChild(10);
           if (bestratio!=NULL)
@@ -5214,6 +5232,22 @@ void Engine::doPlayout(Worker::Settings *settings, Go::IntBoard *firstlist, Go::
             {
               ss << " (br:" << Go::Position::pos2string(bestratio->getMove().getPosition(),boardsize);
               ss << " r:" << std::setprecision(2)<<bestratio->getRatio();
+              ss << " u:" << std::setprecision(2)<<bestratio->getUrgency();
+              ss << " p:" << std::setprecision(2)<<bestratio->getPlayouts();
+              ss << ")";
+            }
+          }
+          Tree *bestcrit=movetree->getBestUrgencyChild(10);
+          if (bestratio!=NULL)
+          {
+            if (robustmove==bestratio)
+              ss << " (same)";
+            else
+            {
+              ss << " (bu:" << Go::Position::pos2string(bestcrit->getMove().getPosition(),boardsize);
+              ss << " r:" << std::setprecision(2)<<bestcrit->getRatio();
+              ss << " u:" << std::setprecision(2)<<bestcrit->getUrgency();
+              ss << " p:" << std::setprecision(2)<<bestcrit->getPlayouts();
               ss << ")";
             }
           }
@@ -5223,8 +5257,9 @@ void Engine::doPlayout(Worker::Settings *settings, Go::IntBoard *firstlist, Go::
       }
     }
   }
-  
+
   delete playoutboard;
+  //pool_board.destroy(playoutboard);
   
   //if (!givenfirstlist)
   //  delete firstlist;
@@ -5562,7 +5597,7 @@ void Engine::generateThread(Worker::Settings *settings)
   Go::IntBoard *secondlist=new Go::IntBoard(boardsize);
   Go::IntBoard *earlyfirstlist=new Go::IntBoard(boardsize);
   Go::IntBoard *earlysecondlist=new Go::IntBoard(boardsize);
-  
+
   while ((totalplayouts=(long)(movetree->getPlayouts()-params->uct_initial_playouts))<(params->playouts_per_move_max))
   {
     if (totalplayouts>=(params->playouts_per_move) && time_allocated==0)

@@ -560,7 +560,7 @@ namespace Go
       /** Add the orthogonally adjacent empty pseudo liberties. */
       inline void addTouchingEmpties();
       /** Determine if given position is one of the last two liberties. */
-      bool isOneOfTwoLiberties(int pos) const;
+      bool isOneOfTwoLiberties(int pos) const __attribute__((hot));
       /** Get the other of the last two liberties.
        * If the group doesn't have two liberties, -1 is returned.
        */
@@ -614,6 +614,7 @@ namespace Go
       /** Create a board of given size. */
       Board(int s);
       ~Board();
+      int getNextPrimePositionMax() {return nextprime;}
       
       /** Create a copy of this board. */
       Go::Board *copy() const;
@@ -759,14 +760,148 @@ namespace Go
       static std::list<Go::Board::SymmetryTransform> getSymmetryTransformsFromPrimaryStatic(Go::Board::Symmetry sym);
       
       /** Determine is the given move is a capture. */
-      bool isCapture(Go::Move move) const;
+      inline bool isCapture(Go::Move move) const
+      {
+        Go::Color col=move.getColor();
+        int pos=move.getPosition();
+        foreach_adjacent(pos,p,{
+          if (this->inGroup(p) && col!=this->getColor(p))
+          {
+            Go::Group *group=this->getGroup(p);
+            if (//col!=group->getColor() && 
+                group->inAtari())
+              return true;
+          }
+        });
+        return false;
+      };
       /** Determine is the given move is an extension. */
       bool isExtension(Go::Move move) const;
       bool isExtension2lib(Go::Move move, bool checkother=true) const;
       /** Determine is the given move is a self-atari. */
-      bool isSelfAtari(Go::Move move) const {return this->isSelfAtariOfSize(move,0);};
+      inline bool isSelfAtari(Go::Move move) const {return this->isSelfAtariOfSize(move,0);};
       /** Determine is the given move is a self-atari of a group of a minimum size. */
-      bool isSelfAtariOfSize(Go::Move move, int minsize=0, bool complex=false) const;
+      inline bool isSelfAtariOfSize(Go::Move move, int minsize=0, bool complex=false) const
+{
+  Go::Color col=move.getColor();
+  int pos=move.getPosition();
+
+  if (this->touchingEmpty(pos)>1 || this->isCapture(move))
+    return false;
+
+  int libpos=-1;
+  int groupsize=1;
+  int groupbent4indicator=this->getPseudoDistanceToBorder(pos);
+  Go::Group *groups_used[4];
+  int groups_used_num=0;
+  int usedneighbours=0;
+  int attach_group_pos=-1;
+  int capturedstones=0;
+  foreach_adjacent(pos,p,{
+    if (this->inGroup(p))
+    {
+      Go::Group *group=this->getGroup(p);
+      if (col==group->getColor())
+      {
+        if (!(group->inAtari() || group->isOneOfTwoLiberties(pos)))
+          return false; // attached group has more than two libs
+        attach_group_pos=p;
+        usedneighbours++;
+        bool found=false;
+        for (int i=0;i<groups_used_num;i++)
+        {
+          if (groups_used[i]==group)
+          {
+            found=true;
+            break;
+          }
+        }
+        if (!found)
+        {
+          groups_used[groups_used_num]=group;
+          groups_used_num++;
+          int otherlib=group->getOtherOneOfTwoLiberties(pos);
+          //fprintf(stderr,"otherlib %d\n",otherlib);
+          if (otherlib!=-1)
+          {
+            if (libpos==-1)
+              libpos=otherlib;
+            else if (libpos!=otherlib)
+              return false; // at least 2 libs
+          }
+          groupsize+=group->numOfStones();
+          groupbent4indicator+=group->numOfPseudoBorderDist();
+          //fprintf(stderr,"groupsize now %d %d\n",groupsize,groupbent4indicator);
+        }
+      }
+      else
+      {
+        //more than on stone is captured, so not self atari
+        if (group->inAtari())
+          capturedstones+=group->numOfStones();
+        if (capturedstones>1)
+        {
+          //fprintf(stderr,"group catched of size more than 1\n");
+          return false;
+        }
+      }
+    }
+    else if (this->getColor(p)==Go::EMPTY)
+    {
+      if (libpos==-1)
+        libpos=p;
+      else if (libpos!=p)
+        return false; // at least 2 libs
+    }
+  });
+  
+  if (groupsize>minsize)
+    return true;
+  else
+  {
+    if (!complex)
+      return false;
+    //complex
+    if (groupsize<4) return false; //no complex handling necessary
+    int pseudoends=4-usedneighbours-usedneighbours;
+    for (int i=0;i<groups_used_num;i++)
+    {
+        pseudoends+=groups_used[i]->numOfPseudoEnds();
+        //fprintf(stderr,"-- %d\n",groups_used[i]->numOfPseudoEnds());
+    }
+    //now we know the pseudoends of the group and can check if it is a good or bad form
+    //fprintf(stderr,"complex self atari checked stones %d pseudoends %d bent4indicator %d\n",groupsize,pseudoends,groupbent4indicator);
+    if (groupsize==5 && pseudoends!=10)
+      return true; //do only play XXX
+                   //             XX   form
+    ///
+    //  
+    //  bent 4 handling in the corner not ok     
+    // 
+    //fprintf(stderr,"debug boardsize must be 9 selfatari 4 or 5 at %s with attached %s\n",move.toString (9).c_str(),Go::Position::pos2string(attach_group_pos,9).c_str());
+    if (groupsize==4)
+    {
+      //here allow play of bent 4 in the corner
+      if (groupbent4indicator==4)
+        return false; //this is bent 4 in the corner or   
+                      // XX
+                      // XX in the corner, which is ok too
+      if (attach_group_pos>=0) 
+      {
+        int nattached=0;
+        foreach_adjacent(attach_group_pos,p,{
+          if (this->getColor(p)==col)
+            nattached++;
+        });
+        if (nattached!=2 && pseudoends!=8)
+          return true; //do only play XX   XXX
+                       //             XX    X
+      }
+     }
+                                          
+    return false;
+  }
+};
       /** Determine is the given move is an atari. */
       bool isAtari(Go::Move move, int *groupsize=NULL) const;
       /** Get the distance from the given position to the board edge. */
@@ -774,7 +909,22 @@ namespace Go
       /** Get the manhattan distance between two positions. */
       int getMaxDistance(int pos1, int pos2) const;
       int getRectDistance(int pos1, int pos2) const;
-      int getPseudoDistanceToBorder(int pos) const;
+      inline int getPseudoDistanceToBorder(int pos) const
+      {
+        int x=Go::Position::pos2x(pos,size);
+        int y=Go::Position::pos2y(pos,size);
+        int ix=(size-x-1);
+        int iy=(size-y-1);
+        
+        int distx=x;
+        int disty=y;
+        if (ix<distx)
+          distx=ix;
+        if (iy<disty)
+          disty=iy;
+        
+        return distx+disty;
+      };
       /** Get the circular distance between two positions. */
       int getCircularDistance(int pos1, int pos2) const;
       /** Get the CFG distances from the given position. */
@@ -824,6 +974,7 @@ namespace Go
       const int size;
       const int sizesq;
       const int sizedata;
+      int nextprime;
       Go::Vertex *const data;
       std::ourset<Go::Group*> groups;
       int movesmade,passesplayed;

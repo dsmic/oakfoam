@@ -235,6 +235,7 @@ class Tree
     Tree *getUrgentChild(Worker::Settings *settings);
     /** Get the child with the best ratio. */
     Tree *getBestRatioChild(float playoutthreshold=0) const;
+    Tree *getBestUrgencyChild(float playoutthreshold=0) const;
     /** Update RAVE values for the path from this node to the root of the tree. */
     void updateRAVE(Go::Color wincol,Go::IntBoard *blacklist,Go::IntBoard *whitelist,bool early, Go::Board *scoredboard);
     /** Prune any superko violations. */
@@ -277,8 +278,9 @@ class Tree
     float getOwnSelfWhite();
     float getOwnSelfBlack();
     float getOwnRatio(Go::Color col=Go::BLACK);
+    void displayOwnerCounts() {fprintf(stderr,"ownselfblack %f,ownselfwhite %f,ownotherblack %f,ownotherwhite %f,ownnobody %f,ownblack %f,ownwhite %f,ownercount %f\n",ownselfblack,ownselfwhite,ownotherblack,ownotherwhite,ownnobody,ownblack,ownwhite,ownercount);};
     float getCriticality() const;
-    float getSelfOwner() const;
+    float getSelfOwner(int size) const;
     float ownselfblack,ownselfwhite,ownotherblack,ownotherwhite,ownnobody,ownblack,ownwhite,ownercount;
     
     /** Get the territory owner statistics for this node. */

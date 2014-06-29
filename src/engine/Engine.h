@@ -405,6 +405,7 @@ class Engine
     }
     
   private:
+    //boost::object_pool<Go::Board> pool_board;
     Gtp::Engine *gtpe;
     std::string longname;
     Go::Board *currentboard;
