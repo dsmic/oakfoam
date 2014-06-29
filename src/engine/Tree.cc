@@ -1706,7 +1706,8 @@ void Tree::updateRAVE(Go::Color wincol,Go::IntBoard *blacklist,Go::IntBoard *whi
         int ravenum=(col==Go::BLACK?blacklist:whitelist)->get(pos);
         if (scoredboard!=NULL)
         {
-          //fprintf(stderr, "%s ScoredOwner %d black %d white %d\n",move.toString(9).c_str(),scoredboard->getScoredOwner(pos),blacklist->get(pos),whitelist->get(pos));
+          if (params->debug_on)
+            fprintf(stderr, "%s ScoredOwner %s black %d white %d nonlocalblack %d nonlocalwhite %d\n",(*iter)->getMove().toString(scoredboard->getSize()).c_str(),Go::getColorName(scoredboard->getScoredOwner(pos)),blacklist->get(pos),whitelist->get(pos),blacklist->getb(pos),whitelist->getb(pos));
           if (scoredboard->getScoredOwner(pos)==Go::BLACK && blacklist->get(pos)!=0 && blacklist->getb(pos)) (*iter)->ownselfblack++;
           if (scoredboard->getScoredOwner(pos)==Go::WHITE && whitelist->get(pos)!=0 && whitelist->getb(pos)) (*iter)->ownselfwhite++;
           if (scoredboard->getScoredOwner(pos)==Go::WHITE && blacklist->get(pos)!=0 && blacklist->getb(pos)) (*iter)->ownotherblack++;
@@ -1802,6 +1803,7 @@ void Tree::updateRAVE(Go::Color wincol,Go::IntBoard *blacklist,Go::IntBoard *whi
       }
     }
   }
+  else if (params->debug_on) fprintf(stderr,"%s\n",scoredboard->toString().c_str());
 }
 
 float Tree::getProgressiveBias() const
@@ -2061,11 +2063,11 @@ float Tree::getSelfOwner(int size) const
 
 float Tree::getOwnSelfBlack()
 {
-  return ((float)ownselfblack)/(ownotherblack+0.1);
+  return ((float)ownselfblack+1)/(ownotherblack+1);
 }
 float Tree::getOwnSelfWhite()
 {
-  return ((float)ownselfwhite)/(ownotherwhite+0.1);
+  return ((float)ownselfwhite+1)/(ownotherwhite+1);
 }
 float Tree::getOwnRatio(Go::Color col)
 {

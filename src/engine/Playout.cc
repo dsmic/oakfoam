@@ -364,7 +364,7 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
     }
 
     if (params->debug_on)
-      fprintf(stderr,"playout makeMove %s\n",move.toString (board->getSize()).c_str()); 
+      fprintf(stderr,"playout makeMove %s playoutmovescount %d nonlocal %d\n",move.toString (board->getSize()).c_str(),playoutmovescount,nonlocalmove); 
     board->makeMove(move);
     playoutmoves.push_back(move);
     playoutmovescount++;
@@ -377,12 +377,16 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
     int p=move.getPosition();
     if ((coltomove==colfirst?firstlist:secondlist)!=NULL && !move.isPass() && !move.isResign())
     {
-      if ((params->test_p2==0 || (coltomove!=colfirst?firstlist:secondlist)->get(p)==0) && (params->test_p46!=0 || nonlocalmove))
+      if ((params->test_p2==0 || ((coltomove==colfirst)?firstlist:secondlist)->get(p)==0))
       {
+        if (params->debug_on) 
+          fprintf(stderr,"set called %s test_p2 %f get(p) %d\n",Go::getColorName(coltomove),params->test_p2,((coltomove==colfirst)?firstlist:secondlist)->get(p));
         //if (p==228 || p==231) fprintf(stderr,"add a move %s %d\n",Go::Move(coltomove,p).toString(19).c_str(),nonlocalmove);
-        (coltomove==colfirst?firstlist:secondlist)->set(p,playoutmovescount,nonlocalmove);
-        if ((coltomove==colfirst?earlyfirstlist:earlysecondlist)!=NULL && params->rave_moves_use>0 && playoutmovescount < (board->getSize()*board->getSize()-treemovescount)*params->rave_moves_use)
-          (coltomove==colfirst?earlyfirstlist:earlysecondlist)->set(p);
+        ((coltomove==colfirst)?firstlist:secondlist)->set(p,playoutmovescount,nonlocalmove);
+        if (params->debug_on) 
+          fprintf(stderr,"after set %s test_p2 %f get(p) %d\n",Go::getColorName(coltomove),params->test_p2,((coltomove==colfirst)?firstlist:secondlist)->get(p));
+        if (((coltomove==colfirst)?earlyfirstlist:earlysecondlist)!=NULL && params->rave_moves_use>0 && playoutmovescount < (board->getSize()*board->getSize()-treemovescount)*params->rave_moves_use)
+          ((coltomove==colfirst)?earlyfirstlist:earlysecondlist)->set(p);
       }
     }
     resign=move.isResign();
@@ -877,7 +881,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
   }
 
 
-  if (nonlocalmove) *nonlocalmove=true;
+  if (nonlocalmove!=NULL) *nonlocalmove=true;
   
   //fprintf(stderr,"should be nonlocal\n");
   

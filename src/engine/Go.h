@@ -164,7 +164,8 @@ namespace Go
     else
       return dx+dy+dy;
   };
-  
+  inline const char *getColorName(Go::Color col) {if (col==Go::EMPTY) return "empty"; if (col==Go::WHITE) return "white"; if (col==Go::BLACK) return "black"; return "offboard";};
+      
   /** Go-related Exceptions.
    * For exceptions such as an illegal move being attempted.
    */
@@ -333,7 +334,6 @@ namespace Go
         if (type==NORMAL)
           throw Go::Exception("invalid type");
       };
-      
       /** Get the color of this move. */
       inline Go::Color getColor() const {return color;};
       /** Get the position of this move. */
