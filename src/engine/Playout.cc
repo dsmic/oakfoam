@@ -72,12 +72,13 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
   std::list<unsigned long> movehashes5x5;
 
   params->engine->ProbabilityClean();
-  
-  if (board->getPassesPlayed()>=2)
-  {
-    finalscore=board->score(params)-params->engine->getScoreKomi();
-    return;
-  }
+
+  // can not score board if not played out with playout rules
+  //if (board->getPassesPlayed()>=2)
+  //{
+  //  finalscore=board->score(params)-params->engine->getScoreKomi();
+  //  return;
+  //}
   int treemovescount=0;
   board->turnSymmetryOff();
   
@@ -106,7 +107,10 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
           ((*iter).getColor()==colfirst?earlyfirstlist:earlysecondlist)->set((*iter).getPosition());
       }
     }
-    if (board->getPassesPlayed()>=2 || (*iter).isResign())
+    // can not score board if not played out with playout rules
+    // no idea when isResign should happen here?!
+    if ( //board->getPassesPlayed()>=2 || 
+        (*iter).isResign())
     {
       if (params->debug_on)
         gtpe->getOutput()->printfDebug("\n");
@@ -337,6 +341,8 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
 
   float trylocal_p=1.0;
   bool earlymoves=true;
+
+  board->resetPassesPlayed(); // if the tree plays two passes it is not guaranteed, that score can count the result!!!
   while (board->getPassesPlayed()<2 || kodelay>0)
   {
     bool resign;

@@ -5174,7 +5174,8 @@ void Engine::doPlayout(Worker::Settings *settings, Go::IntBoard *firstlist, Go::
   
   if (params->rave_moves>0)
   {
-    if (!playoutjigo) // ignore jigos for RAVE
+    //this can not be ignored for the critarray structures
+    //if (!playoutjigo) // ignore jigos for RAVE
     {
       bool blackwin=Go::Board::isWinForColor(Go::BLACK,finalscore);
       Go::Color wincol=(blackwin?Go::BLACK:Go::WHITE);
