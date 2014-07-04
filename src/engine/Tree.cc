@@ -1297,11 +1297,19 @@ Tree *Tree::getRobustChild(bool descend) const
     return besttree->getRobustChild(descend);
 }
 
+bool Tree::compare_UrgentNodes(UrgentNode &u1,UrgentNode &u2)
+  {
+    return u1.urgency>u2.urgency;  //should result in biggest first
+  }
+  
 Tree *Tree::getUrgentChild(Worker::Settings *settings)
 {
+  
   float besturgency=0;
   Tree *besttree=NULL;
-
+  UrgentNode urgenttmp;
+  std::list <UrgentNode> urgentlist;
+  
   bool skiprave=false;
   if (params->rave_skip>0 && (params->rave_skip)>(settings->rand->getRandomReal()))
     skiprave=true;
@@ -1324,9 +1332,17 @@ Tree *Tree::getUrgentChild(Worker::Settings *settings)
         urgency=(*iter)->getUrgency(skiprave,robustchild);
         if (params->random_f>0)
           urgency-=params->random_f*log(settings->rand->getRandomReal());
-        if (params->debug_on)
-          fprintf(stderr,"[urg]:%s %.3f %.2f(%f) %.2f(%f)\n",(*iter)->getMove().toString(params->board_size).c_str(),urgency,(*iter)->getRatio(),(*iter)->getPlayouts(),(*iter)->getRAVERatio(),(*iter)->getRAVEPlayouts());
       }
+      if (params->test_p74>0)
+      {
+        urgenttmp.urgency=urgency;
+        urgenttmp.node=(*iter);
+        urgenttmp.playouts=(*iter)->getPlayouts();
+        urgentlist.push_back(urgenttmp);
+      }
+      
+      if (params->debug_on)
+        fprintf(stderr,"[urg]:%s %.3f %.2f(%f) %.2f(%f)\n",(*iter)->getMove().toString(params->board_size).c_str(),urgency,(*iter)->getRatio(),(*iter)->getPlayouts(),(*iter)->getRAVERatio(),(*iter)->getRAVEPlayouts());
           
       if (urgency>besturgency || besttree==NULL)
       {
@@ -1334,6 +1350,22 @@ Tree *Tree::getUrgentChild(Worker::Settings *settings)
         besturgency=urgency;
       }
     }
+  }
+
+  if (params->test_p74>0 && urgentlist.size()>0)
+  {
+    urgentlist.sort(Tree::compare_UrgentNodes);
+    //urgenttmp=urgentlist.front();
+    float lastplayouts=-1; //nothing yet
+    for (std::list<UrgentNode>::iterator iter=urgentlist.begin();iter!=urgentlist.end();++iter)
+    {
+      if (lastplayouts>=0 && lastplayouts < (*iter).playouts * params->test_p74)
+        break; //if the factor is not bigger than test_p74, than you are allowed to take the node, otherwize take the next
+      urgenttmp=(*iter);
+      lastplayouts=urgenttmp.playouts;
+    }
+    //fprintf(stderr,"besttree %p %f urgenttmp.node %p %f urgenttmp %p\n",besttree,besturgency,urgenttmp.node,urgenttmp.urgency,urgenttmp);
+    besttree=urgenttmp.node;
   }
   
   if (besttree!=NULL && besttree->isTerminalLose() && this->hasPrunedChildren())
@@ -2081,6 +2113,18 @@ float Tree::getOwnRatio(Go::Color col)
 
 float Tree::getCriticality() const
 {
+  // passes get more critical in the end of the game
+  if (params->test_p73>0 && !this->isRoot() && move.isPass())
+  {
+    float crit=((float)params->board_size*params->board_size - getChildren()->size()) / (params->board_size*params->board_size) *params->test_p73;
+    //fprintf(stderr,"[crit]: %.2f\n",crit);
+    if (crit>params->test_p72)
+      return params->test_p72;
+    if (crit>=0)
+      return crit;
+    else
+      return 0;
+  } 
   if (!move.isNormal() || (params->uct_criticality_siblings && this->isRoot()))
     return 0;
   else
@@ -2096,7 +2140,8 @@ float Tree::getCriticality() const
       crit=(float)ownedwinner/plts-(ratio*ownedwhite/plts+(1-ratio)*ownedblack/plts);
     
     //fprintf(stderr,"[crit]: %.2f\n",crit);
-    
+    if (crit>params->test_p72)
+      return params->test_p72;
     if (crit>=0)
       return crit;
     else

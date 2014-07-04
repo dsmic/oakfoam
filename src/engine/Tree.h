@@ -26,6 +26,15 @@ typedef struct
 
 class Tree;
 
+//more information over the children, as they are sorted
+typedef struct
+    {
+      float urgency;
+      Tree * node;
+      float  playouts;
+    } UrgentNode;
+
+
 class EqMoves
 {
   public:
@@ -233,6 +242,8 @@ class Tree
      * The urgent child is the child with the largest urgency.
      */
     Tree *getUrgentChild(Worker::Settings *settings);
+    static bool compare_UrgentNodes(UrgentNode &u1,UrgentNode &u2);
+    
     /** Get the child with the best ratio. */
     Tree *getBestRatioChild(float playoutthreshold=0) const;
     Tree *getBestUrgencyChild(float playoutthreshold=0) const;
@@ -350,12 +361,12 @@ class Tree
     Tree *symmetryprimary;
     
     Go::Move move;
-    float playouts,raveplayouts,earlyraveplayouts;
-    float wins,ravewins,earlyravewins;
-    float raveplayoutsother;
-    float ravewinsother;
-    float earlyraveplayoutsother;
-    float earlyravewinsother;
+    double playouts,raveplayouts,earlyraveplayouts;
+    double wins,ravewins,earlyravewins;
+    double raveplayoutsother;
+    double ravewinsother;
+    double earlyraveplayoutsother;
+    double earlyravewinsother;
     float scoresum,scoresumsq;
     float decayedwins,decayedplayouts;
     Parameters *const params;
