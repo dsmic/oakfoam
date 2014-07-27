@@ -5217,6 +5217,9 @@ void Engine::doPlayout(Worker::Settings *settings, Go::IntBoard *firstlist, Go::
         {
           std::ostringstream ss;
           ss << std::fixed;
+#ifdef HAVE_MPI
+          ss << "(mpi "  << mpirank << ") ";   
+#endif
           ss << "[dbg|" << std::setprecision(0)<<movetree->getPlayouts() << "]";
           Tree *robustmove=movetree->getRobustChild();
           ss << " (rm:" << Go::Position::pos2string(robustmove->getMove().getPosition(),boardsize);

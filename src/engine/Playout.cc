@@ -1980,7 +1980,7 @@ void Playout::getLast2LibAtariMove(Worker::Settings *settings, Go::Board *board,
           if (board->inGroup(q))
           {
             Go::Group *group=board->getGroup(q);
-            if (lastgroup!=group && params->playout_last2libatari_allow_different_groups)
+            if (params->playout_last2libatari_allow_different_groups && lastgroup!=group)
             {
               possiblemovescount_base=possiblemovescount;
               bestlevel=1;
@@ -1993,7 +1993,7 @@ void Playout::getLast2LibAtariMove(Worker::Settings *settings, Go::Board *board,
               {
                 if (board->validMove(col,p))
                 {
-                  float lvl=this->getTwoLibertyMoveLevel(board,Go::Move(col,p),group); //*(params->test_p10+ rand->getRandomReal())
+                  float lvl=this->getTwoLibertyMoveLevel(board,Go::Move(col,p),group); // *(params->test_p10+ rand->getRandomReal())
                   if (params->debug_on)
                     gtpe->getOutput()->printfDebug("1 atlevel %s %f\n",Go::Move(col,p).toString (size).c_str(),lvl);
                   if (lvl>0 && lvl>=bestlevel)
@@ -2010,7 +2010,7 @@ void Playout::getLast2LibAtariMove(Worker::Settings *settings, Go::Board *board,
                 }
                 if (board->validMove(col,s))
                 {
-                  float lvl=this->getTwoLibertyMoveLevel(board,Go::Move(col,s),group); //*(params->test_p10+ rand->getRandomReal())
+                  float lvl=this->getTwoLibertyMoveLevel(board,Go::Move(col,s),group); // *(params->test_p10+ rand->getRandomReal())
                   if (params->debug_on)
                     gtpe->getOutput()->printfDebug("2 atlevel %s %f\n",Go::Move(col,s).toString (size).c_str(),lvl);
                   if (lvl>0 && lvl>=bestlevel)
@@ -2176,7 +2176,7 @@ void Playout::getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go:
   {
     // try connect to an outside group
     foreach_adjacent(board->getLastMove().getPosition(),p,{
-      if (!doubleatari && board->inGroup(p))
+      if (board->inGroup(p) && !doubleatari)
       {
         //if (board->getLastMove().getPosition()==Go::Position::string2pos(std::string("A16"),19))
         //  fprintf(stderr,"last atari at A16\n");

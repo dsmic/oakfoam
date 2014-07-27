@@ -1,3 +1,5 @@
+#define BOOST_DISABLE_ASSERTS
+
 #include "Tree.h"
 
 #include <cmath>
@@ -22,6 +24,8 @@ Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p) : params(
   move=mov;
   playouts=0;
   wins=0;
+  bestLCBwins=0;
+  bestLCBplayouts=0;
   scoresum=0;
   scoresumsq=0;
   raveplayouts=0;
@@ -141,7 +145,15 @@ float Tree::getRatio() const
     if (params->uct_decay_alpha!=1 || params->uct_decay_k!=0)
       return decayedwins/decayedplayouts;
     else
+    {
+      //backup operator only allowed, if not (params->uct_decay_alpha!=1 || params->uct_decay_k!=0)
+      if (params->test_p75>0)
+      {
+        if (bestLCBplayouts>0 && ((wins+params->test_p75*sqrt(wins))/playouts > (bestLCBwins+params->test_p75*sqrt(bestLCBwins))/bestLCBplayouts))
+          return bestLCBwins/bestLCBplayouts;
+      }
       return (float)wins/playouts;
+    }
   }
   else
     return 0;
@@ -722,9 +734,11 @@ std::string Tree::toSGFString() const
       ss<<"Terminal Lose ("<<wins<<","<<hasTerminalWin<<")\n";
     else
     {
-      ss<<"Wins/Playouts: "<<wins<<"/"<<playouts<<"("<<this->getRatio()<<")\n";
+      ss<<"Wins/Playouts: "<<wins<<"/"<<playouts<<"("<<((playouts>0)?wins/playouts:0)<<")\n";
       if (params->uct_decay_alpha!=1 || params->uct_decay_k!=0)
         ss<<"Decayed Playouts: "<<decayedplayouts<<"\n";
+      if (params->test_p75>0)
+        ss<<"backup wins/playouts: "<<bestLCBwins<<"/"<<bestLCBplayouts<<"("<<((bestLCBplayouts>0)?bestLCBwins/bestLCBplayouts:0)<<") gR:"<<this->getRatio()<<"\n";
       ss<<"RAVE Wins/Playouts: "<<ravewins<<"/"<<raveplayouts<<"("<<this->getRAVERatio()<<")\n";
       ss<<"Score Mean: "<<scoresum<<"/"<<playouts<<"("<<this->getScoreMean()<<")\n";
       ss<<"Score SD: "<<this->getScoreSD()<<"\n";
@@ -732,12 +746,67 @@ std::string Tree::toSGFString() const
     ss<<"Urgency: "<<this->getUrgency()<<"\n";
     if (!this->isLeaf())
     {
-      ss<<"Pruned: "<<prunedchildren<<"/"<<children->size()<<"("<<(children->size()-prunedchildren)<<")\n";
+        //ss<<"Pruned: "<<prunedchildren<<"/"<<children->size()<<"("<<(children->size()-prunedchildren)<<")\n";
+      UrgentNode urgenttmp;
+      std::list <UrgentNode> urgentlist;
       for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
       {
-        ss<<(*iter)->getMove().toString(params->board_size)<<" UPF"<<(*iter)->getUnPruneFactor()<<" gamma"<<(*iter)->getFeatureGamma()<<" rave"<<(*iter)->getRAVERatio()<<"other "<<(*iter)->getRAVERatioOther()<<" crit"<<(*iter)->getCriticality()<<"\n";
+        //ss<<(*iter)->getMove().toString(params->board_size)<<" UPF"<<(*iter)->getUnPruneFactor()<<" gamma"<<(*iter)->getFeatureGamma()<<" rave"<<(*iter)->getRAVERatio()<<"other "<<(*iter)->getRAVERatioOther()<<" crit"<<(*iter)->getCriticality()<<"\n";
+        if (!(*iter)->isPruned() && params->test_p75>0)
+        {
+          urgenttmp.urgency=0;
+          urgenttmp.node=(*iter);
+          urgenttmp.wins=(*iter)->getWins();
+          urgenttmp.playouts=(*iter)->getPlayouts();
+          urgenttmp.bestLCBplayouts=(*iter)->getBestLCBPlayouts();
+          urgenttmp.bestLCBwins=(*iter)->getBestLCBWins();
+          urgenttmp.bestLCBconst=params->test_p75;
+          urgentlist.push_back(urgenttmp);
+        }
+      
       }
+      if (params->test_p75>0 && urgentlist.size()>0)
+        {
+          urgentlist.sort(Tree::compare_UrgentNodes_LCB);
+          float bestLCB=0;
     
+          float bestLCBwins_tmp=0;
+          float bestLCBplayouts_tmp=0;
+
+          float bestLCBwins_t=0;
+          float bestLCBplayouts_t=0;
+
+          float bestLCB_tmp;
+          for (std::list<UrgentNode>::iterator iter=urgentlist.begin();iter!=urgentlist.end();++iter)
+          {
+            float LCB=LCB_UrgentNode ((*iter));
+            ss<<(*iter).node->getMove().toString(params->board_size).c_str()<< 
+              "w:"<<(*iter).wins<<"/"<<(*iter).playouts<<"("<<(*iter).wins/(*iter).playouts<<") "<<
+              "wbLBC:"<<(*iter).bestLCBwins<<"/"<<(*iter).bestLCBplayouts<<"("<<(*iter).bestLCBwins/(*iter).bestLCBplayouts<<") "<<
+              "LBC:"<<LCB<<
+              "\n";
+            if (!LCB_UrgentNode_useWins(*iter)) //((*iter).bestLCBplayouts>0 && (*iter).bestLCBplayouts>0)
+            {
+              bestLCBwins_tmp+=(*iter).bestLCBwins;
+              bestLCBplayouts_tmp+=(*iter).bestLCBplayouts;
+            }
+            else
+            {
+              bestLCBwins_tmp+=(*iter).wins;
+              bestLCBplayouts_tmp+=(*iter).playouts;
+            }
+            bestLCB_tmp=0;
+            if (bestLCBplayouts_tmp>0 && bestLCBwins>0) bestLCB_tmp=(bestLCBwins_tmp-params->test_p75*sqrt(bestLCBwins_tmp))/bestLCBplayouts_tmp;
+            else break;
+            if (!(bestLCB_tmp<bestLCB))
+            {
+              bestLCB=bestLCB_tmp;
+              bestLCBwins_t=bestLCBwins_tmp;
+              bestLCBplayouts_t=bestLCBplayouts_tmp;
+            }
+          }
+          ss<<"recalc bLCB "<<bestLCBwins_t<<"/"<<bestLCBplayouts_t<<"("<<bestLCBwins_t/bestLCBplayouts_t<<") self:"<<1.0-bestLCBwins_t/bestLCBplayouts_t;
+        }
     }
     else if (this->isTerminal())
       ss<<"Terminal Node\n";
@@ -757,19 +826,78 @@ std::string Tree::toSGFString() const
       ss<<"Terminal Lose\n";
     if (this->isSuperkoViolation())
       ss<<"Superko Violation!\n";
-    ss<<"Wins/Playouts: "<<wins<<"/"<<playouts<<"("<<this->getRatio()<<")\n";
+    ss<<"Wins/Playouts: "<<wins<<"/"<<playouts<<"("<<wins/playouts<<")\n";
+    if (params->uct_decay_alpha!=1 || params->uct_decay_k!=0)
+      ss<<"Decayed Playouts: "<<decayedplayouts<<"\n";
+    if (params->test_p75>0)
+      ss<<"backup wins/playouts: "<<bestLCBwins<<"/"<<bestLCBplayouts<<"("<<((bestLCBplayouts>0)?bestLCBwins/bestLCBplayouts:0)<<") gR:"<<this->getRatio()<<"\n";
     ss<<"Score Mean: "<<scoresum<<"/"<<playouts<<"("<<this->getScoreMean()<<")\n";
     ss<<"Score SD: "<<"("<<this->getScoreSD()<<")\n";
     if (params->uct_decay_alpha!=1 || params->uct_decay_k!=0)
         ss<<"Decayed Playouts: "<<decayedplayouts<<"\n";
     if (!this->isLeaf())
       {
-        ss<<"Pruned: "<<prunedchildren<<"/"<<children->size()<<"("<<(children->size()-prunedchildren)<<")\n";
-        for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
+        //ss<<"Pruned: "<<prunedchildren<<"/"<<children->size()<<"("<<(children->size()-prunedchildren)<<")\n";
+      UrgentNode urgenttmp;
+      std::list <UrgentNode> urgentlist;
+      for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
+      {
+        //ss<<(*iter)->getMove().toString(params->board_size)<<" UPF"<<(*iter)->getUnPruneFactor()<<" gamma"<<(*iter)->getFeatureGamma()<<" rave"<<(*iter)->getRAVERatio()<<"other "<<(*iter)->getRAVERatioOther()<<" crit"<<(*iter)->getCriticality()<<"\n";
+        if (!(*iter)->isPruned() && params->test_p75>0)
         {
-          ss<<(*iter)->getMove().toString(params->board_size)<<" UPF"<<(*iter)->getUnPruneFactor()<<" gamma"<<(*iter)->getFeatureGamma()<<" rave"<<(*iter)->getRAVERatio()<<"other "<<(*iter)->getRAVERatioOther()<<" crit"<<(*iter)->getCriticality()<<"\n";
+          urgenttmp.urgency=0;
+          urgenttmp.node=(*iter);
+          urgenttmp.wins=(*iter)->getWins();
+          urgenttmp.playouts=(*iter)->getPlayouts();
+          urgenttmp.bestLCBplayouts=(*iter)->getBestLCBPlayouts();
+          urgenttmp.bestLCBwins=(*iter)->getBestLCBWins();
+          urgenttmp.bestLCBconst=params->test_p75;
+          urgentlist.push_back(urgenttmp);
         }
       
+      }
+      if (params->test_p75>0 && urgentlist.size()>0)
+        {
+          urgentlist.sort(Tree::compare_UrgentNodes_LCB);
+          float bestLCB=0;
+    
+          float bestLCBwins_tmp=0;
+          float bestLCBplayouts_tmp=0;
+
+          float bestLCBwins_t=0;
+          float bestLCBplayouts_t=0;
+
+          float bestLCB_tmp;
+          for (std::list<UrgentNode>::iterator iter=urgentlist.begin();iter!=urgentlist.end();++iter)
+          {
+            float LCB=LCB_UrgentNode ((*iter));
+            ss<<(*iter).node->getMove().toString(params->board_size).c_str()<< 
+              "w:"<<(*iter).wins<<"/"<<(*iter).playouts<<"("<<(*iter).wins/(*iter).playouts<<") "<<
+              "wbLBC:"<<(*iter).bestLCBwins<<"/"<<(*iter).bestLCBplayouts<<"("<<(*iter).bestLCBwins/(*iter).bestLCBplayouts<<") "<<
+              "LBC:"<<LCB<<
+              "\n";
+            if (!LCB_UrgentNode_useWins(*iter)) //((*iter).bestLCBplayouts>0)
+            {
+              bestLCBwins_tmp+=(*iter).bestLCBwins;
+              bestLCBplayouts_tmp+=(*iter).bestLCBplayouts;
+            }
+            else
+            {
+              bestLCBwins_tmp+=(*iter).wins;
+              bestLCBplayouts_tmp+=(*iter).playouts;
+            }
+            bestLCB_tmp=0;
+            if (bestLCBplayouts_tmp>0) bestLCB_tmp=(bestLCBwins_tmp-params->test_p75*sqrt(bestLCBwins_tmp))/bestLCBplayouts_tmp;
+            else break;
+            if (!(bestLCB_tmp<bestLCB))
+            {
+              bestLCB=bestLCB_tmp;
+              bestLCBwins_t=bestLCBwins_tmp;
+              bestLCBplayouts_t=bestLCBplayouts_tmp;
+            }
+          }
+          ss<<"recalc bLCB "<<bestLCBwins_t<<"/"<<bestLCBplayouts_t<<"("<<bestLCBwins_t/bestLCBplayouts_t<<") self:"<<1.0-bestLCBwins_t/bestLCBplayouts_t;
+        }
       }
       else if (this->isTerminal())
         ss<<"Terminal Node\n";
@@ -1296,11 +1424,44 @@ Tree *Tree::getRobustChild(bool descend) const
   else
     return besttree->getRobustChild(descend);
 }
+float Tree::LCB_UrgentNode (UrgentNode &u)
+{
+  float r1=-1,r2=-1;
+  if (u.bestLCBplayouts>0 && u.bestLCBwins>0)
+    r1= (u.bestLCBwins-u.bestLCBconst*sqrt(u.bestLCBwins))/u.bestLCBplayouts;
+  if (u.playouts>0 && u.wins>0)
+    r2= (u.wins-u.bestLCBconst*sqrt(u.wins))/u.playouts;
+  
+  return (r1>r2)?r1:r2;
+}
+
+bool Tree::LCB_UrgentNode_useWins (UrgentNode &u)
+{
+  float r1=-1,r2=-1;
+  if (u.bestLCBplayouts>0 && u.bestLCBwins>0)
+    r1= (u.bestLCBwins-u.bestLCBconst*sqrt(u.bestLCBwins))/u.bestLCBplayouts;
+  if (u.playouts>0 && u.wins>0)
+    r2= (u.wins-u.bestLCBconst*sqrt(u.wins))/u.playouts;
+  
+  return r2>=r1;
+}
+
 
 bool Tree::compare_UrgentNodes(UrgentNode &u1,UrgentNode &u2)
-  {
-    return u1.urgency>u2.urgency;  //should result in biggest first
-  }
+{
+  return u1.urgency>u2.urgency;  //should result in biggest first
+}
+  
+bool Tree::compare_UrgentNodes_LCB(UrgentNode &u1,UrgentNode &u2)
+{
+  float u1LCB=-99999;
+  float u2LCB=-99999;
+  u1LCB=LCB_UrgentNode(u1);
+  u2LCB=LCB_UrgentNode(u2);
+  if (u1LCB>-1 || u2LCB>-1)
+    return u1LCB>u2LCB;  //should result in biggest first
+  return u1.playouts>u2.playouts;
+}
   
 Tree *Tree::getUrgentChild(Worker::Settings *settings)
 {
@@ -1333,11 +1494,15 @@ Tree *Tree::getUrgentChild(Worker::Settings *settings)
         if (params->random_f>0)
           urgency-=params->random_f*log(settings->rand->getRandomReal());
       }
-      if (params->test_p74>0)
+      if (params->test_p74>0||params->test_p75>0)
       {
         urgenttmp.urgency=urgency;
         urgenttmp.node=(*iter);
+        urgenttmp.wins=(*iter)->getWins();
         urgenttmp.playouts=(*iter)->getPlayouts();
+        urgenttmp.bestLCBplayouts=(*iter)->getBestLCBPlayouts();
+        urgenttmp.bestLCBwins=(*iter)->getBestLCBWins();
+        urgenttmp.bestLCBconst=params->test_p75;
         urgentlist.push_back(urgenttmp);
       }
       
@@ -1366,6 +1531,56 @@ Tree *Tree::getUrgentChild(Worker::Settings *settings)
     }
     //fprintf(stderr,"besttree %p %f urgenttmp.node %p %f urgenttmp %p\n",besttree,besturgency,urgenttmp.node,urgenttmp.urgency,urgenttmp);
     besttree=urgenttmp.node;
+  }
+  if (params->test_p75>0 && urgentlist.size()>0)
+  {
+    urgentlist.sort(Tree::compare_UrgentNodes_LCB);
+    float bestLCB=0;
+    
+    float bestLCBwins_tmp=0;
+    float bestLCBplayouts_tmp=0;
+
+    float bestLCBwins_t=0;
+    float bestLCBplayouts_t=0;
+
+    float bestLCB_tmp;
+    for (std::list<UrgentNode>::iterator iter=urgentlist.begin();iter!=urgentlist.end();++iter)
+    {
+      if (!LCB_UrgentNode_useWins(*iter)) //(*iter).bestLCBplayouts>0 && (*iter).bestLCBplayouts>0)
+      {
+        bestLCBwins_tmp+=(*iter).bestLCBwins;
+        bestLCBplayouts_tmp+=(*iter).bestLCBplayouts;
+      }
+      else
+      {
+        bestLCBwins_tmp+=(*iter).wins;
+        bestLCBplayouts_tmp+=(*iter).playouts;
+      }
+      bestLCB_tmp=0;
+      if (bestLCBplayouts_tmp>0 && bestLCBwins_tmp>0) bestLCB_tmp=(bestLCBwins_tmp-params->test_p75*sqrt(bestLCBwins_tmp))/bestLCBplayouts_tmp;
+      else break;
+      if (bestLCB_tmp<bestLCB)
+        break;
+      bestLCB=bestLCB_tmp;
+      bestLCBwins_t=bestLCBwins_tmp;
+      bestLCBplayouts_t=bestLCBplayouts_tmp;
+    }
+    bestLCB_tmp=0;
+    //losses in this are compared to wins in childs
+    if (playouts>0) bestLCB_tmp=((playouts-wins)-params->test_p75*sqrt(playouts-wins))/playouts;
+
+    //should be handled elsewhere
+    //if (bestLCB<bestLCB_tmp||bestLCBplayouts==0)
+    //{
+    //  bestLCBwins=wins;
+    //  bestLCBplayouts=playouts;
+    //}
+    //else
+    {
+      //best answer wins converted to actual wins
+      bestLCBwins=bestLCBplayouts_t-bestLCBwins_t;
+      bestLCBplayouts=bestLCBplayouts_t;
+    }
   }
   
   if (besttree!=NULL && besttree->isTerminalLose() && this->hasPrunedChildren())

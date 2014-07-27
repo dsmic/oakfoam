@@ -710,8 +710,8 @@ namespace Go
       /** Get the number of empty positions orthogonally adjacent to the given position. */
       int touchingEmpty(int pos) const {int lib=0; foreach_adjacent(pos,p,{if (this->getColor(p)==Go::EMPTY) lib++;});
   
-  return lib;
-};
+          return lib;
+        };
       int diagonalEmpty(int pos) const;
       /** Get the number of empty positions in the eight positions surrounding the given position. */
       int surroundingEmpty(int pos) const;
@@ -933,10 +933,10 @@ namespace Go
        * Used for the nakade heuristic.
        * If there is not such position, -1 is returned.
        */
-      int getThreeEmptyGroupCenterFrom(int pos) const;
-      int getBent4EmptyGroupCenterFrom(int pos,bool onlycheck=false) const;
-      int getFourEmptyGroupCenterFrom(int pos) const;
-      int getFiveEmptyGroupCenterFrom(int pos) const;
+      int getThreeEmptyGroupCenterFrom(int pos) const __attribute__((hot));
+      int getBent4EmptyGroupCenterFrom(int pos,bool onlycheck=false) const __attribute__((hot));
+      int getFourEmptyGroupCenterFrom(int pos) const __attribute__((hot));
+      int getFiveEmptyGroupCenterFrom(int pos) const __attribute__((hot));
 
       bool isThreeEmptyGroupCenterFrom(int pos) const;
       int  getSecondBent4Position(int pos) const;

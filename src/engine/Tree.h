@@ -31,7 +31,11 @@ typedef struct
     {
       float urgency;
       Tree * node;
-      float  playouts;
+      double  wins;
+      double  playouts;
+      double bestLCBplayouts;
+      double bestLCBwins;
+      float bestLCBconst; //no other way to give this to the compare function?!
     } UrgentNode;
 
 
@@ -143,18 +147,21 @@ class Tree
     /** Get the child of this node specified by @p move. */
     Tree *getChild(Go::Move move) const;
     /** Get the number of playouts through this node. */
-    float getPlayouts() const { return playouts; };
+    double getPlayouts() const { return playouts; };
     /** Get the number of wins through this node, for this node's color. */
-    float getWins() const { return wins; };
+    double getWins() const { return wins; };
+    double getBestLCBWins() const { return bestLCBwins; };
+    double getBestLCBPlayouts() const { return bestLCBplayouts; };
+    
     /** Get the number of RAVE playouts through this node. */
-    float getRAVEPlayouts() const { return raveplayouts; };
-    float getRAVEWins() const { return ravewins; };
-    float getEARLYRAVEPlayouts() const { return earlyraveplayouts; };
+    double getRAVEPlayouts() const { return raveplayouts; };
+    double getRAVEWins() const { return ravewins; };
+    double getEARLYRAVEPlayouts() const { return earlyraveplayouts; };
     /** Get the number of RAVE playouts for the other color through this node. */
-    float getRAVEPlayoutsOther() const { return raveplayoutsother; };
-    float getRAVEWinsOther() const { return ravewinsother; };
-    float getRAVEPlayoutsOtherEarly() const { return earlyraveplayoutsother; };
-    float getRAVEWinsOtherEarly() const { return earlyravewinsother; };
+    double getRAVEPlayoutsOther() const { return raveplayoutsother; };
+    double getRAVEWinsOther() const { return ravewinsother; };
+    double getRAVEPlayoutsOtherEarly() const { return earlyraveplayoutsother; };
+    double getRAVEWinsOtherEarly() const { return earlyravewinsother; };
     /** Get the ratio of wins to playouts. */
     float getRatio() const;
     /** Get the unprune factor, used for determining the order to unprune nodes in. */
@@ -243,7 +250,9 @@ class Tree
      */
     Tree *getUrgentChild(Worker::Settings *settings);
     static bool compare_UrgentNodes(UrgentNode &u1,UrgentNode &u2);
-    
+    static bool compare_UrgentNodes_LCB(UrgentNode &u1,UrgentNode &u2);
+    static float LCB_UrgentNode(UrgentNode &u);
+    static bool LCB_UrgentNode_useWins (UrgentNode &u);
     /** Get the child with the best ratio. */
     Tree *getBestRatioChild(float playoutthreshold=0) const;
     Tree *getBestUrgencyChild(float playoutthreshold=0) const;
@@ -363,6 +372,7 @@ class Tree
     Go::Move move;
     double playouts,raveplayouts,earlyraveplayouts;
     double wins,ravewins,earlyravewins;
+    double bestLCBwins,bestLCBplayouts;
     double raveplayoutsother;
     double ravewinsother;
     double earlyraveplayoutsother;
