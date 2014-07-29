@@ -97,6 +97,7 @@ class Playout
     bool isBadMove(Worker::Settings *settings, Go::Board *board, Go::Color col, int pos, float lbr_p=0.0, float lbm_p=0.0, float lbpr_p=0.0, int passes=0, Go::IntBoard *firstlist=NULL, int playoutmovescount=0, critstruct critarray[]=NULL)  __attribute__((hot));
     bool isEyeFillMove(Go::Board *board, Go::Color col, int pos);
     float getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group *group);
+    inline int getOtherOneOfTwoLiberties(Go::Group *g, int pos);
     
     int getLGRF1(Go::Color col, int pos1) const;
     unsigned int getLGRF1hash(Go::Color col, int pos1) const;

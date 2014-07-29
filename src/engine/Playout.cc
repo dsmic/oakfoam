@@ -1958,7 +1958,35 @@ void Playout::getNakadeMove(Worker::Settings *settings, Go::Board *board, Go::Co
     move=Go::Move(col,possiblemoves[i]);
   }
 }
- 
+
+//testing if performance is better with this
+//probably not, disabled again
+int Playout::getOtherOneOfTwoLiberties(Go::Group *g, int pos) 
+{
+  if (g->numOfPseudoLiberties()>8 || g->inAtari())
+    return -1;
+  
+  int ps=g->numOfPseudoLiberties();
+  int lps=g->getLibpossum();
+  int lpsq=g->getLibpossumsq();
+  Go::Board *board=g->getBoard();
+  int size=board->getSize();
+  
+  foreach_adjacent(pos,p,{
+    if (board->inGroup(p) && board->getGroup(p)==g)
+    {
+      ps--;
+      lps-=pos;
+      lpsq-=pos*pos;
+    }
+  });
+  
+  if (ps>0 && (ps*lpsq)==(lps*lps))
+    return lps/ps;
+  else
+    return -1;
+}
+
 void Playout::getLast2LibAtariMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray)
 {
   Random *const rand=settings->rand;

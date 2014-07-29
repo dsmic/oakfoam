@@ -1768,6 +1768,7 @@ Features::FeatureClass Features::getFeatureClassFromName(std::string name) const
 
 bool Features::loadGammaFile(std::string filename)
 {
+  fprintf(stderr,"load gamma file %s\n",filename.c_str());
   std::ifstream fin(filename.c_str());
   
   if (!fin)

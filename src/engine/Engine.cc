@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <boost/timer.hpp>
 #include <boost/lexical_cast.hpp>
+#include <time.h>       /* clock_t, clock, CLOCKS_PER_SEC */
 #ifdef HAVE_MPI
   #define MPIRANK0_ONLY(__body) {if (mpirank==0) { __body }}
 #else
@@ -720,6 +721,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("dtdistribution",this,&Engine::gtpDTDistribution);
   gtpe->addFunctionCommand("dtstats",this,&Engine::gtpDTStats);
   gtpe->addFunctionCommand("dtpath",this,&Engine::gtpDTPath);
+  gtpe->addFunctionCommand("cputime",this,&Engine::gtpCPUtime);
   
   //gtpe->addAnalyzeCommand("final_score","Final Score","string");
   //gtpe->addAnalyzeCommand("showboard","Show Board","string");
@@ -5688,7 +5690,9 @@ void Engine::generateThread(Worker::Settings *settings)
         livegfxupdate++;
     }
   }
-  
+  stopthinking=true;
+  params->early_stop_occured=true;
+          
   delete firstlist;
   delete secondlist;
   delete earlyfirstlist;
@@ -5835,7 +5839,11 @@ void Engine::gameFinished()
   if (currentboard->getMovesMade()==0)
     return;
 
-  if (params->auto_save_sgf)
+  bool autosave=true;
+#ifdef HAVE_MPI
+  if (mpirank!=0) autosave=false;
+#endif      
+  if (params->auto_save_sgf && autosave)
   {
     boost::posix_time::time_facet *facet = new boost::posix_time::time_facet("_%Y-%m-%d_%H:%M:%S");
     std::ostringstream ss;
@@ -6046,7 +6054,8 @@ void Engine::mpiGenMove(Go::Color col)
   this->allowContinuedPlay();
   this->updateTerritoryScoringInTree();
   params->uct_slow_update_last=0;
-  params->uct_slow_debug_last=0;
+  // generate immediatly on dbg line, was 0
+  params->uct_slow_debug_last=params->uct_slow_debug_interval;
   params->uct_last_r2=-1;
   
   int startplayouts=(int)movetree->getPlayouts();
@@ -6351,4 +6360,14 @@ float Engine::getOldMoveValue(Go::Move m)
   else
     return 0; //was a pass move
 }
+
+void Engine::gtpCPUtime(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  float cpu_time=(float)clock()/CLOCKS_PER_SEC;
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printf("%f\n",cpu_time);
+  gtpe->getOutput()->endResponse();
+}
+
     

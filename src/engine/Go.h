@@ -569,7 +569,9 @@ namespace Go
       /** Get a list of the adjacent groups to this group. */
       //std::list<int,Go::allocator_int> *getAdjacentGroups() { return &adjacentgroups; };
       list_int *getAdjacentGroups() { return &adjacentgroups; };
-    
+      inline int getLibpossum() {return libpossum;}
+      inline int getLibpossumsq() {return libpossumsq;}
+      inline Go::Board *const getBoard() {return board;}
     private:
       Go::Board *const board;
       const Go::Color color;
