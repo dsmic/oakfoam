@@ -147,9 +147,11 @@ float Tree::getRatio() const
     else
     {
       //backup operator only allowed, if not (params->uct_decay_alpha!=1 || params->uct_decay_k!=0)
-      if (params->test_p75>0)
+      if (params->test_p75>0 && bestLCBwins>0 && wins>0) //otherwize no sqrt
       {
-        if (bestLCBplayouts>0 && ((wins+params->test_p75*sqrt(wins))/playouts > (bestLCBwins+params->test_p75*sqrt(bestLCBwins))/bestLCBplayouts))
+        if (bestLCBplayouts>0 && wins/playouts>bestLCBwins/bestLCBplayouts && ((wins+params->test_p75*sqrt(wins))/playouts > (bestLCBwins+params->test_p75*sqrt(bestLCBwins))/bestLCBplayouts))
+          return bestLCBwins/bestLCBplayouts;
+        if (bestLCBplayouts>0 && wins/playouts<bestLCBwins/bestLCBplayouts && ((wins-params->test_p75*sqrt(wins))/playouts < (bestLCBwins-params->test_p75*sqrt(bestLCBwins))/bestLCBplayouts))
           return bestLCBwins/bestLCBplayouts;
       }
       return (float)wins/playouts;
@@ -728,6 +730,8 @@ std::string Tree::toSGFString() const
     else if (move.isPass())
       ss<<"pass";
     ss<<"]C[";
+    if (move.isPass())
+      ss<<"PASS !!!!!!\n";
     if (this->isTerminalWin())
       ss<<"Terminal Win ("<<wins<<","<<hasTerminalWin<<")\n";
     else if (this->isTerminalLose())
@@ -797,7 +801,7 @@ std::string Tree::toSGFString() const
             }
             bestLCB_tmp=0;
             if (bestLCBplayouts_tmp>0 && bestLCBwins>0) bestLCB_tmp=(bestLCBwins_tmp-params->test_p75*sqrt(bestLCBwins_tmp))/bestLCBplayouts_tmp;
-            else break;
+            //else break;
             if (!(bestLCB_tmp<bestLCB))
             {
               bestLCB=bestLCB_tmp;
@@ -819,6 +823,8 @@ std::string Tree::toSGFString() const
     ss<<"C[";
     if (!move.isResign())
       ss<<"Last Move: "<<move.toString(params->board_size)<<"\n";
+    if (move.isPass())
+      ss<<"PASS !!!!!!\n";
     ss<<"Children: "<<children->size()<<"\n";
     if (this->isTerminalWin())
       ss<<"Terminal Win\n";
@@ -888,7 +894,7 @@ std::string Tree::toSGFString() const
             }
             bestLCB_tmp=0;
             if (bestLCBplayouts_tmp>0) bestLCB_tmp=(bestLCBwins_tmp-params->test_p75*sqrt(bestLCBwins_tmp))/bestLCBplayouts_tmp;
-            else break;
+            //else break;
             if (!(bestLCB_tmp<bestLCB))
             {
               bestLCB=bestLCB_tmp;
@@ -1424,28 +1430,42 @@ Tree *Tree::getRobustChild(bool descend) const
   else
     return besttree->getRobustChild(descend);
 }
-float Tree::LCB_UrgentNode (UrgentNode &u)
-{
-  float r1=-1,r2=-1;
-  if (u.bestLCBplayouts>0 && u.bestLCBwins>0)
-    r1= (u.bestLCBwins-u.bestLCBconst*sqrt(u.bestLCBwins))/u.bestLCBplayouts;
-  if (u.playouts>0 && u.wins>0)
-    r2= (u.wins-u.bestLCBconst*sqrt(u.wins))/u.playouts;
-  
-  return (r1>r2)?r1:r2;
-}
 
 bool Tree::LCB_UrgentNode_useWins (UrgentNode &u)
 {
-  float r1=-1,r2=-1;
+  if (u.bestLCBplayouts==0)
+    return true;
+  if (u.playouts==0)
+    return false;
+  
+  float r1=5,r2=5;
+  float rc1=u.bestLCBwins/u.bestLCBplayouts;
+  float rc2=u.wins/u.playouts;
+  
+  if (u.bestLCBplayouts>0 && u.bestLCBwins>0)
+    r1= (u.bestLCBwins+u.bestLCBconst*sqrt(u.bestLCBwins))/u.bestLCBplayouts;
+  if (u.playouts>0 && u.wins>0)
+    r2= (u.wins+u.bestLCBconst*sqrt(u.wins))/u.playouts;
+  if (r1<r2 && rc1<rc2)
+    return false; //1. reason to use LCB (LCB significantly lower than wins)
+  r1=-5; r2=-5;
   if (u.bestLCBplayouts>0 && u.bestLCBwins>0)
     r1= (u.bestLCBwins-u.bestLCBconst*sqrt(u.bestLCBwins))/u.bestLCBplayouts;
   if (u.playouts>0 && u.wins>0)
     r2= (u.wins-u.bestLCBconst*sqrt(u.wins))/u.playouts;
-  
-  return r2>=r1;
+  if (r1>r2 && rc1>rc2)
+    return false; //2. reason to use LCB (LCB significantly higher than wins)
+  return true;
 }
 
+float Tree::LCB_UrgentNode (UrgentNode &u)
+{
+  if (LCB_UrgentNode_useWins(u))
+    return (u.wins>=0 && u.playouts>0)?((u.wins-u.bestLCBconst*sqrt(u.wins))/u.playouts):-100;
+  else
+    return (u.bestLCBwins>=0 && u.bestLCBplayouts)?((u.bestLCBwins-u.bestLCBconst*sqrt(u.bestLCBwins))/u.bestLCBplayouts):-100;
+  return -100;
+}
 
 bool Tree::compare_UrgentNodes(UrgentNode &u1,UrgentNode &u2)
 {

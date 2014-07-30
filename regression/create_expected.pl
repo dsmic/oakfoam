@@ -18,7 +18,7 @@ $filename=$_;
 if (!($filename=~/.html/)) {die "no htmlfile $filename\n";};
 open(HTML,"< $filename") || die "can not open $filename\n";
 $line="";
-undef $result;
+undef %result;
  while (<HTML>)
  {
   if ($line ne "")
