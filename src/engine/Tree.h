@@ -24,6 +24,12 @@ typedef struct
   float parent_playouts,parent_wins,playouts,wins;
 } tree_result;
 
+typedef struct
+{
+  double wins;
+  double playouts;
+} wins_playouts;
+
 class Tree;
 
 //more information over the children, as they are sorted
@@ -253,6 +259,7 @@ class Tree
     static bool compare_UrgentNodes_LCB(UrgentNode &u1,UrgentNode &u2);
     static float LCB_UrgentNode(UrgentNode &u);
     static bool LCB_UrgentNode_useWins (UrgentNode &u);
+    static wins_playouts LCB_UrgentNode_winplayouts(wins_playouts UCBwp, wins_playouts wp, float k_confidence=1.0);
     /** Get the child with the best ratio. */
     Tree *getBestRatioChild(float playoutthreshold=0) const;
     Tree *getBestUrgencyChild(float playoutthreshold=0) const;
