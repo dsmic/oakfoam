@@ -41,7 +41,10 @@ typedef struct
       double  playouts;
       double bestLCBplayouts;
       double bestLCBwins;
-      float bestLCBconst; //no other way to give this to the compare function?!
+
+      //no other way to give this to the compare function?!
+      float bestLCBconst; 
+      float k_confidence;
     } UrgentNode;
 
 
@@ -259,7 +262,7 @@ class Tree
     static bool compare_UrgentNodes_LCB(UrgentNode &u1,UrgentNode &u2);
     static float LCB_UrgentNode(UrgentNode &u);
     static bool LCB_UrgentNode_useWins (UrgentNode &u);
-    static wins_playouts LCB_UrgentNode_winplayouts(wins_playouts UCBwp, wins_playouts wp, float k_confidence=1.0);
+    static wins_playouts LCB_UrgentNode_winplayouts(wins_playouts UCBwp, wins_playouts wp, float k_confidence);
     /** Get the child with the best ratio. */
     Tree *getBestRatioChild(float playoutthreshold=0) const;
     Tree *getBestUrgencyChild(float playoutthreshold=0) const;

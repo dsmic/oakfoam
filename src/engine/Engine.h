@@ -426,6 +426,7 @@ class Engine
     Playout *playout;
     volatile bool stopthinking;
     volatile bool stoppondering;
+    volatile bool isWaitingForStop;
     Worker::Pool *threadpool;
     Go::TerritoryMap *territorymap;
     Go::TerritoryMap **area_correlation_map;
@@ -534,6 +535,7 @@ class Engine
       std::string mpiRecvString(int srcrank);
       void mpiGenMove(Go::Color col);
       void mpiPonder(Go::Color col);
+      void mpiSyncWaitStop();
       bool mpiSyncUpdate(bool stop=false);
       void mpiBuildDerivedTypes();
       void mpiFreeDerivedTypes();

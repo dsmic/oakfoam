@@ -207,7 +207,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","test_p73",&(params->test_p73),0.0);
   params->addParameter("playout","test_p74",&(params->test_p74),0.0);
   params->addParameter("playout","test_p75",&(params->test_p75),0.0);
-  params->addParameter("playout","test_p76",&(params->test_p76),0.0);
+  params->addParameter("playout","test_p76",&(params->test_p76),1.0);
   params->addParameter("playout","test_p77",&(params->test_p77),0.0);
   params->addParameter("playout","test_p78",&(params->test_p78),0.0);
   params->addParameter("playout","test_p79",&(params->test_p79),0.0);
@@ -852,7 +852,7 @@ void Engine::gtpKomi(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 void Engine::gtpPlay(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
-  
+  gtpe->getOutput()->printfDebug("gtpPlay called\n");
   if (cmd->numArgs()!=2)
   {
     gtpe->getOutput()->startResponse(cmd,false);
@@ -889,6 +889,7 @@ void Engine::gtpPlay(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 void Engine::gtpGenMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
+  gtpe->getOutput()->printfDebug("gtpGenMove called\n");
   
   if (cmd->numArgs()!=1)
   {
@@ -5424,11 +5425,18 @@ void Engine::ponder()
     
     params->uct_initial_playouts=(int)movetree->getPlayouts();
     params->thread_job=Parameters::TJ_PONDER;
+    #ifdef HAVE_MPI
+    isWaitingForStop=false;
+    #endif    
     threadpool->startAll();
     threadpool->waitAll();
+    #ifdef HAVE_MPI
+    isWaitingForStop=true;
+    mpiSyncWaitStop();
+    #endif    
     if (movetree->isTerminalResult())
       gtpe->getOutput()->printfDebug("SOLVED! found 100%% sure result after %d plts!\n",(int)movetree->getPlayouts()-params->uct_initial_playouts);
-    fprintf(stderr,"pondering done! after all threads %.0f\n",movetree->getPlayouts());
+    gtpe->getOutput()->printfDebug("pondering done! after all threads %.0f\n",movetree->getPlayouts());
   }
 }
 
@@ -5441,7 +5449,7 @@ void Engine::ponderThread(Worker::Settings *settings)
   
   if (params->move_policy==Parameters::MP_UCT || params->move_policy==Parameters::MP_ONEPLY)
   {
-    fprintf(stderr,"pondering thread starting! %d rank %d stoppondering %d stopthinking %d\n",settings->thread->getID(),mpirank,stoppondering,stopthinking);
+    //fprintf(stderr,"pondering thread starting! %d rank %d stoppondering %d stopthinking %d\n",settings->thread->getID(),mpirank,stoppondering,stopthinking);
     #ifdef HAVE_MPI
       bool mpi_inform_others=true;
       bool mpi_rank_other=(mpirank!=0);
@@ -5494,15 +5502,19 @@ void Engine::ponderThread(Worker::Settings *settings)
     delete secondlist;
     delete earlyfirstlist;
     delete earlysecondlist;
-    fprintf(stderr,"pondering done! %ld %.0f stopthinking %d stoppondering %d playouts %ld\n",playouts,movetree->getPlayouts(),stopthinking,stoppondering,playouts);
+    //fprintf(stderr,"pondering done! %ld %.0f stopthinking %d stoppondering %d playouts %ld\n",playouts,movetree->getPlayouts(),stopthinking,stoppondering,playouts);
     #ifdef HAVE_MPI
     gtpe->getOutput()->printfDebug("ponder on rank %d stopping... (inform: %d) threadid %d\n",mpirank,mpi_inform_others,settings->thread->getID());
     if (settings->thread->getID()==0 && !mpi_rank_other && mpiworldsize>1 && mpi_inform_others)
     {
       stoppondering=true;
       this->mpiSyncUpdate(true);
-      stoppondering=false;
+      //here must be waited till all are stoped!!
+      //this->mpiSyncWaitStop();
+      
+      //stoppondering=false;
     }
+    gtpe->getOutput()->printfDebug("ponder on rank %d stoped (inform: %d) threadid %d\n",mpirank,mpi_inform_others,settings->thread->getID());
     #endif
   }
 }
@@ -6088,10 +6100,17 @@ void Engine::mpiPonder(Go::Color col)
   
   params->uct_initial_playouts=startplayouts;
   params->thread_job=Parameters::TJ_PONDER;
+  #ifdef HAVE_MPI
+    isWaitingForStop=false;
+  #endif    
   threadpool->startAll();
   threadpool->waitAll(); // Here it makes it impossible to interrupt, as it is not listening to mpi commands
-  
-  fprintf(stderr,"ponder on rank %d done.\n",mpirank);
+  #ifdef HAVE_MPI
+    isWaitingForStop=true;
+    mpiSyncWaitStop();
+  #endif    
+    
+  //fprintf(stderr,"ponder on rank %d done.\n",mpirank);
   gtpe->getOutput()->printfDebug("ponder on rank %d done.\n",mpirank);
 }
 
@@ -6195,6 +6214,21 @@ void Engine::MpiHashTable::add(Go::ZobristHash hash, Tree *node)
     entry.nodes.push_back(node);
     table[index].push_back(entry);
   }
+}
+
+void Engine::mpiSyncWaitStop()
+{
+  while (MPI::Wtime()>(params->mpi_last_update+params->mpi_update_period))
+  {
+    params->mpi_last_update=MPI::Wtime();
+    int localcount=(isWaitingForStop?0:1);
+    int maxcount;
+    MPI::COMM_WORLD.Allreduce(&localcount,&maxcount,1,MPI::INT,MPI::MIN);
+    if (maxcount==1)
+      break;
+    boost::this_thread::sleep(boost::posix_time::seconds(params->mpi_update_period));    
+  }
+  gtpe->getOutput()->printfDebug("syncWaitStop (rank: %d)\n",mpirank);
 }
 
 bool Engine::mpiSyncUpdate(bool stop)
