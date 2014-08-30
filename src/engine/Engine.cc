@@ -5229,7 +5229,9 @@ void Engine::doPlayout(Worker::Settings *settings, Go::IntBoard *firstlist, Go::
           ss << " (rm:" << Go::Position::pos2string(robustmove->getMove().getPosition(),boardsize);
           ss << " r:" << std::setprecision(2)<<robustmove->getRatio();
           ss << " r2:" << std::setprecision(2)<<robustmove->secondBestPlayoutRatio();
+          ss << " u:" << std::setprecision(2)<<robustmove->getUrgency();
           ss << " p:" << std::setprecision(2)<<robustmove->getPlayouts();
+          ss << " tw:" << robustmove->isTerminalWin();
           ss << ")";
           Tree *bestratio=movetree->getBestRatioChild(10);
           if (bestratio!=NULL)
@@ -5242,13 +5244,14 @@ void Engine::doPlayout(Worker::Settings *settings, Go::IntBoard *firstlist, Go::
               ss << " r:" << std::setprecision(2)<<bestratio->getRatio();
               ss << " u:" << std::setprecision(2)<<bestratio->getUrgency();
               ss << " p:" << std::setprecision(2)<<bestratio->getPlayouts();
+              ss << " tw:" << bestratio->isTerminalWin();
               ss << ")";
             }
           }
           Tree *bestcrit=movetree->getBestUrgencyChild(10);
-          if (bestratio!=NULL)
+          if (bestcrit!=NULL)
           {
-            if (robustmove==bestratio)
+            if (robustmove==bestcrit)
               ss << " (same)";
             else
             {
@@ -5256,6 +5259,7 @@ void Engine::doPlayout(Worker::Settings *settings, Go::IntBoard *firstlist, Go::
               ss << " r:" << std::setprecision(2)<<bestcrit->getRatio();
               ss << " u:" << std::setprecision(2)<<bestcrit->getUrgency();
               ss << " p:" << std::setprecision(2)<<bestcrit->getPlayouts();
+              ss << " tw:" << bestcrit->isTerminalWin();
               ss << ")";
             }
           }
@@ -5415,6 +5419,9 @@ void Engine::ponder()
         unsigned int tmp1=0;// not used (unsigned int)col;
         this->mpiBroadcastCommand(MPICMD_PONDER,&tmp1);
       );
+
+    //must sync all are started, otherwize stopping before starting possible!!!!!
+    
     #endif
     this->allowContinuedPlay();
     params->uct_slow_update_last=0;
@@ -5449,7 +5456,7 @@ void Engine::ponderThread(Worker::Settings *settings)
   
   if (params->move_policy==Parameters::MP_UCT || params->move_policy==Parameters::MP_ONEPLY)
   {
-    //fprintf(stderr,"pondering thread starting! %d rank %d stoppondering %d stopthinking %d\n",settings->thread->getID(),mpirank,stoppondering,stopthinking);
+    fprintf(stderr,"pondering thread starting! %d rank %d stoppondering %d stopthinking %d\n",settings->thread->getID(),mpirank,stoppondering,stopthinking);
     #ifdef HAVE_MPI
       bool mpi_inform_others=true;
       bool mpi_rank_other=(mpirank!=0);
@@ -5466,7 +5473,11 @@ void Engine::ponderThread(Worker::Settings *settings)
     Go::IntBoard *earlyfirstlist=new Go::IntBoard(boardsize);
     Go::IntBoard *earlysecondlist=new Go::IntBoard(boardsize);
     long playouts=0;
-    
+    bool initial_sync=true;
+
+    //there might be a race condition left if stoppondering and stopthinking is changed before mpiSyncUpdate ()
+    if (settings->thread->getID()==0)
+      stop_called=false; //only this thread is allowed to handle mpi calls
     while (!stoppondering && !stopthinking && (playouts=(long)movetree->getPlayouts())<(params->pondering_playouts_max))
     {
       //if (movetree->isTerminalResult())
@@ -5479,8 +5490,9 @@ void Engine::ponderThread(Worker::Settings *settings)
       this->doPlayout(settings,firstlist,secondlist,earlyfirstlist,earlysecondlist);
       playouts++;
       #ifdef HAVE_MPI
-      if (settings->thread->getID()==0 && mpiworldsize>1 && MPI::Wtime()>(params->mpi_last_update+params->mpi_update_period))
+      if (settings->thread->getID()==0 && mpiworldsize>1 && (MPI::Wtime()>(params->mpi_last_update+params->mpi_update_period) || initial_sync))
       {
+        initial_sync=false;
         //mpi_update_num++;
         //gtpe->getOutput()->printfDebug("update (%d) at %lf (rank: %d) start\n",mpi_update_num,MPI::Wtime(),mpirank);
         
@@ -5505,11 +5517,12 @@ void Engine::ponderThread(Worker::Settings *settings)
     //fprintf(stderr,"pondering done! %ld %.0f stopthinking %d stoppondering %d playouts %ld\n",playouts,movetree->getPlayouts(),stopthinking,stoppondering,playouts);
     #ifdef HAVE_MPI
     gtpe->getOutput()->printfDebug("ponder on rank %d stopping... (inform: %d) threadid %d\n",mpirank,mpi_inform_others,settings->thread->getID());
-    if (settings->thread->getID()==0 && !mpi_rank_other && mpiworldsize>1 && mpi_inform_others)
+    if (!stop_called && settings->thread->getID()==0 && mpiworldsize>1 && mpi_inform_others)
     {
-      stoppondering=true;
+      //stoppondering=true;
       this->mpiSyncUpdate(true);
       //here must be waited till all are stoped!!
+      //gtpe->getOutput()->printfDebug("mpiSyncWaitStop on rank %d stoped (inform: %d) threadid %d\n",mpirank,mpi_inform_others,settings->thread->getID());
       //this->mpiSyncWaitStop();
       
       //stoppondering=false;
@@ -6102,7 +6115,8 @@ void Engine::mpiPonder(Go::Color col)
   params->thread_job=Parameters::TJ_PONDER;
   #ifdef HAVE_MPI
     isWaitingForStop=false;
-  #endif    
+  #endif
+  stoppondering=false;
   threadpool->startAll();
   threadpool->waitAll(); // Here it makes it impossible to interrupt, as it is not listening to mpi commands
   #ifdef HAVE_MPI
@@ -6218,12 +6232,14 @@ void Engine::MpiHashTable::add(Go::ZobristHash hash, Tree *node)
 
 void Engine::mpiSyncWaitStop()
 {
-  while (MPI::Wtime()>(params->mpi_last_update+params->mpi_update_period))
+ gtpe->getOutput()->printfDebug("try syncWaitStop (rank: %d)\n",mpirank);
+ while (true)
   {
     params->mpi_last_update=MPI::Wtime();
-    int localcount=(isWaitingForStop?0:1);
+    int localcount=(isWaitingForStop?1:0);
     int maxcount;
     MPI::COMM_WORLD.Allreduce(&localcount,&maxcount,1,MPI::INT,MPI::MIN);
+    //gtpe->getOutput()->printfDebug("syncWaitStop localcount %d maxcount %d rank %d\n",localcount,maxcount,mpirank);
     if (maxcount==1)
       break;
     boost::this_thread::sleep(boost::posix_time::seconds(params->mpi_update_period));    
@@ -6236,7 +6252,7 @@ bool Engine::mpiSyncUpdate(bool stop)
   int localcount=(stop?0:1);
   int maxcount;
   
-  //gtpe->getOutput()->printfDebug("sync (rank: %d) (stop:%d)!!!!!\n",mpirank,stop);
+  gtpe->getOutput()->printfDebug("!!!!!sync (rank: %d) (stop:%d)!!!!!\n",mpirank,stop);
   
   //TODO: should consider replacing first 2 mpi cmds with 1
   MPI::COMM_WORLD.Allreduce(&localcount,&maxcount,1,MPI::INT,MPI::MIN);
@@ -6247,13 +6263,14 @@ bool Engine::mpiSyncUpdate(bool stop)
   MPI::COMM_WORLD.Allreduce(&stopping,&resstopping,2,MPI::INT,MPI::MAX);
   stopthinking=resstopping[0];
   stoppondering=resstopping[1];
+  if (stopthinking || stoppondering) stop_called=true;
 
   if (maxcount==0)
   {
-    //gtpe->getOutput()->printfDebug("sync (rank: %d) stopping\n",mpirank);
+    gtpe->getOutput()->printfDebug("sync (rank: %d) stopping\n",mpirank);
     return false;
   }
-  //gtpe->getOutput()->printfDebug("sync (rank: %d) not stopping\n",mpirank);
+  gtpe->getOutput()->printfDebug("sync (rank: %d) not stopping\n",mpirank);
   
   std::list<mpistruct_updatemsg> locallist;
   if (movetree->getPlayouts()>0)
@@ -6270,7 +6287,7 @@ bool Engine::mpiSyncUpdate(bool stop)
     msg.playouts=0;
     msg.wins=0;
     locallist.push_back(msg);
-    //gtpe->getOutput()->printfDebug("sync (rank: %d) added empty msg\n",mpirank);
+    gtpe->getOutput()->printfDebug("sync (rank: %d) added empty msg\n",mpirank);
   }
   
   localcount=0;
@@ -6290,7 +6307,7 @@ bool Engine::mpiSyncUpdate(bool stop)
     allmsgs[i].hash=0; // needed as maxcount is not necessarily mincount
   }
   MPI::COMM_WORLD.Allgather(localmsgs,localcount,mpitype_updatemsg,allmsgs,maxcount,mpitype_updatemsg);
-  //gtpe->getOutput()->printfDebug("sync (rank: %d) gathered\n",mpirank);
+  gtpe->getOutput()->printfDebug("sync (rank: %d) gathered\n",mpirank);
   
   for (int i=0;i<mpiworldsize;i++)
   {

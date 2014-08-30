@@ -426,6 +426,7 @@ class Engine
     Playout *playout;
     volatile bool stopthinking;
     volatile bool stoppondering;
+    volatile bool stop_called;
     volatile bool isWaitingForStop;
     Worker::Pool *threadpool;
     Go::TerritoryMap *territorymap;

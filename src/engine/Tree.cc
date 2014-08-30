@@ -10,8 +10,10 @@
 #include "Worker.h"
 #include <cfloat>
 
-#define WITH_P(A) (A>=1.0 || (A>0 && settings->rand->getRandomReal()<A))
 
+#define WITH_P(A) (A>=1.0 || (A>0 && settings->rand->getRandomReal()<A))
+int debug=0;
+    
 //power with sign
 #define pmpow(A,B) (((A)>=0)?pow(A,B):(-pow(-(A),B)))
 
@@ -630,10 +632,13 @@ float Tree::getUrgency(bool skiprave, Tree * robustchild) const
       {
         tmp+=params->test_p62*exp(-params->test_p63*pow( this->getOwnership() - params->test_p64 ,2));
       }
-      val+=(log(1000.0*this->getProgressiveBias()+1.0)+params->test_p49*this->getCriticality ()
+      val+=(log(1000.0*(this->getProgressiveBias()+1.0))+params->test_p49*this->getCriticality ()
             +tmp)*(params->test_p44/(pow(playouts_use,params->test_p51)+1.0));
+      //if (1000.0*(this->getProgressiveBias()+1.0) < 0) //wanted to test for nan, but did not work out
+      if (std::isnan(val)) //wanted to test for nan, this test does not work with -ffast-math enabled!!!!
+          fprintf(stderr,"this should not happen, urgency nan\n");
       if (params->debug_on)
-          fprintf(stderr,"                                                            CalcUrg val: %f criticality %f playouts_use %f\n",val,this->getCriticality(),playouts_use);
+          fprintf(stderr,"CalcUrg val: %f criticality %f playouts_use %f PW: %f %f %f %f\n",val,this->getCriticality(),playouts_use,this->getProgressiveBias(),1000.0*this->getProgressiveBias()+1.0,log(1000.0*this->getProgressiveBias()+1.0),params->test_p44/(pow(playouts_use,params->test_p51)+1.0));
       //val+=(log(this->getProgressiveBias()+0.1)-log(0.1)+params->test_p49*this->getCriticality ())*(params->test_p44/(parent->getPlayouts()+1.0));
     }
   }
@@ -1548,7 +1553,7 @@ Tree *Tree::getUrgentChild(Worker::Settings *settings)
     this->pruneSuperkoViolations();
   Tree * robustchild=NULL;
   if (params->test_p65>0) robustchild=getRobustChild();
-  
+  if (debug) fprintf(stderr,"getUrgentChild\n");
   for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
   {
     if ((*iter)->isPrimary() && (!(*iter)->isPruned() || WITH_P(params->test_p7)))
@@ -1563,6 +1568,9 @@ Tree *Tree::getUrgentChild(Worker::Settings *settings)
         if (params->random_f>0)
           urgency-=params->random_f*log(settings->rand->getRandomReal());
       }
+      if (debug)
+          fprintf(stderr,"urgency %s %f \n",(*iter)->getMove().toString(9).c_str(),urgency);
+      
       if (params->test_p74>0||params->test_p75>0)
       {
         urgenttmp.urgency=urgency;
@@ -1591,6 +1599,12 @@ Tree *Tree::getUrgentChild(Worker::Settings *settings)
   {
     urgentlist.sort(Tree::compare_UrgentNodes);
     //urgenttmp=urgentlist.front();
+    if (debug) {
+      for (std::list<UrgentNode>::iterator iter=urgentlist.begin();iter!=urgentlist.end();++iter)
+      {
+        fprintf(stderr,"urgenttmp.node %p %s %f \n",(*iter).node,(*iter).node->getMove().toString(9).c_str(),(*iter).urgency);
+      }
+    }
     float lastplayouts=-1; //nothing yet
     for (std::list<UrgentNode>::iterator iter=urgentlist.begin();iter!=urgentlist.end();++iter)
     {
@@ -2307,7 +2321,7 @@ Tree *Tree::getBestUrgencyChild(float playoutthreshold) const
   
   for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
   {
-    if (((*iter)->getRatio()>bestratio && (*iter)->getPlayouts()>playoutthreshold) || (*iter)->isTerminalWin())
+    if (((*iter)->getUrgency()>bestratio && (*iter)->getPlayouts()>playoutthreshold) || (*iter)->isTerminalWin())
     {
       besttree=(*iter);
       bestratio=(*iter)->getUrgency();
