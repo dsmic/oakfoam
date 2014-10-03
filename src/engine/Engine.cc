@@ -212,6 +212,17 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","test_p78",&(params->test_p78),0.0);
   params->addParameter("playout","test_p79",&(params->test_p79),0.0);
   
+  params->addParameter("playout","test_p80",&(params->test_p80),0.0);
+  params->addParameter("playout","test_p81",&(params->test_p81),0.0);
+  params->addParameter("playout","test_p82",&(params->test_p82),0.0);
+  params->addParameter("playout","test_p83",&(params->test_p83),0.0);
+  params->addParameter("playout","test_p84",&(params->test_p84),0.0);
+  params->addParameter("playout","test_p85",&(params->test_p85),0.0);
+  params->addParameter("playout","test_p86",&(params->test_p86),0.0);
+  params->addParameter("playout","test_p87",&(params->test_p87),0.0);
+  params->addParameter("playout","test_p88",&(params->test_p88),0.0);
+  params->addParameter("playout","test_p89",&(params->test_p89),0.0);
+  
   params->addParameter("tree","ucb_c",&(params->ucb_c),UCB_C);
   params->addParameter("tree","ucb_init",&(params->ucb_init),UCB_INIT);
 
@@ -2020,6 +2031,16 @@ void Engine::gtpFeatureMatchesAt(void *instance, Gtp::Engine* gtpe, Gtp::Command
   float total=me->features->getBoardGamma(board,cfglastdist,cfgsecondlastdist,col);
   float totallog=me->features->getBoardGamma(board,cfglastdist,cfgsecondlastdist,col,true);
   gtpe->getOutput()->printf("Gamma: %.2f/%.2f (%.2f) log %.2f\n",gamma,total,gamma/total,totallog);
+
+  Tree *tree=me->movetree->getChild(move);
+  if (tree) {
+    gtpe->getOutput()->printf("SelfBlack: %.2f\n",tree->getOwnSelfBlack());
+    gtpe->getOutput()->printf("SelfWhite: %.2f\n",tree->getOwnSelfWhite());
+    gtpe->getOutput()->printf("OwnBlack: %.2f\n",tree->getOwnRatio(Go::BLACK));
+    gtpe->getOutput()->printf("OwnWhite: %.2f\n",tree->getOwnRatio(Go::WHITE));
+    gtpe->getOutput()->printf("WhiteSlope: %.5f\n",tree->getSlope(Go::WHITE));
+    gtpe->getOutput()->printf("BlackSlope: %.5f\n",tree->getSlope(Go::BLACK));
+  }
   gtpe->getOutput()->endResponse(true);
   
   if (cfglastdist!=NULL)
@@ -5230,6 +5251,7 @@ void Engine::doPlayout(Worker::Settings *settings, Go::IntBoard *firstlist, Go::
           ss << " r:" << std::setprecision(2)<<robustmove->getRatio();
           ss << " r2:" << std::setprecision(2)<<robustmove->secondBestPlayoutRatio();
           ss << " u:" << std::setprecision(2)<<robustmove->getUrgency();
+          ss << " uv:" << std::setprecision(3)<<robustmove->getUrgencyVariance();
           ss << " p:" << std::setprecision(2)<<robustmove->getPlayouts();
           ss << " tw:" << robustmove->isTerminalWin();
           ss << ")";
@@ -5433,12 +5455,12 @@ void Engine::ponder()
     params->uct_initial_playouts=(int)movetree->getPlayouts();
     params->thread_job=Parameters::TJ_PONDER;
     #ifdef HAVE_MPI
-    isWaitingForStop=false;
+    //isWaitingForStop=false;
     #endif    
     threadpool->startAll();
     threadpool->waitAll();
     #ifdef HAVE_MPI
-    isWaitingForStop=true;
+    //isWaitingForStop=true;
     mpiSyncWaitStop();
     #endif    
     if (movetree->isTerminalResult())
@@ -5449,8 +5471,8 @@ void Engine::ponder()
 
 void Engine::ponderThread(Worker::Settings *settings)
 {
-  stoppondering=false;
-  stopthinking=false;
+  //stoppondering=false;
+  //stopthinking=false;
   if (!(params->pondering_enabled) || (currentboard->getMovesMade()<=0) || (currentboard->getPassesPlayed()>=2) || (currentboard->getLastMove().isResign()) || (book->getMoves(boardsize,movehistory).size()>0))
     return;
   
@@ -5516,10 +5538,10 @@ void Engine::ponderThread(Worker::Settings *settings)
     delete earlysecondlist;
     //fprintf(stderr,"pondering done! %ld %.0f stopthinking %d stoppondering %d playouts %ld\n",playouts,movetree->getPlayouts(),stopthinking,stoppondering,playouts);
     #ifdef HAVE_MPI
-    gtpe->getOutput()->printfDebug("ponder on rank %d stopping... (inform: %d) threadid %d\n",mpirank,mpi_inform_others,settings->thread->getID());
+    gtpe->getOutput()->printfDebug("ponder on rank %d stopping... (inform: %d) threadid %d stoppondering %d\n",mpirank,mpi_inform_others,settings->thread->getID(),stoppondering);
     if (!stop_called && settings->thread->getID()==0 && mpiworldsize>1 && mpi_inform_others)
     {
-      //stoppondering=true;
+      stoppondering=true;
       this->mpiSyncUpdate(true);
       //here must be waited till all are stoped!!
       //gtpe->getOutput()->printfDebug("mpiSyncWaitStop on rank %d stoped (inform: %d) threadid %d\n",mpirank,mpi_inform_others,settings->thread->getID());
@@ -6114,13 +6136,13 @@ void Engine::mpiPonder(Go::Color col)
   params->uct_initial_playouts=startplayouts;
   params->thread_job=Parameters::TJ_PONDER;
   #ifdef HAVE_MPI
-    isWaitingForStop=false;
+  //  isWaitingForStop=false;
   #endif
   stoppondering=false;
   threadpool->startAll();
   threadpool->waitAll(); // Here it makes it impossible to interrupt, as it is not listening to mpi commands
   #ifdef HAVE_MPI
-    isWaitingForStop=true;
+  //  isWaitingForStop=true;
     mpiSyncWaitStop();
   #endif    
     
@@ -6233,17 +6255,18 @@ void Engine::MpiHashTable::add(Go::ZobristHash hash, Tree *node)
 void Engine::mpiSyncWaitStop()
 {
  gtpe->getOutput()->printfDebug("try syncWaitStop (rank: %d)\n",mpirank);
- while (true)
-  {
-    params->mpi_last_update=MPI::Wtime();
-    int localcount=(isWaitingForStop?1:0);
-    int maxcount;
-    MPI::COMM_WORLD.Allreduce(&localcount,&maxcount,1,MPI::INT,MPI::MIN);
+ MPI::COMM_WORLD.Barrier();
+ //while (true)
+ // {
+ //   params->mpi_last_update=MPI::Wtime();
+ //   int localcount=(isWaitingForStop?1:0);
+ //   int maxcount;
+ //   MPI::COMM_WORLD.Allreduce(&localcount,&maxcount,1,MPI::INT,MPI::MIN);
     //gtpe->getOutput()->printfDebug("syncWaitStop localcount %d maxcount %d rank %d\n",localcount,maxcount,mpirank);
-    if (maxcount==1)
-      break;
-    boost::this_thread::sleep(boost::posix_time::seconds(params->mpi_update_period));    
-  }
+ //   if (maxcount==1)
+ //     break;
+ //   boost::this_thread::sleep(boost::posix_time::seconds(params->mpi_update_period));    
+ // }
   gtpe->getOutput()->printfDebug("syncWaitStop (rank: %d)\n",mpirank);
 }
 
@@ -6252,7 +6275,7 @@ bool Engine::mpiSyncUpdate(bool stop)
   int localcount=(stop?0:1);
   int maxcount;
   
-  gtpe->getOutput()->printfDebug("!!!!!sync (rank: %d) (stop:%d)!!!!!\n",mpirank,stop);
+  //gtpe->getOutput()->printfDebug("!!!!!sync (rank: %d) (stop:%d)!!!!!\n",mpirank,stop);
   
   //TODO: should consider replacing first 2 mpi cmds with 1
   MPI::COMM_WORLD.Allreduce(&localcount,&maxcount,1,MPI::INT,MPI::MIN);
@@ -6267,10 +6290,10 @@ bool Engine::mpiSyncUpdate(bool stop)
 
   if (maxcount==0)
   {
-    gtpe->getOutput()->printfDebug("sync (rank: %d) stopping\n",mpirank);
+    //gtpe->getOutput()->printfDebug("sync (rank: %d) stopping\n",mpirank);
     return false;
   }
-  gtpe->getOutput()->printfDebug("sync (rank: %d) not stopping\n",mpirank);
+  //gtpe->getOutput()->printfDebug("sync (rank: %d) not stopping\n",mpirank);
   
   std::list<mpistruct_updatemsg> locallist;
   if (movetree->getPlayouts()>0)
@@ -6287,7 +6310,7 @@ bool Engine::mpiSyncUpdate(bool stop)
     msg.playouts=0;
     msg.wins=0;
     locallist.push_back(msg);
-    gtpe->getOutput()->printfDebug("sync (rank: %d) added empty msg\n",mpirank);
+    //gtpe->getOutput()->printfDebug("sync (rank: %d) added empty msg\n",mpirank);
   }
   
   localcount=0;
@@ -6307,7 +6330,7 @@ bool Engine::mpiSyncUpdate(bool stop)
     allmsgs[i].hash=0; // needed as maxcount is not necessarily mincount
   }
   MPI::COMM_WORLD.Allgather(localmsgs,localcount,mpitype_updatemsg,allmsgs,maxcount,mpitype_updatemsg);
-  gtpe->getOutput()->printfDebug("sync (rank: %d) gathered\n",mpirank);
+  //gtpe->getOutput()->printfDebug("sync (rank: %d) gathered\n",mpirank);
   
   for (int i=0;i<mpiworldsize;i++)
   {

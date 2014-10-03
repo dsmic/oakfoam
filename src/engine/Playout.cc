@@ -173,6 +173,8 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
 			      critarray[(*iter)->getMove().getPosition()].ownselfwhite=(*iter)->getOwnSelfWhite();
 			      critarray[(*iter)->getMove().getPosition()].ownblack=(*iter)->getOwnRatio(Go::BLACK);
 			      critarray[(*iter)->getMove().getPosition()].ownwhite=(*iter)->getOwnRatio(Go::WHITE);
+            critarray[(*iter)->getMove().getPosition()].slopeblack=(*iter)->getSlope(Go::BLACK);
+			      critarray[(*iter)->getMove().getPosition()].slopewhite=(*iter)->getSlope(Go::WHITE);
             critarray[(*iter)->getMove().getPosition()].isbadblack=false;
             critarray[(*iter)->getMove().getPosition()].isbadwhite=false;
             
@@ -184,7 +186,9 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
                     critarray[(*iter)->getMove().getPosition()].ownselfblack,
                     critarray[(*iter)->getMove().getPosition()].ownselfwhite,
                     critarray[(*iter)->getMove().getPosition()].ownblack,
-                    critarray[(*iter)->getMove().getPosition()].ownwhite
+                    critarray[(*iter)->getMove().getPosition()].ownwhite,
+                    critarray[(*iter)->getMove().getPosition()].slopeblack,
+			              critarray[(*iter)->getMove().getPosition()].slopewhite
                       );
             (*iter)->displayOwnerCounts();
             }
@@ -1169,7 +1173,11 @@ if (params->playout_random_weight_territory_n>0)
         v+=params->test_p15*critarray[p].crit;
       if (params->test_p47>0 && ravearray!=NULL)
         v+=params->test_p47*ravearray[p];
-      
+      if (params->test_p81>0 && critarray!=NULL) {
+        float slope=-(col==Go::BLACK?critarray[p].slopeblack:critarray[p].slopewhite);
+        if (slope>0) v+=params->test_p81*slope;
+      }
+        
       if (params->test_p11>0 && (board->getDistanceToBorder(p)==1 || board->getDistanceToBorder(p)==2))
         v+=params->test_p11;
       if (params->test_p21>0 && board->surroundingEmpty(p)==8)
@@ -1445,7 +1453,7 @@ bool Playout::isBadMove(Worker::Settings *settings, Go::Board *board, Go::Color 
   }
    if (params->debug_on && critarray && (pos==22||pos==11))
   {
-    fprintf(stderr,"after %d\n",isBad);
+  //  fprintf(stderr,"after %d\n",isBad);
   //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   // only debugging !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   //  isBad=true;

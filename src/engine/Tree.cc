@@ -30,6 +30,7 @@ Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p) : params(
   bestLCBplayouts=0;
   scoresum=0;
   scoresumsq=0;
+  urgency_variance=0;
   raveplayouts=0;
   earlyraveplayouts=0;
   ravewins=0;
@@ -76,7 +77,10 @@ Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p) : params(
   ownblack=0;
   ownwhite=0;
   ownercount=0;
-  
+  blackx=0; blacky=0; blackxy=0; blackx2=0;
+  whitex=0; whitey=0; whitexy=0; whitex2=0;
+  regcountb=0;
+  regcountw=0;
   #ifdef HAVE_MPI
     this->resetMpiDiff();
   #endif
@@ -590,12 +594,22 @@ float Tree::getUrgency(bool skiprave, Tree * robustchild) const
     uctbias=0;
   else
   {
-    if (parent->getPlayouts()>1 && playouts>0)
-      uctbias=params->ucb_c*sqrt(log((float)parent->getPlayouts())/(playouts));
-    else if (parent->getPlayouts()>1)
-      uctbias=params->ucb_c*sqrt(log((float)parent->getPlayouts())/(1));
-    else
-      uctbias=params->ucb_c/2;
+    if (params->test_p77>0) {
+      if (parent->getPlayouts()>1 && playouts>0)
+        uctbias=params->test_p77*sqrt(pow((float)parent->getPlayouts()-1,params->test_p78)/(playouts));
+      else if (parent->getPlayouts()>1)
+        uctbias=params->test_p77*sqrt(pow((float)parent->getPlayouts()-1,params->test_p78)/(1));
+      else
+        uctbias=params->test_p77/2;
+    }
+    else {
+      if (parent->getPlayouts()>1 && playouts>0)
+        uctbias=params->ucb_c*sqrt(log((float)parent->getPlayouts())/(playouts));
+      else if (parent->getPlayouts()>1)
+        uctbias=params->ucb_c*sqrt(log((float)parent->getPlayouts())/(1));
+      else
+        uctbias=params->ucb_c/2;
+    }
   }
 
   if (params->bernoulli_a>0)
@@ -679,6 +693,9 @@ float Tree::getUrgency(bool skiprave, Tree * robustchild) const
     else
       val+=params->uct_criticality_urgency_factor*this->getCriticality();
   }
+
+  if (params->test_p79>0)
+    val+=params->test_p79*getUrgencyVariance();
   
   return val+1.0;  //avoid negative urgency!!!
 }
@@ -755,6 +772,7 @@ std::string Tree::toSGFString() const
       ss<<"Score SD: "<<this->getScoreSD()<<"\n";
     }
     ss<<"Urgency: "<<this->getUrgency()<<"\n";
+    ss<<"UrgencyVar: "<<this->getUrgencyVariance()<<"\n";
     if (!this->isLeaf())
     {
         //ss<<"Pruned: "<<prunedchildren<<"/"<<children->size()<<"("<<(children->size()-prunedchildren)<<")\n";
@@ -1346,7 +1364,7 @@ float Tree::getUnPruneFactor(float *moveValues,float mean, int num, float prob_l
     //fprintf(stderr,"prior wins? %f %f %f\n",wins,playouts,this->getRatio());
     factor*=wins*params->uct_prior_unprune_factor;
   }
-  if (params->uct_rave_unprune_factor>0)
+  if (params->uct_rave_unprune_factor>0 && this->getRAVEPlayouts()>0)
   {
     if (params->uct_rave_unprune_multiply)
       factor*=(1+params->uct_rave_unprune_factor*this->getRAVERatio());
@@ -1554,6 +1572,7 @@ Tree *Tree::getUrgentChild(Worker::Settings *settings)
   Tree * robustchild=NULL;
   if (params->test_p65>0) robustchild=getRobustChild();
   if (debug) fprintf(stderr,"getUrgentChild\n");
+  float sum_urgency=0,sum_urgency2=0,var_count=0;
   for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
   {
     if ((*iter)->isPrimary() && (!(*iter)->isPruned() || WITH_P(params->test_p7)))
@@ -1570,7 +1589,9 @@ Tree *Tree::getUrgentChild(Worker::Settings *settings)
       }
       if (debug)
           fprintf(stderr,"urgency %s %f \n",(*iter)->getMove().toString(9).c_str(),urgency);
-      
+      sum_urgency+=urgency;
+      sum_urgency2+=urgency*urgency;
+      var_count+=1;
       if (params->test_p74>0||params->test_p75>0)
       {
         urgenttmp.urgency=urgency;
@@ -1594,7 +1615,7 @@ Tree *Tree::getUrgentChild(Worker::Settings *settings)
       }
     }
   }
-
+  urgency_variance=(sum_urgency2-sum_urgency*sum_urgency/var_count)/var_count;
   if (params->test_p74>0 && urgentlist.size()>0)
   {
     urgentlist.sort(Tree::compare_UrgentNodes);
@@ -2054,6 +2075,28 @@ void Tree::updateRAVE(Go::Color wincol,Go::IntBoard *blacklist,Go::IntBoard *whi
           if (scoredboard->getScoredOwner(pos)==Go::BLACK) (*iter)->ownblack++;
           if (scoredboard->getScoredOwner(pos)==Go::WHITE) (*iter)->ownwhite++;
           (*iter)->ownercount++;
+          if (blacklist->get(pos)!=0) {
+            float rnum=(blacklist->get(pos)>0)?blacklist->get(pos):-blacklist->get(pos);
+            if (rnum<params->test_p82) {
+              (*iter)->regcountb++;
+              (*iter)->blackx+=rnum;
+              (*iter)->blackx2+=rnum*rnum;
+              if (wincol==Go::BLACK) {
+                (*iter)->blacky+=1; (*iter)->blackxy+=rnum;
+              }
+            }
+          }
+          if (whitelist->get(pos)!=0) {
+            float rnum=(whitelist->get(pos)>0)?whitelist->get(pos):-whitelist->get(pos);
+            if (rnum<params->test_p82) {
+              (*iter)->regcountw++;
+              (*iter)->whitex+=rnum; 
+              (*iter)->whitex2+=rnum*rnum;
+              if (wincol==Go::WHITE) {
+                (*iter)->whitey+=1; (*iter)->whitexy+=rnum; 
+              }
+            }
+          }
         }  
         if (ravenum>0)
         {
@@ -2416,6 +2459,14 @@ float Tree::getOwnRatio(Go::Color col)
     return ((float)ownwhite)/(ownercount);
 }
 
+float Tree::getSlope(Go::Color col)
+{
+  if (col==Go::BLACK)
+    return (blackx>0)?(regcountb*blackxy-blackx*blacky)/(regcountb*blackx2-blackx*blackx):0;
+  else
+    return (whitex>0)?(regcountw*whitexy-whitex*whitey)/(regcountw*whitex2-whitex*whitex):0;
+}
+
 float Tree::getCriticality() const
 {
   // passes get more critical in the end of the game
@@ -2515,6 +2566,7 @@ void Tree::resetNode()
   wins=0;
   scoresum=0;
   scoresumsq=0;
+  urgency_variance=0;
   raveplayouts=0;
   earlyraveplayouts=0;
   ravewins=0;
@@ -2536,6 +2588,10 @@ void Tree::resetNode()
   ownblack=0;
   ownwhite=0;
   ownercount=0;
+  blackx=0; blacky=0; blackxy=0; blackx2=0;
+  whitex=0; whitey=0; whitexy=0; whitex2=0;
+  regcountw=0;
+  regcountb=0;
   
   #ifdef HAVE_MPI
     this->resetMpiDiff();

@@ -198,6 +198,7 @@ class Tree
      * Biases can be from UCB, progressive bias or criticality bias.
      */
     float getUrgency(bool skiprave=false, Tree * robustchild=NULL) const;
+    float getUrgencyVariance() const { return urgency_variance;};
     
     /** Add a child to this node. */
     void addChild(Tree *node);
@@ -308,10 +309,14 @@ class Tree
     float getOwnSelfWhite();
     float getOwnSelfBlack();
     float getOwnRatio(Go::Color col=Go::BLACK);
+    float getSlope(Go::Color col);
     void displayOwnerCounts() {fprintf(stderr,"ownselfblack %f,ownselfwhite %f,ownotherblack %f,ownotherwhite %f,ownnobody %f,ownblack %f,ownwhite %f,ownercount %f\n",ownselfblack,ownselfwhite,ownotherblack,ownotherwhite,ownnobody,ownblack,ownwhite,ownercount);};
     float getCriticality() const;
     float getSelfOwner(int size) const;
     float ownselfblack,ownselfwhite,ownotherblack,ownotherwhite,ownnobody,ownblack,ownwhite,ownercount;
+    float blackx,blacky,blackxy,blackx2;
+    float whitex,whitey,whitexy,whitex2;
+    float regcountb,regcountw;
     
     /** Get the territory owner statistics for this node. */
     float getTerritoryOwner() const;
@@ -388,6 +393,7 @@ class Tree
     double earlyraveplayoutsother;
     double earlyravewinsother;
     float scoresum,scoresumsq;
+    float urgency_variance;
     float decayedwins,decayedplayouts;
     Parameters *const params;
     bool hasTerminalWinrate,hasTerminalWin;

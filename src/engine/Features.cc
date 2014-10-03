@@ -961,7 +961,8 @@ unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::B
       //ignore second last, if last was pass
       if (params->features_pass_no_move_for_lastdist && board->getLastMove().isPass())
         return 0;
-      
+      if (params->test_p80>0)
+        return 0; //turned off
       int dist=board->getCircularDistance(move.getPosition(),board->getSecondLastMove().getPosition());
       
       int maxdist=SECONDLASTDIST_LEVELS;
@@ -1389,10 +1390,10 @@ float Features::getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist
   g*=this->getFeatureGamma(Features::SELFATARI,this->matchFeatureClass(Features::SELFATARI,board,cfglastdist,cfgsecondlastdist,move,false));
   g*=(1.0+params->test_p10)*this->getFeatureGamma(Features::ATARI,this->matchFeatureClass(Features::ATARI,board,cfglastdist,cfgsecondlastdist,move,false));
   g*=this->getFeatureGamma(Features::BORDERDIST,this->matchFeatureClass(Features::BORDERDIST,board,cfglastdist,cfgsecondlastdist,move,false));
-  g*=this->getFeatureGamma(Features::PATTERN3X3,this->matchFeatureClass(Features::PATTERN3X3,board,cfglastdist,cfgsecondlastdist,move,false));
   if (circlevels->size()>0)
     g*=this->getFeatureGamma(Features::CIRCPATT,this->matchFeatureClass(Features::CIRCPATT,board,cfglastdist,cfgsecondlastdist,move,false,pattcirc_p));
-
+  else //should be disabled, if circpatt in use !!
+    g*=this->getFeatureGamma(Features::PATTERN3X3,this->matchFeatureClass(Features::PATTERN3X3,board,cfglastdist,cfgsecondlastdist,move,false));
   if (params->features_dt_use)
   {
     float w = DecisionTree::getCollectionWeight(params->engine->getDecisionTrees(),board,move);

@@ -427,7 +427,7 @@ class Engine
     volatile bool stopthinking;
     volatile bool stoppondering;
     volatile bool stop_called;
-    volatile bool isWaitingForStop;
+    //volatile bool isWaitingForStop;
     Worker::Pool *threadpool;
     Go::TerritoryMap *territorymap;
     Go::TerritoryMap **area_correlation_map;
