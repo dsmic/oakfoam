@@ -85,6 +85,8 @@ const std::string FEATURES_DEFAULT=
   "nakade:6 1.0 \n"
   "nakade:7 1.0 \n"
   "nakade:8 1.0 \n"
+  "approach:1 1.0 \n"
+  "approach:2 1.0 \n"
   "pattern3x3:0x0000 0.3169 \n"
   "pattern3x3:0x0001 0.178076 \n"
   "pattern3x3:0x0002 0.265096 \n"
@@ -687,6 +689,8 @@ Features::Features(Parameters *prms) : params(prms)
     gammas_cfgsecondlastdist[i]=1.0;
   for (int i=0;i<NAKADE_LEVELS;i++)
     gammas_nakade[i]=1.0;
+  for (int i=0;i<APPROACH_LEVELS;i++)
+    gammas_approach[i]=1.0;
 
   circdict=new Pattern::CircularDictionary();
 #ifdef with_unordered
@@ -1026,6 +1030,19 @@ unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::B
       if (board->isFourEmptyGroupCenterFrom(move.getPosition())) return 6;
       if (board->isFiveEmptyGroupCenterFrom(move.getPosition())) return 7;
       if (board->isBent4EmptyGroupCenterFrom(move.getPosition())) return 8;
+      return 0;
+    }
+    case Features::APPROACH:
+    {
+      int approach[4];
+      if (board->isApproach(move,approach)) {
+        for (int i=0;i<4;i++) {
+          if (approach[i]<0) break;
+          if (board->isAtari(Go::Move(move.getColor(),approach[i]),NULL,move.getPosition()))
+            return 2;
+        }
+        return 1;
+      }
       return 0;
     }
     case Features::PATTERN3X3:
@@ -1381,7 +1398,7 @@ float Features::getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist
   g*=this->getFeatureGamma(Features::SECONDLASTDIST,this->matchFeatureClass(Features::SECONDLASTDIST,board,cfglastdist,cfgsecondlastdist,move,false));
   g*=this->getFeatureGamma(Features::CFGLASTDIST,this->matchFeatureClass(Features::CFGLASTDIST,board,cfglastdist,cfgsecondlastdist,move,false));
   g*=this->getFeatureGamma(Features::CFGSECONDLASTDIST,this->matchFeatureClass(Features::CFGSECONDLASTDIST,board,cfglastdist,cfgsecondlastdist,move,false));
-
+  
   if (gamma_local_part!=NULL)
     *gamma_local_part=g;
   g*=this->getFeatureGamma(Features::PASS,this->matchFeatureClass(Features::PASS,board,cfglastdist,cfgsecondlastdist,move,false));
@@ -1390,6 +1407,8 @@ float Features::getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist
   g*=this->getFeatureGamma(Features::SELFATARI,this->matchFeatureClass(Features::SELFATARI,board,cfglastdist,cfgsecondlastdist,move,false));
   g*=(1.0+params->test_p10)*this->getFeatureGamma(Features::ATARI,this->matchFeatureClass(Features::ATARI,board,cfglastdist,cfgsecondlastdist,move,false));
   g*=this->getFeatureGamma(Features::BORDERDIST,this->matchFeatureClass(Features::BORDERDIST,board,cfglastdist,cfgsecondlastdist,move,false));
+  g*=this->getFeatureGamma(Features::NAKADE,this->matchFeatureClass(Features::NAKADE,board,cfglastdist,cfgsecondlastdist,move,false));
+  g*=this->getFeatureGamma(Features::APPROACH,this->matchFeatureClass(Features::APPROACH,board,cfglastdist,cfgsecondlastdist,move,false));
   if (circlevels->size()>0)
     g*=this->getFeatureGamma(Features::CIRCPATT,this->matchFeatureClass(Features::CIRCPATT,board,cfglastdist,cfgsecondlastdist,move,false,pattcirc_p));
   else //should be disabled, if circpatt in use !!
@@ -1724,6 +1743,8 @@ std::string Features::getFeatureClassName(Features::FeatureClass featclass) cons
       return "cfgsecondlastdist";
     case Features::NAKADE:
       return "nakade";
+    case Features::APPROACH:
+      return "approach";
     case Features::PATTERN3X3:
       return "pattern3x3";
     case Features::CIRCPATT:
@@ -1757,6 +1778,8 @@ Features::FeatureClass Features::getFeatureClassFromName(std::string name) const
     return Features::CFGSECONDLASTDIST;
   else if (name=="nakade")
     return Features::NAKADE;
+  else if (name=="approach")
+    return Features::APPROACH;
   else if (name=="pattern3x3")
     return Features::PATTERN3X3;
   else if (name=="pattern3x3playout")
@@ -1810,6 +1833,7 @@ bool Features::saveGammaFile(std::string filename)
   for (i=0;i<CFGLASTDIST_LEVELS;i++) fout<<"cfglastdist:"<<i+1<<" "<<gammas_cfglastdist[i]<<" \n";
   for (i=0;i<CFGSECONDLASTDIST_LEVELS;i++) fout<<"cfgsecondlastdist:"<<i+1<<" "<<gammas_cfgsecondlastdist[i]<<" \n";
   for (i=0;i<NAKADE_LEVELS;i++) fout<<"nakade:"<<i+1<<" "<<gammas_nakade[i]<<" \n";
+  for (i=0;i<APPROACH_LEVELS;i++) fout<<"approach:"<<i+1<<" "<<gammas_approach[i]<<" \n";
     
   for (i=0;i<PATTERN_3x3_GAMMAS;i++) if (patterngammas->getGamma (i)>0) {fout<<"pattern3x3:0x"<<std::hex<<std::setw(4)<<std::setfill('0')<<i<<" "<<patterngammas->getGamma (i)<<" \n";};
   std::map<unsigned int,std::string>::iterator it;
@@ -2197,6 +2221,8 @@ float *Features::getStandardGamma(Features::FeatureClass featclass) const
       return (float *)gammas_cfgsecondlastdist;
     case Features::NAKADE:
       return (float *)gammas_nakade;
+    case Features::APPROACH:
+      return (float *)gammas_approach;
     default:
       return NULL;
   }
@@ -2244,7 +2270,7 @@ std::string Features::getMatchingFeaturesString(Go::Board *board, Go::ObjectBoar
   if (playout)
   {
     //this should only be used, if in playout pattern moves are triggered. The check should be done before!
-    unsigned int id0=PASS_LEVELS+CAPTURE_LEVELS+EXTENSION_LEVELS+SELFATARI_LEVELS+ATARI_LEVELS+BORDERDIST_LEVELS+LASTDIST_LEVELS+SECONDLASTDIST_LEVELS+CFGLASTDIST_LEVELS+CFGSECONDLASTDIST_LEVELS+NAKADE_LEVELS;
+    unsigned int id0=PASS_LEVELS+CAPTURE_LEVELS+EXTENSION_LEVELS+SELFATARI_LEVELS+ATARI_LEVELS+BORDERDIST_LEVELS+LASTDIST_LEVELS+SECONDLASTDIST_LEVELS+CFGLASTDIST_LEVELS+CFGSECONDLASTDIST_LEVELS+NAKADE_LEVELS+APPROACH_LEVELS;
     int level1=board->getMaxDistance(board->getLastMove().getPosition(),move.getPosition())-1;
     int level2=board->getMaxDistance(board->getSecondLastMove().getPosition(),move.getPosition())-1;
     long level=this->matchFeatureClass(Features::PATTERN3X3,board,cfglastdist,cfgsecondlastdist,move);
@@ -2383,6 +2409,16 @@ std::string Features::getMatchingFeaturesString(Go::Board *board, Go::ObjectBoar
   }
   base+=NAKADE_LEVELS;
   
+  level=this->matchFeatureClass(Features::APPROACH,board,cfglastdist,cfgsecondlastdist,move);
+  if (level>0)
+  {
+    if (pretty)
+      ss<<" approach:"<<level;
+    else
+      ss<<" "<<(base+level-1);
+  }
+  base+=APPROACH_LEVELS;
+  
   level=this->matchFeatureClass(Features::PATTERN3X3,board,cfglastdist,cfgsecondlastdist,move);
   if (patterngammas->hasGamma(level) && !move.isPass() && !move.isResign())
   {
@@ -2430,7 +2466,7 @@ std::string Features::getFeatureIdList(bool playout) const
   unsigned int id=0;
   if (playout)
   {
-    unsigned int id0=PASS_LEVELS+CAPTURE_LEVELS+EXTENSION_LEVELS+SELFATARI_LEVELS+ATARI_LEVELS+BORDERDIST_LEVELS+LASTDIST_LEVELS+SECONDLASTDIST_LEVELS+CFGLASTDIST_LEVELS+CFGSECONDLASTDIST_LEVELS+NAKADE_LEVELS;
+    unsigned int id0=PASS_LEVELS+CAPTURE_LEVELS+EXTENSION_LEVELS+SELFATARI_LEVELS+ATARI_LEVELS+BORDERDIST_LEVELS+LASTDIST_LEVELS+SECONDLASTDIST_LEVELS+CFGLASTDIST_LEVELS+CFGSECONDLASTDIST_LEVELS+NAKADE_LEVELS+APPROACH_LEVELS;
     for (unsigned int level=0;level<PATTERN_3x3_GAMMAS;level++)
     {
         if (patterngammas->hasGamma(level))  //this list is done with patterngammas, as only they are collected by the harvest scripts
@@ -2487,6 +2523,9 @@ std::string Features::getFeatureIdList(bool playout) const
   for (unsigned int level=1;level<=NAKADE_LEVELS;level++)
     ss<<(id++)<<" nakade:"<<level<<"\n";
   
+  for (unsigned int level=1;level<=APPROACH_LEVELS;level++)
+    ss<<(id++)<<" approach:"<<level<<"\n";
+  
   for (unsigned int level=0;level<PATTERN_3x3_GAMMAS;level++)
   {
     if (patterngammas->hasGamma(level))
@@ -2506,7 +2545,7 @@ std::string Features::getFeatureIdList(bool playout) const
 
 void Features::updatePatternIds()
 {
-  unsigned int id=PASS_LEVELS+CAPTURE_LEVELS+EXTENSION_LEVELS+SELFATARI_LEVELS+ATARI_LEVELS+BORDERDIST_LEVELS+LASTDIST_LEVELS+SECONDLASTDIST_LEVELS+CFGLASTDIST_LEVELS+CFGSECONDLASTDIST_LEVELS+NAKADE_LEVELS;
+  unsigned int id=PASS_LEVELS+CAPTURE_LEVELS+EXTENSION_LEVELS+SELFATARI_LEVELS+ATARI_LEVELS+BORDERDIST_LEVELS+LASTDIST_LEVELS+SECONDLASTDIST_LEVELS+CFGLASTDIST_LEVELS+CFGSECONDLASTDIST_LEVELS+NAKADE_LEVELS+APPROACH_LEVELS;
   
   for (unsigned int level=0;level<PATTERN_3x3_GAMMAS;level++)
   {

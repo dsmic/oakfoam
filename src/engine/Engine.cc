@@ -2024,7 +2024,8 @@ void Engine::gtpFeatureMatchesAt(void *instance, Gtp::Engine* gtpe, Gtp::Command
   gtpe->getOutput()->printf("SECONDLASTDIST:    %u\n",me->features->matchFeatureClass(Features::SECONDLASTDIST,board,cfglastdist,cfgsecondlastdist,move));
   gtpe->getOutput()->printf("CFGLASTDIST:       %u\n",me->features->matchFeatureClass(Features::CFGLASTDIST,board,cfglastdist,cfgsecondlastdist,move));
   gtpe->getOutput()->printf("CFGSECONDLASTDIST: %u\n",me->features->matchFeatureClass(Features::CFGSECONDLASTDIST,board,cfglastdist,cfgsecondlastdist,move));
-  gtpe->getOutput()->printf("NAKADE:             %u\n",me->features->matchFeatureClass(Features::NAKADE,board,cfglastdist,cfgsecondlastdist,move));
+  gtpe->getOutput()->printf("NAKADE:            %u\n",me->features->matchFeatureClass(Features::NAKADE,board,cfglastdist,cfgsecondlastdist,move));
+  gtpe->getOutput()->printf("APPROACH:          %u\n",me->features->matchFeatureClass(Features::APPROACH,board,cfglastdist,cfgsecondlastdist,move));
   gtpe->getOutput()->printf("PATTERN3X3:        0x%04x\n",me->features->matchFeatureClass(Features::PATTERN3X3,board,cfglastdist,cfgsecondlastdist,move));
   gtpe->getOutput()->printf("CIRCPATT:          %u\n",me->features->matchFeatureClass(Features::CIRCPATT,board,cfglastdist,cfgsecondlastdist,move));
   float gamma=me->features->getMoveGamma(board,cfglastdist,cfgsecondlastdist,move);

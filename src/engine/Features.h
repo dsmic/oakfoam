@@ -12,6 +12,7 @@
 #define CFGLASTDIST_LEVELS 10
 #define CFGSECONDLASTDIST_LEVELS 10
 #define NAKADE_LEVELS 8
+#define APPROACH_LEVELS 1
 
 #include <string>
 #include <set>
@@ -110,6 +111,7 @@ class Features
       CFGLASTDIST,
       CFGSECONDLASTDIST,
       NAKADE,
+      APPROACH,
       PATTERN3X3,
       CIRCPATT,
       PATTERN3X3playout,
@@ -214,6 +216,7 @@ class Features
     float gammas_cfglastdist[CFGLASTDIST_LEVELS];
     float gammas_cfgsecondlastdist[CFGSECONDLASTDIST_LEVELS];
     float gammas_nakade[NAKADE_LEVELS];
+    float gammas_approach[APPROACH_LEVELS];
 
     Pattern::CircularDictionary *circdict; 
 #ifdef with_unordered

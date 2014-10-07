@@ -261,6 +261,7 @@ class Engine
       ANYCAPTURE,
       CIRCPATTERN_QUICK,
       FILL_BOARD,
+      RANDOM_QUICK_TERRITORY,
       RANDOM_REWEIGHTED_QUICK,
       RANDOM_QUICK,
       RANDOM,
@@ -268,7 +269,6 @@ class Engine
       PASS,
       REPLACE_WITH_CIRC,
       RANDOM_QUICK_CIRC,
-      RANDOM_QUICK_TERRITORY,
       LGRF2,
       STATISTICS_NUM     //is set to the number of entries !!
     };

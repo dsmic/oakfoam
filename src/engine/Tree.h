@@ -173,6 +173,7 @@ class Tree
     double getRAVEWinsOtherEarly() const { return earlyravewinsother; };
     /** Get the ratio of wins to playouts. */
     float getRatio() const;
+    float getRatio_intern() const;
     /** Get the unprune factor, used for determining the order to unprune nodes in. */
     float getUnPruneFactor(float *moveValues=NULL, float mean=0, int num=0, float prob_local=0) const;
     /** Get the score mean. */

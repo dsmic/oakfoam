@@ -180,7 +180,7 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
             
             if (params->debug_on)
             {
-              fprintf(stderr,"move %s %d crit %f ownblack %f ownwhite %f ownrationb %f ownrationw %f\n",
+              fprintf(stderr,"move %s %d crit %f ownblack %f ownwhite %f ownrationb %f ownrationw %f slopeblack %f slopewhite %f\n",
                     (*iter)->getMove().toString(board->getSize()).c_str(),(*iter)->getMove().getPosition(),
                     critarray[(*iter)->getMove().getPosition()].crit,
                     critarray[(*iter)->getMove().getPosition()].ownselfblack,
@@ -346,7 +346,10 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
   float trylocal_p=1.0;
   bool earlymoves=true;
 
-  board->resetPassesPlayed(); // if the tree plays two passes it is not guaranteed, that score can count the result!!!
+  
+  //board->resetPassesPlayed(); // if the tree plays two passes it is not guaranteed, that score can count the result!!!
+  //but it is the chinese counting, therefore the win is correct, if it is not played to the end within this counting
+  
   while (board->getPassesPlayed()<2 || kodelay>0)
   {
     bool resign;

@@ -144,6 +144,19 @@ float Tree::getScoreSD() const
 
 float Tree::getRatio() const
 {
+  float ratio_intern=this->getRatio_intern();
+  if (!move.isPass())
+    return ratio_intern;
+  else {
+    if (ratio_intern > 1-params->resign_ratio_threshold)
+      return ratio_intern;
+    else 
+      return 0;
+  }
+}
+
+float Tree::getRatio_intern() const
+{
   if (this->isTerminalResult())
     return (hasTerminalWin?1:0);
   else if (playouts>0)
@@ -435,6 +448,8 @@ Tree *Tree::getChild(Go::Move move) const
 
 bool Tree::allChildrenTerminalLoses()
 {
+  if (this->isLeaf()) return false; //no children !!
+  
   //fprintf(stderr,"check if all children of %s are losses: ",move.toString(params->board_size).c_str());
   for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
   {
@@ -475,7 +490,8 @@ void Tree::passPlayoutUp(int fscore, bool win, Tree *source)
         {
           //fprintf(stderr,"Terminal info: (%d -> %d)(%d,%d)(%p,%d,%d,%s)\n",hasTerminalWin,win,hasTerminalWinrate,this->isTerminalResult(),source,(source!=NULL?source->isTerminalResult():0),(source!=NULL?source->hasTerminalWin:0),(source!=NULL?source->getMove().toString(params->board_size).c_str():""));
           hasTerminalWin=win;
-          hasTerminalWinrate=true;
+          if (params->test_p83==0) //if set, no terminal winrate is used, as two passes leed to wrong winrates 
+            hasTerminalWinrate=true;
           if (params->debug_on)
             params->engine->getGtpEngine()->getOutput()->printfDebug("New Terminal Result %d! (%s)\n",win,move.toString(params->board_size).c_str());
           if (!win && !this->isRoot() && parent->hasPrunedChildren())
@@ -493,7 +509,8 @@ void Tree::passPlayoutUp(int fscore, bool win, Tree *source)
   else if (this->isTerminal() && !this->isTerminalResult())
   {
     hasTerminalWin=win;
-    hasTerminalWinrate=true;
+    if (params->test_p83==0) //if set, no terminal winrate is used, as two passes leed to wrong winrates 
+      hasTerminalWinrate=true;
   }
   
   if (!this->isRoot())
@@ -579,9 +596,10 @@ float Tree::KL_max_q(float S, float N, float t) const
 float Tree::getUrgency(bool skiprave, Tree * robustchild) const
 {
   float uctbias;
-  if (this->isTerminal())
+  //handling was not correct I think
+  if (this->isTerminalResult()) //this->isTerminal())
   {
-    if (this->isTerminalWin() || !this->isTerminalResult())
+    if (this->isTerminalWin())// || !this->isTerminalResult())
       return TREE_TERMINAL_URGENCY;
     else
       return -TREE_TERMINAL_URGENCY;
@@ -720,6 +738,9 @@ bool Tree::isTerminal() const
     return true;
   else if (!this->isRoot())
   {
+    // only tree with two passes does not guarantee, that it is terminal!
+    // at least the random playout should be finished, otherwize no scoring possible!
+        
     if (this->getMove().isPass() && parent->getMove().isPass())
       return true;
     else
@@ -782,7 +803,7 @@ std::string Tree::toSGFString() const
       {
         //ss<<(*iter)->getMove().toString(params->board_size)<<" UPF"<<(*iter)->getUnPruneFactor()<<" gamma"<<(*iter)->getFeatureGamma()<<" rave"<<(*iter)->getRAVERatio()<<"other "<<(*iter)->getRAVERatioOther()<<" crit"<<(*iter)->getCriticality()<<"\n";
         ss<<(*iter)->getMove().toString(params->board_size)<<((*iter)->isPruned()?" ":"*")<<" UPF:"<<(*iter)->getUnPruneFactor()<<" rave"<<(*iter)->getRAVERatio()<<"("<<(*iter)->getRAVEWins()<<"/"<<(*iter)->getRAVEPlayouts()<<") "<<
-          params->uct_rave_unprune_factor*((((*iter)->getRAVERatio()-(1.0-this->getRatio()))*(*iter)->getRAVEPlayouts()/((*iter)->getRAVEPlayouts()+params->test_p24))+1)<<"\n";
+          params->uct_rave_unprune_factor*((((*iter)->getRAVERatio()-(1.0-this->getRatio()))*(*iter)->getRAVEPlayouts()/((*iter)->getRAVEPlayouts()+params->test_p24))+1)<<" playouts" << (*iter)->getPlayouts()<<" urgency "<<(*iter)->getUrgency()<<"\n";
         if (!(*iter)->isPruned() && params->test_p75>0)
         {
           urgenttmp.urgency=0;
@@ -887,7 +908,7 @@ std::string Tree::toSGFString() const
       {
         //ss<<(*iter)->getMove().toString(params->board_size)<<" UPF"<<(*iter)->getUnPruneFactor()<<" gamma"<<(*iter)->getFeatureGamma()<<" rave"<<(*iter)->getRAVERatio()<<"other "<<(*iter)->getRAVERatioOther()<<" crit"<<(*iter)->getCriticality()<<"\n";
         ss<<(*iter)->getMove().toString(params->board_size)<<((*iter)->isPruned()?" ":"*")<<" UPF:"<<(*iter)->getUnPruneFactor()<<" rave"<<(*iter)->getRAVERatio()<<"("<<(*iter)->getRAVEWins()<<"/"<<(*iter)->getRAVEPlayouts()<<") "<<
-          params->uct_rave_unprune_factor*((((*iter)->getRAVERatio()-(1.0-this->getRatio()))*(*iter)->getRAVEPlayouts()/((*iter)->getRAVEPlayouts()+params->test_p24))+1)<<"\n";
+          params->uct_rave_unprune_factor*((((*iter)->getRAVERatio()-(1.0-this->getRatio()))*(*iter)->getRAVEPlayouts()/((*iter)->getRAVEPlayouts()+params->test_p24))+1)<<" playouts" << (*iter)->getPlayouts()<<" urgency "<<(*iter)->getUrgency()<<"\n";
         if (!(*iter)->isPruned() && params->test_p75>0)
         {
           urgenttmp.urgency=0;
@@ -1701,7 +1722,7 @@ Tree *Tree::getUrgentChild(Worker::Settings *settings)
       this->unPruneNow(); //unprune a non-terminal loss
   }
   
-  if (params->debug_on)
+  if (debug || params->debug_on)
   {
     if (besttree!=NULL)
       fprintf(stderr,"[best]:%s (%d,%d)\n",besttree->getMove().toString(params->board_size).c_str(),(int)(children->size()-prunedchildren),superkochildrenviolations);

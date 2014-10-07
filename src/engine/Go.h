@@ -780,6 +780,7 @@ namespace Go
       /** Determine is the given move is an extension. */
       bool isExtension(Go::Move move) const;
       bool isExtension2lib(Go::Move move, bool checkother=true) const;
+      bool isApproach(Go::Move move, int other[4]) const;
       /** Determine is the given move is a self-atari. */
       inline bool isSelfAtari(Go::Move move) const {return this->isSelfAtariOfSize(move,0);};
       /** Determine is the given move is a self-atari of a group of a minimum size. */
@@ -906,6 +907,7 @@ namespace Go
 };
       /** Determine is the given move is an atari. */
       bool isAtari(Go::Move move, int *groupsize=NULL) const;
+      bool isAtari(Go::Move move, int *groupsize, int other_not) const;
       /** Get the distance from the given position to the board edge. */
       int getDistanceToBorder(int pos) const;
       /** Get the manhattan distance between two positions. */

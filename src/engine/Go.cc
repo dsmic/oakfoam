@@ -1846,6 +1846,41 @@ bool Go::Board::isExtension2lib(Go::Move move,bool checkother) const
     return false;
 }
 
+
+bool Go::Board::isApproach(Go::Move move, int approach[4]) const
+{
+  Go::Color col=move.getColor();
+  int pos=move.getPosition();
+  int approachcount=0;
+  foreach_adjacent(pos,p,{
+    if (this->inGroup(p) && this->getColor(p)==col)
+    {
+      Go::Group *group=this->getGroup(p);
+      int otherlib=group->getOtherOneOfTwoLiberties(pos);
+      if (otherlib>=0) {
+        Go::Move approach_tmp=Go::Move(col,otherlib);
+        if (isSelfAtari(approach_tmp)) {
+          approach[approachcount]=approach_tmp.getPosition();
+          approachcount++;
+        }
+      }
+    }
+    else {
+      if (this->getColor(p)==Go::EMPTY) { 
+        if (isSelfAtari(Go::Move(col,p))) {
+          approach[approachcount]=p;
+          approachcount++;
+        }
+      }
+    }
+  });
+                   
+ approach[approachcount]=-1;
+ if (approachcount>0) return true;
+
+ return false;
+}
+
 //moved to Go.h
 //bool Go::Board::isSelfAtari(Go::Move move) const
 //{
@@ -1986,6 +2021,25 @@ bool Go::Board::isAtari(Go::Move move, int *groupsize) const
       Go::Group *group=this->getGroup(p);
       if (//col!=group->getColor() && 
           group->isOneOfTwoLiberties(pos))
+      {
+        if (groupsize) *groupsize=group->numOfStones();
+        return true;
+      }
+    }
+  });
+  return false;
+}
+
+bool Go::Board::isAtari(Go::Move move, int *groupsize, int other_not) const
+{
+  Go::Color col=move.getColor();
+  int pos=move.getPosition();
+  foreach_adjacent(pos,p,{
+    if (this->inGroup(p) && this->getColor(p)!=col)
+    {
+      Go::Group *group=this->getGroup(p);
+      if (//col!=group->getColor() && 
+          group->isOneOfTwoLiberties(pos) && group->getOtherOneOfTwoLiberties(pos)!=other_not)
       {
         if (groupsize) *groupsize=group->numOfStones();
         return true;
