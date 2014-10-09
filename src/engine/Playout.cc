@@ -627,11 +627,12 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
 
 void Playout::checkUselessMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, std::string *reason)
 {
-  int *posarray = new int[board->getPositionMax()];
+  //not needed for the actual replacements
+  int *posarray = NULL; //new int[board->getPositionMax()];
   
   this->checkUselessMove(settings,board,col,move,posarray,reason);
   
-  delete[] posarray;
+  //delete[] posarray;
 }
 
 
@@ -643,6 +644,8 @@ void Playout::checkUselessMove(Worker::Settings *settings, Go::Board *board, Go:
   // But the default is checkUselessMove () disabled anyway!
   if (replacemove.isPass())
     this->checkAntiEyeMove(settings,board,col,move,posarray,replacemove);
+  if (replacemove.isPass())
+    this->checkEmptyTriangleMove(settings,board,col,move,posarray,replacemove);
   if (reason!=NULL && replacemove.isNormal())
     (*reason).append(" UselessEye");
   if (!replacemove.isPass())
@@ -2387,6 +2390,53 @@ void Playout::checkAntiEyeMove(Worker::Settings *settings, Go::Board *board, Go:
   if (!tmp_move.isPass ())
     replacemove=tmp_move;
 }
+
+void Playout::checkEmptyTriangleMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray,Go::Move &replacemove)
+{
+  // also usefull for empty XXX
+  //                        XXX
+  // plays R instead of N with color B
+  // R 
+  //  NB
+  //  BB
+  replacemove=Go::Move(col,Go::Move::PASS);
+  if (move.isPass())
+    return;
+  int size=board->getSize();
+  Go::Group *group=NULL;
+
+  int count_empty=0;
+  int new_dist=0;
+  int pos=move.getPosition();
+  foreach_adjacent(pos,p,{
+    // this might be good for both colors, so remove this check ?!
+    if (board->getColor (p)==Go::otherColor(col))
+      return;  //has the other color
+    
+    if (board->getColor(p)==Go::EMPTY)
+    {
+      count_empty++;
+      if (count_empty>2) return; //more than 2 empty surounded
+      new_dist+=p-pos; //tmp_move=Go::Move(col,p);
+    }
+    if (group)
+    {
+      if (board->inGroup(p) && group!=board->getGroup(p))
+        return;
+    }
+    else
+    {
+      if (board->inGroup(p))
+        group=board->getGroup(p);
+    }        
+  });
+  
+  int new_pos=pos+new_dist;
+  if (board->getColor(new_pos)==Go::EMPTY) {
+    replacemove=Go::Move(col,new_pos);
+  }
+}
+
 
 void Playout::getAtariMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray)
 {

@@ -1029,7 +1029,7 @@ bool Go::Board::weakEye(Go::Color col, int pos, bool veryweak) const
     });
     
     foreach_diagonal(pos,p,{
-      if (this->getColor(p)==othercol)
+      if (this->getColor(p)==othercol && !this->getGroup(p)->inAtari()) //and not atari???
       {
         othercols++;
         if ((onside || othercols>=2) && !veryweak)
