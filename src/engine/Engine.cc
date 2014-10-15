@@ -4320,11 +4320,72 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     playoutboard->turnSymmetryOff();
     if (params->playout_features_enabled>0)
       playoutboard->setFeatures(features,params->playout_features_incremental,params->test_p8==0);
-    playout->getPlayoutMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,**move,NULL,NULL);
+    critstruct *critarray=NULL;
+    float *b_ravearray=NULL;
+    float *w_ravearray=NULL;
+    Tree *pooltree=movetree;
+    if (pooltree!=NULL)
+    {
+      critarray=new critstruct[playoutboard->getPositionMax()];
+      for (int i=0;i<playoutboard->getPositionMax ();i++)
+          critarray[i]={0,0,0,0,0};
+      b_ravearray=new float[playoutboard->getPositionMax()];
+      w_ravearray=new float[playoutboard->getPositionMax()];
+      //fprintf(stderr,"poolrave %f number children %d\n",pooltree->getRAVEPlayouts(),pooltree->getChildren()->size());
+      for(std::list<Tree*>::iterator iter=pooltree->getChildren()->begin();iter!=pooltree->getChildren()->end();++iter) 
+        {
+          if (!(*iter)->getMove().isPass())
+          {
+            critarray[(*iter)->getMove().getPosition()].crit=(*iter)->getCriticality();
+			      critarray[(*iter)->getMove().getPosition()].ownselfblack=(*iter)->getOwnSelfBlack();
+			      critarray[(*iter)->getMove().getPosition()].ownselfwhite=(*iter)->getOwnSelfWhite();
+			      critarray[(*iter)->getMove().getPosition()].ownblack=(*iter)->getOwnRatio(Go::BLACK);
+			      critarray[(*iter)->getMove().getPosition()].ownwhite=(*iter)->getOwnRatio(Go::WHITE);
+            critarray[(*iter)->getMove().getPosition()].slopeblack=(*iter)->getSlope(Go::BLACK);
+			      critarray[(*iter)->getMove().getPosition()].slopewhite=(*iter)->getSlope(Go::WHITE);
+            critarray[(*iter)->getMove().getPosition()].isbadblack=false;
+            critarray[(*iter)->getMove().getPosition()].isbadwhite=false;
+            
+            if (params->debug_on)
+            {
+              fprintf(stderr,"move %s %d crit %f ownblack %f ownwhite %f ownrationb %f ownrationw %f slopeblack %f slopewhite %f\n",
+                    (*iter)->getMove().toString(playoutboard->getSize()).c_str(),(*iter)->getMove().getPosition(),
+                    critarray[(*iter)->getMove().getPosition()].crit,
+                    critarray[(*iter)->getMove().getPosition()].ownselfblack,
+                    critarray[(*iter)->getMove().getPosition()].ownselfwhite,
+                    critarray[(*iter)->getMove().getPosition()].ownblack,
+                    critarray[(*iter)->getMove().getPosition()].ownwhite,
+                    critarray[(*iter)->getMove().getPosition()].slopeblack,
+			              critarray[(*iter)->getMove().getPosition()].slopewhite
+                      );
+            (*iter)->displayOwnerCounts();
+            }
+            if ((*iter)->getMove().getColor()==Go::BLACK)
+				    {
+				      b_ravearray[(*iter)->getMove().getPosition()]=(*iter)->getRAVERatio();
+				      w_ravearray[(*iter)->getMove().getPosition()]=(*iter)->getRAVERatioOther();
+				    }
+			      else
+			      {
+				      w_ravearray[(*iter)->getMove().getPosition()]=(*iter)->getRAVERatio();
+				      b_ravearray[(*iter)->getMove().getPosition()]=(*iter)->getRAVERatioOther();
+			      }
+			 	  }
+        }
+    }
+
+    playout->getPlayoutMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,**move,critarray,(col==Go::BLACK)?b_ravearray:w_ravearray);
     if (params->playout_useless_move)
       playout->checkUselessMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,**move,(std::string *)NULL);
     delete playoutboard;
     this->makeMove(**move);
+    if (critarray)
+      delete[] critarray;
+    if (b_ravearray)
+      delete[] b_ravearray;
+    if (w_ravearray)
+      delete[] w_ravearray;
+  
   }
 }
 
