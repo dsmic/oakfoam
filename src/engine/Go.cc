@@ -2149,6 +2149,64 @@ Go::ObjectBoard<int> *Go::Board::getCFGFrom(int pos, int max) const
   return cfgdist;
 }
 
+int Go::Board::getOtherOfEmptyTwoGroup(int pos) const
+{
+  if (this->getColor(pos)!=Go::EMPTY)
+    return -1;
+  int empnei=this->touchingEmpty(pos);
+  //not one of two empty
+  if (empnei!=1) return -1;
+  
+  Go::Color col=Go::EMPTY;
+  int empty,black,white,offboard;
+  this->countAdjacentColors(pos,empty,black,white,offboard);
+  //if (col==Go::EMPTY)
+  {
+    if (black>0 && white>0)
+      return -1;
+    else if (black>0)
+      col=Go::BLACK;
+    else if (white>0)
+      col=Go::WHITE;
+  }
+  int otherempty=-1;
+  foreach_adjacent(pos,p,{
+    if (this->getColor(p)==Go::EMPTY)
+    {
+      if (this->touchingEmpty(p)!=1)
+        return -1;
+      else
+      {
+        this->countAdjacentColors(p,empty,black,white,offboard);
+        if (col==Go::EMPTY)
+        {
+          if (black>0 && white>0)
+            return -1;
+          else if (black>0)
+            col=Go::BLACK;
+          else if (white>0)
+            col=Go::WHITE;
+        }
+        else if (col==Go::BLACK && white>0)
+          return -1;
+        else if (col==Go::WHITE && black>0)
+          return -1;
+        otherempty=p;
+      }
+    }
+    else if (this->getColor(p)!=Go::OFFBOARD)
+    {
+      Go::Color col2=this->getColor(p);
+      if (col==Go::EMPTY)
+          col=col2;
+      else if (col!=col2)
+        return -1;
+    }
+  });
+  
+  return otherempty;
+}
+
 int Go::Board::getThreeEmptyGroupCenterFrom(int pos) const
 {
   if (this->getColor(pos)!=Go::EMPTY)

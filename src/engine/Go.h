@@ -937,6 +937,7 @@ namespace Go
        * Used for the nakade heuristic.
        * If there is not such position, -1 is returned.
        */
+      int getOtherOfEmptyTwoGroup(int pos) const;
       int getThreeEmptyGroupCenterFrom(int pos) const __attribute__((hot));
       int getBent4EmptyGroupCenterFrom(int pos,bool onlycheck=false) const __attribute__((hot));
       int getFourEmptyGroupCenterFrom(int pos) const __attribute__((hot));

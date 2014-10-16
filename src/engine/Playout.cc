@@ -1209,6 +1209,9 @@ if (params->playout_random_weight_territory_n>0)
         patternmove=p;
         bestvalue=v;
       }
+      if (params->debug_on)
+        gtpe->getOutput()->printfDebug(" all_weight %s %f (%f)\n",Go::Move(col,p).toString(board->getSize()).c_str(),v,bestvalue);
+      
     }
     if (count_legal_moves >= params->playout_random_weight_territory_n)
       break;
@@ -1920,6 +1923,13 @@ void Playout::getNakadeMove(Worker::Settings *settings, Go::Board *board, Go::Co
   {
     int size=board->getSize();
     foreach_adjacent(board->getLastMove().getPosition(),p,{
+      int twogroupotherpos=board->getOtherOfEmptyTwoGroup(p);
+      if (twogroupotherpos>=0) {
+        possiblemoves[possiblemovescount]=p;
+        possiblemovescount++;
+        possiblemoves[possiblemovescount]=twogroupotherpos;
+        possiblemovescount++;
+      }
       int centerpos=board->getThreeEmptyGroupCenterFrom(p);
       //fprintf(stderr,"playout 3 in %s\n",Go::Position::pos2string(centerpos,size).c_str());
       if (centerpos!=-1 && board->validMove(col,centerpos))
