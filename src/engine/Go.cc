@@ -862,6 +862,27 @@ int Go::Board::surroundingEmpty(int pos) const
   return lib;
 }
 
+int Go::Board::surroundingEmptyPlus(int pos) const
+{
+  int lib=0;
+  
+  foreach_adjdiag(pos,p,{
+    if (this->getColor(p)==Go::EMPTY)
+      lib++;
+  });
+  if (this->getColor(pos+P_N)==Go::EMPTY && this->getColor(pos+P_N+P_N)==Go::EMPTY)
+      lib++;
+  if (this->getColor(pos+P_S)==Go::EMPTY && this->getColor(pos+P_S+P_S)==Go::EMPTY)
+      lib++;
+  if (this->getColor(pos+P_W)==Go::EMPTY && this->getColor(pos+P_W+P_W)==Go::EMPTY)
+      lib++;
+  if (this->getColor(pos+P_E)==Go::EMPTY && this->getColor(pos+P_E+P_E)==Go::EMPTY)
+      lib++;
+  
+  
+  return lib;
+}
+
 bool Go::Board::touchingAtLeastOneEmpty(int pos) const
 {
   foreach_adjacent(pos,p,{

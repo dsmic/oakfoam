@@ -102,7 +102,6 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","playout_nearby_enabled",&(params->playout_nearby_enabled),PLAYOUT_NEARBY_ENABLED);
   params->addParameter("playout","playout_fillboard_enabled",&(params->playout_fillboard_enabled),PLAYOUT_FILLBOARD_ENABLED);
   params->addParameter("playout","playout_fillboard_n",&(params->playout_fillboard_n),PLAYOUT_FILLBOARD_N);
-  params->addParameter("playout","playout_circreplace_enabled",&(params->playout_circreplace_enabled),PLAYOUT_CIRCREPLACE_ENABLED);
   params->addParameter("playout","playout_fillboard_bestcirc_enabled",&(params->playout_fillboard_bestcirc_enabled),PLAYOUT_FILLBOARD_BESTCIRC_ENABLED);
   params->addParameter("playout","playout_randomquick_bestcirc_n",&(params->playout_randomquick_bestcirc_n),PLAYOUT_RANDOMQUICK_BESTCIRC_N);
   params->addParameter("playout","playout_random_weight_territory_n",&(params->playout_random_weight_territory_n),PLAYOUT_RANDOM_WEIGHT_TERRITORY_N);
@@ -489,8 +488,8 @@ Engine::~Engine()
   delete territorymap;
   delete probabilitymap;
   delete correlationmap;
-  delete blackOldMoves;
-  delete whiteOldMoves;
+  delete[] blackOldMoves;
+  delete[] whiteOldMoves;
   for (std::list<DecisionTree*>::iterator iter=decisiontrees.begin();iter!=decisiontrees.end();++iter)
   {
     delete (*iter);
@@ -4856,8 +4855,8 @@ void Engine::clearBoard()
   delete territorymap;
   delete probabilitymap;
   delete correlationmap;
-  delete blackOldMoves;
-  delete whiteOldMoves;
+  delete[] blackOldMoves;
+  delete[] whiteOldMoves;
   
   if (newsize)
     delete zobristtable;

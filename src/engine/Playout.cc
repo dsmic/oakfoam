@@ -1800,55 +1800,13 @@ void Playout::getPatternMove(Worker::Settings *settings, Go::Board *board, Go::C
 void Playout::getFillBoardMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, int passes, std::string *reason)
 {
   Random *const rand=settings->rand;
-  int *patternmoves=posarray;
-  int patternmovescount=0;
-
+  
   for (int i=0;i<params->playout_fillboard_n;i++)
   {
     int p=rand->getRandomInt(board->getPositionMax());
-    if (board->getColor(p)==Go::EMPTY && board->surroundingEmpty(p)==8 && board->validMove(col,p))
+    if (board->getColor(p)==Go::EMPTY && (params->test_p85==0?board->surroundingEmpty(p)==8:board->surroundingEmptyPlus(p)==12) && board->validMove(col,p))
     {
       move=Go::Move(col,p);
-      if (params->playout_circreplace_enabled)
-      {
-        Pattern::Circular pattcirc=Pattern::Circular(params->engine->getCircDict(),board,p,params->engine->getCircSize());
-        if (col==Go::WHITE)
-          pattcirc.invert();
-        pattcirc.convertToSmallestEquivalent(params->engine->getCircDict());
-        if (params->engine->isCircPattern(pattcirc.toString(params->engine->getCircDict())))
-        {
-          patternmoves[patternmovescount]=p;
-          patternmovescount++;
-        }
-        int pos=move.getPosition();
-        int size=board->getSize ();
-        foreach_adjdiag(pos,p,{
-          if (board->validMove(col,p) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes))
-          {
-            Pattern::Circular pattcirc=Pattern::Circular(params->engine->getCircDict(),board,p,params->engine->getCircSize());
-            if (col==Go::WHITE)
-              pattcirc.invert();
-            pattcirc.convertToSmallestEquivalent(params->engine->getCircDict());
-            if (params->engine->isCircPattern(pattcirc.toString(params->engine->getCircDict())))
-            {
-              move=Go::Move(col,p);
-              patternmoves[patternmovescount]=p;
-              patternmovescount++;
-            }
-          }
-        });
-      }
-      if (patternmovescount>0)
-      {
-        int i=rand->getRandomInt(patternmovescount);
-        move=Go::Move(col,patternmoves[i]);
-        if (params->debug_on)
-          gtpe->getOutput()->printfDebug("[playoutmove]: %s circpattern replace fillboard \n");
-        if (reason!=NULL)
-          *reason="circpattern replace fillboard";
-        params->engine->statisticsPlus(Engine::REPLACE_WITH_CIRC);
-        return;        
-      }
       params->engine->statisticsPlus(Engine::FILL_BOARD);
       return;
     }
@@ -2292,7 +2250,8 @@ void Playout::getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go:
               }
             }
             int liberty=group->getAtariPosition();
-            bool iscaptureorconnect=board->isCapture(Go::Move(col,liberty)) || board->isExtension(Go::Move(col,liberty)); // Why is the check for capture here?
+            bool isconnect=board->isExtension(Go::Move(col,liberty));
+            bool iscaptureorconnect=board->isCapture(Go::Move(col,liberty)) || isconnect; // Why is the check for capture here?
             //fprintf(stderr,"la: %s %s %d %d %d\n",Go::Position::pos2string(p,size).c_str(),Go::Position::pos2string(liberty,size).c_str(),board->isCapture(Go::Move(col,liberty)),board->isExtension(Go::Move(col,liberty)),board->isSelfAtari(Go::Move(col,liberty)));
             if (!atarigroupfound && board->validMove(col,liberty) && iscaptureorconnect && (group->numOfStones()>1 || WITH_P(params->playout_lastatari_p)))
             {
@@ -2974,7 +2933,8 @@ float Playout::getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group
             }
           });
         }
-        return board->touchingEmpty(move.getPosition())+1+((doesconnection)?2:0)+params->test_p9*group->numOfStones();
+        //in case of connects touching empties might be a disadvantage, as with more empties it can be connected later too! Than test_p86 -1.1 might change this behaviour 
+        return (params->test_p86+1.0)*board->touchingEmpty(move.getPosition())+1+((doesconnection)?2:0)+params->test_p9*group->numOfStones();
       }
       else
         return 0;

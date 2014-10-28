@@ -717,6 +717,7 @@ namespace Go
       int diagonalEmpty(int pos) const;
       /** Get the number of empty positions in the eight positions surrounding the given position. */
       int surroundingEmpty(int pos) const;
+      int surroundingEmptyPlus(int pos) const;
       /** Get the number of each color in the orthogonally adjacent positions to the given position. */
       void countAdjacentColors(int pos, int &empty, int &black, int &white, int &offboard) const;
       /** Get the number of each color in the diagonally adjacent positions to the given position. */

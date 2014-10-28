@@ -121,7 +121,6 @@ class Parameters
     /** Number of times to try the fillboard heuristic before continuing. */
     int playout_fillboard_n;
     /** replace a fillboard move with a neighbouring circpattern move*/
-    bool playout_circreplace_enabled;
     bool playout_fillboard_bestcirc_enabled;
     int playout_randomquick_bestcirc_n;
     int playout_random_weight_territory_n;
