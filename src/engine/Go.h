@@ -242,6 +242,7 @@ namespace Go
       inline bool getb(int pos) const { return bdata[pos]; };
       /** Set the value of a position. */
       inline void set(int pos, int val=1, bool b=false) { data[pos]=val; bdata[pos]=b;};
+      inline void add(int pos, int val=1) { data[pos]=data[pos]+val;};
       /** Clear a position.
        * Set the position to false.
        */

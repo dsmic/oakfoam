@@ -714,6 +714,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("showmoveprobability",this,&Engine::gtpShowMoveProbability);
   gtpe->addFunctionCommand("showcorrelationmap",this,&Engine::gtpShowCorrelationMap);
   gtpe->addFunctionCommand("showratios",this,&Engine::gtpShowRatios);
+  gtpe->addFunctionCommand("showtreeplayouts",this,&Engine::gtpShowTreePlayouts);
   gtpe->addFunctionCommand("showunprune",this,&Engine::gtpShowUnPrune);
   gtpe->addFunctionCommand("showunprunecolor",this,&Engine::gtpShowUnPruneColor);
   gtpe->addFunctionCommand("showownratios",this,&Engine::gtpShowOwnRatios);
@@ -748,6 +749,7 @@ void Engine::addGtpCommands()
   //gtpe->addAnalyzeCommand("showsafepositions","Show Safe Positions","gfx");
   gtpe->addAnalyzeCommand("showpatternmatches","Show Pattern Matches","sboard");
   gtpe->addAnalyzeCommand("showratios","Show Ratios","sboard");
+  gtpe->addAnalyzeCommand("showtreeplayouts %%c","Show Tree Playouts","sboard");
   gtpe->addAnalyzeCommand("showunprune","Show UnpruneFactor","sboard");
   gtpe->addAnalyzeCommand("showunprunecolor","Show UnpruneFactor (color display)","cboard");
   gtpe->addAnalyzeCommand("showownratios","Show Own Ratios","sboard");
@@ -1303,6 +1305,39 @@ void Engine::gtpShowRatios(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   }
 
   gtpe->getOutput()->endResponse(true);
+}
+
+void Engine::gtpShowTreePlayouts(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  Go::Color col=me->currentboard->nextToMove();
+  Go::IntBoard *treeboardBlack=new Go::IntBoard(me->boardsize); treeboardBlack->clear();
+  Go::IntBoard *treeboardWhite=new Go::IntBoard(me->boardsize); treeboardWhite->clear();
+  me->movetree->fillTreeBoard (treeboardBlack,treeboardWhite);
+  Gtp::Color gtpcol = cmd->getColorArg(0);
+  if (gtpcol==Gtp::INVALID)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("invalid color");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  Go::IntBoard *treeboard=((gtpcol==Gtp::BLACK)?treeboardBlack:treeboardWhite);
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("\n");
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      int pos=Go::Position::xy2pos(x,y,me->boardsize);
+      gtpe->getOutput()->printf("\"%.2f\"",log(treeboard->get(pos)+1));
+    }
+    gtpe->getOutput()->printf("\n");
+  }
+
+  gtpe->getOutput()->endResponse(true);
+  delete treeboardBlack;
+  delete treeboardWhite;
 }
 
 void Engine::gtpShowUnPrune(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)

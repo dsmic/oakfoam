@@ -321,6 +321,7 @@ class Tree
     
     /** Get the territory owner statistics for this node. */
     float getTerritoryOwner() const;
+    void fillTreeBoard(Go::IntBoard *treeboardBlack,Go::IntBoard *treeboardWhite);
     
     /** Get a string representation for this node. */
     std::string toSGFString() const;

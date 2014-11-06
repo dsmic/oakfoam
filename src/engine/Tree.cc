@@ -2628,6 +2628,24 @@ int Tree::countMoveCirc()
   return params->engine->countMoveCirc(movecirc);
 }
 
+void Tree::fillTreeBoard(Go::IntBoard *treeboardBlack,Go::IntBoard *treeboardWhite)
+{
+  if (treeboardBlack==NULL || treeboardWhite==NULL) return;
+  Go::IntBoard *treeboard=(this->getMove().getColor()==Go::BLACK?treeboardBlack:treeboardWhite);
+  //int debug=0,debug1=0;
+  if (this->getMove().isNormal())
+  {
+  //  debug1=treeboard->get(this->getMove().getPosition());
+    treeboard->add(this->getMove().getPosition(),playouts);
+  //  debug=treeboard->get(this->getMove().getPosition());
+  //  fprintf(stderr,"deb %d %f %d %d\n",this->getMove().getPosition(),playouts,debug1,debug);
+  }
+  for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
+  {
+    if (!(*iter)->isPruned())
+      (*iter)->fillTreeBoard(treeboardBlack,treeboardWhite);
+  }
+}
 
 #ifdef HAVE_MPI
 
