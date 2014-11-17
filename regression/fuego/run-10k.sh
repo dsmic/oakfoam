@@ -17,7 +17,7 @@ if ! test -x ../../oakfoam; then
 fi
 
 if (( $# == 0 )); then
-  TESTS="@all.suite"
+  TESTS="@all-new.suite"
   echo "No test(s)/test suite(s) supplied. Running test: '$TESTS'."
 else
   TESTS=$@

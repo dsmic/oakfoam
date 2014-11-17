@@ -222,6 +222,17 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","test_p88",&(params->test_p88),0.0);
   params->addParameter("playout","test_p89",&(params->test_p89),0.0);
   
+  params->addParameter("playout","test_p90",&(params->test_p90),0.0);
+  params->addParameter("playout","test_p91",&(params->test_p91),0.0);
+  params->addParameter("playout","test_p92",&(params->test_p92),0.0);
+  params->addParameter("playout","test_p93",&(params->test_p93),0.0);
+  params->addParameter("playout","test_p94",&(params->test_p94),0.0);
+  params->addParameter("playout","test_p95",&(params->test_p95),0.0);
+  params->addParameter("playout","test_p96",&(params->test_p96),0.0);
+  params->addParameter("playout","test_p97",&(params->test_p97),0.0);
+  params->addParameter("playout","test_p98",&(params->test_p98),0.0);
+  params->addParameter("playout","test_p99",&(params->test_p99),0.0);
+  
   params->addParameter("tree","ucb_c",&(params->ucb_c),UCB_C);
   params->addParameter("tree","ucb_init",&(params->ucb_init),UCB_INIT);
 
@@ -1310,7 +1321,6 @@ void Engine::gtpShowRatios(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 void Engine::gtpShowTreePlayouts(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
-  Go::Color col=me->currentboard->nextToMove();
   Go::IntBoard *treeboardBlack=new Go::IntBoard(me->boardsize); treeboardBlack->clear();
   Go::IntBoard *treeboardWhite=new Go::IntBoard(me->boardsize); treeboardWhite->clear();
   me->movetree->fillTreeBoard (treeboardBlack,treeboardWhite);

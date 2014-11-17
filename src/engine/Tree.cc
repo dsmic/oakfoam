@@ -186,7 +186,7 @@ float Tree::getRAVERatio() const
 {
   //passes and resigns do not have a correct rave value
   if (raveplayouts>0 && getMove().isNormal())
-    return (float)ravewins/raveplayouts;
+    return (float)ravewins/(raveplayouts+params->test_p91);
   else
     return 0.01;
 }
@@ -204,7 +204,7 @@ float Tree::getRAVERatioOther() const
 {
   //passes and resigns do not have a correct rave value
   if (raveplayoutsother>0 && getMove().isNormal())
-    return (float)ravewinsother/raveplayoutsother;
+    return (float)ravewinsother/(raveplayoutsother+params->test_p91);
   else
     return 0;
 }
@@ -664,8 +664,14 @@ float Tree::getUrgency(bool skiprave, Tree * robustchild) const
       {
         tmp+=params->test_p62*exp(-params->test_p63*pow( this->getOwnership() - params->test_p64 ,2));
       }
-      val+=(log(1000.0*(this->getProgressiveBias()+1.0))+params->test_p49*this->getCriticality ()
+      if (params->test_p90>0) {
+          val+=(log(1000.0*(this->getProgressiveBias()+1.0))+params->test_p49*this->getCriticality ()
+            +tmp)*(params->test_p44*(pow(params->test_p90/(params->test_p90+playouts_use),params->test_p51)));
+        }
+        else {
+          val+=(log(1000.0*(this->getProgressiveBias()+1.0))+params->test_p49*this->getCriticality ()
             +tmp)*(params->test_p44/(pow(playouts_use,params->test_p51)+1.0));
+        }
       //if (1000.0*(this->getProgressiveBias()+1.0) < 0) //wanted to test for nan, but did not work out
       if (std::isnan(val)) //wanted to test for nan, this test does not work with -ffast-math enabled!!!!
           fprintf(stderr,"this should not happen, urgency nan\n");
@@ -1137,6 +1143,18 @@ void Tree::unPruneNextChild()
     //float unprune_select_p=(float)rand()/RAND_MAX;
     float local_prob=0;
     if (params->test_p23 > 0) local_prob=(float)rand()/RAND_MAX;
+    if (params->test_p89 >0) {
+    int countit=0;
+    Tree *tocount=this->getParent();
+      while (tocount!=NULL && tocount->getParent()!=NULL) {
+        countit++;
+        tocount=tocount->getParent();
+      }
+      if (countit>0) {
+        local_prob=params->test_p89 * countit;
+        if (local_prob>1) local_prob=1;
+      }
+    }
     for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
     {
       if ((*iter)->isPrimary() && !(*iter)->isSuperkoViolation())
@@ -1231,6 +1249,18 @@ void Tree::updateUnPruneAt()
   int   numunpruned=0;
   float local_prob=0;
   if (params->test_p23 > 0) local_prob=(float)rand()/RAND_MAX;
+  if (params->test_p89 >0) {
+    int countit=0;
+    Tree *tocount=this->getParent();
+    while (tocount!=NULL && tocount->getParent()!=NULL) {
+      countit++;
+      tocount=tocount->getParent();
+    }
+    if (countit>0) {
+      local_prob=params->test_p89 * countit;
+      if (local_prob>1) local_prob=1;
+    }
+  }
   if (params->test_p16>0 || params->test_p58>0)
   {
     for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
@@ -2635,14 +2665,14 @@ void Tree::fillTreeBoard(Go::IntBoard *treeboardBlack,Go::IntBoard *treeboardWhi
   //int debug=0,debug1=0;
   if (this->getMove().isNormal())
   {
-  //  debug1=treeboard->get(this->getMove().getPosition());
+    //debug1=treeboard->get(this->getMove().getPosition());
     treeboard->add(this->getMove().getPosition(),playouts);
-  //  debug=treeboard->get(this->getMove().getPosition());
-  //  fprintf(stderr,"deb %d %f %d %d\n",this->getMove().getPosition(),playouts,debug1,debug);
+    //debug=treeboard->get(this->getMove().getPosition());
+    //fprintf(stderr,"deb %d %f %d %d\n",this->getMove().getPosition(),playouts,debug1,debug);
   }
   for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
   {
-    if (!(*iter)->isPruned())
+    if ((*iter)->isPrimary() && (!(*iter)->isPruned()))
       (*iter)->fillTreeBoard(treeboardBlack,treeboardWhite);
   }
 }

@@ -330,6 +330,18 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
     }
   }
   
+  Go::IntBoard *treeboardBlack=NULL;
+  Go::IntBoard *treeboardWhite=NULL;
+  int used_playouts=0;
+  if (params->test_p87) {
+    treeboardBlack=new Go::IntBoard(board->getSize()); treeboardBlack->clear();
+    treeboardWhite =new Go::IntBoard(board->getSize()); treeboardWhite->clear();
+    Tree *movetree=playouttree;
+    while (movetree!=NULL && !movetree->isRoot())
+      movetree=movetree->getParent();
+    movetree->fillTreeBoard(treeboardBlack,treeboardWhite);
+    used_playouts=movetree->getPlayouts();
+  }
   
   Go::Color coltomove=board->nextToMove();
   Go::Move move=Go::Move(coltomove,Go::Move::PASS);
@@ -356,14 +368,14 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
     bool nonlocalmove=false;
     if (movereasons!=NULL)
     {
-      this->getPlayoutMove(settings,board,coltomove,move,posarray,critarray,(coltomove==Go::BLACK)?b_ravearray:w_ravearray,(coltomove==Go::BLACK?bpasses:wpasses),(coltomove==poolcol?&pool:&poolcrit),&poolcrit,&reason,&trylocal_p,black_gammas,white_gammas,&earlymoves,(coltomove==colfirst?firstlist:secondlist),playoutmovescount+1,&nonlocalmove);
+      this->getPlayoutMove(settings,board,coltomove,move,posarray,critarray,(coltomove==Go::BLACK)?b_ravearray:w_ravearray,(coltomove==Go::BLACK?bpasses:wpasses),(coltomove==poolcol?&pool:&poolcrit),&poolcrit,&reason,&trylocal_p,black_gammas,white_gammas,&earlymoves,(coltomove==colfirst?firstlist:secondlist),playoutmovescount+1,&nonlocalmove,treeboardBlack,treeboardWhite,used_playouts);
       //fprintf(stderr,"move test %s\n",move.toString (9).c_str());
       if (params->playout_useless_move)
         this->checkUselessMove(settings,board,coltomove,move,posarray,&reason);
     }
     else
     {
-      this->getPlayoutMove(settings,board,coltomove,move,posarray,critarray,(coltomove==Go::BLACK)?b_ravearray:w_ravearray,(coltomove==Go::BLACK?bpasses:wpasses),(coltomove==poolcol?&pool:&poolcrit),&poolcrit,NULL,&trylocal_p,black_gammas,white_gammas,&earlymoves,(coltomove==colfirst?firstlist:secondlist),playoutmovescount+1,&nonlocalmove);
+      this->getPlayoutMove(settings,board,coltomove,move,posarray,critarray,(coltomove==Go::BLACK)?b_ravearray:w_ravearray,(coltomove==Go::BLACK?bpasses:wpasses),(coltomove==poolcol?&pool:&poolcrit),&poolcrit,NULL,&trylocal_p,black_gammas,white_gammas,&earlymoves,(coltomove==colfirst?firstlist:secondlist),playoutmovescount+1,&nonlocalmove,treeboardBlack,treeboardWhite,used_playouts);
       //fprintf(stderr,"move test %s\n",move.toString (9).c_str());
       if (params->playout_useless_move)
         this->checkUselessMove(settings,board,coltomove,move,posarray);
@@ -613,14 +625,17 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
       delete white_gammas;
   if (black_gammas!=0)
       delete black_gammas;
-
+  if (treeboardBlack!=NULL)
+    delete treeboardBlack;
+  if (treeboardWhite!=NULL)
+    delete treeboardWhite;
 }
 
-void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, critstruct critarray[], float ravearray[], int passes, std::vector<int> *pool, std::vector<int> *poolCR, std::string *reason, float *trylocal_p, float *black_gammas, float *white_gammas, bool *earlymoves, Go::IntBoard *firstlist,int playoutmovescount, bool *nonlocalmove)
+void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, critstruct critarray[], float ravearray[], int passes, std::vector<int> *pool, std::vector<int> *poolCR, std::string *reason, float *trylocal_p, float *black_gammas, float *white_gammas, bool *earlymoves, Go::IntBoard *firstlist,int playoutmovescount, bool *nonlocalmove,Go::IntBoard *treeboardBlack,Go::IntBoard *treeboardWhite, int used_playouts)
 {
   int *posarray = new int[board->getPositionMax()];
   
-  this->getPlayoutMove(settings,board,col,move,posarray,critarray,ravearray,passes,pool,poolCR,reason,trylocal_p,black_gammas,white_gammas,earlymoves);
+  this->getPlayoutMove(settings,board,col,move,posarray,critarray,ravearray,passes,pool,poolCR,reason,trylocal_p,black_gammas,white_gammas,earlymoves, firstlist, playoutmovescount, nonlocalmove,treeboardBlack,treeboardWhite, used_playouts);
   
   delete[] posarray;
 }
@@ -656,7 +671,7 @@ void Playout::checkUselessMove(Worker::Settings *settings, Go::Board *board, Go:
   }
 }
 
-void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, critstruct critarray[], float ravearray[], int passes, std::vector<int> *pool, std::vector<int> *poolcrit, std::string *reason, float *trylocal_p, float *black_gammas, float *white_gammas, bool *earlymoves, Go::IntBoard *firstlist,int playoutmovescount, bool *nonlocalmove)
+void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, critstruct critarray[], float ravearray[], int passes, std::vector<int> *pool, std::vector<int> *poolcrit, std::string *reason, float *trylocal_p, float *black_gammas, float *white_gammas, bool *earlymoves, Go::IntBoard *firstlist,int playoutmovescount, bool *nonlocalmove,Go::IntBoard *treeboardBlack,Go::IntBoard *treeboardWhite, int used_playouts)
 {
   /* trylocal_p can be used to influence parameters from move to move in a playout. It starts with 1.0
    * 
@@ -1190,6 +1205,12 @@ if (params->playout_random_weight_territory_n>0)
         v+=params->test_p21;
       if (params->test_p31>0 && board->isAtari(Go::Move(col,p)))
         v+=params->test_p31;
+      if (params->test_p87>0) {
+        Go::IntBoard *treeboard=((col==Go::BLACK)?treeboardBlack:treeboardWhite);
+      //  v+=params->test_p87*(treeboard->get(p));
+        if (treeboard->get(p)>params->test_p88*used_playouts)
+          v+=params->test_p87*log(1.0+treeboard->get(p)-params->test_p88*used_playouts);
+      }
       if (params->test_p29>0)
       {
         unsigned int pattern=Pattern::ThreeByThree::makeHash(board,p);
