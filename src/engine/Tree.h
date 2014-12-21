@@ -269,7 +269,7 @@ class Tree
     Tree *getBestRatioChild(float playoutthreshold=0) const;
     Tree *getBestUrgencyChild(float playoutthreshold=0) const;
     /** Update RAVE values for the path from this node to the root of the tree. */
-    void updateRAVE(Go::Color wincol,Go::IntBoard *blacklist,Go::IntBoard *whitelist,bool early, Go::Board *scoredboard);
+    void updateRAVE(Go::Color wincol,Go::IntBoard *blacklist,Go::IntBoard *whitelist,bool early, Go::Board *scoredboard, int childpos=-3);
     /** Prune any superko violations. */
     void pruneSuperkoViolations();
     

@@ -225,7 +225,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","test_p90",&(params->test_p90),0.0);
   params->addParameter("playout","test_p91",&(params->test_p91),0.0);
   params->addParameter("playout","test_p92",&(params->test_p92),0.0);
-  params->addParameter("playout","test_p93",&(params->test_p93),0.0);
+  params->addParameter("playout","test_p93",&(params->test_p93),20000.0);
   params->addParameter("playout","test_p94",&(params->test_p94),0.0);
   params->addParameter("playout","test_p95",&(params->test_p95),0.0);
   params->addParameter("playout","test_p96",&(params->test_p96),0.0);
@@ -372,6 +372,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("other","features_ordered_comparison",&(params->features_ordered_comparison),false);
   params->addParameter("other","features_circ_list",&(params->features_circ_list),0.0);
   params->addParameter("other","features_circ_list_size",&(params->features_circ_list_size),0);
+  params->addParameter("other","cnn_data",&(params->CNN_data),0.0);
   
   params->addParameter("other","auto_save_sgf",&(params->auto_save_sgf),false);
   params->addParameter("other","auto_save_sgf_prefix",&(params->auto_save_sgf_prefix),"");
@@ -4559,6 +4560,39 @@ void Engine::makeMove(Go::Move move)
       delete cfgsecondlastdist;
   }
 
+  if (WITH_P(params->CNN_data) && move.isNormal())
+  {
+    //output for the CNN training, testing
+    //one line per Position, all included in the board part, additionally the move in readable form
+    // a position 0: empty 1: black stone 2: white stone 3: black next move 4: white next move
+    
+    int size=currentboard->getSize ();
+    for (int x=0;x<size;x++) {
+      for (int y=0;y<size;y++) {
+        Go::Color c=currentboard->getColor(Go::Position::xy2pos(x,y,size));
+        switch (c) {
+          case Go::BLACK:
+            gtpe->getOutput()->printfDebug("1,");
+            break;
+          case Go::WHITE:
+            gtpe->getOutput()->printfDebug("2,");
+            break;
+          default:
+            int p=move.getPosition();
+            if (Go::Position::pos2x(p,size)==x && Go::Position::pos2y(p,size)==y)
+            {
+              if (c==Go::BLACK)
+                gtpe->getOutput()->printfDebug("3,");
+              else
+                gtpe->getOutput()->printfDebug("4,");
+            }
+            else
+              gtpe->getOutput()->printfDebug("0,");
+        }
+      }
+    }
+    gtpe->getOutput()->printfDebug("%s\n",move.toString(size).c_str());
+  }
   if (WITH_P(params->features_circ_list))
   {
     Go::Color col=currentboard->nextToMove();

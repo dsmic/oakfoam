@@ -1171,11 +1171,23 @@ if (params->playout_random_weight_territory_n>0)
 {
   int patternmove=-1;
   float bestvalue=-10000.0;
-
+   
   int count_legal_moves=0;
+  int size=board->getSize ();
+  int direction[9]={0,P_N,P_S,P_W,P_E,P_NW,P_NE,P_SW,P_SE};
+  int p_nodir=0;
   for (int i=0;i<params->playout_random_weight_territory_n*(params->test_p32+1);i++)
   {
-    int p=rand->getRandomInt(board->getPositionMax());
+    //try 5 around each random point
+    int p;
+    if (params->test_p97>0) 
+    {
+      if ((i % (int)params->test_p97)==0) p_nodir=rand->getRandomInt(board->getPositionMax()+P_NW-P_SE)+P_SE;
+      fprintf(stderr,"debug %d\n",p_nodir);
+      p=p_nodir+direction[rand->getRandomInt(9)];
+    }
+    else
+      p=rand->getRandomInt(board->getPositionMax());
     if (doapproachmoves)
       this->replaceWithApproachMove(settings,board,col,p);
     if (board->validMove(col,p) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes, NULL, 0, critarray))

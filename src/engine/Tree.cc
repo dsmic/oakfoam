@@ -634,7 +634,17 @@ float Tree::getUrgency(bool skiprave, Tree * robustchild) const
     uctbias+=params->bernoulli_a*exp(-params->bernoulli_b*playouts);
 
   float val=this->getVal(skiprave)+uctbias;
+  if (params->test_p92>0) {  //ucb_c in this is test_p92, later there might be a good turning over to old style?!
+    float save_playouts=playouts; if (save_playouts<=0) save_playouts=1;
+    float save_raveplayouts=raveplayouts; if (save_raveplayouts<=0) save_raveplayouts=1;
+    float save_parent_playouts=(float)parent->getPlayouts(); if (save_parent_playouts<=0) save_parent_playouts=1;
 
+    float aya_UCB=wins/save_playouts+params->test_p92*sqrt(log(save_parent_playouts)/save_playouts);
+    float aya_RAVE=ravewins/save_raveplayouts + params->test_p94*sqrt(log(save_parent_playouts*175)/(save_parent_playouts*0.48));
+    float aya_beta=save_raveplayouts/(save_raveplayouts+save_playouts*(1.0/params->test_p95 + (1.0/params->test_p93)*save_raveplayouts));
+
+    val=aya_beta*aya_RAVE + (1-aya_beta)*aya_UCB; //G*log(1+gamma) is handeled below
+  }
   if (params->KL_ucb_enabled)
   {
     if (parent!=NULL && parent->getPlayouts()>0 && playouts>0) //otherwize only old val used! Not correct but safe?!
@@ -672,6 +682,9 @@ float Tree::getUrgency(bool skiprave, Tree * robustchild) const
           val+=(log(1000.0*(this->getProgressiveBias()+1.0))+params->test_p49*this->getCriticality ()
             +tmp)*(params->test_p44/(pow(playouts_use,params->test_p51)+1.0));
         }
+      if (params->test_p98>0 && this->getProgressiveBias()>0) {
+        val+=params->test_p98*(sqrt(log(playouts_use)/(playouts+1)))*log(gamma+1.0);
+      }
       //if (1000.0*(this->getProgressiveBias()+1.0) < 0) //wanted to test for nan, but did not work out
       if (std::isnan(val)) //wanted to test for nan, this test does not work with -ffast-math enabled!!!!
           fprintf(stderr,"this should not happen, urgency nan\n");
@@ -2083,7 +2096,7 @@ bool Tree::expandLeaf(Worker::Settings *settings)
   return true;
 }
 
-void Tree::updateRAVE(Go::Color wincol,Go::IntBoard *blacklist,Go::IntBoard *whitelist,bool early, Go::Board *scoredboard)
+void Tree::updateRAVE(Go::Color wincol,Go::IntBoard *blacklist,Go::IntBoard *whitelist,bool early, Go::Board *scoredboard, int childpos)
 {
   if (params->rave_moves<=0)
     return;
@@ -2092,7 +2105,7 @@ void Tree::updateRAVE(Go::Color wincol,Go::IntBoard *blacklist,Go::IntBoard *whi
   
   if (!this->isRoot())
   {
-    parent->updateRAVE(wincol,blacklist,whitelist,early, scoredboard);
+    parent->updateRAVE(wincol,blacklist,whitelist,early, scoredboard,this->getMove().getPosition());
 
     if (this->getMove().isNormal())
     {
@@ -2156,20 +2169,23 @@ void Tree::updateRAVE(Go::Color wincol,Go::IntBoard *blacklist,Go::IntBoard *whi
           //if (!early) raveweight=pow(ravenum,-params->test_p30);
           if (!early) raveweight=1.0/((ravenum-1)*params->test_p30+1);
           
-          if ((*iter)->isPrimary())
+          if ((params->test_p96==0 || pos!=childpos)) //do not update playoutpath, if test_p92 enabled
           {
-            if (col==wincol)
-              (*iter)->addRAVEWin(early,raveweight);
+            if ((*iter)->isPrimary())
+            {
+              if (col==wincol)
+                (*iter)->addRAVEWin(early,raveweight);
+              else
+                (*iter)->addRAVELose(early,raveweight);
+            }
             else
-              (*iter)->addRAVELose(early,raveweight);
-          }
-          else
-          {
-            Tree *primary=(*iter)->getPrimary();
-            if (col==wincol)
-              primary->addRAVEWin(early,raveweight);
-            else
-              primary->addRAVELose(early,raveweight);
+            {
+              Tree *primary=(*iter)->getPrimary();
+              if (col==wincol)
+                primary->addRAVEWin(early,raveweight);
+              else
+                primary->addRAVELose(early,raveweight);
+            }
           }
         }
         if (ravenum<0)
@@ -2177,16 +2193,19 @@ void Tree::updateRAVE(Go::Color wincol,Go::IntBoard *blacklist,Go::IntBoard *whi
           float raveweight=1;
           //if (!early) raveweight=exp(-params->test_p30*ravenum);
           //if (!early) raveweight=pow(-ravenum,-params->test_p30); //this was not sufficently tested and slow
-          if (!early) raveweight=1.0/(-(ravenum-1)*params->test_p30+1);
+          if (!early) raveweight=1.0/(-(ravenum+1)*params->test_p30+1);
           
-          if ((*iter)->isPrimary())
+          if ((params->test_p96==0 || pos!=childpos)) //do not update playoutpath, if test_p92 enabled
           {
-            (*iter)->addRAVELose(early,raveweight);
-          }
-          else
-          {
-            Tree *primary=(*iter)->getPrimary();
-            primary->addRAVELose(early,raveweight);
+            if ((*iter)->isPrimary())
+            {
+              (*iter)->addRAVELose(early,raveweight);
+            }
+            else
+            {
+              Tree *primary=(*iter)->getPrimary();
+              primary->addRAVELose(early,raveweight);
+            }
           }
         }
         //check for the other color
@@ -2197,21 +2216,22 @@ void Tree::updateRAVE(Go::Color wincol,Go::IntBoard *blacklist,Go::IntBoard *whi
           //if (!early) raveweight=exp(-params->test_p30*ravenum);
           //if (!early) raveweight=pow(ravenum,-params->test_p30);
           if (!early) raveweight=1.0/((ravenum-1)*params->test_p30+1);
-          if ((*iter)->isPrimary())
-          {
-            if (Go::otherColor(col)==wincol)
-              (*iter)->addRAVEWinOther(early,raveweight);
+            if ((*iter)->isPrimary())
+            {
+              if (Go::otherColor(col)==wincol)
+                (*iter)->addRAVEWinOther(early,raveweight);
+              else
+                (*iter)->addRAVELoseOther(early,raveweight);
+            }
             else
-              (*iter)->addRAVELoseOther(early,raveweight);
-          }
-          else
-          {
-            Tree *primary=(*iter)->getPrimary();
-            if (Go::otherColor(col)==wincol)
-              primary->addRAVEWinOther(early,raveweight);
-            else
-              primary->addRAVELoseOther(early,raveweight);
-          }
+            {
+              Tree *primary=(*iter)->getPrimary();
+              if (Go::otherColor(col)==wincol)
+                primary->addRAVEWinOther(early,raveweight);
+              else
+                primary->addRAVELoseOther(early,raveweight);
+            }
+          
         }
         if (ravenum<0)
         {  //marked as bad move during playout, therefore counted as rave loss
@@ -2220,15 +2240,16 @@ void Tree::updateRAVE(Go::Color wincol,Go::IntBoard *blacklist,Go::IntBoard *whi
           //if (!early) raveweight=pow(-ravenum,-params->test_p30);
           if (!early) raveweight=1.0/(-(ravenum-1)*params->test_p30+1);
           
-          if ((*iter)->isPrimary())
-          {
-            (*iter)->addRAVELoseOther(early,raveweight);
-          }
-          else
-          {
-            Tree *primary=(*iter)->getPrimary();
-            primary->addRAVELoseOther(early,raveweight);
-          }
+            if ((*iter)->isPrimary())
+            {
+              (*iter)->addRAVELoseOther(early,raveweight);
+            }
+            else
+            {
+              Tree *primary=(*iter)->getPrimary();
+              primary->addRAVELoseOther(early,raveweight);
+            }
+          
         }
         
       }
