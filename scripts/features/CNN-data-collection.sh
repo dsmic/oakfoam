@@ -24,7 +24,13 @@ cat | parallel ./CNN-data.sh {} $INITGAMMAS $SIZE >$TEMPOUTPUT
 #done
 
 echo "Sorting and combining patterns..." >&2
-cat ${TEMPOUTPUT} > ${TEMPCOMBINED}
+set +e
+HARVESTED=`cat $TEMPOUTPUT | wc -l`
+set -e
+
+echo $HARVESTED > ${TEMPCOMBINED}
+
+cat ${TEMPOUTPUT} >> ${TEMPCOMBINED}
 cat $TEMPCOMBINED
 
 rm -f $TEMPOUTPUT
