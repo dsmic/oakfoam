@@ -28,8 +28,11 @@ data = data.astype('float32')
 # catching it, so let's make label 1-indexed.
 
 # label must be of same go board here
-label = np.arange(total_size_out)
-label = label.reshape(num_rows, num_outputs, height, width)
+data2 = np.arange(total_size_out)
+data2 = data2.reshape(num_rows, num_outputs, height, width)
+data2 = data2.astype('float32')
+
+label = 1 + np.arange(num_rows)[:, np.newaxis]
 label = label.astype('float32')
 
 in_line=0
@@ -56,36 +59,36 @@ for line in sys.stdin:
 				if n==1:
 					data[in_line,0,x,y]=1
 					data[in_line,1,x,y]=0
-					label[in_line,0,x,y]=0
+					data2[in_line,0,x,y]=0
 				elif n==2:
 					data[in_line,0,x,y]=0
 					data[in_line,1,x,y]=1
-					label[in_line,0,x,y]=0
+					data2[in_line,0,x,y]=0
 				elif n==3 or n==4:
 					data[in_line,0,x,y]=0
 					data[in_line,1,x,y]=0
-					label[in_line,0,x,y]=1
+					data2[in_line,0,x,y]=1
 				else:
 					data[in_line,0,x,y]=0
 					data[in_line,1,x,y]=0
-					label[in_line,0,x,y]=0
+					data2[in_line,0,x,y]=0
 			if c_played==2:			
 				if n==1:
 					data[in_line,0,x,y]=0
 					data[in_line,1,x,y]=1
-					label[in_line,0,x,y]=0
+					data2[in_line,0,x,y]=0
 				elif n==2:
 					data[in_line,0,x,y]=1
 					data[in_line,1,x,y]=0
-					label[in_line,0,x,y]=0
+					data2[in_line,0,x,y]=0
 				elif n==3 or n==4:
 					data[in_line,0,x,y]=0
 					data[in_line,1,x,y]=0
-					label[in_line,0,x,y]=1
+					data2[in_line,0,x,y]=1
 				else:
 					data[in_line,0,x,y]=0
 					data[in_line,1,x,y]=0
-					label[in_line,0,x,y]=0
+					data2[in_line,0,x,y]=0
 						
 			pos=pos+1
 	in_line=in_line+1
@@ -103,7 +106,7 @@ for x in xrange(0,19):
 print
 for x in xrange(0,19):
 	for y in xrange(0,19):
-		print(str(label[3,0,x,y])),
+		print(str(data2[3,0,x,y])),
 	print
 print			
 	
@@ -115,16 +118,26 @@ with h5py.File(os.path.dirname(__file__) + '/sample_data.h5', 'w') as f:
     f['data'] = data
     f['label'] = label
 
-with h5py.File(os.path.dirname(__file__) + '/sample_data_2_gzip.h5', 'w') as f:
-    f.create_dataset(
-        'data', data=data + total_size_in,
-        compression='gzip', compression_opts=1
-    )
-    f.create_dataset(
-        'label', data=label,
-        compression='gzip', compression_opts=1
-    )
+with h5py.File(os.path.dirname(__file__) + '/sample_data2.h5', 'w') as f:
+    f['data'] = data2
+    f['label'] = label
+
+#with h5py.File(os.path.dirname(__file__) + '/sample_data_2_gzip.h5', 'w') as f:
+#    f.create_dataset(
+#        'data', data=data,
+#        compression='gzip', compression_opts=1
+#    )
+#    f.create_dataset(
+#        'label', data=label,
+#        compression='gzip', compression_opts=1
+#    )
 
 with open(os.path.dirname(__file__) + '/sample_data_list.txt', 'w') as f:
     f.write(os.path.dirname(__file__) + '/sample_data.h5\n')
-    f.write(os.path.dirname(__file__) + '/sample_data_2_gzip.h5\n')
+#    f.write(os.path.dirname(__file__) + '/sample_data_2_gzip.h5\n')
+
+with open(os.path.dirname(__file__) + '/sample_data_list2.txt', 'w') as f:
+    f.write(os.path.dirname(__file__) + '/sample_data2.h5\n')
+
+
+

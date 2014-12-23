@@ -1,0 +1,71 @@
+name: "LogReg"
+layers {
+  name: "mnist"
+  type: HDF5_DATA
+  top: "data"
+  top: "label"
+  hdf5_data_param {
+    source: "sample_data_list.txt"
+    batch_size: 64
+  }
+  include: { phase: TRAIN }
+}
+layers {
+  name: "mnist2"
+  type: HDF5_DATA
+  top: "data_output"
+  top: "label2"
+  hdf5_data_param {
+    source: "sample_data_list2.txt"
+    batch_size: 64
+  }
+  include: { phase: TRAIN }
+}
+layers {
+  name: "mnist"
+  type: HDF5_DATA
+  top: "data"
+  top: "label3"
+  hdf5_data_param {
+    source: "sample_data_list-test.txt"
+    batch_size: 64
+  }
+  include: { phase: TEST }
+}
+layers {
+  name: "mnist2"
+  type: HDF5_DATA
+  top: "data_output"
+  top: "label4"
+  hdf5_data_param {
+    source: "sample_data_list2-test.txt"
+    batch_size: 64
+  }
+  include: { phase: TEST }
+}
+layers {
+  name: "ip"
+  type: INNER_PRODUCT
+  bottom: "data"
+  top: "ip"
+  inner_product_param {
+    num_output: 500
+  }
+}
+layers {
+  name: "loss"
+  type: SOFTMAX_LOSS
+  bottom: "ip"
+  bottom: "data_output"
+  top: "loss"
+}
+#layers {
+#  name: "outputlog"
+#  type: HDF5_OUTPUT
+#  bottom: "ip"
+#  bottom: "data_output"
+#  hdf5_output_param {
+#    file_name: "sample-test-out.h5"
+#  }
+#  include: { phase: TEST }
+#} 
