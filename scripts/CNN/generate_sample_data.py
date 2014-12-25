@@ -13,7 +13,7 @@ print "firstline "+ first_line +"\n"
 num_rows = int(first_line)
 
 
-num_inputs = 2
+num_inputs = 3
 num_outputs = 1
 height = 19
 width = 19
@@ -59,36 +59,36 @@ for line in sys.stdin:
 				if n==1:
 					data[in_line,0,x,y]=1
 					data[in_line,1,x,y]=0
-					data2[in_line,0,x,y]=0
+					data[in_line,2,x,y]=0
 				elif n==2:
 					data[in_line,0,x,y]=0
 					data[in_line,1,x,y]=1
-					data2[in_line,0,x,y]=0
+					data[in_line,2,x,y]=0
 				elif n==3 or n==4:
 					data[in_line,0,x,y]=0
 					data[in_line,1,x,y]=0
-					data2[in_line,0,x,y]=1
+					data[in_line,2,x,y]=1
 				else:
 					data[in_line,0,x,y]=0
 					data[in_line,1,x,y]=0
-					data2[in_line,0,x,y]=0
+					data[in_line,2,x,y]=0
 			if c_played==2:			
 				if n==1:
 					data[in_line,0,x,y]=0
 					data[in_line,1,x,y]=1
-					data2[in_line,0,x,y]=0
+					data[in_line,2,x,y]=0
 				elif n==2:
 					data[in_line,0,x,y]=1
 					data[in_line,1,x,y]=0
-					data2[in_line,0,x,y]=0
+					data[in_line,2,x,y]=0
 				elif n==3 or n==4:
 					data[in_line,0,x,y]=0
 					data[in_line,1,x,y]=0
-					data2[in_line,0,x,y]=1
+					data[in_line,2,x,y]=1
 				else:
 					data[in_line,0,x,y]=0
 					data[in_line,1,x,y]=0
-					data2[in_line,0,x,y]=0
+					data[in_line,2,x,y]=0
 						
 			pos=pos+1
 	in_line=in_line+1
@@ -106,7 +106,7 @@ for x in xrange(0,19):
 print
 for x in xrange(0,19):
 	for y in xrange(0,19):
-		print(str(data2[3,0,x,y])),
+		print(str(data[3,2,x,y])),
 	print
 print			
 	
@@ -118,9 +118,9 @@ with h5py.File(os.path.dirname(__file__) + '/sample_data.h5', 'w') as f:
     f['data'] = data
     f['label'] = label
 
-with h5py.File(os.path.dirname(__file__) + '/sample_data2.h5', 'w') as f:
-    f['data'] = data2
-    f['label'] = label
+#with h5py.File(os.path.dirname(__file__) + '/sample_data2.h5', 'w') as f:
+#    f['data'] = data2
+#    f['label'] = label
 
 #with h5py.File(os.path.dirname(__file__) + '/sample_data_2_gzip.h5', 'w') as f:
 #    f.create_dataset(
@@ -136,8 +136,8 @@ with open(os.path.dirname(__file__) + '/sample_data_list.txt', 'w') as f:
     f.write(os.path.dirname(__file__) + '/sample_data.h5\n')
 #    f.write(os.path.dirname(__file__) + '/sample_data_2_gzip.h5\n')
 
-with open(os.path.dirname(__file__) + '/sample_data_list2.txt', 'w') as f:
-    f.write(os.path.dirname(__file__) + '/sample_data2.h5\n')
+#with open(os.path.dirname(__file__) + '/sample_data_list2.txt', 'w') as f:
+#    f.write(os.path.dirname(__file__) + '/sample_data2.h5\n')
 
 
 

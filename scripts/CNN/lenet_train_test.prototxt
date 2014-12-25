@@ -2,7 +2,7 @@ name: "LogReg"
 layers {
   name: "mnist"
   type: HDF5_DATA
-  top: "data"
+  top: "data_orig"
   top: "label"
   hdf5_data_param {
     source: "sample_data_list.txt"
@@ -11,20 +11,9 @@ layers {
   include: { phase: TRAIN }
 }
 layers {
-  name: "mnist2"
-  type: HDF5_DATA
-  top: "data_output"
-  top: "label2"
-  hdf5_data_param {
-    source: "sample_data_list2.txt"
-    batch_size: 64
-  }
-  include: { phase: TRAIN }
-}
-layers {
   name: "mnist"
   type: HDF5_DATA
-  top: "data"
+  top: "data_orig"
   top: "label3"
   hdf5_data_param {
     source: "sample_data_list-test.txt"
@@ -32,40 +21,39 @@ layers {
   }
   include: { phase: TEST }
 }
+
 layers {
-  name: "mnist2"
-  type: HDF5_DATA
+  name: "slice"
+  type: SLICE
+  bottom: "data_orig"
+  top: "data"
   top: "data_output"
-  top: "label4"
-  hdf5_data_param {
-    source: "sample_data_list2-test.txt"
-    batch_size: 64
+  slice_param {
+	slice_dim: 1
+	slice_point : 2
   }
-  include: { phase: TEST }
 }
+
 layers {
   name: "ip"
   type: INNER_PRODUCT
   bottom: "data"
   top: "ip"
   inner_product_param {
-    num_output: 500
+    num_output: 361
   }
 }
 layers {
-  name: "loss"
-  type: SOFTMAX_LOSS
-  bottom: "ip"
+  name: "flat"
+  type: FLATTEN
   bottom: "data_output"
+  top: "flat"
+}
+layers {
+  name: "loss"
+  type: EUCLIDEAN_LOSS
+  bottom: "ip"
+  bottom: "flat"
   top: "loss"
 }
-#layers {
-#  name: "outputlog"
-#  type: HDF5_OUTPUT
-#  bottom: "ip"
-#  bottom: "data_output"
-#  hdf5_output_param {
-#    file_name: "sample-test-out.h5"
-#  }
-#  include: { phase: TEST }
-#} 
+

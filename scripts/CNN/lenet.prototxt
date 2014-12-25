@@ -11,12 +11,12 @@ layers {
   bottom: "data"
   top: "ip"
   inner_product_param {
-    num_output: 500
+    num_output: 361
   }
 }
-layers {
-  name: "feat"
-  type: SOFTMAX
-  bottom: "ip"
-  top: "feat"
-}
+#layers {
+#  name: "feat"
+#  type: SOFTMAX
+#  bottom: "ip"
+#  top: "feat"
+#}

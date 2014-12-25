@@ -116,7 +116,7 @@ def main(argv):
     parser.add_argument(
         "--pretrained_model",
         default=os.path.join(pycaffe_dir,
-                "snapshots/_iter_10000.caffemodel"),
+                "snapshots/_iter_100000.caffemodel"),
         help="Trained model weights file."
     )
     parser.add_argument(
@@ -225,6 +225,13 @@ def main(argv):
     print "OK"
     print predictions
     print "Done in %.2f s." % (time.time() - start)
+    sum=0
+    for x in xrange(0,19):
+        for y in xrange(0,19):
+            sum=sum+predictions['ip'][0,x*19+y,0,0]
+            print "{:5.2f}".format(predictions['ip'][0,x*19+y,0,0]),
+        print
+    print sum
 
     # Save
     np.save(args.output_file, predictions)
