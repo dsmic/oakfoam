@@ -5,15 +5,30 @@ input_dim: 2
 input_dim: 19
 input_dim: 19
 
+#this part should be the same in learning and prediction network
+layers {
+  name: "conv1_7x7_64"
+  type: CONVOLUTION
+  bottom: "data"
+  top: "conv2"
+  convolution_param {
+    num_output: 64
+    kernel_size: 7
+    pad: 3
+    }
+}
+
 layers {
   name: "ip"
   type: INNER_PRODUCT
-  bottom: "data"
+  bottom: "conv2"
   top: "ip"
   inner_product_param {
     num_output: 361
   }
 }
+
+
 #layers {
 #  name: "feat"
 #  type: SOFTMAX

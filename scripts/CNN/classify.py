@@ -116,7 +116,7 @@ def main(argv):
     parser.add_argument(
         "--pretrained_model",
         default=os.path.join(pycaffe_dir,
-                "snapshots/_iter_100000.caffemodel"),
+                "snapshots/_iter_5000.caffemodel"),
         help="Trained model weights file."
     )
     parser.add_argument(
@@ -145,7 +145,9 @@ def main(argv):
     f_input = open(args.input_file, 'r')
     
     first_line = f_input.readline()
-    
+    numlines = int(first_line)
+    nummatched =0    
+
     num_rows = 1
 
 
@@ -160,78 +162,103 @@ def main(argv):
     data = data.reshape(num_rows, num_inputs, height, width)
     data = data.astype('float32')
 
-    line = f_input.readline()
-    elements = line.split(',')
-    print line;
-    print elements[19*19]
-    color=elements[19*19].split(':')
-    c_played=0
-    if color[0]=='B':
-		print "black"
-		c_played=1
-    if color[0]=='W':
-		print "white"
-		c_played=2
-    pos=0
-    in_line=0
-    for x in xrange(0,19):
-		for y in xrange(0,19):
-			#print "x: "+str(x)+" y: "+str(y)+" "+elements[pos]
-			n=int(elements[pos])
-			#print n
-			#print c_played
-			if c_played==1:			
-				if n==1:
-					data[in_line,0,x,y]=1
-					data[in_line,1,x,y]=0
-#					data2[in_line,0,x,y]=0
-				elif n==2:
-					data[in_line,0,x,y]=0
-					data[in_line,1,x,y]=1
-#					data2[in_line,0,x,y]=0
-				elif n==3 or n==4:
-					data[in_line,0,x,y]=0
-					data[in_line,1,x,y]=0
-#					data2[in_line,0,x,y]=1
-				else:
-					data[in_line,0,x,y]=0
-					data[in_line,1,x,y]=0
-#					data2[in_line,0,x,y]=0
-			if c_played==2:			
-				if n==1:
-					data[in_line,0,x,y]=0
-					data[in_line,1,x,y]=1
-#					data2[in_line,0,x,y]=0
-				elif n==2:
-					data[in_line,0,x,y]=1
-					data[in_line,1,x,y]=0
-#					data2[in_line,0,x,y]=0
-				elif n==3 or n==4:
-					data[in_line,0,x,y]=0
-					data[in_line,1,x,y]=0
-#					data2[in_line,0,x,y]=1
-				else:
-					data[in_line,0,x,y]=0
-					data[in_line,1,x,y]=0
-#					data2[in_line,0,x,y]=0
-						
-			pos=pos+1
+    data2 = np.arange(total_size_out)
+    data2 = data2.reshape(num_rows, num_outputs, height, width)
+    data2 = data2.astype('float32')
+
+    for linenr in xrange(0,numlines):
+        line = f_input.readline()
+        elements = line.split(',')
+        #print line;
+        print
+        print elements[19*19]
+        color=elements[19*19].split(':')
+        c_played=0
+        if color[0]=='B':
+		    print "black"
+		    c_played=1
+        if color[0]=='W':
+		    print "white"
+		    c_played=2
+        pos=0
+        in_line=0
+        for x in xrange(0,19):
+            for y in xrange(0,19):
+                #print "x: "+str(x)+" y: "+str(y)+" "+elements[pos]
+                n=int(elements[pos])
+                #print n
+                #print c_played
+                if c_played==1:			
+                    if n==1:
+                        data[in_line,0,x,y]=1
+                        data[in_line,1,x,y]=0
+                        data2[in_line,0,x,y]=0
+                    elif n==2:
+                        data[in_line,0,x,y]=0
+                        data[in_line,1,x,y]=1
+                        data2[in_line,0,x,y]=0
+                    elif n==3 or n==4:
+                        data[in_line,0,x,y]=0
+                        data[in_line,1,x,y]=0
+                        data2[in_line,0,x,y]=1
+                    else:
+                        data[in_line,0,x,y]=0
+                        data[in_line,1,x,y]=0
+                        data2[in_line,0,x,y]=0
+                if c_played==2:			
+                    if n==1:
+                        data[in_line,0,x,y]=0
+                        data[in_line,1,x,y]=1
+                        data2[in_line,0,x,y]=0
+                    elif n==2:
+                        data[in_line,0,x,y]=1
+                        data[in_line,1,x,y]=0
+                        data2[in_line,0,x,y]=0
+                    elif n==3 or n==4:
+                        data[in_line,0,x,y]=0
+                        data[in_line,1,x,y]=0
+                        data2[in_line,0,x,y]=1
+                    else:
+                        data[in_line,0,x,y]=0
+                        data[in_line,1,x,y]=0
+                        data2[in_line,0,x,y]=0
+                pos=pos+1
 	
 
 
-    # Classify.
-    start = time.time()
-    predictions = classifier.predict(data)
-    print "OK"
-    print predictions
-    print "Done in %.2f s." % (time.time() - start)
-    sum=0
-    for x in xrange(0,19):
-        for y in xrange(0,19):
-            sum=sum+predictions['ip'][0,x*19+y,0,0]
-            print "{:5.2f}".format(predictions['ip'][0,x*19+y,0,0]),
-        print
-    print sum
+        # Classify.
+        start = time.time()
+        predictions = classifier.predict(data)
+        #print "OK"
+        #print predictions
+        #print "Done in %.2f s." % (time.time() - start)
+        for x in xrange(0,19):
+            for y in xrange(0,19):
+                if data[in_line,0,x,y] >0: print "{:5.2f}".format(1.0),
+                elif data[in_line,1,x,y] >0: print "{:5.2f}".format(-1.0),
+                else: print "{:5.2f}".format(0.0),
+            print
+        print        
+        sum=0
+        maxpred=0;
+        for x in xrange(0,19):
+            for y in xrange(0,19):
+                sum=sum+predictions['ip'][0,x*19+y,0,0]
+                print "{:5.2f}".format(predictions['ip'][0,x*19+y,0,0]),
+                if maxpred<predictions['ip'][0,x*19+y,0,0]:
+                    xp=x
+                    yp=y
+                    maxpred=predictions['ip'][0,x*19+y,0,0]
+                if data2[in_line,0,x,y] >0:
+                    xis=x
+                    yis=y
+            print
+        matched=0
+        if xp==xis and yp==yis: 
+            matched=1
+            nummatched=nummatched+1
+        print sum,xp,yp,xis,yis
+    print nummatched,numlines
 
     # Save
     np.save(args.output_file, predictions)

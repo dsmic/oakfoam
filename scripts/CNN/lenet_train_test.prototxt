@@ -34,15 +34,31 @@ layers {
   }
 }
 
+#this part should be the same in learning and prediction network
+layers {
+  name: "conv1_7x7_64"
+  type: CONVOLUTION
+  bottom: "data"
+  top: "conv2"
+  convolution_param {
+    num_output: 64
+    kernel_size: 7
+    pad: 3
+    }
+}
+
 layers {
   name: "ip"
   type: INNER_PRODUCT
-  bottom: "data"
+  bottom: "conv2"
   top: "ip"
   inner_product_param {
     num_output: 361
   }
 }
+
+
+#only learning framework
 layers {
   name: "flat"
   type: FLATTEN
@@ -51,7 +67,7 @@ layers {
 }
 layers {
   name: "loss"
-  type: EUCLIDEAN_LOSS
+  type: SOFTMAX_LOSS
   bottom: "ip"
   bottom: "flat"
   top: "loss"
