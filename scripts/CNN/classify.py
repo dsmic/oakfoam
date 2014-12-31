@@ -116,7 +116,7 @@ def main(argv):
     parser.add_argument(
         "--pretrained_model",
         default=os.path.join(pycaffe_dir,
-                "snapshots/_iter_5000.caffemodel"),
+                "snapshots/_iter_100000.caffemodel"),
         help="Trained model weights file."
     )
     parser.add_argument(
@@ -134,7 +134,7 @@ def main(argv):
     image_dims = [int(s) for s in args.images_dim.split(',')]
 
     # Make classifier.
-    classifier = Classifier(args.model_def, args.pretrained_model)
+    classifier = Classifier(args.model_def, args.pretrained_model,gpu=args.gpu)
 
     if args.gpu:
         print 'GPU mode'
@@ -147,7 +147,9 @@ def main(argv):
     first_line = f_input.readline()
     numlines = int(first_line)
     nummatched =0    
-
+    avrprob = 0
+    avrpos = 0
+    
     num_rows = 1
 
 
@@ -237,10 +239,14 @@ def main(argv):
                 if data[in_line,0,x,y] >0: print "{:5.2f}".format(1.0),
                 elif data[in_line,1,x,y] >0: print "{:5.2f}".format(-1.0),
                 else: print "{:5.2f}".format(0.0),
+                if data2[in_line,0,x,y] >0:
+                    xis=x
+                    yis=y
             print
         print        
         sum=0
-        maxpred=0;
+        maxpred=0
+        posbetter=0
         for x in xrange(0,19):
             for y in xrange(0,19):
                 sum=sum+predictions['ip'][0,x*19+y,0,0]
@@ -249,19 +255,20 @@ def main(argv):
                     xp=x
                     yp=y
                     maxpred=predictions['ip'][0,x*19+y,0,0]
-                if data2[in_line,0,x,y] >0:
-                    xis=x
-                    yis=y
+                if predictions['ip'][0,xis*19+yis,0,0]<predictions['ip'][0,x*19+y,0,0]:
+                    posbetter=posbetter+1
             print
+        avrprob=avrprob+predictions['ip'][0,xis*19+yis,0,0]
+        avrpos=avrpos+posbetter+1
         matched=0
         if xp==xis and yp==yis: 
             matched=1
             nummatched=nummatched+1
         print sum,xp,yp,xis,yis
-    print nummatched,numlines
+    print "{} of {} Acc:{:6.2f}% Rank:{:6.2f} Prob:{:6.2f}%".format(nummatched,numlines,float(nummatched)/numlines*100,float(avrpos)/numlines,avrprob/numlines*100)
 
     # Save
-    np.save(args.output_file, predictions)
+#    np.save(args.output_file, predictions)
 
 
 if __name__ == '__main__':

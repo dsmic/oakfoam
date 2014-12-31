@@ -13,7 +13,7 @@ print "firstline "+ first_line +"\n"
 num_rows = int(first_line)
 
 
-num_inputs = 3
+num_inputs = 2
 num_outputs = 1
 height = 19
 width = 19
@@ -59,36 +59,38 @@ for line in sys.stdin:
 				if n==1:
 					data[in_line,0,x,y]=1
 					data[in_line,1,x,y]=0
-					data[in_line,2,x,y]=0
+#					data[in_line,2,x,y]=0
 				elif n==2:
 					data[in_line,0,x,y]=0
 					data[in_line,1,x,y]=1
-					data[in_line,2,x,y]=0
+#					data[in_line,2,x,y]=0
 				elif n==3 or n==4:
 					data[in_line,0,x,y]=0
 					data[in_line,1,x,y]=0
-					data[in_line,2,x,y]=1
+#					data[in_line,2,x,y]=1
+					label[in_line]=x*19+y
 				else:
 					data[in_line,0,x,y]=0
 					data[in_line,1,x,y]=0
-					data[in_line,2,x,y]=0
+#					data[in_line,2,x,y]=0
 			if c_played==2:			
 				if n==1:
 					data[in_line,0,x,y]=0
 					data[in_line,1,x,y]=1
-					data[in_line,2,x,y]=0
+#					data[in_line,2,x,y]=0
 				elif n==2:
 					data[in_line,0,x,y]=1
 					data[in_line,1,x,y]=0
-					data[in_line,2,x,y]=0
+#					data[in_line,2,x,y]=0
 				elif n==3 or n==4:
 					data[in_line,0,x,y]=0
 					data[in_line,1,x,y]=0
-					data[in_line,2,x,y]=1
+#					data[in_line,2,x,y]=1
+					label[in_line]=x*19+y
 				else:
 					data[in_line,0,x,y]=0
 					data[in_line,1,x,y]=0
-					data[in_line,2,x,y]=0
+#					data[in_line,2,x,y]=0
 						
 			pos=pos+1
 	in_line=in_line+1
@@ -104,11 +106,11 @@ for x in xrange(0,19):
 		print(str(data[3,1,x,y])),
 	print
 print
-for x in xrange(0,19):
-	for y in xrange(0,19):
-		print(str(data[3,2,x,y])),
-	print
-print			
+#for x in xrange(0,19):
+#	for y in xrange(0,19):
+#		print(str(data[3,2,x,y])),
+#	print
+#print			
 	
 print num_rows
 print data

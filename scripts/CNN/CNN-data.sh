@@ -25,7 +25,7 @@ SIZE=$3
 
 echo $GAME >&2
 
-CMDS="param undo_enable 0\nparam CNN_data 0.1\nloadfeaturegammas \"$INITGAMMAS\"\nloadsgf \"$GAME\""
+CMDS="param undo_enable 0\nparam CNN_data 1.0\nloadfeaturegammas \"$INITGAMMAS\"\nloadsgf \"$GAME\""
 # Use gogui-adapter to emulate loadsgf
 echo -e $CMDS | gogui-adapter "$OAKFOAM" > /dev/null
 
