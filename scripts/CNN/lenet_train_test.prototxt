@@ -36,7 +36,7 @@ layers {
 
 #this part should be the same in learning and prediction network
 layers {
-  name: "conv1_7x7_48"
+  name: "conv1_7x7_64"
   type: CONVOLUTION
   blobs_lr: 1.
   blobs_lr: 2.
@@ -63,7 +63,7 @@ layers {
 }
 
 layers {
-  name: "conv2_5x5_32"
+  name: "conv2_5x5_48"
   type: CONVOLUTION
   blobs_lr: 1.
   blobs_lr: 2.
@@ -90,7 +90,7 @@ layers {
 }
 
 layers {
-  name: "conv3_5x5_32"
+  name: "conv3_5x5_48"
   type: CONVOLUTION
   blobs_lr: 1.
   blobs_lr: 2.
@@ -143,81 +143,112 @@ layers {
   top: "conv5"
 }
 
-#layers {
-#  name: "conv5_5x5_48"
-#  type: CONVOLUTION
-#  blobs_lr: 1.
-#  blobs_lr: 2.
-#  bottom: "conv5"
-#  top: "conv6"
-#  convolution_param {
-#    num_output: 48
-#    kernel_size: 5
-#    pad: 2
-#    weight_filler {
-#      type: "xavier"
-#      }
-#      bias_filler {
-#      type: "constant"
-#      }
-#    }
-#}
-
-#layers {
-#  name: "conv6_5x5_32"
-#  type: CONVOLUTION
-#  blobs_lr: 1.
-#  blobs_lr: 2.
-#  bottom: "conv6"
-#  top: "conv7"
-#  convolution_param {
-#    num_output: 32
-#    kernel_size: 5
-#    pad: 2
-#    weight_filler {
-#      type: "xavier"
-#      }
-#      bias_filler {
-#      type: "constant"
-#      }
-#    }
-#}
-
-#layers {
-#  name: "conv7_5x5_32"
-#  type: CONVOLUTION
-#  blobs_lr: 1.
-#  blobs_lr: 2.
-#  bottom: "conv7"
-#  top: "conv8"
-#  convolution_param {
-#    num_output: 32
-#    kernel_size: 5
-#    pad: 2
-#    weight_filler {
-#      type: "xavier"
-#      }
-#      bias_filler {
-#      type: "constant"
-#      }
-#    }
-#}
-
 layers {
-  name: "ip"
-  type: INNER_PRODUCT
+  name: "conv5_5x5_32"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
   bottom: "conv5"
-  top: "ip"
-  inner_product_param {
-    num_output: 361
+  top: "conv6"
+  convolution_param {
+    num_output: 32
+    kernel_size: 5
+    pad: 2
     weight_filler {
       type: "xavier"
       }
-    bias_filler {
+      bias_filler {
       type: "constant"
       }
-   }
+    }
 }
+
+layers {
+  name: "relu6"
+  type: RELU
+  bottom: "conv6"
+  top: "conv6"
+}
+
+
+layers {
+  name: "conv6_3x3_32"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "conv6"
+  top: "conv7"
+  convolution_param {
+    num_output: 32
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "constant"
+      }
+    }
+}
+
+layers {
+  name: "relu7"
+  type: RELU
+  bottom: "conv7"
+  top: "conv7"
+}
+
+
+layers {
+  name: "conv7_3x3_final"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "conv7"
+  top: "conv8"
+  convolution_param {
+    num_output: 1
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "constant"
+      }
+    }
+}
+
+#layers {
+#  name: "relu8"
+#  type: RELU
+#  bottom: "conv8"
+#  top: "conv8"
+#}
+
+#layers {
+#  name: "ip"
+#  type: INNER_PRODUCT
+#  bottom: "conv5"
+#  top: "ip"
+#  inner_product_param {
+#    num_output: 361
+#    weight_filler {
+#      type: "xavier"
+#      }
+#    bias_filler {
+#      type: "constant"
+#      }
+#   }
+#}
+
+layers {
+  name: "flat"
+  type: FLATTEN
+  bottom: "conv8"
+  top: "ip_zw"
+}
+
 
 
 #only learning framework
@@ -237,7 +268,7 @@ layers {
 layers {
   name: "loss"
   type: SOFTMAX_LOSS
-  bottom: "ip"
+  bottom: "ip_zw"
   bottom: "label"
   top: "loss"
 }

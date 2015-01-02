@@ -30,7 +30,7 @@ set -e
 
 echo $HARVESTED > ${TEMPCOMBINED}
 
-cat ${TEMPOUTPUT} >> ${TEMPCOMBINED}
+cat ${TEMPOUTPUT} | shuf >> ${TEMPCOMBINED}
 cat $TEMPCOMBINED
 
 rm -f $TEMPOUTPUT
