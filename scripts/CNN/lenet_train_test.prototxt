@@ -1,11 +1,11 @@
 name: "LogReg"
 layers {
   name: "mnist"
-  type: HDF5_DATA
+  type: DATA
   top: "data"
   top: "label"
-  hdf5_data_param {
-    source: "sample_data_list.txt"
+  data_param {
+    source: "train_leveldb/"
     batch_size: 256
   }
   include: { phase: TRAIN }
@@ -43,7 +43,7 @@ layers {
   bottom: "data"
   top: "conv2"
   convolution_param {
-    num_output: 48
+    num_output: 64
     kernel_size: 7
     pad: 3
     weight_filler {
@@ -63,14 +63,14 @@ layers {
 }
 
 layers {
-  name: "conv2_5x5_48"
+  name: "conv2_5x5_64"
   type: CONVOLUTION
   blobs_lr: 1.
   blobs_lr: 2.
   bottom: "conv2"
   top: "conv3"
   convolution_param {
-    num_output: 32
+    num_output: 64
     kernel_size: 5
     pad: 2
     weight_filler {
@@ -90,14 +90,14 @@ layers {
 }
 
 layers {
-  name: "conv3_5x5_48"
+  name: "conv3_5x5_64"
   type: CONVOLUTION
   blobs_lr: 1.
   blobs_lr: 2.
   bottom: "conv3"
   top: "conv4"
   convolution_param {
-    num_output: 32
+    num_output: 64
     kernel_size: 5
     pad: 2
     weight_filler {
@@ -117,14 +117,14 @@ layers {
 }
 
 layers {
-  name: "conv4_5x5_32"
+  name: "conv4_5x5_48"
   type: CONVOLUTION
   blobs_lr: 1.
   blobs_lr: 2.
   bottom: "conv4"
   top: "conv5"
   convolution_param {
-    num_output: 32
+    num_output: 48
     kernel_size: 5
     pad: 2
     weight_filler {
@@ -144,14 +144,14 @@ layers {
 }
 
 layers {
-  name: "conv5_5x5_32"
+  name: "conv5_5x5_48"
   type: CONVOLUTION
   blobs_lr: 1.
   blobs_lr: 2.
   bottom: "conv5"
   top: "conv6"
   convolution_param {
-    num_output: 32
+    num_output: 48
     kernel_size: 5
     pad: 2
     weight_filler {
@@ -172,7 +172,7 @@ layers {
 
 
 layers {
-  name: "conv6_3x3_32"
+  name: "conv6_5x5_32"
   type: CONVOLUTION
   blobs_lr: 1.
   blobs_lr: 2.
@@ -180,8 +180,8 @@ layers {
   top: "conv7"
   convolution_param {
     num_output: 32
-    kernel_size: 3
-    pad: 1
+    kernel_size: 5
+    pad: 2
     weight_filler {
       type: "xavier"
       }
@@ -200,16 +200,16 @@ layers {
 
 
 layers {
-  name: "conv7_3x3_final"
+  name: "conv7_5x5_32"
   type: CONVOLUTION
   blobs_lr: 1.
   blobs_lr: 2.
   bottom: "conv7"
   top: "conv8"
   convolution_param {
-    num_output: 1
-    kernel_size: 3
-    pad: 1
+    num_output: 32
+    kernel_size: 5
+    pad: 2
     weight_filler {
       type: "xavier"
       }
@@ -219,35 +219,35 @@ layers {
     }
 }
 
-#layers {
-#  name: "relu8"
-#  type: RELU
-#  bottom: "conv8"
-#  top: "conv8"
-#}
-
-#layers {
-#  name: "ip"
-#  type: INNER_PRODUCT
-#  bottom: "conv5"
-#  top: "ip"
-#  inner_product_param {
-#    num_output: 361
-#    weight_filler {
-#      type: "xavier"
-#      }
-#    bias_filler {
-#      type: "constant"
-#      }
-#   }
-#}
+layers {
+  name: "relu8"
+  type: RELU
+  bottom: "conv8"
+  top: "conv8"
+}
 
 layers {
-  name: "flat"
-  type: FLATTEN
+  name: "ip"
+  type: INNER_PRODUCT
   bottom: "conv8"
   top: "ip_zw"
+  inner_product_param {
+    num_output: 361
+    weight_filler {
+      type: "xavier"
+      }
+    bias_filler {
+      type: "constant"
+      }
+   }
 }
+
+#layers {
+#  name: "flat"
+#  type: FLATTEN
+#  bottom: "conv8"
+#  top: "ip_zw"
+#}
 
 
 
@@ -265,6 +265,14 @@ layers {
 #  bottom: "flat"
 #  top: "loss"
 #}
+layers {
+name: "accuracy"
+type: ACCURACY
+bottom: "ip_zw"
+bottom: "label"
+top: "accuracy"
+}
+
 layers {
   name: "loss"
   type: SOFTMAX_LOSS

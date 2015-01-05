@@ -233,6 +233,15 @@ class DecisionTree;
   class Web;
 #endif
 
+//#define CPU_ONLY
+#include <cuda_runtime.h>
+#include "caffe/caffe.hpp"
+#include "caffe/util/io.hpp"
+#include "caffe/blob.hpp" 
+using namespace caffe;
+
+
+
 class MoveCircHash
 {
   public:
@@ -363,7 +372,8 @@ class Engine
     void getOnePlayoutMove(Go::Board *board, Go::Color col, Go::Move *move);
 
     void addpresetplayout(float p) {presetplayouts+=p; presetnum++;}
-    
+
+	void getCNN(Go::Board *board,Go::Color col, float result[361]);
     EqMoves  * addMoveCirc(MoveCirc *m, Tree *t)  
       { 
         lock_move_circ.lock();
@@ -402,7 +412,8 @@ class Engine
         return &circ_move[*m];
       return NULL;
     }
-    
+
+	
   private:
     //boost::object_pool<Go::Board> pool_board;
     Gtp::Engine *gtpe;
@@ -433,6 +444,9 @@ class Engine
     Go::MoveProbabilityMap *probabilitymap;
     Go::ObjectBoard<Go::CorrelationData> *correlationmap;
 
+
+	Net<float> *caffe_test_net;
+		
     #ifdef with_unordered
       std::unordered_map <MoveCirc,EqMoves,MoveCircHash> circ_move;
     #else

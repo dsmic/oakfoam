@@ -10,7 +10,6 @@
 #include "Worker.h"
 #include <cfloat>
 
-
 #define WITH_P(A) (A>=1.0 || (A>0 && settings->rand->getRandomReal()<A))
 int debug=0;
     

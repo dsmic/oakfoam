@@ -21,8 +21,47 @@
 #endif
 
 
+
 Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
 {
+  Caffe::set_mode(Caffe::GPU);
+  Caffe::set_phase(Caffe::TEST);
+  
+  caffe_test_net = new Net<float>("/home/detlef/oakfoam-hg/oakfoam/scripts/CNN/lenet.prototxt");
+  caffe_test_net->CopyTrainedLayersFrom("/home/detlef/oakfoam-hg/oakfoam/scripts/CNN/snapshots/_iter_130000.caffemodel");
+
+  //this is testing code, must be put to a function later!!!!
+  Blob<float> *b=new Blob<float>(1,2,19,19);
+  float *data;
+  //fprintf(stderr,"1\n");
+  data= new float[2*19*19];
+  //fprintf(stderr,"2\n");
+  for (int i=0;i<2;i++)
+	for (int j=0;j<19;j++)
+	  for (int k=0;k<19;k++)
+		{
+	    //fprintf(stderr,"%d %d %d\n",i,j,k);
+		data[i*19*19+j*19+k]=0.0;
+		}
+  data[3*19+4]=1.0;
+  data[19*19+5*19+5]=1.0;
+  b->set_cpu_data(data);
+  vector<Blob<float>*> bottom;
+  bottom.push_back(b); 
+  const vector<Blob<float>*>& result =  caffe_test_net->Forward(bottom);
+  	for (int j=0;j<19;j++)
+	{
+	for (int k=0;k<19;k++)
+		{
+	    fprintf(stderr,"%5.3f ",result[0]->cpu_data()[j*19+k]);
+		}
+	fprintf(stderr,"\n");
+	}
+  delete[] data;
+
+  //end of testing code!
+
+
   gtpe=ge;
   longname=ln;
   #ifdef HAVE_WEB
@@ -506,7 +545,77 @@ Engine::~Engine()
   {
     delete (*iter);
   }
-  
+  delete caffe_test_net;
+}
+
+void Engine::getCNN(Go::Board *board,Go::Color col, float result[361])
+{
+	if (board->getSize()!=19) {
+		fprintf(stderr,"only 19x19 supported by CNN\n");
+		return;
+	}
+	float *data;
+	data= new float[2*19*19];
+	fprintf(stderr,"2\n");
+	if (col==Go::BLACK) {
+	  for (int j=0;j<19;j++)
+	    for (int k=0;k<19;k++)
+		  {//fprintf(stderr,"%d %d %d\n",i,j,k);
+	      if (board->getColor(Go::Position::xy2pos(j,k,19))==Go::BLACK)
+	          {
+			  data[j*19+k]=1.0;
+			  data[19*19+19*j+k]=0.0;
+			  }
+	      else if (board->getColor(Go::Position::xy2pos(j,k,19))==Go::WHITE)
+		      {
+			  data[j*19+k]=0.0;
+			  data[19*19+19*j+k]=1.0;
+			  }
+	      else
+	          {
+			  data[j*19+k]=0.0;
+			  data[19*19+19*j+k]=0.0;
+			  }
+	    }
+	}
+	if (col==Go::WHITE) {
+	  for (int j=0;j<19;j++)
+	    for (int k=0;k<19;k++)
+		  {//fprintf(stderr,"%d %d %d\n",i,j,k);
+	      if (board->getColor(Go::Position::xy2pos(j,k,19))==Go::BLACK)
+	          {
+			  data[j*19+k]=0.0;
+			  data[19*19+19*j+k]=1.0;
+			  }
+	      else if (board->getColor(Go::Position::xy2pos(j,k,19))==Go::WHITE)
+		      {
+			  data[j*19+k]=1.0;
+			  data[19*19+19*j+k]=0.0;
+			  }
+	      else
+	          {
+			  data[j*19+k]=0.0;
+			  data[19*19+19*j+k]=0.0;
+			  }
+	    }
+	}
+
+  Blob<float> *b=new Blob<float>(1,2,19,19);
+  b->set_cpu_data(data);
+  vector<Blob<float>*> bottom;
+  bottom.push_back(b); 
+  const vector<Blob<float>*>& rr =  caffe_test_net->Forward(bottom);
+  //	for (int j=0;j<19;j++)
+	//{
+	//for (int k=0;k<19;k++)
+	//	{
+	//    fprintf(stderr,"%5.3f ",rr[0]->cpu_data()[j*19+k]);
+	//	}
+	//fprintf(stderr,"\n");
+	//}
+  for (int i=0;i<361;i++)
+	  result[i]=rr[0]->cpu_data()[i];	
+  delete[] data;
 }
 
 void Engine::run(bool web_inf, std::string web_addr, int web_port)
