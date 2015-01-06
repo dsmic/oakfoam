@@ -412,7 +412,7 @@ class Engine
         return &circ_move[*m];
       return NULL;
     }
-
+    boost::mutex CNNmutex;
 	
   private:
     //boost::object_pool<Go::Board> pool_board;
@@ -445,7 +445,7 @@ class Engine
     Go::ObjectBoard<Go::CorrelationData> *correlationmap;
 
 
-	Net<float> *caffe_test_net;
+	  Net<float> *caffe_test_net;
 		
     #ifdef with_unordered
       std::unordered_map <MoveCirc,EqMoves,MoveCircHash> circ_move;

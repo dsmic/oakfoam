@@ -28,7 +28,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   Caffe::set_phase(Caffe::TEST);
   
   caffe_test_net = new Net<float>("/home/detlef/oakfoam-hg/oakfoam/scripts/CNN/lenet.prototxt");
-  caffe_test_net->CopyTrainedLayersFrom("/home/detlef/oakfoam-hg/oakfoam/scripts/CNN/snapshots/_iter_130000.caffemodel");
+  caffe_test_net->CopyTrainedLayersFrom("/home/detlef/oakfoam-hg/oakfoam/scripts/CNN/snapshots/_iter_250000.caffemodel");
 
   //this is testing code, must be put to a function later!!!!
   Blob<float> *b=new Blob<float>(1,2,19,19);
@@ -48,8 +48,13 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   b->set_cpu_data(data);
   vector<Blob<float>*> bottom;
   bottom.push_back(b); 
-  const vector<Blob<float>*>& result =  caffe_test_net->Forward(bottom);
-  	for (int j=0;j<19;j++)
+  const vector<Blob<float>*>& result=  caffe_test_net->Forward(bottom);
+  fprintf(stderr,"start\n");
+  //for (int i=0;i<10000;i++)
+  //  const vector<Blob<float>*>& result =  caffe_test_net->Forward(bottom);
+  fprintf(stderr,"end\n");
+  
+  for (int j=0;j<19;j++)
 	{
 	for (int k=0;k<19;k++)
 		{
@@ -58,7 +63,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
 	fprintf(stderr,"\n");
 	}
   delete[] data;
-
+  delete b;
   //end of testing code!
 
 
@@ -271,6 +276,18 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","test_p97",&(params->test_p97),0.0);
   params->addParameter("playout","test_p98",&(params->test_p98),0.0);
   params->addParameter("playout","test_p99",&(params->test_p99),0.0);
+
+  params->addParameter("playout","test_p100",&(params->test_p100),0.0);
+  params->addParameter("playout","test_p101",&(params->test_p101),0.0);
+  params->addParameter("playout","test_p102",&(params->test_p102),0.0);
+  params->addParameter("playout","test_p103",&(params->test_p103),0.0);
+  params->addParameter("playout","test_p104",&(params->test_p104),0.0);
+  params->addParameter("playout","test_p105",&(params->test_p105),0.0);
+  params->addParameter("playout","test_p106",&(params->test_p106),0.0);
+  params->addParameter("playout","test_p107",&(params->test_p107),0.0);
+  params->addParameter("playout","test_p108",&(params->test_p108),0.0);
+  params->addParameter("playout","test_p109",&(params->test_p109),0.0);
+  params->addParameter("playout","test_p210",&(params->test_p110),0.0);
   
   params->addParameter("tree","ucb_c",&(params->ucb_c),UCB_C);
   params->addParameter("tree","ucb_init",&(params->ucb_init),UCB_INIT);
@@ -552,11 +569,12 @@ void Engine::getCNN(Go::Board *board,Go::Color col, float result[361])
 {
 	if (board->getSize()!=19) {
 		fprintf(stderr,"only 19x19 supported by CNN\n");
+    for (int i=0;i<361;i++) result[i]=0.0;
 		return;
 	}
 	float *data;
 	data= new float[2*19*19];
-	fprintf(stderr,"2\n");
+	//fprintf(stderr,"2\n");
 	if (col==Go::BLACK) {
 	  for (int j=0;j<19;j++)
 	    for (int k=0;k<19;k++)
@@ -605,7 +623,7 @@ void Engine::getCNN(Go::Board *board,Go::Color col, float result[361])
   vector<Blob<float>*> bottom;
   bottom.push_back(b); 
   const vector<Blob<float>*>& rr =  caffe_test_net->Forward(bottom);
-  //	for (int j=0;j<19;j++)
+  //for (int j=0;j<19;j++)
 	//{
 	//for (int k=0;k<19;k++)
 	//	{
@@ -613,9 +631,12 @@ void Engine::getCNN(Go::Board *board,Go::Color col, float result[361])
 	//	}
 	//fprintf(stderr,"\n");
 	//}
-  for (int i=0;i<361;i++)
-	  result[i]=rr[0]->cpu_data()[i];	
+  for (int i=0;i<361;i++) {
+	  result[i]=rr[0]->cpu_data()[i];
+    if (result[i]<0.001) result[i]=0.001;
+  }
   delete[] data;
+  delete b;
 }
 
 void Engine::run(bool web_inf, std::string web_addr, int web_port)

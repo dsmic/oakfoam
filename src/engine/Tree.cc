@@ -1820,14 +1820,22 @@ bool Tree::expandLeaf(Worker::Settings *settings)
   
   //boost::mutex::scoped_try_lock lock(expandmutex);
   //expandmutex.lock();
-  if (!expandmutex.try_lock())
+  if (params->test_p100>0) {
+    //now we need an extended lock, as not two nodes may be expanded at the same time now!
+    if (!params->engine->CNNmutex.try_lock())
+      return false;
+  } 
+  else if (!expandmutex.try_lock())
     return false;
 
   //this is never executed?
   if (!this->isLeaf())
   {
     //fprintf(stderr,"Node was already expanded!\n");
-    expandmutex.unlock();
+    if (params->test_p100>0) 
+      params->engine->CNNmutex.unlock();
+    else
+      expandmutex.unlock();
     return true;
   }
   
@@ -1843,7 +1851,10 @@ bool Tree::expandLeaf(Worker::Settings *settings)
     {
       delete startboard;
       fprintf(stderr,"WARNING! Trying to expand a terminal node? (passes:%d)\n",startboard->getPassesPlayed());
-      expandmutex.unlock();
+      if (params->test_p100>0) 
+        params->engine->CNNmutex.unlock();
+      else
+        expandmutex.unlock();
       return true;
     }
   }
@@ -1959,6 +1970,9 @@ bool Tree::expandLeaf(Worker::Settings *settings)
             //fprintf(stderr,"%d %f %f\n",nmt->getMove().getPosition(),rwins[nmt->getMove().getPosition()],rplayouts[nmt->getMove().getPosition()]);
           //  nmt->presetRaveEarly(earlyrwins[nmt->getMove().getPosition()],earlyrplayouts[nmt->getMove().getPosition()]);
           //}
+
+
+          //This might be not thread save, as the childs are not ready yet!!! they get prepared later!!
           this->addChild(nmt);
         }
       }
@@ -2033,7 +2047,14 @@ bool Tree::expandLeaf(Worker::Settings *settings)
     Go::ObjectBoard<int> *cfglastdist=NULL;
     Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
     params->engine->getFeatures()->computeCFGDist(startboard,&cfglastdist,&cfgsecondlastdist);
-
+    float *CNNresults=NULL;
+    if (params->test_p100>0)
+    {
+      CNNresults=new float[361];
+      params->engine->getCNN(startboard,Go::otherColor(col),CNNresults);
+      //for (int i=0;i<361;i++)
+      //  fprintf(stderr,"%d: %f\n",i,CNNresults[i]);
+    } 
     //int now_unpruned=this->getUnprunedNum();
     //fprintf(stderr,"debugging %d\n",now_unpruned);
     for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
@@ -2049,6 +2070,13 @@ bool Tree::expandLeaf(Worker::Settings *settings)
           pattcirc_for_move = new Pattern::Circular(circdict,startboard,(*iter)->getMove().getPosition(),PATTERN_CIRC_MAXSIZE);
         }
         float gammal=params->engine->getFeatures()->getMoveGamma(startboard,cfglastdist,cfgsecondlastdist,(*iter)->getMove(),true,true,&gamma_local_part,pattcirc_for_move);
+        if (params->test_p100>0 && (*iter)->getMove().isNormal()) {
+          int p=(*iter)->getMove().getPosition();
+          int x=Go::Position::pos2x(p,19);
+          int y=Go::Position::pos2y(p,19);
+          //fprintf(stderr,"%d %d %f\n",x,y,CNNresults[19*x+y]);
+          gammal=((gammal-1.0)*params->test_p102+1.0)*(CNNresults[19*x+y]*params->test_p100+params->test_p101);  
+        }
         (*iter)->setFeatureGamma(gammal);
         (*iter)->setFeatureGammaLocalPart(gamma_local_part);
 
@@ -2076,7 +2104,8 @@ bool Tree::expandLeaf(Worker::Settings *settings)
       delete cfglastdist;
     if (cfgsecondlastdist!=NULL)
       delete cfgsecondlastdist;
-    
+    if (CNNresults!=NULL)
+      delete[] CNNresults;
     if (params->uct_progressive_widening_enabled)
     {
       this->pruneChildren();
@@ -2091,7 +2120,10 @@ bool Tree::expandLeaf(Worker::Settings *settings)
   
   beenexpanded=true;
   delete startboard;
-  expandmutex.unlock();
+  if (params->test_p100>0) 
+      params->engine->CNNmutex.unlock();
+    else
+      expandmutex.unlock();
   return true;
 }
 
