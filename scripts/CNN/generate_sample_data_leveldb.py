@@ -39,7 +39,9 @@ db_batch = leveldb.WriteBatch()
 in_line=0
 for line in sys.stdin:
   elements = line.split(',')
-#  print line;
+  if len(elements) != 19*19+1:
+    print line
+    continue
 #  print elements[19*19]
   color=elements[19*19].split(':')
   c_played=0
@@ -49,6 +51,10 @@ for line in sys.stdin:
   if color[0]=='W':
 #	  print "white"
 	  c_played=2
+  if c_played==0:
+    print "ups, no move"
+    print line
+    continue
   pos=0
   for x in xrange(0,19):
 	  for y in xrange(0,19):

@@ -445,8 +445,7 @@ class Engine
     Go::ObjectBoard<Go::CorrelationData> *correlationmap;
 
 
-	  Net<float> *caffe_test_net;
-		
+	  
     #ifdef with_unordered
       std::unordered_map <MoveCirc,EqMoves,MoveCircHash> circ_move;
     #else
@@ -624,6 +623,7 @@ class Engine
     static void gtpFeatureProbDistribution(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpListAllPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpLoadFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpLoadCNN(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpSaveFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpSaveFeatureCircularBinary(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpLoadFeatureCircularBinary(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
@@ -680,6 +680,7 @@ class Engine
     static void gtpDoBenchmark(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowCriticality(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowTerritory(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpShowTerritoryCNN(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowTerritoryAt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowTerritoryError(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowMoveProbability(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);

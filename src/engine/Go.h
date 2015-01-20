@@ -660,6 +660,8 @@ namespace Go
       Go::Move getLastMove() const { return lastmove; };
       /** Get the second-to-last move made on this board. */
       Go::Move getSecondLastMove() const { return secondlastmove; };
+      Go::Move getThirdLastMove() const { return thirdlastmove; };
+      Go::Move getForthLastMove() const { return forthlastmove; };
       /** Get the number of prisoners for a given color. */
       int getStoneCapturesOf(Go::Color col) const { return (col==Go::BLACK?blackcaptures:whitecaptures); };
       /** Reset the number of prisoners.
@@ -987,7 +989,7 @@ namespace Go
       int movesmade,passesplayed;
       Go::Color nexttomove;
       int simpleko;
-      Go::Move lastmove,secondlastmove;
+      Go::Move lastmove,secondlastmove,thirdlastmove,forthlastmove;
       bool symmetryupdated;
       Go::Board::Symmetry currentsymmetry;
       int blackvalidmovecount,whitevalidmovecount;

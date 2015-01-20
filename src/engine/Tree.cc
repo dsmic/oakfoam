@@ -2070,12 +2070,15 @@ bool Tree::expandLeaf(Worker::Settings *settings)
           pattcirc_for_move = new Pattern::Circular(circdict,startboard,(*iter)->getMove().getPosition(),PATTERN_CIRC_MAXSIZE);
         }
         float gammal=params->engine->getFeatures()->getMoveGamma(startboard,cfglastdist,cfgsecondlastdist,(*iter)->getMove(),true,true,&gamma_local_part,pattcirc_for_move);
-        if (params->test_p100>0 && (*iter)->getMove().isNormal()) {
-          int p=(*iter)->getMove().getPosition();
-          int x=Go::Position::pos2x(p,19);
-          int y=Go::Position::pos2y(p,19);
-          //fprintf(stderr,"%d %d %f\n",x,y,CNNresults[19*x+y]);
-          gammal=((gammal-1.0)*params->test_p102+1.0)*(CNNresults[19*x+y]*params->test_p100+params->test_p101);  
+        if (params->test_p100>0) {
+          if ( (*iter)->getMove().isNormal()) {
+            int p=(*iter)->getMove().getPosition();
+            int x=Go::Position::pos2x(p,19);
+            int y=Go::Position::pos2y(p,19);
+            //fprintf(stderr,"%d %d %f\n",x,y,CNNresults[19*x+y]);
+            gammal=((gammal-1.0)*params->test_p102+1.0)*(CNNresults[19*x+y]*params->test_p100+params->test_p101);
+          }
+          else gammal=0.05;
         }
         (*iter)->setFeatureGamma(gammal);
         (*iter)->setFeatureGammaLocalPart(gamma_local_part);

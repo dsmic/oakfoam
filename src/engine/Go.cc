@@ -231,6 +231,8 @@ Go::Board::Board(int s)
   
   lastmove=Go::Move(Go::BLACK,Go::Move::PASS);
   secondlastmove=Go::Move(Go::WHITE,Go::Move::PASS);
+  thirdlastmove=Go::Move(Go::WHITE,Go::Move::PASS);
+  forthlastmove=Go::Move(Go::WHITE,Go::Move::PASS);
   
   blackvalidmoves=new Go::BitBoard(size);
   whitevalidmoves=new Go::BitBoard(size);
@@ -318,6 +320,8 @@ void Go::Board::copyOver(Go::Board *copyboard) const
   
   copyboard->lastmove=this->lastmove;
   copyboard->secondlastmove=this->secondlastmove;
+  copyboard->thirdlastmove=this->thirdlastmove;
+  copyboard->forthlastmove=this->forthlastmove;
   
   copyboard->refreshGroups();
   
@@ -631,6 +635,8 @@ void Go::Board::makeMove(Go::Move move, Gtp::Engine* gtpe)
       lastchanges->set(secondlastmove.getPosition());
     if (markchanges && !lastmove.isPass() && !lastmove.isResign())
       lastchanges->set(lastmove.getPosition());
+    forthlastmove=thirdlastmove;
+    thirdlastmove=secondlastmove;
     secondlastmove=lastmove;
     lastmove=move;
     if (symmetryupdated)
@@ -660,6 +666,8 @@ void Go::Board::makeMove(Go::Move move, Gtp::Engine* gtpe)
     lastchanges->set(secondlastmove.getPosition());
   if (markchanges && !lastmove.isPass() && !lastmove.isResign())
     lastchanges->set(lastmove.getPosition());
+  forthlastmove=thirdlastmove;
+  thirdlastmove=secondlastmove;
   secondlastmove=lastmove;
   lastmove=move;
   

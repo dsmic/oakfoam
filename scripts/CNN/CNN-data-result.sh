@@ -25,6 +25,7 @@ SIZE=$3
 
 echo $GAME >&2
 GAMERESULT=$(cat $GAME|grep -Eo "RE\[.")
+GAMEKOMI=$(cat $GAME|grep -Eo "KM\[.+\]")
 CMDS="param undo_enable 0\nparam CNN_data 1.0\nloadfeaturegammas \"$INITGAMMAS\"\nloadsgf \"$GAME\""
 # Use gogui-adapter to emulate loadsgf
 echo -e $CMDS | gogui-adapter "$OAKFOAM" > /dev/null
@@ -34,10 +35,10 @@ HARVESTED=`cat $TEMPOUTPUT | grep -e '^[0-9]' | wc -l`
 set -e
 
 if (( ${HARVESTED:-0} > 0 )); then
-  cat $TEMPOUTPUT | grep -e '^[0-9]' | while read line; do echo "$line $GAMERESULT"; done>> $TEMPOUTPUT2
+  cat $TEMPOUTPUT | grep -e '^[0-9]' | while read line; do echo "$line,$GAMERESULT,$GAMEKOMI"; done >> $TEMPOUTPUT2
 
   cat $TEMPOUTPUT2
 fi
 
-rm -f $TEMPOUTPUT $TEMPOUTPUT2
+#rm -f $TEMPOUTPUT $TEMPOUTPUT2
 

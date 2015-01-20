@@ -20,7 +20,9 @@
   #include "../web/Web.h"
 #endif
 
-
+//had trouble putting it as static variable into the Engine class, but should only be one Engine anyway!
+Net<float> *caffe_test_net;
+		
 
 Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
 {
@@ -31,12 +33,12 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   caffe_test_net->CopyTrainedLayersFrom("/home/detlef/oakfoam-hg/oakfoam/scripts/CNN/snapshots/_iter_250000.caffemodel");
 
   //this is testing code, must be put to a function later!!!!
-  Blob<float> *b=new Blob<float>(1,2,19,19);
+  Blob<float> *b=new Blob<float>(1,6,19,19);
   float *data;
   //fprintf(stderr,"1\n");
-  data= new float[2*19*19];
+  data= new float[6*19*19];
   //fprintf(stderr,"2\n");
-  for (int i=0;i<2;i++)
+  for (int i=0;i<6;i++)
 	for (int j=0;j<19;j++)
 	  for (int k=0;k<19;k++)
 		{
@@ -573,7 +575,7 @@ void Engine::getCNN(Go::Board *board,Go::Color col, float result[361])
 		return;
 	}
 	float *data;
-	data= new float[2*19*19];
+	data= new float[6*19*19];
 	//fprintf(stderr,"2\n");
 	if (col==Go::BLACK) {
 	  for (int j=0;j<19;j++)
@@ -594,6 +596,10 @@ void Engine::getCNN(Go::Board *board,Go::Color col, float result[361])
 			  data[j*19+k]=0.0;
 			  data[19*19+19*j+k]=0.0;
 			  }
+        data[2*19*19+19*j+k]=0.0;
+			  data[3*19*19+19*j+k]=0.0;
+			  data[4*19*19+19*j+k]=0.0;
+			  data[5*19*19+19*j+k]=0.0;
 	    }
 	}
 	if (col==Go::WHITE) {
@@ -615,10 +621,35 @@ void Engine::getCNN(Go::Board *board,Go::Color col, float result[361])
 			  data[j*19+k]=0.0;
 			  data[19*19+19*j+k]=0.0;
 			  }
-	    }
+        data[2*19*19+19*j+k]=0.0;
+			  data[3*19*19+19*j+k]=0.0;
+			  data[4*19*19+19*j+k]=0.0;
+			  data[5*19*19+19*j+k]=0.0;
+    }
 	}
+  if (board->getLastMove().isNormal()) {
+    int j=Go::Position::pos2x(board->getLastMove().getPosition(),19);
+    int k=Go::Position::pos2y(board->getLastMove().getPosition(),19);
+    data[2*19*19+19*j+k]=1.0;
+  }
+  if (board->getSecondLastMove().isNormal()) {
+    int j=Go::Position::pos2x(board->getSecondLastMove().getPosition(),19);
+    int k=Go::Position::pos2y(board->getSecondLastMove().getPosition(),19);
+    data[3*19*19+19*j+k]=1.0;
+  }
+  if (board->getThirdLastMove().isNormal()) {
+    int j=Go::Position::pos2x(board->getThirdLastMove().getPosition(),19);
+    int k=Go::Position::pos2y(board->getThirdLastMove().getPosition(),19);
+    data[4*19*19+19*j+k]=1.0;
+  }
+  if (board->getForthLastMove().isNormal()) {
+    int j=Go::Position::pos2x(board->getForthLastMove().getPosition(),19);
+    int k=Go::Position::pos2y(board->getForthLastMove().getPosition(),19);
+    data[5*19*19+19*j+k]=1.0;
+  }
+    
 
-  Blob<float> *b=new Blob<float>(1,2,19,19);
+  Blob<float> *b=new Blob<float>(1,6,19,19);
   b->set_cpu_data(data);
   vector<Blob<float>*> bottom;
   bottom.push_back(b); 
@@ -633,7 +664,7 @@ void Engine::getCNN(Go::Board *board,Go::Color col, float result[361])
 	//}
   for (int i=0;i<361;i++) {
 	  result[i]=rr[0]->cpu_data()[i];
-    if (result[i]<0.001) result[i]=0.001;
+    if (result[i]<0.00001) result[i]=0.00001;
   }
   delete[] data;
   delete b;
@@ -807,6 +838,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("listallpatterns",this,&Engine::gtpListAllPatterns);
   gtpe->addFunctionCommand("loadfeaturegammas",this,&Engine::gtpLoadFeatureGammas);
   gtpe->addFunctionCommand("savefeaturegammas",this,&Engine::gtpSaveFeatureGammas);
+  gtpe->addFunctionCommand("loadcnns",this,&Engine::gtpLoadCNN);
   gtpe->addFunctionCommand("savefeaturecircbinarc",this,&Engine::gtpSaveFeatureCircularBinary);
   gtpe->addFunctionCommand("loadfeaturecircbinarc",this,&Engine::gtpLoadFeatureCircularBinary);
   gtpe->addFunctionCommand("loadcircpatterns",this,&Engine::gtpLoadCircPatterns);
@@ -850,6 +882,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("dobenchmark",this,&Engine::gtpDoBenchmark);
   gtpe->addFunctionCommand("showcriticality",this,&Engine::gtpShowCriticality);
   gtpe->addFunctionCommand("showterritory",this,&Engine::gtpShowTerritory);
+  gtpe->addFunctionCommand("showterritorycnn",this,&Engine::gtpShowTerritoryCNN);
   gtpe->addFunctionCommand("showterritoryat",this,&Engine::gtpShowTerritoryAt);
   gtpe->addFunctionCommand("showterritoryerror",this,&Engine::gtpShowTerritoryError);
   
@@ -905,6 +938,7 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("loadfeaturegammas %%r","Load Feature Gammas","none");
   gtpe->addAnalyzeCommand("showcriticality","Show Criticality","cboard");
   gtpe->addAnalyzeCommand("showterritory","Show Territory","dboard");
+  gtpe->addAnalyzeCommand("showterritorycnn %%c","Show Territory CNN","dboard");
   gtpe->addAnalyzeCommand("showterritoryat %%p %%c","Show Territory At","dboard");
   gtpe->addAnalyzeCommand("showterritoryerror","Show Territory Error","dboard");
   gtpe->addAnalyzeCommand("showmoveprobability","Show Move Probability","dboard");
@@ -2358,6 +2392,54 @@ void Engine::gtpLoadFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Comman
   }
 }
 
+void Engine::gtpLoadCNN(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=2)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("need 2 arg");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  std::string filename_net=cmd->getStringArg(0);
+  std::string filename_parameters=cmd->getStringArg(1);
+
+  bool success=true;
+  //the library does not really seem to throw exceptions, but just exit :(
+  try {
+    delete caffe_test_net;
+    caffe_test_net = new Net<float>(filename_net);
+    caffe_test_net->CopyTrainedLayersFrom(filename_parameters);
+  }
+  catch (int e) {
+    gtpe->getOutput()->printf("try catch %d\n",e);
+    success=false;
+  }
+
+  if (success)
+  {
+    #ifdef HAVE_MPI
+      if (me->mpirank==0)
+      {
+        fprintf(stderr,"Attention, mpi not implemented yet!!!\n");
+      }
+    #endif
+    
+    gtpe->getOutput()->startResponse(cmd);
+    gtpe->getOutput()->printf("loaded CNN file: %s and %s learned file",filename_net.c_str(),filename_parameters.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+  else
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("error loading features gamma file: %s",filename_net.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+}
+
 void Engine::gtpSaveFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
@@ -3338,6 +3420,77 @@ void Engine::gtpShowTerritory(void *instance, Gtp::Engine* gtpe, Gtp::Command* c
     gtpe->getOutput()->printf("Territory %.1f Komi %.1f W+%.1f (with ScoreKomi %.1f) (%.1f)\n",
       territorycount,me->getHandiKomi(),-(territorycount-me->getHandiKomi()),-(territorycount-me->getScoreKomi()),me->getScoreKomi());
     
+  gtpe->getOutput()->endResponse(true);
+}
+
+void Engine::gtpShowTerritoryCNN(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("color is required");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  Gtp::Color gtpcol = cmd->getColorArg(0);
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("\n");
+  if (me->boardsize !=19)
+  {
+    gtpe->getOutput()->printString("This only works on 19x19!!!!\n");
+    gtpe->getOutput()->endResponse(false);
+    return;
+  }
+  float *data;
+  //fprintf(stderr,"1\n");
+  data= new float[2*19*19];
+  for (int j=0;j<19;j++)
+	  for (int k=0;k<19;k++)
+		{
+	    int pos=Go::Position::xy2pos(j,k,me->boardsize);
+      Go::Color col=me->currentboard->getColor(pos);
+		  if (col==Go::BLACK)
+        data[0*19*19+j*19+k]=1.0;
+      else
+        data[0*19*19+j*19+k]=0.0;
+      if (col==Go::WHITE)  
+		    data[1*19*19+j*19+k]=1.0;
+      else
+        data[1*19*19+j*19+k]=0.0;
+    }
+
+  float result[732];
+  Blob<float> *b=new Blob<float>(1,2,19,19);
+  b->set_cpu_data(data);
+  vector<Blob<float>*> bottom;
+  bottom.push_back(b); 
+  const vector<Blob<float>*>& rr =  caffe_test_net->Forward(bottom);
+  for (int i=0;i<722;i++) {
+	  result[i]=rr[0]->cpu_data()[i];
+  }
+  //float territorycount=0;
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      float black=result[0*19*19 +19*x+y];
+      float white=result[1*19*19 +19*x+y];
+      //this later if everything is working
+      //if (black>white)
+      //  gtpe->getOutput()->printf("%.2f ",black);
+      //else
+      //  gtpe->getOutput()->printf("%.2f ",-white);
+      if (gtpcol==Gtp::BLACK)
+        gtpe->getOutput()->printf("%.2f ",black);
+      else
+        gtpe->getOutput()->printf("%.2f ",-white);
+    }
+    gtpe->getOutput()->printf("\n");
+  }
   gtpe->getOutput()->endResponse(true);
 }
 
@@ -4711,17 +4864,40 @@ void Engine::makeMove(Go::Move move)
             int p=move.getPosition();
             if (Go::Position::pos2x(p,size)==x && Go::Position::pos2y(p,size)==y)
             {
-              if (c==Go::BLACK)
-                gtpe->getOutput()->printfDebug("3,");
-              else
-                gtpe->getOutput()->printfDebug("4,");
+              gtpe->getOutput()->printfDebug("3,");
             }
             else
               gtpe->getOutput()->printfDebug("0,");
         }
       }
     }
-    gtpe->getOutput()->printfDebug("%s\n",move.toString(size).c_str());
+    int p2=currentboard->getLastMove().getPosition();
+    int p3=currentboard->getSecondLastMove().getPosition();
+    int p4=currentboard->getThirdLastMove().getPosition();
+    int p5=currentboard->getForthLastMove().getPosition();
+    
+    gtpe->getOutput()->printfDebug("%s,%d,%d,%d,%d,%d,%d,%d,%d\n",move.toString(size).c_str(),
+        Go::Position::pos2x(p2,size),Go::Position::pos2y(p2,size),
+        Go::Position::pos2x(p3,size),Go::Position::pos2y(p3,size),
+        Go::Position::pos2x(p4,size),Go::Position::pos2y(p4,size),
+        Go::Position::pos2x(p5,size),Go::Position::pos2y(p5,size)
+                                   );
+  /* //Test code to check, if the predictor does the same as the scripts
+     
+     float result[361];
+    getCNN(currentboard,move.getColor(),result);
+    int dd=0;
+    gtpe->getOutput()->printfDebug("\n#",result[dd]);
+      
+    for (int x=0;x<size;x++) {
+      for (int y=0;y<size;y++) {
+        gtpe->getOutput()->printfDebug("%5.2f",result[dd]);
+        dd++;
+      }
+      gtpe->getOutput()->printfDebug("\n#");
+    }
+    gtpe->getOutput()->printfDebug("\n");
+    */
   }
   if (WITH_P(params->features_circ_list))
   {

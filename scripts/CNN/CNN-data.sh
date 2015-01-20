@@ -25,19 +25,21 @@ SIZE=$3
 
 echo $GAME >&2
 
-CMDS="param undo_enable 0\nparam CNN_data 1.0\nloadfeaturegammas \"$INITGAMMAS\"\nloadsgf \"$GAME\""
+CMDS="param undo_enable 0\nparam CNN_data 1.0\nloadfeaturegammas \"$INITGAMMAS\"\nloadsgf \"$GAME\"\ndonplayouts 1000\nshowterritory"
 # Use gogui-adapter to emulate loadsgf
 echo -e $CMDS | gogui-adapter "$OAKFOAM" > /dev/null
 
+TERRITORY=$(cat $TEMPOUTPUT | grep -A20 "showterritory" |tail -n 19|tr "\\n" " "|tr " " ","| sed 's/,,/,/g' | sed 's/,$/\n/')
 set +e
-HARVESTED=`cat $TEMPOUTPUT | grep -e '^[0-9]' | wc -l`
+HARVESTED=`cat $TEMPOUTPUT | grep -E '^[0-9]+,' | wc -l`
 set -e
 
+tn=0
 if (( ${HARVESTED:-0} > 0 )); then
-  cat $TEMPOUTPUT | grep -e '^[0-9]' >> $TEMPOUTPUT2
+  cat $TEMPOUTPUT | grep -E '^[0-9]+,' | while read line; do echo "$line,$tn,$TERRITORY"; let "tn+=1"; done > $TEMPOUTPUT2
 
   cat $TEMPOUTPUT2
 fi
 
-rm -f $TEMPOUTPUT $TEMPOUTPUT2
+#rm -f $TEMPOUTPUT $TEMPOUTPUT2
 
