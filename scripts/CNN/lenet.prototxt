@@ -1,20 +1,20 @@
 name: "LogReg"
 input: "data"
 input_dim: 1
-input_dim: 6
+input_dim: 2
 input_dim: 19
 input_dim: 19
 
 #this part should be the same in learning and prediction network
 layers {
-  name: "conv1_7x7_64"
+  name: "conv1_7x7_96"
   type: CONVOLUTION
   blobs_lr: 1.
   blobs_lr: 2.
   bottom: "data"
   top: "conv2"
   convolution_param {
-    num_output: 64
+    num_output: 96
     kernel_size: 7
     pad: 3
     weight_filler {
@@ -34,14 +34,14 @@ layers {
 }
 
 layers {
-  name: "conv2_5x5_64"
+  name: "conv2_5x5_96"
   type: CONVOLUTION
   blobs_lr: 1.
   blobs_lr: 2.
   bottom: "conv2"
   top: "conv3"
   convolution_param {
-    num_output: 64
+    num_output: 96
     kernel_size: 5
     pad: 2
     weight_filler {
@@ -61,14 +61,14 @@ layers {
 }
 
 layers {
-  name: "conv3_5x5_64"
+  name: "conv3_5x5_96"
   type: CONVOLUTION
   blobs_lr: 1.
   blobs_lr: 2.
   bottom: "conv3"
   top: "conv4"
   convolution_param {
-    num_output: 64
+    num_output: 96
     kernel_size: 5
     pad: 2
     weight_filler {
@@ -88,14 +88,14 @@ layers {
 }
 
 layers {
-  name: "conv4_5x5_48"
+  name: "conv4_5x5_64"
   type: CONVOLUTION
   blobs_lr: 1.
   blobs_lr: 2.
   bottom: "conv4"
   top: "conv5"
   convolution_param {
-    num_output: 48
+    num_output: 64
     kernel_size: 5
     pad: 2
     weight_filler {
@@ -115,14 +115,14 @@ layers {
 }
 
 layers {
-  name: "conv5_5x5_48"
+  name: "conv5_5x5_64"
   type: CONVOLUTION
   blobs_lr: 1.
   blobs_lr: 2.
   bottom: "conv5"
   top: "conv6"
   convolution_param {
-    num_output: 48
+    num_output: 64
     kernel_size: 5
     pad: 2
     weight_filler {
@@ -143,14 +143,14 @@ layers {
 
 
 layers {
-  name: "conv6_5x5_32"
+  name: "conv6_5x5_48"
   type: CONVOLUTION
   blobs_lr: 1.
   blobs_lr: 2.
   bottom: "conv6"
   top: "conv7"
   convolution_param {
-    num_output: 32
+    num_output: 48
     kernel_size: 5
     pad: 2
     weight_filler {
@@ -171,14 +171,14 @@ layers {
 
 
 layers {
-  name: "conv7_5x5_32"
+  name: "conv7_5x5_48"
   type: CONVOLUTION
   blobs_lr: 1.
   blobs_lr: 2.
   bottom: "conv7"
   top: "conv8"
   convolution_param {
-    num_output: 32
+    num_output: 48
     kernel_size: 5
     pad: 2
     weight_filler {
@@ -219,7 +219,6 @@ layers {
 #  bottom: "conv8"
 #  top: "ip_zw"
 #}
-
 
 #only prediction
 layers {

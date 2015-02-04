@@ -373,7 +373,10 @@ class Engine
 
     void addpresetplayout(float p) {presetplayouts+=p; presetnum++;}
 
-	void getCNN(Go::Board *board,Go::Color col, float result[361]);
+	  void getCNN(Go::Board *board,Go::Color col, float result[361]);
+    float getCNNwr(Go::Board *board,Go::Color col);
+
+
     EqMoves  * addMoveCirc(MoveCirc *m, Tree *t)  
       { 
         lock_move_circ.lock();
@@ -623,7 +626,8 @@ class Engine
     static void gtpFeatureProbDistribution(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpListAllPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpLoadFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
-    static void gtpLoadCNN(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpLoadCNNp(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpLoadCNNt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpSaveFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpSaveFeatureCircularBinary(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpLoadFeatureCircularBinary(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);

@@ -22,23 +22,25 @@
 
 //had trouble putting it as static variable into the Engine class, but should only be one Engine anyway!
 Net<float> *caffe_test_net;
+Net<float> *caffe_area_net;
 		
 
 Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
 {
   Caffe::set_mode(Caffe::GPU);
   Caffe::set_phase(Caffe::TEST);
-  
+  caffe_area_net = NULL;
+  caffe_test_net = NULL;
   caffe_test_net = new Net<float>("/home/detlef/oakfoam-hg/oakfoam/scripts/CNN/lenet.prototxt");
   caffe_test_net->CopyTrainedLayersFrom("/home/detlef/oakfoam-hg/oakfoam/scripts/CNN/snapshots/_iter_250000.caffemodel");
 
   //this is testing code, must be put to a function later!!!!
-  Blob<float> *b=new Blob<float>(1,6,19,19);
+  Blob<float> *b=new Blob<float>(1,2,19,19);
   float *data;
   //fprintf(stderr,"1\n");
-  data= new float[6*19*19];
+  data= new float[2*19*19];
   //fprintf(stderr,"2\n");
-  for (int i=0;i<6;i++)
+  for (int i=0;i<2;i++)
 	for (int j=0;j<19;j++)
 	  for (int k=0;k<19;k++)
 		{
@@ -431,6 +433,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("other","features_circ_list",&(params->features_circ_list),0.0);
   params->addParameter("other","features_circ_list_size",&(params->features_circ_list_size),0);
   params->addParameter("other","cnn_data",&(params->CNN_data),0.0);
+  params->addParameter("other","cnn_data_playouts",&(params->CNN_data_playouts),0);
   
   params->addParameter("other","auto_save_sgf",&(params->auto_save_sgf),false);
   params->addParameter("other","auto_save_sgf_prefix",&(params->auto_save_sgf_prefix),"");
@@ -564,7 +567,8 @@ Engine::~Engine()
   {
     delete (*iter);
   }
-  delete caffe_test_net;
+  if (caffe_test_net!=NULL) delete caffe_test_net;
+  if (caffe_area_net!=NULL) delete caffe_area_net;
 }
 
 void Engine::getCNN(Go::Board *board,Go::Color col, float result[361])
@@ -575,7 +579,7 @@ void Engine::getCNN(Go::Board *board,Go::Color col, float result[361])
 		return;
 	}
 	float *data;
-	data= new float[6*19*19];
+	data= new float[2*19*19];
 	//fprintf(stderr,"2\n");
 	if (col==Go::BLACK) {
 	  for (int j=0;j<19;j++)
@@ -596,10 +600,10 @@ void Engine::getCNN(Go::Board *board,Go::Color col, float result[361])
 			  data[j*19+k]=0.0;
 			  data[19*19+19*j+k]=0.0;
 			  }
-        data[2*19*19+19*j+k]=0.0;
-			  data[3*19*19+19*j+k]=0.0;
-			  data[4*19*19+19*j+k]=0.0;
-			  data[5*19*19+19*j+k]=0.0;
+//        data[2*19*19+19*j+k]=0.0;
+//			  data[3*19*19+19*j+k]=0.0;
+//			  data[4*19*19+19*j+k]=0.0;
+//			  data[5*19*19+19*j+k]=0.0;
 	    }
 	}
 	if (col==Go::WHITE) {
@@ -621,35 +625,35 @@ void Engine::getCNN(Go::Board *board,Go::Color col, float result[361])
 			  data[j*19+k]=0.0;
 			  data[19*19+19*j+k]=0.0;
 			  }
-        data[2*19*19+19*j+k]=0.0;
-			  data[3*19*19+19*j+k]=0.0;
-			  data[4*19*19+19*j+k]=0.0;
-			  data[5*19*19+19*j+k]=0.0;
+//        data[2*19*19+19*j+k]=0.0;
+//			  data[3*19*19+19*j+k]=0.0;
+//			  data[4*19*19+19*j+k]=0.0;
+//			  data[5*19*19+19*j+k]=0.0;
     }
 	}
-  if (board->getLastMove().isNormal()) {
-    int j=Go::Position::pos2x(board->getLastMove().getPosition(),19);
-    int k=Go::Position::pos2y(board->getLastMove().getPosition(),19);
-    data[2*19*19+19*j+k]=1.0;
-  }
-  if (board->getSecondLastMove().isNormal()) {
-    int j=Go::Position::pos2x(board->getSecondLastMove().getPosition(),19);
-    int k=Go::Position::pos2y(board->getSecondLastMove().getPosition(),19);
-    data[3*19*19+19*j+k]=1.0;
-  }
-  if (board->getThirdLastMove().isNormal()) {
-    int j=Go::Position::pos2x(board->getThirdLastMove().getPosition(),19);
-    int k=Go::Position::pos2y(board->getThirdLastMove().getPosition(),19);
-    data[4*19*19+19*j+k]=1.0;
-  }
-  if (board->getForthLastMove().isNormal()) {
-    int j=Go::Position::pos2x(board->getForthLastMove().getPosition(),19);
-    int k=Go::Position::pos2y(board->getForthLastMove().getPosition(),19);
-    data[5*19*19+19*j+k]=1.0;
-  }
+//  if (board->getLastMove().isNormal()) {
+//    int j=Go::Position::pos2x(board->getLastMove().getPosition(),19);
+//    int k=Go::Position::pos2y(board->getLastMove().getPosition(),19);
+//    data[2*19*19+19*j+k]=1.0;
+//  }
+//  if (board->getSecondLastMove().isNormal()) {
+//    int j=Go::Position::pos2x(board->getSecondLastMove().getPosition(),19);
+//    int k=Go::Position::pos2y(board->getSecondLastMove().getPosition(),19);
+//    data[3*19*19+19*j+k]=1.0;
+//  }
+//  if (board->getThirdLastMove().isNormal()) {
+//    int j=Go::Position::pos2x(board->getThirdLastMove().getPosition(),19);
+//    int k=Go::Position::pos2y(board->getThirdLastMove().getPosition(),19);
+//    data[4*19*19+19*j+k]=1.0;
+//  }
+//  if (board->getForthLastMove().isNormal()) {
+//    int j=Go::Position::pos2x(board->getForthLastMove().getPosition(),19);
+//    int k=Go::Position::pos2y(board->getForthLastMove().getPosition(),19);
+//    data[5*19*19+19*j+k]=1.0;
+//  }
     
 
-  Blob<float> *b=new Blob<float>(1,6,19,19);
+  Blob<float> *b=new Blob<float>(1,2,19,19);
   b->set_cpu_data(data);
   vector<Blob<float>*> bottom;
   bottom.push_back(b); 
@@ -668,6 +672,77 @@ void Engine::getCNN(Go::Board *board,Go::Color col, float result[361])
   }
   delete[] data;
   delete b;
+}
+
+float Engine::getCNNwr(Go::Board *board,Go::Color col)
+{
+	if (board->getSize()!=19) {
+		fprintf(stderr,"only 19x19 supported by CNN\n");
+		return 0;
+	}
+	float *data;
+	data= new float[2*19*19];
+	//fprintf(stderr,"2\n");
+	if (col==Go::BLACK) {
+	  for (int j=0;j<19;j++)
+	    for (int k=0;k<19;k++)
+		  {//fprintf(stderr,"%d %d %d\n",i,j,k);
+	      if (board->getColor(Go::Position::xy2pos(j,k,19))==Go::BLACK)
+	          {
+			  data[j*19+k]=1.0;
+			  data[19*19+19*j+k]=0.0;
+			  }
+	      else if (board->getColor(Go::Position::xy2pos(j,k,19))==Go::WHITE)
+		      {
+			  data[j*19+k]=0.0;
+			  data[19*19+19*j+k]=1.0;
+			  }
+	      else
+	          {
+			  data[j*19+k]=0.0;
+			  data[19*19+19*j+k]=0.0;
+			  }
+	    }
+	}
+	if (col==Go::WHITE) {
+	  for (int j=0;j<19;j++)
+	    for (int k=0;k<19;k++)
+		  {//fprintf(stderr,"%d %d %d\n",i,j,k);
+	      if (board->getColor(Go::Position::xy2pos(j,k,19))==Go::BLACK)
+	          {
+			  data[j*19+k]=0.0;
+			  data[19*19+19*j+k]=1.0;
+			  }
+	      else if (board->getColor(Go::Position::xy2pos(j,k,19))==Go::WHITE)
+		      {
+			  data[j*19+k]=1.0;
+			  data[19*19+19*j+k]=0.0;
+			  }
+	      else
+	          {
+			  data[j*19+k]=0.0;
+			  data[19*19+19*j+k]=0.0;
+			  }
+    }
+	}
+  Blob<float> *b=new Blob<float>(1,2,19,19);
+  b->set_cpu_data(data);
+  vector<Blob<float>*> bottom;
+  bottom.push_back(b); 
+  const vector<Blob<float>*>& rr =  caffe_area_net->Forward(bottom);
+  float diffprob[41];
+    for (int i=0;i<41;i++) {
+    diffprob[i]=rr[0]->cpu_data()[i];
+  }
+  float winprob=0;
+  float komipos=20+getHandiKomi();
+  if (col!=Go::BLACK)
+    komipos=20-getHandiKomi();
+  for (int i=0;i<41;i++) {
+    if (i<komipos) winprob+=diffprob[i];
+    if (i==komipos) winprob+=diffprob[i]/2.0;
+  }
+  return 1.0-winprob;
 }
 
 void Engine::run(bool web_inf, std::string web_addr, int web_port)
@@ -838,7 +913,8 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("listallpatterns",this,&Engine::gtpListAllPatterns);
   gtpe->addFunctionCommand("loadfeaturegammas",this,&Engine::gtpLoadFeatureGammas);
   gtpe->addFunctionCommand("savefeaturegammas",this,&Engine::gtpSaveFeatureGammas);
-  gtpe->addFunctionCommand("loadcnns",this,&Engine::gtpLoadCNN);
+  gtpe->addFunctionCommand("loadcnnp",this,&Engine::gtpLoadCNNp);
+  gtpe->addFunctionCommand("loadcnnt",this,&Engine::gtpLoadCNNt);
   gtpe->addFunctionCommand("savefeaturecircbinarc",this,&Engine::gtpSaveFeatureCircularBinary);
   gtpe->addFunctionCommand("loadfeaturecircbinarc",this,&Engine::gtpLoadFeatureCircularBinary);
   gtpe->addFunctionCommand("loadcircpatterns",this,&Engine::gtpLoadCircPatterns);
@@ -1040,7 +1116,7 @@ void Engine::gtpKomi(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 void Engine::gtpPlay(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
-  gtpe->getOutput()->printfDebug("gtpPlay called\n");
+  //gtpe->getOutput()->printfDebug("gtpPlay called\n");
   if (cmd->numArgs()!=2)
   {
     gtpe->getOutput()->startResponse(cmd,false);
@@ -1077,7 +1153,7 @@ void Engine::gtpPlay(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 void Engine::gtpGenMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
-  gtpe->getOutput()->printfDebug("gtpGenMove called\n");
+  //gtpe->getOutput()->printfDebug("gtpGenMove called\n");
   
   if (cmd->numArgs()!=1)
   {
@@ -2392,7 +2468,7 @@ void Engine::gtpLoadFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Comman
   }
 }
 
-void Engine::gtpLoadCNN(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+void Engine::gtpLoadCNNt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
   
@@ -2410,7 +2486,55 @@ void Engine::gtpLoadCNN(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   bool success=true;
   //the library does not really seem to throw exceptions, but just exit :(
   try {
-    delete caffe_test_net;
+    if (caffe_area_net!=NULL) delete caffe_area_net;
+    caffe_area_net = new Net<float>(filename_net);
+    caffe_area_net->CopyTrainedLayersFrom(filename_parameters);
+  }
+  catch (int e) {
+    gtpe->getOutput()->printf("try catch %d\n",e);
+    success=false;
+  }
+
+  if (success)
+  {
+    #ifdef HAVE_MPI
+      if (me->mpirank==0)
+      {
+        fprintf(stderr,"Attention, mpi not implemented yet!!!\n");
+      }
+    #endif
+    
+    gtpe->getOutput()->startResponse(cmd);
+    gtpe->getOutput()->printf("loaded CNN file: %s and %s learned file",filename_net.c_str(),filename_parameters.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+  else
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("error loading features gamma file: %s",filename_net.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+}
+
+void Engine::gtpLoadCNNp(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=2)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("need 2 arg");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  std::string filename_net=cmd->getStringArg(0);
+  std::string filename_parameters=cmd->getStringArg(1);
+
+  bool success=true;
+  //the library does not really seem to throw exceptions, but just exit :(
+  try {
+    if (caffe_test_net!=NULL) delete caffe_test_net;
     caffe_test_net = new Net<float>(filename_net);
     caffe_test_net->CopyTrainedLayersFrom(filename_parameters);
   }
@@ -3426,7 +3550,7 @@ void Engine::gtpShowTerritory(void *instance, Gtp::Engine* gtpe, Gtp::Command* c
 void Engine::gtpShowTerritoryCNN(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
-
+  me->doNPlayouts(100);
   if (cmd->numArgs()!=1)
   {
     gtpe->getOutput()->startResponse(cmd,false);
@@ -3453,44 +3577,89 @@ void Engine::gtpShowTerritoryCNN(void *instance, Gtp::Engine* gtpe, Gtp::Command
 		{
 	    int pos=Go::Position::xy2pos(j,k,me->boardsize);
       Go::Color col=me->currentboard->getColor(pos);
-		  if (col==Go::BLACK)
-        data[0*19*19+j*19+k]=1.0;
-      else
-        data[0*19*19+j*19+k]=0.0;
-      if (col==Go::WHITE)  
-		    data[1*19*19+j*19+k]=1.0;
-      else
-        data[1*19*19+j*19+k]=0.0;
+		  if (gtpcol==Gtp::BLACK) {
+        if (col==Go::BLACK)
+          data[0*19*19+j*19+k]=1.0;
+        else
+          data[0*19*19+j*19+k]=0.0;
+        if (col==Go::WHITE)  
+		      data[1*19*19+j*19+k]=1.0;
+        else
+          data[1*19*19+j*19+k]=0.0;
+      }
+      else {
+        if (col==Go::WHITE)
+          data[0*19*19+j*19+k]=1.0;
+        else
+          data[0*19*19+j*19+k]=0.0;
+        if (col==Go::BLACK)  
+		      data[1*19*19+j*19+k]=1.0;
+        else
+          data[1*19*19+j*19+k]=0.0;
+      }
     }
 
-  float result[732];
+  float result[361];
+  float diffprob[41];
   Blob<float> *b=new Blob<float>(1,2,19,19);
   b->set_cpu_data(data);
   vector<Blob<float>*> bottom;
   bottom.push_back(b); 
-  const vector<Blob<float>*>& rr =  caffe_test_net->Forward(bottom);
-  for (int i=0;i<722;i++) {
-	  result[i]=rr[0]->cpu_data()[i];
+  const vector<Blob<float>*>& rr =  caffe_area_net->Forward(bottom);
+  for (int i=0;i<361;i++) {
+	  result[i]=rr[1]->cpu_data()[i];
   }
-  //float territorycount=0;
+  for (int i=0;i<41;i++) {
+    diffprob[i]=rr[0]->cpu_data()[i];
+  }
+  float territorycount=0;
+  float norm=0;
   for (int y=me->boardsize-1;y>=0;y--)
   {
     for (int x=0;x<me->boardsize;x++)
     {
-      float black=result[0*19*19 +19*x+y];
-      float white=result[1*19*19 +19*x+y];
+      int pos=Go::Position::xy2pos(x,y,me->boardsize);
+      float territory=me->territorymap->getPositionOwner(pos);
+      float black=result[19*x+y]*2.0-1.0;
+      if (gtpcol!=Gtp::BLACK)
+        black=-black;
+      norm+=pow(black-territory,2);
+      //float white=result[1*19*19 +19*x+y];
       //this later if everything is working
       //if (black>white)
       //  gtpe->getOutput()->printf("%.2f ",black);
       //else
       //  gtpe->getOutput()->printf("%.2f ",-white);
-      if (gtpcol==Gtp::BLACK)
-        gtpe->getOutput()->printf("%.2f ",black);
-      else
-        gtpe->getOutput()->printf("%.2f ",-white);
+      //if (gtpcol==Gtp::BLACK)
+      //  gtpe->getOutput()->printf("%.2f ",black);
+      //else
+      //  gtpe->getOutput()->printf("%.2f ",-white);
+      territorycount+=black;
+      gtpe->getOutput()->printf("%.2f ",black);
     }
     gtpe->getOutput()->printf("\n");
   }
+  float winprob=0;
+  float komipos=20+me->getHandiKomi();
+  if (gtpcol!=Gtp::BLACK)
+    komipos=20-me->getHandiKomi();
+  for (int i=0;i<41;i++) {
+    gtpe->getOutput()->printf("%3.0f ",diffprob[i]*1000.0);
+    if (i<komipos) winprob+=diffprob[i];
+    if (i==komipos) winprob+=diffprob[i]/2.0;
+  }
+  gtpe->getOutput()->printf("\n");
+  for (int i=0;i<41;i++) {
+    gtpe->getOutput()->printf("%3d ",i-20);
+  }
+  gtpe->getOutput()->printf("\nwinprob: %.3f\n",1.0-winprob);
+  
+  if (territorycount-me->getHandiKomi()>0)
+    gtpe->getOutput()->printf("Territory %.1f Komi %.1f B+%.1f (with ScoreKomi %.1f) (%.1f) (norm %.2f)\n",
+      territorycount,me->getHandiKomi(),territorycount-me->getHandiKomi(),territorycount-me->getScoreKomi(),me->getScoreKomi(),sqrt(norm));
+  else
+    gtpe->getOutput()->printf("Territory %.1f Komi %.1f W+%.1f (with ScoreKomi %.1f) (%.1f) (norm %.2f)\n",
+      territorycount,me->getHandiKomi(),-(territorycount-me->getHandiKomi()),-(territorycount-me->getScoreKomi()),me->getScoreKomi(),sqrt(norm));
   gtpe->getOutput()->endResponse(true);
 }
 
@@ -4744,7 +4913,7 @@ void Engine::makeMove(Go::Move move)
     );
   #endif
 #define WITH_P(A) (A>=1.0 || (A>0 && threadpool->getThreadZero()->getSettings()->rand->getRandomReal()<A))  
-
+  Engine *me=params->engine;
   bool playoutmove_triggered=true;
   if (params->features_output_for_playout)
   { 
@@ -4843,8 +5012,10 @@ void Engine::makeMove(Go::Move move)
       delete cfgsecondlastdist;
   }
 
+  bool did_CNN=false;
   if (WITH_P(params->CNN_data) && move.isNormal())
   {
+    did_CNN=true;
     //output for the CNN training, testing
     //one line per Position, all included in the board part, additionally the move in readable form
     // a position 0: empty 1: black stone 2: white stone 3: black next move 4: white next move
@@ -4876,12 +5047,15 @@ void Engine::makeMove(Go::Move move)
     int p4=currentboard->getThirdLastMove().getPosition();
     int p5=currentboard->getForthLastMove().getPosition();
     
-    gtpe->getOutput()->printfDebug("%s,%d,%d,%d,%d,%d,%d,%d,%d\n",move.toString(size).c_str(),
+      gtpe->getOutput()->printfDebug("%s,%d,%d,%d,%d,%d,%d,%d,%d",move.toString(size).c_str(),
         Go::Position::pos2x(p2,size),Go::Position::pos2y(p2,size),
         Go::Position::pos2x(p3,size),Go::Position::pos2y(p3,size),
         Go::Position::pos2x(p4,size),Go::Position::pos2y(p4,size),
         Go::Position::pos2x(p5,size),Go::Position::pos2y(p5,size)
                                    );
+    if (params->CNN_data_playouts==0) 
+      gtpe->getOutput()->printfDebug("\n");
+    
   /* //Test code to check, if the predictor does the same as the scripts
      
      float result[361];
@@ -5191,6 +5365,20 @@ void Engine::makeMove(Go::Move move)
   isgamefinished=false;
   if (currentboard->getPassesPlayed()>=2 || move.isResign())
     this->gameFinished();
+  if (did_CNN && params->CNN_data_playouts>0) {
+    me->doNPlayouts(params->CNN_data_playouts);
+    for (int x=0;x<me->boardsize;x++)
+    {
+      for (int y=0;y<me->boardsize;y++)
+      {
+        int pos=Go::Position::xy2pos(x,y,me->boardsize);
+        float tmp=me->territorymap->getPositionOwner(pos);
+        gtpe->getOutput()->printf(",%.2f",tmp);
+      }
+    }
+    float ratio=me->movetree->getRobustChild()->getRatio();
+    gtpe->getOutput()->printf(",%.3f\n",ratio);
+  }
 }
 
 void Engine::setBoardSize(int s)
@@ -5881,7 +6069,7 @@ void Engine::ponder()
     if (this->getTreeMemoryUsage()>(params->memory_usage_max*1024*1024))
       return;
 
-    fprintf(stderr,"pondering starting!\n");
+   // fprintf(stderr,"pondering starting!\n");
     #ifdef HAVE_MPI
       MPIRANK0_ONLY(
         unsigned int tmp1=0;// not used (unsigned int)col;
@@ -5911,7 +6099,7 @@ void Engine::ponder()
     #endif    
     if (movetree->isTerminalResult())
       gtpe->getOutput()->printfDebug("SOLVED! found 100%% sure result after %d plts!\n",(int)movetree->getPlayouts()-params->uct_initial_playouts);
-    gtpe->getOutput()->printfDebug("pondering done! after all threads %.0f\n",movetree->getPlayouts());
+    //gtpe->getOutput()->printfDebug("pondering done! after all threads %.0f\n",movetree->getPlayouts());
   }
 }
 
@@ -5924,7 +6112,7 @@ void Engine::ponderThread(Worker::Settings *settings)
   
   if (params->move_policy==Parameters::MP_UCT || params->move_policy==Parameters::MP_ONEPLY)
   {
-    fprintf(stderr,"pondering thread starting! %d rank %d stoppondering %d stopthinking %d\n",settings->thread->getID(),mpirank,stoppondering,stopthinking);
+    //fprintf(stderr,"pondering thread starting! %d rank %d stoppondering %d stopthinking %d\n",settings->thread->getID(),mpirank,stoppondering,stopthinking);
     #ifdef HAVE_MPI
       bool mpi_inform_others=true;
       bool mpi_rank_other=(mpirank!=0);
@@ -5984,7 +6172,7 @@ void Engine::ponderThread(Worker::Settings *settings)
     delete earlysecondlist;
     //fprintf(stderr,"pondering done! %ld %.0f stopthinking %d stoppondering %d playouts %ld\n",playouts,movetree->getPlayouts(),stopthinking,stoppondering,playouts);
     #ifdef HAVE_MPI
-    gtpe->getOutput()->printfDebug("ponder on rank %d stopping... (inform: %d) threadid %d stoppondering %d\n",mpirank,mpi_inform_others,settings->thread->getID(),stoppondering);
+    //gtpe->getOutput()->printfDebug("ponder on rank %d stopping... (inform: %d) threadid %d stoppondering %d\n",mpirank,mpi_inform_others,settings->thread->getID(),stoppondering);
     if (!stop_called && settings->thread->getID()==0 && mpiworldsize>1 && mpi_inform_others)
     {
       stoppondering=true;
@@ -5995,7 +6183,7 @@ void Engine::ponderThread(Worker::Settings *settings)
       
       //stoppondering=false;
     }
-    gtpe->getOutput()->printfDebug("ponder on rank %d stoped (inform: %d) threadid %d\n",mpirank,mpi_inform_others,settings->thread->getID());
+    //gtpe->getOutput()->printfDebug("ponder on rank %d stoped (inform: %d) threadid %d\n",mpirank,mpi_inform_others,settings->thread->getID());
     #endif
   }
 }
@@ -6566,7 +6754,7 @@ void Engine::mpiGenMove(Go::Color col)
 void Engine::mpiPonder(Go::Color col)
 {
   //fprintf(stderr,"ponder on rank %d starting...\n",mpirank);
-  gtpe->getOutput()->printfDebug("ponder on rank %d starting...\n",mpirank);
+  //gtpe->getOutput()->printfDebug("ponder on rank %d starting...\n",mpirank);
  // currentboard->setNextToMove(col);
   
   movetree->pruneSuperkoViolations();
@@ -6593,7 +6781,7 @@ void Engine::mpiPonder(Go::Color col)
   #endif    
     
   //fprintf(stderr,"ponder on rank %d done.\n",mpirank);
-  gtpe->getOutput()->printfDebug("ponder on rank %d done.\n",mpirank);
+  //gtpe->getOutput()->printfDebug("ponder on rank %d done.\n",mpirank);
 }
 
 void Engine::mpiBuildDerivedTypes()
@@ -6700,7 +6888,7 @@ void Engine::MpiHashTable::add(Go::ZobristHash hash, Tree *node)
 
 void Engine::mpiSyncWaitStop()
 {
- gtpe->getOutput()->printfDebug("try syncWaitStop (rank: %d)\n",mpirank);
+ //gtpe->getOutput()->printfDebug("try syncWaitStop (rank: %d)\n",mpirank);
  MPI::COMM_WORLD.Barrier();
  //while (true)
  // {
@@ -6713,7 +6901,7 @@ void Engine::mpiSyncWaitStop()
  //     break;
  //   boost::this_thread::sleep(boost::posix_time::seconds(params->mpi_update_period));    
  // }
-  gtpe->getOutput()->printfDebug("syncWaitStop (rank: %d)\n",mpirank);
+  //gtpe->getOutput()->printfDebug("syncWaitStop (rank: %d)\n",mpirank);
 }
 
 bool Engine::mpiSyncUpdate(bool stop)

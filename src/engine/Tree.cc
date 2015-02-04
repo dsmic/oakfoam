@@ -1224,8 +1224,8 @@ void Tree::unPruneNextChild()
       //if (unpruned>2)
       //  fprintf(stderr,"\n[unpruning]: (%d) %s bestfactor %f Rave %f EarlyRave %f Criticality %f -- %f\n\n",unpruned,bestchild->getMove().toString(params->board_size).c_str(),bestfactor,bestchild->getRAVERatio (),bestchild->getEARLYRAVERatio (),bestchild->getCriticality(), bestchild->getUnPruneFactor ());
       bestchild->setPruned(false);
-      if (this->isRoot())
-            params->engine->getGtpEngine()->getOutput()->printfDebug("nc:%s %5.3f %5.3f (%5.2f) %5.3f (ravepart: %5.3f)\n",bestchild->getMove().toString(params->board_size).c_str(),bestchild->getUnPruneFactor(),bestchild->getRAVERatio(),bestchild->getRAVEPlayouts(),bestchild->getFeatureGamma(),params->uct_rave_unprune_factor*(((bestchild->getRAVERatio()-(1.0-this->getRatio()))*bestchild->getRAVEPlayouts()/(bestchild->getRAVEPlayouts()+params->test_p24))+1));
+      //if (this->isRoot())
+      //      params->engine->getGtpEngine()->getOutput()->printfDebug("nc:%s %5.3f %5.3f (%5.2f) %5.3f (ravepart: %5.3f)\n",bestchild->getMove().toString(params->board_size).c_str(),bestchild->getUnPruneFactor(),bestchild->getRAVERatio(),bestchild->getRAVEPlayouts(),bestchild->getFeatureGamma(),params->uct_rave_unprune_factor*(((bestchild->getRAVERatio()-(1.0-this->getRatio()))*bestchild->getRAVEPlayouts()/(bestchild->getRAVEPlayouts()+params->test_p24))+1));
       if ((unpruned+superkochildrenviolations)!=unprunedchildren)
         fprintf(stderr,"WARNING! unpruned running total doesn't match (%u:%u)\n",unpruned,unprunedchildren);
       bestchild->setUnprunedNum(unpruned+1);
