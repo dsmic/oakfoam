@@ -380,6 +380,8 @@ class Tree
        movecirc=m;
        eq_moves=e;
      }
+    bool cnn_territory_done;
+    
   private:
     Tree *parent;
     std::list<Tree*> *children;

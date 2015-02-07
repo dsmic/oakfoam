@@ -730,15 +730,15 @@ float Engine::getCNNwr(Go::Board *board,Go::Color col)
   vector<Blob<float>*> bottom;
   bottom.push_back(b); 
   const vector<Blob<float>*>& rr =  caffe_area_net->Forward(bottom);
-  float diffprob[41];
-    for (int i=0;i<41;i++) {
+  float diffprob[121];
+   for (int i=0;i<121;i++) {
     diffprob[i]=rr[0]->cpu_data()[i];
   }
   float winprob=0;
-  float komipos=20+getHandiKomi();
+  float komipos=60+getScoreKomi();
   if (col!=Go::BLACK)
-    komipos=20-getHandiKomi();
-  for (int i=0;i<41;i++) {
+    komipos=60-getScoreKomi();
+  for (int i=0;i<121;i++) {
     if (i<komipos) winprob+=diffprob[i];
     if (i==komipos) winprob+=diffprob[i]/2.0;
   }
@@ -1947,7 +1947,8 @@ void Engine::gtpPlayoutSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     std::list<Go::Move> playoutmoves;
     std::list<std::string> movereasons;
     Tree *playouttree = me->movetree->getUrgentChild(me->threadpool->getThreadZero()->getSettings());
-    me->playout->doPlayout(me->threadpool->getThreadZero()->getSettings(),playoutboard,finalscore,playouttree,playoutmoves,col,NULL,NULL,NULL,NULL,&movereasons);
+    float cnn_winrate=-2;
+    me->playout->doPlayout(me->threadpool->getThreadZero()->getSettings(),playoutboard,finalscore,cnn_winrate,playouttree,playoutmoves,col,NULL,NULL,NULL,NULL,&movereasons);
     if (finalscore*win>=0)
     {
       foundwin=true;
@@ -2013,7 +2014,8 @@ void Engine::gtpPlayoutSGF_pos(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
     std::list<Go::Move> playoutmoves;
     std::list<std::string> movereasons;
     Tree *playouttree = me->movetree->getUrgentChild(me->threadpool->getThreadZero()->getSettings());
-    me->playout->doPlayout(me->threadpool->getThreadZero()->getSettings(),playoutboard,finalscore,playouttree,playoutmoves,col,NULL,NULL,NULL,NULL,&movereasons);
+    float cnn_winrate=-2;
+    me->playout->doPlayout(me->threadpool->getThreadZero()->getSettings(),playoutboard,finalscore,cnn_winrate,playouttree,playoutmoves,col,NULL,NULL,NULL,NULL,&movereasons);
     if (finalscore!=0 && i<1000) from_often++;
     playoutboard->score();
     //fprintf(stderr,"playoutres %d %d finalscore: %f\n",i,playoutboard->getScoredOwner(where),finalscore);
@@ -3426,7 +3428,8 @@ void Engine::gtpDoBenchmark(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd
   {
     Go::Board *board=new Go::Board(me->boardsize);
     std::list<Go::Move> playoutmoves;
-    me->playout->doPlayout(me->threadpool->getThreadZero()->getSettings(),board,finalscore,NULL,playoutmoves,Go::BLACK,NULL,NULL,NULL,NULL);
+    float cnn_winrate=-2;
+    me->playout->doPlayout(me->threadpool->getThreadZero()->getSettings(),board,finalscore,cnn_winrate,NULL,playoutmoves,Go::BLACK,NULL,NULL,NULL,NULL);
     delete board;
   }
   
@@ -3600,7 +3603,7 @@ void Engine::gtpShowTerritoryCNN(void *instance, Gtp::Engine* gtpe, Gtp::Command
     }
 
   float result[361];
-  float diffprob[41];
+  float diffprob[121];
   Blob<float> *b=new Blob<float>(1,2,19,19);
   b->set_cpu_data(data);
   vector<Blob<float>*> bottom;
@@ -3609,7 +3612,7 @@ void Engine::gtpShowTerritoryCNN(void *instance, Gtp::Engine* gtpe, Gtp::Command
   for (int i=0;i<361;i++) {
 	  result[i]=rr[1]->cpu_data()[i];
   }
-  for (int i=0;i<41;i++) {
+  for (int i=0;i<121;i++) {
     diffprob[i]=rr[0]->cpu_data()[i];
   }
   float territorycount=0;
@@ -3640,17 +3643,17 @@ void Engine::gtpShowTerritoryCNN(void *instance, Gtp::Engine* gtpe, Gtp::Command
     gtpe->getOutput()->printf("\n");
   }
   float winprob=0;
-  float komipos=20+me->getHandiKomi();
+  float komipos=60+me->getScoreKomi();
   if (gtpcol!=Gtp::BLACK)
-    komipos=20-me->getHandiKomi();
-  for (int i=0;i<41;i++) {
+    komipos=60-me->getScoreKomi();
+  for (int i=0;i<121;i++) {
     gtpe->getOutput()->printf("%3.0f ",diffprob[i]*1000.0);
     if (i<komipos) winprob+=diffprob[i];
     if (i==komipos) winprob+=diffprob[i]/2.0;
   }
   gtpe->getOutput()->printf("\n");
-  for (int i=0;i<41;i++) {
-    gtpe->getOutput()->printf("%3d ",i-20);
+  for (int i=0;i<121;i++) {
+    gtpe->getOutput()->printf("%3d ",i-60);
   }
   gtpe->getOutput()->printf("\nwinprob: %.3f\n",1.0-winprob);
   
@@ -5750,7 +5753,8 @@ void Engine::doPlayout(Worker::Settings *settings, Go::IntBoard *firstlist, Go::
   Go::Color playoutcol=playoutmoves.back().getColor();
   
   float finalscore;
-  playout->doPlayout(settings,playoutboard,finalscore,playouttree,playoutmoves,col,(params->rave_moves>0?firstlist:NULL),(params->rave_moves>0?secondlist:NULL),(params->rave_moves>0?earlyfirstlist:NULL),(params->rave_moves>0?earlysecondlist:NULL));
+  float cnn_winrate=-1;
+  playout->doPlayout(settings,playoutboard,finalscore,cnn_winrate,playouttree,playoutmoves,col,(params->rave_moves>0?firstlist:NULL),(params->rave_moves>0?secondlist:NULL),(params->rave_moves>0?earlyfirstlist:NULL),(params->rave_moves>0?earlysecondlist:NULL));
   if (this->getTreeMemoryUsage()>(params->memory_usage_max*1024*1024) && !stopthinking)
   {
       gtpe->getOutput()->printfDebug("WARNING! Memory limit reached! Stopping search right now!\n");
@@ -5759,6 +5763,12 @@ void Engine::doPlayout(Worker::Settings *settings, Go::IntBoard *firstlist, Go::
   if (!params->rules_all_stones_alive && !params->cleanup_in_progress && playoutboard->getPassesPlayed()>=2 && (playoutboard->getMovesMade()-currentboard->getMovesMade())<=2)
   {
     finalscore=playoutboard->territoryScore(territorymap,params->territory_threshold)-params->engine->getHandiKomi();
+  }
+
+  if (cnn_winrate>-1) {
+    playouttree->addPartialResult((params->test_p106+params->test_p105*cnn_winrate)*cnn_winrate,params->test_p106+params->test_p105*cnn_winrate,false);
+    delete playoutboard;
+    return;
   }
   
   bool playoutwin=Go::Board::isWinForColor(playoutcol,finalscore);
@@ -5785,6 +5795,7 @@ void Engine::doPlayout(Worker::Settings *settings, Go::IntBoard *firstlist, Go::
           playoutboard->updateTerritoryMap(area_correlation_map[iter->getPosition()+(iter->getColor()==Go::BLACK?playoutboard->getPositionMax():0)]);
       }
   }
+  
   //here with with firstlist and secondlist the correlationmap can be updated
   if (col==Go::BLACK)
     playoutboard->updateCorrelationMap(correlationmap,firstlist,secondlist);

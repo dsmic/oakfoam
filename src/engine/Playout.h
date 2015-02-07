@@ -45,7 +45,7 @@ class Playout
      * @param[out] secondlist   List of location where the other color played.
      * @param[out] movereasons  List of reasons for making moves.
      */
-    void doPlayout(Worker::Settings *settings, Go::Board *board, float &finalscore, Tree *playouttree, std::list<Go::Move> &playoutmoves, Go::Color colfirst, Go::IntBoard *firstlist, Go::IntBoard *secondlist, Go::IntBoard *earlyfirstlist, Go::IntBoard *earlysecondlist, std::list<std::string> *movereasons=NULL);
+    void doPlayout(Worker::Settings *settings, Go::Board *board, float &finalscore, float &cnn_winrate, Tree *playouttree, std::list<Go::Move> &playoutmoves, Go::Color colfirst, Go::IntBoard *firstlist, Go::IntBoard *secondlist, Go::IntBoard *earlyfirstlist, Go::IntBoard *earlysecondlist, std::list<std::string> *movereasons=NULL);
     /** Get a playout move for a given situation. */
     void getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, critstruct critarray[], float ravearray[], int passes=0, std::vector<int> *pool=NULL, std::vector<int> *poolcrit=NULL, std::string *reason=NULL,float *trylocal_p=NULL, float *black_gammas=NULL, float *white_gammas=NULL, bool *earlymoves=NULL,Go::IntBoard *firstlist=NULL,int playoutmovescount=0, bool *nonlocalmove=NULL,Go::IntBoard *treeboardBlack=NULL,Go::IntBoard *treeboardWhite=NULL, int used_playouts=0)  __attribute__((hot));
     /** Check for a useless move according to the Crazy Stone heuristic.

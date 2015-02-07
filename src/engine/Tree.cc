@@ -95,6 +95,7 @@ Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p) : params(
   }
   movecirc=NULL;
   eq_moves=NULL;
+  cnn_territory_done=false;
 }
 
 Tree::~Tree()

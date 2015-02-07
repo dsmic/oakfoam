@@ -66,7 +66,7 @@ Playout::~Playout()
     delete[] lgrf2count;
 }
 
-void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &finalscore, Tree *playouttree, std::list<Go::Move> &playoutmoves, Go::Color colfirst, Go::IntBoard *firstlist, Go::IntBoard *secondlist, Go::IntBoard *earlyfirstlist, Go::IntBoard *earlysecondlist, std::list<std::string> *movereasons)
+void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &finalscore, float &cnn_winrate, Tree *playouttree, std::list<Go::Move> &playoutmoves, Go::Color colfirst, Go::IntBoard *firstlist, Go::IntBoard *secondlist, Go::IntBoard *earlyfirstlist, Go::IntBoard *earlysecondlist, std::list<std::string> *movereasons)
 {
   std::list<unsigned int> movehashes3x3;
   std::list<unsigned long> movehashes5x5;
@@ -361,7 +361,14 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
   
   //board->resetPassesPlayed(); // if the tree plays two passes it is not guaranteed, that score can count the result!!!
   //but it is the chinese counting, therefore the win is correct, if it is not played to the end within this counting
-  
+
+  //cnn_winrate==-2 disables cnn, for other calls than genmove
+  if (params->test_p105>0 && cnn_winrate>-2 && !playouttree->cnn_territory_done && params->engine->CNNmutex.try_lock()) {
+     cnn_winrate=params->engine->getCNNwr (board,coltomove);
+     playouttree->cnn_territory_done=true;
+     params->engine->CNNmutex.unlock();
+  }
+  else {
   while (board->getPassesPlayed()<2 || kodelay>0)
   {
     bool resign;
@@ -440,6 +447,7 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
       kodelay=3;
     else if (kodelay>0)
       kodelay--;
+  }
   }
   delete[] posarray;
   if (critarray)
