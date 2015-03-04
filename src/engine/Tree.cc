@@ -95,7 +95,8 @@ Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p) : params(
   }
   movecirc=NULL;
   eq_moves=NULL;
-  cnn_territory_done=false;
+  cnn_territory_done=0;
+  cnn_territory_wr=-1;
 }
 
 Tree::~Tree()
@@ -415,7 +416,7 @@ void Tree::addRAVELoses(int n,bool early)
   }
 }
 
-void Tree::addPartialResult(float win, float playout, bool invertwin)
+void Tree::addPartialResult(float win, float playout, bool invertwin, float decayfactor)
 {
   boost::mutex::scoped_lock *lock=(params->uct_lock_free?NULL:new boost::mutex::scoped_lock(updatemutex));
   //fprintf(stderr,"adding partial result: %f %f %d\n",win,playout,invertwin);
@@ -431,7 +432,7 @@ void Tree::addPartialResult(float win, float playout, bool invertwin)
     if (invertwin)
       parent->addPartialResult(-win,playout,invertwin);
     else
-      parent->addPartialResult(1-win,playout,invertwin);
+      parent->addPartialResult(decayfactor*(playout-win),decayfactor*playout,invertwin,decayfactor);
   }
   this->checkForUnPruning();
 }
@@ -2049,9 +2050,10 @@ bool Tree::expandLeaf(Worker::Settings *settings)
     Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
     params->engine->getFeatures()->computeCFGDist(startboard,&cfglastdist,&cfgsecondlastdist);
     float *CNNresults=NULL;
+    int size=startboard->getSize();
     if (params->test_p100>0)
     {
-      CNNresults=new float[361];
+      CNNresults=new float[size*size];
       params->engine->getCNN(startboard,Go::otherColor(col),CNNresults);
       //for (int i=0;i<361;i++)
       //  fprintf(stderr,"%d: %f\n",i,CNNresults[i]);
@@ -2074,10 +2076,10 @@ bool Tree::expandLeaf(Worker::Settings *settings)
         if (params->test_p100>0) {
           if ( (*iter)->getMove().isNormal()) {
             int p=(*iter)->getMove().getPosition();
-            int x=Go::Position::pos2x(p,19);
-            int y=Go::Position::pos2y(p,19);
-            //fprintf(stderr,"%d %d %f\n",x,y,CNNresults[19*x+y]);
-            gammal=((gammal-1.0)*params->test_p102+1.0)*(CNNresults[19*x+y]*params->test_p100+params->test_p101);
+            int x=Go::Position::pos2x(p,size);
+            int y=Go::Position::pos2y(p,size);
+            //fprintf(stderr,"%d %d %f\n",x,y,CNNresults[size*x+y]);
+            gammal=((gammal-1.0)*params->test_p102+1.0)*(CNNresults[size*x+y]*params->test_p100+params->test_p101);
           }
           else gammal=0.05;
         }

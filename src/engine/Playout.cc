@@ -363,12 +363,22 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
   //but it is the chinese counting, therefore the win is correct, if it is not played to the end within this counting
 
   //cnn_winrate==-2 disables cnn, for other calls than genmove
-  if (params->test_p105>0 && cnn_winrate>-2 && !playouttree->cnn_territory_done && params->engine->CNNmutex.try_lock()) {
-     cnn_winrate=params->engine->getCNNwr (board,coltomove);
-     playouttree->cnn_territory_done=true;
-     params->engine->CNNmutex.unlock();
+  //lock can be optimized not to lock, if tree wr is used !!!!!!!!!!!!!!!!!!!!!!!!!
+  if (params->test_p105>0 && cnn_winrate>-2 && playouttree->cnn_territory_done<params->test_p105 && params->engine->CNNmutex.try_lock()) {
+    if (playouttree->cnn_territory_wr>-1)
+      cnn_winrate=playouttree->cnn_territory_wr;
+    else {
+      cnn_winrate=params->engine->getCNNwr (board,coltomove);
+      playouttree->cnn_territory_wr=cnn_winrate;
+    }
+    if (coltomove!=Go::BLACK)
+      cnn_winrate=1.0-cnn_winrate;
+    playouttree->cnn_territory_done+=params->test_p105*params->test_p106;
+    params->engine->CNNmutex.unlock();
   }
-  else {
+  //do both, CNN and playout if commented
+  //else 
+  {
   while (board->getPassesPlayed()<2 || kodelay>0)
   {
     bool resign;

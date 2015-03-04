@@ -239,7 +239,7 @@ class Tree
     /** Add a partial result to this node.
      * A partial result is used for non-integer result rewards.
      */
-    void addPartialResult(float win, float playout, bool invertwin=true);
+    void addPartialResult(float win, float playout, bool invertwin=true, float decay_factor=1.0);
     /** Add a decaying result. */
     void addDecayResult(float result);
     
@@ -380,8 +380,8 @@ class Tree
        movecirc=m;
        eq_moves=e;
      }
-    bool cnn_territory_done;
-    
+    float cnn_territory_done;
+    float cnn_territory_wr;
   private:
     Tree *parent;
     std::list<Tree*> *children;

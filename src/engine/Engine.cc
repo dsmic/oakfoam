@@ -31,8 +31,9 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   Caffe::set_phase(Caffe::TEST);
   caffe_area_net = NULL;
   caffe_test_net = NULL;
-  caffe_test_net = new Net<float>("/home/detlef/oakfoam-hg/oakfoam/scripts/CNN/lenet.prototxt");
-  caffe_test_net->CopyTrainedLayersFrom("/home/detlef/oakfoam-hg/oakfoam/scripts/CNN/snapshots/_iter_250000.caffemodel");
+  
+   caffe_test_net = new Net<float>("/home/detlef/oakfoam-hg/oakfoam/scripts/CNN/movepredict.prototxt");
+  caffe_test_net->CopyTrainedLayersFrom("/home/detlef/oakfoam-hg/oakfoam/scripts/CNN/movepredict.caffemodel");
 
   //this is testing code, must be put to a function later!!!!
   Blob<float> *b=new Blob<float>(1,2,19,19);
@@ -69,7 +70,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   delete[] data;
   delete b;
   //end of testing code!
-
+  
 
   gtpe=ge;
   longname=ln;
@@ -571,34 +572,35 @@ Engine::~Engine()
   if (caffe_area_net!=NULL) delete caffe_area_net;
 }
 
-void Engine::getCNN(Go::Board *board,Go::Color col, float result[361])
+void Engine::getCNN(Go::Board *board,Go::Color col, float result[])
 {
-	if (board->getSize()!=19) {
-		fprintf(stderr,"only 19x19 supported by CNN\n");
-    for (int i=0;i<361;i++) result[i]=0.0;
-		return;
-	}
+	//if (board->getSize()!=19) {
+	//	fprintf(stderr,"only 19x19 supported by CNN\n");
+  //  for (int i=0;i<361;i++) result[i]=0.0;
+	//	return;
+	//}
+  int size=board->getSize();
 	float *data;
-	data= new float[2*19*19];
+	data= new float[2*size*size];
 	//fprintf(stderr,"2\n");
 	if (col==Go::BLACK) {
-	  for (int j=0;j<19;j++)
-	    for (int k=0;k<19;k++)
+	  for (int j=0;j<size;j++)
+	    for (int k=0;k<size;k++)
 		  {//fprintf(stderr,"%d %d %d\n",i,j,k);
-	      if (board->getColor(Go::Position::xy2pos(j,k,19))==Go::BLACK)
+	      if (board->getColor(Go::Position::xy2pos(j,k,size))==Go::BLACK)
 	          {
-			  data[j*19+k]=1.0;
-			  data[19*19+19*j+k]=0.0;
+			  data[j*size+k]=1.0;
+			  data[size*size+size*j+k]=0.0;
 			  }
-	      else if (board->getColor(Go::Position::xy2pos(j,k,19))==Go::WHITE)
+	      else if (board->getColor(Go::Position::xy2pos(j,k,size))==Go::WHITE)
 		      {
-			  data[j*19+k]=0.0;
-			  data[19*19+19*j+k]=1.0;
+			  data[j*size+k]=0.0;
+			  data[size*size+size*j+k]=1.0;
 			  }
 	      else
 	          {
-			  data[j*19+k]=0.0;
-			  data[19*19+19*j+k]=0.0;
+			  data[j*size+k]=0.0;
+			  data[size*size+size*j+k]=0.0;
 			  }
 //        data[2*19*19+19*j+k]=0.0;
 //			  data[3*19*19+19*j+k]=0.0;
@@ -607,23 +609,23 @@ void Engine::getCNN(Go::Board *board,Go::Color col, float result[361])
 	    }
 	}
 	if (col==Go::WHITE) {
-	  for (int j=0;j<19;j++)
-	    for (int k=0;k<19;k++)
+	  for (int j=0;j<size;j++)
+	    for (int k=0;k<size;k++)
 		  {//fprintf(stderr,"%d %d %d\n",i,j,k);
-	      if (board->getColor(Go::Position::xy2pos(j,k,19))==Go::BLACK)
+	      if (board->getColor(Go::Position::xy2pos(j,k,size))==Go::BLACK)
 	          {
-			  data[j*19+k]=0.0;
-			  data[19*19+19*j+k]=1.0;
+			  data[j*size+k]=0.0;
+			  data[size*size+size*j+k]=1.0;
 			  }
-	      else if (board->getColor(Go::Position::xy2pos(j,k,19))==Go::WHITE)
+	      else if (board->getColor(Go::Position::xy2pos(j,k,size))==Go::WHITE)
 		      {
-			  data[j*19+k]=1.0;
-			  data[19*19+19*j+k]=0.0;
+			  data[j*size+k]=1.0;
+			  data[size*size+size*j+k]=0.0;
 			  }
 	      else
 	          {
-			  data[j*19+k]=0.0;
-			  data[19*19+19*j+k]=0.0;
+			  data[j*size+k]=0.0;
+			  data[size*size+size*j+k]=0.0;
 			  }
 //        data[2*19*19+19*j+k]=0.0;
 //			  data[3*19*19+19*j+k]=0.0;
@@ -653,7 +655,7 @@ void Engine::getCNN(Go::Board *board,Go::Color col, float result[361])
 //  }
     
 
-  Blob<float> *b=new Blob<float>(1,2,19,19);
+  Blob<float> *b=new Blob<float>(1,2,size,size);
   b->set_cpu_data(data);
   vector<Blob<float>*> bottom;
   bottom.push_back(b); 
@@ -666,7 +668,7 @@ void Engine::getCNN(Go::Board *board,Go::Color col, float result[361])
 	//	}
 	//fprintf(stderr,"\n");
 	//}
-  for (int i=0;i<361;i++) {
+  for (int i=0;i<size*size;i++) {
 	  result[i]=rr[0]->cpu_data()[i];
     if (result[i]<0.00001) result[i]=0.00001;
   }
@@ -742,6 +744,9 @@ float Engine::getCNNwr(Go::Board *board,Go::Color col)
     if (i<komipos) winprob+=diffprob[i];
     if (i==komipos) winprob+=diffprob[i]/2.0;
   }
+  //fprintf(stderr,"col %s winrate %.3f\n",(col==Go::BLACK)?"black":"white",1.0-winprob);
+  delete[] data;
+  delete b;
   return 1.0-winprob;
 }
 
@@ -3664,6 +3669,8 @@ void Engine::gtpShowTerritoryCNN(void *instance, Gtp::Engine* gtpe, Gtp::Command
     gtpe->getOutput()->printf("Territory %.1f Komi %.1f W+%.1f (with ScoreKomi %.1f) (%.1f) (norm %.2f)\n",
       territorycount,me->getHandiKomi(),-(territorycount-me->getHandiKomi()),-(territorycount-me->getScoreKomi()),me->getScoreKomi(),sqrt(norm));
   gtpe->getOutput()->endResponse(true);
+  delete[] data;
+  delete b;
 }
 
 float Engine::getAreaCorrelation(Go::Move m)
@@ -5674,6 +5681,7 @@ bool Engine::writeGameSGF(std::string filename)
 
 void Engine::doNPlayouts(int n)
 {
+  //gtpe->getOutput()->printfDebug("dddd1\n");
   if (params->move_policy==Parameters::MP_UCT || params->move_policy==Parameters::MP_ONEPLY)
   {
     stopthinking=false;
@@ -5697,11 +5705,11 @@ void Engine::doNPlayouts(int n)
   }
 }
 
-void Engine::doPlayout(Worker::Settings *settings, Go::IntBoard *firstlist, Go::IntBoard *secondlist, Go::IntBoard *earlyfirstlist, Go::IntBoard *earlysecondlist)
+void Engine::doPlayout(Worker::Settings *settings, Go::IntBoard *firstlist, Go::IntBoard *secondlist, Go::IntBoard *earlyfirstlist, Go::IntBoard *earlysecondlist, float *score_stats)
 {
   //bool givenfirstlist,givensecondlist;
   Go::Color col=currentboard->nextToMove();
-  
+
   if (movetree->isLeaf())
   {
     this->allowContinuedPlay();
@@ -5751,7 +5759,12 @@ void Engine::doPlayout(Worker::Settings *settings, Go::IntBoard *firstlist, Go::
     earlysecondlist->clear();
   }
   Go::Color playoutcol=playoutmoves.back().getColor();
-  
+
+  //for(std::list<Go::Move>::iterator iter=playoutmoves.begin();iter!=playoutmoves.end();++iter)
+  //{
+  //    fprintf(stderr,"%s ",(*iter).toString(19).c_str());
+  //}
+  //fprintf(stderr,"\n");
   float finalscore;
   float cnn_winrate=-1;
   playout->doPlayout(settings,playoutboard,finalscore,cnn_winrate,playouttree,playoutmoves,col,(params->rave_moves>0?firstlist:NULL),(params->rave_moves>0?secondlist:NULL),(params->rave_moves>0?earlyfirstlist:NULL),(params->rave_moves>0?earlysecondlist:NULL));
@@ -5760,16 +5773,36 @@ void Engine::doPlayout(Worker::Settings *settings, Go::IntBoard *firstlist, Go::
       gtpe->getOutput()->printfDebug("WARNING! Memory limit reached! Stopping search right now!\n");
       this->stopThinking();
   }
+  if (cnn_winrate>-1) {
+    //params->test_p105/10.0 is added in playout.cc
+    float mwr=params->test_p105;
+    if (playoutcol!=Go::BLACK)
+      cnn_winrate=1.0-cnn_winrate;
+    playouttree->addPartialResult((params->test_p106*mwr)*cnn_winrate,params->test_p106*mwr,false,1.0-params->test_p107);
+    //fprintf(stderr,"playouttreecol %s playoutcol %s winrate %.3f playouts %f wins %f\n",(playouttree->getMove().getColor()==Go::BLACK)?"black":"white",(playoutcol==Go::BLACK)?"black":"white",cnn_winrate,playouttree->getPlayouts(),playouttree->getWins());
+
+    //this can be uncommented, to avoid a usual playout every CNN
+    //delete playoutboard;
+    //return;
+    //this does a playout after a cnn territory
+    //playoutboard=currentboard->copy();
+    //playoutboard->turnSymmetryOff();
+    //if (params->rave_moves>0)
+    //{
+    //  firstlist->clear();
+    //  secondlist->clear();
+    //  earlyfirstlist->clear();
+    //  earlysecondlist->clear();
+    //}
+    //cnn_winrate=-2;
+    //playout->doPlayout(settings,playoutboard,finalscore,cnn_winrate,playouttree,playoutmoves,col,(params->rave_moves>0?firstlist:NULL),(params->rave_moves>0?secondlist:NULL),(params->rave_moves>0?earlyfirstlist:NULL),(params->rave_moves>0?earlysecondlist:NULL));
+  }
+  
   if (!params->rules_all_stones_alive && !params->cleanup_in_progress && playoutboard->getPassesPlayed()>=2 && (playoutboard->getMovesMade()-currentboard->getMovesMade())<=2)
   {
     finalscore=playoutboard->territoryScore(territorymap,params->territory_threshold)-params->engine->getHandiKomi();
   }
 
-  if (cnn_winrate>-1) {
-    playouttree->addPartialResult((params->test_p106+params->test_p105*cnn_winrate)*cnn_winrate,params->test_p106+params->test_p105*cnn_winrate,false);
-    delete playoutboard;
-    return;
-  }
   
   bool playoutwin=Go::Board::isWinForColor(playoutcol,finalscore);
   bool playoutjigo=(finalscore==0);
@@ -5944,6 +5977,14 @@ void Engine::doPlayout(Worker::Settings *settings, Go::IntBoard *firstlist, Go::
   //  delete firstlist;
   //if (!givensecondlist)
   //  delete secondlist;
+  //gtpe->getOutput()->printfDebug("dddd33a\n");
+  if (score_stats!=NULL) {
+    //gtpe->getOutput()->printfDebug("dddd33b\n");
+    int score=(int)(finalscore+params->engine->getScoreKomi()+(float)boardsize*boardsize/2);
+    if (score<0) score=0;
+    if (score>=boardsize*boardsize) score=boardsize*boardsize-1;
+    score_stats[score]+=1;
+  }
 }
 
 void Engine::displayPlayoutLiveGfx(int totalplayouts, bool livegfx)
@@ -6408,7 +6449,12 @@ void Engine::doNPlayoutsThread(Worker::Settings *settings)
   Go::IntBoard *earlyfirstlist=new Go::IntBoard(boardsize);
   Go::IntBoard *earlysecondlist=new Go::IntBoard(boardsize);
   long totalplayouts;
-  
+  float *score_stats=NULL;
+  //gtpe->getOutput()->printfDebug("dddd2\n");
+  if (params->CNN_data_playouts>0) {
+    score_stats=new float[boardsize*boardsize]();
+    //gtpe->getOutput()->printfDebug("dddd3a\n");
+  }
   while ((totalplayouts=(long)(movetree->getPlayouts()-params->uct_initial_playouts))<(params->playouts_per_move))
   {
     if (movetree->isTerminalResult())
@@ -6419,7 +6465,9 @@ void Engine::doNPlayoutsThread(Worker::Settings *settings)
     else if (stopthinking)
       break;
     
-    this->doPlayout(settings,firstlist,secondlist,earlyfirstlist,earlysecondlist);
+    //gtpe->getOutput()->printfDebug("dddd3ab\n");
+    this->doPlayout(settings,firstlist,secondlist,earlyfirstlist,earlysecondlist,score_stats);
+    //gtpe->getOutput()->printfDebug("dddd3b\n");
     totalplayouts+=1;
     
     if (settings->thread->getID()==0 && params->livegfx_on)
@@ -6437,7 +6485,18 @@ void Engine::doNPlayoutsThread(Worker::Settings *settings)
         livegfxupdate++;
     }
   }
-  
+
+  //gtpe->getOutput()->printfDebug("dddd4\n");
+  if (params->CNN_data_playouts>0) {
+    //gtpe->getOutput()->printfDebug("dddd5\n");
+    float sum_stats=0;
+    for (int i=0;i<boardsize*boardsize;i++)
+      sum_stats+=score_stats[i];
+    for (int i=0;i<boardsize*boardsize;i++)
+      gtpe->getOutput()->printfDebug(",%.3f",score_stats[i]/sum_stats);
+    //gtpe->getOutput()->printfDebug("\n");
+    delete[] score_stats;
+  }
   delete firstlist;
   delete secondlist;
   delete earlyfirstlist;
