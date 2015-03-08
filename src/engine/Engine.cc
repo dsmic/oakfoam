@@ -963,6 +963,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("dobenchmark",this,&Engine::gtpDoBenchmark);
   gtpe->addFunctionCommand("showcriticality",this,&Engine::gtpShowCriticality);
   gtpe->addFunctionCommand("showterritory",this,&Engine::gtpShowTerritory);
+  gtpe->addFunctionCommand("showprobabilitycnn",this,&Engine::gtpShowProbabilityCNN);
   gtpe->addFunctionCommand("showterritorycnn",this,&Engine::gtpShowTerritoryCNN);
   gtpe->addFunctionCommand("showterritoryat",this,&Engine::gtpShowTerritoryAt);
   gtpe->addFunctionCommand("showterritoryerror",this,&Engine::gtpShowTerritoryError);
@@ -1020,6 +1021,7 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("showcriticality","Show Criticality","cboard");
   gtpe->addAnalyzeCommand("showterritory","Show Territory","dboard");
   gtpe->addAnalyzeCommand("showterritorycnn %%c","Show Territory CNN","dboard");
+  gtpe->addAnalyzeCommand("showprobabilitycnn %%c","Show Probability CNN","dboard");
   gtpe->addAnalyzeCommand("showterritoryat %%p %%c","Show Territory At","dboard");
   gtpe->addAnalyzeCommand("showterritoryerror","Show Territory Error","dboard");
   gtpe->addAnalyzeCommand("showmoveprobability","Show Move Probability","dboard");
@@ -3552,6 +3554,43 @@ void Engine::gtpShowTerritory(void *instance, Gtp::Engine* gtpe, Gtp::Command* c
     gtpe->getOutput()->printf("Territory %.1f Komi %.1f W+%.1f (with ScoreKomi %.1f) (%.1f)\n",
       territorycount,me->getHandiKomi(),-(territorycount-me->getHandiKomi()),-(territorycount-me->getScoreKomi()),me->getScoreKomi());
     
+  gtpe->getOutput()->endResponse(true);
+}
+
+void Engine::gtpShowProbabilityCNN(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  me->doNPlayouts(100);
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("color is required");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  Gtp::Color gtpcol = cmd->getColorArg(0);
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("\n");
+  if (me->boardsize !=19)
+  {
+    gtpe->getOutput()->printString("This only works on 19x19!!!!\n");
+    gtpe->getOutput()->endResponse(false);
+    return;
+  }
+  float result[361];
+
+  me->getCNN(me->currentboard,(gtpcol==Gtp::BLACK)?Go::BLACK:Go::WHITE,result);
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      float black=result[19*x+y];
+      gtpe->getOutput()->printf("%.2f ",black);
+    }
+    gtpe->getOutput()->printf("\n");
+  }
   gtpe->getOutput()->endResponse(true);
 }
 
