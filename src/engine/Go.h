@@ -717,6 +717,10 @@ namespace Go
   
           return lib;
         };
+      int touchingColor(int pos,Go::Color col) const {int lib=0; foreach_adjacent(pos,p,{if (this->getColor(p)==col) lib++;});
+  
+          return lib;
+        };
       int diagonalEmpty(int pos) const;
       /** Get the number of empty positions in the eight positions surrounding the given position. */
       int surroundingEmpty(int pos) const;

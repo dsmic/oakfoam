@@ -2952,15 +2952,14 @@ float Playout::getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group
         if (stopsconnection)
         {
           if (params->debug_on)
-            gtpe->getOutput()->printfDebug("lib2 value 11 + touching empty %d\n",board->touchingEmpty(move.getPosition()));
-          return board->touchingEmpty(move.getPosition())+11+params->test_p9*group->numOfStones();
+            gtpe->getOutput()->printfDebug("lib2 value 11 + touching empty %d + touching color %d\n",board->touchingEmpty(move.getPosition()),board->touchingColor(move.getPosition(),col));
+          return board->touchingEmpty(move.getPosition())+11+params->test_p9*group->numOfStones() + params->test_p108*board->touchingColor(move.getPosition(),col);
         }
         else
         {
           if (params->debug_on)
-            gtpe->getOutput()->printfDebug("lib2 value 7 + touching empty %d avoid_atari %d\n",board->touchingEmpty(move.getPosition()),one_stone_atari_avoid);
-          return board->touchingEmpty(move.getPosition())+7+params->test_p9*group->numOfStones()+((one_stone_atari_avoid)?params->test_p12:0);
-        }
+            gtpe->getOutput()->printfDebug("lib2 value 7 + touching empty %d avoid_atari %d + touching color %d\n",board->touchingEmpty(move.getPosition()),one_stone_atari_avoid,board->touchingColor(move.getPosition(),col));
+          return board->touchingEmpty(move.getPosition())+7+params->test_p9*group->numOfStones()+((one_stone_atari_avoid)?params->test_p12:0)+params->test_p108*board->touchingColor(move.getPosition(),col);        }
       }
       else if (group->numOfStones()>1)
       {
