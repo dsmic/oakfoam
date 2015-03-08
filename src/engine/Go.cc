@@ -1742,6 +1742,7 @@ void Go::Board::updateFeatureGamma(Go::ObjectBoard<int> *cfglastdist, Go::Object
 
 bool Go::Board::isExtension(Go::Move move) const
 {
+  //fprintf(stderr,"called IsExtension:");
   Go::Color col=move.getColor();
   int pos=move.getPosition();
   bool foundgroupinatari=false;
@@ -1765,25 +1766,32 @@ bool Go::Board::isExtension(Go::Move move) const
               foundconnectingliberties=1;
               libpos=otherlib;
             }
-            else if (libpos!=otherlib)
+            else if (libpos!=otherlib) {
               foundconnectingliberties=2;
+              //fprintf(stderr," 2 ");
+            }
           }
-          else
+          else {
             foundconnectingliberties=2;
+            //fprintf(stderr, " 3 ");
+          }
         }
       }
     }
-    else if (this->onBoard(p) && foundconnectingliberties<2)
+    else if (this->onBoard(p) && this->getColor(p)==Go::EMPTY && foundconnectingliberties<2)
     {
       if (foundconnectingliberties==0)
       {
         foundconnectingliberties=1;
         libpos=p;
       }
-      else if (libpos!=p)
+      else if (libpos!=-1 && libpos!=p) { //I am not sure, what the idea was, but libpos==-1 for sure is wrong!
         foundconnectingliberties=2;
+        //fprintf(stderr," 4 %s %s ",Go::Position::pos2string(libpos,19).c_str(),Go::Position::pos2string(p,19).c_str());
+      }
     }
   });
+  //fprintf(stderr,"\n");
   if (foundgroupinatari && foundconnectingliberties>=2)
     return true;
   else
