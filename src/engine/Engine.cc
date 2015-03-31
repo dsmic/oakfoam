@@ -581,56 +581,59 @@ void Engine::getCNN(Go::Board *board,Go::Color col, float result[])
 	//}
   int size=board->getSize();
 	float *data;
-	data= new float[2*size*size];
+  board->calcSlowLibertyGroups();
+	data= new float[9*size*size];
 	//fprintf(stderr,"2\n");
 	if (col==Go::BLACK) {
 	  for (int j=0;j<size;j++)
 	    for (int k=0;k<size;k++)
-		  {//fprintf(stderr,"%d %d %d\n",i,j,k);
-	      if (board->getColor(Go::Position::xy2pos(j,k,size))==Go::BLACK)
+		  {
+        for (int l=0;l<9;l++) data[l*size*size+size*j+k]=0;
+        //fprintf(stderr,"%d %d %d\n",i,j,k);
+        int pos=Go::Position::xy2pos(j,k,size);
+        int libs=0;
+        if (board->inGroup(pos)) libs=board->getGroup(pos)->real_libs-1;
+        if (libs>3) libs=3; 
+        if (board->getColor(pos)==Go::BLACK)
 	          {
-			  data[j*size+k]=1.0;
-			  data[size*size+size*j+k]=0.0;
+			  data[(0+libs)*size*size + size*j + k]=1.0;
+			  //data[size*size+size*j+k]=0.0;
 			  }
-	      else if (board->getColor(Go::Position::xy2pos(j,k,size))==Go::WHITE)
+	      else if (board->getColor(pos)==Go::WHITE)
 		      {
-			  data[j*size+k]=0.0;
-			  data[size*size+size*j+k]=1.0;
+			  //data[j*size+k]=0.0;
+			  data[(4+libs)*size*size + size*j + k]=1.0;
 			  }
-	      else
-	          {
-			  data[j*size+k]=0.0;
-			  data[size*size+size*j+k]=0.0;
+	      else if (board->getColor(Go::Position::xy2pos(j,k,size))==Go::EMPTY)
+	      {
+			    data[8*size*size + size*j + k]=1.0;
 			  }
-//        data[2*19*19+19*j+k]=0.0;
-//			  data[3*19*19+19*j+k]=0.0;
-//			  data[4*19*19+19*j+k]=0.0;
-//			  data[5*19*19+19*j+k]=0.0;
 	    }
 	}
 	if (col==Go::WHITE) {
 	  for (int j=0;j<size;j++)
 	    for (int k=0;k<size;k++)
 		  {//fprintf(stderr,"%d %d %d\n",i,j,k);
-	      if (board->getColor(Go::Position::xy2pos(j,k,size))==Go::BLACK)
+        for (int l=0;l<9;l++) data[l*size*size+size*j+k]=0;
+        //fprintf(stderr,"%d %d %d\n",i,j,k);
+        int pos=Go::Position::xy2pos(j,k,size);
+        int libs=0;
+        if (board->inGroup(pos)) libs=board->getGroup(pos)->real_libs-1;
+        if (libs>3) libs=3; 
+        if (board->getColor(pos)==Go::BLACK)
 	          {
-			  data[j*size+k]=0.0;
-			  data[size*size+size*j+k]=1.0;
+			  data[(4+libs)*size*size + size*j + k]=1.0;
+			  //data[size*size+size*j+k]=0.0;
 			  }
-	      else if (board->getColor(Go::Position::xy2pos(j,k,size))==Go::WHITE)
+	      else if (board->getColor(pos)==Go::WHITE)
 		      {
-			  data[j*size+k]=1.0;
-			  data[size*size+size*j+k]=0.0;
+			  //data[j*size+k]=0.0;
+			  data[(0+libs)*size*size + size*j + k]=1.0;
 			  }
-	      else
-	          {
-			  data[j*size+k]=0.0;
-			  data[size*size+size*j+k]=0.0;
+	      else if (board->getColor(pos)==Go::EMPTY)
+	      {
+			    data[8*size*size + size*j + k]=1.0;
 			  }
-//        data[2*19*19+19*j+k]=0.0;
-//			  data[3*19*19+19*j+k]=0.0;
-//			  data[4*19*19+19*j+k]=0.0;
-//			  data[5*19*19+19*j+k]=0.0;
     }
 	}
 //  if (board->getLastMove().isNormal()) {
@@ -655,7 +658,7 @@ void Engine::getCNN(Go::Board *board,Go::Color col, float result[])
 //  }
     
 
-  Blob<float> *b=new Blob<float>(1,2,size,size);
+  Blob<float> *b=new Blob<float>(1,9,size,size);
   b->set_cpu_data(data);
   vector<Blob<float>*> bottom;
   bottom.push_back(b); 
@@ -971,6 +974,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("showmoveprobability",this,&Engine::gtpShowMoveProbability);
   gtpe->addFunctionCommand("showcorrelationmap",this,&Engine::gtpShowCorrelationMap);
   gtpe->addFunctionCommand("showratios",this,&Engine::gtpShowRatios);
+  gtpe->addFunctionCommand("showreallibs",this,&Engine::gtpShowRealLibs);
   gtpe->addFunctionCommand("showtreeplayouts",this,&Engine::gtpShowTreePlayouts);
   gtpe->addFunctionCommand("showunprune",this,&Engine::gtpShowUnPrune);
   gtpe->addFunctionCommand("showunprunecolor",this,&Engine::gtpShowUnPruneColor);
@@ -1006,6 +1010,7 @@ void Engine::addGtpCommands()
   //gtpe->addAnalyzeCommand("showsafepositions","Show Safe Positions","gfx");
   gtpe->addAnalyzeCommand("showpatternmatches","Show Pattern Matches","sboard");
   gtpe->addAnalyzeCommand("showratios","Show Ratios","sboard");
+  gtpe->addAnalyzeCommand("showreallibs","Show Real Libs","sboard");
   gtpe->addAnalyzeCommand("showtreeplayouts %%c","Show Tree Playouts","sboard");
   gtpe->addAnalyzeCommand("showunprune","Show UnpruneFactor","sboard");
   gtpe->addAnalyzeCommand("showunprunecolor","Show UnpruneFactor (color display)","cboard");
@@ -1563,6 +1568,29 @@ void Engine::gtpShowRatios(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     gtpe->getOutput()->printf("\n");
   }
 
+  gtpe->getOutput()->endResponse(true);
+}
+
+void Engine::gtpShowRealLibs(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  Go::Color col=me->currentboard->nextToMove();
+  me->currentboard->calcSlowLibertyGroups();
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("\n");
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      int pos=Go::Position::xy2pos(x,y,me->boardsize);
+      int reallibs=0;
+      if (me->currentboard->inGroup(pos)) {
+        reallibs=me->currentboard->getGroup(pos)->real_libs;
+      }
+      gtpe->getOutput()->printf("\"%d\"",reallibs);
+    }
+    gtpe->getOutput()->printf("\n");
+  }
   gtpe->getOutput()->endResponse(true);
 }
 
@@ -3570,23 +3598,23 @@ void Engine::gtpShowProbabilityCNN(void *instance, Gtp::Engine* gtpe, Gtp::Comma
   }
   
   Gtp::Color gtpcol = cmd->getColorArg(0);
-  
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printString("\n");
-  if (me->boardsize !=19)
-  {
-    gtpe->getOutput()->printString("This only works on 19x19!!!!\n");
-    gtpe->getOutput()->endResponse(false);
-    return;
-  }
-  float result[361];
+  //if (me->boardsize !=19)
+  //{
+  //  gtpe->getOutput()->printString("This only works on 19x19!!!!\n");
+  //  gtpe->getOutput()->endResponse(false);
+  //  return;
+  //}
+  int bsize=me->boardsize;
+  float result[bsize*bsize];
 
   me->getCNN(me->currentboard,(gtpcol==Gtp::BLACK)?Go::BLACK:Go::WHITE,result);
   for (int y=me->boardsize-1;y>=0;y--)
   {
     for (int x=0;x<me->boardsize;x++)
     {
-      float black=result[19*x+y];
+      float black=result[bsize*x+y];
       gtpe->getOutput()->printf("%.2f ",black);
     }
     gtpe->getOutput()->printf("\n");
@@ -5070,6 +5098,7 @@ void Engine::makeMove(Go::Move move)
     // a position 0: empty 1: black stone 2: white stone 3: black next move 4: white next move
     
     int size=currentboard->getSize ();
+    currentboard->calcSlowLibertyGroups();
     for (int x=0;x<size;x++) {
       for (int y=0;y<size;y++) {
         Go::Color c=currentboard->getColor(Go::Position::xy2pos(x,y,size));
@@ -5089,6 +5118,27 @@ void Engine::makeMove(Go::Move move)
             else
               gtpe->getOutput()->printfDebug("0,");
         }
+      }
+    }
+    for (int x=0;x<size;x++) {
+      for (int y=0;y<size;y++) {
+        int pos=Go::Position::xy2pos(x,y,size);
+        if (currentboard->inGroup(pos)) {
+          gtpe->getOutput()->printfDebug("%d,",currentboard->getGroup(pos)->real_libs);
+        }
+        else
+          gtpe->getOutput()->printfDebug("0,");
+      
+      }
+    }
+    for (int x=0;x<size;x++) {
+      for (int y=0;y<size;y++) {
+        int pos=Go::Position::xy2pos(x,y,size);
+        if (currentboard->inGroup(pos)) {
+          gtpe->getOutput()->printfDebug("%d,",currentboard->getGroup(pos)->numOfStones());
+        }
+        else
+          gtpe->getOutput()->printfDebug("0,");
       }
     }
     int p2=currentboard->getLastMove().getPosition();

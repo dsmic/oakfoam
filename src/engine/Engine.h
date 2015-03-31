@@ -691,6 +691,7 @@ class Engine
     static void gtpShowMoveProbability(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowCorrelationMap(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowRatios(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpShowRealLibs(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowTreePlayouts(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowUnPrune(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowUnPruneColor(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);

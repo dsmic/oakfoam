@@ -573,6 +573,8 @@ namespace Go
       inline int getLibpossum() {return libpossum;}
       inline int getLibpossumsq() {return libpossumsq;}
       inline Go::Board *const getBoard() {return board;}
+      int real_libs; //used for very slow real liberty counting
+      
     private:
       Go::Board *const board;
       const Go::Color color;
@@ -586,7 +588,7 @@ namespace Go
       int pseudoborderdist;
       int libpossum;
       int libpossumsq;
-      
+
       list_int adjacentgroups;
   };
   
@@ -982,7 +984,8 @@ namespace Go
       bool isProbableWorkingLadderAfter(Go::Group *group, Go::Move move) const;
       void updateFeatureGammas(bool both=false);
       inline int getPseudoLiberties(int pos) const { if (data[pos].group==NULL) return 0; else return data[pos].group->find()->numOfPseudoLiberties(); };
-      
+
+      void calcSlowLibertyGroups();
     private:
       const int size;
       const int sizesq;

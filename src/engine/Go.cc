@@ -3280,3 +3280,34 @@ bool Go::Board::isProbableWorkingLadder(Go::Group *group, int posA, int movepos)
 
   return true;
 }
+
+
+void Go::Board::calcSlowLibertyGroups()  {
+  for(std::ourset<Go::Group*>::iterator iter=groups.begin();iter!=groups.end();++iter) 
+  {
+    (*iter)->real_libs=0;
+  }
+  for (int pos=0; pos<getPositionMax();pos++) {
+    if (getColor(pos)==Go::EMPTY) {
+      Go::Group *groups_used[4];
+      int groups_used_num=0;
+      foreach_adjacent(pos,p,{
+          if (this->inGroup(p)) {
+            Go::Group *group=this->getGroup(p);
+            bool found=false;
+            for (int i=0;i<groups_used_num;i++)
+            {
+              if (groups_used[i]==group)
+                found=true;
+            }
+            if (!found)
+            {
+              group->real_libs++;
+              groups_used[groups_used_num]=group;
+              groups_used_num++;
+            }
+          }
+      });  
+    }
+  }  
+}
