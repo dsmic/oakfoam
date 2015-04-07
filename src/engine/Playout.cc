@@ -1796,7 +1796,7 @@ void Playout::getPatternMove(Worker::Settings *settings, Go::Board *board, Go::C
             if (params->debug_on)
               fprintf(stderr,"patterngamma %i %i %s %f\n",MaxLast,1,Go::Move(col,p).toString(board->getSize()).c_str(),params->engine->getFeatures()->getFeatureGammaPlayoutPattern(pattern,MaxLast,1));
             patternmoves[patternmovescount]=p;
-            patternmovesgamma[patternmovescount]=params->engine->getFeatures()->getFeatureGammaPlayoutPattern(pattern,MaxLast,1);
+            patternmovesgamma[patternmovescount]=params->test_p111*params->engine->getFeatures()->getFeatureGammaPlayoutPattern(pattern,MaxLast,1);
             patternmovescount++;
           
         }
@@ -2094,7 +2094,7 @@ void Playout::getLast2LibAtariMove(Worker::Settings *settings, Go::Board *board,
     });
   }
 
-  if (possiblemovescount>0 && (bestlevel>1 || WITH_P(params->test_p13)) && (bestlevel>2 || params->test_p71==0))
+  if (possiblemovescount>0 && (bestlevel>1 || WITH_P(params->test_p13)) && (bestlevel>2 || params->test_p71==0) && (bestlevel>7 || WITH_P(params->test_p109)))
   {
     int i=rand->getRandomInt(possiblemovescount);
     if (!this->isBadMove(settings,board,col,possiblemoves[i]))
@@ -2913,7 +2913,7 @@ float Playout::getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group
   {
     if (!board->isSelfAtari(move) && (group->numOfStones()>1||board->isAtari(move))) //a single ladder block at the boards was used as 2 lib string, this should not harm, as single stones should not be extended by this rule
     {
-      if (board->isAtari(move))
+      if ((board->isAtari(move) && params->test_p110==0) || (group->getColor()==move.getColor() && group->getAtariPosition()==move.getPosition() && params->test_p110!=0))
       {
         Go::Color col=move.getColor();
         Go::Color othercol=Go::otherColor(col);

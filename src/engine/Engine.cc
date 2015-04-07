@@ -291,9 +291,20 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","test_p106",&(params->test_p106),0.0);
   params->addParameter("playout","test_p107",&(params->test_p107),0.0);
   params->addParameter("playout","test_p108",&(params->test_p108),0.0);
-  params->addParameter("playout","test_p109",&(params->test_p109),0.0);
-  params->addParameter("playout","test_p210",&(params->test_p110),0.0);
+  params->addParameter("playout","test_p109",&(params->test_p109),1.0);
+  params->addParameter("playout","test_p110",&(params->test_p110),0.0);
   
+  params->addParameter("playout","test_p111",&(params->test_p111),1.0);
+  params->addParameter("playout","test_p112",&(params->test_p112),0.0);
+  params->addParameter("playout","test_p113",&(params->test_p113),0.0);
+  params->addParameter("playout","test_p114",&(params->test_p114),0.0);
+  params->addParameter("playout","test_p115",&(params->test_p115),0.0);
+  params->addParameter("playout","test_p116",&(params->test_p116),0.0);
+  params->addParameter("playout","test_p117",&(params->test_p117),0.0);
+  params->addParameter("playout","test_p118",&(params->test_p118),0.0);
+  params->addParameter("playout","test_p119",&(params->test_p119),0.0);
+  params->addParameter("playout","test_p120",&(params->test_p120),0.0);
+
   params->addParameter("tree","ucb_c",&(params->ucb_c),UCB_C);
   params->addParameter("tree","ucb_init",&(params->ucb_init),UCB_INIT);
 
@@ -5476,7 +5487,7 @@ void Engine::makeMove(Go::Move move)
       }
     }
     float ratio=me->movetree->getRobustChild()->getRatio();
-    gtpe->getOutput()->printf(",%.3f\n",ratio);
+    gtpe->getOutput()->printf(",%.3f,%.1f\n",ratio,komi);
   }
 }
 
