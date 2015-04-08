@@ -2913,7 +2913,7 @@ float Playout::getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group
   {
     if (!board->isSelfAtari(move) && (group->numOfStones()>1||board->isAtari(move))) //a single ladder block at the boards was used as 2 lib string, this should not harm, as single stones should not be extended by this rule
     {
-      if ((board->isAtari(move) && params->test_p110==0) || (group->getColor()==move.getColor() && group->getAtariPosition()==move.getPosition() && params->test_p110!=0))
+      if ((board->isAtari(move) && params->test_p110==0) || (group->getColor()!=move.getColor() && group->isOneOfTwoLiberties(move.getPosition()) && params->test_p110!=0))
       {
         Go::Color col=move.getColor();
         Go::Color othercol=Go::otherColor(col);
