@@ -135,6 +135,7 @@
 #define PLAYOUT_MERCY_RULE_FACTOR 0.40
 #define PLAYOUT_RANDOM_CHANCE 0.00
 #define PLAYOUT_RANDOM_APPROACH_P 0.00
+#define PLAYOUT_DEFEND_APPROACH false
 #define PLAYOUT_LAST2LIBATARI_ENABLED true
 #define PLAYOUT_LAST2LIBATARI_COMPLEX true
 #define PLAYOUT_LAST2LIBATARI_ALLOW_DIFFERENT_GROUPS false
@@ -472,6 +473,8 @@ class Engine
     float presetplayouts;
     int presetnum;
 
+    int ACpos[4],ACcount;
+    
     std::string learn_filename_features,learn_filename_circ_patterns;
     
     enum MovePolicy

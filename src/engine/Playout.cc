@@ -70,7 +70,8 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
 {
   std::list<unsigned int> movehashes3x3;
   std::list<unsigned long> movehashes5x5;
-
+  int ACpos[4],ACcount=0;
+  
   params->engine->ProbabilityClean();
 
   // can not score board if not played out with playout rules
@@ -92,6 +93,8 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
       if (params->playout_lgpf_enabled)
         movehashes5x5.push_back(Pattern::FiveByFiveBorder::makeHash(board,(*iter).getPosition()));
     }
+    if (params->playout_defend_approach)
+      board->connectedAtariPos((*iter),ACpos,ACcount);
     board->makeMove((*iter),gtpe);
     treemovescount++;
     if (movereasons!=NULL)
@@ -385,14 +388,14 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
     bool nonlocalmove=false;
     if (movereasons!=NULL)
     {
-      this->getPlayoutMove(settings,board,coltomove,move,posarray,critarray,(coltomove==Go::BLACK)?b_ravearray:w_ravearray,(coltomove==Go::BLACK?bpasses:wpasses),(coltomove==poolcol?&pool:&poolcrit),&poolcrit,&reason,&trylocal_p,black_gammas,white_gammas,&earlymoves,(coltomove==colfirst?firstlist:secondlist),playoutmovescount+1,&nonlocalmove,treeboardBlack,treeboardWhite,used_playouts);
+      this->getPlayoutMove(settings,board,coltomove,move,posarray,critarray,(coltomove==Go::BLACK)?b_ravearray:w_ravearray,(coltomove==Go::BLACK?bpasses:wpasses),(coltomove==poolcol?&pool:&poolcrit),&poolcrit,&reason,&trylocal_p,black_gammas,white_gammas,&earlymoves,(coltomove==colfirst?firstlist:secondlist),playoutmovescount+1,&nonlocalmove,treeboardBlack,treeboardWhite,used_playouts,ACpos,ACcount);
       //fprintf(stderr,"move test %s\n",move.toString (9).c_str());
       if (params->playout_useless_move)
         this->checkUselessMove(settings,board,coltomove,move,posarray,&reason);
     }
     else
     {
-      this->getPlayoutMove(settings,board,coltomove,move,posarray,critarray,(coltomove==Go::BLACK)?b_ravearray:w_ravearray,(coltomove==Go::BLACK?bpasses:wpasses),(coltomove==poolcol?&pool:&poolcrit),&poolcrit,NULL,&trylocal_p,black_gammas,white_gammas,&earlymoves,(coltomove==colfirst?firstlist:secondlist),playoutmovescount+1,&nonlocalmove,treeboardBlack,treeboardWhite,used_playouts);
+      this->getPlayoutMove(settings,board,coltomove,move,posarray,critarray,(coltomove==Go::BLACK)?b_ravearray:w_ravearray,(coltomove==Go::BLACK?bpasses:wpasses),(coltomove==poolcol?&pool:&poolcrit),&poolcrit,NULL,&trylocal_p,black_gammas,white_gammas,&earlymoves,(coltomove==colfirst?firstlist:secondlist),playoutmovescount+1,&nonlocalmove,treeboardBlack,treeboardWhite,used_playouts,ACpos,ACcount);
       //fprintf(stderr,"move test %s\n",move.toString (9).c_str());
       if (params->playout_useless_move)
         this->checkUselessMove(settings,board,coltomove,move,posarray);
@@ -407,6 +410,8 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
 
     if (params->debug_on)
       fprintf(stderr,"playout makeMove %s playoutmovescount %d nonlocal %d\n",move.toString (board->getSize()).c_str(),playoutmovescount,nonlocalmove); 
+    if (params->playout_defend_approach)
+      board->connectedAtariPos(move,ACpos,ACcount);
     board->makeMove(move);
     playoutmoves.push_back(move);
     playoutmovescount++;
@@ -423,7 +428,7 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
       {
         if (params->debug_on) 
           fprintf(stderr,"set called %s test_p2 %f get(p) %d\n",Go::getColorName(coltomove),params->test_p2,((coltomove==colfirst)?firstlist:secondlist)->get(p));
-        //if (p==228 || p==231) fprintf(stderr,"add a move %s %d\n",Go::Move(coltomove,p).toString(19).c_str(),nonlocalmove);
+        //if (p==228 || p==231) fprintf(stderr,"add a move %s %d\n",Go::Move(coltomove,p).toString(size).c_str(),nonlocalmove);
         ((coltomove==colfirst)?firstlist:secondlist)->set(p,playoutmovescount,nonlocalmove);
         if (params->debug_on) 
           fprintf(stderr,"after set %s test_p2 %f get(p) %d\n",Go::getColorName(coltomove),params->test_p2,((coltomove==colfirst)?firstlist:secondlist)->get(p));
@@ -649,11 +654,11 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
     delete treeboardWhite;
 }
 
-void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, critstruct critarray[], float ravearray[], int passes, std::vector<int> *pool, std::vector<int> *poolCR, std::string *reason, float *trylocal_p, float *black_gammas, float *white_gammas, bool *earlymoves, Go::IntBoard *firstlist,int playoutmovescount, bool *nonlocalmove,Go::IntBoard *treeboardBlack,Go::IntBoard *treeboardWhite, int used_playouts)
+void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, critstruct critarray[], float ravearray[], int passes, std::vector<int> *pool, std::vector<int> *poolCR, std::string *reason, float *trylocal_p, float *black_gammas, float *white_gammas, bool *earlymoves, Go::IntBoard *firstlist,int playoutmovescount, bool *nonlocalmove,Go::IntBoard *treeboardBlack,Go::IntBoard *treeboardWhite, int used_playouts, int *ACpos, int ACcount)
 {
   int *posarray = new int[board->getPositionMax()];
   
-  this->getPlayoutMove(settings,board,col,move,posarray,critarray,ravearray,passes,pool,poolCR,reason,trylocal_p,black_gammas,white_gammas,earlymoves, firstlist, playoutmovescount, nonlocalmove,treeboardBlack,treeboardWhite, used_playouts);
+  this->getPlayoutMove(settings,board,col,move,posarray,critarray,ravearray,passes,pool,poolCR,reason,trylocal_p,black_gammas,white_gammas,earlymoves, firstlist, playoutmovescount, nonlocalmove,treeboardBlack,treeboardWhite, used_playouts, ACpos, ACcount);
   
   delete[] posarray;
 }
@@ -689,7 +694,7 @@ void Playout::checkUselessMove(Worker::Settings *settings, Go::Board *board, Go:
   }
 }
 
-void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, critstruct critarray[], float ravearray[], int passes, std::vector<int> *pool, std::vector<int> *poolcrit, std::string *reason, float *trylocal_p, float *black_gammas, float *white_gammas, bool *earlymoves, Go::IntBoard *firstlist,int playoutmovescount, bool *nonlocalmove,Go::IntBoard *treeboardBlack,Go::IntBoard *treeboardWhite, int used_playouts)
+void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, critstruct critarray[], float ravearray[], int passes, std::vector<int> *pool, std::vector<int> *poolcrit, std::string *reason, float *trylocal_p, float *black_gammas, float *white_gammas, bool *earlymoves, Go::IntBoard *firstlist,int playoutmovescount, bool *nonlocalmove,Go::IntBoard *treeboardBlack,Go::IntBoard *treeboardWhite, int used_playouts, int *ACpos, int ACcount)
 {
   /* trylocal_p can be used to influence parameters from move to move in a playout. It starts with 1.0
    * 
@@ -951,6 +956,22 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     }
     else
       move=Go::Move(col,Go::Move::PASS);
+  }
+
+  if (params->playout_defend_approach && ACcount>0 && ACpos!=NULL)
+  {
+    int i=rand->getRandomInt(ACcount); 
+    move=Go::Move(col,ACpos[i]);
+    if (params->debug_on)
+      gtpe->getOutput()->printfDebug("[playoutmove]: %s defend approach\n",move.toString(board->getSize()).c_str());
+    if (reason!=NULL)
+    	*reason="defend approach";
+    if (!move.isPass() && board->validMove(move)) 
+        return; //should allways be true, for safety at the moment
+    else {
+     // fprintf(stderr,"not valid move in defend approach?! %s\n%s",move.toString(board->getSize()).c_str(),board->toString().c_str());
+      move=Go::Move(col,Go::Move::PASS);
+    }
   }
 
 //  notlocal:
@@ -2913,7 +2934,7 @@ float Playout::getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group
   {
     if (!board->isSelfAtari(move) && (group->numOfStones()>1||board->isAtari(move))) //a single ladder block at the boards was used as 2 lib string, this should not harm, as single stones should not be extended by this rule
     {
-      if ((board->isAtari(move) && params->test_p110==0) || (group->getColor()!=move.getColor() && group->isOneOfTwoLiberties(move.getPosition()) && params->test_p110!=0))
+      if ((params->test_p110==0 && board->isAtari(move)) || (params->test_p110!=0 && group->getColor()!=move.getColor() && group->isOneOfTwoLiberties(move.getPosition()) ))
       {
         Go::Color col=move.getColor();
         Go::Color othercol=Go::otherColor(col);
@@ -2921,7 +2942,7 @@ float Playout::getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group
         bool stopsconnection=false;
         bool one_stone_atari_avoid=false;
         if (params->debug_on)
-          gtpe->getOutput()->printfDebug("move %s\n",move.toString(19).c_str());
+          gtpe->getOutput()->printfDebug("move %s\n",move.toString(size).c_str());
         foreach_adjacent(move.getPosition(),p,{
           if (board->getColor(p)==othercol)
           {
@@ -2930,8 +2951,8 @@ float Playout::getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group
               gtpe->getOutput()->printfDebug("othergroup %p group %p  othergroup!=group %d inAtari %d number of stones %d pseudoliberties %d\n",othergroup,group,othergroup!=group,othergroup->inAtari(),othergroup->numOfStones(),board->getPseudoLiberties(p));
             if (params->debug_on)
               gtpe->getOutput()->printfDebug("group %s othergroup %s\n",
-                    Go::Move(group->getColor(),group->getPosition()).toString(19).c_str(),
-                    Go::Move(othergroup->getColor(),othergroup->getPosition()).toString(19).c_str());
+                    Go::Move(group->getColor(),group->getPosition()).toString(size).c_str(),
+                    Go::Move(othergroup->getColor(),othergroup->getPosition()).toString(size).c_str());
             //stops connection between groups of the same color
             if (othergroup!=group && !othergroup->inAtari() && group->getColor()==othergroup->getColor())
               stopsconnection=true;
@@ -2975,8 +2996,8 @@ float Playout::getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group
                 gtpe->getOutput()->printfDebug("othergroup %p group %p  othergroup!=group %d inAtari %d number of stones %d pseudoliberties %d\n",othergroup,group,othergroup!=group,othergroup->inAtari(),othergroup->numOfStones(),board->getPseudoLiberties(p));
               if (params->debug_on)
                 gtpe->getOutput()->printfDebug("group %s othergroup %s\n",
-                      Go::Move(group->getColor(),group->getPosition()).toString(19).c_str(),
-                      Go::Move(othergroup->getColor(),othergroup->getPosition()).toString(19).c_str());
+                      Go::Move(group->getColor(),group->getPosition()).toString(size).c_str(),
+                      Go::Move(othergroup->getColor(),othergroup->getPosition()).toString(size).c_str());
               //stops connection between groups of the same color
               if (othergroup!=group && !othergroup->inAtari() && group->getColor()==othergroup->getColor())
                 doesconnection=true;

@@ -2794,6 +2794,7 @@ void Go::Board::countAdjacentColors(int pos, int &empty, int &black, int &white,
         break;
     }
   });
+  //fprintf(stderr,"%s %d %d %d\n",Go::Position::pos2string(pos,13).c_str(),black,white,offboard);
 }
 
 void Go::Board::countDiagonalColors(int pos, int &empty, int &black, int &white, int &offboard) const
@@ -3310,4 +3311,26 @@ void Go::Board::calcSlowLibertyGroups()  {
       });  
     }
   }  
+}
+
+
+void Go::Board::connectedAtariPos(Go::Move move, int CApos[4], int &CAcount)
+{
+ int pos=move.getPosition ();
+ Go::Color col=move.getColor();
+ CAcount=0;
+ if (pos<0) return;
+ foreach_adjacent(pos,p,{
+    if (this->getColor(p)==col && this->inGroup(p) && this->getGroup(p)->isOneOfTwoLiberties(pos))
+    {
+      //fprintf(stderr,"pos =%d ",pos);
+      int movepos=this->getGroup(p)->getOtherOneOfTwoLiberties(pos);
+      if (getMaxDistance(movepos,pos)>1 && this->validMove(Go::Move(Go::otherColor(col),movepos)))
+      {
+     //   fprintf(stderr,"connected Atari %s %d for move %s on board\n%s",Go::Move(Go::otherColor(col),movepos).toString(getSize()).c_str(),CAcount,move.toString(getSize()).c_str(),toString().c_str());
+        CApos[CAcount]=movepos;
+        CAcount++;
+      }
+    }
+  });
 }

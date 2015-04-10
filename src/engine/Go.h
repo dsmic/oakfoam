@@ -986,6 +986,7 @@ namespace Go
       inline int getPseudoLiberties(int pos) const { if (data[pos].group==NULL) return 0; else return data[pos].group->find()->numOfPseudoLiberties(); };
 
       void calcSlowLibertyGroups();
+      void connectedAtariPos(Go::Move move, int CApos[4], int &CAcount);
     private:
       const int size;
       const int sizesq;

@@ -71,7 +71,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   delete b;
   //end of testing code!
   
-
+  ACcount=0;
+  
   gtpe=ge;
   longname=ln;
   #ifdef HAVE_WEB
@@ -165,6 +166,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","playout_features_incremental",&(params->playout_features_incremental),PLAYOUT_FEATURES_INCREMENTAL);
   params->addParameter("playout","playout_random_chance",&(params->playout_random_chance),PLAYOUT_RANDOM_CHANCE);
   params->addParameter("playout","playout_random_approach_p",&(params->playout_random_approach_p),PLAYOUT_RANDOM_APPROACH_P);
+  params->addParameter("playout","playout_defend_approach",&(params->playout_defend_approach),PLAYOUT_DEFEND_APPROACH);
   params->addParameter("playout","playout_avoid_selfatari",&(params->playout_avoid_selfatari),PLAYOUT_AVOID_SELFATARI);
   params->addParameter("playout","playout_avoid_selfatari_size",&(params->playout_avoid_selfatari_size),PLAYOUT_AVOID_SELFATARI_SIZE);
   params->addParameter("playout","playout_avoid_selfatari_complex",&(params->playout_avoid_selfatari_complex),PLAYOUT_AVOID_SELFATARI_COMPLEX);
@@ -4959,10 +4961,19 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
         }
     }
 
-    playout->getPlayoutMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,**move,critarray,(col==Go::BLACK)?b_ravearray:w_ravearray);
+    playout->getPlayoutMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,**move,critarray,(col==Go::BLACK)?b_ravearray:w_ravearray, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0,  NULL, NULL, NULL, 0, ACpos, ACcount);
     if (params->playout_useless_move)
       playout->checkUselessMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,**move,(std::string *)NULL);
     delete playoutboard;
+    if (params->playout_defend_approach)
+      currentboard->connectedAtariPos(**move,ACpos,ACcount);
+    if (ACcount>0) 
+    {
+      for (int i=0;i<ACcount;i++)
+        fprintf(stderr," %s ",Go::Position::pos2string(ACpos[i],currentboard->getSize()).c_str());
+      fprintf(stderr,"---\n");
+    }
+    
     this->makeMove(**move);
     if (critarray)
       delete[] critarray;
