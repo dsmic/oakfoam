@@ -703,7 +703,8 @@ class Parameters
     bool auto_save_sgf;
     /** The filename prefix for the outputted SGFs. */
     std::string auto_save_sgf_prefix;
-
+    std::string version_config_file;
+    
     /** Probability that the decision trees are updated after a move. */
     float dt_update_prob;
     /** Number of descents that must occur before a decision tree node is split. */

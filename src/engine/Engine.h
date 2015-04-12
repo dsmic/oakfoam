@@ -703,6 +703,7 @@ class Engine
     static void gtpShowRAVERatiosColor(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowRAVERatiosOther(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpCPUtime(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpVERSION(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
 };
 
 #endif

@@ -451,6 +451,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   
   params->addParameter("other","auto_save_sgf",&(params->auto_save_sgf),false);
   params->addParameter("other","auto_save_sgf_prefix",&(params->auto_save_sgf_prefix),"");
+  params->addParameter("other","version_config_file",&(params->version_config_file),"");
 
   params->addParameter("other","dt_update_prob",&(params->dt_update_prob),0.00);
   params->addParameter("other","dt_split_after",&(params->dt_split_after),1000);
@@ -1007,6 +1008,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("dtstats",this,&Engine::gtpDTStats);
   gtpe->addFunctionCommand("dtpath",this,&Engine::gtpDTPath);
   gtpe->addFunctionCommand("cputime",this,&Engine::gtpCPUtime);
+  gtpe->addFunctionCommand("version",this,&Engine::gtpVERSION);
   
   //gtpe->addAnalyzeCommand("final_score","Final Score","string");
   //gtpe->addAnalyzeCommand("showboard","Show Board","string");
@@ -5766,7 +5768,7 @@ bool Engine::writeGameSGF(std::string filename)
 {
   std::ofstream sgffile;
   sgffile.open(filename.c_str());
-  sgffile<<"(;\nFF[4]SZ["<<boardsize<<"]KM["<<komi<<"]\n";
+  sgffile<<"(;\nFF[4]SZ["<<boardsize<<"]KM["<<komi<<"]C["<<VERSION<<params->version_config_file<<"]\n";
 
   std::list<std::string>::iterator expiter = moveexplanations->begin();
   for(std::list<Go::Move>::iterator iter=movehistory->begin();iter!=movehistory->end();++iter)
@@ -7260,4 +7262,13 @@ void Engine::gtpCPUtime(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   gtpe->getOutput()->endResponse();
 }
 
-    
+void Engine::gtpVERSION(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printf("%s(%s)\n",VERSION,me->params->version_config_file.c_str());
+  gtpe->getOutput()->endResponse();
+}
+
+        
