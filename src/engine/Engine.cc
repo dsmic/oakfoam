@@ -700,7 +700,7 @@ float Engine::getCNNwr(Go::Board *board,Go::Color col)
 		return 0;
 	}
 	float *data;
-	data= new float[2*19*19];
+	data= new float[3*19*19];
 	//fprintf(stderr,"2\n");
 	if (col==Go::BLACK) {
 	  for (int j=0;j<19;j++)
@@ -721,6 +721,7 @@ float Engine::getCNNwr(Go::Board *board,Go::Color col)
 			  data[j*19+k]=0.0;
 			  data[19*19+19*j+k]=0.0;
 			  }
+        data[2*19*19+j*19+k]=komi;
 	    }
 	}
 	if (col==Go::WHITE) {
@@ -742,29 +743,22 @@ float Engine::getCNNwr(Go::Board *board,Go::Color col)
 			  data[j*19+k]=0.0;
 			  data[19*19+19*j+k]=0.0;
 			  }
+        data[2*19*19+j*19+k]=-komi;
     }
 	}
-  Blob<float> *b=new Blob<float>(1,2,19,19);
+  Blob<float> *b=new Blob<float>(1,3,19,19);
   b->set_cpu_data(data);
   vector<Blob<float>*> bottom;
   bottom.push_back(b); 
   const vector<Blob<float>*>& rr =  caffe_area_net->Forward(bottom);
-  float diffprob[121];
-   for (int i=0;i<121;i++) {
-    diffprob[i]=rr[0]->cpu_data()[i];
+  float wr_sum=0;
+  for (int i=0;i<361;i++) {
+    wr_sum+=rr[1]->cpu_data()[i];
   }
-  float winprob=0;
-  float komipos=60+getScoreKomi();
-  if (col!=Go::BLACK)
-    komipos=60-getScoreKomi();
-  for (int i=0;i<121;i++) {
-    if (i<komipos) winprob+=diffprob[i];
-    if (i==komipos) winprob+=diffprob[i]/2.0;
-  }
-  //fprintf(stderr,"col %s winrate %.3f\n",(col==Go::BLACK)?"black":"white",1.0-winprob);
+  
   delete[] data;
   delete b;
-  return 1.0-winprob;
+  return 1.0-wr_sum/361.0;
 }
 
 void Engine::run(bool web_inf, std::string web_addr, int web_port)
@@ -1589,7 +1583,7 @@ void Engine::gtpShowRatios(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 void Engine::gtpShowRealLibs(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
-  Go::Color col=me->currentboard->nextToMove();
+//  Go::Color col=me->currentboard->nextToMove();
   me->currentboard->calcSlowLibertyGroups();
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printString("\n");
@@ -3661,7 +3655,7 @@ void Engine::gtpShowTerritoryCNN(void *instance, Gtp::Engine* gtpe, Gtp::Command
   }
   float *data;
   //fprintf(stderr,"1\n");
-  data= new float[2*19*19];
+  data= new float[3*19*19];
   for (int j=0;j<19;j++)
 	  for (int k=0;k<19;k++)
 		{
@@ -3676,6 +3670,7 @@ void Engine::gtpShowTerritoryCNN(void *instance, Gtp::Engine* gtpe, Gtp::Command
 		      data[1*19*19+j*19+k]=1.0;
         else
           data[1*19*19+j*19+k]=0.0;
+      data[2*19*19+j*19+k]=me->komi;
       }
       else {
         if (col==Go::WHITE)
@@ -3686,21 +3681,31 @@ void Engine::gtpShowTerritoryCNN(void *instance, Gtp::Engine* gtpe, Gtp::Command
 		      data[1*19*19+j*19+k]=1.0;
         else
           data[1*19*19+j*19+k]=0.0;
+      data[2*19*19+j*19+k]=-me->komi;
       }
     }
 
   float result[361];
   float diffprob[121];
-  Blob<float> *b=new Blob<float>(1,2,19,19);
+  float wr[361];
+  Blob<float> *b=new Blob<float>(1,3,19,19);
   b->set_cpu_data(data);
   vector<Blob<float>*> bottom;
   bottom.push_back(b); 
   const vector<Blob<float>*>& rr =  caffe_area_net->Forward(bottom);
   for (int i=0;i<361;i++) {
-	  result[i]=rr[1]->cpu_data()[i];
+	  wr[i]=rr[1]->cpu_data()[i];
+    //gtpe->getOutput()->printf("wr%.3f",wr[i]);
   }
+  //gtpe->getOutput()->printf("\n");
+  for (int i=0;i<361;i++) {
+	  result[i]=rr[2]->cpu_data()[i];
+    //gtpe->getOutput()->printf("tr%.3f",result[i]);
+  }
+  //gtpe->getOutput()->printf("\n");
   for (int i=0;i<121;i++) {
     diffprob[i]=rr[0]->cpu_data()[i];
+    //gtpe->getOutput()->printf("pd%.3f",diffprob[i]);
   }
   float territorycount=0;
   float norm=0;
@@ -3710,7 +3715,7 @@ void Engine::gtpShowTerritoryCNN(void *instance, Gtp::Engine* gtpe, Gtp::Command
     {
       int pos=Go::Position::xy2pos(x,y,me->boardsize);
       float territory=me->territorymap->getPositionOwner(pos);
-      float black=result[19*x+y]*2.0-1.0;
+      float black=result[19*x+y];
       if (gtpcol!=Gtp::BLACK)
         black=-black;
       norm+=pow(black-territory,2);
@@ -3742,7 +3747,13 @@ void Engine::gtpShowTerritoryCNN(void *instance, Gtp::Engine* gtpe, Gtp::Command
   for (int i=0;i<121;i++) {
     gtpe->getOutput()->printf("%3d ",i-60);
   }
-  gtpe->getOutput()->printf("\nwinprob: %.3f\n",1.0-winprob);
+  float wr_sum=0,wr_sqrt=0;
+  for (int i=0;i<361;i++) {
+    wr_sum+=wr[i];
+    wr_sqrt+=wr[i]*wr[i];
+  }
+  gtpe->getOutput()->printf("\nwinprob1: %.3f\n",1.0-winprob);
+  gtpe->getOutput()->printf("winprob2: %.3f (%.3f)\n",1.0-wr_sum/361.0,wr_sqrt/361.0-(wr_sum*wr_sum/361.0/361.0));
   
   if (territorycount-me->getHandiKomi()>0)
     gtpe->getOutput()->printf("Territory %.1f Komi %.1f B+%.1f (with ScoreKomi %.1f) (%.1f) (norm %.2f)\n",

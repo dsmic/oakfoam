@@ -2052,7 +2052,9 @@ void Playout::getLast2LibAtariMove(Worker::Settings *settings, Go::Board *board,
   int size=board->getSize();
   float bestlevel=1;
   Go::Group *lastgroup=NULL;
-  
+
+  bool only_bigger_7=WITH_P(1.0-params->test_p109);
+    
   if (board->getLastMove().isNormal())
   {
     foreach_adjdiag(board->getLastMove().getPosition(),p,{
@@ -2075,7 +2077,7 @@ void Playout::getLast2LibAtariMove(Worker::Settings *settings, Go::Board *board,
               {
                 if (board->validMove(col,p))
                 {
-                  float lvl=this->getTwoLibertyMoveLevel(board,Go::Move(col,p),group); // *(params->test_p10+ rand->getRandomReal())
+                  float lvl=this->getTwoLibertyMoveLevel(board,Go::Move(col,p),group,only_bigger_7); // *(params->test_p10+ rand->getRandomReal())
                   if (params->debug_on)
                     gtpe->getOutput()->printfDebug("1 atlevel %s %f\n",Go::Move(col,p).toString (size).c_str(),lvl);
                   if (lvl>0 && lvl>=bestlevel)
@@ -2092,7 +2094,7 @@ void Playout::getLast2LibAtariMove(Worker::Settings *settings, Go::Board *board,
                 }
                 if (board->validMove(col,s))
                 {
-                  float lvl=this->getTwoLibertyMoveLevel(board,Go::Move(col,s),group); // *(params->test_p10+ rand->getRandomReal())
+                  float lvl=this->getTwoLibertyMoveLevel(board,Go::Move(col,s),group,only_bigger_7); // *(params->test_p10+ rand->getRandomReal())
                   if (params->debug_on)
                     gtpe->getOutput()->printfDebug("2 atlevel %s %f\n",Go::Move(col,s).toString (size).c_str(),lvl);
                   if (lvl>0 && lvl>=bestlevel)
@@ -2115,7 +2117,7 @@ void Playout::getLast2LibAtariMove(Worker::Settings *settings, Go::Board *board,
     });
   }
 
-  if (possiblemovescount>0 && (bestlevel>1 || WITH_P(params->test_p13)) && (bestlevel>2 || params->test_p71==0) && (bestlevel>7 || WITH_P(params->test_p109)))
+  if (possiblemovescount>0 && (bestlevel>1 || WITH_P(params->test_p13)) && (bestlevel>2 || params->test_p71==0))// && (bestlevel>7 || WITH_P(params->test_p109)))
   {
     int i=rand->getRandomInt(possiblemovescount);
     if (!this->isBadMove(settings,board,col,possiblemoves[i]))
@@ -2928,7 +2930,7 @@ void Playout::clearLGPF(Go::Color col, int pos1, unsigned int hash, unsigned lon
   }
  }
 
-float Playout::getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group *group)
+float Playout::getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group *group, bool only_bigger_7)
 {
   if (params->playout_last2libatari_complex)
   {
@@ -2984,6 +2986,7 @@ float Playout::getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group
       }
       else if (group->numOfStones()>1)
       {
+        if (only_bigger_7) return 0;
         bool doesconnection=false;
         int size=board->getSize();
         if (params->test_p71>0 && board->touchingEmpty(move.getPosition())<2)
@@ -3012,6 +3015,7 @@ float Playout::getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group
     }
     else if (move.getColor()!=group->getColor())
     {
+      if (only_bigger_7) return 0;
       Go::Color col=move.getColor();
       Go::Color othercol=Go::otherColor(col);
       int size=board->getSize();
