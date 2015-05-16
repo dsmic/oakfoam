@@ -10,6 +10,7 @@
 #include <boost/thread/mutex.hpp>
 #include "Go.h"
 #include "Pattern.h"
+#include <boost/bimap.hpp>
 //from "Parameters.h":
 class Parameters;
 //from "Worker.h":
@@ -382,6 +383,8 @@ class Tree
      }
     float cnn_territory_done;
     float cnn_territory_wr;
+    boost::bimap <int,float> cnn_b,cnn_w;
+    
   private:
     Tree *parent;
     std::list<Tree*> *children;
@@ -441,6 +444,7 @@ class Tree
 
     MoveCirc *movecirc;
     EqMoves *eq_moves;
+    float *CNNresults;
 };
 
 class MoveCirc

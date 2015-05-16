@@ -97,6 +97,7 @@ Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p) : params(
   eq_moves=NULL;
   cnn_territory_done=0;
   cnn_territory_wr=-1;
+  CNNresults=NULL;
 }
 
 Tree::~Tree()
@@ -110,6 +111,8 @@ Tree::~Tree()
   params->tree_instances--;
   if (movecirc!=NULL) params->engine->removeMoveCirc(movecirc,this);
   if (movecirc!=NULL) delete movecirc;
+  if (CNNresults!=NULL)
+    delete[] CNNresults;
 }
 
 void Tree::addChild(Tree *node)
@@ -2049,14 +2052,33 @@ bool Tree::expandLeaf(Worker::Settings *settings)
     Go::ObjectBoard<int> *cfglastdist=NULL;
     Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
     params->engine->getFeatures()->computeCFGDist(startboard,&cfglastdist,&cfgsecondlastdist);
-    float *CNNresults=NULL;
+    //float *CNNresults=NULL;
     int size=startboard->getSize();
-    if (params->test_p100>0)
+    if (params->test_p100>0 && CNNresults==NULL)
     {
       CNNresults=new float[size*size];
       params->engine->getCNN(startboard,Go::otherColor(col),CNNresults);
-      //for (int i=0;i<361;i++)
-      //  fprintf(stderr,"%d: %f\n",i,CNNresults[i]);
+      if (params->test_p116>0) {
+        float *CNNresults_other=new float[size*size];
+        params->engine->getCNN(startboard,col,CNNresults_other);
+        for (int i=0;i<size*size;i++) {
+          int pp=Go::Position::cnn2pos(i,size);
+          float value=-(int(CNNresults[i]*10000)+float(i)/size/size);
+          float value_other=-(int(CNNresults_other[i]*10000)+float(i)/size/size);
+          if (col==Go::BLACK) {
+            cnn_b.insert({pp,value_other});
+            cnn_w.insert({pp,value});
+          }
+          else {
+            cnn_w.insert({pp,value_other});
+            cnn_b.insert({pp,value});
+          }
+        }
+        delete[] CNNresults_other;
+        //for (boost::bimap <int,float>::right_const_iterator it = cnn_b.right.begin();it!=cnn_b.right.end();++it) {
+        // fprintf(stderr,"%f %d\n",it->first,it->second);
+        //}
+      }
     } 
     //int now_unpruned=this->getUnprunedNum();
     //fprintf(stderr,"debugging %d\n",now_unpruned);
@@ -2110,8 +2132,8 @@ bool Tree::expandLeaf(Worker::Settings *settings)
       delete cfglastdist;
     if (cfgsecondlastdist!=NULL)
       delete cfgsecondlastdist;
-    if (CNNresults!=NULL)
-      delete[] CNNresults;
+    //if (CNNresults!=NULL)
+    //  delete[] CNNresults;
     if (params->uct_progressive_widening_enabled)
     {
       this->pruneChildren();

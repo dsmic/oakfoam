@@ -198,6 +198,8 @@ namespace Go
       static std::string pos2string(int pos, int boardsize);
       /** Parse a string representation of a poistion. */
       static int string2pos(std::string str, int boardsize);
+      static inline int pos2cnn(int pos, int boardsize) {return (pos-1)%(boardsize+1) * boardsize + (pos-1)/(boardsize+1)-1;};
+      static inline int cnn2pos(int cnn, int boardsize) {return xy2pos(cnn/boardsize,cnn%boardsize,boardsize);};
   };
   
   /** Board with a bit for each position. */
