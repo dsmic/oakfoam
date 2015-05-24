@@ -846,7 +846,9 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
   
   if (params->playout_lastatari_p>0.0 && (WITH_P(params->test_p34)||*earlymoves)) //p is used in the getLastAtariMove function
   {
-    this->getLastAtariMove(settings,board,col,move,posarray,params->test_p19);
+#warning "memory allocated for respondmoves, should be turned to be switched off by a parameter"
+    std::list<int> respondmoves;
+    this->getLastAtariMove(settings,board,col,move,posarray,params->test_p19,&respondmoves);
     if (!move.isPass())
     {
       if (params->debug_on)
@@ -854,6 +856,9 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
       if (reason!=NULL)
         *reason="lastatari";
       params->engine->statisticsPlus(Engine::LASTATARI);
+      Go::RespondBoard *tmp=params->engine->respondboard;
+      if (board->getLastMove().isNormal())
+        tmp->addRespond(board->getLastMove().getPosition(), Go::otherColor(col), &respondmoves);
       return;
     }
   }
@@ -2298,7 +2303,7 @@ void Playout::getLastCaptureMove(Worker::Settings *settings, Go::Board *board, G
   }
 }
 
-void Playout::getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray,float pp)
+void Playout::getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray,float pp, std::list<int> *capturemoves)
 {
   Random *const rand=settings->rand;
 
@@ -2351,7 +2356,8 @@ void Playout::getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go:
                   if (othergroup->inAtari())
                   {
                     int liberty=othergroup->getAtariPosition();
-                    bool iscaptureorconnect=board->isCapture(Go::Move(col,liberty)) || board->isExtension(Go::Move(col,liberty)); // Why is the check for capture here?
+                    bool iscapture=board->isCapture(Go::Move(col,liberty));
+                    bool iscaptureorconnect=iscapture || board->isExtension(Go::Move(col,liberty)); // Why is the check for capture here?
                     //fprintf(stderr,"debug %f %d\n",pow(params->playout_lastatari_captureattached_p,1/group->numOfStones ()),group->numOfStones ());
                     // was a bug in there && WITH_P(pow(params->playout_lastatari_captureattached_p,1/group->numOfStones ()))
                     // as 1/group-> was integer and only 0 or 1. Thefore replaced, but should be checked once again
@@ -2362,6 +2368,7 @@ void Playout::getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go:
                         possiblemoves[possiblemovescount]=liberty;
                         possiblemovescount++;
                         atarigroupfound=true;
+                        if (capturemoves!=NULL && iscapture) capturemoves->push_back(liberty);
                       }
                     }
                   }

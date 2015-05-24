@@ -418,7 +418,9 @@ class Engine
       return NULL;
     }
     boost::mutex CNNmutex;
-	
+
+    Go::RespondBoard *respondboard; //public for simplicity here
+
   private:
     //boost::object_pool<Go::Board> pool_board;
     Gtp::Engine *gtpe;
@@ -449,8 +451,6 @@ class Engine
     Go::MoveProbabilityMap *probabilitymap;
     Go::ObjectBoard<Go::CorrelationData> *correlationmap;
 
-
-	  
     #ifdef with_unordered
       std::unordered_map <MoveCirc,EqMoves,MoveCircHash> circ_move;
     #else
@@ -695,6 +695,7 @@ class Engine
     static void gtpShowMoveProbability(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowCorrelationMap(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowRatios(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpShowAtariCaptureAttached(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowRealLibs(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowTreePlayouts(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowUnPrune(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);

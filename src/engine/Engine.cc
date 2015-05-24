@@ -492,6 +492,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   }
   probabilitymap=new Go::MoveProbabilityMap(boardsize);
   correlationmap=new Go::ObjectBoard<Go::CorrelationData>(boardsize);
+
+  respondboard=new Go::RespondBoard(boardsize);
   
   blackOldMoves=new float[currentboard->getPositionMax()];
   whiteOldMoves=new float[currentboard->getPositionMax()];
@@ -576,6 +578,7 @@ Engine::~Engine()
   delete territorymap;
   delete probabilitymap;
   delete correlationmap;
+  delete respondboard;
   delete[] blackOldMoves;
   delete[] whiteOldMoves;
   for (std::list<DecisionTree*>::iterator iter=decisiontrees.begin();iter!=decisiontrees.end();++iter)
@@ -976,6 +979,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("showterritory",this,&Engine::gtpShowTerritory);
   gtpe->addFunctionCommand("showprobabilitycnn",this,&Engine::gtpShowProbabilityCNN);
   gtpe->addFunctionCommand("showterritorycnn",this,&Engine::gtpShowTerritoryCNN);
+  gtpe->addFunctionCommand("showatarirespondat",this,&Engine::gtpShowAtariCaptureAttached);
   gtpe->addFunctionCommand("showterritoryat",this,&Engine::gtpShowTerritoryAt);
   gtpe->addFunctionCommand("showterritoryerror",this,&Engine::gtpShowTerritoryError);
   
@@ -1036,6 +1040,7 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("showterritory","Show Territory","dboard");
   gtpe->addAnalyzeCommand("showterritorycnn %%c","Show Territory CNN","dboard");
   gtpe->addAnalyzeCommand("showprobabilitycnn %%c","Show Probability CNN","dboard");
+  gtpe->addAnalyzeCommand("showatarirespondat %%p %%c","Show Atarirespond At","sboard");
   gtpe->addAnalyzeCommand("showterritoryat %%p %%c","Show Territory At","dboard");
   gtpe->addAnalyzeCommand("showterritoryerror","Show Territory Error","dboard");
   gtpe->addAnalyzeCommand("showmoveprobability","Show Move Probability","dboard");
@@ -1573,6 +1578,54 @@ void Engine::gtpShowRatios(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
       }
       else
         gtpe->getOutput()->printf("\"\"");
+    }
+    gtpe->getOutput()->printf("\n");
+  }
+
+  gtpe->getOutput()->endResponse(true);
+}
+
+
+void Engine::gtpShowAtariCaptureAttached(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  //Go::Color col=me->currentboard->nextToMove();
+  if (cmd->numArgs()!=2)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("color vertex is required");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  Gtp::Vertex vert = cmd->getVertexArg(0);
+  Gtp::Color gtpcol = cmd->getColorArg(1);
+
+  int pos=Go::Position::xy2pos(vert.x,vert.y,me->boardsize);
+  int num=0;
+  std::list<std::pair<int,int>> responds=me->respondboard->getMoves(pos,(gtpcol==Gtp::BLACK)?Go::BLACK : Go::WHITE,num);
+  fprintf(stderr,"allmoves %d \n",num);
+  float rb[me->currentboard->getPositionMax()];
+  for (int i=0;i<me->currentboard->getPositionMax();i++)
+      rb[i]=0;
+  if (num>0) {
+    for (std::list<std::pair<int,int>>::iterator it=responds.begin();it!=responds.end();++it) {
+      fprintf(stderr,"respondmoves %d %d move %s  %f\n",it->first,it->second,Go::Move((gtpcol==Gtp::BLACK)?Go::WHITE : Go::BLACK,it->first).toString(me->boardsize).c_str(),(float)it->second/num);
+      rb[it->first]=-(float)it->second/num;
+    }
+  }
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("\n");
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      int pos=Go::Position::xy2pos(x,y,me->boardsize);
+      int val=(int)(rb[pos]*1000);
+      if (val>0)
+        gtpe->getOutput()->printf("\"%d\"",(int)(rb[pos]*1000));
+      else
+        gtpe->getOutput()->printf("\"\"");  
     }
     gtpe->getOutput()->printf("\n");
   }
@@ -5562,6 +5615,7 @@ void Engine::clearBoard()
   delete territorymap;
   delete probabilitymap;
   delete correlationmap;
+  delete respondboard;
   delete[] blackOldMoves;
   delete[] whiteOldMoves;
   
@@ -5581,6 +5635,7 @@ void Engine::clearBoard()
 
   probabilitymap=new Go::MoveProbabilityMap (boardsize);
   correlationmap=new Go::ObjectBoard<Go::CorrelationData>(boardsize);
+  respondboard=new Go::RespondBoard(boardsize);
   blackOldMoves=new float[currentboard->getPositionMax()];
   whiteOldMoves=new float[currentboard->getPositionMax()];
   for (int i=0;i<currentboard->getPositionMax();i++)

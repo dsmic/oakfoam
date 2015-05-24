@@ -62,6 +62,30 @@ Go::IntBoard::~IntBoard()
   delete[] data;
 }
 
+Go::RespondBoard::RespondBoard(int s)
+  : size(s),
+    sizesq(s*s),
+    sizedata(1+(s+1)*(s+2)),
+    respondsb(new boost::bimap<int,int>[sizedata]),
+    respondsw(new boost::bimap<int,int>[sizedata]),
+    numplayedb(new int[sizedata]),
+    numplayedw(new int[sizedata])
+{
+  for (int i=0;i<sizedata;i++)
+  {
+    numplayedb[i]=0;
+    numplayedw[i]=0;
+  }
+}
+
+Go::RespondBoard::~RespondBoard()
+{
+  delete[] respondsw;
+  delete[] respondsb;
+  delete[] numplayedw;
+  delete[] numplayedb;
+}
+
 std::string Go::Position::pos2string(int pos, int boardsize)
 {
   if (pos==-1)

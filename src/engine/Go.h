@@ -8,6 +8,7 @@
 #include <boost/pool/pool_alloc.hpp>
 #include <boost/pool/object_pool.hpp>
 #include <boost/cstdint.hpp>
+#include <boost/bimap.hpp>
 
 #include "../gtp/Gtp.h"
 
@@ -261,6 +262,95 @@ namespace Go
       const int size,sizesq,sizedata;
       int *const data;
       bool *const bdata;
+  };
+
+  /** Board with a bit for each position. */
+  class RespondBoard
+  {
+    public:
+      /** Create an instance with given board size. */
+      RespondBoard(int s);
+      ~RespondBoard();
+      
+      /** Get the value of a position. */
+      
+      void addRespond(int pos, Go::Color col, std::list<int> *respondpositions) {
+        if (lock_full.try_lock()) { //do not waste time, if already in use
+          (Go::BLACK==col)?numplayedb[pos]++ :numplayedw[pos]++;
+          for (std::list<int>::iterator itlist=respondpositions->begin();itlist!=respondpositions->end();++itlist) {
+            boost::bimap<int,int> *tmp=getresponds(pos,col);
+            boost::bimap<int,int>::left_iterator it=tmp->left.find(*itlist);
+            int val=0;
+            if (it!=tmp->left.end()) {
+              val=it->second;
+              tmp->left.erase(it);
+            }
+            tmp->insert({*itlist,val-1});
+          }
+          lock_full.unlock();
+        }
+      }; // if respondpos !=pass so >0
+      std::list<std::pair<int,int>> getMoves(int pos, Go::Color col, int &nump) {
+        std::list<std::pair<int,int>> returnlist;
+        if (lock_full.try_lock()) { //do not waste time, if already in use
+          boost::bimap<int,int> *tmp=getresponds(pos,col);
+          fprintf(stderr,"pointer %p col %d %p %p\n",tmp,col,&respondsb[pos],&respondsw[pos]);
+          for (boost::bimap <int,int>::right_const_iterator it = tmp->right.begin();it!=tmp->right.end();++it) {
+            returnlist.push_back({it->second,it->first});
+          }
+          nump=(Go::BLACK==col)?numplayedb[pos]:numplayedw[pos];
+          lock_full.unlock();
+        }
+        return returnlist;
+      }
+      void clear() {
+        std::list<int> returnlist;
+        lock_full.lock();
+        for (int i=0;i<size;i++) {
+          respondsb[i].clear();
+          respondsw[i].clear();
+          numplayedb[i]=0;
+          numplayedw[i]=0;
+        }
+        lock_full.unlock();
+      }
+      void scale(float f) {
+        std::list<int> returnlist;
+        lock_full.lock();
+        for (int i=0;i<size;i++) {
+          numplayedb[i]*=f;
+          std::list<std::pair<int,int>> returnlist;
+          boost::bimap<int,int> *tmp=getresponds(i,Go::BLACK);
+          for (boost::bimap <int,int>::right_const_iterator it = tmp->right.begin();it!=tmp->right.end();++it) {
+            returnlist.push_back({it->second,it->first});
+          }
+          tmp->clear();
+          for (std::list<std::pair<int,int>>::iterator it=returnlist.begin();it!=returnlist.end();++it) {
+            if (it->second*f<0) tmp->insert({it->first,(int)(it->second*f)});
+          }
+        }
+        for (int i=0;i<size;i++) {
+          numplayedw[i]*=f;
+          std::list<std::pair<int,int>> returnlist;
+          boost::bimap<int,int> *tmp=getresponds(i,Go::WHITE);
+          for (boost::bimap <int,int>::right_const_iterator it = tmp->right.begin();it!=tmp->right.end();++it) {
+            returnlist.push_back({it->second,it->first});
+          }
+          tmp->clear();
+          for (std::list<std::pair<int,int>>::iterator it=returnlist.begin();it!=returnlist.end();++it) {
+            if (it->second*f<0) tmp->insert({it->first,(int)(it->second*f)});
+          }
+        }
+        lock_full.unlock();
+      }
+    private:
+      inline boost::bimap<int,int> *getresponds(int pos, Go::Color col) const { if (col==Go::BLACK) return &respondsb[pos]; else return &respondsw[pos]; }; //not locked
+      const int size,sizesq,sizedata;
+      boost::bimap<int,int> *const respondsb;
+      boost::bimap<int,int> *const respondsw;
+      int *const numplayedb;
+      int *const numplayedw;
+      boost::mutex lock_full;
   };
 
   class CorrelationData
