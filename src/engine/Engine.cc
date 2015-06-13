@@ -1589,6 +1589,7 @@ void Engine::gtpShowRatios(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 void Engine::gtpShowAtariCaptureAttached(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
+  //me->respondboard->scale(0.2);
   //Go::Color col=me->currentboard->nextToMove();
   if (cmd->numArgs()!=2)
   {
@@ -1603,8 +1604,9 @@ void Engine::gtpShowAtariCaptureAttached(void *instance, Gtp::Engine* gtpe, Gtp:
 
   int pos=Go::Position::xy2pos(vert.x,vert.y,me->boardsize);
   int num=0;
-  std::list<std::pair<int,int>> responds=me->respondboard->getMoves(pos,(gtpcol==Gtp::BLACK)?Go::BLACK : Go::WHITE,num);
-  fprintf(stderr,"allmoves %d \n",num);
+  int capt=0;
+  std::list<std::pair<int,int>> responds=me->respondboard->getMoves(pos,(gtpcol==Gtp::BLACK)?Go::BLACK : Go::WHITE,num,capt);
+  fprintf(stderr,"allmoves %d %d\n",num,capt);
   float rb[me->currentboard->getPositionMax()];
   for (int i=0;i<me->currentboard->getPositionMax();i++)
       rb[i]=0;
@@ -4700,6 +4702,7 @@ void Engine::learnFromTree(Go::Board *tmpboard, Tree *learntree, std::ostringstr
 void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
 {
   clearStatistics();
+  respondboard->scale(0.2);
 
   if (params->book_use)
   {
@@ -6563,24 +6566,26 @@ void Engine::generateThread(Worker::Settings *settings)
     if (settings->thread->getID()==0 && !mpi_rank_other && params->uct_stop_early && params->uct_slow_update_last==0 && totalplayouts>=(params->playouts_per_move_min))
     {
       Tree *besttree=movetree->getRobustChild();
+      //double newtotalplayouts=totalplayouts;
+      double newtotalplayouts=movetree->getPlayouts(); //fixed a long standing timing bug, which was introduced probably when reusing childtrees
       if (besttree!=NULL)
       {
-        double currentpart=(besttree->getPlayouts()-besttree->secondBestPlayouts())/totalplayouts;
+        double currentpart=(besttree->getPlayouts()-besttree->secondBestPlayouts())/newtotalplayouts;
         double overallratio,overallratiotimed;
         if (time_allocated>0) // timed search
         {
-          overallratio=(double)params->playouts_per_move_max/totalplayouts;
+          overallratio=((double)params->playouts_per_move_max+newtotalplayouts-totalplayouts)/newtotalplayouts;
           overallratiotimed=(double)(time_allocated+TIME_RESOLUTION)/this->timeSince(time_start);
         }
         else
         {
-          overallratio=(double)params->playouts_per_move/totalplayouts;
+          overallratio=((double)params->playouts_per_move_max+newtotalplayouts-totalplayouts)/newtotalplayouts;
           overallratiotimed=0;
         }
         
         if (((overallratio-1)<currentpart) || ((time_allocated>0) && ((overallratiotimed-1)<currentpart)))
         {
-          gtpe->getOutput()->printfDebug("best move cannot change! (%.3f %.3f)\n",currentpart,overallratio);
+          gtpe->getOutput()->printfDebug("best move cannot change! (%.3f %.3f %.0f)\n",currentpart,overallratio,newtotalplayouts);
           stopthinking=true;
           params->early_stop_occured=true;
           break;

@@ -274,10 +274,12 @@ namespace Go
       
       /** Get the value of a position. */
       
-      void addRespond(int pos, Go::Color col, std::list<int> *respondpositions) {
+      void addRespond(int pos, Go::Color col, std::set<int> *respondpositions) {
+        if (respondpositions==NULL) return;
         if (lock_full.try_lock()) { //do not waste time, if already in use
           (Go::BLACK==col)?numplayedb[pos]++ :numplayedw[pos]++;
-          for (std::list<int>::iterator itlist=respondpositions->begin();itlist!=respondpositions->end();++itlist) {
+          if (respondpositions->size()>0) {(Go::BLACK==col)?numcaptb[pos]++ :numcaptw[pos]++;}
+          for (std::set<int>::iterator itlist=respondpositions->begin();itlist!=respondpositions->end();++itlist) {
             boost::bimap<int,int> *tmp=getresponds(pos,col);
             boost::bimap<int,int>::left_iterator it=tmp->left.find(*itlist);
             int val=0;
@@ -290,15 +292,16 @@ namespace Go
           lock_full.unlock();
         }
       }; // if respondpos !=pass so >0
-      std::list<std::pair<int,int>> getMoves(int pos, Go::Color col, int &nump) {
+      std::list<std::pair<int,int>> getMoves(int pos, Go::Color col, int &nump, int &numcapt) {
         std::list<std::pair<int,int>> returnlist;
         if (lock_full.try_lock()) { //do not waste time, if already in use
           boost::bimap<int,int> *tmp=getresponds(pos,col);
-          fprintf(stderr,"pointer %p col %d %p %p\n",tmp,col,&respondsb[pos],&respondsw[pos]);
+          //fprintf(stderr,"pointer %p col %d %p %p\n",tmp,col,&respondsb[pos],&respondsw[pos]);
           for (boost::bimap <int,int>::right_const_iterator it = tmp->right.begin();it!=tmp->right.end();++it) {
             returnlist.push_back({it->second,it->first});
           }
           nump=(Go::BLACK==col)?numplayedb[pos]:numplayedw[pos];
+          numcapt=(Go::BLACK==col)?numcaptb[pos]:numcaptw[pos];
           lock_full.unlock();
         }
         return returnlist;
@@ -306,7 +309,7 @@ namespace Go
       void clear() {
         std::list<int> returnlist;
         lock_full.lock();
-        for (int i=0;i<size;i++) {
+        for (int i=0;i<sizedata;i++) {
           respondsb[i].clear();
           respondsw[i].clear();
           numplayedb[i]=0;
@@ -317,7 +320,7 @@ namespace Go
       void scale(float f) {
         std::list<int> returnlist;
         lock_full.lock();
-        for (int i=0;i<size;i++) {
+        for (int i=0;i<sizedata;i++) {
           numplayedb[i]*=f;
           std::list<std::pair<int,int>> returnlist;
           boost::bimap<int,int> *tmp=getresponds(i,Go::BLACK);
@@ -326,10 +329,10 @@ namespace Go
           }
           tmp->clear();
           for (std::list<std::pair<int,int>>::iterator it=returnlist.begin();it!=returnlist.end();++it) {
-            if (it->second*f<0) tmp->insert({it->first,(int)(it->second*f)});
+            if ((int)(it->second*f)<0) tmp->insert({it->first,(int)(it->second*f)});
           }
         }
-        for (int i=0;i<size;i++) {
+        for (int i=0;i<sizedata;i++) {
           numplayedw[i]*=f;
           std::list<std::pair<int,int>> returnlist;
           boost::bimap<int,int> *tmp=getresponds(i,Go::WHITE);
@@ -338,7 +341,7 @@ namespace Go
           }
           tmp->clear();
           for (std::list<std::pair<int,int>>::iterator it=returnlist.begin();it!=returnlist.end();++it) {
-            if (it->second*f<0) tmp->insert({it->first,(int)(it->second*f)});
+            if ((int)(it->second*f)<0) tmp->insert({it->first,(int)(it->second*f)});
           }
         }
         lock_full.unlock();
@@ -350,6 +353,8 @@ namespace Go
       boost::bimap<int,int> *const respondsw;
       int *const numplayedb;
       int *const numplayedw;
+      int *const numcaptb;
+      int *const numcaptw;
       boost::mutex lock_full;
   };
 

@@ -69,12 +69,16 @@ Go::RespondBoard::RespondBoard(int s)
     respondsb(new boost::bimap<int,int>[sizedata]),
     respondsw(new boost::bimap<int,int>[sizedata]),
     numplayedb(new int[sizedata]),
-    numplayedw(new int[sizedata])
+    numplayedw(new int[sizedata]),
+    numcaptb(new int[sizedata]),
+    numcaptw(new int[sizedata])
 {
   for (int i=0;i<sizedata;i++)
   {
     numplayedb[i]=0;
     numplayedw[i]=0;
+    numcaptb[i]=0;
+    numcaptw[i]=0;
   }
 }
 

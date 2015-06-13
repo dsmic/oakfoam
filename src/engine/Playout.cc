@@ -846,9 +846,11 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
   
   if (params->playout_lastatari_p>0.0 && (WITH_P(params->test_p34)||*earlymoves)) //p is used in the getLastAtariMove function
   {
-#warning "memory allocated for respondmoves, should be turned to be switched off by a parameter"
-    std::list<int> respondmoves;
-    this->getLastAtariMove(settings,board,col,move,posarray,params->test_p19,&respondmoves);
+    std::set<int> *respondmoves=NULL;
+    if (params->test_p119>0)
+      respondmoves=new std::set<int>;
+      
+    this->getLastAtariMove(settings,board,col,move,posarray,params->test_p19,respondmoves);
     if (!move.isPass())
     {
       if (params->debug_on)
@@ -857,15 +859,24 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
         *reason="lastatari";
       params->engine->statisticsPlus(Engine::LASTATARI);
       Go::RespondBoard *tmp=params->engine->respondboard;
-      if (board->getLastMove().isNormal())
-        tmp->addRespond(board->getLastMove().getPosition(), Go::otherColor(col), &respondmoves);
+      if (respondmoves!=NULL && board->getLastMove().isNormal()) {
+        //respondmoves->sort();
+        //respondmoves->unique();
+        tmp->addRespond(board->getLastMove().getPosition(), Go::otherColor(col), respondmoves);
+      }
+      if (respondmoves!=NULL) delete respondmoves;
       return;
     }
+    if (respondmoves!=NULL) delete respondmoves;
   }
   
   if ((params->playout_order==0 || params->playout_order>3) && params->playout_lastcapture_enabled && (WITH_P(params->test_p33)||*earlymoves))
   {
-    this->getLastCaptureMove(settings,board,col,move,posarray);
+    std::set<int> *respondmoves=NULL;
+    if (params->test_p119>0)
+      respondmoves=new std::set<int>;
+      
+    this->getLastCaptureMove(settings,board,col,move,posarray,respondmoves);
     if (!move.isPass())
     {
       if (params->debug_on)
@@ -873,8 +884,16 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
       if (reason!=NULL)
         *reason="lastcapture";
       params->engine->statisticsPlus(Engine::LASTCAPTURE);
+      Go::RespondBoard *tmp=params->engine->respondboard;
+      if (board->getLastMove().isNormal()) {
+        //respondmoves->sort();
+        //respondmoves->unique();
+        tmp->addRespond(board->getLastMove().getPosition(), Go::otherColor(col), respondmoves);
+      }
+      if (respondmoves!=NULL) delete respondmoves;
       return;
     }
+    if (respondmoves!=NULL) delete respondmoves;
   }
 
   if (params->playout_last2libatari_enabled && (WITH_P(params->test_p34)||*earlymoves))
@@ -1193,6 +1212,31 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
   bool doapproachmoves=(rand->getRandomReal()<params->playout_random_approach_p);
 
 
+  if (params->test_p119>0) {
+    Go::Move l=board->getLastMove();
+    if (l.isNormal()) {
+      int num=0;
+      int capt=0;
+      std::list<std::pair<int,int>> responds=params->engine->respondboard->getMoves(l.getPosition(),l.getColor(),num,capt);
+      //if (responds.size()>0) {
+      for (std::list<std::pair<int,int>>::iterator it=responds.begin();it!=responds.end();++it) {
+        //std::pair<int,int> m=responds.front();
+        int p=it->first;
+        if (num==0) fprintf(stderr,"should not happen num==0 %d\n",it->second);
+        if ((float)it->second/num < params->test_p119) break;
+        if (num>0 && board->validMove(col,p) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes, NULL, 0, critarray)) {
+        //if (num>0 && (float)capt/num>params->test_p119 && board->validMove(col,p) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes, NULL, 0, critarray)) {
+          move=Go::Move(col,p);
+          if (reason!=NULL)
+            *reason="liberty race ";
+          if (params->debug_on)
+            gtpe->getOutput()->printfDebug("[playoutmove]: %s from cnn\n",move.toString(board->getSize()).c_str());
+          params->engine->statisticsPlus(Engine::RANDOM_LIBERTY_RACE);
+          return;
+        }
+      }
+    }
+  }
   //get a CNN move
   if (params->test_p116>0 && cnn_moves!=NULL) {
     std::list<int> to_delete;
@@ -2193,7 +2237,7 @@ void Playout::getLast2LibAtariMove(Worker::Settings *settings, Go::Board *board,
   }
 }
 
-void Playout::getLastCaptureMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray)
+void Playout::getLastCaptureMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, std::set<int> *capturemoves)
 {
   Random *const rand=settings->rand;
 
@@ -2225,13 +2269,15 @@ void Playout::getLastCaptureMove(Worker::Settings *settings, Go::Board *board, G
               if (othergroup->inAtari())
               {
                 int liberty=othergroup->getAtariPosition();
-                bool iscaptureorconnect=board->isCapture(Go::Move(col,liberty)) || board->isExtension(Go::Move(col,liberty)); // Why is the check for capture here?
+                bool iscapture = board->isCapture(Go::Move(col,liberty));
+                bool iscaptureorconnect= iscapture || board->isExtension(Go::Move(col,liberty)); // Why is the check for capture here?
                 if (board->validMove(col,liberty) && iscaptureorconnect)
                 {
                   if (possiblemovescount<board->getPositionMax())
                   {
                     possiblemoves[possiblemovescount]=liberty;
                     possiblemovescount++;
+                    if (capturemoves!=NULL && iscapture) capturemoves->insert(liberty);
                   }
                 }
               }
@@ -2272,13 +2318,15 @@ void Playout::getLastCaptureMove(Worker::Settings *settings, Go::Board *board, G
               if (othergroup->inAtari())
               {
                 int liberty=othergroup->getAtariPosition();
-                bool iscaptureorconnect=board->isCapture(Go::Move(col,liberty)) || board->isExtension(Go::Move(col,liberty)); // Why is the check for capture here?
+                bool iscapture=board->isCapture(Go::Move(col,liberty));
+                bool iscaptureorconnect=iscapture || board->isExtension(Go::Move(col,liberty)); // Why is the check for capture here?
                 if (board->validMove(col,liberty) && iscaptureorconnect)
                 {
                   if (possiblemovescount<board->getPositionMax())
                   {
                     possiblemoves[possiblemovescount]=liberty;
                     possiblemovescount++;
+                    if (capturemoves!=NULL && iscapture) capturemoves->insert(liberty);
                   }
                 }
               }
@@ -2303,7 +2351,7 @@ void Playout::getLastCaptureMove(Worker::Settings *settings, Go::Board *board, G
   }
 }
 
-void Playout::getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray,float pp, std::list<int> *capturemoves)
+void Playout::getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray,float pp, std::set<int> *capturemoves)
 {
   Random *const rand=settings->rand;
 
@@ -2368,7 +2416,7 @@ void Playout::getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go:
                         possiblemoves[possiblemovescount]=liberty;
                         possiblemovescount++;
                         atarigroupfound=true;
-                        if (capturemoves!=NULL && iscapture) capturemoves->push_back(liberty);
+                        if (capturemoves!=NULL && iscapture) capturemoves->insert(liberty);
                       }
                     }
                   }
