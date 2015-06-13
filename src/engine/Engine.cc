@@ -6572,10 +6572,13 @@ void Engine::generateThread(Worker::Settings *settings)
       {
         double currentpart=(besttree->getPlayouts()-besttree->secondBestPlayouts())/newtotalplayouts;
         double overallratio,overallratiotimed;
+        double calcmax=0;
         if (time_allocated>0) // timed search
         {
           overallratio=((double)params->playouts_per_move_max+newtotalplayouts-totalplayouts)/newtotalplayouts;
-          overallratiotimed=(double)(time_allocated+TIME_RESOLUTION)/this->timeSince(time_start);
+          double timeratio=(double)(time_allocated+TIME_RESOLUTION)/this->timeSince(time_start);
+          calcmax=totalplayouts*timeratio;
+          overallratiotimed=(calcmax+newtotalplayouts-totalplayouts)/newtotalplayouts;
         }
         else
         {
@@ -6585,7 +6588,8 @@ void Engine::generateThread(Worker::Settings *settings)
         
         if (((overallratio-1)<currentpart) || ((time_allocated>0) && ((overallratiotimed-1)<currentpart)))
         {
-          gtpe->getOutput()->printfDebug("best move cannot change! (%.3f %.3f %.0f)\n",currentpart,overallratio,newtotalplayouts);
+          gtpe->getOutput()->printfDebug("best move cannot change! (current %.3f playratio %.3f timedratio %.3f calcmax %.3f time used %.3f total %.0f newtotal %.0f)\n",
+                                         currentpart, overallratio, overallratiotimed, calcmax, (double)this->timeSince(time_start), (double)totalplayouts, newtotalplayouts);
           stopthinking=true;
           params->early_stop_occured=true;
           break;
