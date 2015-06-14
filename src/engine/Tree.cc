@@ -155,7 +155,7 @@ float Tree::getRatio() const
     if (ratio_intern > 1-params->resign_ratio_threshold)
       return ratio_intern;
     else 
-      return 0;
+      return params->resign_ratio_threshold+0.01; //this does not force to do another move allways, but instead resignes some times?!
   }
 }
 

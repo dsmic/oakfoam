@@ -116,7 +116,7 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
         (*iter).isResign())
     {
       if (params->debug_on)
-        gtpe->getOutput()->printfDebug("\n");
+        gtpe->getOutput()->printfDebug("is Resign happend\n");
       finalscore=board->score(params)-(params->engine->getScoreKomi());
       return;
     }
