@@ -4134,15 +4134,16 @@ void Engine::gtpTimeSettings(void *instance, Gtp::Engine* gtpe, Gtp::Command* cm
 void Engine::gtpTimeLeft(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
-  
-  if (me->time->isNoTiming())
-  {
-    gtpe->getOutput()->startResponse(cmd,false);
-    gtpe->getOutput()->printString("no time settings defined");
-    gtpe->getOutput()->endResponse();
-    return;
-  }
-  else if (cmd->numArgs()!=3)
+
+//  if (me->time->isNoTiming())
+//  {
+//  gtpe->getOutput()->startResponse(cmd,false);
+//   gtpe->getOutput()->printString("no time settings defined");
+//   gtpe->getOutput()->endResponse();
+// return;
+// }
+//else 
+  if (cmd->numArgs()!=3)
   {
     gtpe->getOutput()->startResponse(cmd,false);
     gtpe->getOutput()->printString("invalid arguments");
@@ -4157,6 +4158,10 @@ void Engine::gtpTimeLeft(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     gtpe->getOutput()->printString("invalid color");
     gtpe->getOutput()->endResponse();
     return;
+  }
+  if (me->time->isNoTiming()) {
+    me->time=new Time(me->params,cmd->getIntArg(1),0,0);
+    fprintf(stderr,"time_left before time_setting\n");
   }
   Go::Color col=(gtpcol==Gtp::BLACK ? Go::BLACK : Go::WHITE);
   
