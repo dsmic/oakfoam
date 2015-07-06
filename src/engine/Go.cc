@@ -292,7 +292,7 @@ Go::Board::Board(int s)
   whitegammas=new Go::ObjectBoard<float>(s);
   blackgammas->fill(0);
   whitegammas->fill(0);
-  
+
   blackcaptures=0;
   whitecaptures=0;
   lastscoredata=NULL;
@@ -307,6 +307,8 @@ Go::Board::~Board()
   
   delete blackgammas;
   delete whitegammas;
+
+  if (changed_positions!=NULL) delete changed_positions;
   
   //XXX: memory will get freed when pool is destroyed
   /*for(std::list<Go::Group*,Go::allocator_groupptr>::iterator iter=groups.begin();iter!=groups.end();++iter) 
@@ -356,7 +358,14 @@ void Go::Board::copyOver(Go::Board *copyboard) const
   copyboard->symmetryupdated=this->symmetryupdated;
   copyboard->currentsymmetry=this->currentsymmetry;
   copyboard->updateFeatureGammas();
-  
+
+  copyboard->CSstyle=CSstyle;
+  if (CSstyle) {
+    blackgammas->copy(copyboard->blackgammas);
+    whitegammas->copy(copyboard->whitegammas);
+    if (changed_positions!=NULL && changed_positions->size()>0)
+      fprintf(stderr, "playout gammas not correct, copied with open changes\n");
+  }
   copyboard->blackcaptures=this->blackcaptures;
   copyboard->whitecaptures=this->whitecaptures;
 }
@@ -698,7 +707,7 @@ void Go::Board::makeMove(Go::Move move, Gtp::Engine* gtpe)
   thirdlastmove=secondlastmove;
   secondlastmove=lastmove;
   lastmove=move;
-  
+  if (changed_positions!=NULL) changed_positions->push_back(move.getPosition());
   int pos=move.getPosition();
   int posko=-1;
   
@@ -1026,6 +1035,7 @@ void Go::Board::spreadRemoveStones(Go::Color col, int pos, list_int *possiblesui
   //Go::Group *group=this->getGroupWithoutFind(pos); //see destroy() below
   
   this->setColor(pos,Go::EMPTY);
+  if (changed_positions!=NULL) changed_positions->push_back(pos);
   pool_group.destroy(data[pos].group); //5% speed up, as the pool is now used!
 
   this->setGroup(pos,NULL);
@@ -1636,9 +1646,51 @@ std::list<Go::Board::SymmetryTransform> Go::Board::getSymmetryTransformsFromPrim
   
   return list;
 }
-
+void Go::Board::updatePlayoutGammas(Features *feat)
+{
+  CSstyle=true;
+  if (feat!=NULL) features=feat;
+  if (changed_positions==NULL) {
+    //create all
+    for (int p=0;p<sizedata;p++)
+      {
+        if (this->getColor(p)==Go::EMPTY) {
+          unsigned int pattern=Pattern::ThreeByThree::makeHash(this,p);
+          blackgammas->set(p,features->getFeatureGammaPlayoutPattern(Pattern::ThreeByThree::smallestEquivalent(pattern),99,99));
+          pattern=Pattern::ThreeByThree::invert(pattern);
+          whitegammas->set(p,features->getFeatureGammaPlayoutPattern(Pattern::ThreeByThree::smallestEquivalent(pattern),99,99));
+        }
+      }
+  }
+  else {
+    //only update the changed_positions
+    Go::BitBoard *changes3x3=new Go::BitBoard(size);
+    changes3x3->clear();
+    for (Go::list_int::iterator p=changed_positions->begin(); p!=changed_positions->end(); ++p) {
+      changes3x3->set(*p);
+      if (this->getColor(*p)==Go::EMPTY) {
+        unsigned int pattern=Pattern::ThreeByThree::makeHash(this,*p);
+        blackgammas->set(*p,features->getFeatureGammaPlayoutPattern(Pattern::ThreeByThree::smallestEquivalent(pattern),99,99));
+        pattern=Pattern::ThreeByThree::invert(pattern);
+        whitegammas->set(*p,features->getFeatureGammaPlayoutPattern(Pattern::ThreeByThree::smallestEquivalent(pattern),99,99));
+      }
+      foreach_adjdiag(*p,q,{
+            if (this->getColor(q)==Go::EMPTY && changes3x3->get(q)==false) {
+              changes3x3->set(q);
+              unsigned int pattern=Pattern::ThreeByThree::makeHash(this,q);
+              blackgammas->set(q,features->getFeatureGammaPlayoutPattern(Pattern::ThreeByThree::smallestEquivalent(pattern),99,99));
+              pattern=Pattern::ThreeByThree::invert(pattern);
+              whitegammas->set(q,features->getFeatureGammaPlayoutPattern(Pattern::ThreeByThree::smallestEquivalent(pattern),99,99));
+            }
+          });
+    }
+    changed_positions->clear();
+    delete changes3x3;
+  }
+}
 void Go::Board::updateFeatureGammas(bool both)
 {
+  if (CSstyle) return;
   if ((markchanges || both) && features!=NULL)
   {
     Go::ObjectBoard<int> *cfglastdist=NULL;
@@ -1739,6 +1791,9 @@ void Go::Board::updateFeatureGamma(Go::ObjectBoard<int> *cfglastdist, Go::Object
 
 void Go::Board::updateFeatureGamma(Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Color col, int pos)
 {
+  // return if pos not empty?!
+
+  
   float oldgamma=(col==Go::BLACK?blackgammas:whitegammas)->get(pos);
   float gamma;
   if (pos==0) //pass
@@ -1747,6 +1802,7 @@ void Go::Board::updateFeatureGamma(Go::ObjectBoard<int> *cfglastdist, Go::Object
     gamma=features->getMoveGamma(this,cfglastdist,cfgsecondlastdist,Go::Move(col,pos));
   else
     gamma=0;
+  
   (col==Go::BLACK?blackgammas:whitegammas)->set(pos,gamma);
   (col==Go::BLACK?blacktotalgamma:whitetotalgamma)+=(gamma-oldgamma);
 }

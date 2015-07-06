@@ -145,6 +145,7 @@ class Features
       /** Return the weight for a move.
      * The weight for a move is the product of matching feature weights for that move.
      */
+    float getPlayoutGamma(Go::Board *board, Go::Move move, bool checkforvalidmove=true, bool withcircularpatterns=true, float *gamma_local_part=NULL, Pattern::Circular *pattcirc_p=NULL) const;
     float getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove=true, bool withcircularpatterns=true, float *gamma_local_part=NULL, Pattern::Circular *pattcirc_p=NULL) const;
     bool learnMovesGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, std::map<float,Go::Move,std::greater<float> > ordervalue, std::map<int,float> move_gamma, float sum_gammas);
     bool learnMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, float learn_diff);

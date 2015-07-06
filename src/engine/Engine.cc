@@ -91,7 +91,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   
   boardsize=9;
   params->board_size=boardsize;
-  currentboard=new Go::Board(boardsize);
+  currentboard=new Go::Board(boardsize); //may be to early use of params, reload later with clear board?
   komi=7.5;
   komi_handicap=0;
   recalc_dynkomi=0;
@@ -307,6 +307,17 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","test_p119",&(params->test_p119),0.0);
   params->addParameter("playout","test_p120",&(params->test_p120),0.0);
 
+  params->addParameter("playout","csstyle_enabled",&(params->csstyle_enabled),0);
+  params->addParameter("playout","csstyle_01",&(params->csstyle_01),0.0);
+  params->addParameter("playout","csstyle_02",&(params->csstyle_02),0.0);
+  params->addParameter("playout","csstyle_03",&(params->csstyle_03),0.0);
+  params->addParameter("playout","csstyle_04",&(params->csstyle_04),0.0);
+  params->addParameter("playout","csstyle_05",&(params->csstyle_05),0.0);
+  params->addParameter("playout","csstyle_06",&(params->csstyle_06),0.0);
+  params->addParameter("playout","csstyle_07",&(params->csstyle_07),0.0);
+  params->addParameter("playout","csstyle_08",&(params->csstyle_08),0.0);
+  params->addParameter("playout","csstyle_09",&(params->csstyle_09),0.0);
+  
   params->addParameter("tree","ucb_c",&(params->ucb_c),UCB_C);
   params->addParameter("tree","ucb_init",&(params->ucb_init),UCB_INIT);
 
@@ -977,6 +988,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("dobenchmark",this,&Engine::gtpDoBenchmark);
   gtpe->addFunctionCommand("showcriticality",this,&Engine::gtpShowCriticality);
   gtpe->addFunctionCommand("showterritory",this,&Engine::gtpShowTerritory);
+  gtpe->addFunctionCommand("showplayoutgammas",this,&Engine::gtpShowPlayoutGammas);
   gtpe->addFunctionCommand("showprobabilitycnn",this,&Engine::gtpShowProbabilityCNN);
   gtpe->addFunctionCommand("showterritorycnn",this,&Engine::gtpShowTerritoryCNN);
   gtpe->addFunctionCommand("showatarirespondat",this,&Engine::gtpShowAtariCaptureAttached);
@@ -1038,6 +1050,7 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("loadfeaturegammas %%r","Load Feature Gammas","none");
   gtpe->addAnalyzeCommand("showcriticality","Show Criticality","cboard");
   gtpe->addAnalyzeCommand("showterritory","Show Territory","dboard");
+  gtpe->addAnalyzeCommand("showplayoutgammas %%c","Show Playout Gammas","sboard");
   gtpe->addAnalyzeCommand("showterritorycnn %%c","Show Territory CNN","dboard");
   gtpe->addAnalyzeCommand("showprobabilitycnn %%c","Show Probability CNN","dboard");
   gtpe->addAnalyzeCommand("showatarirespondat %%p %%c","Show Atarirespond At","sboard");
@@ -2636,7 +2649,9 @@ void Engine::gtpLoadCNNp(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   //the library does not really seem to throw exceptions, but just exit :(
   try {
     if (caffe_test_net!=NULL) delete caffe_test_net;
+    fprintf(stderr,"ok, create net\n");
     caffe_test_net = new Net<float>(filename_net);
+    fprintf(stderr,"ok, created net\n");
     caffe_test_net->CopyTrainedLayersFrom(filename_parameters);
   }
   catch (int e) {
@@ -3821,6 +3836,41 @@ void Engine::gtpShowTerritoryCNN(void *instance, Gtp::Engine* gtpe, Gtp::Command
   delete b;
 }
 
+void Engine::gtpShowPlayoutGammas(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("color is required");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  Gtp::Color gtpcol = cmd->getColorArg(0);
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("\n");
+  me->currentboard->updatePlayoutGammas(me->features);
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      int pos=Go::Position::xy2pos(x,y,me->boardsize);
+      float gammaval=0;
+      if (gtpcol==Gtp::BLACK)
+        gammaval=me->currentboard->blackgammas->get(pos);
+      else
+        gammaval=me->currentboard->whitegammas->get(pos);
+        
+      gtpe->getOutput()->printf("\"%.2f\"",gammaval);
+    }
+    gtpe->getOutput()->printf("\n");
+  }
+  gtpe->getOutput()->endResponse(true);
+}
+
+
 float Engine::getAreaCorrelation(Go::Move m)
 {
   int showpos=m.getPosition();
@@ -4981,6 +5031,11 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     playoutboard->turnSymmetryOff();
     if (params->playout_features_enabled>0)
       playoutboard->setFeatures(features,params->playout_features_incremental,params->test_p8==0);
+    if (params->csstyle_enabled) {
+      if (params->playout_features_enabled)
+        fprintf(stderr,"playout_features_enabled and csstyle_enabled can not be used together!!!!\n");
+      playoutboard->updatePlayoutGammas(features);
+    }
     critstruct *critarray=NULL;
     float *b_ravearray=NULL;
     float *w_ravearray=NULL;
@@ -5065,6 +5120,11 @@ void Engine::getOnePlayoutMove(Go::Board *board, Go::Color col, Go::Move *move)
   playoutboard->turnSymmetryOff();
   if (params->playout_features_enabled>0)
     playoutboard->setFeatures(features,params->playout_features_incremental,params->test_p8==0);
+  if (params->csstyle_enabled) {
+    if (params->playout_features_enabled)
+      fprintf(stderr,"playout_features_enabled and csstyle_enabled can not be used together!!!!\n");
+    playoutboard->updatePlayoutGammas(features);
+  }
   playout->getPlayoutMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,*move,NULL,NULL);
   if (params->playout_useless_move)
     playout->checkUselessMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,*move,(std::string *)NULL);
@@ -5096,6 +5156,11 @@ void Engine::makeMove(Go::Move move)
     playoutboard->turnSymmetryOff();
     if (params->playout_features_enabled>0)
       playoutboard->setFeatures(features,params->playout_features_incremental,params->test_p8==0);
+    if (params->csstyle_enabled) {
+      if (params->playout_features_enabled)
+        fprintf(stderr,"playout_features_enabled and csstyle_enabled can not be used together!!!!\n");
+      playoutboard->updatePlayoutGammas(features);
+    }
     playout->getPlayoutMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,movetmp,NULL,NULL);
     if (!movetmp.isPass())
       playoutmove_triggered=false;
@@ -5938,6 +6003,11 @@ void Engine::doPlayout(Worker::Settings *settings, Go::IntBoard *firstlist, Go::
   playoutboard->turnSymmetryOff();
   if (params->playout_features_enabled>0)
     playoutboard->setFeatures(features,params->playout_features_incremental,params->test_p8==0);
+  if (params->csstyle_enabled) {
+    if (params->playout_features_enabled)
+      fprintf(stderr,"playout_features_enabled and csstyle_enabled can not be used together!!!!\n");
+    playoutboard->updatePlayoutGammas(features);
+  }
   if (params->rave_moves>0)
   {
     firstlist->clear();

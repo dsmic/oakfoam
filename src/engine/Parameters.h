@@ -309,6 +309,17 @@ class Parameters
     float test_p119;
     float test_p120;
 
+    bool csstyle_enabled;
+    float csstyle_01;
+    float csstyle_02;
+    float csstyle_03;
+    float csstyle_04;
+    float csstyle_05;
+    float csstyle_06;
+    float csstyle_07;
+    float csstyle_08;
+    float csstyle_09;
+    
     /** Skip all playout heuristics with this probability.
      * Set to zero to disable.
      */

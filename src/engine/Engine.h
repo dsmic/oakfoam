@@ -689,6 +689,7 @@ class Engine
     static void gtpDoBenchmark(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowCriticality(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowTerritory(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpShowPlayoutGammas(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowTerritoryCNN(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowProbabilityCNN(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpShowTerritoryAt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);

@@ -400,6 +400,11 @@ namespace Go
       inline void set(int pos, const T val) { data[pos]=val; };
       /** Fill the whole board with a set value. */
       inline void fill(T val) { for (int i=0;i<sizedata;i++) data[i]=val; };
+      inline void copy(ObjectBoard<T> *copyboard) {
+        for (int i=0;i<sizedata;i++)
+          copyboard->set(i,data[i]);  
+      }
+
     
     private:
       const int size,sizesq,sizedata;
@@ -716,6 +721,7 @@ namespace Go
       /** Create a board of given size. */
       Board(int s);
       ~Board();
+      
       int getNextPrimePositionMax() {return nextprime;}
       
       /** Create a copy of this board. */
@@ -835,6 +841,8 @@ namespace Go
       
       /** Set the features for the board and whether the gamma values should be updated incrementally. */
       void setFeatures(Features *feat, bool inc, bool mchanges=true) { features=feat; incfeatures=inc; markchanges=mchanges; this->refreshFeatureGammas(); };
+      void updatePlayoutGammas(Features *feat=NULL);
+      
       /** Get the sum ofthe gamma values for this board. */
       float getFeatureTotalGamma() const { return (nexttomove==Go::BLACK?blacktotalgamma:whitetotalgamma); };
       /** Get the gamma value for a position on this board. */
@@ -1084,6 +1092,12 @@ namespace Go
 
       void calcSlowLibertyGroups();
       void connectedAtariPos(Go::Move move, int CApos[4], int &CAcount);
+      void enable_changed_positions() {changed_positions =new list_int();}
+      void disable_changed_positions() {if (changed_positions!=NULL) delete changed_positions; changed_positions=NULL;}
+
+      Go::ObjectBoard<float> *blackgammas;
+      Go::ObjectBoard<float> *whitegammas;
+
     private:
       const int size;
       const int sizesq;
@@ -1106,11 +1120,12 @@ namespace Go
       bool incfeatures;
       float blacktotalgamma;
       float whitetotalgamma;
-      Go::ObjectBoard<float> *blackgammas;
-      Go::ObjectBoard<float> *whitegammas;
+      
       int blackcaptures,whitecaptures;
       bool lastcapture;
-      
+      bool CSstyle=false;
+      list_int *changed_positions=NULL;
+  
       struct ScoreVertex
       {
         bool touched;

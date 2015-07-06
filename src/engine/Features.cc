@@ -1387,6 +1387,16 @@ void Features::learnFeatureGamma(Features::FeatureClass featclass, unsigned int 
   }
 }
 
+float Features::getPlayoutGamma(Go::Board *board, Go::Move move, bool checkforvalidmove, bool usecircularpatterns, float *gamma_local_part, Pattern::Circular *pattcirc_p) const
+{
+  float g=1.0;
+  //if (circlevels->size()>0)
+  //  g*=this->getFeatureGamma(Features::CIRCPATT,this->matchFeatureClass(Features::CIRCPATT,board,NULL,NULL,move,false,pattcirc_p));
+  //else //should be disabled, if circpatt in use !!
+    g*=this->getFeatureGamma(Features::PATTERN3X3,this->matchFeatureClass(Features::PATTERN3X3,board,NULL,NULL,move,false));
+  return g;
+}
+
 float Features::getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove, bool usecircularpatterns, float *gamma_local_part, Pattern::Circular *pattcirc_p) const
 {
   float g=1.0;
