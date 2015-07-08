@@ -1215,7 +1215,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     board->updatePlayoutGammas();
     std::vector<std::pair<float,int>> sorted_pos;
     sorted_pos.reserve(size*size/2);
-    float gamma_sum=0;
+    //float gamma_sum=0;
     if (col==Go::BLACK) {
       for (int x=0;x<size;x++)
         for (int y=0;y<size;y++) 
@@ -1223,9 +1223,11 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
           int pos=Go::Position::xy2pos(x,y,size);
           if (board->validMove(col,pos)) {
             float gamma=board->blackgammas->get(pos)+rand->getRandomReal()/1000.0;
-            //sorted_pos.insert({-gamma,pos});
+            gamma*=board->getFeatures()->getLastDistGamma(board,pos);
+            gamma-=params->csstyle_01;
+            if (gamma<0) gamma=0;
             sorted_pos.push_back({-gamma,pos});
-            gamma_sum+=gamma;
+            //gamma_sum+=gamma;
           }
         }
     }
@@ -1236,15 +1238,16 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
           int pos=Go::Position::xy2pos(x,y,size);
           if (board->validMove(col,pos)) {
             float gamma=board->whitegammas->get(pos)+rand->getRandomReal()/1000.0;
-            //sorted_pos.insert({-gamma,pos});
+            gamma*=board->getFeatures()->getLastDistGamma(board,pos);
+            gamma-=params->csstyle_01;
+            if (gamma<0) gamma=0;
             sorted_pos.push_back({-gamma,pos});
-            gamma_sum+=gamma;
+            //gamma_sum+=gamma;
           }
         }
     }
     // now we have sorted_pos with the best first and gamma_sum
     float gamma_up_to_now=0;
-    unsigned int cc=0;
     unsigned int max_num=10;
     int pos=-1;
     if (sorted_pos.size()<=max_num)
@@ -1252,15 +1255,17 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     else
       std::partial_sort(sorted_pos.begin(),sorted_pos.begin()+max_num,sorted_pos.end());
     float gamma_sum2=0;
+    bool debug=false;
     for (auto mm=sorted_pos.begin(); mm!=sorted_pos.begin()+max_num && mm!=sorted_pos.end(); ++mm) {
-      gamma_sum2+=mm->first;
+      gamma_sum2-=mm->first;
+      if (debug) fprintf(stderr,"- %f %d sum %f\n",mm->first,mm->second,gamma_sum2);
     }
     float gamma_rand=rand->getRandomReal()*gamma_sum2;
-    for (auto mm=sorted_pos.begin(); mm!=sorted_pos.end(); ++mm) {
-      if (++cc>max_num) break;
+    for (auto mm=sorted_pos.begin(); mm!=sorted_pos.begin()+max_num && mm!=sorted_pos.end(); ++mm) {
       gamma_up_to_now-=mm->first;  //all entries are -, because of map orderintg, therefore - here
       if (gamma_up_to_now>gamma_rand) {
         pos=mm->second;
+        if (debug) fprintf(stderr,"selected- %f %d sum %f\n",mm->first,mm->second,gamma_sum2);
         break;
       }
     }
@@ -1270,11 +1275,9 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
       return;
     }
     gamma_up_to_now=0;
-    cc=0;
     pos=-1;
-    gamma_rand=rand->getRandomReal()*gamma_sum;
-    for (auto mm=sorted_pos.begin(); mm!=sorted_pos.end(); ++mm) {
-      if (++cc>max_num) break;
+    gamma_rand=rand->getRandomReal()*gamma_sum2;
+    for (auto mm=sorted_pos.begin(); mm!=sorted_pos.begin()+max_num && mm!=sorted_pos.end(); ++mm) {
       gamma_up_to_now-=mm->first;  //all entries are -, because of map orderintg, therefore - here
       if (gamma_up_to_now>gamma_rand) {
         pos=mm->second;

@@ -841,6 +841,8 @@ namespace Go
       
       /** Set the features for the board and whether the gamma values should be updated incrementally. */
       void setFeatures(Features *feat, bool inc, bool mchanges=true) { features=feat; incfeatures=inc; markchanges=mchanges; this->refreshFeatureGammas(); };
+      void setPlayoutGammaAt(int p);
+      void setPlayoutGammaAround(int p, Go::BitBoard *changes3x3);
       void updatePlayoutGammas(Features *feat=NULL);
       
       /** Get the sum ofthe gamma values for this board. */
@@ -1097,6 +1099,7 @@ namespace Go
 
       Go::ObjectBoard<float> *blackgammas;
       Go::ObjectBoard<float> *whitegammas;
+      Features *getFeatures() {return features;};
 
     private:
       const int size;
@@ -1168,6 +1171,7 @@ namespace Go
       void refreshFeatureGammas();
       void updateFeatureGamma(Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, int pos);
       void updateFeatureGamma(Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Color col, int pos);
+      int psize=3;
   };
 };
 

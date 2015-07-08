@@ -27,12 +27,12 @@ Net<float> *caffe_area_net;
 
 Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
 {
-  Caffe::set_mode(Caffe::GPU);
+  Caffe::set_mode(Caffe::CPU);
   Caffe::set_phase(Caffe::TEST);
   caffe_area_net = NULL;
   caffe_test_net = NULL;
-  
-   caffe_test_net = new Net<float>("/home/detlef/oakfoam-hg/oakfoam/scripts/CNN/movepredict.prototxt");
+  /*
+  caffe_test_net = new Net<float>("/home/detlef/oakfoam-hg/oakfoam/scripts/CNN/movepredict.prototxt");
   caffe_test_net->CopyTrainedLayersFrom("/home/detlef/oakfoam-hg/oakfoam/scripts/CNN/movepredict.caffemodel");
 
   //this is testing code, must be put to a function later!!!!
@@ -70,7 +70,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   delete[] data;
   delete b;
   //end of testing code!
-  
+  */
   ACcount=0;
   
   gtpe=ge;

@@ -497,6 +497,39 @@ Pattern::Circular::Circular(Pattern::CircularDictionary *dict, const Go::Board *
   }
 }
 
+void Pattern::CircularHelper::MarkBoardPositions(Pattern::CircularDictionary *dict, const Go::Board *board, int pos, int size, std::list<int> *changesCirc)
+{
+  if (changesCirc==NULL) return;
+  int x=Go::Position::pos2x(pos,board->getSize());
+  int y=Go::Position::pos2y(pos,board->getSize());
+  int base=0;
+  
+  for (int d=2;d<=size;d++)
+  {
+    std::list<int> *xoffsets=dict->getXOffsetsForSize(d);
+    std::list<int> *yoffsets=dict->getYOffsetsForSize(d);
+    std::list<int>::iterator iterx=xoffsets->begin();
+    std::list<int>::iterator itery=yoffsets->begin();
+    while(iterx!=xoffsets->end() && itery!=yoffsets->end())
+    {
+      int fx=x+(*iterx);
+      int fy=y+(*itery);
+      //Go::Color col;
+      
+      if (!(fx<0 || fy<0 || fx>=board->getSize() || fy>=board->getSize()))
+      {
+       // col=board->getColor(Go::Position::xy2pos(fx,fy,board->getSize()));
+        changesCirc->push_back(Go::Position::xy2pos(fx,fy,board->getSize()));
+      }
+      //this->initColor(base,col);
+      
+      ++iterx;
+      ++itery;
+      base++;
+    }
+  }
+}
+
 int Pattern::Circular::countStones(Pattern::CircularDictionary *dict)
 {
   int numStones=0;

@@ -741,6 +741,19 @@ void Features::constructCircstrings() const
 
 }
 
+
+float Features::getLastDistGamma(Go::Board *board, int pos)
+{
+  if (board->getLastMove().isNormal()) {
+    int pos2=board->getLastMove().getPosition();
+    int dist=board->getCircularDistance(pos,pos2);
+    int maxdist=LASTDIST_LEVELS;
+    if (dist<=maxdist)
+          return gammas_lastdist[dist-1];
+  }
+  return 1.0;
+}
+
 unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove, Pattern::Circular *pattcirc_p) const
 {
   if ((featclass!=Features::PASS && move.isPass()) || move.isResign())

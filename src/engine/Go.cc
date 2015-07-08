@@ -1646,6 +1646,45 @@ std::list<Go::Board::SymmetryTransform> Go::Board::getSymmetryTransformsFromPrim
   
   return list;
 }
+
+//large patterns are too slow at the moment:(
+#define is3x3only
+void Go::Board::setPlayoutGammaAt(int p)
+{
+#ifdef is3x3only
+  unsigned int pattern=Pattern::ThreeByThree::makeHash(this,p);
+  //blackgammas->set(p,features->getFeatureGammaPlayoutPattern(Pattern::ThreeByThree::smallestEquivalent(pattern),99,99));
+  blackgammas->set(p,features->getFeatureGammaPattern(Pattern::ThreeByThree::smallestEquivalent(pattern)));
+  pattern=Pattern::ThreeByThree::invert(pattern);
+  //whitegammas->set(p,features->getFeatureGammaPlayoutPattern(Pattern::ThreeByThree::smallestEquivalent(pattern),99,99));
+  whitegammas->set(p,features->getFeatureGammaPattern(Pattern::ThreeByThree::smallestEquivalent(pattern)));
+#else
+  Pattern::Circular pattcirc = Pattern::Circular(features->getCircDict(),this,p,psize);
+  blackgammas->set(p,features->getFeatureGammaLargePattern(pattcirc,psize));
+  pattcirc.invert();   
+  whitegammas->set(p,features->getFeatureGammaLargePattern(pattcirc,psize));
+#endif
+}
+
+
+void Go::Board::setPlayoutGammaAround(int p, Go::BitBoard *changes3x3)
+{
+#ifdef is3x3only
+  foreach_adjdiag(p,q,{
+            if (this->getColor(q)==Go::EMPTY && changes3x3->get(q)==false) {
+              changes3x3->set(q);
+              setPlayoutGammaAt(q);
+            }
+          });
+#else
+  std::list<int> changed;
+  Pattern::CircularHelper::MarkBoardPositions(features->getCircDict(), this, p, psize, &changed);
+  for (auto cc=changed.begin();cc!=changed.end();++cc) {
+    setPlayoutGammaAt(*cc);
+  }
+#endif
+}
+
 void Go::Board::updatePlayoutGammas(Features *feat)
 {
   CSstyle=true;
@@ -1655,10 +1694,7 @@ void Go::Board::updatePlayoutGammas(Features *feat)
     for (int p=0;p<sizedata;p++)
       {
         if (this->getColor(p)==Go::EMPTY) {
-          unsigned int pattern=Pattern::ThreeByThree::makeHash(this,p);
-          blackgammas->set(p,features->getFeatureGammaPlayoutPattern(Pattern::ThreeByThree::smallestEquivalent(pattern),99,99));
-          pattern=Pattern::ThreeByThree::invert(pattern);
-          whitegammas->set(p,features->getFeatureGammaPlayoutPattern(Pattern::ThreeByThree::smallestEquivalent(pattern),99,99));
+          setPlayoutGammaAt(p);
         }
       }
   }
@@ -1669,23 +1705,25 @@ void Go::Board::updatePlayoutGammas(Features *feat)
     for (Go::list_int::iterator p=changed_positions->begin(); p!=changed_positions->end(); ++p) {
       changes3x3->set(*p);
       if (this->getColor(*p)==Go::EMPTY) {
-        unsigned int pattern=Pattern::ThreeByThree::makeHash(this,*p);
-        blackgammas->set(*p,features->getFeatureGammaPlayoutPattern(Pattern::ThreeByThree::smallestEquivalent(pattern),99,99));
-        pattern=Pattern::ThreeByThree::invert(pattern);
-        whitegammas->set(*p,features->getFeatureGammaPlayoutPattern(Pattern::ThreeByThree::smallestEquivalent(pattern),99,99));
+        setPlayoutGammaAt(*p);
       }
-      foreach_adjdiag(*p,q,{
-            if (this->getColor(q)==Go::EMPTY && changes3x3->get(q)==false) {
-              changes3x3->set(q);
-              unsigned int pattern=Pattern::ThreeByThree::makeHash(this,q);
-              blackgammas->set(q,features->getFeatureGammaPlayoutPattern(Pattern::ThreeByThree::smallestEquivalent(pattern),99,99));
-              pattern=Pattern::ThreeByThree::invert(pattern);
-              whitegammas->set(q,features->getFeatureGammaPlayoutPattern(Pattern::ThreeByThree::smallestEquivalent(pattern),99,99));
-            }
-          });
+      setPlayoutGammaAround(*p,changes3x3);
     }
     changed_positions->clear();
     delete changes3x3;
+
+    //check if correct
+    //for (int p=0;p<sizedata;p++)
+    //  {
+    //    if (this->getColor(p)==Go::EMPTY) {
+    //      unsigned int pattern=Pattern::ThreeByThree::makeHash(this,p);
+    //      if (blackgammas->get(p)!=features->getFeatureGammaPlayoutPattern(Pattern::ThreeByThree::smallestEquivalent(pattern),99,99))
+    //        fprintf(stderr,"wrong black gamma %d\n",p);
+    //      pattern=Pattern::ThreeByThree::invert(pattern);
+    //      if (whitegammas->get(p)!=features->getFeatureGammaPlayoutPattern(Pattern::ThreeByThree::smallestEquivalent(pattern),99,99))
+    //        fprintf(stderr, "wrong white gammas %d\n",p);
+    //    }
+    //  }
   }
 }
 void Go::Board::updateFeatureGammas(bool both)

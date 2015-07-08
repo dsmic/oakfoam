@@ -141,10 +141,40 @@ class Features
           else
             return 1.0;  //? in this case 1.0 might not be a good idea, if a pattern is never played in the games.....
       };
+    float getFeatureGammaPattern(unsigned int level)  const
+      {
+        if (patterngammas->hasGamma(level))
+          return patterngammas->getGamma(level);
+        else
+          return 1.0;
+      };
+
+    float getFeatureGammaLargePattern(Pattern::Circular &pattcirc, int psize)  const
+      {
+          pattcirc.convertToSmallestEquivalent(circdict);
+          unsigned int level=0;
+          for (int s=psize;s>=3;s--)
+          {
+            Pattern::Circular pc = pattcirc.getSubPattern(circdict,s);
+            if (circlevels->count(pc)>0)
+            {
+              level = (*circlevels)[pc];
+              break;
+            }
+          }
+          if (circgammas->size()>level)
+            return (*circgammas)[level];
+          else
+            return 1.0;
+
+      };
+
+    
     float getFeatureGammaPlayoutCircPattern(Go::Board *board, Go::Move move) const;
       /** Return the weight for a move.
      * The weight for a move is the product of matching feature weights for that move.
      */
+    float getLastDistGamma(Go::Board *board, int pos);
     float getPlayoutGamma(Go::Board *board, Go::Move move, bool checkforvalidmove=true, bool withcircularpatterns=true, float *gamma_local_part=NULL, Pattern::Circular *pattcirc_p=NULL) const;
     float getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove=true, bool withcircularpatterns=true, float *gamma_local_part=NULL, Pattern::Circular *pattcirc_p=NULL) const;
     bool learnMovesGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, std::map<float,Go::Move,std::greater<float> > ordervalue, std::map<int,float> move_gamma, float sum_gammas);

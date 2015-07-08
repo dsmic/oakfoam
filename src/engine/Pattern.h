@@ -289,6 +289,12 @@ namespace Pattern
       
       void setTrans(boost::uint32_t data[PATTERN_CIRC_32BITPARTS], int offset);
   };
+
+  class CircularHelper
+  {
+    public:
+      static void MarkBoardPositions(Pattern::CircularDictionary *dict, const Go::Board *board, int pos, int sz, std::list<int> *changesCirc);
+  };
   
   /** Circular Pattern. */
   class Circular
