@@ -626,9 +626,9 @@ float Tree::getUrgency(bool skiprave, Tree * robustchild) const
     }
     else {
       if (parent->getPlayouts()>1 && playouts>0)
-        uctbias=params->ucb_c*sqrt(log((float)parent->getPlayouts())/(playouts));
+        uctbias=params->ucb_c*sqrt(((params->test_p120>0)?pow((float)parent->getPlayouts(),params->test_p120):log((float)parent->getPlayouts()))/(playouts));
       else if (parent->getPlayouts()>1)
-        uctbias=params->ucb_c*sqrt(log((float)parent->getPlayouts())/(1));
+        uctbias=params->ucb_c*sqrt(((params->test_p120>0)?pow((float)parent->getPlayouts(),params->test_p120):log((float)parent->getPlayouts()))/(1));
       else
         uctbias=params->ucb_c/2;
     }

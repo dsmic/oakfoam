@@ -1703,8 +1703,8 @@ void Go::Board::updatePlayoutGammas(Features *feat)
     Go::BitBoard *changes3x3=new Go::BitBoard(size);
     changes3x3->clear();
     for (Go::list_int::iterator p=changed_positions->begin(); p!=changed_positions->end(); ++p) {
-      changes3x3->set(*p);
-      if (this->getColor(*p)==Go::EMPTY) {
+      if (this->getColor(*p)==Go::EMPTY && changes3x3->get(*p)==false) {
+        changes3x3->set(*p);
         setPlayoutGammaAt(*p);
       }
       setPlayoutGammaAround(*p,changes3x3);
