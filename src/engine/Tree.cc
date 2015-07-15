@@ -665,7 +665,7 @@ float Tree::getUrgency(bool skiprave, Tree * robustchild) const
     {
       float tmp=0;
       float playouts_use=(parent!=NULL)?parent->getPlayouts():0;
-      if (params->test_p65 && robustchild!=NULL)
+      if (params->test_p65>0 && robustchild!=NULL)
       {
         playouts_use=robustchild->getPlayouts();
       }
@@ -683,6 +683,7 @@ float Tree::getUrgency(bool skiprave, Tree * robustchild) const
             +tmp)*(params->test_p44*(pow(params->test_p90/(params->test_p90+playouts_use),params->test_p51)));
         }
         else {
+          //the factor 1000.0 is as a additive constant to log gamma. Should be a parameter, as it is not covered by other parameters in this formula
           val+=(log(1000.0*(this->getProgressiveBias()+1.0))+params->test_p49*this->getCriticality ()
             +tmp)*(params->test_p44/(pow(playouts_use,params->test_p51)+1.0));
         }
