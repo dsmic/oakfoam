@@ -177,7 +177,7 @@ class Features
     float getLastDistGamma(Go::Board *board, int pos);
     float getLastDistGammaPlayout(Go::Board *board, int pos);
     float getPlayoutGamma(Go::Board *board, Go::Move move, bool checkforvalidmove=true, bool withcircularpatterns=true, float *gamma_local_part=NULL, Pattern::Circular *pattcirc_p=NULL) const;
-    float getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove=true, bool withcircularpatterns=true, float *gamma_local_part=NULL, Pattern::Circular *pattcirc_p=NULL) const;
+    float getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove=true, bool withcircularpatterns=true, float *gamma_local_part=NULL, Pattern::Circular *pattcirc_p=NULL,Go::ObjectBoard<int> *cfgaroundposdist=NULL) const;
     bool learnMovesGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, std::map<float,Go::Move,std::greater<float> > ordervalue, std::map<int,float> move_gamma, float sum_gammas);
     bool learnMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, float learn_diff);
     int learnMoveGammaC(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, float learn_diff);
@@ -219,6 +219,7 @@ class Features
     
     /** Return the CFG distances for the last and second last moves on a board. */
     void computeCFGDist(Go::Board *board, Go::ObjectBoard<int> **cfglastdist, Go::ObjectBoard<int> **cfgsecondlastdist);
+    void computeCFGDist(Go::Board *board, int around_pos, Go::ObjectBoard<int> **cfgmovelastdist);
 
     /** Return a structure with the gammas for the 3x3 patterns. */
     Pattern::ThreeByThreeGammas* getPatternGammas() {return patterngammas;}

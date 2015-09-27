@@ -95,6 +95,7 @@ namespace Go
   // 15.6.2014 fast_pool is much slower!!
   //typedef std::list<int,boost::fast_pool_allocator<int>> list_int;
   typedef std::list<int> list_int;
+  typedef std::list<int> list_short; //short would be enough, but slower?!
 
   /** Go colors. */
   enum Color
@@ -601,7 +602,8 @@ namespace Go
   {
     public:
       /** Create a Group instance for given board, with given key stone position. */
-      Group(Go::Board *brd, int pos);
+      Group(Go::Board *board, 
+            int pos);
       ~Group() {};
       
       /** Get the color of this group. */
@@ -661,24 +663,24 @@ namespace Go
        */
       inline int getAtariPosition() const { if (this->inAtari()) return libpossum/pseudoliberties; else return -1; };
       /** Add the orthogonally adjacent empty pseudo liberties. */
-      inline void addTouchingEmpties();
+      inline void addTouchingEmpties(Go::Board *);
       /** Determine if given position is one of the last two liberties. */
-      bool isOneOfTwoLiberties(int pos) const __attribute__((hot));
+      bool isOneOfTwoLiberties(const Go::Board *board,int pos) const __attribute__((hot));
       /** Get the other of the last two liberties.
        * If the group doesn't have two liberties, -1 is returned.
        */
-      int getOtherOneOfTwoLiberties(int pos) const  __attribute__((hot));
+      int getOtherOneOfTwoLiberties(const Go::Board *board,int pos) const  __attribute__((hot));
       
       /** Get a list of the adjacent groups to this group. */
       //std::list<int,Go::allocator_int> *getAdjacentGroups() { return &adjacentgroups; };
-      list_int *getAdjacentGroups() { return &adjacentgroups; };
+      list_short *getAdjacentGroups() { return &adjacentgroups; };
       inline int getLibpossum() {return libpossum;}
       inline int getLibpossumsq() {return libpossumsq;}
-      inline Go::Board *const getBoard() {return board;}
+//      inline Go::Board *const getBoard() {return board;}
       int real_libs; //used for very slow real liberty counting
       
     private:
-      Go::Board *const board;
+      //Go::Board *const board;
       const Go::Color color;
       const int position;
       
@@ -691,7 +693,7 @@ namespace Go
       int libpossum;
       int libpossumsq;
 
-      list_int adjacentgroups;
+      list_short adjacentgroups;
   };
   
   /** Go board. */
@@ -810,7 +812,7 @@ namespace Go
       Go::BitBoard *getValidMoves(Go::Color col) const { return (col==Go::BLACK?blackvalidmoves:whitevalidmoves); };
       
       /** Compute the current score. */
-      float score(Parameters* params=NULL);
+      float score(Parameters* params=NULL, int a_pos=-1);
       /** Determine if the given position is a weak eye for the given color. */
       bool weakEye(Go::Color col, int pos, bool veryweak=0) const;
       /** Determine if the given position has an eye where two weak eyes are shared from two groups. */
@@ -923,7 +925,7 @@ namespace Go
       Go::Group *group=this->getGroup(p);
       if (col==group->getColor())
       {
-        if (!(group->inAtari() || group->isOneOfTwoLiberties(pos)))
+        if (!(group->inAtari() || group->isOneOfTwoLiberties(this,pos)))
           return false; // attached group has more than two libs
         attach_group_pos=p;
         usedneighbours++;
@@ -940,7 +942,7 @@ namespace Go
         {
           groups_used[groups_used_num]=group;
           groups_used_num++;
-          int otherlib=group->getOtherOneOfTwoLiberties(pos);
+          int otherlib=group->getOtherOneOfTwoLiberties(this,pos);
           //fprintf(stderr,"otherlib %d\n",otherlib);
           if (otherlib!=-1)
           {
@@ -1100,6 +1102,8 @@ namespace Go
       Go::ObjectBoard<float> *blackgammas;
       Go::ObjectBoard<float> *whitegammas;
       Features *getFeatures() {return features;};
+
+      float komi_grouptesting=0;  //only used for group testing!!!!!!!!
 
     private:
       const int size;

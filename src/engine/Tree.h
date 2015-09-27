@@ -76,7 +76,7 @@ class Tree
      * @param mov   Move that creates this position.
      * @param p     Parent tree node.
      */
-    Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov = Go::Move(Go::EMPTY,Go::Move::RESIGN), Tree *p = NULL);
+    Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov = Go::Move(Go::EMPTY,Go::Move::RESIGN), Tree *p = NULL, int a_pos=-1);
     ~Tree();
     
     /** Get the parent tree node. */
@@ -384,6 +384,7 @@ class Tree
     float cnn_territory_done;
     float cnn_territory_wr;
     boost::bimap <int,float> cnn_b,cnn_w;
+    int around_pos;
     
   private:
     Tree *parent;

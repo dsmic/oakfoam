@@ -319,6 +319,16 @@ class Parameters
     float csstyle_07;
     float csstyle_08;
     float csstyle_09;
+
+    float localeval_01;
+    float localeval_02;
+    float localeval_03;
+    float localeval_04;
+    float localeval_05;
+    float localeval_06;
+    float localeval_07;
+    float localeval_08;
+    float localeval_09;
     
     /** Skip all playout heuristics with this probability.
      * Set to zero to disable.

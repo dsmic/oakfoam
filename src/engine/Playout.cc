@@ -82,6 +82,8 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
   //}
   int treemovescount=0;
   board->turnSymmetryOff();
+
+  int a_pos=playouttree->around_pos;
   
   if (params->debug_on)
     gtpe->getOutput()->printfDebug("[playout]:");
@@ -117,7 +119,7 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
     {
       if (params->debug_on)
         gtpe->getOutput()->printfDebug("is Resign happend\n");
-      finalscore=board->score(params)-(params->engine->getScoreKomi());
+      finalscore=board->score(params,a_pos)-(params->engine->getScoreKomi());
       return;
     }
   }
@@ -483,7 +485,7 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
   if (w_ravearray)
     delete[] w_ravearray;
   if (!mercywin)
-    finalscore=board->score(params)-params->engine->getScoreKomi();
+    finalscore=board->score(params,a_pos)-params->engine->getScoreKomi();
   //Go::Color playoutcol=playoutmoves.back().getColor();
   //bool playoutwin=Go::Board::isWinForColor(playoutcol,finalscore);
   bool playoutjigo=(finalscore==0);
@@ -714,8 +716,9 @@ template <typename T> string tostr(const T& t) {
 
 
 //prefer the better move with some probability (think about a little more:)
-#define SetIfBetter(MOVE,GAMMA) {if (best_gamma/GAMMA<rand->getRandomReal()*0.2+0.8) {best_pos=MOVE.getPosition(); best_gamma=GAMMA;}
-#define ReturnIfBetter(GAMMA) {if (best_gamma==0 && best_gamma/GAMMA>rand->getRandomReal()*0.2+1.0) return;}
+#define CheckBetterP(GAMMA,GAMMAbefore) ((GAMMAbefore<=0)?true:((GAMMA>GAMMAbefore)?WITH_P(1.0-0.5*GAMMAbefore/GAMMA):WITH_P(0.5*GAMMA/GAMMAbefore)))
+#define SetIfBetter(MOVE,GAMMA) {if (CheckBetterP(GAMMA,best_gamma)) {best_pos=MOVE.getPosition(); best_gamma=GAMMA;}}
+#define ReturnBetter(MOVE,GAMMA) {if (CheckBetterP(GAMMA,best_gamma)) return;}
 
 void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, critstruct critarray[], float ravearray[], int passes, std::vector<int> *pool, std::vector<int> *poolcrit, std::string *reason, float *trylocal_p, float *black_gammas, float *white_gammas, bool *earlymoves, Go::IntBoard *firstlist,int playoutmovescount, bool *nonlocalmove,Go::IntBoard *treeboardBlack,Go::IntBoard *treeboardWhite, int used_playouts, int *ACpos, int ACcount, boost::bimap<int,float> *cnn_moves)
 {
@@ -735,6 +738,8 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
 
   int best_gamma=0;
   int best_pos=-1;
+  int blevel=0;
+  float bgamma=0;
   
   Random *const rand=settings->rand;
   int ncirc=0;
@@ -909,15 +914,20 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
 
   if (params->playout_last2libatari_enabled && (WITH_P(params->test_p34)||*earlymoves))
   {
-    this->getLast2LibAtariMove(settings,board,col,move,posarray);
+    this->getLast2LibAtariMove(settings,board,col,move,posarray,&blevel);
     if (!move.isPass())
     {
-      if (params->debug_on)
-        gtpe->getOutput()->printfDebug("[playoutmove]: %s last2libatari\n",move.toString(board->getSize()).c_str());
-      if (reason!=NULL)
-        *reason="last2libatari";
-      params->engine->statisticsPlus(Engine::LAST2LIBATARI);
-      return;
+      if (blevel>7) {
+        if (params->debug_on)
+          gtpe->getOutput()->printfDebug("[playoutmove]: %s last2libatari\n",move.toString(board->getSize()).c_str());
+        if (reason!=NULL)
+          *reason="last2libatari";
+        params->engine->statisticsPlus(Engine::LAST2LIBATARI);
+        return;
+      }
+      else {
+        SetIfBetter(move,params->csstyle_07);
+      }
     }
   }
 
@@ -992,17 +1002,26 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
   
   if (WITH_P(params->playout_patterns_p))
   {
-    this->getPatternMove(settings,board,col,move,posarray,passes,critarray);
+    this->getPatternMove(settings,board,col,move,posarray,passes,critarray,&bgamma);
     if (board->validMove(move) && !this->isBadMove(settings,board,col,move.getPosition(),params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes, NULL, 0, critarray))
     {
       if (!move.isPass())
       {
         if (params->debug_on)
           gtpe->getOutput()->printfDebug("[playoutmove]: %s pattern\n",move.toString(board->getSize()).c_str());
-        if (reason!=NULL)
-        	*reason="pattern";
-        params->engine->statisticsPlus(Engine::PATTERN);
-        return;
+        if (CheckBetterP(bgamma,best_gamma)) {
+          if (reason!=NULL)
+          	*reason="pattern";
+          params->engine->statisticsPlus(Engine::PATTERN);
+          return;
+        } 
+        else {
+          if (reason!=NULL)
+          	*reason="pattern was not better";
+          params->engine->statisticsPlus(Engine::PATTERN_NOT_BETTER);
+          move=Go::Move(col,best_pos);
+          return;
+        }
       }
     }
     else
@@ -1225,7 +1244,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     board->updatePlayoutGammas();
     std::vector<std::pair<float,int>> sorted_pos;
     sorted_pos.reserve(size*size/2);
-    //float gamma_sum=0;
+    float gamma_sum=0;
     if (col==Go::BLACK) {
       for (int x=0;x<size;x++)
         for (int y=0;y<size;y++) 
@@ -1236,7 +1255,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
             gamma*=board->getFeatures()->getLastDistGammaPlayout(board,pos);
             if (params->csstyle_02>0) gamma*=1.0+params->csstyle_02*critarray[pos].crit;
             sorted_pos.push_back({-gamma,pos});
-            //gamma_sum+=gamma;
+            gamma_sum+=gamma;
           }
         }
     }
@@ -1250,47 +1269,67 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
             gamma*=board->getFeatures()->getLastDistGammaPlayout(board,pos);
             if (params->csstyle_02>0) gamma*=1.0+params->csstyle_02*critarray[pos].crit;
             sorted_pos.push_back({-gamma,pos});
-            //gamma_sum+=gamma;
+            gamma_sum+=gamma;
           }
         }
     }
-    // now we have sorted_pos with the best first and gamma_sum
-    unsigned int max_num=10;
-    int ppp[max_num];
-    float ppg[max_num];
-    unsigned int cc=0;
     int pos=-1;
-    if (sorted_pos.size()<=max_num)
-      std::sort(sorted_pos.begin(),sorted_pos.end());
-    else
-      std::partial_sort(sorted_pos.begin(),sorted_pos.begin()+max_num,sorted_pos.end());
-    for (auto mm=sorted_pos.begin();cc<max_num && mm!=sorted_pos.end(); ++mm) {
-      ppg[cc]=-mm->first; 
-      ppp[cc]=mm->second;
-      cc++;
+    if (params->csstyle_08>0) {
+      // now we have sorted_pos with the best first and gamma_sum
+      unsigned int max_num=10;
+      int ppp[max_num];
+      float ppg[max_num];
+      unsigned int cc=0;
+      if (sorted_pos.size()<=max_num)
+        std::sort(sorted_pos.begin(),sorted_pos.end());
+      else
+        std::partial_sort(sorted_pos.begin(),sorted_pos.begin()+max_num,sorted_pos.end());
+      for (auto mm=sorted_pos.begin();cc<max_num && mm!=sorted_pos.end(); ++mm) {
+        ppg[cc]=-mm->first; 
+        ppp[cc]=mm->second;
+        cc++;
+      }
+      //this is not the statistic version, it prefers the best moves ....
+      if (cc>0 && ppg[0]>params->csstyle_01) {
+        float randgamma=params->csstyle_01+(ppg[0]-params->csstyle_01)*rand->getRandomReal();
+        int cc_better=cc;
+        for (unsigned int ii=1;ii<cc;ii++) {
+          if (ppg[ii]<randgamma) {
+            cc_better=ii;
+            break;
+          }
+        }
+        pos=ppp[rand->getRandomInt(cc_better)];
+        if (pos>=0 && !this->isBadMove(settings,board,col,pos,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes, NULL, 0, critarray)) {
+          move=Go::Move(col,pos);
+          params->engine->statisticsPlus(Engine::PLAYOUT_GAMMA);
+          return;
+        }
+        pos=ppp[rand->getRandomInt(cc_better)];
+        if (pos>=0 && !this->isBadMove(settings,board,col,pos,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes, NULL, 0, critarray)) {
+          move=Go::Move(col,pos);
+          params->engine->statisticsPlus(Engine::PLAYOUT_GAMMA);
+          return;
+        }
+      }
     }
-    if (cc>0 && ppg[0]>params->csstyle_01) {
-      float randgamma=params->csstyle_01+(ppg[0]-params->csstyle_01)*rand->getRandomReal();
-      int cc_better=cc;
-      for (unsigned int ii=1;ii<cc;ii++) {
-        if (ppg[ii]<randgamma) {
-          cc_better=ii;
+    else {
+      float gamma_now=0;
+      float randgamma=gamma_sum*rand->getRandomReal();
+      for (auto mm=sorted_pos.begin(); mm!=sorted_pos.end(); ++mm) {
+        gamma_now+=-mm->first; 
+        if (gamma_now>randgamma) {
+          pos=mm->second;
           break;
         }
       }
-      pos=ppp[rand->getRandomInt(cc_better)];
-      if (pos>=0 && !this->isBadMove(settings,board,col,pos,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes, NULL, 0, critarray)) {
-        move=Go::Move(col,pos);
-        params->engine->statisticsPlus(Engine::PLAYOUT_GAMMA);
-        return;
-      }
-      pos=ppp[rand->getRandomInt(cc_better)];
       if (pos>=0 && !this->isBadMove(settings,board,col,pos,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes, NULL, 0, critarray)) {
         move=Go::Move(col,pos);
         params->engine->statisticsPlus(Engine::PLAYOUT_GAMMA);
         return;
       }
     }
+    
     /*float gamma_rand=rand->getRandomReal()*gamma_sum2;
     for (unsigned int ii=0;ii<cc;ii++) {
       gamma_up_to_now+=ppg[ii];  //all entries are -, because of map orderintg, therefore - here
@@ -1926,7 +1965,7 @@ void Playout::getAnyCaptureMove(Worker::Settings *settings, Go::Board *board, Go
   }
 }
 
-void Playout::getPatternMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, int passes, critstruct critarray[])
+void Playout::getPatternMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, int passes, critstruct critarray[], float *bgamma)
 {
   Random *const rand=settings->rand;
   Pattern::ThreeByThreeTable *const patterntable=params->engine->getPatternTable();
@@ -2085,8 +2124,10 @@ void Playout::getPatternMove(Worker::Settings *settings, Go::Board *board, Go::C
     debugint=ii;
     if (ii>=patternmovescount-1)
       move=Go::Move(col,Go::Move::PASS);
-    else
+    else {
       move=Go::Move(col,patternmoves[ii]);
+      if (bgamma!=NULL) *bgamma=patternmovesgamma[ii];
+    }
   //delete patternmovesgamma;
   }
   if (params->playout_patterns_gammas_p>0 && params->csstyle_06>0)
@@ -2112,7 +2153,9 @@ void Playout::getPatternMove(Worker::Settings *settings, Go::Board *board, Go::C
           break;
         }
       }
-      int pos=patternmoves[rand->getRandomInt(cc_better)];
+      int ii=rand->getRandomInt(cc_better);
+      int pos=patternmoves[ii];
+      if (bgamma!=NULL) *bgamma=patternmovesgamma[ii];
       move=Go::Move(col,pos);
     }
   }
@@ -2265,7 +2308,7 @@ void Playout::getNakadeMove(Worker::Settings *settings, Go::Board *board, Go::Co
 
 //testing if performance is better with this
 //probably not, disabled again
-int Playout::getOtherOneOfTwoLiberties(Go::Group *g, int pos) 
+int Playout::getOtherOneOfTwoLiberties(Go::Board *board,Go::Group *g, int pos) 
 {
   if (g->numOfPseudoLiberties()>8 || g->inAtari())
     return -1;
@@ -2273,7 +2316,7 @@ int Playout::getOtherOneOfTwoLiberties(Go::Group *g, int pos)
   int ps=g->numOfPseudoLiberties();
   int lps=g->getLibpossum();
   int lpsq=g->getLibpossumsq();
-  Go::Board *board=g->getBoard();
+  //Go::Board *board=g->getBoard();
   int size=board->getSize();
   
   foreach_adjacent(pos,p,{
@@ -2291,7 +2334,7 @@ int Playout::getOtherOneOfTwoLiberties(Go::Group *g, int pos)
     return -1;
 }
 
-void Playout::getLast2LibAtariMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray)
+void Playout::getLast2LibAtariMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, int *blevel)
 {
   Random *const rand=settings->rand;
 
@@ -2322,7 +2365,7 @@ void Playout::getLast2LibAtariMove(Worker::Settings *settings, Go::Board *board,
             lastgroup=group;
             if (group!=NULL)
             {
-              int s=group->getOtherOneOfTwoLiberties(p);
+              int s=group->getOtherOneOfTwoLiberties(board,p);
               if (s>0)
               {
                 if (board->validMove(col,p))
@@ -2384,6 +2427,7 @@ void Playout::getLast2LibAtariMove(Worker::Settings *settings, Go::Board *board,
       //board->isSelfAtariOfSize(Go::Move(col,possiblemoves[i]),params->playout_avoid_selfatari_size);
     }
   }
+  if (blevel!=NULL) *blevel=bestlevel;
 }
 
 void Playout::getLastCaptureMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, std::set<int> *capturemoves)
@@ -2402,7 +2446,7 @@ void Playout::getLastCaptureMove(Worker::Settings *settings, Go::Board *board, G
         Go::Group *group=board->getGroup(p);
         if (group!=NULL && group->inAtari())
         {
-          Go::list_int *adjacentgroups=group->getAdjacentGroups();
+          Go::list_short *adjacentgroups=group->getAdjacentGroups();
           if (adjacentgroups->size()>(unsigned int)board->getPositionMax())
           {
               adjacentgroups->sort();
@@ -2410,7 +2454,7 @@ void Playout::getLastCaptureMove(Worker::Settings *settings, Go::Board *board, G
               //std::sort(adjacentgroups->begin(),adjacentgroups->end());
               //std::unique(adjacentgroups->begin(),adjacentgroups->end());
           }
-          for(Go::list_int::iterator iter=adjacentgroups->begin();iter!=adjacentgroups->end();)
+          for(auto iter=adjacentgroups->begin();iter!=adjacentgroups->end();)
           {
             if (board->inGroup((*iter)))
             {
@@ -2451,7 +2495,7 @@ void Playout::getLastCaptureMove(Worker::Settings *settings, Go::Board *board, G
         Go::Group *group=board->getGroup(p);
         if (group!=NULL && group->inAtari())
         {
-          Go::list_int *adjacentgroups=group->getAdjacentGroups();
+          Go::list_short *adjacentgroups=group->getAdjacentGroups();
           if (adjacentgroups->size()>(unsigned int)board->getPositionMax())
           {
               adjacentgroups->sort();
@@ -2459,7 +2503,7 @@ void Playout::getLastCaptureMove(Worker::Settings *settings, Go::Board *board, G
               //std::sort(adjacentgroups->begin(),adjacentgroups->end());
               //std::unique(adjacentgroups->begin(),adjacentgroups->end());
           }
-          for(Go::list_int::iterator iter=adjacentgroups->begin();iter!=adjacentgroups->end();)
+          for(auto iter=adjacentgroups->begin();iter!=adjacentgroups->end();)
           {
             if (board->inGroup((*iter)))
             {
@@ -2535,7 +2579,7 @@ void Playout::getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go:
           if (!doubleatari)
           {
             bool atarigroupfound=false;
-            Go::list_int *adjacentgroups=group->getAdjacentGroups();
+            Go::list_short *adjacentgroups=group->getAdjacentGroups();
             if (params->playout_lastatari_captureattached_p>0.0)
             {
               if (adjacentgroups->size()>(unsigned int)board->getPositionMax())
@@ -2545,7 +2589,7 @@ void Playout::getLastAtariMove(Worker::Settings *settings, Go::Board *board, Go:
                 //std::sort(adjacentgroups->begin(),adjacentgroups->end());
                 //std::unique(adjacentgroups->begin(),adjacentgroups->end());
               }
-              for(Go::list_int::iterator iter=adjacentgroups->begin();iter!=adjacentgroups->end();)
+              for(auto iter=adjacentgroups->begin();iter!=adjacentgroups->end();)
               {
                 if (board->inGroup((*iter)))
                 {
@@ -3200,7 +3244,7 @@ float Playout::getTwoLibertyMoveLevel(Go::Board *board, Go::Move move, Go::Group
               gtpe->getOutput()->printfDebug("group %s move %s\n",
                     Go::Move(group->getColor(),group->getPosition()).toString(size).c_str(),
                     move.toString(size).c_str());
-      if ((params->test_p110==0 && board->isAtari(move)) || (params->test_p110!=0 && group->getColor()!=move.getColor() && group->isOneOfTwoLiberties(move.getPosition()) && (params->test_p117==0 || group->numOfStones()>params->test_p117)  ))
+      if ((params->test_p110==0 && board->isAtari(move)) || (params->test_p110!=0 && group->getColor()!=move.getColor() && group->isOneOfTwoLiberties(board,move.getPosition()) && (params->test_p117==0 || group->numOfStones()>params->test_p117)  ))
       {
         Go::Color col=move.getColor();
         Go::Color othercol=Go::otherColor(col);
@@ -3315,7 +3359,7 @@ void Playout::replaceWithApproachMove(Worker::Settings *settings, Go::Board *boa
       if (board->getColor(p)==col)
       {
         Go::Group *group=board->getGroup(p);
-        int lib=group->getOtherOneOfTwoLiberties(pos);
+        int lib=group->getOtherOneOfTwoLiberties(board,pos);
         if (lib!=-1)
         {
           approaches[approachescount]=lib;

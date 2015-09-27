@@ -237,8 +237,8 @@ class DecisionTree;
 //#define CPU_ONLY
 #include <cuda_runtime.h>
 #include "caffe/caffe.hpp"
-#include "caffe/util/io.hpp"
-#include "caffe/blob.hpp" 
+//#include "caffe/util/io.hpp"
+//#include "caffe/blob.hpp" 
 using namespace caffe;
 
 
@@ -267,6 +267,7 @@ class Engine
       LAST2LIBATARI,
       NAKED,
       PATTERN,
+      PATTERN_NOT_BETTER,
       ANYCAPTURE,
       CIRCPATTERN_QUICK,
       FILL_BOARD,
@@ -566,7 +567,7 @@ class Engine
     
     void addGtpCommands();
     
-    void clearMoveTree();
+    void clearMoveTree(int a_pos=-1);
     void chooseSubTree(Go::Move move);
     
     void doNPlayouts(int n);
@@ -654,6 +655,7 @@ class Engine
     static void gtpTimeLeft(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     
     static void gtpDoNPlayouts(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpDoNPlayoutsAround(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
 
     static void gtpOutputSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpPlayoutSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);

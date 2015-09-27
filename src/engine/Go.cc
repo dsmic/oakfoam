@@ -158,13 +158,14 @@ std::string Go::Move::toString(int boardsize) const
   }
 }
 
-Go::Group::Group(Go::Board *brd, int pos)
-  : board(brd),
+Go::Group::Group(Go::Board *board, 
+                 int pos)
+  : //board(brd),
     color(board->getColor(pos)),
     position(pos)
 {
   stonescount=1;
-  pseudoborderdist=brd->getPseudoDistanceToBorder(pos);
+  pseudoborderdist=board->getPseudoDistanceToBorder(pos);
   parent=NULL;
   pseudoliberties=0;
   pseudoends=0;
@@ -172,7 +173,7 @@ Go::Group::Group(Go::Board *brd, int pos)
   libpossumsq=0;
 }
 
-void Go::Group::addTouchingEmpties()
+void Go::Group::addTouchingEmpties(Go::Board *board)
 {
   int size=board->getSize();
   foreach_adjacent(position,p,{
@@ -183,7 +184,7 @@ void Go::Group::addTouchingEmpties()
   });
 }
 
-bool Go::Group::isOneOfTwoLiberties(int pos) const
+bool Go::Group::isOneOfTwoLiberties(const Go::Board *board,int pos) const
 {
   if (pseudoliberties>8 || this->inAtari())
     return false;
@@ -206,7 +207,7 @@ bool Go::Group::isOneOfTwoLiberties(int pos) const
 }
 
 
-int Go::Group::getOtherOneOfTwoLiberties(int pos) const
+int Go::Group::getOtherOneOfTwoLiberties(const Go::Board *board,int pos) const
 {
   if (pseudoliberties>8 || this->inAtari())
     return -1;
@@ -424,7 +425,7 @@ std::string Go::Board::toSGFString() const
   return ss.str();
 }
 
-float Go::Board::score(Parameters* params)
+float Go::Board::score(Parameters* params, int a_pos)
 {
   Go::Board::ScoreVertex *scoredata;
   
@@ -468,7 +469,16 @@ float Go::Board::score(Parameters* params)
   if (lastscoredata!=NULL)
     delete[] lastscoredata;
   lastscoredata=scoredata;
-  
+
+  //test groupwinning
+  if (a_pos>=0) {
+    Go::Color col=scoredata[a_pos].color;
+    if (col==Go::BLACK)
+      return 100;
+    else if (col==Go::WHITE)
+      return -100;
+    return komi_grouptesting;
+  }
   //delete[] scoredata;
   return s;
 }
@@ -717,7 +727,7 @@ void Go::Board::makeMove(Go::Move move, Gtp::Engine* gtpe)
   this->setGroup(pos,thisgroup);
   groups.insert(thisgroup);
   
-  thisgroup->addTouchingEmpties();
+  thisgroup->addTouchingEmpties(this);
   
   foreach_adjacent(pos,p,{
     if (this->getColor(p)==col)
@@ -958,7 +968,7 @@ void Go::Board::refreshGroups()
     {
       Go::Group *newgroup=pool_group.construct(this,p);
       this->setGroup(p,newgroup);
-      newgroup->addTouchingEmpties();
+      newgroup->addTouchingEmpties(this);
     
       foreach_adjacent(p,q,{
         this->spreadGroup(q,newgroup);
@@ -995,7 +1005,7 @@ void Go::Board::spreadGroup(int pos, Go::Group *group)
     Go::Group *thisgroup=pool_group.construct(this,pos);
     this->setGroup(pos,thisgroup);
     groups.insert(thisgroup);
-    thisgroup->addTouchingEmpties();
+    thisgroup->addTouchingEmpties(this);
     this->mergeGroups(group,thisgroup);
     
     foreach_adjacent(pos,p,{
@@ -1144,10 +1154,10 @@ bool Go::Board::twoGroupEye(Go::Color col, int pos) const
   for (int i=0;i<groups_used_num;i++)
   {
     Go::Group *group=groups_used[i];
-    if (group->isOneOfTwoLiberties (pos))
+    if (group->isOneOfTwoLiberties (this,pos))
     {
       //possible group attaching
-      int otherlib=group->getOtherOneOfTwoLiberties(pos);
+      int otherlib=group->getOtherOneOfTwoLiberties(this,pos);
       //if otherlib has more than two libs together with first lib
       //it is shared!
       int found=0;
@@ -1880,7 +1890,7 @@ bool Go::Board::isExtension(Go::Move move) const
           foundgroupinatari=true;
         else if (foundconnectingliberties<2)
         {
-          int otherlib=group->getOtherOneOfTwoLiberties(pos);
+          int otherlib=group->getOtherOneOfTwoLiberties(this,pos);
           if (otherlib!=-1)
           {
             if (foundconnectingliberties==0)
@@ -1936,12 +1946,12 @@ bool Go::Board::isExtension2lib(Go::Move move,bool checkother) const
       Go::Group *group=this->getGroup(p);
       //if (col==group->getColor())
       {
-        if (group->isOneOfTwoLiberties(pos))
+        if (group->isOneOfTwoLiberties(this,pos))
           foundgrouphas2lib=true;
         //else 
         if (checkother || foundconnectingliberties<3)
         {
-          int otherlib=group->getOtherOneOfTwoLiberties(pos);
+          int otherlib=group->getOtherOneOfTwoLiberties(this,pos);
           //if (checkother && otherlib!=-1) fprintf(stderr,"pos %d otherlib %d extension %d\n",pos,otherlib,isExtension2lib(Go::Move(col,otherlib),false));
           if (!checkother || otherlib==-1 || !isExtension2lib(Go::Move(col,otherlib),false))
           {
@@ -2015,7 +2025,7 @@ bool Go::Board::isApproach(Go::Move move, int approach[4]) const
     if (this->inGroup(p) && this->getColor(p)==col)
     {
       Go::Group *group=this->getGroup(p);
-      int otherlib=group->getOtherOneOfTwoLiberties(pos);
+      int otherlib=group->getOtherOneOfTwoLiberties(this,pos);
       if (otherlib>=0) {
         Go::Move approach_tmp=Go::Move(col,otherlib);
         if (isSelfAtari(approach_tmp)) {
@@ -2179,7 +2189,7 @@ bool Go::Board::isAtari(Go::Move move, int *groupsize) const
     {
       Go::Group *group=this->getGroup(p);
       if (//col!=group->getColor() && 
-          group->isOneOfTwoLiberties(pos))
+          group->isOneOfTwoLiberties(this,pos))
       {
         if (groupsize) *groupsize=group->numOfStones();
         return true;
@@ -2198,7 +2208,7 @@ bool Go::Board::isAtari(Go::Move move, int *groupsize, int other_not) const
     {
       Go::Group *group=this->getGroup(p);
       if (//col!=group->getColor() && 
-          group->isOneOfTwoLiberties(pos) && group->getOtherOneOfTwoLiberties(pos)!=other_not)
+          group->isOneOfTwoLiberties(this,pos) && group->getOtherOneOfTwoLiberties(this,pos)!=other_not)
       {
         if (groupsize) *groupsize=group->numOfStones();
         return true;
@@ -3273,7 +3283,7 @@ bool Go::Board::isLadder(Go::Group *group) const
 
 bool Go::Board::isLadderAfter(Go::Group *group, Go::Move move) const
 {
-  int libpos=group->getOtherOneOfTwoLiberties(move.getPosition());
+  int libpos=group->getOtherOneOfTwoLiberties(this,move.getPosition());
   if (libpos==-1 || move.getColor()==group->getColor())
     return false;
 
@@ -3291,7 +3301,7 @@ bool Go::Board::isLadderAfter(Go::Group *group, Go::Move move) const
 
 bool Go::Board::isProbableWorkingLadderAfter(Go::Group *group, Go::Move move) const
 {
-  int posA=group->getOtherOneOfTwoLiberties(move.getPosition());
+  int posA=group->getOtherOneOfTwoLiberties(this,move.getPosition());
   if (posA==-1 || move.getColor()==group->getColor())
     return false;
   else if (this->isSelfAtari(move))
@@ -3340,7 +3350,7 @@ bool Go::Board::isProbableWorkingLadder(Go::Group *group, int posA, int movepos)
     return false;
 
   //check for stones in atari
-  Go::list_int *adjacentgroups=group->getAdjacentGroups();
+  Go::list_short *adjacentgroups=group->getAdjacentGroups();
   if (adjacentgroups->size()>(unsigned int)this->getPositionMax())
   {
     adjacentgroups->sort();
@@ -3348,7 +3358,7 @@ bool Go::Board::isProbableWorkingLadder(Go::Group *group, int posA, int movepos)
     //std::sort(adjacentgroups->begin(),adjacentgroups->end());
     //std::uni(adjacentgroups->begin(),adjacentgroups->end());
   }
-  for(Go::list_int::iterator iter=adjacentgroups->begin();iter!=adjacentgroups->end();++iter)
+  for(auto iter=adjacentgroups->begin();iter!=adjacentgroups->end();++iter)
   {
     if (this->inGroup((*iter)) && this->getGroup((*iter))->inAtari())
       return false;
@@ -3443,10 +3453,10 @@ void Go::Board::connectedAtariPos(Go::Move move, int CApos[4], int &CAcount)
  CAcount=0;
  if (pos<0) return;
  foreach_adjacent(pos,p,{
-    if (this->getColor(p)==col && this->inGroup(p) && this->getGroup(p)->isOneOfTwoLiberties(pos))
+    if (this->getColor(p)==col && this->inGroup(p) && this->getGroup(p)->isOneOfTwoLiberties(this,pos))
     {
       //fprintf(stderr,"pos =%d ",pos);
-      int movepos=this->getGroup(p)->getOtherOneOfTwoLiberties(pos);
+      int movepos=this->getGroup(p)->getOtherOneOfTwoLiberties(this,pos);
       if (getMaxDistance(movepos,pos)>1 && this->validMove(Go::Move(Go::otherColor(col),movepos)))
       {
      //   fprintf(stderr,"connected Atari %s %d for move %s on board\n%s",Go::Move(Go::otherColor(col),movepos).toString(getSize()).c_str(),CAcount,move.toString(getSize()).c_str(),toString().c_str());

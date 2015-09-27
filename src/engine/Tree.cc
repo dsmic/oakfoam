@@ -16,10 +16,14 @@ int debug=0;
 //power with sign
 #define pmpow(A,B) (((A)>=0)?pow(A,B):(-pow(-(A),B)))
 
-Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p) : params(prms)
+Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p, int a_pos) : params(prms)
 {
   params->tree_instances++;
   parent=p;
+  if (parent!=NULL) 
+    around_pos=parent->around_pos;
+  else
+    around_pos=a_pos;
   children=new std::list<Tree*>();
   beenexpanded=false;
   move=mov;
@@ -249,6 +253,10 @@ void Tree::addWin(int fscore, Tree *source)
     delete lock;
   this->passPlayoutUp(fscore,true,source);
   this->checkForUnPruning();
+  if (this->isPruned()) {
+    fprintf(stderr,"updateing pruned child win %s\n",move.toString(params->board_size).c_str());
+    this->setPruned (false);
+  }
 }
 
 void Tree::addLose(int fscore, Tree *source)
@@ -270,6 +278,10 @@ void Tree::addLose(int fscore, Tree *source)
     delete lock;
   this->passPlayoutUp(fscore,false,source);
   this->checkForUnPruning();
+  if (this->isPruned()) {
+    fprintf(stderr,"updateing pruned child loss %s\n",move.toString(params->board_size).c_str());
+    this->setPruned (false);
+  }
 }
 
 void Tree::addDecayResult(float result)
@@ -438,6 +450,10 @@ void Tree::addPartialResult(float win, float playout, bool invertwin, float deca
       parent->addPartialResult(decayfactor*(playout-win),decayfactor*playout,invertwin,decayfactor);
   }
   this->checkForUnPruning();
+  if (this->isPruned()) {
+    fprintf(stderr,"updateing pruned child Partial %s\n",move.toString(params->board_size).c_str());
+    this->setPruned (false);
+  }
 }
 
 Tree *Tree::getChild(Go::Move move) const
@@ -1223,7 +1239,7 @@ void Tree::unPruneNextChild()
       }
     }
     //if (this->isRoot())
-    //  fprintf(stderr,"\n");
+    //  fprintf(stderr,"unpruned %d\n",unpruned);
     
     if (bestchild!=NULL)
     {
@@ -1626,7 +1642,7 @@ bool Tree::compare_UrgentNodes_LCB(UrgentNode &u1,UrgentNode &u2)
   
 Tree *Tree::getUrgentChild(Worker::Settings *settings)
 {
-  
+  if (this->isLeaf()) return NULL; //expantion not ready
   float besturgency=0;
   Tree *besttree=NULL;
   UrgentNode urgenttmp;
@@ -1790,7 +1806,9 @@ Tree *Tree::getUrgentChild(Worker::Settings *settings)
   
   if (params->uct_virtual_loss)
     besttree->addVirtualLoss();
-  
+  if (besttree->isPruned()) {
+    fprintf(stderr,"besttree is pruned?!\n");
+  }
   if (besttree->isLeaf() || busyexpanding)
     return besttree;
   else
@@ -1834,7 +1852,7 @@ bool Tree::expandLeaf(Worker::Settings *settings)
   else if (!expandmutex.try_lock())
     return false;
 
-  //this is never executed?
+  //this is never executed? It is in race conditions I think.
   if (!this->isLeaf())
   {
     //fprintf(stderr,"Node was already expanded!\n");
@@ -2050,9 +2068,15 @@ bool Tree::expandLeaf(Worker::Settings *settings)
   
   if (params->uct_progressive_widening_enabled || params->uct_progressive_bias_enabled)
   {
+    if (params->uct_progressive_widening_enabled)
+    {
+      this->pruneChildren();  //in multithreading otherwize not unpruned moves are played
+    }
     Go::ObjectBoard<int> *cfglastdist=NULL;
     Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
+    Go::ObjectBoard<int> *cfgaroundposdist=NULL;
     params->engine->getFeatures()->computeCFGDist(startboard,&cfglastdist,&cfgsecondlastdist);
+    params->engine->getFeatures()->computeCFGDist(startboard,around_pos,&cfgaroundposdist);
     //float *CNNresults=NULL;
     int size=startboard->getSize();
     if (params->test_p100>0 && CNNresults==NULL)
@@ -2095,7 +2119,7 @@ bool Tree::expandLeaf(Worker::Settings *settings)
           //does this expensive construction twice, should be optimized later
           pattcirc_for_move = new Pattern::Circular(circdict,startboard,(*iter)->getMove().getPosition(),PATTERN_CIRC_MAXSIZE);
         }
-        float gammal=params->engine->getFeatures()->getMoveGamma(startboard,cfglastdist,cfgsecondlastdist,(*iter)->getMove(),true,true,&gamma_local_part,pattcirc_for_move);
+        float gammal=params->engine->getFeatures()->getMoveGamma(startboard,cfglastdist,cfgsecondlastdist,(*iter)->getMove(),true,true,&gamma_local_part,pattcirc_for_move,cfgaroundposdist);
         if (params->test_p100>0) {
           if ( (*iter)->getMove().isNormal()) {
             int p=(*iter)->getMove().getPosition();
@@ -2108,7 +2132,8 @@ bool Tree::expandLeaf(Worker::Settings *settings)
         }
         (*iter)->setFeatureGamma(gammal);
         (*iter)->setFeatureGammaLocalPart(gamma_local_part);
-
+        if (around_pos>=0)
+          (*iter)->around_pos=around_pos;
         if (params->test_p55>0 || params->test_p57>0)
         {
           //may be not necessary, as we are at the identical move!!
@@ -2133,6 +2158,8 @@ bool Tree::expandLeaf(Worker::Settings *settings)
       delete cfglastdist;
     if (cfgsecondlastdist!=NULL)
       delete cfgsecondlastdist;
+    if (cfgaroundposdist!=NULL)
+      delete cfgaroundposdist;
     //if (CNNresults!=NULL)
     //  delete[] CNNresults;
     if (params->uct_progressive_widening_enabled)

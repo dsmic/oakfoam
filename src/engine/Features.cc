@@ -802,8 +802,8 @@ unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::B
             Go::Group *group=board->getGroup(p);
             if (group->getColor()!=col && group->inAtari()) // captured group
             {
-              Go::list_int *adjacentgroups=group->getAdjacentGroups();
-              for(Go::list_int::iterator iter=adjacentgroups->begin();iter!=adjacentgroups->end();++iter)
+              Go::list_short *adjacentgroups=group->getAdjacentGroups();
+              for(auto iter=adjacentgroups->begin();iter!=adjacentgroups->end();++iter)
               {
                 if (board->inGroup((*iter)) && board->getGroup((*iter))->inAtari())
                 {
@@ -1423,13 +1423,19 @@ float Features::getPlayoutGamma(Go::Board *board, Go::Move move, bool checkforva
   return g;
 }
 
-float Features::getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove, bool usecircularpatterns, float *gamma_local_part, Pattern::Circular *pattcirc_p) const
+float Features::getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove, bool usecircularpatterns, float *gamma_local_part, Pattern::Circular *pattcirc_p,Go::ObjectBoard<int> *cfgaroundposdist) const
 {
   float g=1.0;
   
   if (checkforvalidmove && !board->validMove(move))
     return 0;
 
+  if (cfgaroundposdist!=NULL && params->localeval_01>0) {
+    int dist=this->matchFeatureClass(Features::CFGSECONDLASTDIST,board,NULL,cfgaroundposdist,move,false);
+    if (dist>0 && dist<params->localeval_02)
+      g*=params->localeval_01;
+  }
+  
   g*=this->getFeatureGamma(Features::LASTDIST,this->matchFeatureClass(Features::LASTDIST,board,cfglastdist,cfgsecondlastdist,move,false));
   g*=this->getFeatureGamma(Features::SECONDLASTDIST,this->matchFeatureClass(Features::SECONDLASTDIST,board,cfglastdist,cfgsecondlastdist,move,false));
   g*=this->getFeatureGamma(Features::CFGLASTDIST,this->matchFeatureClass(Features::CFGLASTDIST,board,cfglastdist,cfgsecondlastdist,move,false));
@@ -1501,7 +1507,7 @@ float Features::getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist
       if (board->inGroup(p))
       {
         Go::Group *group=board->getGroup(p);
-        if (col!=group->getColor() && group->isOneOfTwoLiberties(pos))
+        if (col!=group->getColor() && group->isOneOfTwoLiberties(board,pos))
           StonesInAtari+=group->numOfStones();
         if (col!=group->getColor())
           DangerValue+=params->uct_danger_value*group->numOfStones()/group->numOfPseudoLiberties();
@@ -2596,6 +2602,12 @@ void Features::computeCFGDist(Go::Board *board, Go::ObjectBoard<int> **cfglastdi
     *cfglastdist=board->getCFGFrom(board->getLastMove().getPosition(),CFGLASTDIST_LEVELS);
   if (!board->getSecondLastMove().isPass() && !board->getSecondLastMove().isResign())
     *cfgsecondlastdist=board->getCFGFrom(board->getSecondLastMove().getPosition(),CFGSECONDLASTDIST_LEVELS);
+}
+
+void Features::computeCFGDist(Go::Board *board, int around_pos, Go::ObjectBoard<int> **cfgmovelastdist)
+{
+  if (around_pos>=0)
+    *cfgmovelastdist=board->getCFGFrom(around_pos,CFGSECONDLASTDIST_LEVELS);
 }
 
 

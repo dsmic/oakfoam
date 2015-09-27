@@ -27,21 +27,27 @@ Net<float> *caffe_area_net;
 
 Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
 {
+  //Caffe::set_mode_gpu();
+  Caffe::SetDevice(0);
+  int t1=Caffe::mode();
   Caffe::set_mode(Caffe::GPU);
-  Caffe::set_phase(Caffe::TEST);
+  int t2=Caffe::mode();
+  fprintf(stderr,"%d %d\n",t1,t2);
+  Caffe::DeviceQuery();
+  //Caffe::set_phase(Caffe::TEST);
   caffe_area_net = NULL;
   caffe_test_net = NULL;
-  /*
-  caffe_test_net = new Net<float>("/home/detlef/oakfoam-hg/oakfoam/scripts/CNN/movepredict.prototxt");
-  caffe_test_net->CopyTrainedLayersFrom("/home/detlef/oakfoam-hg/oakfoam/scripts/CNN/movepredict.caffemodel");
+  
+  caffe_test_net = new Net<float>("/home/detlef/oakfoam-hg/oakfoam/scripts/CNN/gobig19.prototxt",TRAIN);
+  caffe_test_net->CopyTrainedLayersFrom("/home/detlef/oakfoam-hg/oakfoam/scripts/CNN/gobig.trained");
 
   //this is testing code, must be put to a function later!!!!
-  Blob<float> *b=new Blob<float>(1,2,19,19);
+  Blob<float> *b=new Blob<float>(1,9,19,19);
   float *data;
   //fprintf(stderr,"1\n");
-  data= new float[2*19*19];
+  data= new float[9*19*19];
   //fprintf(stderr,"2\n");
-  for (int i=0;i<2;i++)
+  for (int i=0;i<9;i++)
 	for (int j=0;j<19;j++)
 	  for (int k=0;k<19;k++)
 		{
@@ -55,8 +61,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   bottom.push_back(b); 
   const vector<Blob<float>*>& result=  caffe_test_net->Forward(bottom);
   fprintf(stderr,"start\n");
-  //for (int i=0;i<10000;i++)
-  //  const vector<Blob<float>*>& result =  caffe_test_net->Forward(bottom);
+  for (int i=0;i<100;i++)
+    const vector<Blob<float>*>& result =  caffe_test_net->Forward(bottom);
   fprintf(stderr,"end\n");
   
   for (int j=0;j<19;j++)
@@ -70,7 +76,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   delete[] data;
   delete b;
   //end of testing code!
-  */
+  
   ACcount=0;
   
   gtpe=ge;
@@ -317,6 +323,16 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","csstyle_07",&(params->csstyle_07),0.0);
   params->addParameter("playout","csstyle_08",&(params->csstyle_08),0.0);
   params->addParameter("playout","csstyle_09",&(params->csstyle_09),0.0);
+
+  params->addParameter("playout","localeval_01",&(params->localeval_01),0.0);
+  params->addParameter("playout","localeval_02",&(params->localeval_02),0.0);
+  params->addParameter("playout","localeval_03",&(params->localeval_03),0.0);
+  params->addParameter("playout","localeval_04",&(params->localeval_04),0.0);
+  params->addParameter("playout","localeval_05",&(params->localeval_05),0.0);
+  params->addParameter("playout","localeval_06",&(params->localeval_06),0.0);
+  params->addParameter("playout","localeval_07",&(params->localeval_07),0.0);
+  params->addParameter("playout","localeval_08",&(params->localeval_08),0.0);
+  params->addParameter("playout","localeval_09",&(params->localeval_09),0.0);
   
   params->addParameter("tree","ucb_c",&(params->ucb_c),UCB_C);
   params->addParameter("tree","ucb_init",&(params->ucb_init),UCB_INIT);
@@ -964,6 +980,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("time_left",this,&Engine::gtpTimeLeft);
   
   gtpe->addFunctionCommand("donplayouts",this,&Engine::gtpDoNPlayouts);
+  gtpe->addFunctionCommand("donplayoutsaround",this,&Engine::gtpDoNPlayoutsAround);
   gtpe->addFunctionCommand("outputsgf",this,&Engine::gtpOutputSGF);
   gtpe->addFunctionCommand("playoutsgf",this,&Engine::gtpPlayoutSGF);
   gtpe->addFunctionCommand("playoutsgf_pos",this,&Engine::gtpPlayoutSGF_pos);
@@ -1070,6 +1087,7 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("param time","Parameters (Time)","param");
   gtpe->addAnalyzeCommand("param rules","Parameters (Rules)","param");
   gtpe->addAnalyzeCommand("param other","Parameters (Other)","param");
+  gtpe->addAnalyzeCommand("donplayoutsaround %%s %%p","Do N Playouts around","none");
   gtpe->addAnalyzeCommand("donplayouts %%s","Do N Playouts","none");
   gtpe->addAnalyzeCommand("donplayouts 1","Do 1 Playout","none");
   gtpe->addAnalyzeCommand("donplayouts 100","Do 100 Playouts","none");
@@ -2318,6 +2336,30 @@ void Engine::gtpDoNPlayouts(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd
   gtpe->getOutput()->endResponse();
 }
 
+
+void Engine::gtpDoNPlayoutsAround(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=2)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("need 2 arg");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  int n=cmd->getIntArg(0);
+  Gtp::Vertex vert = cmd->getVertexArg(1);
+  int a_pos=Go::Position::xy2pos(vert.x,vert.y,me->boardsize);
+  me->clearMoveTree(a_pos);
+  me->doNPlayouts(n);
+  //me->clearMoveTree();
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->endResponse();
+}
+
 void Engine::gtpExplainLastMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
@@ -2601,8 +2643,9 @@ void Engine::gtpLoadCNNt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   //the library does not really seem to throw exceptions, but just exit :(
   try {
     if (caffe_area_net!=NULL) delete caffe_area_net;
-    caffe_area_net = new Net<float>(filename_net);
+    caffe_area_net = new Net<float>(filename_net,TEST);
     caffe_area_net->CopyTrainedLayersFrom(filename_parameters);
+//    caffe_area_net->set_mode_gpu();
   }
   catch (int e) {
     gtpe->getOutput()->printf("try catch %d\n",e);
@@ -2650,9 +2693,13 @@ void Engine::gtpLoadCNNp(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   try {
     if (caffe_test_net!=NULL) delete caffe_test_net;
     fprintf(stderr,"ok, create net\n");
-    caffe_test_net = new Net<float>(filename_net);
+    caffe_test_net = new Net<float>(filename_net,TEST);
     fprintf(stderr,"ok, created net\n");
     caffe_test_net->CopyTrainedLayersFrom(filename_parameters);
+    int t2=Caffe::mode();
+    fprintf(stderr,"!!!!!!!!!!!!!!!!!!!!!!!! %d\n",t2);
+  
+//    caffe_test_net->set_mode_gpu();
   }
   catch (int e) {
     gtpe->getOutput()->printf("try catch %d\n",e);
@@ -3221,11 +3268,11 @@ void Engine::gtpListAdjacentGroupsOf(void *instance, Gtp::Engine* gtpe, Gtp::Com
   
   if (group!=NULL)
   {
-    Go::list_int *adjacentgroups=group->getAdjacentGroups();
+    Go::list_short *adjacentgroups=group->getAdjacentGroups();
     
     gtpe->getOutput()->startResponse(cmd);
     gtpe->getOutput()->printf("list of size %d:\n",adjacentgroups->size());
-    for(Go::list_int::iterator iter=adjacentgroups->begin();iter!=adjacentgroups->end();++iter)
+    for(auto iter=adjacentgroups->begin();iter!=adjacentgroups->end();++iter)
     {
       if (me->currentboard->inGroup((*iter)))
         gtpe->getOutput()->printf("%s\n",Go::Position::pos2string((*iter),me->boardsize).c_str());
@@ -4888,6 +4935,9 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     ssun<<")";
     ssun<< " ravepreset: " << (presetplayouts/presetnum);
     Tree *besttree=movetree->getRobustChild();
+    if (besttree->isPruned()) {
+      fprintf(stderr,"besttree is pruned but has %f playouts ?!\n",besttree->getPlayouts()); 
+    }
     float scoresd=0;
     float scoremean=0;
     float bestratio=0;
@@ -5734,7 +5784,7 @@ void Engine::clearBoard()
   recalc_dynkomi=0;
 }
 
-void Engine::clearMoveTree()
+void Engine::clearMoveTree(int a_pos)
 {
   #ifdef HAVE_MPI
     MPIRANK0_ONLY(this->mpiBroadcastCommand(MPICMD_CLEARTREE););
@@ -5742,11 +5792,18 @@ void Engine::clearMoveTree()
   
   if (movetree!=NULL)
     delete movetree;
-  
-  if (currentboard->getMovesMade()>0)
-    movetree=new Tree(params,currentboard->getZobristHash(zobristtable),currentboard->getLastMove());
-  else
-    movetree=new Tree(params,0);
+  if (a_pos<0) {
+    if (currentboard->getMovesMade()>0)
+      movetree=new Tree(params,currentboard->getZobristHash(zobristtable),currentboard->getLastMove());
+    else
+      movetree=new Tree(params,0);
+  }
+  else {
+    if (currentboard->getMovesMade()>0)
+      movetree=new Tree(params,currentboard->getZobristHash(zobristtable),currentboard->getLastMove(),NULL,a_pos);
+    else
+      movetree=new Tree(params,0,Go::Move(Go::EMPTY,Go::Move::RESIGN),NULL,a_pos);
+  }
   
   params->uct_slow_update_last=0;
   params->uct_slow_debug_last=0;
@@ -5999,7 +6056,7 @@ void Engine::doPlayout(Worker::Settings *settings, Go::IntBoard *firstlist, Go::
   Go::Board *playoutboard=currentboard->copy();
   //Go::Board *playoutboard=pool_board.construct(currentboard->getSize());
   //currentboard->copyOver(playoutboard);
-
+  playoutboard->komi_grouptesting=this->komi;
   playoutboard->turnSymmetryOff();
   if (params->playout_features_enabled>0)
     playoutboard->setFeatures(features,params->playout_features_incremental,params->test_p8==0);
@@ -6019,9 +6076,9 @@ void Engine::doPlayout(Worker::Settings *settings, Go::IntBoard *firstlist, Go::
 
   //for(std::list<Go::Move>::iterator iter=playoutmoves.begin();iter!=playoutmoves.end();++iter)
   //{
-  //    fprintf(stderr,"%s ",(*iter).toString(19).c_str());
+  //    fprintf(stderr,"%s ",(*iter).toString(boardsize).c_str());
   //}
-  //fprintf(stderr,"\n");
+  //fprintf(stderr,"-\n");
   float finalscore;
   float cnn_winrate=-1;
   playout->doPlayout(settings,playoutboard,finalscore,cnn_winrate,playouttree,playoutmoves,col,(params->rave_moves>0?firstlist:NULL),(params->rave_moves>0?secondlist:NULL),(params->rave_moves>0?earlyfirstlist:NULL),(params->rave_moves>0?earlysecondlist:NULL));
