@@ -171,6 +171,7 @@ Go::Group::Group(Go::Board *board,
   pseudoends=0;
   libpossum=0;
   libpossumsq=0;
+  solid=false;
 }
 
 void Go::Group::addTouchingEmpties(Go::Board *board)
@@ -297,6 +298,8 @@ Go::Board::Board(int s)
   blackcaptures=0;
   whitecaptures=0;
   lastscoredata=NULL;
+
+  hasSolidGroups=false;
 }
 
 Go::Board::~Board()

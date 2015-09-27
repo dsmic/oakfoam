@@ -634,6 +634,7 @@ namespace Go
         pseudoborderdist+=othergroup->pseudoborderdist;
         libpossum+=othergroup->libpossum;
         libpossumsq+=othergroup->libpossumsq;
+        if (isSolid() || othergroup->isSolid()) setSolid();
         adjacentgroups.splice(adjacentgroups.end(),*othergroup->getAdjacentGroups());
         //adjacentgroups.insert(adjacentgroups.end(),othergroup->getAdjacentGroups()->begin(),othergroup->getAdjacentGroups()->end());
         //adjacentgroups.insert(othergroup->getAdjacentGroups()->begin(),othergroup->getAdjacentGroups()->end());
@@ -678,6 +679,8 @@ namespace Go
       inline int getLibpossumsq() {return libpossumsq;}
 //      inline Go::Board *const getBoard() {return board;}
       int real_libs; //used for very slow real liberty counting
+      bool isSolid() {return solid;}
+      void setSolid(bool t=true) {solid=t;}
       
     private:
       //Go::Board *const board;
@@ -694,6 +697,7 @@ namespace Go
       int libpossumsq;
 
       list_short adjacentgroups;
+      bool solid;
   };
   
   /** Go board. */
@@ -896,6 +900,22 @@ namespace Go
         });
         return false;
       };
+      inline bool isCaptureSolid(Go::Move move) const
+      {
+        Go::Color col=move.getColor();
+        int pos=move.getPosition();
+        foreach_adjacent(pos,p,{
+          if (this->inGroup(p) && col!=this->getColor(p))
+          {
+            Go::Group *group=this->getGroup(p);
+            if (//col!=group->getColor() && 
+                group->inAtari() && group->isSolid())
+              return true;
+          }
+        });
+        return false;
+      };
+      
       /** Determine is the given move is an extension. */
       bool isExtension(Go::Move move) const;
       bool isExtension2lib(Go::Move move, bool checkother=true) const;
@@ -1104,6 +1124,7 @@ namespace Go
       Features *getFeatures() {return features;};
 
       float komi_grouptesting=0;  //only used for group testing!!!!!!!!
+      bool hasSolidGroups;
 
     private:
       const int size;

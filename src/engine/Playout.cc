@@ -1770,7 +1770,9 @@ bool Playout::isBadMove(Worker::Settings *settings, Go::Board *board, Go::Color 
       fprintf(stderr,"%s %f %d ",Go::Move(col,pos).toString(board->getSize()).c_str(),(col==Go::BLACK)?critarray[pos].ownselfblack:critarray[pos].ownselfwhite,isBad);
   }
 
-
+  if (!isBad && board->hasSolidGroups && board->isCaptureSolid(Go::Move(col,pos)))
+    isBad=true;
+  
   //maybe one must take into account, the getOwnRatio(), simelar to criticality!!!
   
   if (critarray!=NULL && ((!isBad && params->test_p68>0
