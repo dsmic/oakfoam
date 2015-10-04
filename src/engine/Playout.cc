@@ -867,7 +867,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
       respondmoves=new std::set<int>;
       
     this->getLastAtariMove(settings,board,col,move,posarray,params->test_p19,respondmoves);
-    if (!move.isPass())
+    if (!move.isPass()  && !(board->hasSolidGroups && board->isCaptureSolid(move)))
     {
       if (params->debug_on)
         gtpe->getOutput()->printfDebug("[playoutmove]: %s lastatari\n",move.toString(board->getSize()).c_str());
@@ -893,7 +893,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
       respondmoves=new std::set<int>;
       
     this->getLastCaptureMove(settings,board,col,move,posarray,respondmoves);
-    if (!move.isPass())
+    if (!move.isPass()  && !(board->hasSolidGroups && board->isCaptureSolid(move)))
     {
       if (params->debug_on)
         gtpe->getOutput()->printfDebug("[playoutmove]: %s lastcapture\n",move.toString(board->getSize()).c_str());
@@ -915,7 +915,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
   if (params->playout_last2libatari_enabled && (WITH_P(params->test_p34)||*earlymoves))
   {
     this->getLast2LibAtariMove(settings,board,col,move,posarray,&blevel);
-    if (!move.isPass())
+    if (!move.isPass() && !(board->hasSolidGroups && board->isCaptureSolid(move)))
     {
       if (blevel>7) {
         if (params->debug_on)
@@ -1770,8 +1770,10 @@ bool Playout::isBadMove(Worker::Settings *settings, Go::Board *board, Go::Color 
       fprintf(stderr,"%s %f %d ",Go::Move(col,pos).toString(board->getSize()).c_str(),(col==Go::BLACK)?critarray[pos].ownselfblack:critarray[pos].ownselfwhite,isBad);
   }
 
-  if (!isBad && board->hasSolidGroups && board->isCaptureSolid(Go::Move(col,pos)))
+  if (!isBad && board->hasSolidGroups && board->isCaptureSolid(Go::Move(col,pos))) {
     isBad=true;
+    fprintf(stderr,"solid capture bad move %s\n",Go::Move(col,pos).toString(board->getSize()).c_str());
+  }
   
   //maybe one must take into account, the getOwnRatio(), simelar to criticality!!!
   

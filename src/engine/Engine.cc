@@ -61,7 +61,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   bottom.push_back(b); 
   const vector<Blob<float>*>& result=  caffe_test_net->Forward(bottom);
   fprintf(stderr,"start\n");
-  for (int i=0;i<100;i++)
+  for (int i=0;i<10;i++)
     const vector<Blob<float>*>& result =  caffe_test_net->Forward(bottom);
   fprintf(stderr,"end\n");
   
@@ -101,6 +101,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   komi=7.5;
   komi_handicap=0;
   recalc_dynkomi=0;
+
+  debug_solid_group=-1;
 
   params->tree_instances=0;
   
@@ -980,6 +982,7 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("time_left",this,&Engine::gtpTimeLeft);
   
   gtpe->addFunctionCommand("donplayouts",this,&Engine::gtpDoNPlayouts);
+  gtpe->addFunctionCommand("solidgroupat",this,&Engine::gtpSolidGroupAt);
   gtpe->addFunctionCommand("donplayoutsaround",this,&Engine::gtpDoNPlayoutsAround);
   gtpe->addFunctionCommand("outputsgf",this,&Engine::gtpOutputSGF);
   gtpe->addFunctionCommand("playoutsgf",this,&Engine::gtpPlayoutSGF);
@@ -1087,6 +1090,7 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("param time","Parameters (Time)","param");
   gtpe->addAnalyzeCommand("param rules","Parameters (Rules)","param");
   gtpe->addAnalyzeCommand("param other","Parameters (Other)","param");
+  gtpe->addAnalyzeCommand("solidgroupat %%p","Solid Group At","none");
   gtpe->addAnalyzeCommand("donplayoutsaround %%s %%p","Do N Playouts around","none");
   gtpe->addAnalyzeCommand("donplayouts %%s","Do N Playouts","none");
   gtpe->addAnalyzeCommand("donplayouts 1","Do 1 Playout","none");
@@ -1680,7 +1684,10 @@ void Engine::gtpShowRealLibs(void *instance, Gtp::Engine* gtpe, Gtp::Command* cm
       int pos=Go::Position::xy2pos(x,y,me->boardsize);
       int reallibs=0;
       if (me->currentboard->inGroup(pos)) {
-        reallibs=me->currentboard->getGroup(pos)->real_libs;
+        //reallibs=me->currentboard->getGroup(pos)->real_libs;
+        reallibs=me->currentboard->getGroup(pos)->numRealLibs();
+        if (me->currentboard->getGroup(pos)->real_libs!=reallibs)
+          fprintf(stderr,"this is not correct, liberties are wrong:(\n");
       }
       gtpe->getOutput()->printf("\"%d\"",reallibs);
     }
@@ -2139,6 +2146,11 @@ void Engine::gtpPlayoutSGF_pos(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
   for (int i=0;i<1000+1000;i++)
   {
     Go::Board *playoutboard=me->currentboard->copy();
+    if (me->debug_solid_group>=0 && playoutboard->inGroup(me->debug_solid_group)) {
+      playoutboard->hasSolidGroups=true;
+      Go::Group *thegroup=playoutboard->getGroup(me->debug_solid_group);
+      thegroup->setSolid ();
+    }
     Go::Color col=me->currentboard->nextToMove();
     float finalscore;
     std::list<Go::Move> playoutmoves;
@@ -2331,6 +2343,26 @@ void Engine::gtpDoNPlayouts(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd
   
   int n=cmd->getIntArg(0);
   me->doNPlayouts(n);
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->endResponse();
+}
+
+void Engine::gtpSolidGroupAt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("need 1 arg");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  Gtp::Vertex vert = cmd->getVertexArg(0);
+  int a_pos=Go::Position::xy2pos(vert.x,vert.y,me->boardsize);
+  me->debug_solid_group=a_pos;
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->endResponse();
@@ -6058,6 +6090,11 @@ void Engine::doPlayout(Worker::Settings *settings, Go::IntBoard *firstlist, Go::
   //currentboard->copyOver(playoutboard);
   playoutboard->komi_grouptesting=this->komi;
   playoutboard->turnSymmetryOff();
+  if (debug_solid_group>=0 && playoutboard->inGroup(debug_solid_group)) {
+    playoutboard->hasSolidGroups=true;
+    Go::Group *thegroup=playoutboard->getGroup(debug_solid_group);
+    thegroup->setSolid ();
+  }
   if (params->playout_features_enabled>0)
     playoutboard->setFeatures(features,params->playout_features_incremental,params->test_p8==0);
   if (params->csstyle_enabled) {

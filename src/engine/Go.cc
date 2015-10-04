@@ -158,9 +158,9 @@ std::string Go::Move::toString(int boardsize) const
   }
 }
 
-Go::Group::Group(Go::Board *board, 
+Go::Group::Group(Go::Board *boardtmp, 
                  int pos)
-  : //board(brd),
+  : board(boardtmp),
     color(board->getColor(pos)),
     position(pos)
 {
@@ -184,6 +184,13 @@ void Go::Group::addTouchingEmpties(Go::Board *board)
       this->addPseudoEnd();
   });
 }
+/*
+ bool Go::Group::inAtari() const { 
+  if ((all_liberties.size()==1)!=((pseudoliberties*libpossumsq)==(libpossum*libpossum) && pseudoliberties>0))
+    fprintf(stderr,"should not happen %d %d %d %s\n%s",(int)all_liberties.size(),pseudoliberties,stonescount,Go::Position::pos2string(position,board->getSize()).c_str(),board->toString().c_str());
+  return ((pseudoliberties*libpossumsq)==(libpossum*libpossum) && pseudoliberties>0); 
+};  //pseudoliberties==0 should not happen?!
+*/
 
 bool Go::Group::isOneOfTwoLiberties(const Go::Board *board,int pos) const
 {
@@ -203,7 +210,6 @@ bool Go::Group::isOneOfTwoLiberties(const Go::Board *board,int pos) const
       lpsq-=pos*pos;
     }
   });
-  
   return (ps>0 && (ps*lpsq)==(lps*lps));
 }
 
@@ -746,7 +752,8 @@ void Go::Board::makeMove(Go::Move move, Gtp::Engine* gtpe)
       thisgroup=thisgroup->find();
     }
   });
-  
+
+  //fprintf(stderr,"move %s\n",move.toString (size).c_str());
   foreach_adjacent(pos,p,{
     if (this->getColor(p)==othercol)
     {
@@ -758,7 +765,7 @@ void Go::Board::makeMove(Go::Move move, Gtp::Engine* gtpe)
       othergroup->getAdjacentGroups()->push_back(pos);
       //thisgroup->getAdjacentGroups()->insert(p);
       //othergroup->getAdjacentGroups()->insert(pos);
-      
+      //fprintf(stderr,"numpseudo %d %s\n",othergroup->numOfPseudoLiberties(),Go::Position::pos2string(othergroup->getPosition (),size).c_str());
       if (othergroup->numOfPseudoLiberties()==0)
       {
         lastcapture=true;
@@ -772,9 +779,10 @@ void Go::Board::makeMove(Go::Move move, Gtp::Engine* gtpe)
       }
       else if (othergroup->numOfPseudoLiberties()<=4)
       {
-        if (othergroup->inAtari())
+        if (othergroup->inAtariNotCompleted())
         {
-          int liberty=othergroup->getAtariPosition();
+          //fprintf(stderr,"inatari\n");
+          int liberty=othergroup->getAtariPositionNotCompleted();
           this->addValidMove(col,liberty);
           if (this->touchingEmpty(liberty)==0 && !this->validMoveCheck(othercol,liberty))
             this->removeValidMove(othercol,liberty);

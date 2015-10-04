@@ -433,6 +433,7 @@ class Engine
     float komi_handicap;
     float recalc_dynkomi;
     int boardsize;
+    int debug_solid_group;
     Time *time;
     Tree *movetree;
     Pattern::ThreeByThreeTable *patterntable;
@@ -655,6 +656,7 @@ class Engine
     static void gtpTimeLeft(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     
     static void gtpDoNPlayouts(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
+    static void gtpSolidGroupAt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
     static void gtpDoNPlayoutsAround(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);
 
     static void gtpOutputSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd);

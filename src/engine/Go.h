@@ -634,6 +634,7 @@ namespace Go
         pseudoborderdist+=othergroup->pseudoborderdist;
         libpossum+=othergroup->libpossum;
         libpossumsq+=othergroup->libpossumsq;
+        all_liberties.insert(othergroup->all_liberties.begin(),othergroup->all_liberties.end());
         if (isSolid() || othergroup->isSolid()) setSolid();
         adjacentgroups.splice(adjacentgroups.end(),*othergroup->getAdjacentGroups());
         //adjacentgroups.insert(adjacentgroups.end(),othergroup->getAdjacentGroups()->begin(),othergroup->getAdjacentGroups()->end());
@@ -651,18 +652,28 @@ namespace Go
       inline int numOfPseudoBorderDist() const { return pseudoborderdist; };
       
       /** Add a pseudo liberty to this group. */
-      inline void addPseudoLiberty(int pos) { pseudoliberties++; libpossum+=pos; libpossumsq+=pos*pos; };
+      inline void addPseudoLiberty(int pos) { pseudoliberties++; libpossum+=pos; libpossumsq+=pos*pos; all_liberties.insert(pos);};
       inline void addPseudoEnd() { pseudoends++;};
       inline void addPseudoBorderDist(int dist) { pseudoborderdist+=dist;};
       /** Remove a pseudo liberty from this group. */
-      inline void removePseudoLiberty(int pos) { pseudoliberties--; libpossum-=pos; libpossumsq-=pos*pos; };
+      inline void removePseudoLiberty(int pos) { pseudoliberties--; libpossum-=pos; libpossumsq-=pos*pos; all_liberties.erase(pos);};
       inline void removePseudoEnd() { pseudoends--;};
       /** Determine if this group is in atari. */
-      inline bool inAtari() const { return ((pseudoliberties*libpossumsq)==(libpossum*libpossum) && pseudoliberties>0); };  //pseudoliberties==0 should not happen?!
+      inline bool inAtari() const {return (all_liberties.size()==1);};
+      //inline bool inAtari() const {return ((pseudoliberties*libpossumsq)==(libpossum*libpossum) && pseudoliberties>0); };  //pseudoliberties==0 should not happen?!
+      inline bool inAtariNotCompleted() const {return ((pseudoliberties*libpossumsq)==(libpossum*libpossum) && pseudoliberties>0); };  //pseudoliberties==0 should not happen?!
+    /*{ 
+        if ((all_liberties.size()==1)!=((pseudoliberties*libpossumsq)==(libpossum*libpossum) && pseudoliberties>0))
+          fprintf(stderr,"should not happen %d %d %d\n%s",(int)all_liberties.size(),pseudoliberties,stonescount,board->toSting());
+        return ((pseudoliberties*libpossumsq)==(libpossum*libpossum) && pseudoliberties>0); };  //pseudoliberties==0 should not happen?!
+      */
+
+      //inline bool inAtari() const {return all_liberties.size()==1;}
       /** Get the last remaining postion of a group in atari.
        * If the group is not in atari, -1 is returned.
        */
       inline int getAtariPosition() const { if (this->inAtari()) return libpossum/pseudoliberties; else return -1; };
+      inline int getAtariPositionNotCompleted() const { if (this->inAtariNotCompleted()) return libpossum/pseudoliberties; else return -1; };
       /** Add the orthogonally adjacent empty pseudo liberties. */
       inline void addTouchingEmpties(Go::Board *);
       /** Determine if given position is one of the last two liberties. */
@@ -681,9 +692,10 @@ namespace Go
       int real_libs; //used for very slow real liberty counting
       bool isSolid() {return solid;}
       void setSolid(bool t=true) {solid=t;}
+      int numRealLibs() {return all_liberties.size();}
       
     private:
-      //Go::Board *const board;
+      Go::Board *const board;
       const Go::Color color;
       const int position;
       
@@ -698,6 +710,7 @@ namespace Go
 
       list_short adjacentgroups;
       bool solid;
+      std::set<int> all_liberties;
   };
   
   /** Go board. */
