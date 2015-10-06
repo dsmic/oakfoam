@@ -316,6 +316,15 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","test_p120",&(params->test_p120),0.0);
 
   params->addParameter("playout","csstyle_enabled",&(params->csstyle_enabled),0);
+  params->addParameter("playout","csstyle_atatarigroup",&(params->csstyle_atatarigroup),1.0);
+  params->addParameter("playout","csstyle_is2libgroup",&(params->csstyle_is2libgroup),1.0);
+  params->addParameter("playout","csstyle_attachedpos",&(params->csstyle_attachedpos),1.0);
+  params->addParameter("playout","csstyle_saveataricapture",&(params->csstyle_saveataricapture),1.0);
+  params->addParameter("playout","csstyle_saveataricapturebutselfatari",&(params->csstyle_saveataricapturebutselfatari),1.0);
+  params->addParameter("playout","csstyle_saveatariextention",&(params->csstyle_saveatariextention),1.0);
+  params->addParameter("playout","csstyle_saveatariextentionbutselfatari",&(params->csstyle_saveatariextentionbutselfatari),1.0);
+  params->addParameter("playout","csstyle_solvekocapture",&(params->csstyle_solvekocapture),1.0);
+  params->addParameter("playout","csstyle_2libcapture",&(params->csstyle_2libcapture),1.0);
   params->addParameter("playout","csstyle_01",&(params->csstyle_01),0.0);
   params->addParameter("playout","csstyle_02",&(params->csstyle_02),0.0);
   params->addParameter("playout","csstyle_03",&(params->csstyle_03),0.0);
@@ -627,7 +636,7 @@ void Engine::getCNN(Go::Board *board,Go::Color col, float result[])
 	//}
   int size=board->getSize();
 	float *data;
-  board->calcSlowLibertyGroups();
+  //board->calcSlowLibertyGroups();
 	data= new float[9*size*size];
 	//fprintf(stderr,"2\n");
 	if (col==Go::BLACK) {
@@ -638,7 +647,7 @@ void Engine::getCNN(Go::Board *board,Go::Color col, float result[])
         //fprintf(stderr,"%d %d %d\n",i,j,k);
         int pos=Go::Position::xy2pos(j,k,size);
         int libs=0;
-        if (board->inGroup(pos)) libs=board->getGroup(pos)->real_libs-1;
+        if (board->inGroup(pos)) libs=board->getGroup(pos)->numRealLibs()-1;
         if (libs>3) libs=3; 
         if (board->getColor(pos)==Go::BLACK)
 	          {
@@ -664,7 +673,7 @@ void Engine::getCNN(Go::Board *board,Go::Color col, float result[])
         //fprintf(stderr,"%d %d %d\n",i,j,k);
         int pos=Go::Position::xy2pos(j,k,size);
         int libs=0;
-        if (board->inGroup(pos)) libs=board->getGroup(pos)->real_libs-1;
+        if (board->inGroup(pos)) libs=board->getGroup(pos)->numRealLibs()-1;
         if (libs>3) libs=3; 
         if (board->getColor(pos)==Go::BLACK)
 	          {
@@ -3930,7 +3939,7 @@ void Engine::gtpShowPlayoutGammas(void *instance, Gtp::Engine* gtpe, Gtp::Comman
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printString("\n");
-  me->currentboard->updatePlayoutGammas(me->features);
+  me->currentboard->updatePlayoutGammas(me->params, me->features);
   for (int y=me->boardsize-1;y>=0;y--)
   {
     for (int x=0;x<me->boardsize;x++)
@@ -5116,7 +5125,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     if (params->csstyle_enabled) {
       if (params->playout_features_enabled)
         fprintf(stderr,"playout_features_enabled and csstyle_enabled can not be used together!!!!\n");
-      playoutboard->updatePlayoutGammas(features);
+      playoutboard->updatePlayoutGammas(params, features);
     }
     critstruct *critarray=NULL;
     float *b_ravearray=NULL;
@@ -5205,7 +5214,7 @@ void Engine::getOnePlayoutMove(Go::Board *board, Go::Color col, Go::Move *move)
   if (params->csstyle_enabled) {
     if (params->playout_features_enabled)
       fprintf(stderr,"playout_features_enabled and csstyle_enabled can not be used together!!!!\n");
-    playoutboard->updatePlayoutGammas(features);
+    playoutboard->updatePlayoutGammas(params, features);
   }
   playout->getPlayoutMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,*move,NULL,NULL);
   if (params->playout_useless_move)
@@ -5241,7 +5250,7 @@ void Engine::makeMove(Go::Move move)
     if (params->csstyle_enabled) {
       if (params->playout_features_enabled)
         fprintf(stderr,"playout_features_enabled and csstyle_enabled can not be used together!!!!\n");
-      playoutboard->updatePlayoutGammas(features);
+      playoutboard->updatePlayoutGammas(params, features);
     }
     playout->getPlayoutMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,movetmp,NULL,NULL);
     if (!movetmp.isPass())
@@ -6100,7 +6109,7 @@ void Engine::doPlayout(Worker::Settings *settings, Go::IntBoard *firstlist, Go::
   if (params->csstyle_enabled) {
     if (params->playout_features_enabled)
       fprintf(stderr,"playout_features_enabled and csstyle_enabled can not be used together!!!!\n");
-    playoutboard->updatePlayoutGammas(features);
+    playoutboard->updatePlayoutGammas(params, features);
   }
   if (params->rave_moves>0)
   {

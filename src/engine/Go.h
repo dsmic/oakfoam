@@ -12,6 +12,8 @@
 
 #include "../gtp/Gtp.h"
 
+
+#define MARK {fprintf(stderr,"mark %s %d\n",__FILE__,__LINE__);}
 //can be set or unordered_set last is faster (this was probably wrong, it is only faster if fetch by value is needed, and only one is needed in erase(group))
 #define ourset unordered_set
 
@@ -35,6 +37,7 @@ class Random;
 #define P_SE (P_S+P_E)
 
 //changed ordering to hopefully hit the cache better 2/15/2014
+#define foreach_adjacent_debug(__pos ,__adjpos) for (int __adjpos : {__pos+P_E,__pos+P_W,__pos+P_S,__pos+P_N}) 
 #define foreach_adjacent(__pos, __adjpos, __body) \
   { \
     int __intpos = __pos; \
@@ -45,6 +48,7 @@ class Random;
     __adjpos = __intpos+P_N; { __body }; \
   }
 
+#define foreach_onandadj_debug(__pos ,__adjpos) for (int __adjpos : {__pos,__pos+P_E,__pos+P_W,__pos+P_S,__pos+P_N}) 
 #define foreach_onandadj(__pos, __adjpos, __body) \
   { \
     int __intpos = __pos; \
@@ -56,6 +60,7 @@ class Random;
     __adjpos = __intpos+P_N; { __body }; \
   }
 
+#define foreach_adjdiag_debug(__pos ,__adjpos) for (int __adjpos : {__pos+P_E,__pos+P_W,__pos+P_SW,__pos+P_S,__pos+P_SE,__pos+P_NW,__pos+P_N,__pos+P_NE}) 
 #define foreach_adjdiag(__pos, __adjpos, __body) \
   { \
     int __intpos = __pos; \
@@ -70,6 +75,7 @@ class Random;
     __adjpos = __intpos+P_NE; { __body }; \
   }
 
+#define foreach_diagonal_debug(__pos ,__adjpos) for (int __adjpos : {__pos+P_SW,__pos+P_SE,__pos+P_NW,__pos+P_NE}) 
 #define foreach_diagonal(__pos, __adjpos, __body) \
   { \
     int __intpos = __pos; \
@@ -648,6 +654,7 @@ namespace Go
       inline int numOfStones() const { return stonescount; };
       /** Get the number of pseudo liberties for this group. */
       inline int numOfPseudoLiberties() const { return pseudoliberties; };
+      inline int numOfRealLiberties() const { return all_liberties.size(); };
       inline int numOfPseudoEnds() const { return pseudoends; };
       inline int numOfPseudoBorderDist() const { return pseudoborderdist; };
       
@@ -661,19 +668,19 @@ namespace Go
       /** Determine if this group is in atari. */
       inline bool inAtari() const {return (all_liberties.size()==1);};
       //inline bool inAtari() const {return ((pseudoliberties*libpossumsq)==(libpossum*libpossum) && pseudoliberties>0); };  //pseudoliberties==0 should not happen?!
-      inline bool inAtariNotCompleted() const {return ((pseudoliberties*libpossumsq)==(libpossum*libpossum) && pseudoliberties>0); };  //pseudoliberties==0 should not happen?!
+      //inline bool inAtariNotCompleted() const {return ((pseudoliberties*libpossumsq)==(libpossum*libpossum) && pseudoliberties>0); };  //pseudoliberties==0 should not happen?!
     /*{ 
         if ((all_liberties.size()==1)!=((pseudoliberties*libpossumsq)==(libpossum*libpossum) && pseudoliberties>0))
           fprintf(stderr,"should not happen %d %d %d\n%s",(int)all_liberties.size(),pseudoliberties,stonescount,board->toSting());
         return ((pseudoliberties*libpossumsq)==(libpossum*libpossum) && pseudoliberties>0); };  //pseudoliberties==0 should not happen?!
       */
 
-      //inline bool inAtari() const {return all_liberties.size()==1;}
       /** Get the last remaining postion of a group in atari.
        * If the group is not in atari, -1 is returned.
        */
-      inline int getAtariPosition() const { if (this->inAtari()) return libpossum/pseudoliberties; else return -1; };
-      inline int getAtariPositionNotCompleted() const { if (this->inAtariNotCompleted()) return libpossum/pseudoliberties; else return -1; };
+      inline int getAtariPosition() const { if (this->inAtari()) return *all_liberties.begin(); else return -1; };
+      inline bool get2libPositions(int &a, int &b) const { if (this->numRealLibs()==2) {a=*all_liberties.begin(); b=*(++all_liberties.begin()); return true;} else return false; };
+      //inline int getAtariPositionNotCompleted() const { if (this->inAtariNotCompleted()) return libpossum/pseudoliberties; else return -1; };
       /** Add the orthogonally adjacent empty pseudo liberties. */
       inline void addTouchingEmpties(Go::Board *);
       /** Determine if given position is one of the last two liberties. */
@@ -692,8 +699,18 @@ namespace Go
       int real_libs; //used for very slow real liberty counting
       bool isSolid() {return solid;}
       void setSolid(bool t=true) {solid=t;}
-      int numRealLibs() {return all_liberties.size();}
-      
+      int numRealLibs() const {return all_liberties.size();}
+      int changedAtariAt() {
+        if ((changed_atari_pos>=0)!=inAtari()) 
+          {
+            int atpos=getAtariPosition();
+            if (atpos>=0) {changed_atari_pos=atpos; return changed_atari_pos;}
+            atpos=changed_atari_pos;
+            changed_atari_pos=-1;
+            return atpos; //here was atari at the last update (call of changedAtariAt)
+          }
+        return -1; //no change
+      }
     private:
       Go::Board *const board;
       const Go::Color color;
@@ -710,7 +727,8 @@ namespace Go
 
       list_short adjacentgroups;
       bool solid;
-      std::set<int> all_liberties;
+      std::ourset<int> all_liberties;
+      int changed_atari_pos; //updatePlayoutGammas () uses this to track, if a ataristatus of a group has changed at pos
   };
   
   /** Go board. */
@@ -860,9 +878,9 @@ namespace Go
       
       /** Set the features for the board and whether the gamma values should be updated incrementally. */
       void setFeatures(Features *feat, bool inc, bool mchanges=true) { features=feat; incfeatures=inc; markchanges=mchanges; this->refreshFeatureGammas(); };
-      void setPlayoutGammaAt(int p);
-      void setPlayoutGammaAround(int p, Go::BitBoard *changes3x3);
-      void updatePlayoutGammas(Features *feat=NULL);
+      void setPlayoutGammaAt(Parameters* params,int p);
+      void setPlayoutGammaAround(Parameters* params,int p, Go::BitBoard *changes3x3);
+      void updatePlayoutGammas(Parameters* params, Features *feat=NULL);
       
       /** Get the sum ofthe gamma values for this board. */
       float getFeatureTotalGamma() const { return (nexttomove==Go::BLACK?blacktotalgamma:whitetotalgamma); };
@@ -1058,6 +1076,7 @@ namespace Go
   }
 };
       /** Determine is the given move is an atari. */
+      bool isLastLib(int pos, int *groupsize) const;
       bool isAtari(Go::Move move, int *groupsize=NULL) const;
       bool isAtari(Go::Move move, int *groupsize, int other_not) const;
       /** Get the distance from the given position to the board edge. */

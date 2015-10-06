@@ -310,6 +310,15 @@ class Parameters
     float test_p120;
 
     bool csstyle_enabled;
+    float csstyle_atatarigroup;
+    float csstyle_is2libgroup;
+    float csstyle_attachedpos;
+    float csstyle_saveataricapture;
+    float csstyle_saveataricapturebutselfatari;
+    float csstyle_saveatariextention;
+    float csstyle_saveatariextentionbutselfatari;
+    float csstyle_solvekocapture;
+    float csstyle_2libcapture;
     float csstyle_01;
     float csstyle_02;
     float csstyle_03;

@@ -172,6 +172,7 @@ Go::Group::Group(Go::Board *boardtmp,
   libpossum=0;
   libpossumsq=0;
   solid=false;
+  changed_atari_pos=-1;
 }
 
 void Go::Group::addTouchingEmpties(Go::Board *board)
@@ -192,7 +193,8 @@ void Go::Group::addTouchingEmpties(Go::Board *board)
 };  //pseudoliberties==0 should not happen?!
 */
 
-bool Go::Group::isOneOfTwoLiberties(const Go::Board *board,int pos) const
+/*
+ bool Go::Group::isOneOfTwoLiberties(const Go::Board *board,int pos) const
 {
   if (pseudoliberties>8 || this->inAtari())
     return false;
@@ -212,8 +214,20 @@ bool Go::Group::isOneOfTwoLiberties(const Go::Board *board,int pos) const
   });
   return (ps>0 && (ps*lpsq)==(lps*lps));
 }
+*/
 
+bool Go::Group::isOneOfTwoLiberties(const Go::Board *board,int pos) const
+{
+  return ((all_liberties.size()==2) && (*all_liberties.find(pos)>-1));
+}
 
+int Go::Group::getOtherOneOfTwoLiberties(const Go::Board *board,int pos) const
+{
+  if (all_liberties.size()!=2) return -1;
+  if (*all_liberties.begin()==pos) return *(++(all_liberties.begin()));
+  return *all_liberties.begin();
+}
+/*
 int Go::Group::getOtherOneOfTwoLiberties(const Go::Board *board,int pos) const
 {
   if (pseudoliberties>8 || this->inAtari())
@@ -238,6 +252,8 @@ int Go::Group::getOtherOneOfTwoLiberties(const Go::Board *board,int pos) const
   else
     return -1;
 }
+*/
+
 
 Go::Board::Board(int s)
   : size(s),
@@ -766,7 +782,7 @@ void Go::Board::makeMove(Go::Move move, Gtp::Engine* gtpe)
       //thisgroup->getAdjacentGroups()->insert(p);
       //othergroup->getAdjacentGroups()->insert(pos);
       //fprintf(stderr,"numpseudo %d %s\n",othergroup->numOfPseudoLiberties(),Go::Position::pos2string(othergroup->getPosition (),size).c_str());
-      if (othergroup->numOfPseudoLiberties()==0)
+      if (othergroup->numOfRealLiberties()==0)
       {
         lastcapture=true;
         if (removeGroup(othergroup)==1)
@@ -777,12 +793,12 @@ void Go::Board::makeMove(Go::Move move, Gtp::Engine* gtpe)
             posko=-2;
         }
       }
-      else if (othergroup->numOfPseudoLiberties()<=4)
+      else //if (othergroup->numOfPseudoLiberties()<=4)
       {
-        if (othergroup->inAtariNotCompleted())
+        if (othergroup->inAtari())
         {
           //fprintf(stderr,"inatari\n");
-          int liberty=othergroup->getAtariPositionNotCompleted();
+          int liberty=othergroup->getAtariPosition();
           this->addValidMove(col,liberty);
           if (this->touchingEmpty(liberty)==0 && !this->validMoveCheck(othercol,liberty))
             this->removeValidMove(othercol,liberty);
@@ -1670,15 +1686,47 @@ std::list<Go::Board::SymmetryTransform> Go::Board::getSymmetryTransformsFromPrim
 
 //large patterns are too slow at the moment:(
 #define is3x3only
-void Go::Board::setPlayoutGammaAt(int p)
+void Go::Board::setPlayoutGammaAt(Parameters* params,int p)
 {
 #ifdef is3x3only
+  if (params->csstyle_atatarigroup!=1.0) {
+  float atari=1.0, is2lib=1.0;//,atariw=1.0, is2libw=1.0;
+  foreach_adjacent(p,q,{
+    if (this->inGroup(q))
+    {
+      Go::Group *group=this->getGroup(q);
+      int libs=group->numRealLibs();
+      //Go::Color col=group->getColor();
+      switch (libs) {
+      case 1:
+          //if (col==Go::BLACK) atarib=params->csstyle_atatarigroup; else 
+          atari=params->csstyle_atatarigroup;
+          break;
+      case 2:
+          //if (col==Go::BLACK) is2libb=params->csstyle_is2libgroup; else 
+          is2lib=params->csstyle_is2libgroup;
+          break;
+      default:
+          ;
+      }
+    }
+  });
+  
+  unsigned int pattern=Pattern::ThreeByThree::makeHash(this,p);
+  //blackgammas->set(p,features->getFeatureGammaPlayoutPattern(Pattern::ThreeByThree::smallestEquivalent(pattern),99,99));
+  blackgammas->set(p,atari*is2lib*features->getFeatureGammaPattern(Pattern::ThreeByThree::smallestEquivalent(pattern)));
+  pattern=Pattern::ThreeByThree::invert(pattern);
+  //whitegammas->set(p,features->getFeatureGammaPlayoutPattern(Pattern::ThreeByThree::smallestEquivalent(pattern),99,99));
+  whitegammas->set(p,atari*is2lib*features->getFeatureGammaPattern(Pattern::ThreeByThree::smallestEquivalent(pattern)));
+  }
+  else {
   unsigned int pattern=Pattern::ThreeByThree::makeHash(this,p);
   //blackgammas->set(p,features->getFeatureGammaPlayoutPattern(Pattern::ThreeByThree::smallestEquivalent(pattern),99,99));
   blackgammas->set(p,features->getFeatureGammaPattern(Pattern::ThreeByThree::smallestEquivalent(pattern)));
   pattern=Pattern::ThreeByThree::invert(pattern);
   //whitegammas->set(p,features->getFeatureGammaPlayoutPattern(Pattern::ThreeByThree::smallestEquivalent(pattern),99,99));
   whitegammas->set(p,features->getFeatureGammaPattern(Pattern::ThreeByThree::smallestEquivalent(pattern)));
+  }
 #else
   Pattern::Circular pattcirc = Pattern::Circular(features->getCircDict(),this,p,psize);
   blackgammas->set(p,features->getFeatureGammaLargePattern(pattcirc,psize));
@@ -1688,13 +1736,29 @@ void Go::Board::setPlayoutGammaAt(int p)
 }
 
 
-void Go::Board::setPlayoutGammaAround(int p, Go::BitBoard *changes3x3)
+void Go::Board::setPlayoutGammaAround(Parameters* params,int p, Go::BitBoard *changes3x3)
 {
 #ifdef is3x3only
+  if (changes3x3->get(p)==false && this->inGroup(p)) {
+    int atari_changed=this->getGroup(p)->changedAtariAt();
+    if (atari_changed>=0) {
+      changes3x3->set(atari_changed);
+      setPlayoutGammaAt(params,atari_changed);
+    }
+  }
   foreach_adjdiag(p,q,{
-            if (this->getColor(q)==Go::EMPTY && changes3x3->get(q)==false) {
-              changes3x3->set(q);
-              setPlayoutGammaAt(q);
+            if (changes3x3->get(q)==false) {
+              if (this->getColor(q)==Go::EMPTY) {
+                changes3x3->set(q);
+                setPlayoutGammaAt(params,q);
+              }
+              else if (this->inGroup(q)) {
+                int atari_changed=this->getGroup(q)->changedAtariAt();
+                if (atari_changed>=0) {
+                  changes3x3->set(atari_changed);
+                  setPlayoutGammaAt(params,atari_changed);
+                }
+              }
             }
           });
 #else
@@ -1706,7 +1770,7 @@ void Go::Board::setPlayoutGammaAround(int p, Go::BitBoard *changes3x3)
 #endif
 }
 
-void Go::Board::updatePlayoutGammas(Features *feat)
+void Go::Board::updatePlayoutGammas(Parameters* params,Features *feat)
 {
   CSstyle=true;
   if (feat!=NULL) features=feat;
@@ -1715,7 +1779,7 @@ void Go::Board::updatePlayoutGammas(Features *feat)
     for (int p=0;p<sizedata;p++)
       {
         if (this->getColor(p)==Go::EMPTY) {
-          setPlayoutGammaAt(p);
+          setPlayoutGammaAt(params,p);
         }
       }
   }
@@ -1726,9 +1790,9 @@ void Go::Board::updatePlayoutGammas(Features *feat)
     for (Go::list_int::iterator p=changed_positions->begin(); p!=changed_positions->end(); ++p) {
       if (this->getColor(*p)==Go::EMPTY && changes3x3->get(*p)==false) {
         changes3x3->set(*p);
-        setPlayoutGammaAt(*p);
+        setPlayoutGammaAt(params,*p);
       }
-      setPlayoutGammaAround(*p,changes3x3);
+      setPlayoutGammaAround(params,*p,changes3x3);
     }
     changed_positions->clear();
     delete changes3x3;
@@ -2190,6 +2254,22 @@ bool Go::Board::isApproach(Go::Move move, int approach[4]) const
   }
 }
 */
+
+bool Go::Board::isLastLib(int pos, int *groupsize) const
+{
+  foreach_adjacent(pos,p,{
+    if (this->inGroup(p))
+    {
+      Go::Group *group=this->getGroup(p);
+      if (group->inAtari())
+      {
+        if (groupsize) *groupsize=group->numOfStones();
+        return true;
+      }
+    }
+  });
+  return false;
+}
 
 bool Go::Board::isAtari(Go::Move move, int *groupsize) const
 {

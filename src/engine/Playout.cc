@@ -713,6 +713,7 @@ template <typename T> string tostr(const T& t) {
    return os.str(); 
 } 
 
+#define LOCAL_FEATURE_POSITION(A,B) {res=local_feature_positions.insert({A,B});  if (!res.second)  local_feature_positions[A]*=B;}
 
 
 //prefer the better move with some probability (think about a little more:)
@@ -725,6 +726,202 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
   /* trylocal_p can be used to influence parameters from move to move in a playout. It starts with 1.0
    * 
    */
+
+  //this should replace all other code here later
+  if (params->csstyle_enabled) {
+
+    // https://www.conftool.net/acg2015/index.php/Graf-Adaptive_Playouts_in_Monte_Carlo_Tree_Search_with_Policy_Gradient_Reinforcement_Learning-113.pdf?page=downloadPaper&filename=Graf-Adaptive_Playouts_in_Monte_Carlo_Tree_Search_with_Policy_Gradient_Reinforcement_Learning-113.pdf&form_id=113&form_version=final
+    /*
+     * 1. Contiguous to the last move
+     * 2. Save new atari-string by capturing
+     * 3. Save new atari-string by capturing but resulting in self-atari
+     * 4. Save new atari-string by extending
+     * 5. Save new atari-string by extending but resulting in self-atari
+     * 6. Solve ko by capturing
+     * 7. 2-point semeai: if the last move reduces a string to two liberties any move which kills a neighbouring string with 2 liberties has this feature
+     * 8. 3-4-5-point semeai heuristic: if the last move reduces a string to 3,4 or 5 liberties and this string cannot increase its liberties (by a move on its own liberties) then any move on a liberty of a neighbouring string of the opponent which also cannot increase its liberties has this feature
+       9. Nakade capture: if the last move captured a group with a nakade-shape the killing move has this feature
+       */
+
+    int size=board->getSize();
+
+    move=Go::Move(col,Go::Move::PASS);
+    if (board->numOfValidMoves(col)==0)
+      return;
+    std::unordered_map<int,float> local_feature_positions;
+
+    int lastpos=board->getLastMove().getPosition();
+    std::pair<std::unordered_map<int,float>::iterator,bool> res;
+    int killattachedgroup;
+    int a,b;
+    if (lastpos>=0) {
+        foreach_adjdiag_debug(lastpos,q) {
+//      foreach_adjdiag(lastpos,q, {
+        if (board->validMove(col,q)) {
+            //1. Contiguous to the last move
+            LOCAL_FEATURE_POSITION(q,params->csstyle_attachedpos);
+        }
+        else {
+          if (board->getColor(q)==col) {
+            Go::Group *group=board->getGroup(q);
+            if (group->inAtari()) {
+              //new atari-string (of color col)
+              // check for capture attached
+              //Go::Color othercol=Go::otherColor(col);
+              Go::list_short *adjacentgroups=group->getAdjacentGroups();
+              if (adjacentgroups->size()>(unsigned int)board->getPositionMax())
+              {
+                adjacentgroups->sort();
+                adjacentgroups->unique();
+              }
+              for(auto iter=adjacentgroups->begin();iter!=adjacentgroups->end();)
+              {
+                if (board->inGroup((*iter)))
+                {
+                  Go::Group *attachedgroup=board->getGroup((*iter));
+                  if (attachedgroup->inAtari()) {
+                    // attached group in Atari (must have othercol)
+                    killattachedgroup=attachedgroup->getAtariPosition();
+                    int libs=0;
+                    Go::Group *usedgroup=NULL;
+                    foreach_adjacent_debug(killattachedgroup,q) {
+                    //foreach_adjacent(killattachedgroup,q,{
+                      if (board->getColor(q)==Go::EMPTY) libs++;
+                      else if (board->getColor(q)==col) {
+                        Go::Group *checkgroup=board->getGroup(q);
+                        if (checkgroup!=usedgroup && checkgroup->numRealLibs()>1) {
+                          libs+=checkgroup->numRealLibs()-1;
+                          usedgroup=checkgroup;
+                        }
+                      }
+                    }//);
+                    if (libs>1) {
+                      //2. Save new atari-string by capturing
+                      LOCAL_FEATURE_POSITION(killattachedgroup,params->csstyle_saveataricapture);
+                    }
+                    else {
+                      //3. Save new atari-string by capturing but resulting in self-atari
+                      LOCAL_FEATURE_POSITION(killattachedgroup,params->csstyle_saveataricapturebutselfatari);
+                    }
+                  }
+                iter++;
+                }
+                else
+                {
+                  iter=adjacentgroups->erase(iter);
+                }
+              }
+
+              //check for extention
+              int extentionpos=group->getAtariPosition();
+              int libs=0;
+              Go::Group *usedgroup=NULL;
+              foreach_adjacent_debug(extentionpos,q){
+              //foreach_adjacent(extentionpos,q,{
+                if (board->getColor(q)==Go::EMPTY) libs++;
+                else if (board->getColor(q)==col) {
+                  Go::Group *checkgroup=board->getGroup(q);
+                  if (checkgroup!=usedgroup && checkgroup->numRealLibs()>1) {
+                    libs+=checkgroup->numRealLibs()-1;
+                    usedgroup=checkgroup;
+                  }
+                }
+              }//);
+              if (libs>1) {
+                //4. Save new atari-string by extending
+                LOCAL_FEATURE_POSITION(killattachedgroup,params->csstyle_saveatariextention);
+              }
+              else {
+                //5. Save new atari-string by extending but resulting in self-atari
+                LOCAL_FEATURE_POSITION(killattachedgroup,params->csstyle_saveatariextentionbutselfatari);
+              }      
+            }
+            else if (group->numRealLibs()==2) {
+              //7. 2-point semeai: if the last move reduces a string to two liberties any move which kills a neighbouring string with 2 liberties has this features
+              Go::list_short *adjacentgroups=group->getAdjacentGroups();
+              if (adjacentgroups->size()>(unsigned int)board->getPositionMax())
+              {
+                adjacentgroups->sort();
+                adjacentgroups->unique();
+              }
+              for(auto iter=adjacentgroups->begin();iter!=adjacentgroups->end();)
+              {
+                if (board->inGroup((*iter)))
+                {
+                  Go::Group *attachedgroup=board->getGroup((*iter));
+                  if (attachedgroup->get2libPositions (a,b)) {
+                    //now from libs a and b the lib which kills has to be found
+                    bool a_is_extention=false;
+                    bool b_is_extention=false;
+                    int libs=0;
+                    int colattached=attachedgroup->getColor();
+                    Go::Group *usedgroup=NULL;
+                    foreach_adjacent_debug(a,q){
+                    //foreach_adjacent(a,q,{
+                      if (board->getColor(q)==Go::EMPTY) libs++;
+                      else if (board->getColor(q)==colattached && q!=b) {
+                        Go::Group *checkgroup=board->getGroup(q);
+                        if (checkgroup!=usedgroup && checkgroup->numRealLibs()>1) {
+                          libs+=checkgroup->numRealLibs()-1;
+                          usedgroup=checkgroup;
+                        }
+                      }
+                    }//);
+                    if (libs>1) a_is_extention=true;
+                    libs=0;
+                    usedgroup=NULL;
+                    foreach_adjacent_debug(b,q){
+                    //foreach_adjacent(b,q,{
+                      if (board->getColor(q)==Go::EMPTY) libs++;
+                      else if (board->getColor(q)==colattached && q!=a) {
+                        Go::Group *checkgroup=board->getGroup(q);
+                        if (checkgroup!=usedgroup && checkgroup->numRealLibs()>1) {
+                          libs+=checkgroup->numRealLibs()-1;
+                          usedgroup=checkgroup;
+                        }
+                      }
+                    }//);
+                    if (libs>1) b_is_extention=true;
+                    if (a_is_extention && !b_is_extention) LOCAL_FEATURE_POSITION(a,params->csstyle_2libcapture);
+                    if (b_is_extention && !a_is_extention) LOCAL_FEATURE_POSITION(b,params->csstyle_2libcapture);
+                  };
+                iter++;
+                }
+                else
+                {
+                  iter=adjacentgroups->erase(iter);
+                }
+              }
+
+            }
+          }
+        }
+      }//);
+
+      int kopos=board->getSimpleKo();
+      if (kopos>=0) {
+        // 6. Solve ko by capturing
+        int kostone=-1;
+        foreach_adjacent_debug(kopos,q){
+        //foreach_adjacent(kopos,q,{
+          if (board->inGroup(q) && board->getGroup(q)->inAtari())
+            kostone=board->getGroup(q)->getAtariPosition();
+        }//);
+        foreach_adjacent_debug(kostone,q){
+        //foreach_adjacent(kostone,q,{
+          if (board->inGroup(q) && board->getGroup(q)->inAtari())
+            LOCAL_FEATURE_POSITION(board->getGroup(q)->getAtariPosition(),params->csstyle_solvekocapture);
+        }//);
+      }
+    for (auto pf : local_feature_positions) {
+      fprintf(stderr,"%s:%4.1f ", Go::Position::pos2string((pf).first,size).c_str(),(pf).second);
+    }
+     fprintf(stderr,"-\n");
+    }
+  }
+  
+
+
   
   /*
    The playout_order==4 and safe_lgrfs try to do the following logic
@@ -747,7 +944,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
   move=Go::Move(col,Go::Move::PASS);
   if (board->numOfValidMoves(col)==0)
     return;
-  
+
   if (params->playout_random_chance>0)
   {
     float f=rand->getRandomReal();
@@ -1241,7 +1438,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
 
   if (params->csstyle_enabled) {
     int size=board->getSize();
-    board->updatePlayoutGammas();
+    board->updatePlayoutGammas(params);
     std::vector<std::pair<float,int>> sorted_pos;
     sorted_pos.reserve(size*size/2);
     float gamma_sum=0;
@@ -2312,8 +2509,10 @@ void Playout::getNakadeMove(Worker::Settings *settings, Go::Board *board, Go::Co
 
 //testing if performance is better with this
 //probably not, disabled again
-int Playout::getOtherOneOfTwoLiberties(Go::Board *board,Go::Group *g, int pos) 
+/*
+ int Playout::getOtherOneOfTwoLiberties(Go::Board *board,Go::Group *g, int pos) 
 {
+ // return g->getOtherOneOfTwoLiberties(board,pos);
   if (g->numOfPseudoLiberties()>8 || g->inAtari())
     return -1;
   
@@ -2337,7 +2536,7 @@ int Playout::getOtherOneOfTwoLiberties(Go::Board *board,Go::Group *g, int pos)
   else
     return -1;
 }
-
+*/
 void Playout::getLast2LibAtariMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, int *blevel)
 {
   Random *const rand=settings->rand;
