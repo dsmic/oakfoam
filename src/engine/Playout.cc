@@ -713,7 +713,8 @@ template <typename T> string tostr(const T& t) {
    return os.str(); 
 } 
 
-#define LOCAL_FEATURE_POSITION(A,B,C) {if (used[C].count(A)==0) {fprintf(stderr,"%s %d\n",Go::Position::pos2string(A,size).c_str(),C); used[C].insert(A); res=local_feature_positions.insert({A,B});  if (!res.second)  local_feature_positions[A]*=B;}}
+//#define LOCAL_FEATURE_POSITION(A,B,C) {if (used[C].count(A)==0) {fprintf(stderr,"%s %d\n",Go::Position::pos2string(A,size).c_str(),C); used[C].insert(A); res=local_feature_positions.insert({A,B});  if (!res.second)  local_feature_positions[A]*=B;}}
+#define LOCAL_FEATURE_POSITION(A,B,C) {if (used[C].count(A)==0) {used[C].insert(A); res=local_feature_positions.insert({A,B});  if (!res.second)  local_feature_positions[A]*=B;}}
 
 
 //prefer the better move with some probability (think about a little more:)
@@ -728,6 +729,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
    */
 
   //this should replace all other code here later
+  Random *const rand=settings->rand;
   if (params->csstyle_enabled) {
 
     // https://www.conftool.net/acg2015/index.php/Graf-Adaptive_Playouts_in_Monte_Carlo_Tree_Search_with_Policy_Gradient_Reinforcement_Learning-113.pdf?page=downloadPaper&filename=Graf-Adaptive_Playouts_in_Monte_Carlo_Tree_Search_with_Policy_Gradient_Reinforcement_Learning-113.pdf&form_id=113&form_version=final
@@ -831,11 +833,11 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
               }//);
               if (libs>1) {
                 //4. Save new atari-string by extending
-                LOCAL_FEATURE_POSITION(killattachedgroup,params->csstyle_saveatariextention,4);
+                LOCAL_FEATURE_POSITION(extentionpos,params->csstyle_saveatariextention,4);
               }
               else {
                 //5. Save new atari-string by extending but resulting in self-atari
-                LOCAL_FEATURE_POSITION(killattachedgroup,params->csstyle_saveatariextentionbutselfatari,5);
+                LOCAL_FEATURE_POSITION(extentionpos,params->csstyle_saveatariextentionbutselfatari,5);
               }      
             }
             else if (group->numRealLibs()==2) {
@@ -908,16 +910,45 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
           if (board->inGroup(q) && board->getGroup(q)->inAtari())
             kostone=q;
         }//);
-        foreach_adjacent_debug(kostone,q){
-        //foreach_adjacent(kostone,q,{
-          if (board->inGroup(q) && board->getGroup(q)->inAtari())
-            LOCAL_FEATURE_POSITION(board->getGroup(q)->getAtariPosition(),params->csstyle_solvekocapture,6);
-        }//);
+        if (kostone>=0) {
+          foreach_adjacent_debug(kostone,q){
+          //foreach_adjacent(kostone,q,{
+            if (board->inGroup(q) && board->getGroup(q)->inAtari())
+              LOCAL_FEATURE_POSITION(board->getGroup(q)->getAtariPosition(),params->csstyle_solvekocapture,6);
+          }//);
+        }
       }
-    for (auto pf : local_feature_positions) {
-      fprintf(stderr,"%s:%4.1f ", Go::Position::pos2string(pf.first,size).c_str(),pf.second);
+    
+    board->updatePlayoutGammas(params);
+
+    std::vector<std::pair<float,int>> sorted_pos;
+    sorted_pos.reserve(board->getPositionMax());
+    //float tmp[board->getPositionMax()];
+    float gamma_sum=0;
+    if (col==Go::BLACK) {
+      for (int i=0;i<board->getPositionMax();i++) {
+        sorted_pos[i]={-board->blackgammas->get(i),i};
+        gamma_sum+=board->blackgammas->get(i);
+      }
+    } else {
+      for (int i=0;i<board->getPositionMax();i++) {
+        sorted_pos[i]={-board->whitegammas->get(i),i};
+        gamma_sum+=board->whitegammas->get(i);
+      }
     }
-     fprintf(stderr,"-\n");
+    for (auto pf : local_feature_positions) {
+      //fprintf(stderr,"%d %s:%4.1f\n", pf.first, Go::Position::pos2string(pf.first,size).c_str(),pf.second);
+      gamma_sum-=-sorted_pos[pf.first].first;
+      sorted_pos[pf.first]={-pf.second*sorted_pos[pf.first].second,pf.first};
+      gamma_sum+=-sorted_pos[pf.first].first;
+    }
+    int max_num=30;
+    std::partial_sort(sorted_pos.begin(),sorted_pos.begin()+max_num,sorted_pos.end());
+    //for (auto pf : local_feature_positions) {
+    //  fprintf(stderr,"%s:%4.1f ", Go::Position::pos2string(pf.first,size).c_str(),pf.second);
+    //}
+    //fprintf(stderr,"-\n");
+
     }
   }
   
@@ -939,7 +970,6 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
   int blevel=0;
   float bgamma=0;
   
-  Random *const rand=settings->rand;
   int ncirc=0;
 
   move=Go::Move(col,Go::Move::PASS);
