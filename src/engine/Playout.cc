@@ -713,7 +713,7 @@ template <typename T> string tostr(const T& t) {
    return os.str(); 
 } 
 
-#define LOCAL_FEATURE_POSITION(A,B) {res=local_feature_positions.insert({A,B});  if (!res.second)  local_feature_positions[A]*=B;}
+#define LOCAL_FEATURE_POSITION(A,B,C) {if (used[C].count(A)==0) {fprintf(stderr,"%s %d\n",Go::Position::pos2string(A,size).c_str(),C); used[C].insert(A); res=local_feature_positions.insert({A,B});  if (!res.second)  local_feature_positions[A]*=B;}}
 
 
 //prefer the better move with some probability (think about a little more:)
@@ -749,7 +749,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     if (board->numOfValidMoves(col)==0)
       return;
     std::unordered_map<int,float> local_feature_positions;
-
+    std::set<int> used[8];
     int lastpos=board->getLastMove().getPosition();
     std::pair<std::unordered_map<int,float>::iterator,bool> res;
     int killattachedgroup;
@@ -759,9 +759,11 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
 //      foreach_adjdiag(lastpos,q, {
         if (board->validMove(col,q)) {
             //1. Contiguous to the last move
-            LOCAL_FEATURE_POSITION(q,params->csstyle_attachedpos);
+            LOCAL_FEATURE_POSITION(q,params->csstyle_attachedpos,1);
         }
-        else {
+        }//);
+        foreach_adjacent_debug(lastpos,q) {
+//      foreach_adjdiag(lastpos,q, {
           if (board->getColor(q)==col) {
             Go::Group *group=board->getGroup(q);
             if (group->inAtari()) {
@@ -797,11 +799,11 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                     }//);
                     if (libs>1) {
                       //2. Save new atari-string by capturing
-                      LOCAL_FEATURE_POSITION(killattachedgroup,params->csstyle_saveataricapture);
+                      LOCAL_FEATURE_POSITION(killattachedgroup,params->csstyle_saveataricapture,2);
                     }
                     else {
                       //3. Save new atari-string by capturing but resulting in self-atari
-                      LOCAL_FEATURE_POSITION(killattachedgroup,params->csstyle_saveataricapturebutselfatari);
+                      LOCAL_FEATURE_POSITION(killattachedgroup,params->csstyle_saveataricapturebutselfatari,3);
                     }
                   }
                 iter++;
@@ -829,11 +831,11 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
               }//);
               if (libs>1) {
                 //4. Save new atari-string by extending
-                LOCAL_FEATURE_POSITION(killattachedgroup,params->csstyle_saveatariextention);
+                LOCAL_FEATURE_POSITION(killattachedgroup,params->csstyle_saveatariextention,4);
               }
               else {
                 //5. Save new atari-string by extending but resulting in self-atari
-                LOCAL_FEATURE_POSITION(killattachedgroup,params->csstyle_saveatariextentionbutselfatari);
+                LOCAL_FEATURE_POSITION(killattachedgroup,params->csstyle_saveatariextentionbutselfatari,5);
               }      
             }
             else if (group->numRealLibs()==2) {
@@ -861,7 +863,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                       if (board->getColor(q)==Go::EMPTY) libs++;
                       else if (board->getColor(q)==colattached && q!=b) {
                         Go::Group *checkgroup=board->getGroup(q);
-                        if (checkgroup!=usedgroup && checkgroup->numRealLibs()>1) {
+                        if (checkgroup!=attachedgroup && checkgroup!=usedgroup && checkgroup->numRealLibs()>1) {
                           libs+=checkgroup->numRealLibs()-1;
                           usedgroup=checkgroup;
                         }
@@ -875,15 +877,15 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                       if (board->getColor(q)==Go::EMPTY) libs++;
                       else if (board->getColor(q)==colattached && q!=a) {
                         Go::Group *checkgroup=board->getGroup(q);
-                        if (checkgroup!=usedgroup && checkgroup->numRealLibs()>1) {
+                        if (checkgroup!=attachedgroup && checkgroup!=usedgroup && checkgroup->numRealLibs()>1) {
                           libs+=checkgroup->numRealLibs()-1;
                           usedgroup=checkgroup;
                         }
                       }
                     }//);
                     if (libs>1) b_is_extention=true;
-                    if (a_is_extention && !b_is_extention) LOCAL_FEATURE_POSITION(a,params->csstyle_2libcapture);
-                    if (b_is_extention && !a_is_extention) LOCAL_FEATURE_POSITION(b,params->csstyle_2libcapture);
+                    if (a_is_extention && !b_is_extention) LOCAL_FEATURE_POSITION(a,params->csstyle_2libcapture,7);
+                    if (b_is_extention && !a_is_extention) LOCAL_FEATURE_POSITION(b,params->csstyle_2libcapture,7);
                   };
                 iter++;
                 }
@@ -895,26 +897,25 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
 
             }
           }
-        }
-      }//);
+        }//);
 
-      int kopos=board->getSimpleKo();
+      int kopos=board->getSimpleKoBefore();
       if (kopos>=0) {
         // 6. Solve ko by capturing
         int kostone=-1;
         foreach_adjacent_debug(kopos,q){
         //foreach_adjacent(kopos,q,{
           if (board->inGroup(q) && board->getGroup(q)->inAtari())
-            kostone=board->getGroup(q)->getAtariPosition();
+            kostone=q;
         }//);
         foreach_adjacent_debug(kostone,q){
         //foreach_adjacent(kostone,q,{
           if (board->inGroup(q) && board->getGroup(q)->inAtari())
-            LOCAL_FEATURE_POSITION(board->getGroup(q)->getAtariPosition(),params->csstyle_solvekocapture);
+            LOCAL_FEATURE_POSITION(board->getGroup(q)->getAtariPosition(),params->csstyle_solvekocapture,6);
         }//);
       }
     for (auto pf : local_feature_positions) {
-      fprintf(stderr,"%s:%4.1f ", Go::Position::pos2string((pf).first,size).c_str(),(pf).second);
+      fprintf(stderr,"%s:%4.1f ", Go::Position::pos2string(pf.first,size).c_str(),pf.second);
     }
      fprintf(stderr,"-\n");
     }

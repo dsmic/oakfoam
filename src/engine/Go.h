@@ -782,6 +782,7 @@ namespace Go
        * If there is no current simple ko, return -1.
        */
       int getSimpleKo() const { return simpleko; };
+      int getSimpleKoBefore() const { return wassimpleko; };
       /** Determine if there is currently a simple ko. */
       bool isCurrentSimpleKo() const { return (simpleko!=-1); };
       /** Get the number of moves made on this board. */
@@ -1168,6 +1169,7 @@ namespace Go
       int movesmade,passesplayed;
       Go::Color nexttomove;
       int simpleko;
+      int wassimpleko;
       Go::Move lastmove,secondlastmove,thirdlastmove,forthlastmove;
       bool symmetryupdated;
       Go::Board::Symmetry currentsymmetry;

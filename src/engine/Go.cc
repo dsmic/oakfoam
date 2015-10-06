@@ -373,6 +373,7 @@ void Go::Board::copyOver(Go::Board *copyboard) const
   copyboard->nexttomove=this->nexttomove;
   copyboard->passesplayed=this->passesplayed;
   copyboard->simpleko=this->simpleko;
+  copyboard->wassimpleko=this->wassimpleko;
   
   copyboard->lastmove=this->lastmove;
   copyboard->secondlastmove=this->secondlastmove;
@@ -691,11 +692,13 @@ void Go::Board::makeMove(Go::Move move, Gtp::Engine* gtpe)
   {
     int kopos=simpleko;
     simpleko=-1;
+    wassimpleko=kopos;
     if (this->validMoveCheck(move.getColor(),kopos))
       this->addValidMove(move.getColor(),kopos);
     if (markchanges)
       lastchanges->set(kopos);
   }
+  else {wassimpleko=-1;}
   
   if (move.isPass() || move.isResign())
   {
