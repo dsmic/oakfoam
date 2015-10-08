@@ -763,14 +763,14 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
        */
 
     // for 9. Nakade we use a different approach, if empty nakade shape is around last move, the killing move has this feature
-
+    // 10. Continous to last move but selfatari
     int size=board->getSize();
 
     move=Go::Move(col,Go::Move::PASS);
     if (board->numOfValidMoves(col)==0)
       return;
     std::unordered_map<int,float> local_feature_positions;
-    std::set<int> used[10];
+    std::set<int> used[11];
     int lastpos=board->getLastMove().getPosition();
     std::pair<std::unordered_map<int,float>::iterator,bool> res;
     int killattachedgroup;
@@ -781,72 +781,13 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
 
     if (lastpos>=0) {
       //fprintf(stderr,"start\n");
-        foreach_adjdiag_debug(lastpos,q) {
-//      foreach_adjdiag(lastpos,q, {
-        if (board->validMove(col,q)) {
-            //1. Contiguous to the last move
-            LOCAL_FEATURE_POSITION(q,params->csstyle_attachedpos,1);
-        }
-        }//);
-        
-        // 0. playon ladder
-        if (board->inGroup(lastpos)) {
-          //exactly one of the liberites is extention than play on it
-          Go::Group *attachedgroup=board->getGroup(lastpos);
-          //attached group is a bad name, but this way the code is exactly the code of feature 7 but with libs>2
-          if (attachedgroup->get2libPositions(a,b)) {
-            bool a_is_extention=false;
-            bool b_is_extention=false;
-            bool a_is_bigextention=false;
-            bool b_is_bigextention=false;
-            bool a_is_atari=false;
-            bool b_is_atari=false;
-            int libs=0;
-            int colattached=attachedgroup->getColor();
-            Go::Group *usedgroup=NULL;
-            foreach_adjacent_debug(a,q){
-            //foreach_adjacent(a,q,{
-              if (board->getColor(q)==Go::EMPTY) libs++;
-              else if (board->getColor(q)==colattached && q!=b) {
-                Go::Group *checkgroup=board->getGroup(q);
-                if (checkgroup!=attachedgroup && checkgroup!=usedgroup && checkgroup->numRealLibs()>1) {
-                  libs+=checkgroup->numRealLibs()-1;
-                  usedgroup=checkgroup;
-                }
-              }
-              else if (board->getColor(q)==col && board->getGroup(q)->numRealLibs()<3)
-                  a_is_atari=true;
-            }//);
-            if (libs>1) a_is_extention=true;
-            if (libs>2) a_is_bigextention=true;
-            libs=0;
-            usedgroup=NULL;
-            foreach_adjacent_debug(b,q){
-            //foreach_adjacent(b,q,{
-              if (board->getColor(q)==Go::EMPTY) libs++;
-              else if (board->getColor(q)==colattached && q!=a) {
-                Go::Group *checkgroup=board->getGroup(q);
-                if (checkgroup!=attachedgroup && checkgroup!=usedgroup && checkgroup->numRealLibs()>1) {
-                  libs+=checkgroup->numRealLibs()-1;
-                  usedgroup=checkgroup;
-                }
-              }
-              else if (board->getColor(q)==col && board->getGroup(q)->numRealLibs()<3)
-                  b_is_atari=true;
-            }//);
-            if (libs>1) b_is_extention=true;
-            if (libs>2) b_is_bigextention=true;
-            if (a_is_extention && ((!b_is_bigextention && !b_is_atari) || !b_is_extention)) LOCAL_FEATURE_POSITION(a,params->csstyle_playonladder,0);
-            if (b_is_extention && ((!a_is_bigextention && !a_is_atari) || !a_is_extention)) LOCAL_FEATURE_POSITION(b,params->csstyle_playonladder,0);
-          }
-        }
-    
-
+        bool new_atarigroup_found=false;
         foreach_adjacent_debug(lastpos,q) {
 //      foreach_adjdiag(lastpos,q, {
           if (board->getColor(q)==col) {
             Go::Group *group=board->getGroup(q);
             if (group->inAtari()) {
+              new_atarigroup_found=true;
               //new atari-string (of color col)
               // check for capture attached
               //Go::Color othercol=Go::otherColor(col);
@@ -877,7 +818,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                         }
                       }
                     }//);
-                    if (libs>1) {
+                    if (libs>0) {
                       //2. Save new atari-string by capturing
                       LOCAL_FEATURE_POSITION(killattachedgroup,params->csstyle_saveataricapture,2);
                     }
@@ -979,6 +920,87 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
           }
         }//);
 
+        foreach_adjdiag_debug(lastpos,q) {
+        //foreach_adjdiag(lastpos,q, {
+        if (board->validMove(col,q)) {
+          int libs=0;
+          Go::Group *usedgroup=NULL;
+          foreach_adjacent_debug(q,q1) {
+          //foreach_adjacent(killattachedgroup,q,{
+            if (board->getColor(q1)==Go::EMPTY) libs++;
+            else if (board->getColor(q1)==col) {
+              Go::Group *checkgroup=board->getGroup(q1);
+              if (checkgroup!=usedgroup && checkgroup->numRealLibs()>1) {
+                libs+=checkgroup->numRealLibs()-1;
+                usedgroup=checkgroup;
+              }
+            }
+          }//);
+          if (libs>1||new_atarigroup_found) {
+            //1. Contiguous to the last move
+            LOCAL_FEATURE_POSITION(q,params->csstyle_attachedpos,1);
+          }
+          else {
+            //10. Contiguous to the last move but selfatari
+            LOCAL_FEATURE_POSITION(q,params->csstyle_attachedposbutselfatari,1);
+          }
+        }
+        }//);
+        
+        // 0. playon ladder
+        if (board->inGroup(lastpos) && !new_atarigroup_found) {
+          //exactly one of the liberites is extention than play on it
+          Go::Group *attachedgroup=board->getGroup(lastpos);
+          //attached group is a bad name, but this way the code is exactly the code of feature 7 but with libs>2
+          if (attachedgroup->get2libPositions(a,b)) {
+            bool a_is_extention=false;
+            bool b_is_extention=false;
+            bool a_is_bigextention=false;
+            bool b_is_bigextention=false;
+            bool a_is_atari=false;
+            bool b_is_atari=false;
+            int libs=0;
+            int colattached=attachedgroup->getColor();
+            Go::Group *usedgroup=NULL;
+            foreach_adjacent_debug(a,q){
+            //foreach_adjacent(a,q,{
+              if (board->getColor(q)==Go::EMPTY) libs++;
+              else if (board->getColor(q)==colattached && q!=b) {
+                Go::Group *checkgroup=board->getGroup(q);
+                if (checkgroup!=attachedgroup && checkgroup!=usedgroup && checkgroup->numRealLibs()>1) {
+                  libs+=checkgroup->numRealLibs()-1;
+                  usedgroup=checkgroup;
+                }
+              }
+              else if (board->getColor(q)==col && board->getGroup(q)->numRealLibs()<3)
+                  a_is_atari=true;
+            }//);
+            if (libs>1) a_is_extention=true;
+            if (libs>2) a_is_bigextention=true;
+            libs=0;
+            usedgroup=NULL;
+            foreach_adjacent_debug(b,q){
+            //foreach_adjacent(b,q,{
+              if (board->getColor(q)==Go::EMPTY) libs++;
+              else if (board->getColor(q)==colattached && q!=a) {
+                Go::Group *checkgroup=board->getGroup(q);
+                if (checkgroup!=attachedgroup && checkgroup!=usedgroup && checkgroup->numRealLibs()>1) {
+                  libs+=checkgroup->numRealLibs()-1;
+                  usedgroup=checkgroup;
+                }
+              }
+              else if (board->getColor(q)==col && board->getGroup(q)->numRealLibs()<3)
+                  b_is_atari=true;
+            }//);
+            if (libs>1) b_is_extention=true;
+            if (libs>2) b_is_bigextention=true;
+            if (a_is_extention && ((!b_is_bigextention && !b_is_atari) || !b_is_extention)) LOCAL_FEATURE_POSITION(a,params->csstyle_playonladder,0);
+            if (b_is_extention && ((!a_is_bigextention && !a_is_atari) || !a_is_extention)) LOCAL_FEATURE_POSITION(b,params->csstyle_playonladder,0);
+          }
+        }
+    
+
+        
       int kopos=board->getSimpleKoBefore();
       if (kopos>=0) {
         // 6. Solve ko by capturing
@@ -1012,7 +1034,6 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     // this plays them with equal probabiliy
     std::vector<std::pair<int,float>> features_tmp;
     for (auto p : local_feature_positions) {
-      //fprintf(stderr," local %s %f\n",Go::Position::pos2string(p.first,size).c_str(),p.second);
       if (p.second>10000) features_tmp.push_back(p);
     }
     while (features_tmp.size()>0) {
@@ -1064,6 +1085,8 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
         float g1=board->blackgammas->get(pf.first);
         float g2=pf.second*g1;
         //if (board->validMove (col,pf.first)) 
+        if (params->debug_on)
+          gtpe->getOutput()->printfDebug(" local %s %f %f ->%f\n",Go::Position::pos2string(pf.first,size).c_str(),g1,pf.second,g2);
         {
           sorted_pos.push_back({-(g2-rand->getRandomReal()/1000.0),pf.first});
           //fprintf(stderr,"added1 %d\n",pf.first);

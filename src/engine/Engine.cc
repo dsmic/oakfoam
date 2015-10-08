@@ -319,6 +319,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","csstyle_atatarigroup",&(params->csstyle_atatarigroup),1.0);
   params->addParameter("playout","csstyle_is2libgroup",&(params->csstyle_is2libgroup),1.0);
   params->addParameter("playout","csstyle_attachedpos",&(params->csstyle_attachedpos),1.0);
+  params->addParameter("playout","csstyle_attachedposbutselfatari",&(params->csstyle_attachedposbutselfatari),1.0);
   params->addParameter("playout","csstyle_saveataricapture",&(params->csstyle_saveataricapture),1.0);
   params->addParameter("playout","csstyle_saveataricapturebutselfatari",&(params->csstyle_saveataricapturebutselfatari),1.0);
   params->addParameter("playout","csstyle_saveatariextention",&(params->csstyle_saveatariextention),1.0);

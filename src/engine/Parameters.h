@@ -313,6 +313,7 @@ class Parameters
     float csstyle_atatarigroup;
     float csstyle_is2libgroup;
     float csstyle_attachedpos;
+    float csstyle_attachedposbutselfatari;
     float csstyle_saveataricapture;
     float csstyle_saveataricapturebutselfatari;
     float csstyle_saveatariextention;
