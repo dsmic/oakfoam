@@ -2286,6 +2286,24 @@ bool Features::setFeatureGamma(Features::FeatureClass featclass, unsigned int le
   else if (featclass==Features::PATTERN3X3)
   {
     patterngammas->setGamma(level,gamma);
+
+    //this code adds the transformed patterns, so it is not necessary to call smalestEquivalent hopefully :)
+    unsigned int leveltmp=Pattern::ThreeByThree::rotateRight(level);
+    patterngammas->setGamma(leveltmp,gamma);
+    leveltmp=Pattern::ThreeByThree::rotateRight(leveltmp);
+    patterngammas->setGamma(leveltmp,gamma);
+    leveltmp=Pattern::ThreeByThree::rotateRight(leveltmp);
+    patterngammas->setGamma(leveltmp,gamma);
+
+    leveltmp=Pattern::ThreeByThree::flipHorizontal(level);
+    patterngammas->setGamma(leveltmp,gamma);
+    leveltmp=Pattern::ThreeByThree::rotateRight(leveltmp);
+    patterngammas->setGamma(leveltmp,gamma);
+    leveltmp=Pattern::ThreeByThree::rotateRight(leveltmp);
+    patterngammas->setGamma(leveltmp,gamma);
+    leveltmp=Pattern::ThreeByThree::rotateRight(leveltmp);
+    patterngammas->setGamma(leveltmp,gamma);
+    
     this->updatePatternIds();
     return true;
   }

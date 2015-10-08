@@ -1724,13 +1724,13 @@ inline void Go::Board::setPlayoutGammaAt(Parameters* params,int p)
   unsigned int pattern=Pattern::ThreeByThree::makeHash(this,p);
   //blackgammas->set(p,features->getFeatureGammaPlayoutPattern(Pattern::ThreeByThree::smallestEquivalent(pattern),99,99));
   if (blackvalidmoves->get(p))
-      blackgammas->set(p,atari*is2lib*features->getFeatureGammaPattern(Pattern::ThreeByThree::smallestEquivalent(pattern)));
+      blackgammas->set(p,atari*is2lib*features->getFeatureGammaPattern(pattern));//Pattern::ThreeByThree::smallestEquivalent(pattern)));
     else
       blackgammas->set(p,0);
   pattern=Pattern::ThreeByThree::invert(pattern);
   //whitegammas->set(p,features->getFeatureGammaPlayoutPattern(Pattern::ThreeByThree::smallestEquivalent(pattern),99,99));
   if (whitevalidmoves->get(p))
-      whitegammas->set(p,atari*is2lib*features->getFeatureGammaPattern(Pattern::ThreeByThree::smallestEquivalent(pattern)));
+      whitegammas->set(p,atari*is2lib*features->getFeatureGammaPattern(pattern));//Pattern::ThreeByThree::smallestEquivalent(pattern)));
     else
       whitegammas->set(p,0);
   }
@@ -1738,13 +1738,13 @@ inline void Go::Board::setPlayoutGammaAt(Parameters* params,int p)
   unsigned int pattern=Pattern::ThreeByThree::makeHash(this,p);
   //blackgammas->set(p,features->getFeatureGammaPlayoutPattern(Pattern::ThreeByThree::smallestEquivalent(pattern),99,99));
   if (blackvalidmoves->get(p))
-      blackgammas->set(p,features->getFeatureGammaPattern(Pattern::ThreeByThree::smallestEquivalent(pattern)));
+      blackgammas->set(p,features->getFeatureGammaPattern(pattern));//Pattern::ThreeByThree::smallestEquivalent(pattern)));
     else
       blackgammas->set(p,0);
   pattern=Pattern::ThreeByThree::invert(pattern);
   //whitegammas->set(p,features->getFeatureGammaPlayoutPattern(Pattern::ThreeByThree::smallestEquivalent(pattern),99,99));
   if (whitevalidmoves->get(p))
-      whitegammas->set(p,features->getFeatureGammaPattern(Pattern::ThreeByThree::smallestEquivalent(pattern)));
+      whitegammas->set(p,features->getFeatureGammaPattern(pattern));//Pattern::ThreeByThree::smallestEquivalent(pattern)));
     else
       whitegammas->set(p,0);
   }
