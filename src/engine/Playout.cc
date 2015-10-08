@@ -6,6 +6,7 @@
 #include "Pattern.h"
 #include "Random.h"
 #include "Worker.h"
+#include <time.h>
 
 #define LGRFCOUNT1 1
 #define LGRFCOUNT2 1
@@ -34,6 +35,8 @@ Playout::Playout(Parameters *prms) : params(prms)
   lgrf1count=NULL;
   lgrf2count=NULL;
   this->resetLGRF();
+  //rng = new boost::random::lagged_fibonacci607(time(0));
+  //randomgen = new boost::uniform_01<boost::random::lagged_fibonacci607>(*rng);
 }
 
 Playout::~Playout()
@@ -64,6 +67,8 @@ Playout::~Playout()
     delete[] lgrf1count;
   if (lgrf2count!=NULL)
     delete[] lgrf2count;
+  //delete randomgen;
+  //delete rng;
 }
 
 void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &finalscore, float &cnn_winrate, Tree *playouttree, std::list<Go::Move> &playoutmoves, Go::Color colfirst, Go::IntBoard *firstlist, Go::IntBoard *secondlist, Go::IntBoard *earlyfirstlist, Go::IntBoard *earlysecondlist, std::list<std::string> *movereasons)
@@ -713,8 +718,8 @@ template <typename T> string tostr(const T& t) {
    return os.str(); 
 } 
 
-//#define LOCAL_FEATURE_POSITION(A,B,C) {if (used[C].count(A)==0) {fprintf(stderr,"%s %d\n",Go::Position::pos2string(A,size).c_str(),C); used[C].insert(A); res=local_feature_positions.insert({A,B});  if (!res.second)  local_feature_positions[A]*=B;}}
-#define LOCAL_FEATURE_POSITION(A,B,C) {if (used[C].count(A)==0) {used[C].insert(A); res=local_feature_positions.insert({A,B});  if (!res.second)  local_feature_positions[A]*=B;}}
+//#define LOCAL_FEATURE_POSITION(A,B,C) {if (used[C].count(A)==0 && board->validMove(col,A)) {fprintf(stderr,"%s %d\n",Go::Position::pos2string(A,size).c_str(),C); used[C].insert(A); res=local_feature_positions.insert({A,B});  if (!res.second)  local_feature_positions[A]*=B;}}
+#define LOCAL_FEATURE_POSITION(A,B,C) {if (used[C].count(A)==0 && board->validMove(col,A)) {used[C].insert(A); res=local_feature_positions.insert({A,B});  if (!res.second)  local_feature_positions[A]*=B;}}
 
 
 //prefer the better move with some probability (think about a little more:)
@@ -729,9 +734,21 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
    */
 
   //this should replace all other code here later
+  bool doapproachmoves;
+  int best_gamma=0;
+  int best_pos=-1;
+  int blevel=0;
+  float bgamma=0;
+  
+  int ncirc=0;
+
   Random *const rand=settings->rand;
   if (params->csstyle_enabled) {
 
+    // our own heuristics
+    // 0. playon ladder
+
+    
     // https://www.conftool.net/acg2015/index.php/Graf-Adaptive_Playouts_in_Monte_Carlo_Tree_Search_with_Policy_Gradient_Reinforcement_Learning-113.pdf?page=downloadPaper&filename=Graf-Adaptive_Playouts_in_Monte_Carlo_Tree_Search_with_Policy_Gradient_Reinforcement_Learning-113.pdf&form_id=113&form_version=final
     /*
      * 1. Contiguous to the last move
@@ -745,18 +762,25 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
        9. Nakade capture: if the last move captured a group with a nakade-shape the killing move has this feature
        */
 
+    // for 9. Nakade we use a different approach, if empty nakade shape is around last move, the killing move has this feature
+
     int size=board->getSize();
 
     move=Go::Move(col,Go::Move::PASS);
     if (board->numOfValidMoves(col)==0)
       return;
     std::unordered_map<int,float> local_feature_positions;
-    std::set<int> used[8];
+    std::set<int> used[10];
     int lastpos=board->getLastMove().getPosition();
     std::pair<std::unordered_map<int,float>::iterator,bool> res;
     int killattachedgroup;
     int a,b;
+
+    //doapproachmoves=(rand->getRandomReal()<params->playout_random_approach_p);
+    //goto random2;
+
     if (lastpos>=0) {
+      //fprintf(stderr,"start\n");
         foreach_adjdiag_debug(lastpos,q) {
 //      foreach_adjdiag(lastpos,q, {
         if (board->validMove(col,q)) {
@@ -764,6 +788,60 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
             LOCAL_FEATURE_POSITION(q,params->csstyle_attachedpos,1);
         }
         }//);
+        
+        // 0. playon ladder
+        if (board->inGroup(lastpos)) {
+          //exactly one of the liberites is extention than play on it
+          Go::Group *attachedgroup=board->getGroup(lastpos);
+          //attached group is a bad name, but this way the code is exactly the code of feature 7 but with libs>2
+          if (attachedgroup->get2libPositions(a,b)) {
+            bool a_is_extention=false;
+            bool b_is_extention=false;
+            bool a_is_bigextention=false;
+            bool b_is_bigextention=false;
+            bool a_is_atari=false;
+            bool b_is_atari=false;
+            int libs=0;
+            int colattached=attachedgroup->getColor();
+            Go::Group *usedgroup=NULL;
+            foreach_adjacent_debug(a,q){
+            //foreach_adjacent(a,q,{
+              if (board->getColor(q)==Go::EMPTY) libs++;
+              else if (board->getColor(q)==colattached && q!=b) {
+                Go::Group *checkgroup=board->getGroup(q);
+                if (checkgroup!=attachedgroup && checkgroup!=usedgroup && checkgroup->numRealLibs()>1) {
+                  libs+=checkgroup->numRealLibs()-1;
+                  usedgroup=checkgroup;
+                }
+              }
+              else if (board->getColor(q)==col && board->getGroup(q)->numRealLibs()<3)
+                  a_is_atari=true;
+            }//);
+            if (libs>1) a_is_extention=true;
+            if (libs>2) a_is_bigextention=true;
+            libs=0;
+            usedgroup=NULL;
+            foreach_adjacent_debug(b,q){
+            //foreach_adjacent(b,q,{
+              if (board->getColor(q)==Go::EMPTY) libs++;
+              else if (board->getColor(q)==colattached && q!=a) {
+                Go::Group *checkgroup=board->getGroup(q);
+                if (checkgroup!=attachedgroup && checkgroup!=usedgroup && checkgroup->numRealLibs()>1) {
+                  libs+=checkgroup->numRealLibs()-1;
+                  usedgroup=checkgroup;
+                }
+              }
+              else if (board->getColor(q)==col && board->getGroup(q)->numRealLibs()<3)
+                  b_is_atari=true;
+            }//);
+            if (libs>1) b_is_extention=true;
+            if (libs>2) b_is_bigextention=true;
+            if (a_is_extention && ((!b_is_bigextention && !b_is_atari) || !b_is_extention)) LOCAL_FEATURE_POSITION(a,params->csstyle_playonladder,0);
+            if (b_is_extention && ((!a_is_bigextention && !a_is_atari) || !a_is_extention)) LOCAL_FEATURE_POSITION(b,params->csstyle_playonladder,0);
+          }
+        }
+    
+
         foreach_adjacent_debug(lastpos,q) {
 //      foreach_adjdiag(lastpos,q, {
           if (board->getColor(q)==col) {
@@ -918,38 +996,192 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
           }//);
         }
       }
-    
+
+    if (params->playout_nakade_enabled && WITH_P(params->test_p35))
+      {
+        Go::Move movetmp=Go::Move(col,Go::Move::PASS);
+        this->getNakadeMove(settings,board,col,movetmp,posarray);
+        if (!movetmp.isPass())
+        {
+          LOCAL_FEATURE_POSITION(move.getPosition(),params->csstyle_nakade,9);
+        }
+    }
+
+    // if we found a 100% local move, we play it here and save expensive updatePlayoutGammas()
+    // gamma of them must be > 10000
+    // this plays them with equal probabiliy
+    std::vector<std::pair<int,float>> features_tmp;
+    for (auto p : local_feature_positions) {
+      //fprintf(stderr," local %s %f\n",Go::Position::pos2string(p.first,size).c_str(),p.second);
+      if (p.second>10000) features_tmp.push_back(p);
+    }
+    while (features_tmp.size()>0) {
+      int select=rand->getRandomInt (features_tmp.size());
+      move=Go::Move(col,features_tmp[select].first);
+      if (board->validMove (move)) {
+        params->engine->statisticsPlus(Engine::CSSTYLE_FORCELOCAL);
+        return;
+      }
+      move=Go::Move(col,Go::Move::PASS);
+      features_tmp.erase(features_tmp.begin()+select);
+      local_feature_positions.erase(select);
+    }
+
+
+//fprintf(stderr,"start2\n");
+
+
+    //doapproachmoves=(rand->getRandomReal()<params->playout_random_approach_p);
+    //goto random2;
     board->updatePlayoutGammas(params);
 
-    std::vector<std::pair<float,int>> sorted_pos;
-    sorted_pos.reserve(board->getPositionMax());
-    //float tmp[board->getPositionMax()];
+    
+    
     float gamma_sum=0;
     if (col==Go::BLACK) {
       for (int i=0;i<board->getPositionMax();i++) {
-        sorted_pos[i]={-board->blackgammas->get(i),i};
-        gamma_sum+=board->blackgammas->get(i);
+        float tmp=board->blackgammas->get(i);// *rand->getRandomReal()/1000.0;
+        //sorted_pos[i]={-tmp,i};
+        gamma_sum+=tmp;
       }
     } else {
       for (int i=0;i<board->getPositionMax();i++) {
-        sorted_pos[i]={-board->whitegammas->get(i),i};
-        gamma_sum+=board->whitegammas->get(i);
+        float tmp=board->whitegammas->get(i);// *rand->getRandomReal()/1000.0;
+        //sorted_pos[i]={-tmp,i};
+        gamma_sum+=tmp;
       }
     }
-    for (auto pf : local_feature_positions) {
-      //fprintf(stderr,"%d %s:%4.1f\n", pf.first, Go::Position::pos2string(pf.first,size).c_str(),pf.second);
-      gamma_sum-=-sorted_pos[pf.first].first;
-      sorted_pos[pf.first]={-pf.second*sorted_pos[pf.first].second,pf.first};
-      gamma_sum+=-sorted_pos[pf.first].first;
+    
+
+    //fprintf(stderr,"%f\n",gamma_sum);
+    //int max_num=size*size/5;  //this should make sure, that all moves with not used here have a probability of 1/5 to be seen
+    float min_gamma=2.0;
+    std::vector<std::pair<float,int>> sorted_pos;
+    sorted_pos.reserve(30);
+    float gamma_sum_local=0;
+    if (col==Go::BLACK) {
+      for (auto pf : local_feature_positions) {
+        float g1=board->blackgammas->get(pf.first);
+        float g2=pf.second*g1;
+        //if (board->validMove (col,pf.first)) 
+        {
+          sorted_pos.push_back({-(g2-rand->getRandomReal()/1000.0),pf.first});
+          //fprintf(stderr,"added1 %d\n",pf.first);
+          gamma_sum_local+=g2;
+          gamma_sum-=g1;
+        }
+      }
     }
-    int max_num=30;
-    std::partial_sort(sorted_pos.begin(),sorted_pos.begin()+max_num,sorted_pos.end());
-    //for (auto pf : local_feature_positions) {
-    //  fprintf(stderr,"%s:%4.1f ", Go::Position::pos2string(pf.first,size).c_str(),pf.second);
-    //}
-    //fprintf(stderr,"-\n");
+    else
+    {
+      for (auto pf : local_feature_positions) {
+        float g1=board->whitegammas->get(pf.first);
+        float g2=pf.second*g1;
+        //if (board->validMove (col,pf.first)) 
+        {
+          sorted_pos.push_back({-(g2-rand->getRandomReal()/1000.0),pf.first});
+          //fprintf(stderr,"added2 %d\n",pf.first);
+          gamma_sum_local+=g2;
+          gamma_sum-=g1;
+        }
+      }
+    }
+
+    //fprintf(stderr," local %f nonlocal %f\n",gamma_sum_local,gamma_sum);
+    //gamma_sum contains the sum of all non(!) local moves
+    //gamma_sum_local contains the sum of all local moves
+
+    //here we decide the probability to play a local versus a non local move and play the local move in case
+
+    while (sorted_pos.size()>0) {
+      float rand_sum=rand->getRandomReal()*(gamma_sum_local+gamma_sum);
+      unsigned int select;
+      float sum=0;
+      for (select=0;select<sorted_pos.size();select++) {
+        sum-=sorted_pos[select].first;
+        if (sum>rand_sum)
+          break;
+      }
+      if (select<sorted_pos.size()) {
+        move=Go::Move(col,sorted_pos[select].second);
+        if (board->validMove (move)) {
+          params->engine->statisticsPlus(Engine::CSSTYLE_LOCAL);
+          return;
+        }
+        fprintf(stderr,"should not happen 2? %d %s\n%s",col,Go::Position::pos2string(sorted_pos[select].second,size).c_str(),board->toString().c_str());
+        move=Go::Move(col,Go::Move::PASS);
+        sorted_pos.erase(sorted_pos.begin()+select);
+      }
+      else {
+         //fprintf(stderr,"sums1 %f %f %f %f\n",gamma_sum_local,gamma_sum,sum,rand_sum);
+         break;
+       }
+    }
+
+    
+//fprintf(stderr,"size1 %d  ",sorted_pos.size());
+    if (col==Go::BLACK) {
+      for (int i=0;i<board->getPositionMax();i++) {
+        float tmp=board->blackgammas->get(i);
+        //fprintf(stderr,"%f %f\n",tmp,(float)gamma_sum/max_num);
+        if (tmp>min_gamma //*2* rand->getRandomReal()  //(float)gamma_sum/max_num 
+            && local_feature_positions.count(i)==0 //&& board->validMove(col,i)
+            ) {
+          //fprintf(stderr,"-\n");
+          sorted_pos.push_back({-tmp-rand->getRandomReal()/1000.0,i});
+          //fprintf(stderr,"added3 %d\n",i);
+        }
+      }
+    } else {
+      for (int i=0;i<board->getPositionMax();i++) {
+        float tmp=board->whitegammas->get(i);
+        //fprintf(stderr,"%f %f\n",tmp,(float)gamma_sum/max_num);
+        if (tmp>min_gamma //*2* rand->getRandomReal()  //(float)gamma_sum/max_num 
+            && local_feature_positions.count(i)==0 //&& board->validMove(col,i)
+            ) {
+          //fprintf(stderr,"-\n");
+          sorted_pos.push_back({-tmp-rand->getRandomReal()/1000.0,i});
+          //fprintf(stderr,"added4 %d\n",i);
+        }
+      }
+    }
+    //fprintf(stderr,"size %d %d\n",sorted_pos.size(),local_feature_positions.size());
+    std::sort(sorted_pos.begin(),sorted_pos.end());
+    float sum_used_gammas=0;
+    for (auto p: sorted_pos) {
+      sum_used_gammas+=p.first;
+      //fprintf(stderr," %f %d\n",p.second,p.first);
+    }
+    //fprintf(stderr,"size2 %d %f\n",sorted_pos.size(),sum_used_gammas);
+
+    while (sorted_pos.size()>0) {
+      float rand_sum=rand->getRandomReal()*(gamma_sum);
+      unsigned int select;
+      float sum=0;
+      for (select=0;select<sorted_pos.size();select++) {
+        sum-=sorted_pos[select].first;
+        if (sum>rand_sum)
+          break;
+      }
+      if (select<sorted_pos.size()) {
+        move=Go::Move(col,sorted_pos[select].second);
+        if (board->validMove (move)) {
+          params->engine->statisticsPlus(Engine::CSSTYLE_NONLOCAL);
+          return;
+        }
+        fprintf(stderr,"should not happen 1? lastmove %s %d %s\n%s",Go::Position::pos2string(lastpos,size).c_str(),col,Go::Position::pos2string(sorted_pos[select].second,size).c_str(),board->toString().c_str());
+        move=Go::Move(col,Go::Move::PASS);
+        sorted_pos.erase(sorted_pos.begin()+select);
+      }
+       else {
+         //fprintf(stderr,"sums2 %f %f %f %f\n",gamma_sum_local,gamma_sum,sum,rand_sum);
+         break;
+       }
+    }
 
     }
+    doapproachmoves=(rand->getRandomReal()<params->playout_random_approach_p);
+    goto random2;
   }
   
 
@@ -964,13 +1196,6 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
    5. Non local moves as random ...
    */
   //fprintf(stderr,"playoutmove\n");
-
-  int best_gamma=0;
-  int best_pos=-1;
-  int blevel=0;
-  float bgamma=0;
-  
-  int ncirc=0;
 
   move=Go::Move(col,Go::Move::PASS);
   if (board->numOfValidMoves(col)==0)
@@ -1511,7 +1736,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
       if (sorted_pos.size()<=max_num)
         std::sort(sorted_pos.begin(),sorted_pos.end());
       else
-        std::partial_sort(sorted_pos.begin(),sorted_pos.begin()+max_num,sorted_pos.end());
+        std::partial_sort(sorted_pos.begin(),sorted_pos.begin()+max_num,sorted_pos.begin()+sorted_pos.size());
       for (auto mm=sorted_pos.begin();cc<max_num && mm!=sorted_pos.end(); ++mm) {
         ppg[cc]=-mm->first; 
         ppp[cc]=mm->second;
@@ -1593,7 +1818,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
   
   random: // for playout_random_chance
 
-  bool doapproachmoves=(rand->getRandomReal()<params->playout_random_approach_p);
+  doapproachmoves=(rand->getRandomReal()<params->playout_random_approach_p);
 
 
   if (params->test_p119>0) {
@@ -1780,6 +2005,8 @@ if (params->playout_random_weight_territory_n>0)
   }
 }
 
+random2:
+
 
 //reweight random moves with probability measured
 if (params->test_p4>0)
@@ -1894,7 +2121,8 @@ if (params->playout_randomquick_bestcirc_n>0)
       }
     }
   }
-  
+
+
   Go::BitBoard *validmoves=board->getValidMoves(col);
   /*int *possiblemoves=posarray;
   int possiblemovescount=0;
@@ -1921,7 +2149,6 @@ if (params->playout_randomquick_bestcirc_n>0)
   //const int directions[6]={-4,-2,-1,1,2,4}; //no even board sizes, therefore powers of 2 should be safe
   //int d=directions[rand->getRandomInt(6)];
   //int d=rand->getRandomInt(2)*2-1;
-
   int rp_tmp=rand->getRandomInt(board->getPositionMax());
   int NextPrime=board->getNextPrimePositionMax();
   int d=rand->getRandomInt(NextPrime);

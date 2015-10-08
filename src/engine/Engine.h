@@ -283,6 +283,9 @@ class Engine
       REPLACE_WITH_CIRC,
       RANDOM_QUICK_CIRC,
       LGRF2,
+      CSSTYLE_FORCELOCAL,
+      CSSTYLE_LOCAL,
+      CSSTYLE_NONLOCAL,
       STATISTICS_NUM     //is set to the number of entries !!
     };
 

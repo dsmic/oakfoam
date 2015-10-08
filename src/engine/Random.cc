@@ -48,10 +48,12 @@ unsigned long Random::getRandomInt(unsigned long max, float a)
   return r;
 }
 
+/*
 float Random::getRandomReal()
 {
   return (float)this->getRandomInt() / ((unsigned long)(1) << 31);
 }
+*/
 
 unsigned long Random::makeSeed(int threadid)
 {

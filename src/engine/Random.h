@@ -37,7 +37,10 @@ class Random
     /** Generate with distribution function. */
     unsigned long getRandomInt(unsigned long max, float a);
     /** Generate a random float in the range (0,1). */
-    float getRandomReal();
+    inline float getRandomReal()
+      {
+        return (float)this->getRandomInt() / ((unsigned long)(1) << 31);
+      };
     
     /** Create a new seed. */
     static unsigned long makeSeed(int threadid=0);

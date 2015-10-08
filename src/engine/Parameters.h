@@ -319,6 +319,8 @@ class Parameters
     float csstyle_saveatariextentionbutselfatari;
     float csstyle_solvekocapture;
     float csstyle_2libcapture;
+    float csstyle_nakade;
+    float csstyle_playonladder;
     float csstyle_01;
     float csstyle_02;
     float csstyle_03;

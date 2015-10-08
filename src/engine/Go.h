@@ -417,6 +417,63 @@ namespace Go
       const int size,sizesq,sizedata;
       T *const data;
   };
+
+  template<typename T>
+  class ObjectBiBoard
+  {
+    public:
+      /** Create a board with the given size. */
+      ObjectBiBoard(int s)
+        : size(s),
+          sizesq(s*s),
+          sizedata(1+(s+1)*(s+2))
+        //,          data(new T[sizedata])
+      {seed=0;};
+      ~ObjectBiBoard()
+      {
+        //delete[] data;
+      };
+      
+      /** Get the value of a position. */
+      inline T get(int pos) const { return data.left.find(pos)->second; };
+      inline T* getp(int pos) const { return &data.left.find(pos)->second; };
+      /** Set the value of a position. */
+      inline void set(int pos, const T val) { data.insert({pos,val+getRandomReal()/1000.0}); };
+      /** Fill the whole board with a set value. */
+      inline void fill(T val) { for (int i=0;i<sizedata;i++) set(i,val); };
+      inline void copy(ObjectBiBoard<T> *copyboard) {
+        for (int i=0;i<sizedata;i++)
+          copyboard->set(i,get(i));  
+      }
+
+    
+    private:
+      const int size,sizesq,sizedata;
+      //T *const data;
+      boost::bimap<int,T> data;
+      inline unsigned long getRandomInt()
+      {
+        //Park-Miller "Minimal Standard" PRNG
+        
+        unsigned long hi, lo;
+        
+        lo= 16807 * (seed & 0xffff);
+        hi= 16807 * (seed >> 16);
+        
+        lo+= (hi & 0x7fff) << 16;
+        lo+= hi >> 15;
+        
+        if (lo >= 0x7FFFFFFF) lo-=0x7FFFFFFF;
+
+        return (seed=lo);
+      };
+      inline double getRandomReal()
+      {
+        return (double)this->getRandomInt() / ((unsigned long)(1) << 31);
+      };
+      long seed;
+    
+  };
   
   /** Go move.
    * This represents a move on a Go board.

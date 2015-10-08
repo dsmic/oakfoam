@@ -4,6 +4,9 @@
 #include "Go.h"
 #include <boost/bimap.hpp>
 #include <unordered_map>
+
+#include <boost/random.hpp>
+
 //from "Parameters.h":
 class Parameters;
 //from "Tree.h":
@@ -75,7 +78,8 @@ class Playout
     bool *badpassanswer;
     
     int lgrfpositionmax;
-    
+    //boost::random::lagged_fibonacci607 *rng;
+    //boost::uniform_01<boost::random::lagged_fibonacci607> *randomgen;  
     void getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, critstruct critarray[], float ravearray[], int passes=0, std::vector<int> *pool=NULL, std::vector<int> *poolcrit=NULL, std::string *reason=NULL,float *trylocal_p=NULL,float *black_gammas=NULL,float *white_gammas=NULL, bool *earlymoves=NULL,Go::IntBoard *firstlist=NULL,int playoutmovescount=0, bool *nonlocalmove=NULL,Go::IntBoard *treeboardBlack=NULL,Go::IntBoard *treeboardWhite=NULL, int used_playouts=0, int *ACpos=NULL, int ACcount=0, boost::bimap<int,float> *cnn_moves=NULL);
     void checkUselessMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, std::string *reason=NULL);
     void getPoolRAVEMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, std::vector<int> *pool=NULL);

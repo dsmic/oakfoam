@@ -1059,8 +1059,10 @@ int Go::Board::removeGroup(Go::Group *group)
   
   for(list_int::iterator iter=possiblesuicides.begin();iter!=possiblesuicides.end();++iter)
   {
-    if (!this->validMoveCheck(groupcol,(*iter))) 
+    if (!this->validMoveCheck(groupcol,(*iter))) {
       this->removeValidMove(groupcol,(*iter));
+      if (changed_positions!=NULL) changed_positions->push_back((*iter));
+    }
   }
   
 //  possiblesuicides->resize(0);  //what's the idea of this??
@@ -1692,6 +1694,10 @@ std::list<Go::Board::SymmetryTransform> Go::Board::getSymmetryTransformsFromPrim
 inline void Go::Board::setPlayoutGammaAt(Parameters* params,int p)
 {
 #ifdef is3x3only
+  if (getColor(p)==Go::EMPTY) {
+    whitegammas->set(p,0);
+    blackgammas->set(p,0);
+  }
   if (params->csstyle_atatarigroup!=1.0) {
   float atari=1.0, is2lib=1.0;//,atariw=1.0, is2libw=1.0;
   foreach_adjacent(p,q,{
@@ -1803,7 +1809,8 @@ void Go::Board::updatePlayoutGammas(Parameters* params,Features *feat)
     Go::BitBoard *changes3x3=new Go::BitBoard(size);
     changes3x3->clear();
     for (Go::list_int::iterator p=changed_positions->begin(); p!=changed_positions->end(); ++p) {
-      if (this->getColor(*p)==Go::EMPTY && changes3x3->get(*p)==false) {
+      if (//this->getColor(*p)==Go::EMPTY && 
+          changes3x3->get(*p)==false) {
         changes3x3->set(*p);
         setPlayoutGammaAt(params,*p);
       }
