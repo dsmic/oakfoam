@@ -1051,7 +1051,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     while (features_tmp.size()>0) {
       int select=rand->getRandomInt (features_tmp.size());
       move=Go::Move(col,features_tmp[select].first);
-      if (board->validMove (move)) {
+      if (board->validMove(move)) {
         params->engine->statisticsPlus(Engine::CSSTYLE_FORCELOCAL);
         return;
       }
@@ -1216,6 +1216,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
          break;
        }
     }
+    
     float bestvalue=0;
     int patternmove=-1;
     Go::ObjectBoard<float> *gammas;
@@ -1227,7 +1228,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     for (int i=0;i<pick_num;i++) {
       int p=rand->getRandomInt(board->getPositionMax());
       float v=gammas->get(p);
-      if (board->validMove(col,p)) {
+      if (board->validMove(col,p) && !this->isBadMove(settings,board,col,p,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes, NULL, 0, critarray)) {
         if (v>bestvalue)
         {
           patternmove=p;
@@ -1240,10 +1241,11 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
       params->engine->statisticsPlus(Engine::CSSTYLE_NONLOCAL_PICK);
       return;
     }
-
-    }
     doapproachmoves=(rand->getRandomReal()<params->playout_random_approach_p);
     goto random2;
+
+    }
+    
   }
   
 
