@@ -382,6 +382,8 @@ void Go::Board::copyOver(Go::Board *copyboard) const
   copyboard->secondlastmove=this->secondlastmove;
   copyboard->thirdlastmove=this->thirdlastmove;
   copyboard->forthlastmove=this->forthlastmove;
+
+  copyboard->features=this->features;
   
   copyboard->refreshGroups();
   
@@ -1784,7 +1786,7 @@ void Go::Board::setPlayoutGammaAround(Parameters* params,int p)
       setPlayoutGammaAt(params,atari_changed);
     }
   }
-  foreach_adjdiag(p,q,{
+  foreach_adjdiag_debug(p,q) { //,{
             if (changes3x3->get(q)==false) {
               if (this->getColor(q)==Go::EMPTY) {
                 changes3x3->set(q);
@@ -1798,7 +1800,7 @@ void Go::Board::setPlayoutGammaAround(Parameters* params,int p)
                 }
               }
             }
-          });
+          }//);
 #else
   std::list<int> changed;
   Pattern::CircularHelper::MarkBoardPositions(features->getCircDict(), this, p, psize, &changed);

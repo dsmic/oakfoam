@@ -824,9 +824,12 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                           libs+=checkgroup->numRealLibs()-1;
                           usedgroup=checkgroup;
                         }
-                      } 
+                      }
+                      else if (board->getColor(q)==othercol && board->getGroup(q)->inAtari()) {
+                        libs++;
+                      }
                     }//);
-                    if (libs>0) {
+                    if (libs>1) {
                       //2. Save new atari-string by capturing
                       LOCAL_FEATURE_POSITION(killattachedgroup,params->csstyle_saveataricapture,2);
                     }
@@ -845,6 +848,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
 
               //check for extention
               int extentionpos=group->getAtariPosition();
+              int singlelibpos=-1;
               int libs=0;
               Go::Group *usedgroup=NULL;
               foreach_adjacent_debug(extentionpos,q){
@@ -853,10 +857,21 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                 else if (board->getColor(q)==col) {
                   Go::Group *checkgroup=board->getGroup(q);
                   if (checkgroup!=usedgroup && checkgroup->numRealLibs()>1) {
-                    libs+=checkgroup->numRealLibs()-1;
+                    if (checkgroup->numRealLibs()>2) 
+                      libs+=checkgroup->numRealLibs()-1;
+                    else if (checkgroup->numRealLibs()==2) {
+                      int newsinglelibpos=checkgroup->getOtherOneOfTwoLiberties(board,q);
+                      if (newsinglelibpos!=singlelibpos) {
+                        singlelibpos=newsinglelibpos;
+                        libs+=1;
+                      }
+                    }
                     usedgroup=checkgroup;
                   }
-                } 
+                }
+                else if (board->getColor(q)==othercol && board->getGroup(q)->inAtari()) {
+                  libs++;
+                }
               }//);
               if (libs>1) {
                 //4. Save new atari-string by extending
@@ -885,6 +900,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                     bool a_is_extention=false;
                     bool b_is_extention=false;
                     int libs=0;
+                    int singlelibpos=-1;
                     int colattached=attachedgroup->getColor();
                     Go::Group *usedgroup=NULL;
                     foreach_adjacent_debug(a,q){
@@ -900,6 +916,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                     }//);
                     if (libs>1) a_is_extention=true;
                     libs=0;
+                    singlelibpos=-1;
                     usedgroup=NULL;
                     foreach_adjacent_debug(b,q){
                     //foreach_adjacent(b,q,{
@@ -907,7 +924,15 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                       else if (board->getColor(q)==colattached && q!=a) {
                         Go::Group *checkgroup=board->getGroup(q);
                         if (checkgroup!=attachedgroup && checkgroup!=usedgroup && checkgroup->numRealLibs()>1) {
-                          libs+=checkgroup->numRealLibs()-1;
+                          if (checkgroup->numRealLibs()>2) 
+                            libs+=checkgroup->numRealLibs()-1;
+                          else if (checkgroup->numRealLibs()==2) {
+                            int newsinglelibpos=checkgroup->getOtherOneOfTwoLiberties(board,q);
+                            if (newsinglelibpos!=singlelibpos) {
+                              singlelibpos=newsinglelibpos;
+                              libs+=1;
+                            }
+                          }
                           usedgroup=checkgroup;
                         }
                       }
@@ -932,6 +957,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
           //foreach_adjdiag(lastpos,q, {
           if (board->validMove(col,q)) {
             int libs=0;
+            int singlelibpos=-1;
             Go::Group *usedgroup=NULL;
             foreach_adjacent_debug(q,q1) {
             //foreach_adjacent(killattachedgroup,q,{
@@ -939,13 +965,22 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
               else if (board->getColor(q1)==col) {
                 Go::Group *checkgroup=board->getGroup(q1);
                 if (checkgroup!=usedgroup && checkgroup->numRealLibs()>1) {
-                  libs+=checkgroup->numRealLibs()-1;
+                  if (checkgroup->numRealLibs()>2) 
+                    libs+=checkgroup->numRealLibs()-1;
+                  else if (checkgroup->numRealLibs()==2) {
+                    int newsinglelibpos=checkgroup->getOtherOneOfTwoLiberties(board,q);
+                    if (newsinglelibpos!=singlelibpos) {
+                      singlelibpos=newsinglelibpos;
+                      libs+=1;
+                    }
+                  }
                   usedgroup=checkgroup;
                 }
-              }else if (board->getColor(q1)==othercol) 
+              }
+              else if (board->getColor(q1)==othercol) 
               {
                 if (board->getGroup(q1)->inAtari()) 
-                  libs++; //this is a capture move, might even be used for additional feature?!
+                  libs++; 
               }
             }//);
             if (libs>1||new_atarigroup_found) {
@@ -1115,6 +1150,8 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
         float g1=board->whitegammas->get(pf.first);
         float g2=pf.second*g1;
         //if (board->validMove (col,pf.first)) 
+        if (params->debug_on)
+          gtpe->getOutput()->printfDebug(" local %s %f %f ->%f\n",Go::Position::pos2string(pf.first,size).c_str(),g1,pf.second,g2);
         {
           sorted_pos.push_back({-(g2-rand->getRandomReal()/1000.0),pf.first});
           //fprintf(stderr,"added2 %d\n",pf.first);

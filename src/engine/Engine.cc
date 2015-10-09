@@ -2166,7 +2166,8 @@ void Engine::gtpPlayoutSGF_pos(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
 
   bool success=false;
   bool foundwin=false;
-  int how_often=0,from_often=0;;
+  int how_often=0,from_often=0,numplayoutmoves=0;
+  me->currentboard->updatePlayoutGammas(me->params, me->features);
   for (int i=0;i<1000+1000;i++)
   {
     Go::Board *playoutboard=me->currentboard->copy();
@@ -2179,7 +2180,7 @@ void Engine::gtpPlayoutSGF_pos(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
     float finalscore;
     std::list<Go::Move> playoutmoves;
     std::list<std::string> movereasons;
-    Tree *playouttree = me->movetree->getUrgentChild(me->threadpool->getThreadZero()->getSettings());
+    Tree *playouttree = me->movetree; //me->movetree->getUrgentChild(me->threadpool->getThreadZero()->getSettings());
     float cnn_winrate=-2;
     me->playout->doPlayout(me->threadpool->getThreadZero()->getSettings(),playoutboard,finalscore,cnn_winrate,playouttree,playoutmoves,col,NULL,NULL,NULL,NULL,&movereasons);
     if (finalscore!=0 && i<1000) from_often++;
@@ -2193,6 +2194,7 @@ void Engine::gtpPlayoutSGF_pos(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
       {
         foundwin=true;
         success=me->writeSGF(sgffile,me->currentboard,playoutmoves,&movereasons);
+        numplayoutmoves=playoutmoves.size();
         break;
       }
     }
@@ -2209,7 +2211,7 @@ void Engine::gtpPlayoutSGF_pos(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
   if (success)
   {
     gtpe->getOutput()->startResponse(cmd);
-    gtpe->getOutput()->printf("wrote sgf file: %s  found within the first %d playouts: %d",sgffile.c_str(),from_often,how_often);
+    gtpe->getOutput()->printf("wrote sgf file: %s  found within the first %d playouts: %d playoutmoves %d",sgffile.c_str(),from_often,how_often,numplayoutmoves);
     gtpe->getOutput()->endResponse();
   }
   else
