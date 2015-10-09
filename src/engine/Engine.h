@@ -286,6 +286,7 @@ class Engine
       CSSTYLE_FORCELOCAL,
       CSSTYLE_LOCAL,
       CSSTYLE_NONLOCAL,
+      CSSTYLE_NONLOCAL_PICK,
       STATISTICS_NUM     //is set to the number of entries !!
     };
 

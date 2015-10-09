@@ -323,6 +323,7 @@ Go::Board::Board(int s)
 
   hasSolidGroups=false;
   ACcount=0;
+  changes3x3=new Go::BitBoard(size);
 }
 
 Go::Board::~Board()
@@ -348,6 +349,7 @@ Go::Board::~Board()
     delete[] lastscoredata;
   
   delete[] data;
+  delete changes3x3;
 }
 
 Go::Board *Go::Board::copy() const
@@ -1761,7 +1763,7 @@ inline void Go::Board::setPlayoutGammaAt(Parameters* params,int p)
 }
 
 
-void Go::Board::setPlayoutGammaAround(Parameters* params,int p, Go::BitBoard *changes3x3)
+void Go::Board::setPlayoutGammaAround(Parameters* params,int p)
 {
 #ifdef is3x3only
   if (changes3x3->get(p)==false && this->inGroup(p)) {
@@ -1810,7 +1812,6 @@ void Go::Board::updatePlayoutGammas(Parameters* params,Features *feat)
   }
   else {
     //only update the changed_positions
-    Go::BitBoard *changes3x3=new Go::BitBoard(size);
     changes3x3->clear();
     for (Go::list_int::iterator p=changed_positions->begin(); p!=changed_positions->end(); ++p) {
       if (//this->getColor(*p)==Go::EMPTY && 
@@ -1818,11 +1819,10 @@ void Go::Board::updatePlayoutGammas(Parameters* params,Features *feat)
         changes3x3->set(*p);
         setPlayoutGammaAt(params,*p);
       }
-      setPlayoutGammaAround(params,*p,changes3x3);
+      setPlayoutGammaAround(params,*p);
     }
     changed_positions->clear();
-    delete changes3x3;
-
+    
     //check if correct
     //for (int p=0;p<sizedata;p++)
     //  {

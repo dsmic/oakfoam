@@ -1088,7 +1088,10 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
 
     //fprintf(stderr,"%f\n",gamma_sum);
     //int max_num=size*size/5;  //this should make sure, that all moves with not used here have a probability of 1/5 to be seen
-    float min_gamma=2.0;
+
+    float min_gamma=1.5+rand->getRandomReal();
+    int pick_num=10;
+
     std::vector<std::pair<float,int>> sorted_pos;
     sorted_pos.reserve(30);
     float gamma_sum_local=0;
@@ -1212,6 +1215,30 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
          //fprintf(stderr,"sums2 %f %f %f %f\n",gamma_sum_local,gamma_sum,sum,rand_sum);
          break;
        }
+    }
+    float bestvalue=0;
+    int patternmove=-1;
+    Go::ObjectBoard<float> *gammas;
+    if (col==Go::BLACK)
+        gammas=board->blackgammas;
+      else
+        gammas=board->whitegammas;
+    //Some theory to be added to check, if 10 is a good number for random pick
+    for (int i=0;i<pick_num;i++) {
+      int p=rand->getRandomInt(board->getPositionMax());
+      float v=gammas->get(p);
+      if (board->validMove(col,p)) {
+        if (v>bestvalue)
+        {
+          patternmove=p;
+          bestvalue=v;
+        }
+      }
+    }
+    if (patternmove>=0) {
+      move=Go::Move(col,patternmove);
+      params->engine->statisticsPlus(Engine::CSSTYLE_NONLOCAL_PICK);
+      return;
     }
 
     }

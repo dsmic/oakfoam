@@ -937,7 +937,7 @@ namespace Go
       /** Set the features for the board and whether the gamma values should be updated incrementally. */
       void setFeatures(Features *feat, bool inc, bool mchanges=true) { features=feat; incfeatures=inc; markchanges=mchanges; this->refreshFeatureGammas(); };
       void setPlayoutGammaAt(Parameters* params,int p);
-      void setPlayoutGammaAround(Parameters* params,int p, Go::BitBoard *changes3x3);
+      void setPlayoutGammaAround(Parameters* params,int p);
       void updatePlayoutGammas(Parameters* params, Features *feat=NULL);
       
       /** Get the sum ofthe gamma values for this board. */
@@ -1245,6 +1245,9 @@ namespace Go
       
       int blackcaptures,whitecaptures;
       bool lastcapture;
+
+      Go::BitBoard *changes3x3;
+    
       bool CSstyle=false;
       list_int *changed_positions=NULL;
       struct ScoreVertex

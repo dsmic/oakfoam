@@ -61,9 +61,12 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   bottom.push_back(b); 
   const vector<Blob<float>*>& result=  caffe_test_net->Forward(bottom);
   fprintf(stderr,"start\n");
-  for (int i=0;i<10;i++)
+  clock_t tbegin = clock();
+  for (int i=0;i<50;i++) {
     const vector<Blob<float>*>& result =  caffe_test_net->Forward(bottom);
-  fprintf(stderr,"end\n");
+  }
+  clock_t tend = clock();
+  fprintf(stderr,"end %f\n",double(tend - tbegin) / CLOCKS_PER_SEC);
   
   for (int j=0;j<19;j++)
 	{
@@ -721,7 +724,15 @@ void Engine::getCNN(Go::Board *board,Go::Color col, float result[])
   b->set_cpu_data(data);
   vector<Blob<float>*> bottom;
   bottom.push_back(b); 
+  Caffe::set_mode(Caffe::GPU);
   const vector<Blob<float>*>& rr =  caffe_test_net->Forward(bottom);
+  //fprintf(stderr,"start\n");
+  //clock_t tbegin = clock();
+  //for (int i=0;i<50;i++) {
+  //  const vector<Blob<float>*>& result =  caffe_test_net->Forward(bottom);
+  //}
+  //clock_t tend = clock();
+  //fprintf(stderr,"end %f\n",double(tend - tbegin) / CLOCKS_PER_SEC);
   //for (int j=0;j<19;j++)
 	//{
 	//for (int k=0;k<19;k++)
