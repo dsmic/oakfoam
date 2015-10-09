@@ -411,8 +411,7 @@ namespace Go
         for (int i=0;i<sizedata;i++)
           copyboard->set(i,data[i]);  
       }
-
-    
+      
     private:
       const int size,sizesq,sizedata;
       T *const data;
@@ -1203,6 +1202,7 @@ namespace Go
       bool isProbableWorkingLadderAfter(Go::Group *group, Go::Move move) const;
       void updateFeatureGammas(bool both=false);
       inline int getPseudoLiberties(int pos) const { if (data[pos].group==NULL) return 0; else return data[pos].group->find()->numOfPseudoLiberties(); };
+      inline int getRealLiberties(int pos) const { if (data[pos].group==NULL) return 0; else return data[pos].group->find()->numRealLibs(); };
 
       void calcSlowLibertyGroups();
       void connectedAtariPos(Go::Move move);//, int CApos[4], int &CAcount);

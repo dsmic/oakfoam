@@ -1085,7 +1085,6 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
       }
     }
     
-
     //fprintf(stderr,"%f\n",gamma_sum);
     //int max_num=size*size/5;  //this should make sure, that all moves with not used here have a probability of 1/5 to be seen
 

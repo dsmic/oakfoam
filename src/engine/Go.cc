@@ -586,8 +586,8 @@ bool Go::Board::validMoveCheck(Go::Color col, int pos) const
     Go::Color othercol=Go::otherColor(col);
     bool isvalid=false;
     int captures=0;
-    
-    foreach_adjacent(pos,p,{
+
+/*    foreach_adjacent(pos,p,{
       if (this->getColor(p)==col || this->getColor(p)==othercol)
         this->getGroup(p)->removePseudoLiberty(pos);
       if (this->getColor(p)==col)
@@ -611,7 +611,17 @@ bool Go::Board::validMoveCheck(Go::Color col, int pos) const
       if (this->getColor(p)==col)
         this->getGroup(p)->addPseudoEnd();
     });
-    
+ */
+    foreach_adjacent(pos,p,{
+      if (this->getColor(p)==col && this->getRealLiberties(p)>1)
+        isvalid=true;
+      else if (this->getColor(p)==othercol && this->getRealLiberties(p)==1)
+      {
+        captures+=this->getGroupSize(p);
+        if (captures>1)
+          isvalid=true;
+      }
+    });
     if (isvalid)
       return true;
     
@@ -629,6 +639,7 @@ bool Go::Board::validMoveCheck(Go::Color col, int pos) const
 
 bool Go::Board::validMoveCheck(Go::Move move) const
 {
+  fprintf(stderr,"should not be used, not optimized\n");
   if (move.isPass() || move.isResign())
     return true;
   
