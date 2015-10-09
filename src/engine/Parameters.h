@@ -322,6 +322,7 @@ class Parameters
     float csstyle_2libcapture;
     float csstyle_nakade;
     float csstyle_playonladder;
+    float csstyle_defendapproach;
     float csstyle_01;
     float csstyle_02;
     float csstyle_03;

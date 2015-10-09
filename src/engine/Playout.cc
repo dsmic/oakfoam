@@ -764,13 +764,15 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
 
     // for 9. Nakade we use a different approach, if empty nakade shape is around last move, the killing move has this feature
     // 10. Continous to last move but selfatari
+    // 11. Defend an approach move
+    
     int size=board->getSize();
 
     move=Go::Move(col,Go::Move::PASS);
     if (board->numOfValidMoves(col)==0)
       return;
     std::unordered_map<int,float> local_feature_positions;
-    std::set<int> used[11];
+    std::set<int> used[12];
     int lastpos=board->getLastMove().getPosition();
     std::pair<std::unordered_map<int,float>::iterator,bool> res;
     int killattachedgroup;
@@ -782,6 +784,13 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     if (lastpos>=0) {
       //fprintf(stderr,"start\n");
         bool new_atarigroup_found=false;
+        Go::Color othercol=Go::otherColor(col);
+        if (ACcount>0 && ACpos!=NULL)  //ACcount is produced in playout code only, not in Moves, make it only work if a playout move was generated before, debugging problems
+        {
+          for (int i=0;i<ACcount;i++) {
+            if (board->validMove(col,ACpos[i])) LOCAL_FEATURE_POSITION(ACpos[i],params->csstyle_defendapproach,11);
+          }
+        }
         foreach_adjacent_debug(lastpos,q) {
 //      foreach_adjdiag(lastpos,q, {
           if (board->getColor(q)==col) {
@@ -790,7 +799,6 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
               new_atarigroup_found=true;
               //new atari-string (of color col)
               // check for capture attached
-              //Go::Color othercol=Go::otherColor(col);
               Go::list_short *adjacentgroups=group->getAdjacentGroups();
               if (adjacentgroups->size()>(unsigned int)board->getPositionMax())
               {
@@ -816,7 +824,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                           libs+=checkgroup->numRealLibs()-1;
                           usedgroup=checkgroup;
                         }
-                      }
+                      } 
                     }//);
                     if (libs>0) {
                       //2. Save new atari-string by capturing
@@ -848,7 +856,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                     libs+=checkgroup->numRealLibs()-1;
                     usedgroup=checkgroup;
                   }
-                }
+                } 
               }//);
               if (libs>1) {
                 //4. Save new atari-string by extending
@@ -921,30 +929,34 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
         }//);
 
         foreach_adjdiag_debug(lastpos,q) {
-        //foreach_adjdiag(lastpos,q, {
-        if (board->validMove(col,q)) {
-          int libs=0;
-          Go::Group *usedgroup=NULL;
-          foreach_adjacent_debug(q,q1) {
-          //foreach_adjacent(killattachedgroup,q,{
-            if (board->getColor(q1)==Go::EMPTY) libs++;
-            else if (board->getColor(q1)==col) {
-              Go::Group *checkgroup=board->getGroup(q1);
-              if (checkgroup!=usedgroup && checkgroup->numRealLibs()>1) {
-                libs+=checkgroup->numRealLibs()-1;
-                usedgroup=checkgroup;
+          //foreach_adjdiag(lastpos,q, {
+          if (board->validMove(col,q)) {
+            int libs=0;
+            Go::Group *usedgroup=NULL;
+            foreach_adjacent_debug(q,q1) {
+            //foreach_adjacent(killattachedgroup,q,{
+              if (board->getColor(q1)==Go::EMPTY) libs++;
+              else if (board->getColor(q1)==col) {
+                Go::Group *checkgroup=board->getGroup(q1);
+                if (checkgroup!=usedgroup && checkgroup->numRealLibs()>1) {
+                  libs+=checkgroup->numRealLibs()-1;
+                  usedgroup=checkgroup;
+                }
+              }else if (board->getColor(q1)==othercol) 
+              {
+                if (board->getGroup(q1)->inAtari()) 
+                  libs++; //this is a capture move, might even be used for additional feature?!
               }
+            }//);
+            if (libs>1||new_atarigroup_found) {
+              //1. Contiguous to the last move
+              LOCAL_FEATURE_POSITION(q,params->csstyle_attachedpos,1);
             }
-          }//);
-          if (libs>1||new_atarigroup_found) {
-            //1. Contiguous to the last move
-            LOCAL_FEATURE_POSITION(q,params->csstyle_attachedpos,1);
+            else {
+              //10. Contiguous to the last move but selfatari
+              LOCAL_FEATURE_POSITION(q,params->csstyle_attachedposbutselfatari,1);
+            }
           }
-          else {
-            //10. Contiguous to the last move but selfatari
-            LOCAL_FEATURE_POSITION(q,params->csstyle_attachedposbutselfatari,1);
-          }
-        }
         }//);
         
         // 0. playon ladder

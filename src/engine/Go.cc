@@ -1699,7 +1699,8 @@ inline void Go::Board::setPlayoutGammaAt(Parameters* params,int p)
     blackgammas->set(p,0);
   }
   if (params->csstyle_atatarigroup!=1.0) {
-  float atari=1.0, is2lib=1.0;//,atariw=1.0, is2libw=1.0;
+//this has to be extended by logic, this way b and w groups are handled equally ...
+    float atari=1.0, is2lib=1.0;//,atariw=1.0, is2libw=1.0;
   foreach_adjacent(p,q,{
     if (this->inGroup(q))
     {
@@ -1709,11 +1710,11 @@ inline void Go::Board::setPlayoutGammaAt(Parameters* params,int p)
       switch (libs) {
       case 1:
           //if (col==Go::BLACK) atarib=params->csstyle_atatarigroup; else 
-          atari=params->csstyle_atatarigroup;
+          atari*=params->csstyle_atatarigroup;
           break;
       case 2:
           //if (col==Go::BLACK) is2libb=params->csstyle_is2libgroup; else 
-          is2lib=params->csstyle_is2libgroup;
+          is2lib*=params->csstyle_is2libgroup;
           break;
       default:
           ;

@@ -328,6 +328,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","csstyle_2libcapture",&(params->csstyle_2libcapture),1.0);
   params->addParameter("playout","csstyle_nakade",&(params->csstyle_nakade),1.0);
   params->addParameter("playout","csstyle_playonladder",&(params->csstyle_playonladder),1.0);
+  params->addParameter("playout","csstyle_defendapproach",&(params->csstyle_defendapproach),1.0);
   params->addParameter("playout","csstyle_01",&(params->csstyle_01),0.0);
   params->addParameter("playout","csstyle_02",&(params->csstyle_02),0.0);
   params->addParameter("playout","csstyle_03",&(params->csstyle_03),0.0);
