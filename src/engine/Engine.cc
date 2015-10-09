@@ -5185,12 +5185,12 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
         }
     }
 
-    playout->getPlayoutMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,**move,critarray,(col==Go::BLACK)?b_ravearray:w_ravearray, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0,  NULL, NULL, NULL, 0, ACpos, ACcount);
+    playout->getPlayoutMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,**move,critarray,(col==Go::BLACK)?b_ravearray:w_ravearray, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0,  NULL, NULL, NULL, 0);
     if (params->playout_useless_move)
       playout->checkUselessMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,**move,(std::string *)NULL);
     delete playoutboard;
-    if (params->playout_defend_approach)
-      currentboard->connectedAtariPos(**move,ACpos,ACcount);
+    //if (params->playout_defend_approach)
+    //  currentboard->connectedAtariPos(**move,ACpos,ACcount);
     if (ACcount>0) 
     {
       for (int i=0;i<ACcount;i++)

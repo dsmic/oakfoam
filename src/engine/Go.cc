@@ -322,6 +322,7 @@ Go::Board::Board(int s)
   lastscoredata=NULL;
 
   hasSolidGroups=false;
+  ACcount=0;
 }
 
 Go::Board::~Board()
@@ -395,6 +396,8 @@ void Go::Board::copyOver(Go::Board *copyboard) const
   }
   copyboard->blackcaptures=this->blackcaptures;
   copyboard->whitecaptures=this->whitecaptures;
+  copyboard->ACcount=ACcount;
+  for (int i=0;i<ACcount;i++) copyboard->ACpos[i]=ACpos[i];
 }
 
 std::string Go::Board::toString() const
@@ -685,7 +688,7 @@ void Go::Board::makeMove(Go::Move move, Gtp::Engine* gtpe)
   {
     fprintf(stderr,"WARNING! unexpected move color\n");
   }
-  
+  connectedAtariPos(move);
   lastcapture = false;
 
   if (simpleko!=-1)
@@ -3560,11 +3563,11 @@ void Go::Board::calcSlowLibertyGroups()  {
 }
 
 
-void Go::Board::connectedAtariPos(Go::Move move, int CApos[4], int &CAcount)
+void Go::Board::connectedAtariPos(Go::Move move) //, int CApos[4], int &CAcount)
 {
  int pos=move.getPosition ();
  Go::Color col=move.getColor();
- CAcount=0;
+ ACcount=0;
  if (pos<0) return;
  foreach_adjacent(pos,p,{
     if (this->getColor(p)==col && this->inGroup(p) && this->getGroup(p)->isOneOfTwoLiberties(this,pos))
@@ -3574,8 +3577,8 @@ void Go::Board::connectedAtariPos(Go::Move move, int CApos[4], int &CAcount)
       if (getMaxDistance(movepos,pos)>1 && this->validMove(Go::Move(Go::otherColor(col),movepos)))
       {
      //   fprintf(stderr,"connected Atari %s %d for move %s on board\n%s",Go::Move(Go::otherColor(col),movepos).toString(getSize()).c_str(),CAcount,move.toString(getSize()).c_str(),toString().c_str());
-        CApos[CAcount]=movepos;
-        CAcount++;
+        ACpos[ACcount]=movepos;
+        ACcount++;
       }
     }
   });

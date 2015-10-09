@@ -1205,7 +1205,10 @@ namespace Go
       inline int getPseudoLiberties(int pos) const { if (data[pos].group==NULL) return 0; else return data[pos].group->find()->numOfPseudoLiberties(); };
 
       void calcSlowLibertyGroups();
-      void connectedAtariPos(Go::Move move, int CApos[4], int &CAcount);
+      void connectedAtariPos(Go::Move move);//, int CApos[4], int &CAcount);
+      int ACcount;
+      int ACpos[4];
+
       void enable_changed_positions() {changed_positions =new list_int();}
       void disable_changed_positions() {if (changed_positions!=NULL) delete changed_positions; changed_positions=NULL;}
 
@@ -1244,7 +1247,6 @@ namespace Go
       bool lastcapture;
       bool CSstyle=false;
       list_int *changed_positions=NULL;
-  
       struct ScoreVertex
       {
         bool touched;
