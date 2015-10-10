@@ -1218,7 +1218,22 @@ namespace Go
 
       float komi_grouptesting=0;  //only used for group testing!!!!!!!!
       bool hasSolidGroups;
-
+      //check if one of the attachedpos groups is attached to capturepos
+      bool groupatached(int capturedpos,list_short &attachedpos) {
+        if (attachedpos.size()==0) return false;
+        list_short *captatt=getGroup(capturedpos)->getAdjacentGroups();
+        std::list<Go::Group*> captachedposgroup;
+        for (auto p:attachedpos) {
+          captachedposgroup.push_back(getGroup(p));
+        }
+        for (auto p:*captatt) {
+          Go::Group *group=getGroup(p);
+          for (auto gg: captachedposgroup) {
+            if (gg==group) return true;
+          }
+        }
+        return false;        
+      }
     private:
       const int size;
       const int sizesq;

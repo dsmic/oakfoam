@@ -814,6 +814,8 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                     // attached group in Atari (must have othercol)
                     killattachedgroup=attachedgroup->getAtariPosition();
                     int libs=0;
+                    int capturedpos=-1;
+                    Go::list_short attachedpos;
                     Go::Group *usedgroup=NULL;
                     foreach_adjacent_debug(killattachedgroup,q) {
                     //foreach_adjacent(killattachedgroup,q,{
@@ -823,13 +825,15 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                         if (checkgroup!=usedgroup && checkgroup->numRealLibs()>1) {
                           libs+=checkgroup->numRealLibs()-1;
                           usedgroup=checkgroup;
+                          attachedpos.push_back(q);
                         }
                       }
                       else if (board->getColor(q)==othercol && board->getGroup(q)->inAtari()) {
                         libs++;
+                        capturedpos=q;
                       }
                     }//);
-                    if (libs>1) {
+                    if (libs>1 || (libs==1 && capturedpos>=0 && board->groupatached(capturedpos,attachedpos))) {
                       //2. Save new atari-string by capturing
                       LOCAL_FEATURE_POSITION(killattachedgroup,params->csstyle_saveataricapture,2);
                     }
@@ -850,6 +854,8 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
               int extentionpos=group->getAtariPosition();
               int singlelibpos=-1;
               int libs=0;
+              int capturedpos=-1;
+              Go::list_short attachedpos;
               Go::Group *usedgroup=NULL;
               foreach_adjacent_debug(extentionpos,q){
               //foreach_adjacent(extentionpos,q,{
@@ -871,9 +877,10 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                 }
                 else if (board->getColor(q)==othercol && board->getGroup(q)->inAtari()) {
                   libs++;
+                  capturedpos=q;
                 }
               }//);
-              if (libs>1) {
+              if (libs>1 || (libs==1 && capturedpos>=0 && board->groupatached(capturedpos,attachedpos))) {
                 //4. Save new atari-string by extending
                 LOCAL_FEATURE_POSITION(extentionpos,params->csstyle_saveatariextention,4);
               }
@@ -902,6 +909,8 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                     int libs=0;
                     int singlelibpos=-1;
                     int colattached=attachedgroup->getColor();
+                    int capturedpos=-1;
+                    Go::list_short attachedpos;
                     Go::Group *usedgroup=NULL;
                     foreach_adjacent_debug(a,q){
                     //foreach_adjacent(a,q,{
@@ -913,10 +922,16 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                           usedgroup=checkgroup;
                         }
                       }
+                      else if (board->getColor(q)==othercol && board->getGroup(q)->inAtari()) {
+                        libs++;
+                        capturedpos=q;
+                      }
                     }//);
-                    if (libs>1) a_is_extention=true;
+                    if (libs>1 || (libs==1 && capturedpos>=0 && board->groupatached(capturedpos,attachedpos))) a_is_extention=true;
                     libs=0;
                     singlelibpos=-1;
+                    capturedpos=-1;
+                    attachedpos.clear();
                     usedgroup=NULL;
                     foreach_adjacent_debug(b,q){
                     //foreach_adjacent(b,q,{
@@ -936,8 +951,12 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                           usedgroup=checkgroup;
                         }
                       }
+                      else if (board->getColor(q)==othercol && board->getGroup(q)->inAtari()) {
+                        libs++;
+                        capturedpos=q;
+                      }
                     }//);
-                    if (libs>1) b_is_extention=true;
+                    if (libs>1 || (libs==1 && capturedpos>=0 && board->groupatached(capturedpos,attachedpos))) b_is_extention=true;
                     if (a_is_extention && !b_is_extention) LOCAL_FEATURE_POSITION(a,params->csstyle_2libcapture,7);
                     if (b_is_extention && !a_is_extention) LOCAL_FEATURE_POSITION(b,params->csstyle_2libcapture,7);
                   };
