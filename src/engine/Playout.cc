@@ -7,6 +7,7 @@
 #include "Random.h"
 #include "Worker.h"
 #include <time.h>
+#include "boost/container/flat_set.hpp"
 
 #define LGRFCOUNT1 1
 #define LGRFCOUNT2 1
@@ -67,6 +68,8 @@ Playout::~Playout()
     delete[] lgrf1count;
   if (lgrf2count!=NULL)
     delete[] lgrf2count;
+  if (gamma_gradient!=NULL)
+    delete[] gamma_gradient;
   //delete randomgen;
   //delete rng;
 }
@@ -76,6 +79,13 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
   std::list<unsigned int> movehashes3x3;
   std::list<unsigned long> movehashes5x5;
   //int ACpos[4],ACcount=0;
+  float *gamma_gradient_local=NULL;
+  if (params->csstyle_adaptiveplayouts) {
+    if (gamma_gradient==NULL) {
+      gamma_gradient= new float[2 * (local_feature_num+hashto5num) * (params->board_size) * (params->board_size)];
+      gamma_gradient_num=0;
+    }
+  }
   
   params->engine->ProbabilityClean();
   board->enable_changed_positions();
@@ -144,6 +154,12 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
     }
   }
 
+  int gradient_num=0;
+  if (params->csstyle_adaptiveplayouts) 
+  {
+    gamma_gradient_local= new float[2*(local_feature_num+hashto5num) * (params->board_size) * (params->board_size)];
+  }
+  
   // setup poolRAVE and its variants
   std::vector<int> pool;
   std::vector<int> poolother;
@@ -402,14 +418,14 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
     bool nonlocalmove=false;
     if (movereasons!=NULL)
     {
-      this->getPlayoutMove(settings,board,coltomove,move,posarray,critarray,(coltomove==Go::BLACK)?b_ravearray:w_ravearray,(coltomove==Go::BLACK?bpasses:wpasses),(coltomove==poolcol?&pool:&poolcrit),&poolcrit,&reason,&trylocal_p,black_gammas,white_gammas,&earlymoves,(coltomove==colfirst?firstlist:secondlist),playoutmovescount+1,&nonlocalmove,treeboardBlack,treeboardWhite,used_playouts,(coltomove==Go::BLACK)?&cnn_b_copy:&cnn_w_copy);
+      this->getPlayoutMove(settings,board,coltomove,move,posarray,critarray,(coltomove==Go::BLACK)?b_ravearray:w_ravearray,(coltomove==Go::BLACK?bpasses:wpasses),(coltomove==poolcol?&pool:&poolcrit),&poolcrit,&reason,&trylocal_p,black_gammas,white_gammas,&earlymoves,(coltomove==colfirst?firstlist:secondlist),playoutmovescount+1,&nonlocalmove,treeboardBlack,treeboardWhite,used_playouts,(coltomove==Go::BLACK)?&cnn_b_copy:&cnn_w_copy,gamma_gradient_local,&gradient_num);
       //fprintf(stderr,"move test %s\n",move.toString (9).c_str());
       if (params->playout_useless_move)
         this->checkUselessMove(settings,board,coltomove,move,posarray,&reason);
     }
     else
     {
-      this->getPlayoutMove(settings,board,coltomove,move,posarray,critarray,(coltomove==Go::BLACK)?b_ravearray:w_ravearray,(coltomove==Go::BLACK?bpasses:wpasses),(coltomove==poolcol?&pool:&poolcrit),&poolcrit,NULL,&trylocal_p,black_gammas,white_gammas,&earlymoves,(coltomove==colfirst?firstlist:secondlist),playoutmovescount+1,&nonlocalmove,treeboardBlack,treeboardWhite,used_playouts,(coltomove==Go::BLACK)?&cnn_b_copy:&cnn_w_copy);
+      this->getPlayoutMove(settings,board,coltomove,move,posarray,critarray,(coltomove==Go::BLACK)?b_ravearray:w_ravearray,(coltomove==Go::BLACK?bpasses:wpasses),(coltomove==poolcol?&pool:&poolcrit),&poolcrit,NULL,&trylocal_p,black_gammas,white_gammas,&earlymoves,(coltomove==colfirst?firstlist:secondlist),playoutmovescount+1,&nonlocalmove,treeboardBlack,treeboardWhite,used_playouts,(coltomove==Go::BLACK)?&cnn_b_copy:&cnn_w_copy,gamma_gradient_local,&gradient_num);
       //fprintf(stderr,"move test %s\n",move.toString (9).c_str());
       if (params->playout_useless_move)
         this->checkUselessMove(settings,board,coltomove,move,posarray);
@@ -670,13 +686,15 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
     delete treeboardBlack;
   if (treeboardWhite!=NULL)
     delete treeboardWhite;
+  if (gamma_gradient_local!=NULL)
+    delete[]gamma_gradient_local;
 }
 
-void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, critstruct critarray[], float ravearray[], int passes, std::vector<int> *pool, std::vector<int> *poolCR, std::string *reason, float *trylocal_p, float *black_gammas, float *white_gammas, bool *earlymoves, Go::IntBoard *firstlist,int playoutmovescount, bool *nonlocalmove,Go::IntBoard *treeboardBlack,Go::IntBoard *treeboardWhite, int used_playouts, boost::bimap<int,float> *cnn_moves)
+void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, critstruct critarray[], float ravearray[], int passes, std::vector<int> *pool, std::vector<int> *poolCR, std::string *reason, float *trylocal_p, float *black_gammas, float *white_gammas, bool *earlymoves, Go::IntBoard *firstlist,int playoutmovescount, bool *nonlocalmove,Go::IntBoard *treeboardBlack,Go::IntBoard *treeboardWhite, int used_playouts, boost::bimap<int,float> *cnn_moves, float *gamma_gradient_local, int *gradient_num)
 {
   int *posarray = new int[board->getPositionMax()];
   
-  this->getPlayoutMove(settings,board,col,move,posarray,critarray,ravearray,passes,pool,poolCR,reason,trylocal_p,black_gammas,white_gammas,earlymoves, firstlist, playoutmovescount, nonlocalmove,treeboardBlack,treeboardWhite, used_playouts, cnn_moves);
+  this->getPlayoutMove(settings,board,col,move,posarray,critarray,ravearray,passes,pool,poolCR,reason,trylocal_p,black_gammas,white_gammas,earlymoves, firstlist, playoutmovescount, nonlocalmove,treeboardBlack,treeboardWhite, used_playouts, cnn_moves, gamma_gradient_local, gradient_num);
   
   delete[] posarray;
 }
@@ -719,7 +737,7 @@ template <typename T> string tostr(const T& t) {
 } 
 
 //#define LOCAL_FEATURE_POSITION(A,B,C) {if (used[C].count(A)==0 && board->validMove(col,A)) {fprintf(stderr,"%s %d\n",Go::Position::pos2string(A,size).c_str(),C); used[C].insert(A); res=local_feature_positions.insert({A,B});  if (!res.second)  local_feature_positions[A]*=B;}}
-#define LOCAL_FEATURE_POSITION(A,B,C) {if (used[C].count(A)==0 && board->validMove(col,A)) {used[C].insert(A); res=local_feature_positions.insert({A,B});  if (!res.second)  local_feature_positions[A]*=B;}}
+#define LOCAL_FEATURE_POSITION(A,B,C) {if (A<0) fprintf(stderr,"pos negative %d %f %d\n",A,B,C); if (used[C].count(A)==0 && board->validMove(col,A)) {used[C].insert(A); res=local_feature_positions.insert({A,B});  if (!res.second)  local_feature_positions[A]*=B;}}
 
 
 //prefer the better move with some probability (think about a little more:)
@@ -727,7 +745,7 @@ template <typename T> string tostr(const T& t) {
 #define SetIfBetter(MOVE,GAMMA) {if (CheckBetterP(GAMMA,best_gamma)) {best_pos=MOVE.getPosition(); best_gamma=GAMMA;}}
 #define ReturnBetter(MOVE,GAMMA) {if (CheckBetterP(GAMMA,best_gamma)) return;}
 
-void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, critstruct critarray[], float ravearray[], int passes, std::vector<int> *pool, std::vector<int> *poolcrit, std::string *reason, float *trylocal_p, float *black_gammas, float *white_gammas, bool *earlymoves, Go::IntBoard *firstlist,int playoutmovescount, bool *nonlocalmove,Go::IntBoard *treeboardBlack,Go::IntBoard *treeboardWhite, int used_playouts, boost::bimap<int,float> *cnn_moves)
+void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, critstruct critarray[], float ravearray[], int passes, std::vector<int> *pool, std::vector<int> *poolcrit, std::string *reason, float *trylocal_p, float *black_gammas, float *white_gammas, bool *earlymoves, Go::IntBoard *firstlist,int playoutmovescount, bool *nonlocalmove,Go::IntBoard *treeboardBlack,Go::IntBoard *treeboardWhite, int used_playouts, boost::bimap<int,float> *cnn_moves, float *gamma_gradient_local, int *gradient_num)
 {
   /* trylocal_p can be used to influence parameters from move to move in a playout. It starts with 1.0
    * 
@@ -739,7 +757,19 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
   int best_pos=-1;
   int blevel=0;
   float bgamma=0;
-  
+  float local_weights[]={
+    params->csstyle_attachedpos,//1
+    params->csstyle_saveataricapture,//2
+    params->csstyle_saveataricapturebutselfatari,//3
+    params->csstyle_saveatariextention,//4
+    params->csstyle_saveatariextentionbutselfatari,//5
+    params->csstyle_solvekocapture,//6
+    params->csstyle_2libcapture,//7
+    0, //8
+    params->csstyle_nakade,//9  
+    params->csstyle_attachedposbutselfatari,//10
+    params->csstyle_defendapproach //11 
+  };
   int ncirc=0;
 
   Random *const rand=settings->rand;
@@ -771,10 +801,10 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     move=Go::Move(col,Go::Move::PASS);
     if (board->numOfValidMoves(col)==0)
       return;
-    std::unordered_map<int,float> local_feature_positions;
-    std::set<int> used[12];
+    std::map<int,float> local_feature_positions;
+    std::set<int> used[local_feature_num]; // quite expensive
     int lastpos=board->getLastMove().getPosition();
-    std::pair<std::unordered_map<int,float>::iterator,bool> res;
+    std::pair<std::map<int,float>::iterator,bool> res;
     int killattachedgroup;
     int a,b;
 
@@ -1008,7 +1038,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
             }
             else {
               //10. Contiguous to the last move but selfatari
-              LOCAL_FEATURE_POSITION(q,params->csstyle_attachedposbutselfatari,1);
+              LOCAL_FEATURE_POSITION(q,params->csstyle_attachedposbutselfatari,10);
             }
           }
         }//);
@@ -1085,13 +1115,13 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
         }
       }
 
-    if (params->playout_nakade_enabled && WITH_P(params->test_p35))
+    if (params->playout_nakade_enabled)
       {
         Go::Move movetmp=Go::Move(col,Go::Move::PASS);
         this->getNakadeMove(settings,board,col,movetmp,posarray);
         if (!movetmp.isPass())
         {
-          LOCAL_FEATURE_POSITION(move.getPosition(),params->csstyle_nakade,9);
+          LOCAL_FEATURE_POSITION(movetmp.getPosition(),params->csstyle_nakade,9);
         }
     }
 
@@ -1113,13 +1143,10 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
       features_tmp.erase(features_tmp.begin()+select);
       local_feature_positions.erase(select);
     }
+    }
 
+    // 100% local moves do not give information on the gradient!!
 
-//fprintf(stderr,"start2\n");
-
-
-    //doapproachmoves=(rand->getRandomReal()<params->playout_random_approach_p);
-    //goto random2;
     board->updatePlayoutGammas(params);
 
     
@@ -1138,7 +1165,6 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
         gamma_sum+=tmp;
       }
     }
-    
     //fprintf(stderr,"%f\n",gamma_sum);
     //int max_num=size*size/5;  //this should make sure, that all moves with not used here have a probability of 1/5 to be seen
 
@@ -1161,6 +1187,16 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
           gamma_sum_local+=g2;
           gamma_sum-=g1;
         }
+        if (params->csstyle_adaptiveplayouts) {
+          int sumand=0; //black
+          int p=pf.first;
+          int x=Go::Position::pos2x(p,size);
+          int y=Go::Position::pos2y(p,size);
+          for (int i=0;i<local_feature_num;i++) {
+            if (used[i].count(p)>0)
+              gamma_gradient_local[sumand + (size*x+y)*(local_feature_num+hashto5num)+i]-=(g2*local_weights[i]-g1*g1)/(gamma_sum_local+gamma_sum+0.1);
+          }
+        }
       }
     }
     else
@@ -1177,9 +1213,46 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
           gamma_sum_local+=g2;
           gamma_sum-=g1;
         }
+        if (params->csstyle_adaptiveplayouts) {
+          int sumand=(local_feature_num+hashto5num) * size * size; //white
+          int p=pf.first;
+          int x=Go::Position::pos2x(p,size);
+          int y=Go::Position::pos2y(p,size);
+          for (int i=0;i<local_feature_num;i++) {
+            if (used[i].count(p)>0)
+              gamma_gradient_local[sumand + (size*x+y)*(local_feature_num+hashto5num)+i]-=(g2*local_weights[i]-g1*g1)/(gamma_sum_local+gamma_sum+0.1);
+          }
+        }
       }
     }
 
+    if (params->csstyle_adaptiveplayouts) {
+      float gs=(gamma_sum_local+gamma_sum+0.1);
+      if (col==Go::BLACK) {
+        for (int x=0;x<size;x++) 
+          for (int y=0;y<size;y++) {
+            int p=Go::Position::xy2pos(x,y,size);
+            float gamma=board->blackpatterns->get(p);
+            if (gamma==0) break;
+            int patt=board->blackpatterns->get(p);
+            gamma_gradient_local[(size*x+y)*(local_feature_num+hashto5num)+local_feature_num+patt]-=gamma*gamma/gs;
+          }
+      }
+      else {
+        int sumand=(local_feature_num+hashto5num) * size * size;
+        for (int x=0;x<size;x++) 
+          for (int y=0;y<size;y++) {
+            int p=Go::Position::xy2pos(x,y,size);
+            float gamma=board->whitepatterns->get(p);
+            if (gamma==0) break;
+            int patt=board->whitepatterns->get(p);
+            gamma_gradient_local[sumand + (size*x+y)*(local_feature_num+hashto5num)+local_feature_num+patt]-=gamma*gamma/gs;
+          }
+      }
+      (*gradient_num)++;
+    }
+    
+    
     //fprintf(stderr," local %f nonlocal %f\n",gamma_sum_local,gamma_sum);
     //gamma_sum contains the sum of all non(!) local moves
     //gamma_sum_local contains the sum of all local moves
@@ -1199,6 +1272,24 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
         move=Go::Move(col,sorted_pos[select].second);
         if (board->validMove (move)) {
           params->engine->statisticsPlus(Engine::CSSTYLE_LOCAL);
+          {
+            int p=move.getPosition();
+            int x=Go::Position::pos2x(p,size);
+            int y=Go::Position::pos2y(p,size);
+            int sumand;
+            if (col==Go::BLACK) {
+              sumand=0;
+              gamma_gradient_local[sumand + (size*x+y)*(local_feature_num+hashto5num)+local_feature_num+board->blackpatterns->get(p)]+=board->blackgammas->get(p);
+            } 
+            else {
+              sumand= (local_feature_num+hashto5num) * size * size; //white
+              gamma_gradient_local[sumand + (size*x+y)*(local_feature_num+hashto5num)+local_feature_num+board->whitepatterns->get(p)]+=board->whitegammas->get(p);
+            }
+            for (int i=0;i<local_feature_num;i++) {
+              if (used[i].count(p)>0)
+                gamma_gradient_local[sumand + (size*x+y)*(local_feature_num+hashto5num)+i]+=local_weights[i];
+            }
+          }
           return;
         }
         fprintf(stderr,"should not happen 2? %d %s\n%s",col,Go::Position::pos2string(sorted_pos[select].second,size).c_str(),board->toString().c_str());
@@ -1260,6 +1351,24 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
         move=Go::Move(col,sorted_pos[select].second);
         if (board->validMove (move)) {
           params->engine->statisticsPlus(Engine::CSSTYLE_NONLOCAL);
+          {
+            int p=move.getPosition();
+            int x=Go::Position::pos2x(p,size);
+            int y=Go::Position::pos2y(p,size);
+            int sumand;
+            if (col==Go::BLACK) {
+              sumand=0;
+              gamma_gradient_local[sumand + (size*x+y)*(local_feature_num+hashto5num)+local_feature_num+board->blackpatterns->get(p)]+=board->blackgammas->get(p);
+            } 
+            else {
+              sumand= (local_feature_num+hashto5num) * size * size; //white
+              gamma_gradient_local[sumand + (size*x+y)*(local_feature_num+hashto5num)+local_feature_num+board->whitepatterns->get(p)]+=board->whitegammas->get(p);
+            }
+            for (int i=0;i<local_feature_num;i++) {
+              if (used[i].count(p)>0)
+                gamma_gradient_local[sumand + (size*x+y)*(local_feature_num+hashto5num)+i]+=local_weights[i];
+            }
+          }
           return;
         }
         fprintf(stderr,"should not happen 1? lastmove %s %d %s\n%s",Go::Position::pos2string(lastpos,size).c_str(),col,Go::Position::pos2string(sorted_pos[select].second,size).c_str(),board->toString().c_str());
@@ -1294,16 +1403,34 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     if (patternmove>=0) {
       move=Go::Move(col,patternmove);
       params->engine->statisticsPlus(Engine::CSSTYLE_NONLOCAL_PICK);
+      {
+        int p=move.getPosition();
+        int x=Go::Position::pos2x(p,size);
+        int y=Go::Position::pos2y(p,size);
+        int sumand;
+        if (col==Go::BLACK) {
+          sumand=0;
+          gamma_gradient_local[sumand + (size*x+y)*(local_feature_num+hashto5num)+local_feature_num+board->blackpatterns->get(p)]+=board->blackgammas->get(p);
+        } 
+        else {
+          sumand= (local_feature_num+hashto5num) * size * size; //white
+          gamma_gradient_local[sumand + (size*x+y)*(local_feature_num+hashto5num)+local_feature_num+board->whitepatterns->get(p)]+=board->whitegammas->get(p);
+        }
+      //this should not have other features
+      //      for (int i=0;i<local_feature_num;i++) {
+      //        if (used[i].count(p)>0)
+      //          gamma_gradient_local[sumand + (size*x+y)*(local_feature_num+hashto5num)+i]+=local_weights[i];
+      }
       return;
     }
     doapproachmoves=(rand->getRandomReal()<params->playout_random_approach_p);
     goto random2;
 
-    }
+    
     
   }
   
-
+   
 
   
   /*

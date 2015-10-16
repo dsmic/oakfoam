@@ -31,6 +31,8 @@ typedef struct
   float slopeblack;
 } critstruct;
 
+
+#define local_feature_num 12
 /** Playouts. */
 class Playout
 {
@@ -52,7 +54,7 @@ class Playout
      */
     void doPlayout(Worker::Settings *settings, Go::Board *board, float &finalscore, float &cnn_winrate, Tree *playouttree, std::list<Go::Move> &playoutmoves, Go::Color colfirst, Go::IntBoard *firstlist, Go::IntBoard *secondlist, Go::IntBoard *earlyfirstlist, Go::IntBoard *earlysecondlist, std::list<std::string> *movereasons=NULL);
     /** Get a playout move for a given situation. */
-    void getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, critstruct critarray[], float ravearray[], int passes=0, std::vector<int> *pool=NULL, std::vector<int> *poolcrit=NULL, std::string *reason=NULL,float *trylocal_p=NULL, float *black_gammas=NULL, float *white_gammas=NULL, bool *earlymoves=NULL,Go::IntBoard *firstlist=NULL,int playoutmovescount=0, bool *nonlocalmove=NULL,Go::IntBoard *treeboardBlack=NULL,Go::IntBoard *treeboardWhite=NULL, int used_playouts=0, boost::bimap<int,float> *cnn_moves=NULL)  __attribute__((hot));
+    void getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, critstruct critarray[], float ravearray[], int passes=0, std::vector<int> *pool=NULL, std::vector<int> *poolcrit=NULL, std::string *reason=NULL,float *trylocal_p=NULL, float *black_gammas=NULL, float *white_gammas=NULL, bool *earlymoves=NULL,Go::IntBoard *firstlist=NULL,int playoutmovescount=0, bool *nonlocalmove=NULL,Go::IntBoard *treeboardBlack=NULL,Go::IntBoard *treeboardWhite=NULL, int used_playouts=0, boost::bimap<int,float> *cnn_moves=NULL,float *gamma_gradient_local=NULL, int *gradient_num=NULL)  __attribute__((hot));
     /** Check for a useless move according to the Crazy Stone heuristic.
      * @todo Consider incorporating this into getPlayoutMove()
      */
@@ -60,7 +62,7 @@ class Playout
     
     /** Reset LGRF values. */
     void resetLGRF();
-  
+    
   private:
     Parameters *const params;
     Gtp::Engine *gtpe;
@@ -76,11 +78,13 @@ class Playout
     unsigned long int *lgpf_b;
     
     bool *badpassanswer;
+    float *gamma_gradient;
+    int gamma_gradient_num;
     
     int lgrfpositionmax;
     //boost::random::lagged_fibonacci607 *rng;
     //boost::uniform_01<boost::random::lagged_fibonacci607> *randomgen;  
-    void getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, critstruct critarray[], float ravearray[], int passes=0, std::vector<int> *pool=NULL, std::vector<int> *poolcrit=NULL, std::string *reason=NULL,float *trylocal_p=NULL,float *black_gammas=NULL,float *white_gammas=NULL, bool *earlymoves=NULL,Go::IntBoard *firstlist=NULL,int playoutmovescount=0, bool *nonlocalmove=NULL,Go::IntBoard *treeboardBlack=NULL,Go::IntBoard *treeboardWhite=NULL, int used_playouts=0, boost::bimap<int,float> *cnn_moves=NULL);
+    void getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, critstruct critarray[], float ravearray[], int passes=0, std::vector<int> *pool=NULL, std::vector<int> *poolcrit=NULL, std::string *reason=NULL,float *trylocal_p=NULL,float *black_gammas=NULL,float *white_gammas=NULL, bool *earlymoves=NULL,Go::IntBoard *firstlist=NULL,int playoutmovescount=0, bool *nonlocalmove=NULL,Go::IntBoard *treeboardBlack=NULL,Go::IntBoard *treeboardWhite=NULL, int used_playouts=0, boost::bimap<int,float> *cnn_moves=NULL,float *gamma_gradient_local=NULL, int *gradient_num=NULL);
     void checkUselessMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray, std::string *reason=NULL);
     void getPoolRAVEMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, std::vector<int> *pool=NULL);
     void getLGRF2Move(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move);

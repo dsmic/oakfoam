@@ -169,8 +169,8 @@ Go::Group::Group(Go::Board *boardtmp,
   parent=NULL;
   pseudoliberties=0;
   pseudoends=0;
-  libpossum=0;
-  libpossumsq=0;
+//  libpossum=0;
+//  libpossumsq=0;
   solid=false;
   changed_atari_pos=-1;
 }
@@ -316,6 +316,10 @@ Go::Board::Board(int s)
   whitegammas=new Go::ObjectBoard<float>(s);
   blackgammas->fill(0);
   whitegammas->fill(0);
+  blackpatterns=new Go::ObjectBoard<int>(s);
+  whitepatterns=new Go::ObjectBoard<int>(s);
+  blackpatterns->fill(0);
+  whitepatterns->fill(0);
 
   blackcaptures=0;
   whitecaptures=0;
@@ -335,6 +339,8 @@ Go::Board::~Board()
   
   delete blackgammas;
   delete whitegammas;
+  delete blackpatterns;
+  delete whitepatterns;
 
   if (changed_positions!=NULL) delete changed_positions;
   
@@ -395,6 +401,8 @@ void Go::Board::copyOver(Go::Board *copyboard) const
   if (CSstyle) {
     blackgammas->copy(copyboard->blackgammas);
     whitegammas->copy(copyboard->whitegammas);
+    blackpatterns->copy(copyboard->blackpatterns);
+    whitepatterns->copy(copyboard->whitepatterns);
     if (changed_positions!=NULL && changed_positions->size()>0)
       fprintf(stderr, "playout gammas not correct, copied with open changes\n");
   }
@@ -775,7 +783,7 @@ void Go::Board::makeMove(Go::Move move, Gtp::Engine* gtpe)
   
   thisgroup->addTouchingEmpties(this);
   
-  foreach_adjacent(pos,p,{
+  foreach_adjacent_debug(pos,p) {//,{
     if (this->getColor(p)==col)
     {
       Go::Group *othergroup=this->getGroup(p);
@@ -788,10 +796,10 @@ void Go::Board::makeMove(Go::Move move, Gtp::Engine* gtpe)
         this->mergeGroups(thisgroup,othergroup);
       thisgroup=thisgroup->find();
     }
-  });
+  }//);
 
   //fprintf(stderr,"move %s\n",move.toString (size).c_str());
-  foreach_adjacent(pos,p,{
+  foreach_adjacent_debug(pos,p) {//,{
     if (this->getColor(p)==othercol)
     {
       Go::Group *othergroup=this->getGroup(p);
@@ -826,7 +834,7 @@ void Go::Board::makeMove(Go::Move move, Gtp::Engine* gtpe)
         }
       }
     }
-  });
+  }//);
   
   this->removeValidMove(Go::BLACK,pos);
   this->removeValidMove(Go::WHITE,pos);
@@ -1712,10 +1720,10 @@ std::list<Go::Board::SymmetryTransform> Go::Board::getSymmetryTransformsFromPrim
 inline void Go::Board::setPlayoutGammaAt(Parameters* params,int p)
 {
 #ifdef is3x3only
-  if (getColor(p)==Go::EMPTY) {
-    whitegammas->set(p,0);
-    blackgammas->set(p,0);
-  }
+  //if (getColor(p)==Go::EMPTY) {
+  //  whitegammas->set(p,0);
+  //  blackgammas->set(p,0);
+  //}
   if (params->csstyle_atatarigroup!=1.0) {
 //this has to be extended by logic, this way b and w groups are handled equally ...
     float atari=1.0, is2lib=1.0;//,atariw=1.0, is2libw=1.0;
@@ -1760,12 +1768,14 @@ inline void Go::Board::setPlayoutGammaAt(Parameters* params,int p)
       blackgammas->set(p,features->getFeatureGammaPattern(pattern));//Pattern::ThreeByThree::smallestEquivalent(pattern)));
     else
       blackgammas->set(p,0);
+  if (params->csstyle_adaptiveplayouts) blackpatterns->set(p,Pattern::hashto5(pattern));
   pattern=Pattern::ThreeByThree::invert(pattern);
   //whitegammas->set(p,features->getFeatureGammaPlayoutPattern(Pattern::ThreeByThree::smallestEquivalent(pattern),99,99));
   if (whitevalidmoves->get(p))
       whitegammas->set(p,features->getFeatureGammaPattern(pattern));//Pattern::ThreeByThree::smallestEquivalent(pattern)));
     else
       whitegammas->set(p,0);
+  if (params->csstyle_adaptiveplayouts) whitepatterns->set(p,Pattern::hashto5(pattern));
   }
 #else
   Pattern::Circular pattcirc = Pattern::Circular(features->getCircDict(),this,p,psize);

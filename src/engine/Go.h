@@ -694,8 +694,8 @@ namespace Go
         pseudoliberties+=othergroup->pseudoliberties;
         pseudoends+=othergroup->pseudoends;
         pseudoborderdist+=othergroup->pseudoborderdist;
-        libpossum+=othergroup->libpossum;
-        libpossumsq+=othergroup->libpossumsq;
+        //libpossum+=othergroup->libpossum;
+        //libpossumsq+=othergroup->libpossumsq;
         all_liberties.insert(othergroup->all_liberties.begin(),othergroup->all_liberties.end());
         if (isSolid() || othergroup->isSolid()) setSolid();
         adjacentgroups.splice(adjacentgroups.end(),*othergroup->getAdjacentGroups());
@@ -715,11 +715,13 @@ namespace Go
       inline int numOfPseudoBorderDist() const { return pseudoborderdist; };
       
       /** Add a pseudo liberty to this group. */
-      inline void addPseudoLiberty(int pos) { pseudoliberties++; libpossum+=pos; libpossumsq+=pos*pos; all_liberties.insert(pos);};
+      inline void addPseudoLiberty(int pos) { pseudoliberties++; //libpossum+=pos; libpossumsq+=pos*pos; 
+        all_liberties.insert(pos);};
       inline void addPseudoEnd() { pseudoends++;};
       inline void addPseudoBorderDist(int dist) { pseudoborderdist+=dist;};
       /** Remove a pseudo liberty from this group. */
-      inline void removePseudoLiberty(int pos) { pseudoliberties--; libpossum-=pos; libpossumsq-=pos*pos; all_liberties.erase(pos);};
+      inline void removePseudoLiberty(int pos) { pseudoliberties--; //libpossum-=pos; libpossumsq-=pos*pos; 
+        all_liberties.erase(pos);};
       inline void removePseudoEnd() { pseudoends--;};
       /** Determine if this group is in atari. */
       inline bool inAtari() const {return (all_liberties.size()==1);};
@@ -749,8 +751,8 @@ namespace Go
       /** Get a list of the adjacent groups to this group. */
       //std::list<int,Go::allocator_int> *getAdjacentGroups() { return &adjacentgroups; };
       list_short *getAdjacentGroups() { return &adjacentgroups; };
-      inline int getLibpossum() {return libpossum;}
-      inline int getLibpossumsq() {return libpossumsq;}
+      //inline int getLibpossum() {return libpossum;}
+      //inline int getLibpossumsq() {return libpossumsq;}
 //      inline Go::Board *const getBoard() {return board;}
       int real_libs; //used for very slow real liberty counting
       bool isSolid() {return solid;}
@@ -778,8 +780,8 @@ namespace Go
       int pseudoliberties;
       int pseudoends;
       int pseudoborderdist;
-      int libpossum;
-      int libpossumsq;
+      //int libpossum;
+      //int libpossumsq;
 
       list_short adjacentgroups;
       bool solid;
@@ -1214,6 +1216,8 @@ namespace Go
 
       Go::ObjectBoard<float> *blackgammas;
       Go::ObjectBoard<float> *whitegammas;
+      Go::ObjectBoard<int> *blackpatterns;
+      Go::ObjectBoard<int> *whitepatterns;
       Features *getFeatures() {return features;};
 
       float komi_grouptesting=0;  //only used for group testing!!!!!!!!

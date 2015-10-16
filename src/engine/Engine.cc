@@ -27,6 +27,7 @@ Net<float> *caffe_area_net;
 
 Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
 {
+  //cudaSetDeviceFlags(cudaDeviceBlockingSync);
   //Caffe::set_mode_gpu();
   Caffe::SetDevice(0);
   int t1=Caffe::mode();
@@ -318,7 +319,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","test_p119",&(params->test_p119),0.0);
   params->addParameter("playout","test_p120",&(params->test_p120),0.0);
 
-  params->addParameter("playout","csstyle_enabled",&(params->csstyle_enabled),0);
+  params->addParameter("playout","csstyle_enabled",&(params->csstyle_enabled),false);
   params->addParameter("playout","csstyle_atatarigroup",&(params->csstyle_atatarigroup),1.0);
   params->addParameter("playout","csstyle_is2libgroup",&(params->csstyle_is2libgroup),1.0);
   params->addParameter("playout","csstyle_attachedpos",&(params->csstyle_attachedpos),1.0);
@@ -332,6 +333,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","csstyle_nakade",&(params->csstyle_nakade),1.0);
   params->addParameter("playout","csstyle_playonladder",&(params->csstyle_playonladder),1.0);
   params->addParameter("playout","csstyle_defendapproach",&(params->csstyle_defendapproach),1.0);
+  params->addParameter("playout","csstyle_adaptiveplayouts",&(params->csstyle_adaptiveplayouts),false);
   params->addParameter("playout","csstyle_01",&(params->csstyle_01),0.0);
   params->addParameter("playout","csstyle_02",&(params->csstyle_02),0.0);
   params->addParameter("playout","csstyle_03",&(params->csstyle_03),0.0);
@@ -724,6 +726,7 @@ void Engine::getCNN(Go::Board *board,Go::Color col, float result[])
   b->set_cpu_data(data);
   vector<Blob<float>*> bottom;
   bottom.push_back(b); 
+  //cudaSetDeviceFlags(cudaDeviceBlockingSync);
   Caffe::set_mode(Caffe::GPU);
   const vector<Blob<float>*>& rr =  caffe_test_net->Forward(bottom);
   //fprintf(stderr,"start\n");
