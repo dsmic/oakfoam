@@ -13,6 +13,11 @@
 #include "../gtp/Gtp.h"
 
 
+//adaptive playouts
+#define local_feature_num 12
+#define hashto5num 32
+
+
 #define MARK {fprintf(stderr,"mark %s %d\n",__FILE__,__LINE__);}
 //can be set or unordered_set last is faster (this was probably wrong, it is only faster if fetch by value is needed, and only one is needed in erase(group))
 #define ourset unordered_set
@@ -1211,13 +1216,24 @@ namespace Go
       int ACcount;
       int ACpos[4];
 
-      void enable_changed_positions() {changed_positions =new list_int();}
+      void enable_changed_positions(Parameters* params) {if (changed_positions!=NULL) delete changed_positions; updatePlayoutGammas(params); changed_positions =new list_int();}
       void disable_changed_positions() {if (changed_positions!=NULL) delete changed_positions; changed_positions=NULL;}
 
       Go::ObjectBoard<float> *blackgammas;
       Go::ObjectBoard<float> *whitegammas;
       Go::ObjectBoard<int> *blackpatterns;
       Go::ObjectBoard<int> *whitepatterns;
+      float *deltagammas;
+      inline float deltagammasGetLocalFeature(int p, Go::Color col,int i) {
+        int x=Go::Position::pos2x(p,size); int y=Go::Position::pos2y(p,size);
+        int sum=0; if (Go::WHITE==col) sum=deltawhiteoffset;
+        return deltagammas[sum+(size*y+x)*(local_feature_num+hashto5num)+i];
+      }
+      inline float deltagammasGetPattern(int p, Go::Color col,int patt) {
+        int x=Go::Position::pos2x(p,size); int y=Go::Position::pos2y(p,size);
+        int sum=0; if (Go::WHITE==col) sum=deltawhiteoffset;
+        return deltagammas[sum+(size*y+x)*(local_feature_num+hashto5num)+local_feature_num+patt];
+      }
       Features *getFeatures() {return features;};
 
       float komi_grouptesting=0;  //only used for group testing!!!!!!!!
@@ -1312,6 +1328,7 @@ namespace Go
       void updateFeatureGamma(Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, int pos);
       void updateFeatureGamma(Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Color col, int pos);
       int psize=3;
+      const int deltawhiteoffset;
   };
 };
 

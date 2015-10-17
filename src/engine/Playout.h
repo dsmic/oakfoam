@@ -32,7 +32,6 @@ typedef struct
 } critstruct;
 
 
-#define local_feature_num 12
 /** Playouts. */
 class Playout
 {

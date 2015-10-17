@@ -259,7 +259,8 @@ Go::Board::Board(int s)
   : size(s),
     sizesq(s*s),
     sizedata(1+(s+1)*(s+2)),
-    data(new Go::Vertex[sizedata])
+    data(new Go::Vertex[sizedata]),
+    deltawhiteoffset(s*s*(local_feature_num+hashto5num))
 {
   const int nextprimes[26]={3,7,13,23,31,43,59,73,97,113,137,157,191,211,241,277,307,347,383,421,463,509,557,601,653,709};
   nextprime=nextprimes[s];
@@ -320,7 +321,8 @@ Go::Board::Board(int s)
   whitepatterns=new Go::ObjectBoard<int>(s);
   blackpatterns->fill(0);
   whitepatterns->fill(0);
-
+  deltagammas = new float[2*s*s*(local_feature_num+hashto5num)];
+  for (int i=0;i<2*s*s*(local_feature_num+hashto5num);i++) deltagammas[i]=1.0;
   blackcaptures=0;
   whitecaptures=0;
   lastscoredata=NULL;
@@ -341,6 +343,7 @@ Go::Board::~Board()
   delete whitegammas;
   delete blackpatterns;
   delete whitepatterns;
+  delete[] deltagammas;
 
   if (changed_positions!=NULL) delete changed_positions;
   
@@ -1764,18 +1767,28 @@ inline void Go::Board::setPlayoutGammaAt(Parameters* params,int p)
   else {
   unsigned int pattern=Pattern::ThreeByThree::makeHash(this,p);
   //blackgammas->set(p,features->getFeatureGammaPlayoutPattern(Pattern::ThreeByThree::smallestEquivalent(pattern),99,99));
+  float deltab=1.0;
+  if (params->csstyle_adaptiveplayouts) {
+    int patt=Pattern::hashto5(pattern);
+    blackpatterns->set(p,patt);
+    deltab=deltagammasGetPattern(p,Go::BLACK,patt);
+  }
   if (blackvalidmoves->get(p))
-      blackgammas->set(p,features->getFeatureGammaPattern(pattern));//Pattern::ThreeByThree::smallestEquivalent(pattern)));
+      blackgammas->set(p,features->getFeatureGammaPattern(pattern)*deltab);//Pattern::ThreeByThree::smallestEquivalent(pattern)));
     else
       blackgammas->set(p,0);
-  if (params->csstyle_adaptiveplayouts) blackpatterns->set(p,Pattern::hashto5(pattern));
   pattern=Pattern::ThreeByThree::invert(pattern);
   //whitegammas->set(p,features->getFeatureGammaPlayoutPattern(Pattern::ThreeByThree::smallestEquivalent(pattern),99,99));
+  float deltaw=1.0;
+  if (params->csstyle_adaptiveplayouts) {
+    int patt=Pattern::hashto5(pattern);
+    whitepatterns->set(p,patt);
+    deltaw=deltagammasGetPattern(p,Go::WHITE,patt);
+  }
   if (whitevalidmoves->get(p))
-      whitegammas->set(p,features->getFeatureGammaPattern(pattern));//Pattern::ThreeByThree::smallestEquivalent(pattern)));
+      whitegammas->set(p,features->getFeatureGammaPattern(pattern)*deltaw);//Pattern::ThreeByThree::smallestEquivalent(pattern)));
     else
       whitegammas->set(p,0);
-  if (params->csstyle_adaptiveplayouts) whitepatterns->set(p,Pattern::hashto5(pattern));
   }
 #else
   Pattern::Circular pattcirc = Pattern::Circular(features->getCircDict(),this,p,psize);

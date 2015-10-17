@@ -82,7 +82,7 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
   float *gamma_gradient_local=NULL;
   
   params->engine->ProbabilityClean();
-  board->enable_changed_positions();
+  board->enable_changed_positions(params);
   // can not score board if not played out with playout rules
   //if (board->getPassesPlayed()>=2)
   //{
@@ -1191,8 +1191,8 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
           int x=Go::Position::pos2x(p,size);
           int y=Go::Position::pos2y(p,size);
           for (int i=0;i<local_feature_num;i++) {
-            if (used[i].count(p)>0 && g1>0 && g2>0)
-              gamma_gradient_local[sumand + (size*x+y)*(local_feature_num+hashto5num)+i]/=(g2*local_weights[i]/g1/g1); // /(localweights * g2/gs) and * (gamma*gamma/gs) to compensate for later /(gamma*gamma/gs)  
+            if (used[i].count(p)>0 && g1>0 && g2>0 && gamma_gradient_local!=NULL)
+              gamma_gradient_local[sumand + (size*y+x)*(local_feature_num+hashto5num)+i]/=(g2*local_weights[i]/g1/g1); // /(localweights * g2/gs) and * (gamma*gamma/gs) to compensate for later /(gamma*gamma/gs)  
           }
         }
       }
@@ -1217,33 +1217,33 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
           int x=Go::Position::pos2x(p,size);
           int y=Go::Position::pos2y(p,size);
           for (int i=0;i<local_feature_num;i++) {
-            if (used[i].count(p)>0 && g1>0 && g2>0)
-              gamma_gradient_local[sumand + (size*x+y)*(local_feature_num+hashto5num)+i]/=(g2*local_weights[i]/g1/g1); // /(localweights * g2/gs) and * (gamma*gamma/gs) to compensate for later /(gamma*gamma/gs) 
+            if (used[i].count(p)>0 && g1>0 && g2>0  && gamma_gradient_local!=NULL)
+              gamma_gradient_local[sumand + (size*y+x)*(local_feature_num+hashto5num)+i]/=(g2*local_weights[i]/g1/g1); // /(localweights * g2/gs) and * (gamma*gamma/gs) to compensate for later /(gamma*gamma/gs) 
           }
         }
       }
     }
 
-    if (params->csstyle_adaptiveplayouts) {
+    if (params->csstyle_adaptiveplayouts && gamma_gradient_local!=NULL) {
       if (col==Go::BLACK) {
-        for (int x=0;x<size;x++) 
-          for (int y=0;y<size;y++) {
+        for (int y=0;y<size;y++) 
+          for (int x=0;x<size;x++) {
             int p=Go::Position::xy2pos(x,y,size);
             float gamma=board->blackpatterns->get(p);
             if (gamma==0) break;
             int patt=board->blackpatterns->get(p);
-            gamma_gradient_local[(size*x+y)*(local_feature_num+hashto5num)+local_feature_num+patt]/=gamma*gamma/gs;
+            gamma_gradient_local[(size*y+x)*(local_feature_num+hashto5num)+local_feature_num+patt]/=gamma*gamma/gs;
           }
       }
       else {
         int sumand=(local_feature_num+hashto5num) * size * size;
-        for (int x=0;x<size;x++) 
-          for (int y=0;y<size;y++) {
+        for (int y=0;y<size;y++) 
+          for (int x=0;x<size;x++) {
             int p=Go::Position::xy2pos(x,y,size);
             float gamma=board->whitepatterns->get(p);
             if (gamma==0) break;
             int patt=board->whitepatterns->get(p);
-            gamma_gradient_local[sumand + (size*x+y)*(local_feature_num+hashto5num)+local_feature_num+patt]/=gamma*gamma/gs;
+            gamma_gradient_local[sumand + (size*y+x)*(local_feature_num+hashto5num)+local_feature_num+patt]/=gamma*gamma/gs;
           }
       }
       (*gradient_num)++;
@@ -1269,18 +1269,18 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
         move=Go::Move(col,sorted_pos[select].second);
         if (board->validMove (move)) {
           params->engine->statisticsPlus(Engine::CSSTYLE_LOCAL);
-          {
+          if (gamma_gradient_local!=NULL) {
             int p=move.getPosition();
             int x=Go::Position::pos2x(p,size);
             int y=Go::Position::pos2y(p,size);
             int sumand;
             if (col==Go::BLACK) {
               sumand=0;
-              gamma_gradient_local[sumand + (size*x+y)*(local_feature_num+hashto5num)+local_feature_num+board->blackpatterns->get(p)]*=-sorted_pos[select].first;
+              gamma_gradient_local[sumand + (size*y+x)*(local_feature_num+hashto5num)+local_feature_num+board->blackpatterns->get(p)]*=-sorted_pos[select].first;
             } 
             else {
               sumand= (local_feature_num+hashto5num) * size * size; //white
-              gamma_gradient_local[sumand + (size*x+y)*(local_feature_num+hashto5num)+local_feature_num+board->whitepatterns->get(p)]*=-sorted_pos[select].first;
+              gamma_gradient_local[sumand + (size*y+x)*(local_feature_num+hashto5num)+local_feature_num+board->whitepatterns->get(p)]*=-sorted_pos[select].first;
             }
           }
           return;
@@ -1344,18 +1344,18 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
         move=Go::Move(col,sorted_pos[select].second);
         if (board->validMove (move)) {
           params->engine->statisticsPlus(Engine::CSSTYLE_NONLOCAL);
-          {
+          if (gamma_gradient_local!=NULL) {
             int p=move.getPosition();
             int x=Go::Position::pos2x(p,size);
             int y=Go::Position::pos2y(p,size);
             int sumand;
             if (col==Go::BLACK) {
               sumand=0;
-              gamma_gradient_local[sumand + (size*x+y)*(local_feature_num+hashto5num)+local_feature_num+board->blackpatterns->get(p)]*=sorted_pos[select].first;
+              gamma_gradient_local[sumand + (size*y+x)*(local_feature_num+hashto5num)+local_feature_num+board->blackpatterns->get(p)]*=sorted_pos[select].first;
             } 
             else {
               sumand= (local_feature_num+hashto5num) * size * size; //white
-              gamma_gradient_local[sumand + (size*x+y)*(local_feature_num+hashto5num)+local_feature_num+board->whitepatterns->get(p)]*=sorted_pos[select].first;
+              gamma_gradient_local[sumand + (size*y+x)*(local_feature_num+hashto5num)+local_feature_num+board->whitepatterns->get(p)]*=sorted_pos[select].first;
             }
           }
           return;
@@ -1392,18 +1392,18 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     if (patternmove>=0) {
       move=Go::Move(col,patternmove);
       params->engine->statisticsPlus(Engine::CSSTYLE_NONLOCAL_PICK);
-      {
+      if (gamma_gradient_local!=NULL) {
         int p=move.getPosition();
         int x=Go::Position::pos2x(p,size);
         int y=Go::Position::pos2y(p,size);
         int sumand;
         if (col==Go::BLACK) {
           sumand=0;
-          gamma_gradient_local[sumand + (size*x+y)*(local_feature_num+hashto5num)+local_feature_num+board->blackpatterns->get(p)]*=bestvalue;
+          gamma_gradient_local[sumand + (size*y+x)*(local_feature_num+hashto5num)+local_feature_num+board->blackpatterns->get(p)]*=bestvalue;
         } 
         else {
           sumand= (local_feature_num+hashto5num) * size * size; //white
-          gamma_gradient_local[sumand + (size*x+y)*(local_feature_num+hashto5num)+local_feature_num+board->whitepatterns->get(p)]*=bestvalue;
+          gamma_gradient_local[sumand + (size*y+x)*(local_feature_num+hashto5num)+local_feature_num+board->whitepatterns->get(p)]*=bestvalue;
         }
       }
       return;
