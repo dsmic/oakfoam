@@ -9,9 +9,9 @@
 #include <boost/pool/object_pool.hpp>
 #include <boost/cstdint.hpp>
 #include <boost/bimap.hpp>
+//#include "fastonebigheader.h"
 
 #include "../gtp/Gtp.h"
-
 
 //adaptive playouts
 #define local_feature_num 12
@@ -213,7 +213,8 @@ namespace Go
       static int string2pos(std::string str, int boardsize);
       static inline int pos2cnn(int pos, int boardsize) {return (pos-1)%(boardsize+1) * boardsize + (pos-1)/(boardsize+1)-1;};
       static inline int cnn2pos(int cnn, int boardsize) {return xy2pos(cnn/boardsize,cnn%boardsize,boardsize);};
-  };
+      static inline int pos2grad(int pos, int boardsize) {return pos - boardsize - pos/(boardsize+1) -1;}
+  };  
   
   /** Board with a bit for each position. */
   class BitBoard
@@ -1223,17 +1224,6 @@ namespace Go
       Go::ObjectBoard<float> *whitegammas;
       Go::ObjectBoard<int> *blackpatterns;
       Go::ObjectBoard<int> *whitepatterns;
-      float *deltagammas;
-      inline float deltagammasGetLocalFeature(int p, Go::Color col,int i) {
-        int x=Go::Position::pos2x(p,size); int y=Go::Position::pos2y(p,size);
-        int sum=0; if (Go::WHITE==col) sum=deltawhiteoffset;
-        return deltagammas[sum+(size*y+x)*(local_feature_num+hashto5num)+i];
-      }
-      inline float deltagammasGetPattern(int p, Go::Color col,int patt) {
-        int x=Go::Position::pos2x(p,size); int y=Go::Position::pos2y(p,size);
-        int sum=0; if (Go::WHITE==col) sum=deltawhiteoffset;
-        return deltagammas[sum+(size*y+x)*(local_feature_num+hashto5num)+local_feature_num+patt];
-      }
       Features *getFeatures() {return features;};
 
       float komi_grouptesting=0;  //only used for group testing!!!!!!!!
@@ -1328,7 +1318,6 @@ namespace Go
       void updateFeatureGamma(Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, int pos);
       void updateFeatureGamma(Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Color col, int pos);
       int psize=3;
-      const int deltawhiteoffset;
   };
 };
 

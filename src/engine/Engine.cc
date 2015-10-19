@@ -9,6 +9,8 @@
 #include <boost/timer.hpp>
 #include <boost/lexical_cast.hpp>
 #include <time.h>       /* clock_t, clock, CLOCKS_PER_SEC */
+
+
 #ifdef HAVE_MPI
   #define MPIRANK0_ONLY(__body) {if (mpirank==0) { __body }}
 #else
@@ -87,6 +89,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   //end of testing code!
   
   ACcount=0;
+
+  
   
   gtpe=ge;
   longname=ln;
@@ -111,6 +115,12 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   komi_handicap=0;
   recalc_dynkomi=0;
 
+  deltawhiteoffset=boardsize*boardsize*(local_feature_num+hashto5num);
+  deltagammas = new float[2*boardsize*boardsize*(local_feature_num+hashto5num)];
+  for (int i=0;i<2*boardsize*boardsize*(local_feature_num+hashto5num);i++) deltagammas[i]=1.0;
+  deltagammaslocal = new float[2*boardsize*boardsize*(local_feature_num+hashto5num)];
+  for (int i=0;i<2*boardsize*boardsize*(local_feature_num+hashto5num);i++) deltagammaslocal[i]=1.0;
+  
   debug_solid_group=-1;
 
   params->tree_instances=0;
@@ -633,6 +643,9 @@ Engine::~Engine()
   delete respondboard;
   delete[] blackOldMoves;
   delete[] whiteOldMoves;
+  delete[] deltagammas;
+  delete[] deltagammaslocal;
+
   for (std::list<DecisionTree*>::iterator iter=decisiontrees.begin();iter!=decisiontrees.end();++iter)
   {
     delete (*iter);
@@ -5775,6 +5788,13 @@ void Engine::setBoardSize(int s)
   boardsize=s;
   params->board_size=boardsize;
   this->clearBoard();
+  if (deltagammas!=NULL) delete[]deltagammas;
+  if (deltagammaslocal!=NULL) delete[]deltagammaslocal;
+  deltawhiteoffset=boardsize*boardsize*(local_feature_num+hashto5num);
+  deltagammas = new float[2*boardsize*boardsize*(local_feature_num+hashto5num)];
+  for (int i=0;i<2*boardsize*boardsize*(local_feature_num+hashto5num);i++) deltagammas[i]=1.0;
+  deltagammaslocal = new float[2*boardsize*boardsize*(local_feature_num+hashto5num)];
+  for (int i=0;i<2*boardsize*boardsize*(local_feature_num+hashto5num);i++) deltagammaslocal[i]=1.0;
 }
 
 void Engine::setKomi(float k)
@@ -5851,6 +5871,7 @@ void Engine::clearBoard()
   isgamefinished=false;
   komi_handicap=0;
   recalc_dynkomi=0;
+  deltagammas = new float[2*boardsize*boardsize*(local_feature_num+hashto5num)];
 }
 
 void Engine::clearMoveTree(int a_pos)
@@ -6568,6 +6589,7 @@ void Engine::ponderThread(Worker::Settings *settings)
     Go::IntBoard *secondlist=new Go::IntBoard(boardsize);
     Go::IntBoard *earlyfirstlist=new Go::IntBoard(boardsize);
     Go::IntBoard *earlysecondlist=new Go::IntBoard(boardsize);
+
     long playouts=0;
     bool initial_sync=true;
 
@@ -6610,6 +6632,7 @@ void Engine::ponderThread(Worker::Settings *settings)
     delete secondlist;
     delete earlyfirstlist;
     delete earlysecondlist;
+
     //fprintf(stderr,"pondering done! %ld %.0f stopthinking %d stoppondering %d playouts %ld\n",playouts,movetree->getPlayouts(),stopthinking,stoppondering,playouts);
     #ifdef HAVE_MPI
     //gtpe->getOutput()->printfDebug("ponder on rank %d stopping... (inform: %d) threadid %d stoppondering %d\n",mpirank,mpi_inform_others,settings->thread->getID(),stoppondering);
@@ -6825,7 +6848,7 @@ void Engine::generateThread(Worker::Settings *settings)
   delete secondlist;
   delete earlyfirstlist;
   delete earlysecondlist;
-    
+  
   #ifdef HAVE_MPI
   //gtpe->getOutput()->printfDebug("genmove on rank %d stopping... (inform: %d)\n",mpirank,mpi_inform_others);
   if (settings->thread->getID()==0 && mpiworldsize>1 && mpi_inform_others)
@@ -7552,4 +7575,16 @@ void Engine::gtpVERSION(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   gtpe->getOutput()->endResponse();
 }
 
-        
+void Engine::doGradientDescend(float * grad)
+{
+//  return;
+  float alpha=0.01;
+  float alphalambda=0.001*alpha;
+  float einsMinusAlphaLambda=1.0-alphalambda;
+  gradlock.lock();
+  for (int i=0;i<2*boardsize*boardsize*(local_feature_num+hashto5num);i++) 
+    //deltagammaslocal[i]=fasterpow(deltagammas[i],einsMinusAlphaLambda)*grad[i];
+    deltagammaslocal[i]=(deltagammas[i]*einsMinusAlphaLambda+alphalambda)*grad[i];  //taylor around x^(1-delta)
+  deltagammaslocal=deltagammas.exchange(deltagammaslocal);
+  gradlock.unlock();
+}

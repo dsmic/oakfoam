@@ -225,6 +225,8 @@ namespace Pattern
 #include "Playout.h"
 #include "Benson.h"
 #include "Worker.h"
+#include <atomic>
+#include <mutex>
 
 //from "DecisionTree.h":
 class DecisionTree;
@@ -428,7 +430,23 @@ class Engine
 
     Go::RespondBoard *respondboard; //public for simplicity here
 
+    inline float deltagammasGetLocalFeature(int p, Go::Color col,int i) {
+      int x=Go::Position::pos2x(p,boardsize); int y=Go::Position::pos2y(p,boardsize);
+      int sum=0; if (Go::WHITE==col) sum=deltawhiteoffset;
+      return deltagammas[sum+(boardsize*y+x)*(local_feature_num+hashto5num)+i];
+    }
+    inline float deltagammasGetPattern(int p, Go::Color col,int patt) {
+      int x=Go::Position::pos2x(p,boardsize); int y=Go::Position::pos2y(p,boardsize);
+      int sum=local_feature_num; if (Go::WHITE==col) sum=local_feature_num+deltawhiteoffset;
+      return deltagammas[sum+(boardsize*y+x)*(local_feature_num+hashto5num)+patt];
+      //return deltagammas[sum+Go::Position::pos2grad(p,boardsize)*(local_feature_num+hashto5num)+patt];
+    }
+    void doGradientDescend(float * grad); //RmB is r-b in Adaptive Playouts Paper (8) (cited playout.cc)
+    std::mutex gradlock;
   private:
+    std::atomic<float*> deltagammas;  //this makes it indeed slower, mayby necessary anyway ?!
+    float *deltagammaslocal;
+    int deltawhiteoffset;
     //boost::object_pool<Go::Board> pool_board;
     Gtp::Engine *gtpe;
     std::string longname;

@@ -56,7 +56,6 @@ Go::IntBoard *Go::IntBoard::copy() const
   return copyboard;
 }
 
-
 Go::IntBoard::~IntBoard()
 {
   delete[] data;
@@ -259,8 +258,7 @@ Go::Board::Board(int s)
   : size(s),
     sizesq(s*s),
     sizedata(1+(s+1)*(s+2)),
-    data(new Go::Vertex[sizedata]),
-    deltawhiteoffset(s*s*(local_feature_num+hashto5num))
+    data(new Go::Vertex[sizedata])
 {
   const int nextprimes[26]={3,7,13,23,31,43,59,73,97,113,137,157,191,211,241,277,307,347,383,421,463,509,557,601,653,709};
   nextprime=nextprimes[s];
@@ -321,8 +319,6 @@ Go::Board::Board(int s)
   whitepatterns=new Go::ObjectBoard<int>(s);
   blackpatterns->fill(0);
   whitepatterns->fill(0);
-  deltagammas = new float[2*s*s*(local_feature_num+hashto5num)];
-  for (int i=0;i<2*s*s*(local_feature_num+hashto5num);i++) deltagammas[i]=1.0;
   blackcaptures=0;
   whitecaptures=0;
   lastscoredata=NULL;
@@ -343,8 +339,7 @@ Go::Board::~Board()
   delete whitegammas;
   delete blackpatterns;
   delete whitepatterns;
-  delete[] deltagammas;
-
+  
   if (changed_positions!=NULL) delete changed_positions;
   
   //XXX: memory will get freed when pool is destroyed
@@ -1771,7 +1766,7 @@ inline void Go::Board::setPlayoutGammaAt(Parameters* params,int p)
   if (params->csstyle_adaptiveplayouts) {
     int patt=Pattern::hashto5(pattern);
     blackpatterns->set(p,patt);
-    deltab=deltagammasGetPattern(p,Go::BLACK,patt);
+    deltab=params->engine->deltagammasGetPattern(p,Go::BLACK,patt);
   }
   if (blackvalidmoves->get(p))
       blackgammas->set(p,features->getFeatureGammaPattern(pattern)*deltab);//Pattern::ThreeByThree::smallestEquivalent(pattern)));
@@ -1783,7 +1778,7 @@ inline void Go::Board::setPlayoutGammaAt(Parameters* params,int p)
   if (params->csstyle_adaptiveplayouts) {
     int patt=Pattern::hashto5(pattern);
     whitepatterns->set(p,patt);
-    deltaw=deltagammasGetPattern(p,Go::WHITE,patt);
+    deltaw=params->engine->deltagammasGetPattern(p,Go::WHITE,patt);
   }
   if (whitevalidmoves->get(p))
       whitegammas->set(p,features->getFeatureGammaPattern(pattern)*deltaw);//Pattern::ThreeByThree::smallestEquivalent(pattern)));
@@ -1797,7 +1792,6 @@ inline void Go::Board::setPlayoutGammaAt(Parameters* params,int p)
   whitegammas->set(p,features->getFeatureGammaLargePattern(pattcirc,psize));
 #endif
 }
-
 
 void Go::Board::setPlayoutGammaAround(Parameters* params,int p)
 {
