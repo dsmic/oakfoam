@@ -9,6 +9,7 @@
 #include <time.h>
 #include "boost/container/flat_set.hpp"
 
+
 #define LGRFCOUNT1 1
 #define LGRFCOUNT2 1
 #define LGPF_EMPTY 0xFFFF
@@ -760,7 +761,8 @@ template <typename T> string tostr(const T& t) {
 } 
 
 //#define LOCAL_FEATURE_POSITION(A,B,C) {if (used[C].count(A)==0 && board->validMove(col,A)) {fprintf(stderr,"%s %d\n",Go::Position::pos2string(A,size).c_str(),C); used[C].insert(A); res=local_feature_positions.insert({A,B});  if (!res.second)  local_feature_positions[A]*=B;}}
-#define LOCAL_FEATURE_POSITION(A,B,C) {if (A<0) fprintf(stderr,"pos negative %d %f %d\n",A,B,C); if (used[C].count(A)==0 && board->validMove(col,A)) {used[C].insert(A); res=local_feature_positions.insert({A,B});  if (!res.second)  local_feature_positions[A]*=B;}}
+//#define LOCAL_FEATURE_POSITION(A,B,C) {if (A<0) fprintf(stderr,"pos negative %d %f %d\n",A,B,C); if (used[C].count(A)==0 && board->validMove(col,A)) {used[C].insert(A); res=local_feature_positions.insert({A,B});  if (!res.second)  local_feature_positions[A]*=B;}}
+#define LOCAL_FEATURE_POSITION(A,B,C) {if (used[C].count(A)==0 && board->validMove(col,A)) {used[C].insert(A); res=local_feature_positions.insert({A,B});  if (!res.second)  local_feature_positions[A]*=B;}}
 
 
 //prefer the better move with some probability (think about a little more:)
@@ -791,7 +793,8 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     0, //8
     params->csstyle_nakade,//9  
     params->csstyle_attachedposbutselfatari,//10
-    params->csstyle_defendapproach //11 
+    params->csstyle_defendapproach, //11
+    params->csstyle_2libavoidcapture //12
   };
   int ncirc=0;
 
@@ -818,16 +821,21 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     // for 9. Nakade we use a different approach, if empty nakade shape is around last move, the killing move has this feature
     // 10. Continous to last move but selfatari
     // 11. Defend an approach move
+
+    // planed features
+    // 12. 2-point semeai heuristic: if the last move reduces a string to two liberties any move which prevents it from beeing killed by opponent playing on one of the liberties has this feature
+    
     
     int size=board->getSize();
 
     move=Go::Move(col,Go::Move::PASS);
     if (board->numOfValidMoves(col)==0)
       return;
-    std::map<int,float> local_feature_positions;
+    std::unordered_map<int,float> local_feature_positions;
     std::set<int> used[local_feature_num]; // quite expensive
+    //std::vector<std::vector<bool>> used2(local_feature_num,vector<bool>(board->getPositionMax(),false));
     int lastpos=board->getLastMove().getPosition();
-    std::pair<std::map<int,float>::iterator,bool> res;
+    std::pair<std::unordered_map<int,float>::iterator,bool> res;
     int killattachedgroup;
     int a,b;
 
@@ -1010,17 +1018,78 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                       }
                     }//);
                     if (libs>1 || (libs==1 && capturedpos>=0 && board->groupatached(capturedpos,attachedpos))) b_is_extention=true;
-                    if (a_is_extention && !b_is_extention) LOCAL_FEATURE_POSITION(a,params->csstyle_2libcapture,7);
-                    if (b_is_extention && !a_is_extention) LOCAL_FEATURE_POSITION(b,params->csstyle_2libcapture,7);
+                    if (!b_is_extention) LOCAL_FEATURE_POSITION(a,params->csstyle_2libcapture,7);
+                    if (!a_is_extention) LOCAL_FEATURE_POSITION(b,params->csstyle_2libcapture,7);
                   };
                 iter++;
                 }
                 else
                 {
                   iter=adjacentgroups->erase(iter);
+                  
                 }
               }
-
+            // 12. 2-point semeai heuristic: if the last move reduces a string to two liberties any move which prevents it from beeing killed by opponent playing on one of the liberties has this feature
+            group->get2libPositions (a,b);
+            Go::Group *attachedgroup=group; //this makes it possible to copy the code from attachedgroup logic
+                  {
+                    //now from libs a and b the lib which kills has to be found
+                    bool a_is_extention=false;
+                    bool b_is_extention=false;
+                    int libs=0;
+                    int singlelibpos=-1;
+                    int colattached=attachedgroup->getColor();
+                    int capturedpos=-1;
+                    Go::list_short attachedpos;
+                    Go::Group *usedgroup=NULL;
+                    foreach_adjacent_debug(a,q){
+                    //foreach_adjacent(a,q,{
+                      if (board->getColor(q)==Go::EMPTY) libs++;
+                      else if (board->getColor(q)==colattached && q!=b) {
+                        Go::Group *checkgroup=board->getGroup(q);
+                        if (checkgroup!=attachedgroup && checkgroup!=usedgroup && checkgroup->numRealLibs()>1) {
+                          libs+=checkgroup->numRealLibs()-1;
+                          usedgroup=checkgroup;
+                        }
+                      }
+                      else if (board->getColor(q)==othercol && board->getGroup(q)->inAtari()) {
+                        libs++;
+                        capturedpos=q;
+                      }
+                    }//);
+                    if (libs>1 || (libs==1 && capturedpos>=0 && board->groupatached(capturedpos,attachedpos))) a_is_extention=true;
+                    libs=0;
+                    singlelibpos=-1;
+                    capturedpos=-1;
+                    attachedpos.clear();
+                    usedgroup=NULL;
+                    foreach_adjacent_debug(b,q){
+                    //foreach_adjacent(b,q,{
+                      if (board->getColor(q)==Go::EMPTY) libs++;
+                      else if (board->getColor(q)==colattached && q!=a) {
+                        Go::Group *checkgroup=board->getGroup(q);
+                        if (checkgroup!=attachedgroup && checkgroup!=usedgroup && checkgroup->numRealLibs()>1) {
+                          if (checkgroup->numRealLibs()>2) 
+                            libs+=checkgroup->numRealLibs()-1;
+                          else if (checkgroup->numRealLibs()==2) {
+                            int newsinglelibpos=checkgroup->getOtherOneOfTwoLiberties(board,q);
+                            if (newsinglelibpos!=singlelibpos) {
+                              singlelibpos=newsinglelibpos;
+                              libs+=1;
+                            }
+                          }
+                          usedgroup=checkgroup;
+                        }
+                      }
+                      else if (board->getColor(q)==othercol && board->getGroup(q)->inAtari()) {
+                        libs++;
+                        capturedpos=q;
+                      }
+                    }//);
+                    if (libs>1 || (libs==1 && capturedpos>=0 && board->groupatached(capturedpos,attachedpos))) b_is_extention=true;
+                    if (a_is_extention && !b_is_extention) LOCAL_FEATURE_POSITION(a,params->csstyle_2libavoidcapture,12);
+                    if (b_is_extention && !a_is_extention) LOCAL_FEATURE_POSITION(b,params->csstyle_2libavoidcapture,12);
+                  };
             }
           }
         }//);
@@ -1174,8 +1243,11 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
 
     
     
+    //float gamma_sum=size*size/2;
+    //this is usually around half the points, should be good enough
+    
     float gamma_sum=0;
-    if (col==Go::BLACK) {
+     if (col==Go::BLACK) {
       for (int i=0;i<board->getPositionMax();i++) {
         float tmp=board->blackgammas->get(i);// *rand->getRandomReal()/1000.0;
         //sorted_pos[i]={-tmp,i};
@@ -1188,6 +1260,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
         gamma_sum+=tmp;
       }
     }
+    
     //fprintf(stderr,"%f\n",gamma_sum);
     //int max_num=size*size/5;  //this should make sure, that all moves with not used here have a probability of 1/5 to be seen
 

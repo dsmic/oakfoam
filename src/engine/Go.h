@@ -14,7 +14,7 @@
 #include "../gtp/Gtp.h"
 
 //adaptive playouts
-#define local_feature_num 12
+#define local_feature_num 13
 #define hashto5num 32
 
 

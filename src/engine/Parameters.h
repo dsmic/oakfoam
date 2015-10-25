@@ -323,6 +323,7 @@ class Parameters
     float csstyle_nakade;
     float csstyle_playonladder;
     float csstyle_defendapproach;
+    float csstyle_2libavoidcapture;
     bool csstyle_adaptiveplayouts;
     float csstyle_01;
     float csstyle_02;

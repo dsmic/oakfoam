@@ -348,6 +348,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","csstyle_nakade",&(params->csstyle_nakade),1.0);
   params->addParameter("playout","csstyle_playonladder",&(params->csstyle_playonladder),1.0);
   params->addParameter("playout","csstyle_defendapproach",&(params->csstyle_defendapproach),1.0);
+  params->addParameter("playout","csstyle_2libavoidcapture",&(params->csstyle_2libavoidcapture),1.0);
   params->addParameter("playout","csstyle_adaptiveplayouts",&(params->csstyle_adaptiveplayouts),false);
   params->addParameter("playout","csstyle_01",&(params->csstyle_01),0.0);
   params->addParameter("playout","csstyle_02",&(params->csstyle_02),0.0);
@@ -720,24 +721,24 @@ void Engine::getCNN(Go::Board *board,Go::Color col, float result[])
 	}
 if (caffe_test_net_input_dim > 9) {
   if (board->getLastMove().isNormal()) {
-    int j=Go::Position::pos2x(board->getLastMove().getPosition(),19);
-    int k=Go::Position::pos2y(board->getLastMove().getPosition(),19);
-    data[9*19*19+19*j+k]=1.0;
+    int j=Go::Position::pos2x(board->getLastMove().getPosition(),size);
+    int k=Go::Position::pos2y(board->getLastMove().getPosition(),size);
+    data[9*size*size+size*j+k]=1.0;
   }
   if (board->getSecondLastMove().isNormal()) {
-    int j=Go::Position::pos2x(board->getSecondLastMove().getPosition(),19);
-    int k=Go::Position::pos2y(board->getSecondLastMove().getPosition(),19);
-    data[10*19*19+19*j+k]=1.0;
+    int j=Go::Position::pos2x(board->getSecondLastMove().getPosition(),size);
+    int k=Go::Position::pos2y(board->getSecondLastMove().getPosition(),size);
+    data[10*size*size+size*j+k]=1.0;
   }
   if (board->getThirdLastMove().isNormal()) {
-    int j=Go::Position::pos2x(board->getThirdLastMove().getPosition(),19);
-    int k=Go::Position::pos2y(board->getThirdLastMove().getPosition(),19);
-    data[11*19*19+19*j+k]=1.0;
+    int j=Go::Position::pos2x(board->getThirdLastMove().getPosition(),size);
+    int k=Go::Position::pos2y(board->getThirdLastMove().getPosition(),size);
+    data[11*size*size+size*j+k]=1.0;
   }
   if (board->getForthLastMove().isNormal()) {
-    int j=Go::Position::pos2x(board->getForthLastMove().getPosition(),19);
-    int k=Go::Position::pos2y(board->getForthLastMove().getPosition(),19);
-    data[12*19*19+19*j+k]=1.0;
+    int j=Go::Position::pos2x(board->getForthLastMove().getPosition(),size);
+    int k=Go::Position::pos2y(board->getForthLastMove().getPosition(),size);
+    data[12*size*size+size*j+k]=1.0;
   }
 }
     
