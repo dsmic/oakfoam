@@ -762,7 +762,7 @@ template <typename T> string tostr(const T& t) {
 
 //#define LOCAL_FEATURE_POSITION(A,B,C) {if (used[C].count(A)==0 && board->validMove(col,A)) {fprintf(stderr,"%s %d\n",Go::Position::pos2string(A,size).c_str(),C); used[C].insert(A); res=local_feature_positions.insert({A,B});  if (!res.second)  local_feature_positions[A]*=B;}}
 //#define LOCAL_FEATURE_POSITION(A,B,C) {if (A<0) fprintf(stderr,"pos negative %d %f %d\n",A,B,C); if (used[C].count(A)==0 && board->validMove(col,A)) {used[C].insert(A); res=local_feature_positions.insert({A,B});  if (!res.second)  local_feature_positions[A]*=B;}}
-#define LOCAL_FEATURE_POSITION(A,B,C) {if (used[C].count(A)==0 && board->validMove(col,A)) {used[C].insert(A); res=local_feature_positions.insert({A,B});  if (!res.second)  local_feature_positions[A]*=B;}}
+#define LOCAL_FEATURE_POSITION(A,B,C) {if (used[C].count(A)==0 && board->validMove(col,A)) {if (params->debug_on) {fprintf(stderr,"%s %d\n",Go::Position::pos2string(A,size).c_str(),C);} used[C].insert(A); res=local_feature_positions.insert({A,B});  if (!res.second)  local_feature_positions[A]*=B;}}
 
 
 //prefer the better move with some probability (think about a little more:)
@@ -849,7 +849,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
         if (board->ACcount>0 && board->ACpos!=NULL)  
         {
           for (int i=0;i<board->ACcount;i++) {
-            if (board->validMove(col,board->ACpos[i])) LOCAL_FEATURE_POSITION(board->ACpos[i],params->csstyle_defendapproach,11);
+            if (board->validMove(col,board->ACpos[i]) && !board->isSelfAtari (Go::Move(col,board->ACpos[i]))) LOCAL_FEATURE_POSITION(board->ACpos[i],params->csstyle_defendapproach,11);
           }
         }
         foreach_adjacent_debug(lastpos,q) {
@@ -969,35 +969,13 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                     bool b_is_extention=false;
                     int libs=0;
                     int singlelibpos=-1;
-                    int colattached=attachedgroup->getColor();
-                    int capturedpos=-1;
+                    Go::Color colattached=attachedgroup->getColor();
                     Go::list_short attachedpos;
                     Go::Group *usedgroup=NULL;
                     foreach_adjacent_debug(a,q){
                     //foreach_adjacent(a,q,{
-                      if (board->getColor(q)==Go::EMPTY) libs++;
-                      else if (board->getColor(q)==colattached && q!=b) {
-                        Go::Group *checkgroup=board->getGroup(q);
-                        if (checkgroup!=attachedgroup && checkgroup!=usedgroup && checkgroup->numRealLibs()>1) {
-                          libs+=checkgroup->numRealLibs()-1;
-                          usedgroup=checkgroup;
-                        }
-                      }
-                      else if (board->getColor(q)==othercol && board->getGroup(q)->inAtari()) {
-                        libs++;
-                        capturedpos=q;
-                      }
-                    }//);
-                    if (libs>1 || (libs==1 && capturedpos>=0 && board->groupatached(capturedpos,attachedpos))) a_is_extention=true;
-                    libs=0;
-                    singlelibpos=-1;
-                    capturedpos=-1;
-                    attachedpos.clear();
-                    usedgroup=NULL;
-                    foreach_adjacent_debug(b,q){
-                    //foreach_adjacent(b,q,{
-                      if (board->getColor(q)==Go::EMPTY) libs++;
-                      else if (board->getColor(q)==colattached && q!=a) {
+                      if (board->getColor(q)==Go::EMPTY && q!=b) libs++;
+                      else if (board->getColor(q)==colattached) {
                         Go::Group *checkgroup=board->getGroup(q);
                         if (checkgroup!=attachedgroup && checkgroup!=usedgroup && checkgroup->numRealLibs()>1) {
                           if (checkgroup->numRealLibs()>2) 
@@ -1012,12 +990,32 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                           usedgroup=checkgroup;
                         }
                       }
-                      else if (board->getColor(q)==othercol && board->getGroup(q)->inAtari()) {
-                        libs++;
-                        capturedpos=q;
+                    }//);
+                    if (libs>1) a_is_extention=true;
+                    libs=0;
+                    singlelibpos=-1;
+                    attachedpos.clear();
+                    usedgroup=NULL;
+                    foreach_adjacent_debug(b,q){
+                    //foreach_adjacent(b,q,{
+                      if (board->getColor(q)==Go::EMPTY && q!=a) libs++;
+                      else if (board->getColor(q)==colattached) {
+                        Go::Group *checkgroup=board->getGroup(q);
+                        if (checkgroup!=attachedgroup && checkgroup!=usedgroup && checkgroup->numRealLibs()>1) {
+                          if (checkgroup->numRealLibs()>2) 
+                            libs+=checkgroup->numRealLibs()-1;
+                          else if (checkgroup->numRealLibs()==2) {
+                            int newsinglelibpos=checkgroup->getOtherOneOfTwoLiberties(board,q);
+                            if (newsinglelibpos!=singlelibpos) {
+                              singlelibpos=newsinglelibpos;
+                              libs+=1;
+                            }
+                          }
+                          usedgroup=checkgroup;
+                        }
                       }
                     }//);
-                    if (libs>1 || (libs==1 && capturedpos>=0 && board->groupatached(capturedpos,attachedpos))) b_is_extention=true;
+                    if (libs>1) b_is_extention=true;
                     if (!b_is_extention) LOCAL_FEATURE_POSITION(a,params->csstyle_2libcapture,7);
                     if (!a_is_extention) LOCAL_FEATURE_POSITION(b,params->csstyle_2libcapture,7);
                   };
@@ -1036,37 +1034,17 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                     //now from libs a and b the lib which kills has to be found
                     bool a_is_extention=false;
                     bool b_is_extention=false;
+                    bool a_possible_extandable=false;
+                    bool b_possible_extendable=false;
                     int libs=0;
                     int singlelibpos=-1;
-                    int colattached=attachedgroup->getColor();
-                    int capturedpos=-1;
+                    Go::Color colattached=attachedgroup->getColor();
                     Go::list_short attachedpos;
                     Go::Group *usedgroup=NULL;
                     foreach_adjacent_debug(a,q){
                     //foreach_adjacent(a,q,{
-                      if (board->getColor(q)==Go::EMPTY) libs++;
-                      else if (board->getColor(q)==colattached && q!=b) {
-                        Go::Group *checkgroup=board->getGroup(q);
-                        if (checkgroup!=attachedgroup && checkgroup!=usedgroup && checkgroup->numRealLibs()>1) {
-                          libs+=checkgroup->numRealLibs()-1;
-                          usedgroup=checkgroup;
-                        }
-                      }
-                      else if (board->getColor(q)==othercol && board->getGroup(q)->inAtari()) {
-                        libs++;
-                        capturedpos=q;
-                      }
-                    }//);
-                    if (libs>1 || (libs==1 && capturedpos>=0 && board->groupatached(capturedpos,attachedpos))) a_is_extention=true;
-                    libs=0;
-                    singlelibpos=-1;
-                    capturedpos=-1;
-                    attachedpos.clear();
-                    usedgroup=NULL;
-                    foreach_adjacent_debug(b,q){
-                    //foreach_adjacent(b,q,{
-                      if (board->getColor(q)==Go::EMPTY) libs++;
-                      else if (board->getColor(q)==colattached && q!=a) {
+                      if (board->getColor(q)==Go::EMPTY && q!=b) libs++;
+                      else if (board->getColor(q)==colattached) {
                         Go::Group *checkgroup=board->getGroup(q);
                         if (checkgroup!=attachedgroup && checkgroup!=usedgroup && checkgroup->numRealLibs()>1) {
                           if (checkgroup->numRealLibs()>2) 
@@ -1076,19 +1054,43 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                             if (newsinglelibpos!=singlelibpos) {
                               singlelibpos=newsinglelibpos;
                               libs+=1;
+                              a_possible_extandable=true;
                             }
                           }
                           usedgroup=checkgroup;
                         }
                       }
-                      else if (board->getColor(q)==othercol && board->getGroup(q)->inAtari()) {
-                        libs++;
-                        capturedpos=q;
+                    }//);
+                    if (libs>1) a_is_extention=true;
+                    libs=0;
+                    singlelibpos=-1;
+                    attachedpos.clear();
+                    usedgroup=NULL;
+                    foreach_adjacent_debug(b,q){
+                    //foreach_adjacent(b,q,{
+                      if (board->getColor(q)==Go::EMPTY && q!=a) libs++;
+                      else if (board->getColor(q)==colattached) {
+                        Go::Group *checkgroup=board->getGroup(q);
+                        if (checkgroup!=attachedgroup && checkgroup!=usedgroup && checkgroup->numRealLibs()>1) {
+                          if (checkgroup->numRealLibs()>2) 
+                            libs+=checkgroup->numRealLibs()-1;
+                          else if (checkgroup->numRealLibs()==2) {
+                            int newsinglelibpos=checkgroup->getOtherOneOfTwoLiberties(board,q);
+                            if (newsinglelibpos!=singlelibpos) {
+                              singlelibpos=newsinglelibpos;
+                              libs+=1;
+                              b_possible_extendable=true;
+                            }
+                          }
+                          usedgroup=checkgroup;
+                        }
                       }
                     }//);
-                    if (libs>1 || (libs==1 && capturedpos>=0 && board->groupatached(capturedpos,attachedpos))) b_is_extention=true;
+                    if (libs>1) b_is_extention=true;
                     if (a_is_extention && !b_is_extention) LOCAL_FEATURE_POSITION(a,params->csstyle_2libavoidcapture,12);
                     if (b_is_extention && !a_is_extention) LOCAL_FEATURE_POSITION(b,params->csstyle_2libavoidcapture,12);
+                    if (!b_is_extention && !a_is_extention && a_possible_extandable) LOCAL_FEATURE_POSITION(a,params->csstyle_2libavoidcapture,12);
+                    if (!b_is_extention && !a_is_extention && b_possible_extendable) LOCAL_FEATURE_POSITION(b,params->csstyle_2libavoidcapture,12);
                   };
             }
           }
@@ -1147,43 +1149,71 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
             bool b_is_bigextention=false;
             bool a_is_atari=false;
             bool b_is_atari=false;
+            bool a_is_selfatari=false;
+            bool b_is_selfatari=false;
             int libs=0;
+            int libsSelfatari=0;
             int colattached=attachedgroup->getColor();
             Go::Group *usedgroup=NULL;
+            Go::Group *usedgroupSelfatari=NULL;
             foreach_adjacent_debug(a,q){
             //foreach_adjacent(a,q,{
-              if (board->getColor(q)==Go::EMPTY) libs++;
-              else if (board->getColor(q)==colattached && q!=b) {
+              if (board->getColor(q)==Go::EMPTY && q!=b) {
+                libs++;
+                libsSelfatari++;
+              }
+              else if (board->getColor(q)==colattached) {
                 Go::Group *checkgroup=board->getGroup(q);
                 if (checkgroup!=attachedgroup && checkgroup!=usedgroup && checkgroup->numRealLibs()>1) {
                   libs+=checkgroup->numRealLibs()-1;
                   usedgroup=checkgroup;
                 }
               }
-              else if (board->getColor(q)==col && board->getGroup(q)->numRealLibs()<3)
+              else if (board->getColor(q)==col) {
+                if (board->getGroup(q)->numRealLibs()<3)
                   a_is_atari=true;
+                Go::Group *checkgroup=board->getGroup(q);
+                if (checkgroup!=attachedgroup && checkgroup!=usedgroupSelfatari && checkgroup->numRealLibs()>1) {
+                  libsSelfatari+=checkgroup->numRealLibs()-1;
+                  usedgroupSelfatari=checkgroup;
+                }
+              }
             }//);
             if (libs>1) a_is_extention=true;
             if (libs>2) a_is_bigextention=true;
+            if (libsSelfatari<2) a_is_selfatari=true;
             libs=0;
+            libsSelfatari=0;
             usedgroup=NULL;
+            usedgroupSelfatari=NULL;
             foreach_adjacent_debug(b,q){
             //foreach_adjacent(b,q,{
-              if (board->getColor(q)==Go::EMPTY) libs++;
-              else if (board->getColor(q)==colattached && q!=a) {
+              if (board->getColor(q)==Go::EMPTY && q!=a) {
+                libs++;
+                libsSelfatari++;
+              }
+              else if (board->getColor(q)==colattached) {
                 Go::Group *checkgroup=board->getGroup(q);
                 if (checkgroup!=attachedgroup && checkgroup!=usedgroup && checkgroup->numRealLibs()>1) {
                   libs+=checkgroup->numRealLibs()-1;
                   usedgroup=checkgroup;
                 }
               }
-              else if (board->getColor(q)==col && board->getGroup(q)->numRealLibs()<3)
-                  b_is_atari=true;
+              else if (board->getColor(q)==col) {
+                if (board->getGroup(q)->numRealLibs()<3)
+                  a_is_atari=true;
+                Go::Group *checkgroup=board->getGroup(q);
+                if (checkgroup!=attachedgroup && checkgroup!=usedgroupSelfatari && checkgroup->numRealLibs()>1) {
+                  libsSelfatari+=checkgroup->numRealLibs()-1;
+                  usedgroupSelfatari=checkgroup;
+                }
+              }
             }//);
             if (libs>1) b_is_extention=true;
             if (libs>2) b_is_bigextention=true;
-            if (a_is_extention && ((!b_is_bigextention && !b_is_atari) || !b_is_extention)) LOCAL_FEATURE_POSITION(a,params->csstyle_playonladder,0);
-            if (b_is_extention && ((!a_is_bigextention && !a_is_atari) || !a_is_extention)) LOCAL_FEATURE_POSITION(b,params->csstyle_playonladder,0);
+            if (libsSelfatari<2) b_is_selfatari=true;
+            if (a_is_extention && !a_is_selfatari && ((!b_is_bigextention && !b_is_atari) || !b_is_extention)) LOCAL_FEATURE_POSITION(a,params->csstyle_playonladder,0);
+            if (b_is_extention && !b_is_selfatari && ((!a_is_bigextention && !a_is_atari) || !a_is_extention)) LOCAL_FEATURE_POSITION(b,params->csstyle_playonladder,0);
           }
         }
     
@@ -1222,7 +1252,11 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     // this plays them with equal probabiliy
     std::vector<std::pair<int,float>> features_tmp;
     for (auto p : local_feature_positions) {
-      if (p.second>10000) features_tmp.push_back(p);
+      if (p.second>1000000000) {
+        features_tmp.push_back(p);
+      if (params->debug_on)
+          gtpe->getOutput()->printfDebug(" force %s ->%f\n",Go::Position::pos2string(p.first,size).c_str(),p.second);
+      }
     }
     while (features_tmp.size()>0) {
       int select=rand->getRandomInt (features_tmp.size());

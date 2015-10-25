@@ -3599,7 +3599,7 @@ void Go::Board::connectedAtariPos(Go::Move move) //, int CApos[4], int &CAcount)
  Go::Color col=move.getColor();
  ACcount=0;
  if (pos<0) return;
- foreach_adjacent(pos,p,{
+ foreach_adjacent_debug(pos,p) { //,{
     if (this->getColor(p)==col && this->inGroup(p) && this->getGroup(p)->isOneOfTwoLiberties(this,pos))
     {
       //fprintf(stderr,"pos =%d ",pos);
@@ -3611,5 +3611,5 @@ void Go::Board::connectedAtariPos(Go::Move move) //, int CApos[4], int &CAcount)
         ACcount++;
       }
     }
-  });
+  };//);
 }
