@@ -760,9 +760,16 @@ template <typename T> string tostr(const T& t) {
    return os.str(); 
 } 
 
+
+//test, but was not faster
+#define usedIs(POS,FEAT)  ((used[POS] & (1 << FEAT)) !=0)
+#define usedSet(POS,FEAT) used[POS] &=(1 << FEAT)
+
 //#define LOCAL_FEATURE_POSITION(A,B,C) {if (used[C].count(A)==0 && board->validMove(col,A)) {fprintf(stderr,"%s %d\n",Go::Position::pos2string(A,size).c_str(),C); used[C].insert(A); res=local_feature_positions.insert({A,B});  if (!res.second)  local_feature_positions[A]*=B;}}
 //#define LOCAL_FEATURE_POSITION(A,B,C) {if (A<0) fprintf(stderr,"pos negative %d %f %d\n",A,B,C); if (used[C].count(A)==0 && board->validMove(col,A)) {used[C].insert(A); res=local_feature_positions.insert({A,B});  if (!res.second)  local_feature_positions[A]*=B;}}
+
 #define LOCAL_FEATURE_POSITION(A,B,C) {if (used[C].count(A)==0 && board->validMove(col,A)) {if (params->debug_on) {fprintf(stderr,"%s %d\n",Go::Position::pos2string(A,size).c_str(),C);} used[C].insert(A); res=local_feature_positions.insert({A,B});  if (!res.second)  local_feature_positions[A]*=B;}}
+//#define LOCAL_FEATURE_POSITION(A,B,C) {if (usedIs(A,C) && board->validMove(col,A)) {if (params->debug_on) {fprintf(stderr,"%s %d\n",Go::Position::pos2string(A,size).c_str(),C);} usedSet(A,C); res=local_feature_positions.insert({A,B});  if (!res.second)  local_feature_positions[A]*=B;}}
 
 
 //prefer the better move with some probability (think about a little more:)
@@ -833,6 +840,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
       return;
     std::unordered_map<int,float> local_feature_positions;
     std::set<int> used[local_feature_num]; // quite expensive
+    //short used[board->getPositionMax()]; for (int i=0;i<board->getPositionMax();i++) used[i]=0;
     //std::vector<std::vector<bool>> used2(local_feature_num,vector<bool>(board->getPositionMax(),false));
     int lastpos=board->getLastMove().getPosition();
     std::pair<std::unordered_map<int,float>::iterator,bool> res;
@@ -1036,14 +1044,20 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                     bool b_is_extention=false;
                     bool a_possible_extandable=false;
                     bool b_possible_extendable=false;
+                    bool a_is_selfatari=false;
+                    bool b_is_selfatari=false;
                     int libs=0;
+                    int libsother=0;
                     int singlelibpos=-1;
                     Go::Color colattached=attachedgroup->getColor();
                     Go::list_short attachedpos;
                     Go::Group *usedgroup=NULL;
                     foreach_adjacent_debug(a,q){
                     //foreach_adjacent(a,q,{
-                      if (board->getColor(q)==Go::EMPTY && q!=b) libs++;
+                      if (board->getColor(q)==Go::EMPTY && q!=b) {
+                        libs++;
+                        libsother++;
+                      }
                       else if (board->getColor(q)==colattached) {
                         Go::Group *checkgroup=board->getGroup(q);
                         if (checkgroup!=attachedgroup && checkgroup!=usedgroup && checkgroup->numRealLibs()>1) {
@@ -1060,15 +1074,25 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                           usedgroup=checkgroup;
                         }
                       }
+                      else if (board->getColor(q)==col) {
+                        Go::Group *checkgroup=board->getGroup(q);
+                        if (checkgroup->numRealLibs ()>1)
+                          libsother++;
+                      }
                     }//);
                     if (libs>1) a_is_extention=true;
+                    if (libsother==0) a_is_selfatari=true;
                     libs=0;
+                    libsother=0;
                     singlelibpos=-1;
                     attachedpos.clear();
                     usedgroup=NULL;
                     foreach_adjacent_debug(b,q){
                     //foreach_adjacent(b,q,{
-                      if (board->getColor(q)==Go::EMPTY && q!=a) libs++;
+                      if (board->getColor(q)==Go::EMPTY && q!=a) {
+                        libs++;
+                        libsother++;
+                      }
                       else if (board->getColor(q)==colattached) {
                         Go::Group *checkgroup=board->getGroup(q);
                         if (checkgroup!=attachedgroup && checkgroup!=usedgroup && checkgroup->numRealLibs()>1) {
@@ -1085,12 +1109,18 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                           usedgroup=checkgroup;
                         }
                       }
+                      else if (board->getColor(q)==col) {
+                        Go::Group *checkgroup=board->getGroup(q);
+                        if (checkgroup->numRealLibs ()>1)
+                          libsother++;
+                      }
                     }//);
                     if (libs>1) b_is_extention=true;
+                    if (libsother==0) b_is_selfatari=true;
                     if (a_is_extention && !b_is_extention) LOCAL_FEATURE_POSITION(a,params->csstyle_2libavoidcapture,12);
                     if (b_is_extention && !a_is_extention) LOCAL_FEATURE_POSITION(b,params->csstyle_2libavoidcapture,12);
-                    if (!b_is_extention && !a_is_extention && a_possible_extandable) LOCAL_FEATURE_POSITION(a,params->csstyle_2libavoidcapture,12);
-                    if (!b_is_extention && !a_is_extention && b_possible_extendable) LOCAL_FEATURE_POSITION(b,params->csstyle_2libavoidcapture,12);
+                    if (!b_is_extention && !a_is_extention && a_possible_extandable && !a_is_selfatari) LOCAL_FEATURE_POSITION(a,params->csstyle_2libavoidcapture,12);
+                    if (!b_is_extention && !a_is_extention && b_possible_extendable && !b_is_selfatari) LOCAL_FEATURE_POSITION(b,params->csstyle_2libavoidcapture,12);
                   };
             }
           }
@@ -1298,7 +1328,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     //fprintf(stderr,"%f\n",gamma_sum);
     //int max_num=size*size/5;  //this should make sure, that all moves with not used here have a probability of 1/5 to be seen
 
-    float min_gamma=1.5+rand->getRandomReal();
+    float min_gamma=1.0+rand->getRandomReal();
     int pick_num=10;
 
     std::vector<std::pair<float,int>> sorted_pos;
@@ -1472,9 +1502,13 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
         if (sum>rand_sum)
           break;
       }
+      if (params->debug_on)
+        gtpe->getOutput()->printfDebug(" num strong gammas %d\n",sorted_pos.size());
       if (select<sorted_pos.size()) {
         move=Go::Move(col,sorted_pos[select].second);
         if (board->validMove (move)) {
+          if (params->debug_on)
+            gtpe->getOutput()->printfDebug(" strong gamma %s ->%f\n",Go::Position::pos2string(sorted_pos[select].second,size).c_str(),sorted_pos[select].first);
           params->engine->statisticsPlus(Engine::CSSTYLE_NONLOCAL);
           if (gamma_gradient_local!=NULL) {
             int p=move.getPosition();
@@ -1523,6 +1557,8 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     }
     if (patternmove>=0) {
       move=Go::Move(col,patternmove);
+      if (params->debug_on)
+            gtpe->getOutput()->printfDebug(" weak gamma %s ->%f\n",Go::Position::pos2string(patternmove,size).c_str(),bestvalue);
       params->engine->statisticsPlus(Engine::CSSTYLE_NONLOCAL_PICK);
       if (gamma_gradient_local!=NULL) {
         int p=move.getPosition();

@@ -87,6 +87,8 @@ Go::RespondBoard::~RespondBoard()
   delete[] respondsb;
   delete[] numplayedw;
   delete[] numplayedb;
+  delete[] numcaptb;
+  delete[] numcaptw;
 }
 
 std::string Go::Position::pos2string(int pos, int boardsize)
@@ -315,6 +317,7 @@ Go::Board::Board(int s)
   whitegammas=new Go::ObjectBoard<float>(s);
   blackgammas->fill(0);
   whitegammas->fill(0);
+  changes3x3=new Go::BitBoard(size);
   blackpatterns=new Go::ObjectBoard<int>(s);
   whitepatterns=new Go::ObjectBoard<int>(s);
   blackpatterns->fill(0);
@@ -325,7 +328,6 @@ Go::Board::Board(int s)
 
   hasSolidGroups=false;
   ACcount=0;
-  changes3x3=new Go::BitBoard(size);
 }
 
 Go::Board::~Board()
@@ -1210,7 +1212,7 @@ bool Go::Board::twoGroupEye(Go::Color col, int pos) const
   for (int i=0;i<groups_used_num;i++)
   {
     Go::Group *group=groups_used[i];
-    if (group->isOneOfTwoLiberties (this,pos))
+    if (group->numRealLibs()==2) //group->isOneOfTwoLiberties (this,pos))
     {
       //possible group attaching
       int otherlib=group->getOtherOneOfTwoLiberties(this,pos);
@@ -2077,7 +2079,7 @@ bool Go::Board::isExtension2lib(Go::Move move,bool checkother) const
       Go::Group *group=this->getGroup(p);
       //if (col==group->getColor())
       {
-        if (group->isOneOfTwoLiberties(this,pos))
+        if (group->numRealLibs()==2) //group->isOneOfTwoLiberties(this,pos))
           foundgrouphas2lib=true;
         //else 
         if (checkother || foundconnectingliberties<3)
@@ -2336,7 +2338,7 @@ bool Go::Board::isAtari(Go::Move move, int *groupsize) const
     {
       Go::Group *group=this->getGroup(p);
       if (//col!=group->getColor() && 
-          group->isOneOfTwoLiberties(this,pos))
+          group->numRealLibs()==2) //group->isOneOfTwoLiberties(this,pos))
       {
         if (groupsize) *groupsize=group->numOfStones();
         return true;
@@ -2355,7 +2357,8 @@ bool Go::Board::isAtari(Go::Move move, int *groupsize, int other_not) const
     {
       Go::Group *group=this->getGroup(p);
       if (//col!=group->getColor() && 
-          group->isOneOfTwoLiberties(this,pos) && group->getOtherOneOfTwoLiberties(this,pos)!=other_not)
+          group->numRealLibs()==2 //group->isOneOfTwoLiberties(this,pos) 
+          && group->getOtherOneOfTwoLiberties(this,pos)!=other_not)
       {
         if (groupsize) *groupsize=group->numOfStones();
         return true;
@@ -3600,7 +3603,7 @@ void Go::Board::connectedAtariPos(Go::Move move) //, int CApos[4], int &CAcount)
  ACcount=0;
  if (pos<0) return;
  foreach_adjacent_debug(pos,p) { //,{
-    if (this->getColor(p)==col && this->inGroup(p) && this->getGroup(p)->isOneOfTwoLiberties(this,pos))
+    if (this->getColor(p)==col && this->inGroup(p) && this->getGroup(p)->numRealLibs()==2)
     {
       //fprintf(stderr,"pos =%d ",pos);
       int movepos=this->getGroup(p)->getOtherOneOfTwoLiberties(this,pos);

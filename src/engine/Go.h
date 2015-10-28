@@ -1041,7 +1041,8 @@ namespace Go
       Go::Group *group=this->getGroup(p);
       if (col==group->getColor())
       {
-        if (!(group->inAtari() || group->isOneOfTwoLiberties(this,pos)))
+        //if (!(group->inAtari() || group->isOneOfTwoLiberties(this,pos)))
+        if (group->numRealLibs()>2)
           return false; // attached group has more than two libs
         attach_group_pos=p;
         usedneighbours++;
@@ -1259,6 +1260,7 @@ namespace Go
       bool symmetryupdated;
       Go::Board::Symmetry currentsymmetry;
       int blackvalidmovecount,whitevalidmovecount;
+      Go::BitBoard *changes3x3;
       Go::BitBoard *blackvalidmoves,*whitevalidmoves;
       boost::object_pool<Go::Group> pool_group;
       bool markchanges;
@@ -1271,8 +1273,7 @@ namespace Go
       int blackcaptures,whitecaptures;
       bool lastcapture;
 
-      Go::BitBoard *changes3x3;
-    
+      
       bool CSstyle=false;
       list_int *changed_positions=NULL;
       struct ScoreVertex
