@@ -891,6 +891,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                       if (board->getColor(q)==Go::EMPTY) libs++;
                       else if (board->getColor(q)==col) {
                         Go::Group *checkgroup=board->getGroup(q);
+                        if (checkgroup==group) libs+=2; //killing from the attacked group, no selfatari!
                         if (checkgroup!=usedgroup && checkgroup->numRealLibs()>1) {
                           libs+=checkgroup->numRealLibs()-1;
                           usedgroup=checkgroup;
@@ -928,14 +929,20 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
               Go::Group *usedgroup=NULL;
               foreach_adjacent_debug(extentionpos,q){
               //foreach_adjacent(extentionpos,q,{
-                if (board->getColor(q)==Go::EMPTY) libs++;
+                if (board->getColor(q)==Go::EMPTY) {
+                      int newsinglelibpos=q;
+                      if (newsinglelibpos!=singlelibpos) {
+                        singlelibpos=newsinglelibpos;
+                        libs+=1;
+                      }
+                }
                 else if (board->getColor(q)==col) {
                   Go::Group *checkgroup=board->getGroup(q);
                   if (checkgroup!=usedgroup && checkgroup->numRealLibs()>1) {
                     if (checkgroup->numRealLibs()>2) 
                       libs+=checkgroup->numRealLibs()-1;
                     else if (checkgroup->numRealLibs()==2) {
-                      int newsinglelibpos=checkgroup->getOtherOneOfTwoLiberties(board,q);
+                      int newsinglelibpos=checkgroup->getOtherOneOfTwoLiberties(board,extentionpos);
                       if (newsinglelibpos!=singlelibpos) {
                         singlelibpos=newsinglelibpos;
                         libs+=1;
@@ -982,14 +989,20 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                     Go::Group *usedgroup=NULL;
                     foreach_adjacent_debug(a,q){
                     //foreach_adjacent(a,q,{
-                      if (board->getColor(q)==Go::EMPTY && q!=b) libs++;
+                      if (board->getColor(q)==Go::EMPTY && q!=b) {
+                            int newsinglelibpos=q;
+                            if (newsinglelibpos!=singlelibpos) {
+                              singlelibpos=newsinglelibpos;
+                              libs+=1;
+                            }
+                          }
                       else if (board->getColor(q)==colattached) {
                         Go::Group *checkgroup=board->getGroup(q);
                         if (checkgroup!=attachedgroup && checkgroup!=usedgroup && checkgroup->numRealLibs()>1) {
                           if (checkgroup->numRealLibs()>2) 
                             libs+=checkgroup->numRealLibs()-1;
                           else if (checkgroup->numRealLibs()==2) {
-                            int newsinglelibpos=checkgroup->getOtherOneOfTwoLiberties(board,q);
+                            int newsinglelibpos=checkgroup->getOtherOneOfTwoLiberties(board,a);
                             if (newsinglelibpos!=singlelibpos) {
                               singlelibpos=newsinglelibpos;
                               libs+=1;
@@ -1006,14 +1019,20 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                     usedgroup=NULL;
                     foreach_adjacent_debug(b,q){
                     //foreach_adjacent(b,q,{
-                      if (board->getColor(q)==Go::EMPTY && q!=a) libs++;
+                      if (board->getColor(q)==Go::EMPTY && q!=a) {
+                            int newsinglelibpos=q;
+                            if (newsinglelibpos!=singlelibpos) {
+                              singlelibpos=newsinglelibpos;
+                              libs+=1;
+                            }
+                          }
                       else if (board->getColor(q)==colattached) {
                         Go::Group *checkgroup=board->getGroup(q);
                         if (checkgroup!=attachedgroup && checkgroup!=usedgroup && checkgroup->numRealLibs()>1) {
                           if (checkgroup->numRealLibs()>2) 
                             libs+=checkgroup->numRealLibs()-1;
                           else if (checkgroup->numRealLibs()==2) {
-                            int newsinglelibpos=checkgroup->getOtherOneOfTwoLiberties(board,q);
+                            int newsinglelibpos=checkgroup->getOtherOneOfTwoLiberties(board,b);
                             if (newsinglelibpos!=singlelibpos) {
                               singlelibpos=newsinglelibpos;
                               libs+=1;
@@ -1055,7 +1074,11 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                     foreach_adjacent_debug(a,q){
                     //foreach_adjacent(a,q,{
                       if (board->getColor(q)==Go::EMPTY && q!=b) {
-                        libs++;
+                        int newsinglelibpos=q;
+                        if (newsinglelibpos!=singlelibpos) {
+                          singlelibpos=newsinglelibpos;
+                          libs+=1;
+                        }
                         libsother++;
                       }
                       else if (board->getColor(q)==colattached) {
@@ -1064,7 +1087,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                           if (checkgroup->numRealLibs()>2) 
                             libs+=checkgroup->numRealLibs()-1;
                           else if (checkgroup->numRealLibs()==2) {
-                            int newsinglelibpos=checkgroup->getOtherOneOfTwoLiberties(board,q);
+                            int newsinglelibpos=checkgroup->getOtherOneOfTwoLiberties(board,a);
                             if (newsinglelibpos!=singlelibpos) {
                               singlelibpos=newsinglelibpos;
                               libs+=1;
@@ -1090,7 +1113,11 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                     foreach_adjacent_debug(b,q){
                     //foreach_adjacent(b,q,{
                       if (board->getColor(q)==Go::EMPTY && q!=a) {
-                        libs++;
+                        int newsinglelibpos=q;
+                        if (newsinglelibpos!=singlelibpos) {
+                          singlelibpos=newsinglelibpos;
+                          libs+=1;
+                        }
                         libsother++;
                       }
                       else if (board->getColor(q)==colattached) {
@@ -1099,7 +1126,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                           if (checkgroup->numRealLibs()>2) 
                             libs+=checkgroup->numRealLibs()-1;
                           else if (checkgroup->numRealLibs()==2) {
-                            int newsinglelibpos=checkgroup->getOtherOneOfTwoLiberties(board,q);
+                            int newsinglelibpos=checkgroup->getOtherOneOfTwoLiberties(board,b);
                             if (newsinglelibpos!=singlelibpos) {
                               singlelibpos=newsinglelibpos;
                               libs+=1;
@@ -1117,8 +1144,8 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                     }//);
                     if (libs>1) b_is_extention=true;
                     if (libsother==0) b_is_selfatari=true;
-                    if (a_is_extention && !b_is_extention) LOCAL_FEATURE_POSITION(a,params->csstyle_2libavoidcapture,12);
-                    if (b_is_extention && !a_is_extention) LOCAL_FEATURE_POSITION(b,params->csstyle_2libavoidcapture,12);
+                    if (a_is_extention && !b_is_extention && !a_is_selfatari) LOCAL_FEATURE_POSITION(a,params->csstyle_2libavoidcapture,12);
+                    if (b_is_extention && !a_is_extention && !b_is_selfatari) LOCAL_FEATURE_POSITION(b,params->csstyle_2libavoidcapture,12);
                     if (!b_is_extention && !a_is_extention && a_possible_extandable && !a_is_selfatari) LOCAL_FEATURE_POSITION(a,params->csstyle_2libavoidcapture,12);
                     if (!b_is_extention && !a_is_extention && b_possible_extendable && !b_is_selfatari) LOCAL_FEATURE_POSITION(b,params->csstyle_2libavoidcapture,12);
                   };
