@@ -1056,7 +1056,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
               }
             // 12. 2-point semeai heuristic: if the last move reduces a string to two liberties any move which prevents it from beeing killed by opponent playing on one of the liberties has this feature
             group->get2libPositions (a,b);
-            Go::Group *attachedgroup=group; //this makes it possible to copy the code from attachedgroup logic
+            Go::Group *attachedgroup=group; //this makes it possible to copy the code from attachedgroup logic, not completely!!! col was wrong
                   {
                     //now from libs a and b the lib which kills has to be found
                     bool a_is_extention=false;
@@ -1097,10 +1097,13 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                           usedgroup=checkgroup;
                         }
                       }
-                      else if (board->getColor(q)==col) {
+                      else if (board->getColor(q)==Go::otherColor(colattached)) {
                         Go::Group *checkgroup=board->getGroup(q);
-                        if (checkgroup->numRealLibs ()>1)
-                          libsother++;
+                        if (checkgroup->numRealLibs ()==1) {
+                          libs++;
+                          a_is_extention=true;
+                        }
+                        libsother++;
                       }
                     }//);
                     if (libs>1) a_is_extention=true;
@@ -1136,10 +1139,13 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                           usedgroup=checkgroup;
                         }
                       }
-                      else if (board->getColor(q)==col) {
+                      else if (board->getColor(q)==Go::otherColor(colattached)) {
                         Go::Group *checkgroup=board->getGroup(q);
-                        if (checkgroup->numRealLibs ()>1)
-                          libsother++;
+                        if (checkgroup->numRealLibs ()==1) {
+                          libs++;
+                          b_is_extention=true;
+                        }
+                        libsother++;
                       }
                     }//);
                     if (libs>1) b_is_extention=true;
