@@ -25,8 +25,8 @@
 #endif
 
 #include "Go.h"
-//from "Parameters.h":
-class Parameters;
+#include "Parameters.h"
+//class Parameters;
 //from "Pattern.h":
 /*namespace Pattern
 {
@@ -146,7 +146,7 @@ class Features
         if (patterngammas->hasGamma(level))
           return patterngammas->getGamma(level);
         else
-          return 1.0;
+          return params->csstyle_patterngammasnothing;
       };
 
     float getFeatureGammaLargePattern(Pattern::Circular &pattcirc, int psize)  const

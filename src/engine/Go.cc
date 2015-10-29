@@ -1726,38 +1726,50 @@ inline void Go::Board::setPlayoutGammaAt(Parameters* params,int p)
   //}
   if (params->csstyle_atatarigroup!=1.0) {
 //this has to be extended by logic, this way b and w groups are handled equally ...
-    float atari=1.0, is2lib=1.0;//,atariw=1.0, is2libw=1.0;
-  foreach_adjacent(p,q,{
+    float atarib=1.0, is2libb=1.0,atariw=1.0, is2libw=1.0;
+  foreach_adjacent_debug(p,q) { //,{
     if (this->inGroup(q))
     {
       Go::Group *group=this->getGroup(q);
       int libs=group->numRealLibs();
-      //Go::Color col=group->getColor();
+      Go::Color col=group->getColor();
       switch (libs) {
       case 1:
-          //if (col==Go::BLACK) atarib=params->csstyle_atatarigroup; else 
-          atari*=params->csstyle_atatarigroup;
+          if (col==Go::BLACK) atarib=params->csstyle_atatarigroup; else 
+          atariw*=params->csstyle_atatarigroup;
           break;
       case 2:
-          //if (col==Go::BLACK) is2libb=params->csstyle_is2libgroup; else 
-          is2lib*=params->csstyle_is2libgroup;
+          if (col==Go::BLACK) is2libb=params->csstyle_is2libgroup; else 
+          is2libw*=params->csstyle_is2libgroup;
           break;
       default:
           ;
       }
     }
-  });
+  }//);
   
   unsigned int pattern=Pattern::ThreeByThree::makeHash(this,p);
   //blackgammas->set(p,features->getFeatureGammaPlayoutPattern(Pattern::ThreeByThree::smallestEquivalent(pattern),99,99));
+  float deltab=1.0;
+  if (params->csstyle_adaptiveplayouts) {
+    int patt=Pattern::hashto5(pattern);
+    blackpatterns->set(p,patt);
+    deltab=params->engine->deltagammasGetPattern(p,Go::BLACK,patt);
+  }
   if (blackvalidmoves->get(p))
-      blackgammas->set(p,atari*is2lib*features->getFeatureGammaPattern(pattern));//Pattern::ThreeByThree::smallestEquivalent(pattern)));
+      blackgammas->set(p,atarib*atariw*is2libb*features->getFeatureGammaPattern(pattern)*deltab);//Pattern::ThreeByThree::smallestEquivalent(pattern)));
     else
       blackgammas->set(p,0);
   pattern=Pattern::ThreeByThree::invert(pattern);
   //whitegammas->set(p,features->getFeatureGammaPlayoutPattern(Pattern::ThreeByThree::smallestEquivalent(pattern),99,99));
+  float deltaw=1.0;
+  if (params->csstyle_adaptiveplayouts) {
+    int patt=Pattern::hashto5(pattern);
+    whitepatterns->set(p,patt);
+    deltaw=params->engine->deltagammasGetPattern(p,Go::WHITE,patt);
+  }
   if (whitevalidmoves->get(p))
-      whitegammas->set(p,atari*is2lib*features->getFeatureGammaPattern(pattern));//Pattern::ThreeByThree::smallestEquivalent(pattern)));
+      whitegammas->set(p,atariw*atarib*is2libw*features->getFeatureGammaPattern(pattern)*deltaw);//Pattern::ThreeByThree::smallestEquivalent(pattern)));
     else
       whitegammas->set(p,0);
   }

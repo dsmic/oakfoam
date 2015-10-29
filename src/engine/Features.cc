@@ -5,7 +5,7 @@
 #include <fstream>
 #include <algorithm>
 #include <iomanip>
-#include "Parameters.h"
+//#include "Parameters.h"
 //#include "Pattern.h"
 #include "DecisionTree.h"
 #include "Engine.h"

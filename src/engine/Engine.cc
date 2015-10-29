@@ -350,6 +350,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","csstyle_defendapproach",&(params->csstyle_defendapproach),1.0);
   params->addParameter("playout","csstyle_2libavoidcapture",&(params->csstyle_2libavoidcapture),1.0);
   params->addParameter("playout","csstyle_adaptiveplayouts",&(params->csstyle_adaptiveplayouts),false);
+  params->addParameter("playout","csstyle_patterngammasnothing",&(params->csstyle_patterngammasnothing),1.0);
   params->addParameter("playout","csstyle_01",&(params->csstyle_01),0.0);
   params->addParameter("playout","csstyle_02",&(params->csstyle_02),0.0);
   params->addParameter("playout","csstyle_03",&(params->csstyle_03),0.0);
