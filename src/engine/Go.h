@@ -1245,6 +1245,14 @@ namespace Go
         }
         return false;        
       }
+      bool groupatached(int capturedpos, Go::Group* captachedposgroup) {
+        list_short *captatt=getGroup(capturedpos)->getAdjacentGroups();
+        for (auto p:*captatt) {
+          Go::Group *group=getGroup(p);
+            if (captachedposgroup==group) return true;
+        }
+        return false;        
+      }
     private:
       const int size;
       const int sizesq;

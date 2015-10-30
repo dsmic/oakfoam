@@ -899,7 +899,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                       }
                       else if (board->getColor(q)==othercol) {
                         Go::Group *checkgroup=board->getGroup(q);
-                        if (checkgroup==group) libs+=2; //killing from the attacked group, no selfatari!
+                        if (killattachedgroup==group->getAtariPosition()) libs+=2; //killing from the attacked group, no selfatari!
                         if (board->getGroup(q)->inAtari()) {
                           libs++;
                           capturedpos=q;
@@ -959,7 +959,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                   capturedpos=q;
                 }
               }//);
-              if (libs>1 || (libs==1 && capturedpos>=0 && board->groupatached(capturedpos,attachedpos))) {
+              if (libs>1 || (libs==1 && capturedpos>=0 && board->groupatached(capturedpos,group))) {
                 //4. Save new atari-string by extending
                 LOCAL_FEATURE_POSITION(extentionpos,params->csstyle_saveatariextention,4);
               }
