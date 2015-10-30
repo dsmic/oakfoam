@@ -898,7 +898,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                         }
                       }
                       else if (board->getColor(q)==othercol) {
-                        if (killattachedgroup==group->getAtariPosition()) libs+=2; //killing from the attacked group, no selfatari!
+                        if (killattachedgroup==group->getAtariPosition() && attachedgroup->numOfStones()>1) libs+=2; //killing from the attacked group, no selfatari! Not 100% save, as it might be selfatari if a bigger group is killed at one position 
                         if (board->getGroup(q)->inAtari()) {
                           libs++;
                           capturedpos=q;
@@ -927,6 +927,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
               int singlelibpos=-1;
               int libs=0;
               int capturedpos=-1;
+              int numOfcapturedstones=0;
               Go::list_short attachedpos;
               Go::Group *usedgroup=NULL;
               foreach_adjacent_debug(extentionpos,q){
@@ -953,12 +954,16 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                     usedgroup=checkgroup;
                   }
                 }
-                else if (board->getColor(q)==othercol && board->getGroup(q)->inAtari()) {
-                  libs++;
-                  capturedpos=q;
-                }
-              }//);
-              if (libs>1 || (libs==1 && capturedpos>=0 && board->groupatached(capturedpos,group))) {
+                else if (board->getColor(q)==othercol) {
+                  Go::Group *othergroup=board->getGroup(q);
+                  if (othergroup->inAtari()) {
+                      libs++;
+                      capturedpos=q;
+                      numOfcapturedstones=othergroup->numOfStones();
+                    }
+                  }
+                }//);
+              if (libs>1 || (libs==1 && capturedpos>=0 && board->groupatached(capturedpos,group) && numOfcapturedstones>1)) {
                 //4. Save new atari-string by extending
                 LOCAL_FEATURE_POSITION(extentionpos,params->csstyle_saveatariextention,4);
               }
