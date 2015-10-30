@@ -1238,18 +1238,23 @@ namespace Go
           captachedposgroup.push_back(getGroup(p));
         }
         for (auto p:*captatt) {
-          Go::Group *group=getGroup(p);
-          for (auto gg: captachedposgroup) {
-            if (gg==group) return true;
+          if (inGroup(p)) {
+            Go::Group *group=getGroup(p);
+            for (auto gg: captachedposgroup) {
+              if (gg==group) return true;
+            }
           }
         }
         return false;        
       }
       bool groupatached(int capturedpos, Go::Group* captachedposgroup) {
         list_short *captatt=getGroup(capturedpos)->getAdjacentGroups();
+        //return false;
         for (auto p:*captatt) {
-          Go::Group *group=getGroup(p);
+          if (inGroup(p)) {
+            Go::Group *group=getGroup(p);
             if (captachedposgroup==group) return true;
+          }
         }
         return false;        
       }

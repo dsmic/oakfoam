@@ -898,7 +898,6 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                         }
                       }
                       else if (board->getColor(q)==othercol) {
-                        Go::Group *checkgroup=board->getGroup(q);
                         if (killattachedgroup==group->getAtariPosition()) libs+=2; //killing from the attacked group, no selfatari!
                         if (board->getGroup(q)->inAtari()) {
                           libs++;
