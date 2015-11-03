@@ -2615,7 +2615,6 @@ END
   fi
 fi
 
-
 ac_config_headers="$ac_config_headers config.h"
 
 CXXFLAGS="-Wall -g -O3 -std=c++0x -DTOPSRCDIR=\\\"`pwd`\\\" -fno-strict-aliasing"
