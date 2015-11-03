@@ -963,11 +963,12 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                     }
                   }
                 }//);
-              if (libs>1 || (libs==1 && capturedpos>=0 && board->groupatached(capturedpos,group) && numOfcapturedstones>1)) {
+              if (libs>1 ) {
                 //4. Save new atari-string by extending
                 LOCAL_FEATURE_POSITION(extentionpos,params->csstyle_saveatariextention,4);
               }
-              else {
+              else if (!(libs==1 && capturedpos>=0 && board->groupatached(capturedpos,group) && numOfcapturedstones>1)) 
+              { // if it is captured, than it was considered by the attached groups !!
                 //5. Save new atari-string by extending but resulting in self-atari
                 LOCAL_FEATURE_POSITION(extentionpos,params->csstyle_saveatariextentionbutselfatari,5);
               }      

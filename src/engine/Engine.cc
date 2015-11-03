@@ -41,7 +41,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   //Caffe::set_phase(Caffe::TEST);
   caffe_area_net = NULL;
   caffe_test_net = NULL;
-  
+  /*
   caffe_test_net = new Net<float>("/home/detlef/oakfoam-hg/oakfoam/scripts/CNN/gobig19.prototxt",TRAIN);
   caffe_test_net->CopyTrainedLayersFrom("/home/detlef/oakfoam-hg/oakfoam/scripts/CNN/gobig.trained");
   int num_inputs=caffe_test_net->num_inputs();
@@ -87,6 +87,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   delete[] data;
   delete b;
   //end of testing code!
+  */
   
   ACcount=0;
 
