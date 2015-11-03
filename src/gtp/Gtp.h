@@ -104,6 +104,7 @@ namespace Gtp
       void printString(std::string str);
       /** Output a Gtp::Vertex. */
       void printVertex(Gtp::Vertex vert);
+      void printVertexUpperCase(Gtp::Vertex vert);
       /** Output a formatted score. */
       void printScore(float score);
       /** Output a formatted std::string. */

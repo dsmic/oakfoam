@@ -30,6 +30,7 @@ DTFILE=${3:--}
 # fi
 
 LADDERS=${4:-0}
+FORPLAYOUT=${5:-0}
 
 if ! test -x $WD/../../oakfoam; then
   echo "File $WD/../oakfoam not found" >&2
@@ -40,8 +41,7 @@ if ! test -x $WD/mm/mm; then
   echo "File $WD/mm/mm not found" >&2
   exit 1
 fi
-
-echo -e "loadfeaturegammas $INITIALPATTERNGAMMAS\nlistfeatureids" | $OAKFOAM 2>/dev/null | grep -e "^[0-9]* [a-zA-Z0-9]*:[0-9a-fA-FxX]*" > $TEMPIDS
+echo -e "loadfeaturegammas $INITIALPATTERNGAMMAS\nparam features_output_for_playout $FORPLAYOUT\nlistfeatureids" | $OAKFOAM 2>/dev/null | grep -e "^[0-9]* [a-zA-Z0-9]*:[0-9a-fA-FxX]*" > $TEMPIDS
 FEATUREIDCOUNT=`cat $TEMPIDS | wc -l`
 
 MMFEATURES=`cat $TEMPIDS | sed "s/[0-9]* \([a-zA-Z0-9]*\):.*/\1/" | uniq -c | sed "s/^ *//"`
@@ -62,9 +62,18 @@ ${MMFEATURES}
 
 echo "$MMHEADER" > $TEMPMM
 
+touch $TEMPGTP
+
+#if availible preload the better configuration, used for playout training, as trigger of patternmove is important there
+if test -x /home/detlef/gomill/preconfig.gtp; then
+  cat /home/detlef/gomill/preconfig.gtp >$TEMPGTP
+fi
+
 #here is a probability to introduce (1.0) it says with which probability a move is taken for the data base. set to 1 for original behaviour
-echo -e "loadfeaturegammas ${INITIALPATTERNGAMMAS}\nparam features_output_competitions 0.1\nparam features_output_competitions_mmstyle 1\n${SMALLONLY}" > $TEMPGTP
+echo -e "loadfeaturegammas ${INITIALPATTERNGAMMAS}\nparam features_output_competitions 0.3\nparam features_output_competitions_mmstyle 1\n${SMALLONLY}" >> $TEMPGTP
 echo "param features_ladders $LADDERS" >> $TEMPGTP
+echo "param features_output_for_playout $FORPLAYOUT" >> $TEMPGTP
+
 echo 'param undo_enable 0' >> $TEMPGTP # so gogui-adapter doesn't send undo commands
 
 if [ "$DTFILE" != "-" ]; then
@@ -93,7 +102,7 @@ echo "[`date +%F_%T`] extracting competitions..." >&2
 #cat $TEMPGTP | gogui-adapter "$OAKFOAMLOG" > /dev/null
 cat "$TEMPGTP" | gogui-adapter "$OAKFOAMLOG" 2>&1 | sed -nu 's/^= @@ //p' >&2
 cat $TEMPLOG | grep "^\[features\]:" | sed "s/\[features\]://" | sed "s/^#.*/#/;s/[a-zA-Z0-9]*[*:] //" >> $TEMPMM
-rm -f $TEMPLOG
+#rm -f $TEMPLOG
 
 echo "[`date +%F_%T`] training..." >&2
 MMOUTPUT="mm_output.tmp"
@@ -133,7 +142,7 @@ cat "$MMOUTPUT" | join $TEMPIDS - | sed "s/ */ /;s/^ //;s/^[0-9]* //"
 rm -f "$MMOUTPUT"
 set -e # end workaround
 
-rm -f $TEMPMM
-rm -f $TEMPIDS
-rm -f $TEMPLOG
-rm -f $TEMPGTP
+#rm -f $TEMPMM
+#rm -f $TEMPIDS
+#rm -f $TEMPLOG
+#rm -f $TEMPGTP

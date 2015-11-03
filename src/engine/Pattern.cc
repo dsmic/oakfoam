@@ -454,6 +454,11 @@ Pattern::CircularDictionary::CircularDictionary()
   }
 }
 
+Pattern::Circular::Circular(Pattern::CircularDictionary *dict , int sz): size(sz>PATTERN_CIRC_MAXSIZE?PATTERN_CIRC_MAXSIZE:sz) 
+{
+  ldict=dict;
+}
+
 Pattern::Circular::Circular(Pattern::CircularDictionary *dict, const Go::Board *board, int pos, int sz) : size(sz>PATTERN_CIRC_MAXSIZE?PATTERN_CIRC_MAXSIZE:sz)
 {
   ldict=dict;
@@ -492,6 +497,39 @@ Pattern::Circular::Circular(Pattern::CircularDictionary *dict, const Go::Board *
   }
 }
 
+void Pattern::CircularHelper::MarkBoardPositions(Pattern::CircularDictionary *dict, const Go::Board *board, int pos, int size, std::list<int> *changesCirc)
+{
+  if (changesCirc==NULL) return;
+  int x=Go::Position::pos2x(pos,board->getSize());
+  int y=Go::Position::pos2y(pos,board->getSize());
+  int base=0;
+  
+  for (int d=2;d<=size;d++)
+  {
+    std::list<int> *xoffsets=dict->getXOffsetsForSize(d);
+    std::list<int> *yoffsets=dict->getYOffsetsForSize(d);
+    std::list<int>::iterator iterx=xoffsets->begin();
+    std::list<int>::iterator itery=yoffsets->begin();
+    while(iterx!=xoffsets->end() && itery!=yoffsets->end())
+    {
+      int fx=x+(*iterx);
+      int fy=y+(*itery);
+      //Go::Color col;
+      
+      if (!(fx<0 || fy<0 || fx>=board->getSize() || fy>=board->getSize()))
+      {
+       // col=board->getColor(Go::Position::xy2pos(fx,fy,board->getSize()));
+        changesCirc->push_back(Go::Position::xy2pos(fx,fy,board->getSize()));
+      }
+      //this->initColor(base,col);
+      
+      ++iterx;
+      ++itery;
+      base++;
+    }
+  }
+}
+
 int Pattern::Circular::countStones(Pattern::CircularDictionary *dict)
 {
   int numStones=0;
@@ -501,6 +539,32 @@ int Pattern::Circular::countStones(Pattern::CircularDictionary *dict)
   {
     if (this->getColor(i)==Go::WHITE) numStones++;
     if (this->getColor(i)==Go::BLACK) numStones++;
+  }
+
+  return numStones;
+}
+      
+int Pattern::Circular::countNonEmpty(Pattern::CircularDictionary *dict)
+{
+  int numStones=0;
+  int l=dict->getBaseOffset(size+1);
+     
+  for (int i=0;i<l;i++)
+  {
+    if (this->getColor(i)!=Go::EMPTY) numStones++;
+  }
+
+  return numStones;
+}
+      
+int Pattern::Circular::countNonOffboard(Pattern::CircularDictionary *dict)
+{
+  int numStones=0;
+  int l=dict->getBaseOffset(size+1);
+     
+  for (int i=0;i<l;i++)
+  {
+    if (this->getColor(i)!=Go::OFFBOARD) numStones++;
   }
 
   return numStones;
@@ -793,5 +857,18 @@ void Pattern::Circular::convertToSmallestEquivalent(Pattern::CircularDictionary 
     //  fprintf(stderr,"missed: %s\n",alternative.toString(dict).c_str());
     alternative.rotateRight(dict);
   }
+}
+
+void Pattern::Circular::writeTo(std::ofstream &fout) const
+{
+  fout.write((char*)&size,sizeof(size)); 
+  fout.write((char*)&hash,sizeof(hash[0])*PATTERN_CIRC_32BITPARTS);
+}
+
+void Pattern::Circular::readFrom(std::ifstream &fin) const
+{
+  //must be set during init of the pattern!!
+  //fin.read((char*)&size,sizeof(size)); 
+  fin.read((char*)&hash,sizeof(hash[0])*PATTERN_CIRC_32BITPARTS);
 }
 

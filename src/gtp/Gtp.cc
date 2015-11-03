@@ -549,6 +549,21 @@ void Gtp::Output::printVertex(Gtp::Vertex vert)
   }
 }
 
+void Gtp::Output::printVertexUpperCase(Gtp::Vertex vert)
+{
+  if (vert.x==-1 && vert.y==-1)
+    this->printf("PASS");
+  else if (vert.x==-2 && vert.y==-2)
+    this->printf("RESIGN");
+  else
+  {
+    char xletter='A'+vert.x;
+    if (vert.x>=8)
+      xletter++;
+    this->printf("%c%d",xletter,(vert.y+1));
+  }
+}
+
 void Gtp::Output::printScore(float score)
 {
   if (score==0)

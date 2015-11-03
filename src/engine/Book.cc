@@ -419,7 +419,7 @@ void Book::Tree::addChild(Book::Tree *child, int size)
   std::list<Go::Move> *moves=new std::list<Go::Move>();
   this->getMovesFromRoot(moves);
   
-  Go::Board *board=new Go::Board(size);
+  Go::Board *board=new Go::Board(size);  //this should not need csstyle playouts?! for book production only?
     
   for (std::list<Go::Move>::iterator iter=moves->begin();iter!=moves->end();++iter)
   {

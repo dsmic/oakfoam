@@ -9,12 +9,61 @@
 #include <string>
 #include <boost/thread/mutex.hpp>
 #include "Go.h"
+#include "Pattern.h"
+#include <boost/bimap.hpp>
 //from "Parameters.h":
 class Parameters;
 //from "Worker.h":
 namespace Worker
 {
   class Settings;
+};
+
+class MoveCirc;
+typedef struct
+{
+  float parent_playouts,parent_wins,playouts,wins;
+} tree_result;
+
+typedef struct
+{
+  double wins;
+  double playouts;
+} wins_playouts;
+
+class Tree;
+
+//more information over the children, as they are sorted
+typedef struct
+    {
+      float urgency;
+      Tree * node;
+      double  wins;
+      double  playouts;
+      double bestLCBplayouts;
+      double bestLCBwins;
+
+      //no other way to give this to the compare function?!
+      float bestLCBconst; 
+      float k_confidence;
+    } UrgentNode;
+
+
+class EqMoves
+{
+  public:
+    std::set<Tree*>::iterator begin() {return eq_moves.begin();}
+    std::set<Tree*>::iterator end() {return eq_moves.end();}
+    std::set<Tree*>::size_type size() {return eq_moves.size();}
+    void insert(Tree *t) {eq_moves.insert(t);}
+    void erase(Tree *t) {eq_moves.erase(t);}
+    void lock() {lock_eq_moves.lock();}
+    bool try_lock() {return lock_eq_moves.try_lock();}
+    void unlock() {lock_eq_moves.unlock();}
+    ~EqMoves() {lock_eq_moves.unlock();}
+  private:
+    std::set <Tree*> eq_moves;
+    boost::mutex lock_eq_moves;
 };
 
 /** MCTS Tree. */
@@ -27,7 +76,7 @@ class Tree
      * @param mov   Move that creates this position.
      * @param p     Parent tree node.
      */
-    Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov = Go::Move(Go::EMPTY,Go::Move::RESIGN), Tree *p = NULL);
+    Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov = Go::Move(Go::EMPTY,Go::Move::RESIGN), Tree *p = NULL, int a_pos=-1);
     ~Tree();
     
     /** Get the parent tree node. */
@@ -88,6 +137,9 @@ class Tree
     
     /** Set the feature gamma value for this node. */
     void setFeatureGamma(float g);
+    void setFeatureGammaLocalPart(float g) {gamma_local_part=g;};
+    void setStonesAround(float g);
+    int getStonesAround() {return stones_around;};
     /** Get the feature gamma value for this node. */
     float getFeatureGamma() const { return gamma; };
     /** Get the sum of the children's gamma values. */
@@ -105,22 +157,26 @@ class Tree
     /** Get the child of this node specified by @p move. */
     Tree *getChild(Go::Move move) const;
     /** Get the number of playouts through this node. */
-    float getPlayouts() const { return playouts; };
+    double getPlayouts() const { return playouts; };
     /** Get the number of wins through this node, for this node's color. */
-    float getWins() const { return wins; };
+    double getWins() const { return wins; };
+    double getBestLCBWins() const { return bestLCBwins; };
+    double getBestLCBPlayouts() const { return bestLCBplayouts; };
+    
     /** Get the number of RAVE playouts through this node. */
-    float getRAVEPlayouts() const { return raveplayouts; };
-    float getRAVEWins() const { return ravewins; };
-    float getEARLYRAVEPlayouts() const { return earlyraveplayouts; };
+    double getRAVEPlayouts() const { return raveplayouts; };
+    double getRAVEWins() const { return ravewins; };
+    double getEARLYRAVEPlayouts() const { return earlyraveplayouts; };
     /** Get the number of RAVE playouts for the other color through this node. */
-    float getRAVEPlayoutsOther() const { return raveplayoutsother; };
-    float getRAVEWinsOther() const { return ravewinsother; };
-    float getRAVEPlayoutsOtherEarly() const { return earlyraveplayoutsother; };
-    float getRAVEWinsOtherEarly() const { return earlyravewinsother; };
+    double getRAVEPlayoutsOther() const { return raveplayoutsother; };
+    double getRAVEWinsOther() const { return ravewinsother; };
+    double getRAVEPlayoutsOtherEarly() const { return earlyraveplayoutsother; };
+    double getRAVEWinsOtherEarly() const { return earlyravewinsother; };
     /** Get the ratio of wins to playouts. */
     float getRatio() const;
+    float getRatio_intern() const;
     /** Get the unprune factor, used for determining the order to unprune nodes in. */
-    float getUnPruneFactor(float *moveValues=NULL, float mean=0, int num=0) const;
+    float getUnPruneFactor(float *moveValues=NULL, float mean=0, int num=0, float prob_local=0) const;
     /** Get the score mean. */
     float getScoreMean() const;
     /** Get the score standard deviation. */
@@ -143,7 +199,8 @@ class Tree
      * This is the node value combined with a biases.
      * Biases can be from UCB, progressive bias or criticality bias.
      */
-    float getUrgency(bool skiprave=false) const;
+    float getUrgency(bool skiprave=false, Tree * robustchild=NULL) const;
+    float getUrgencyVariance() const { return urgency_variance;};
     
     /** Add a child to this node. */
     void addChild(Tree *node);
@@ -166,13 +223,13 @@ class Tree
     /** Add a number of prior losses to this node. */
     void addPriorLoses(int n);
     /** Add a RAVE win to this node. */
-    void addRAVEWin(bool early);
+    void addRAVEWin(bool early,float weight=1.0);
     /** Add a RAVE loss to this node. */
-    void addRAVELose(bool early);
+    void addRAVELose(bool early,float weight=1.0);
     /** Add a RAVE win for the other color to this node. */
-    void addRAVEWinOther(bool early);
+    void addRAVEWinOther(bool early,float weight=1.0);
     /** Add a RAVE loss for the other color to this node. */
-    void addRAVELoseOther(bool early);
+    void addRAVELoseOther(bool early,float weight=1.0);
     
     /** Add a number of RAVE wins to this node. */
     void addRAVEWins(int n,bool early);
@@ -183,7 +240,7 @@ class Tree
     /** Add a partial result to this node.
      * A partial result is used for non-integer result rewards.
      */
-    void addPartialResult(float win, float playout, bool invertwin=true);
+    void addPartialResult(float win, float playout, bool invertwin=true, float decay_factor=1.0);
     /** Add a decaying result. */
     void addDecayResult(float result);
     
@@ -204,10 +261,16 @@ class Tree
      * The urgent child is the child with the largest urgency.
      */
     Tree *getUrgentChild(Worker::Settings *settings);
+    static bool compare_UrgentNodes(UrgentNode &u1,UrgentNode &u2);
+    static bool compare_UrgentNodes_LCB(UrgentNode &u1,UrgentNode &u2);
+    static float LCB_UrgentNode(UrgentNode &u);
+    static bool LCB_UrgentNode_useWins (UrgentNode &u);
+    static wins_playouts LCB_UrgentNode_winplayouts(wins_playouts UCBwp, wins_playouts wp, float k_confidence);
     /** Get the child with the best ratio. */
     Tree *getBestRatioChild(float playoutthreshold=0) const;
+    Tree *getBestUrgencyChild(float playoutthreshold=0) const;
     /** Update RAVE values for the path from this node to the root of the tree. */
-    void updateRAVE(Go::Color wincol,Go::BitBoard *blacklist,Go::BitBoard *whitelist,bool early);
+    void updateRAVE(Go::Color wincol,Go::IntBoard *blacklist,Go::IntBoard *whitelist,bool early, Go::Board *scoredboard, int childpos=-3);
     /** Prune any superko violations. */
     void pruneSuperkoViolations();
     
@@ -245,10 +308,21 @@ class Tree
     /** Update the criticality for this node and the path to the root. */
     void updateCriticality(Go::Board *board, Go::Color wincol);
     /** Get the criticality for this node. */
+    float getOwnSelfWhite();
+    float getOwnSelfBlack();
+    float getOwnRatio(Go::Color col=Go::BLACK);
+    float getSlope(Go::Color col);
+    void displayOwnerCounts() {fprintf(stderr,"ownselfblack %f,ownselfwhite %f,ownotherblack %f,ownotherwhite %f,ownnobody %f,ownblack %f,ownwhite %f,ownercount %f\n",ownselfblack,ownselfwhite,ownotherblack,ownotherwhite,ownnobody,ownblack,ownwhite,ownercount);};
     float getCriticality() const;
+    float getSelfOwner(int size) const;
+    float ownselfblack,ownselfwhite,ownotherblack,ownotherwhite,ownnobody,ownblack,ownwhite,ownercount;
+    float blackx,blacky,blackxy,blackx2;
+    float whitex,whitey,whitexy,whitex2;
+    float regcountb,regcountw;
     
     /** Get the territory owner statistics for this node. */
     float getTerritoryOwner() const;
+    void fillTreeBoard(Go::IntBoard *treeboardBlack,Go::IntBoard *treeboardWhite);
     
     /** Get a string representation for this node. */
     std::string toSGFString() const;
@@ -275,6 +349,42 @@ class Tree
     #endif
 
     std::list<Tree*> *getChildren() {return children;}
+    int countMoveCirc(); 
+    int countMoveCirc2() {return (eq_moves!=NULL)?eq_moves->size():0;}
+    tree_result getTreeResult() {tree_result r={0,0,0,0}; if (parent!=NULL) r.parent_playouts=parent->getPlayouts(); r.parent_wins=parent->getWins(); r.playouts=playouts; r.wins=wins; return r;} 
+    tree_result sumOtherTreeResults() 
+      {
+        tree_result r={0,0,0,0};
+        if (eq_moves==NULL) return r;
+        eq_moves->lock();
+        for(std::set<Tree*>::iterator iter=eq_moves->begin();iter!=eq_moves->end();++iter) 
+        {
+          if ((*iter)!=this)
+          {
+            tree_result r_tmp=(*iter)->getTreeResult();
+            r.parent_playouts+=r_tmp.parent_playouts;
+            r.parent_wins+=r_tmp.parent_wins;
+            r.playouts+=r_tmp.playouts;
+            r.wins+=r_tmp.wins;
+          }
+        }
+        eq_moves->unlock();
+        return r;
+      }
+    
+    EqMoves * get_eq_moves() {return eq_moves;}
+    float getTreeResultsUnpruneFactor() const;
+      
+    void setMoveCirc(MoveCirc *m,EqMoves *e) 
+     {
+       if (movecirc!=NULL || eq_moves!=NULL) fprintf(stderr,"should not happen\n");
+       movecirc=m;
+       eq_moves=e;
+     }
+    float cnn_territory_done;
+    float cnn_territory_wr;
+    boost::bimap <int,float> cnn_b,cnn_w;
+    int around_pos;
     
   private:
     Tree *parent;
@@ -283,13 +393,15 @@ class Tree
     Tree *symmetryprimary;
     
     Go::Move move;
-    float playouts,raveplayouts,earlyraveplayouts;
-    float wins,ravewins,earlyravewins;
-    float raveplayoutsother;
-    float ravewinsother;
-    float earlyraveplayoutsother;
-    float earlyravewinsother;
+    double playouts,raveplayouts,earlyraveplayouts;
+    double wins,ravewins,earlyravewins;
+    double bestLCBwins,bestLCBplayouts;
+    double raveplayoutsother;
+    double ravewinsother;
+    double earlyraveplayoutsother;
+    double earlyravewinsother;
     float scoresum,scoresumsq;
+    float urgency_variance;
     float decayedwins,decayedplayouts;
     Parameters *const params;
     bool hasTerminalWinrate,hasTerminalWin;
@@ -298,7 +410,8 @@ class Tree
     int unprunednum;
     unsigned int prunedchildren;
     unsigned int unprunedchildren;
-    float gamma,childrentotalgamma,maxchildgamma;
+    float gamma,childrentotalgamma,maxchildgamma,gamma_local_part,childrenlogtotalchildgamma;
+    float stones_around;
     float lastunprune,unprunenextchildat;
     float unprunebase;
     int ownedblack,ownedwhite,ownedwinner;
@@ -322,7 +435,51 @@ class Tree
     void updateUnPruneAt();
     
     void addCriticalityStats(bool winner, bool black, bool white);
+    //ownership, only black is +1, only white -1
+    float getOwnership() const {return ((float)(ownedblack-ownedwhite))/(ownedblack+ownedwhite);}
     
     static float variance(int wins, int playouts);
+    float KL_d(float p, float q) const;
+    float KL_xLogx_y(float x, float y) const;
+    float KL_max_q(float S, float N, float t) const;
+
+    MoveCirc *movecirc;
+    EqMoves *eq_moves;
+    float *CNNresults;
 };
+
+class MoveCirc
+{
+  public:
+    /** Determine if two are equal. */
+      MoveCirc(Pattern::Circular m_circ, Go::Move m_m):circ(m_circ.getHash(),m_circ.getSize()),m(m_m.getColor(),m_m.getPosition()) {deleted=0;};
+      bool operator==(const MoveCirc other) const {return (m==other.m && circ==other.circ);};
+      /** Determine if two are unequal. */
+      bool operator!=(const MoveCirc other) const { return !(*this == other); };
+      /** Determine if one is smaller than another. */
+      bool operator<(const MoveCirc other) const { 
+        if (m.getColor()<other.m.getColor()) return true;
+        if (m.getColor()>other.m.getColor()) return false;
+        if (m.getPosition()<other.m.getPosition()) return true;
+        if (m.getPosition()>other.m.getPosition()) return false;
+        if (circ<other.circ) return true; else return false;
+      };
+      /** Determine if one is smaller than another. */
+      bool operator<(const MoveCirc *other) const { 
+        if (m.getColor()<other->m.getColor()) return true;
+        if (m.getColor()>other->m.getColor()) return false;
+        if (m.getPosition()<other->m.getPosition()) return true;
+        if (m.getPosition()>other->m.getPosition()) return false;
+        if (circ<other->circ) return true; else return false;
+      };
+      std::size_t hashf() const {return circ.hashf()+m.getPosition()*13+((m.getColor()==Go::WHITE)?17:0);}; //quick and dirty hash
+
+    Pattern::Circular circ;
+    Go::Move m;
+
+  private:
+    unsigned int deleted; //used for reference counting, if deleted==t.getSize() no is used
+};
+
+
 #endif

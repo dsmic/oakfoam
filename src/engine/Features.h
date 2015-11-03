@@ -3,14 +3,16 @@
 
 #define PASS_LEVELS 2
 #define CAPTURE_LEVELS 6
-#define EXTENSION_LEVELS 2
+#define EXTENSION_LEVELS 3
 #define SELFATARI_LEVELS 2
-#define ATARI_LEVELS 3
+#define ATARI_LEVELS 5
 #define BORDERDIST_LEVELS 4
 #define LASTDIST_LEVELS 10
 #define SECONDLASTDIST_LEVELS 10
 #define CFGLASTDIST_LEVELS 10
 #define CFGSECONDLASTDIST_LEVELS 10
+#define NAKADE_LEVELS 8
+#define APPROACH_LEVELS 1
 
 #include <string>
 #include <set>
@@ -23,8 +25,8 @@
 #endif
 
 #include "Go.h"
-//from "Parameters.h":
-class Parameters;
+#include "Parameters.h"
+//class Parameters;
 //from "Pattern.h":
 /*namespace Pattern
 {
@@ -36,6 +38,8 @@ class Parameters;
 
 #include "Pattern.h"
 
+#define playpatterndim 4
+    
 /** ELO Features.
  * Class to manage extracting, learning, and using feature weights.
  *
@@ -106,8 +110,11 @@ class Features
       SECONDLASTDIST,
       CFGLASTDIST,
       CFGSECONDLASTDIST,
+      NAKADE,
+      APPROACH,
       PATTERN3X3,
       CIRCPATT,
+      PATTERN3X3playout,
       INVALID
     };
     
@@ -119,18 +126,63 @@ class Features
      * The @p move is check for a match against @p featclass on @p board.
      * A return value of zero, means that the feature was not matched.
      */
-    unsigned int matchFeatureClass(Features::FeatureClass featclass, Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove=true) const;
+    unsigned int matchFeatureClass(Features::FeatureClass featclass, Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove=true, Pattern::Circular *pattcirc_p=NULL) const;
     /** Return the gamma weight for a specific feature and level. */
     float getFeatureGamma(Features::FeatureClass featclass, unsigned int level) const;
-    /** Return the weight for a move.
+    float getFeatureGammaPlayoutPattern(unsigned int pattern, int MaxLast, int MaxSecondLast)  const
+      {
+        MaxLast--;
+        MaxSecondLast--;
+        if (MaxLast>=playpatterndim) MaxLast=playpatterndim-1;
+        if (MaxSecondLast>=playpatterndim) MaxSecondLast=playpatterndim-1;
+        unsigned int level=pattern*playpatternnum+playpattern[MaxLast][MaxSecondLast];
+        if (patterngammas_playout[level]>0)
+            return patterngammas_playout[level];
+          else
+            return 1.0;  //? in this case 1.0 might not be a good idea, if a pattern is never played in the games.....
+      };
+    float getFeatureGammaPattern(unsigned int level)  const
+      {
+        if (patterngammas->hasGamma(level))
+          return patterngammas->getGamma(level);
+        else
+          return params->csstyle_patterngammasnothing;
+      };
+
+    float getFeatureGammaLargePattern(Pattern::Circular &pattcirc, int psize)  const
+      {
+          pattcirc.convertToSmallestEquivalent(circdict);
+          unsigned int level=0;
+          for (int s=psize;s>=3;s--)
+          {
+            Pattern::Circular pc = pattcirc.getSubPattern(circdict,s);
+            if (circlevels->count(pc)>0)
+            {
+              level = (*circlevels)[pc];
+              break;
+            }
+          }
+          if (circgammas->size()>level)
+            return (*circgammas)[level];
+          else
+            return 1.0;
+
+      };
+
+    
+    float getFeatureGammaPlayoutCircPattern(Go::Board *board, Go::Move move) const;
+      /** Return the weight for a move.
      * The weight for a move is the product of matching feature weights for that move.
      */
-    float getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove=true, bool withcircularpatterns=true) const;
+    float getLastDistGamma(Go::Board *board, int pos);
+    float getLastDistGammaPlayout(Go::Board *board, int pos);
+    float getPlayoutGamma(Go::Board *board, Go::Move move, bool checkforvalidmove=true, bool withcircularpatterns=true, float *gamma_local_part=NULL, Pattern::Circular *pattcirc_p=NULL) const;
+    float getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove=true, bool withcircularpatterns=true, float *gamma_local_part=NULL, Pattern::Circular *pattcirc_p=NULL,Go::ObjectBoard<int> *cfgaroundposdist=NULL) const;
     bool learnMovesGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, std::map<float,Go::Move,std::greater<float> > ordervalue, std::map<int,float> move_gamma, float sum_gammas);
     bool learnMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, float learn_diff);
     int learnMoveGammaC(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, float learn_diff);
     /** Return the total of all gammas for the moves on a board. */
-    float getBoardGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Color col) const;
+    float getBoardGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Color col, bool logarithm=false) const;
     /** Return the total of all gammas for the moves on a board and each move's weight in @p gammas. */
     float getBoardGammas(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Color col, Go::ObjectBoard<float> *gammas) const;
     /** Return the human-readable name for a feature class. */
@@ -144,15 +196,17 @@ class Features
     int learnFeatureGammaC(Features::FeatureClass featclass, unsigned int level, float learn_diff);
     
     /** Return a string of all the matching features for a move. */ 
-    std::string getMatchingFeaturesString(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool pretty=true) const;
+    std::string getMatchingFeaturesString(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool pretty=true, bool playout=false) const;
     /** Return a list of all valid features and levels. */
-    std::string getFeatureIdList() const;
+    std::string getFeatureIdList(bool playout=false) const;
     
     /** Load a gamma value from a line. */
     bool loadGammaLine(std::string line);
     /** Load a file of gamma values. */
     bool loadGammaFile(std::string filename);
     bool saveGammaFile(std::string filename);
+    bool saveCircularBinary(std::string filename);
+    bool loadCircularBinary(std::string filename);
     bool saveGammaFileInline(std::string filename);
     bool loadCircFile(std::string filename,int numlines);
     bool loadCircFileNot(std::string filename,int numlines);
@@ -165,6 +219,7 @@ class Features
     
     /** Return the CFG distances for the last and second last moves on a board. */
     void computeCFGDist(Go::Board *board, Go::ObjectBoard<int> **cfglastdist, Go::ObjectBoard<int> **cfgsecondlastdist);
+    void computeCFGDist(Go::Board *board, int around_pos, Go::ObjectBoard<int> **cfgmovelastdist);
 
     /** Return a structure with the gammas for the 3x3 patterns. */
     Pattern::ThreeByThreeGammas* getPatternGammas() {return patterngammas;}
@@ -182,6 +237,7 @@ class Features
     Parameters *const params;
     Pattern::ThreeByThreeGammas *patterngammas;
     Pattern::ThreeByThreeGammas *patternids;
+    float *patterngammas_playout;
     float gammas_pass[PASS_LEVELS];
     float gammas_capture[CAPTURE_LEVELS];
     float gammas_extension[EXTENSION_LEVELS];
@@ -192,6 +248,8 @@ class Features
     float gammas_secondlastdist[SECONDLASTDIST_LEVELS];
     float gammas_cfglastdist[CFGLASTDIST_LEVELS];
     float gammas_cfgsecondlastdist[CFGSECONDLASTDIST_LEVELS];
+    float gammas_nakade[NAKADE_LEVELS];
+    float gammas_approach[APPROACH_LEVELS];
 
     Pattern::CircularDictionary *circdict; 
 #ifdef with_unordered
@@ -204,6 +262,7 @@ class Features
 
     float *getStandardGamma(Features::FeatureClass featclass) const;
     void updatePatternIds();
+    void constructCircstrings() const;
 
     std::map<std::string,long int> circpatterns;
     std::map<std::string,long int> circpatternsnot;
@@ -211,6 +270,9 @@ class Features
     int circpatternsize;
     long int num_circmoves;
     long int num_circmoves_not;
+    const int playpattern[playpatterndim][playpatterndim]={{0,1,2,3},{4,7,7,7},{5,7,7,7},{6,7,7,7}};
+    const int playpatternnum=8;
+
 };
 
 #endif

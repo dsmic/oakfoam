@@ -96,7 +96,7 @@ class Parameters
     /** Whether to use the features heuristic in playouts.
      * The feature gamma of a move over the sum of the gammas is the probability of that move being played.
      */
-    bool playout_features_enabled;
+    float playout_features_enabled;
     /** Whether to try to update the feature gammas incrementally. */
     bool playout_features_incremental;
     /** The probability of using the lastatari heuristic in playouts.
@@ -121,7 +121,6 @@ class Parameters
     /** Number of times to try the fillboard heuristic before continuing. */
     int playout_fillboard_n;
     /** replace a fillboard move with a neighbouring circpattern move*/
-    bool playout_circreplace_enabled;
     bool playout_fillboard_bestcirc_enabled;
     int playout_randomquick_bestcirc_n;
     int playout_random_weight_territory_n;
@@ -145,6 +144,8 @@ class Parameters
     float playout_avoid_lbmf_p;
     float playout_avoid_lbrf1_p2;
     float playout_avoid_lbmf_p2;
+    float playout_avoid_bpr_p;
+    float playout_avoid_bpr_p2;
 
     //own followup moves, independent of the inbetween move of opponent
     bool playout_lgrf1o_enabled;
@@ -166,7 +167,11 @@ class Parameters
      */
     float playout_mercy_rule_factor;
 
+    /** dynkomi_enabled enables handicap related komi
+     *  recalc_dynkomi_enabled enables komi to keep the winrate near 50%
+     */
     bool dynkomi_enabled;
+    int recalc_dynkomi_limit;  //UnDo will have problems with this option!!
 
     bool mm_learn_enabled;
     float mm_learn_delta;
@@ -183,7 +188,7 @@ class Parameters
     float test_p9;
     float test_p10;
 
-     float test_p11;
+    float test_p11;
     float test_p12;
     float test_p13;
     float test_p14;
@@ -194,7 +199,152 @@ class Parameters
     float test_p19;
     float test_p20;
     
+    float test_p21;
+    float test_p22;
+    float test_p23;
+    float test_p24;
+    float test_p25;
+    float test_p26;
+    float test_p27;
+    float test_p28;
+    float test_p29;
+    float test_p30;
+    
+    float test_p31;
+    float test_p32;
+    float test_p33;
+    float test_p34;
+    float test_p35;
+    float test_p36;
+    float test_p37;
+    float test_p38;
+    float test_p39;
 
+    float test_p40;
+    float test_p41;
+    float test_p42;
+    float test_p43;
+    float test_p44;
+    float test_p45;
+    float test_p46;
+    float test_p47;
+    float test_p48;
+    float test_p49;
+
+    float test_p50;
+    float test_p51;
+    float test_p52;
+    float test_p53;
+    float test_p54;
+    float test_p55;
+    float test_p56;
+    float test_p57;
+    float test_p58;
+    float test_p59;
+
+    float test_p60;
+    float test_p61;
+    float test_p62;
+    float test_p63;
+    float test_p64;
+    float test_p65;
+    float test_p66;
+    float test_p67;
+    float test_p68;
+    float test_p69;
+
+    float test_p70;
+    float test_p71;
+    float test_p72;
+    float test_p73;
+    float test_p74;
+    float test_p75;
+    float test_p76;
+    float test_p77;
+    float test_p78;
+    float test_p79;
+
+    float test_p80;
+    float test_p81;
+    float test_p82;
+    float test_p83;
+    float test_p84;
+    float test_p85;
+    float test_p86;
+    float test_p87;
+    float test_p88;
+    float test_p89;
+
+    float test_p90;
+    float test_p91;
+    float test_p92;
+    float test_p93;
+    float test_p94;
+    float test_p95;
+    float test_p96;
+    float test_p97;
+    float test_p98;
+    float test_p99;
+
+    float test_p100;
+    float test_p101;
+    float test_p102;
+    float test_p103;
+    float test_p104;
+    float test_p105;
+    float test_p106;
+    float test_p107;
+    float test_p108;
+    float test_p109;
+    float test_p110;
+
+    float test_p111;
+    float test_p112;
+    float test_p113;
+    float test_p114;
+    float test_p115;
+    float test_p116;
+    float test_p117;
+    float test_p118;
+    float test_p119;
+    float test_p120;
+
+    bool csstyle_enabled;
+    float csstyle_atatarigroup;
+    float csstyle_is2libgroup;
+    float csstyle_attachedpos;
+    float csstyle_attachedposbutselfatari;
+    float csstyle_saveataricapture;
+    float csstyle_saveataricapturebutselfatari;
+    float csstyle_saveatariextention;
+    float csstyle_saveatariextentionbutselfatari;
+    float csstyle_solvekocapture;
+    float csstyle_2libcapture;
+    float csstyle_nakade;
+    float csstyle_playonladder;
+    float csstyle_defendapproach;
+    float csstyle_2libavoidcapture;
+    bool csstyle_adaptiveplayouts;
+    float csstyle_patterngammasnothing;
+    float csstyle_01;
+    float csstyle_02;
+    float csstyle_03;
+    float csstyle_04;
+    float csstyle_05;
+    float csstyle_06;
+    float csstyle_07;
+    float csstyle_08;
+    float csstyle_09;
+
+    float localeval_01;
+    float localeval_02;
+    float localeval_03;
+    float localeval_04;
+    float localeval_05;
+    float localeval_06;
+    float localeval_07;
+    float localeval_08;
+    float localeval_09;
     
     /** Skip all playout heuristics with this probability.
      * Set to zero to disable.
@@ -202,6 +352,8 @@ class Parameters
     float playout_random_chance;
     /** Probability of replacing a random  self-atari move with an approach move. */
     float playout_random_approach_p;
+    bool playout_defend_approach;
+    
     /** Whether to use the last2libatari heuristic in playouts.
      * When the last move reduced a group to 2 liberties, and is near one of those liberties, play on one of them.
      */
@@ -210,6 +362,7 @@ class Parameters
      * @see playout_last2libatari_enabled
      */
     bool playout_last2libatari_complex;
+    bool playout_last2libatari_allow_different_groups;
     /** Whether to use the poolRAVE modification. */
     bool playout_poolrave_enabled;
     /** Whether to use the poolCriticality modification.
@@ -260,6 +413,7 @@ class Parameters
     // Under Construction
     float bernoulli_a;
     float bernoulli_b;
+    bool  KL_ucb_enabled;
     float weight_score;
     float random_f;
     
@@ -389,6 +543,7 @@ class Parameters
      */
     float uct_prior_unprune_factor;
     float uct_rave_unprune_factor;
+    float uct_rave_other_unprune_factor;
     float uct_earlyrave_unprune_factor;
     float uct_rave_unprune_decay;
     /** Parameter for RAVE unpruning.
@@ -411,6 +566,8 @@ class Parameters
     float uct_area_owner_factor_a;
     float uct_area_owner_factor_b;
     float uct_area_owner_factor_c;
+
+    bool uct_area_correlation_statistics;
     
     
     /** Constant for decaying tree statistics.
@@ -559,6 +716,7 @@ class Parameters
      * @see features_output_competitions
      */
     bool features_output_competitions_mmstyle;
+    bool features_output_for_playout;
     /** Whether to output a comparison of each move made with the features' ordering.
      * Used to measure feature accuracy.
      */
@@ -569,6 +727,8 @@ class Parameters
     bool features_dt_use;
     /** Probability that the circular patterns are listed after a move. */
     float features_circ_list;
+    float CNN_data;
+    int CNN_data_playouts;
     /** Size of circular patterns that are listed after a move.
      * @see features_circ_list
      */
@@ -580,7 +740,8 @@ class Parameters
     bool auto_save_sgf;
     /** The filename prefix for the outputted SGFs. */
     std::string auto_save_sgf_prefix;
-
+    std::string version_config_file;
+    
     /** Probability that the decision trees are updated after a move. */
     float dt_update_prob;
     /** Number of descents that must occur before a decision tree node is split. */

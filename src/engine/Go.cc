@@ -32,6 +32,65 @@ Go::BitBoard::~BitBoard()
   delete[] data;
 }
 
+Go::IntBoard::IntBoard(int s)
+  : size(s),
+    sizesq(s*s),
+    sizedata(1+(s+1)*(s+2)),
+    data(new int[sizedata]),
+    bdata(new bool[sizedata])
+{
+  for (int i=0;i<sizedata;i++)
+  {
+    data[i]=0;
+    bdata[i]=false;
+  }
+}
+
+Go::IntBoard *Go::IntBoard::copy() const
+{
+  Go::IntBoard *copyboard;
+  copyboard=new Go::IntBoard(size);
+  
+  for (int i=0;i<sizedata;i++)
+    copyboard->set(i,data[i]);  
+  return copyboard;
+}
+
+Go::IntBoard::~IntBoard()
+{
+  delete[] data;
+}
+
+Go::RespondBoard::RespondBoard(int s)
+  : size(s),
+    sizesq(s*s),
+    sizedata(1+(s+1)*(s+2)),
+    respondsb(new boost::bimap<int,int>[sizedata]),
+    respondsw(new boost::bimap<int,int>[sizedata]),
+    numplayedb(new int[sizedata]),
+    numplayedw(new int[sizedata]),
+    numcaptb(new int[sizedata]),
+    numcaptw(new int[sizedata])
+{
+  for (int i=0;i<sizedata;i++)
+  {
+    numplayedb[i]=0;
+    numplayedw[i]=0;
+    numcaptb[i]=0;
+    numcaptw[i]=0;
+  }
+}
+
+Go::RespondBoard::~RespondBoard()
+{
+  delete[] respondsw;
+  delete[] respondsb;
+  delete[] numplayedw;
+  delete[] numplayedb;
+  delete[] numcaptb;
+  delete[] numcaptw;
+}
+
 std::string Go::Position::pos2string(int pos, int boardsize)
 {
   if (pos==-1)
@@ -100,21 +159,24 @@ std::string Go::Move::toString(int boardsize) const
   }
 }
 
-Go::Group::Group(Go::Board *brd, int pos)
-  : board(brd),
+Go::Group::Group(Go::Board *boardtmp, 
+                 int pos)
+  : board(boardtmp),
     color(board->getColor(pos)),
     position(pos)
 {
   stonescount=1;
-  pseudoborderdist=brd->getPseudoDistanceToBorder(pos);
+  pseudoborderdist=board->getPseudoDistanceToBorder(pos);
   parent=NULL;
   pseudoliberties=0;
   pseudoends=0;
-  libpossum=0;
-  libpossumsq=0;
+//  libpossum=0;
+//  libpossumsq=0;
+  solid=false;
+  changed_atari_pos=-1;
 }
 
-void Go::Group::addTouchingEmpties()
+void Go::Group::addTouchingEmpties(Go::Board *board)
 {
   int size=board->getSize();
   foreach_adjacent(position,p,{
@@ -124,8 +186,16 @@ void Go::Group::addTouchingEmpties()
       this->addPseudoEnd();
   });
 }
+/*
+ bool Go::Group::inAtari() const { 
+  if ((all_liberties.size()==1)!=((pseudoliberties*libpossumsq)==(libpossum*libpossum) && pseudoliberties>0))
+    fprintf(stderr,"should not happen %d %d %d %s\n%s",(int)all_liberties.size(),pseudoliberties,stonescount,Go::Position::pos2string(position,board->getSize()).c_str(),board->toString().c_str());
+  return ((pseudoliberties*libpossumsq)==(libpossum*libpossum) && pseudoliberties>0); 
+};  //pseudoliberties==0 should not happen?!
+*/
 
-bool Go::Group::isOneOfTwoLiberties(int pos) const
+/*
+ bool Go::Group::isOneOfTwoLiberties(const Go::Board *board,int pos) const
 {
   if (pseudoliberties>8 || this->inAtari())
     return false;
@@ -143,11 +213,23 @@ bool Go::Group::isOneOfTwoLiberties(int pos) const
       lpsq-=pos*pos;
     }
   });
-  
   return (ps>0 && (ps*lpsq)==(lps*lps));
 }
+*/
 
-int Go::Group::getOtherOneOfTwoLiberties(int pos) const
+bool Go::Group::isOneOfTwoLiberties(const Go::Board *board,int pos) const
+{
+  return ((all_liberties.size()==2) && (*all_liberties.find(pos)>-1));
+}
+
+int Go::Group::getOtherOneOfTwoLiberties(const Go::Board *board,int pos) const
+{
+  if (all_liberties.size()!=2) return -1;
+  if (*all_liberties.begin()==pos) return *(++(all_liberties.begin()));
+  return *all_liberties.begin();
+}
+/*
+int Go::Group::getOtherOneOfTwoLiberties(const Go::Board *board,int pos) const
 {
   if (pseudoliberties>8 || this->inAtari())
     return -1;
@@ -171,6 +253,8 @@ int Go::Group::getOtherOneOfTwoLiberties(int pos) const
   else
     return -1;
 }
+*/
+
 
 Go::Board::Board(int s)
   : size(s),
@@ -178,6 +262,8 @@ Go::Board::Board(int s)
     sizedata(1+(s+1)*(s+2)),
     data(new Go::Vertex[sizedata])
 {
+  const int nextprimes[26]={3,7,13,23,31,43,59,73,97,113,137,157,191,211,241,277,307,347,383,421,463,509,557,601,653,709};
+  nextprime=nextprimes[s];
   markchanges=false;
   lastchanges=new Go::BitBoard(size);
   lastcapture=false;
@@ -198,6 +284,8 @@ Go::Board::Board(int s)
   
   lastmove=Go::Move(Go::BLACK,Go::Move::PASS);
   secondlastmove=Go::Move(Go::WHITE,Go::Move::PASS);
+  thirdlastmove=Go::Move(Go::WHITE,Go::Move::PASS);
+  forthlastmove=Go::Move(Go::WHITE,Go::Move::PASS);
   
   blackvalidmoves=new Go::BitBoard(size);
   whitevalidmoves=new Go::BitBoard(size);
@@ -229,10 +317,17 @@ Go::Board::Board(int s)
   whitegammas=new Go::ObjectBoard<float>(s);
   blackgammas->fill(0);
   whitegammas->fill(0);
-  
+  changes3x3=new Go::BitBoard(size);
+  blackpatterns=new Go::ObjectBoard<int>(s);
+  whitepatterns=new Go::ObjectBoard<int>(s);
+  blackpatterns->fill(0);
+  whitepatterns->fill(0);
   blackcaptures=0;
   whitecaptures=0;
   lastscoredata=NULL;
+
+  hasSolidGroups=false;
+  ACcount=0;
 }
 
 Go::Board::~Board()
@@ -244,6 +339,10 @@ Go::Board::~Board()
   
   delete blackgammas;
   delete whitegammas;
+  delete blackpatterns;
+  delete whitepatterns;
+  
+  if (changed_positions!=NULL) delete changed_positions;
   
   //XXX: memory will get freed when pool is destroyed
   /*for(std::list<Go::Group*,Go::allocator_groupptr>::iterator iter=groups.begin();iter!=groups.end();++iter) 
@@ -256,6 +355,7 @@ Go::Board::~Board()
     delete[] lastscoredata;
   
   delete[] data;
+  delete changes3x3;
 }
 
 Go::Board *Go::Board::copy() const
@@ -282,18 +382,34 @@ void Go::Board::copyOver(Go::Board *copyboard) const
   copyboard->nexttomove=this->nexttomove;
   copyboard->passesplayed=this->passesplayed;
   copyboard->simpleko=this->simpleko;
+  copyboard->wassimpleko=this->wassimpleko;
   
   copyboard->lastmove=this->lastmove;
   copyboard->secondlastmove=this->secondlastmove;
+  copyboard->thirdlastmove=this->thirdlastmove;
+  copyboard->forthlastmove=this->forthlastmove;
+
+  copyboard->features=this->features;
   
   copyboard->refreshGroups();
   
   copyboard->symmetryupdated=this->symmetryupdated;
   copyboard->currentsymmetry=this->currentsymmetry;
   copyboard->updateFeatureGammas();
-  
+
+  copyboard->CSstyle=CSstyle;
+  if (CSstyle) {
+    blackgammas->copy(copyboard->blackgammas);
+    whitegammas->copy(copyboard->whitegammas);
+    blackpatterns->copy(copyboard->blackpatterns);
+    whitepatterns->copy(copyboard->whitepatterns);
+    if (changed_positions!=NULL && changed_positions->size()>0)
+      fprintf(stderr, "playout gammas not correct, copied with open changes\n");
+  }
   copyboard->blackcaptures=this->blackcaptures;
   copyboard->whitecaptures=this->whitecaptures;
+  copyboard->ACcount=ACcount;
+  for (int i=0;i<ACcount;i++) copyboard->ACpos[i]=ACpos[i];
 }
 
 std::string Go::Board::toString() const
@@ -350,7 +466,7 @@ std::string Go::Board::toSGFString() const
   return ss.str();
 }
 
-float Go::Board::score(Parameters* params)
+float Go::Board::score(Parameters* params, int a_pos)
 {
   Go::Board::ScoreVertex *scoredata;
   
@@ -383,8 +499,8 @@ float Go::Board::score(Parameters* params)
   {
     Go::Color col=scoredata[p].color;
     float v=1.0;
-//    if (params!=NULL && params->test_p3!=0.0)
-//      v=(1.0-params->test_p3)+params->test_p3*pow(params->engine->getTerritoryMap()->getPositionOwner(p),2);
+    if (params!=NULL && params->test_p17!=0.0)
+      v=(1.0-params->test_p17/2.0)+params->test_p17*fabs(params->engine->getTerritoryMap()->getPositionOwner(p));
     if (col==Go::BLACK)
       s+=v;
     else if (col==Go::WHITE)
@@ -394,7 +510,16 @@ float Go::Board::score(Parameters* params)
   if (lastscoredata!=NULL)
     delete[] lastscoredata;
   lastscoredata=scoredata;
-  
+
+  //test groupwinning
+  if (a_pos>=0) {
+    Go::Color col=scoredata[a_pos].color;
+    if (col==Go::BLACK)
+      return 100;
+    else if (col==Go::WHITE)
+      return -100;
+    return komi_grouptesting;
+  }
   //delete[] scoredata;
   return s;
 }
@@ -449,14 +574,82 @@ Go::Color Go::Board::getScoredOwner(int pos) const
     return Go::EMPTY;
 }
 
-bool Go::Board::validMove(Go::Move move) const
+//bool Go::Board::validMove(Go::Move move) const
+//{
+//  Go::BitBoard *validmoves=(move.getColor()==Go::BLACK?blackvalidmoves:whitevalidmoves);
+//  return move.isPass() || move.isResign() || validmoves->get(move.getPosition());
+//}
+
+bool Go::Board::validMoveCheck(Go::Color col, int pos) const
 {
-  Go::BitBoard *validmoves=(move.getColor()==Go::BLACK?blackvalidmoves:whitevalidmoves);
-  return move.isPass() || move.isResign() || validmoves->get(move.getPosition());
+  if (pos<0)
+    return true;
+  
+  if (this->getColor(pos)!=Go::EMPTY)
+    return false;
+  else if (touchingAtLeastOneEmpty(pos))
+    return true;
+  else
+  {
+    //int pos=move.getPosition();
+    //Go::Color col=move.getColor();
+    Go::Color othercol=Go::otherColor(col);
+    bool isvalid=false;
+    int captures=0;
+
+/*    foreach_adjacent(pos,p,{
+      if (this->getColor(p)==col || this->getColor(p)==othercol)
+        this->getGroup(p)->removePseudoLiberty(pos);
+      if (this->getColor(p)==col)
+        this->getGroup(p)->removePseudoEnd();
+    });
+    
+    foreach_adjacent(pos,p,{
+      if (this->getColor(p)==col && this->getPseudoLiberties(p)>0)
+        isvalid=true;
+      else if (this->getColor(p)==othercol && this->getPseudoLiberties(p)==0)
+      {
+        captures+=this->getGroupSize(p);
+        if (captures>1)
+          isvalid=true;
+      }
+    });
+    
+    foreach_adjacent(pos,p,{
+      if (this->getColor(p)==col || this->getColor(p)==othercol)
+        this->getGroup(p)->addPseudoLiberty(pos);
+      if (this->getColor(p)==col)
+        this->getGroup(p)->addPseudoEnd();
+    });
+ */
+    foreach_adjacent(pos,p,{
+      if (this->getColor(p)==col && this->getRealLiberties(p)>1)
+        isvalid=true;
+      else if (this->getColor(p)==othercol && this->getRealLiberties(p)==1)
+      {
+        captures+=this->getGroupSize(p);
+        if (captures>1)
+          isvalid=true;
+      }
+    });
+    if (isvalid)
+      return true;
+    
+    if (captures==1)
+    {
+      if (pos==simpleko)
+        return false;
+      else
+        return true;
+    }
+    
+    return false;
+  }
 }
 
 bool Go::Board::validMoveCheck(Go::Move move) const
 {
+  fprintf(stderr,"should not be used, not optimized\n");
   if (move.isPass() || move.isResign())
     return true;
   
@@ -512,24 +705,26 @@ bool Go::Board::validMoveCheck(Go::Move move) const
   }
 }
 
-void Go::Board::makeMove(Go::Move move)
+void Go::Board::makeMove(Go::Move move, Gtp::Engine* gtpe)
 {
   if (nexttomove!=move.getColor())
   {
     fprintf(stderr,"WARNING! unexpected move color\n");
   }
-  
+  connectedAtariPos(move);
   lastcapture = false;
 
   if (simpleko!=-1)
   {
     int kopos=simpleko;
     simpleko=-1;
-    if (this->validMoveCheck(Go::Move(move.getColor(),kopos)))
-      this->addValidMove(Go::Move(move.getColor(),kopos));
+    wassimpleko=kopos;
+    if (this->validMoveCheck(move.getColor(),kopos))
+      this->addValidMove(move.getColor(),kopos);
     if (markchanges)
       lastchanges->set(kopos);
   }
+  else {wassimpleko=-1;}
   
   if (move.isPass() || move.isResign())
   {
@@ -541,6 +736,8 @@ void Go::Board::makeMove(Go::Move move)
       lastchanges->set(secondlastmove.getPosition());
     if (markchanges && !lastmove.isPass() && !lastmove.isResign())
       lastchanges->set(lastmove.getPosition());
+    forthlastmove=thirdlastmove;
+    thirdlastmove=secondlastmove;
     secondlastmove=lastmove;
     lastmove=move;
     if (symmetryupdated)
@@ -552,6 +749,11 @@ void Go::Board::makeMove(Go::Move move)
   if (!this->validMove(move))
   {
     fprintf(stderr,"invalid move at %d,%d\n",move.getX(size),move.getY(size));
+    if (gtpe)
+    {
+      gtpe->getOutput()->printfDebug ("invalid move at %d,%d\n",move.getX(size),move.getY(size));
+      gtpe->getOutput()->printString(this->toString());
+    }
     throw Go::Exception("invalid move");
   }
   
@@ -565,21 +767,23 @@ void Go::Board::makeMove(Go::Move move)
     lastchanges->set(secondlastmove.getPosition());
   if (markchanges && !lastmove.isPass() && !lastmove.isResign())
     lastchanges->set(lastmove.getPosition());
+  forthlastmove=thirdlastmove;
+  thirdlastmove=secondlastmove;
   secondlastmove=lastmove;
   lastmove=move;
-  
+  if (changed_positions!=NULL) changed_positions->push_back(move.getPosition());
   int pos=move.getPosition();
   int posko=-1;
   
   this->setColor(pos,col);
   
-  Go::Group *thisgroup=pool_group.construct(this,pos);
+  Go::Group *thisgroup=pool_group.construct(this,pos);  
   this->setGroup(pos,thisgroup);
   groups.insert(thisgroup);
   
-  thisgroup->addTouchingEmpties();
+  thisgroup->addTouchingEmpties(this);
   
-  foreach_adjacent(pos,p,{
+  foreach_adjacent_debug(pos,p) {//,{
     if (this->getColor(p)==col)
     {
       Go::Group *othergroup=this->getGroup(p);
@@ -592,9 +796,10 @@ void Go::Board::makeMove(Go::Move move)
         this->mergeGroups(thisgroup,othergroup);
       thisgroup=thisgroup->find();
     }
-  });
-  
-  foreach_adjacent(pos,p,{
+  }//);
+
+  //fprintf(stderr,"move %s\n",move.toString (size).c_str());
+  foreach_adjacent_debug(pos,p) {//,{
     if (this->getColor(p)==othercol)
     {
       Go::Group *othergroup=this->getGroup(p);
@@ -603,8 +808,10 @@ void Go::Board::makeMove(Go::Move move)
       
       thisgroup->getAdjacentGroups()->push_back(p);
       othergroup->getAdjacentGroups()->push_back(pos);
-      
-      if (othergroup->numOfPseudoLiberties()==0)
+      //thisgroup->getAdjacentGroups()->insert(p);
+      //othergroup->getAdjacentGroups()->insert(pos);
+      //fprintf(stderr,"numpseudo %d %s\n",othergroup->numOfPseudoLiberties(),Go::Position::pos2string(othergroup->getPosition (),size).c_str());
+      if (othergroup->numOfRealLiberties()==0)
       {
         lastcapture=true;
         if (removeGroup(othergroup)==1)
@@ -615,44 +822,45 @@ void Go::Board::makeMove(Go::Move move)
             posko=-2;
         }
       }
-      else if (othergroup->numOfPseudoLiberties()<=4)
+      else //if (othergroup->numOfPseudoLiberties()<=4)
       {
         if (othergroup->inAtari())
         {
+          //fprintf(stderr,"inatari\n");
           int liberty=othergroup->getAtariPosition();
-          this->addValidMove(Go::Move(col,liberty));
-          if (this->touchingEmpty(liberty)==0 && !this->validMoveCheck(Go::Move(othercol,liberty)))
-            this->removeValidMove(Go::Move(othercol,liberty));
+          this->addValidMove(col,liberty);
+          if (this->touchingEmpty(liberty)==0 && !this->validMoveCheck(othercol,liberty))
+            this->removeValidMove(othercol,liberty);
         }
       }
     }
-  });
+  }//);
   
-  this->removeValidMove(Go::Move(Go::BLACK,pos));
-  this->removeValidMove(Go::Move(Go::WHITE,pos));
+  this->removeValidMove(Go::BLACK,pos);
+  this->removeValidMove(Go::WHITE,pos);
   
   if (thisgroup->inAtari())
   {
     int liberty=thisgroup->getAtariPosition();
-    if (this->touchingEmpty(liberty)==0 && !this->validMoveCheck(Go::Move(col,liberty)))
-      this->removeValidMove(Go::Move(col,liberty));
-    if (this->validMoveCheck(Go::Move(othercol,liberty)))
-      this->addValidMove(Go::Move(othercol,liberty));
+    if (this->touchingEmpty(liberty)==0 && !this->validMoveCheck(col,liberty))
+      this->removeValidMove(col,liberty);
+    if (this->validMoveCheck(othercol,liberty))
+      this->addValidMove(othercol,liberty);
   }
   
   foreach_adjacent(pos,p,{
     if (this->getColor(p)==Go::EMPTY)
     {
-      if (!this->validMoveCheck(Go::Move(othercol,p)))
-        this->removeValidMove(Go::Move(othercol,p));
+      if (!this->validMoveCheck(othercol,p))
+        this->removeValidMove(othercol,p);
     }
   });
   
   if (posko>=0 && thisgroup->inAtari())
   {
     simpleko=posko;
-    if (!this->validMoveCheck(Go::Move(othercol,simpleko)))
-      this->removeValidMove(Go::Move(othercol,simpleko));
+    if (!this->validMoveCheck(othercol,simpleko))
+      this->removeValidMove(othercol,simpleko);
   }
   
   if (symmetryupdated)
@@ -675,8 +883,8 @@ void Go::Board::refreshValidMoves(Go::Color col)
   for (int p=0;p<sizedata;p++)
   {
     validmoves->clear(p);
-    if (this->validMoveCheck(Go::Move(col,p)))
-      this->addValidMove(Go::Move(col,p));
+    if (this->validMoveCheck(col,p))
+      this->addValidMove(col,p);
   }
 }
 
@@ -688,6 +896,18 @@ void Go::Board::addValidMove(Go::Move move)
   if (!validmoves->get(move.getPosition()))
   {
     validmoves->set(move.getPosition());
+    (*validmovecount)++;
+  }
+}
+
+void Go::Board::addValidMove(Go::Color col, int pos)
+{
+  Go::BitBoard *validmoves=(col==Go::BLACK?blackvalidmoves:whitevalidmoves);
+  int *validmovecount=(col==Go::BLACK?&blackvalidmovecount:&whitevalidmovecount);
+  
+  if (!validmoves->get(pos))
+  {
+    validmoves->set(pos);
     (*validmovecount)++;
   }
 }
@@ -704,17 +924,30 @@ void Go::Board::removeValidMove(Go::Move move)
   }
 }
 
-int Go::Board::touchingEmpty(int pos) const
+void Go::Board::removeValidMove(Go::Color col, int pos)
 {
-  int lib=0;
+  Go::BitBoard *validmoves=(col==Go::BLACK?blackvalidmoves:whitevalidmoves);
+  int *validmovecount=(col==Go::BLACK?&blackvalidmovecount:&whitevalidmovecount);
   
-  foreach_adjacent(pos,p,{
-    if (this->getColor(p)==Go::EMPTY)
-      lib++;
-  });
-  
-  return lib;
+  if (validmoves->get(pos))
+  {
+    validmoves->clear(pos);
+    (*validmovecount)--;
+  }
 }
+
+//moved to Go.h
+//int Go::Board::touchingEmpty(int pos) const
+//{
+//  int lib=0;
+  
+//  foreach_adjacent(pos,p,{
+//    if (this->getColor(p)==Go::EMPTY)
+//      lib++;
+//  });
+  
+//  return lib;
+//}
 
 int Go::Board::diagonalEmpty(int pos) const
 {
@@ -736,6 +969,27 @@ int Go::Board::surroundingEmpty(int pos) const
     if (this->getColor(p)==Go::EMPTY)
       lib++;
   });
+  
+  return lib;
+}
+
+int Go::Board::surroundingEmptyPlus(int pos) const
+{
+  int lib=0;
+  
+  foreach_adjdiag(pos,p,{
+    if (this->getColor(p)==Go::EMPTY)
+      lib++;
+  });
+  if (this->getColor(pos+P_N)==Go::EMPTY && this->getColor(pos+P_N+P_N)==Go::EMPTY)
+      lib++;
+  if (this->getColor(pos+P_S)==Go::EMPTY && this->getColor(pos+P_S+P_S)==Go::EMPTY)
+      lib++;
+  if (this->getColor(pos+P_W)==Go::EMPTY && this->getColor(pos+P_W+P_W)==Go::EMPTY)
+      lib++;
+  if (this->getColor(pos+P_E)==Go::EMPTY && this->getColor(pos+P_E+P_E)==Go::EMPTY)
+      lib++;
+  
   
   return lib;
 }
@@ -770,7 +1024,7 @@ void Go::Board::refreshGroups()
     {
       Go::Group *newgroup=pool_group.construct(this,p);
       this->setGroup(p,newgroup);
-      newgroup->addTouchingEmpties();
+      newgroup->addTouchingEmpties(this);
     
       foreach_adjacent(p,q,{
         this->spreadGroup(q,newgroup);
@@ -790,6 +1044,7 @@ void Go::Board::refreshGroups()
         {
           //Go::Group *othergroup=this->getGroup(q);
           group->getAdjacentGroups()->push_back(q);
+          //group->getAdjacentGroups()->insert(q);
           //othergroup->getAdjacentGroups()->push_back(p);
         }
       });
@@ -806,7 +1061,7 @@ void Go::Board::spreadGroup(int pos, Go::Group *group)
     Go::Group *thisgroup=pool_group.construct(this,pos);
     this->setGroup(pos,thisgroup);
     groups.insert(thisgroup);
-    thisgroup->addTouchingEmpties();
+    thisgroup->addTouchingEmpties(this);
     this->mergeGroups(group,thisgroup);
     
     foreach_adjacent(pos,p,{
@@ -824,28 +1079,33 @@ int Go::Board::removeGroup(Go::Group *group)
   
   groups.erase(group);
   
-  std::list<int,Go::allocator_int> *possiblesuicides = new std::list<int,Go::allocator_int>();
+  list_int possiblesuicides;//*possiblesuicides = new list_int();
   
-  this->spreadRemoveStones(groupcol,pos,possiblesuicides);
+  this->spreadRemoveStones(groupcol,pos,&possiblesuicides);
   
-  for(std::list<int,Go::allocator_int>::iterator iter=possiblesuicides->begin();iter!=possiblesuicides->end();++iter)
+  for(list_int::iterator iter=possiblesuicides.begin();iter!=possiblesuicides.end();++iter)
   {
-    if (!this->validMoveCheck(Go::Move(groupcol,(*iter)))) 
-      this->removeValidMove(Go::Move(groupcol,(*iter)));
+    if (!this->validMoveCheck(groupcol,(*iter))) {
+      this->removeValidMove(groupcol,(*iter));
+      if (changed_positions!=NULL) changed_positions->push_back((*iter));
+    }
   }
   
-  possiblesuicides->resize(0);  //what's the idea of this??
-  delete possiblesuicides;
+//  possiblesuicides->resize(0);  //what's the idea of this??
+  //delete possiblesuicides;
   
   return s;
 }
 
-void Go::Board::spreadRemoveStones(Go::Color col, int pos, std::list<int,Go::allocator_int> *possiblesuicides)
+void Go::Board::spreadRemoveStones(Go::Color col, int pos, list_int *possiblesuicides)
 {
   Go::Color othercol=Go::otherColor(col);
   //Go::Group *group=this->getGroupWithoutFind(pos); //see destroy() below
   
   this->setColor(pos,Go::EMPTY);
+  if (changed_positions!=NULL) changed_positions->push_back(pos);
+  pool_group.destroy(data[pos].group); //5% speed up, as the pool is now used!
+
   this->setGroup(pos,NULL);
   if (col==Go::BLACK)
     blackcaptures++;
@@ -861,16 +1121,17 @@ void Go::Board::spreadRemoveStones(Go::Color col, int pos, std::list<int,Go::all
       if (othergroup->inAtari())
       {
         int liberty=othergroup->getAtariPosition();
-        this->addValidMove(Go::Move(othercol,liberty));
+        this->addValidMove(othercol,liberty);
         possiblesuicides->push_back(liberty);
+        //possiblesuicides->insert(liberty);
       }
       othergroup->addPseudoLiberty(pos);
       // not here: othergroup->addPseudoEnd();
     }
   });
   
-  this->addValidMove(Go::Move(othercol,pos));
-  this->addValidMove(Go::Move(col,pos));
+  this->addValidMove(othercol,pos);
+  this->addValidMove(col,pos);
   
   //XXX: memory will get freed when pool is destroyed
   //pool_group.destroy(group);
@@ -885,7 +1146,7 @@ void Go::Board::mergeGroups(Go::Group *first, Go::Group *second)
   first->unionWith(second);
 }
 
-bool Go::Board::weakEye(Go::Color col, int pos) const
+bool Go::Board::weakEye(Go::Color col, int pos, bool veryweak) const
 {
   if (col==Go::EMPTY || col==Go::OFFBOARD || this->getColor(pos)!=Go::EMPTY)
     return false;
@@ -903,10 +1164,10 @@ bool Go::Board::weakEye(Go::Color col, int pos) const
     });
     
     foreach_diagonal(pos,p,{
-      if (this->getColor(p)==othercol)
+      if (this->getColor(p)==othercol && !this->getGroup(p)->inAtari()) //and not atari???
       {
         othercols++;
-        if (onside || othercols>=2)
+        if ((onside || othercols>=2) && !veryweak)
           return false;
       }
     });
@@ -925,10 +1186,10 @@ bool Go::Board::twoGroupEye(Go::Color col, int pos) const
   Go::Group *groups_used[4];
   int groups_used_num=0;
   foreach_adjacent(pos,p,{
-    if (this->inGroup(p))
+    if (this->inGroup(p) && col==this->getColor(p))
     {
       Go::Group *group=this->getGroup(p);
-      if (col==group->getColor())
+      //if (col==group->getColor())
       {
         bool found=false;
         for (int i=0;i<groups_used_num;i++)
@@ -951,10 +1212,10 @@ bool Go::Board::twoGroupEye(Go::Color col, int pos) const
   for (int i=0;i<groups_used_num;i++)
   {
     Go::Group *group=groups_used[i];
-    if (group->isOneOfTwoLiberties (pos))
+    if (group->numRealLibs()==2) //group->isOneOfTwoLiberties (this,pos))
     {
       //possible group attaching
-      int otherlib=group->getOtherOneOfTwoLiberties(pos);
+      int otherlib=group->getOtherOneOfTwoLiberties(this,pos);
       //if otherlib has more than two libs together with first lib
       //it is shared!
       int found=0;
@@ -1002,7 +1263,7 @@ bool Go::Board::strongEye(Go::Color col, int pos) const
   {
     Go::Group *group=NULL;
     foreach_adjacent(pos,p,{
-      if (this->getColor(p)!=col || this->getColor(p)==Go::EMPTY)
+      if ((this->getColor(p)!=col && this->getColor(p)!=Go::OFFBOARD) || this->getColor(p)==Go::EMPTY)
         return false;
       else if (this->inGroup(p))
       {
@@ -1454,9 +1715,176 @@ std::list<Go::Board::SymmetryTransform> Go::Board::getSymmetryTransformsFromPrim
   return list;
 }
 
-void Go::Board::updateFeatureGammas()
+//large patterns are too slow at the moment:(
+#define is3x3only
+inline void Go::Board::setPlayoutGammaAt(Parameters* params,int p)
 {
-  if (markchanges && features!=NULL)
+#ifdef is3x3only
+  //if (getColor(p)==Go::EMPTY) {
+  //  whitegammas->set(p,0);
+  //  blackgammas->set(p,0);
+  //}
+  if (params->csstyle_atatarigroup!=1.0) {
+//this has to be extended by logic, this way b and w groups are handled equally ...
+    float atarib=1.0, is2libb=1.0,atariw=1.0, is2libw=1.0;
+  foreach_adjacent_debug(p,q) { //,{
+    if (this->inGroup(q))
+    {
+      Go::Group *group=this->getGroup(q);
+      int libs=group->numRealLibs();
+      Go::Color col=group->getColor();
+      switch (libs) {
+      case 1:
+          if (col==Go::BLACK) atarib=params->csstyle_atatarigroup; else 
+          atariw*=params->csstyle_atatarigroup;
+          break;
+      case 2:
+          if (col==Go::BLACK) is2libb=params->csstyle_is2libgroup; else 
+          is2libw*=params->csstyle_is2libgroup;
+          break;
+      default:
+          ;
+      }
+    }
+  }//);
+  
+  unsigned int pattern=Pattern::ThreeByThree::makeHash(this,p);
+  //blackgammas->set(p,features->getFeatureGammaPlayoutPattern(Pattern::ThreeByThree::smallestEquivalent(pattern),99,99));
+  float deltab=1.0;
+  if (params->csstyle_adaptiveplayouts) {
+    int patt=Pattern::hashto5(pattern);
+    blackpatterns->set(p,patt);
+    deltab=params->engine->deltagammasGetPattern(p,Go::BLACK,patt);
+  }
+  if (blackvalidmoves->get(p))
+      blackgammas->set(p,atarib*atariw*is2libb*features->getFeatureGammaPattern(pattern)*deltab);//Pattern::ThreeByThree::smallestEquivalent(pattern)));
+    else
+      blackgammas->set(p,0);
+  pattern=Pattern::ThreeByThree::invert(pattern);
+  //whitegammas->set(p,features->getFeatureGammaPlayoutPattern(Pattern::ThreeByThree::smallestEquivalent(pattern),99,99));
+  float deltaw=1.0;
+  if (params->csstyle_adaptiveplayouts) {
+    int patt=Pattern::hashto5(pattern);
+    whitepatterns->set(p,patt);
+    deltaw=params->engine->deltagammasGetPattern(p,Go::WHITE,patt);
+  }
+  if (whitevalidmoves->get(p))
+      whitegammas->set(p,atariw*atarib*is2libw*features->getFeatureGammaPattern(pattern)*deltaw);//Pattern::ThreeByThree::smallestEquivalent(pattern)));
+    else
+      whitegammas->set(p,0);
+  }
+  else {
+  unsigned int pattern=Pattern::ThreeByThree::makeHash(this,p);
+  //blackgammas->set(p,features->getFeatureGammaPlayoutPattern(Pattern::ThreeByThree::smallestEquivalent(pattern),99,99));
+  float deltab=1.0;
+  if (params->csstyle_adaptiveplayouts) {
+    int patt=Pattern::hashto5(pattern);
+    blackpatterns->set(p,patt);
+    deltab=params->engine->deltagammasGetPattern(p,Go::BLACK,patt);
+  }
+  if (blackvalidmoves->get(p))
+      blackgammas->set(p,features->getFeatureGammaPattern(pattern)*deltab);//Pattern::ThreeByThree::smallestEquivalent(pattern)));
+    else
+      blackgammas->set(p,0);
+  pattern=Pattern::ThreeByThree::invert(pattern);
+  //whitegammas->set(p,features->getFeatureGammaPlayoutPattern(Pattern::ThreeByThree::smallestEquivalent(pattern),99,99));
+  float deltaw=1.0;
+  if (params->csstyle_adaptiveplayouts) {
+    int patt=Pattern::hashto5(pattern);
+    whitepatterns->set(p,patt);
+    deltaw=params->engine->deltagammasGetPattern(p,Go::WHITE,patt);
+  }
+  if (whitevalidmoves->get(p))
+      whitegammas->set(p,features->getFeatureGammaPattern(pattern)*deltaw);//Pattern::ThreeByThree::smallestEquivalent(pattern)));
+    else
+      whitegammas->set(p,0);
+  }
+#else
+  Pattern::Circular pattcirc = Pattern::Circular(features->getCircDict(),this,p,psize);
+  blackgammas->set(p,features->getFeatureGammaLargePattern(pattcirc,psize));
+  pattcirc.invert();   
+  whitegammas->set(p,features->getFeatureGammaLargePattern(pattcirc,psize));
+#endif
+}
+
+void Go::Board::setPlayoutGammaAround(Parameters* params,int p)
+{
+#ifdef is3x3only
+  if (changes3x3->get(p)==false && this->inGroup(p)) {
+    int atari_changed=this->getGroup(p)->changedAtariAt();
+    if (atari_changed>=0) {
+      changes3x3->set(atari_changed);
+      setPlayoutGammaAt(params,atari_changed);
+    }
+  }
+  foreach_adjdiag_debug(p,q) { //,{
+            if (changes3x3->get(q)==false) {
+              if (this->getColor(q)==Go::EMPTY) {
+                changes3x3->set(q);
+                setPlayoutGammaAt(params,q);
+              }
+              else if (this->inGroup(q)) {
+                int atari_changed=this->getGroup(q)->changedAtariAt();
+                if (atari_changed>=0) {
+                  changes3x3->set(atari_changed);
+                  setPlayoutGammaAt(params,atari_changed);
+                }
+              }
+            }
+          }//);
+#else
+  std::list<int> changed;
+  Pattern::CircularHelper::MarkBoardPositions(features->getCircDict(), this, p, psize, &changed);
+  for (auto cc=changed.begin();cc!=changed.end();++cc) {
+    setPlayoutGammaAt(*cc);
+  }
+#endif
+}
+
+void Go::Board::updatePlayoutGammas(Parameters* params,Features *feat)
+{
+  CSstyle=true;
+  if (feat!=NULL) features=feat;
+  if (changed_positions==NULL) {
+    //create all
+    for (int p=0;p<sizedata;p++)
+      {
+        if (this->getColor(p)==Go::EMPTY) {
+          setPlayoutGammaAt(params,p);
+        }
+      }
+  }
+  else {
+    //only update the changed_positions
+    changes3x3->clear();
+    for (Go::list_int::iterator p=changed_positions->begin(); p!=changed_positions->end(); ++p) {
+      if (//this->getColor(*p)==Go::EMPTY && 
+          changes3x3->get(*p)==false) {
+        changes3x3->set(*p);
+        setPlayoutGammaAt(params,*p);
+      }
+      setPlayoutGammaAround(params,*p);
+    }
+    changed_positions->clear();
+    
+    //check if correct
+    //for (int p=0;p<sizedata;p++)
+    //  {
+    //    if (this->getColor(p)==Go::EMPTY) {
+    //      unsigned int pattern=Pattern::ThreeByThree::makeHash(this,p);
+    //      if (blackgammas->get(p)!=features->getFeatureGammaPlayoutPattern(Pattern::ThreeByThree::smallestEquivalent(pattern),99,99))
+    //        fprintf(stderr,"wrong black gamma %d\n",p);
+    //      pattern=Pattern::ThreeByThree::invert(pattern);
+    //      if (whitegammas->get(p)!=features->getFeatureGammaPlayoutPattern(Pattern::ThreeByThree::smallestEquivalent(pattern),99,99))
+    //        fprintf(stderr, "wrong white gammas %d\n",p);
+    //    }
+    //  }
+  }
+}
+void Go::Board::updateFeatureGammas(bool both)
+{
+  if (CSstyle) return;
+  if ((markchanges || both) && features!=NULL)
   {
     Go::ObjectBoard<int> *cfglastdist=NULL;
     Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
@@ -1494,13 +1922,27 @@ void Go::Board::updateFeatureGammas()
     }
     else
     {
-      (nexttomove==Go::BLACK?blacktotalgamma:whitetotalgamma)=0;
-      (nexttomove==Go::BLACK?blackgammas:whitegammas)->fill(0);
+      if (both)
+      {
+        blackgammas->fill(0);
+        whitegammas->fill(0);
+      }
+      else
+      {
+        (nexttomove==Go::BLACK?blacktotalgamma:whitetotalgamma)=0;
+        (nexttomove==Go::BLACK?blackgammas:whitegammas)->fill(0);
+      }
       lastchanges->clear();
       
       for (int p=0;p<sizedata;p++)
       {
-        this->updateFeatureGamma(cfglastdist,cfgsecondlastdist,nexttomove,p);
+        if (both)
+        {
+          this->updateFeatureGamma(cfglastdist,cfgsecondlastdist,Go::BLACK,p);
+          this->updateFeatureGamma(cfglastdist,cfgsecondlastdist,Go::WHITE,p);
+        }
+        else
+          this->updateFeatureGamma(cfglastdist,cfgsecondlastdist,nexttomove,p);
       }
     }
     
@@ -1542,6 +1984,9 @@ void Go::Board::updateFeatureGamma(Go::ObjectBoard<int> *cfglastdist, Go::Object
 
 void Go::Board::updateFeatureGamma(Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Color col, int pos)
 {
+  // return if pos not empty?!
+
+  
   float oldgamma=(col==Go::BLACK?blackgammas:whitegammas)->get(pos);
   float gamma;
   if (pos==0) //pass
@@ -1550,43 +1995,47 @@ void Go::Board::updateFeatureGamma(Go::ObjectBoard<int> *cfglastdist, Go::Object
     gamma=features->getMoveGamma(this,cfglastdist,cfgsecondlastdist,Go::Move(col,pos));
   else
     gamma=0;
+  
   (col==Go::BLACK?blackgammas:whitegammas)->set(pos,gamma);
   (col==Go::BLACK?blacktotalgamma:whitetotalgamma)+=(gamma-oldgamma);
 }
 
-bool Go::Board::isCapture(Go::Move move) const
+/*bool Go::Board::isCapture(Go::Move move) const
 {
   Go::Color col=move.getColor();
   int pos=move.getPosition();
   foreach_adjacent(pos,p,{
-    if (this->inGroup(p))
+    if (this->inGroup(p) && col!=this->getColor(p))
     {
       Go::Group *group=this->getGroup(p);
-      if (group->inAtari() && col!=group->getColor())
+      if (//col!=group->getColor() && 
+          group->inAtari())
         return true;
     }
   });
   return false;
 }
+*/
 
 bool Go::Board::isExtension(Go::Move move) const
 {
+  //fprintf(stderr,"called IsExtension:");
   Go::Color col=move.getColor();
   int pos=move.getPosition();
   bool foundgroupinatari=false;
   int foundconnectingliberties=0;
   int libpos=-1;
   foreach_adjacent(pos,p,{
-    if (this->inGroup(p))
+    if (this->inGroup(p) && this->getColor(p)==col)
     {
       Go::Group *group=this->getGroup(p);
-      if (col==group->getColor())
+      //if (col==group->getColor())
       {
         if (group->inAtari())
           foundgroupinatari=true;
         else if (foundconnectingliberties<2)
         {
-          int otherlib=group->getOtherOneOfTwoLiberties(pos);
+          int otherlib=group->getOtherOneOfTwoLiberties(this,pos);
           if (otherlib!=-1)
           {
             if (foundconnectingliberties==0)
@@ -1594,15 +2043,94 @@ bool Go::Board::isExtension(Go::Move move) const
               foundconnectingliberties=1;
               libpos=otherlib;
             }
-            else if (libpos!=otherlib)
+            else if (libpos!=otherlib) {
               foundconnectingliberties=2;
+              //fprintf(stderr," 2 ");
+            }
           }
-          else
+          else {
             foundconnectingliberties=2;
+            //fprintf(stderr, " 3 ");
+          }
         }
       }
     }
-    else if (this->onBoard(p) && foundconnectingliberties<2)
+    else if (this->onBoard(p) && this->getColor(p)==Go::EMPTY && foundconnectingliberties<2)
+    {
+      if (foundconnectingliberties==0)
+      {
+        foundconnectingliberties=1;
+        libpos=p;
+      }
+      else if (libpos!=-1 && libpos!=p) { //I am not sure, what the idea was, but libpos==-1 for sure is wrong!
+        foundconnectingliberties=2;
+        //fprintf(stderr," 4 %s %s ",Go::Position::pos2string(libpos,19).c_str(),Go::Position::pos2string(p,19).c_str());
+      }
+    }
+  });
+  //fprintf(stderr,"\n");
+  if (foundgroupinatari && foundconnectingliberties>=2)
+    return true;
+  else
+    return false;
+}
+
+bool Go::Board::isExtension2lib(Go::Move move,bool checkother) const
+{
+  Go::Color col=move.getColor();
+  int pos=move.getPosition();
+  //fprintf(stderr,"checkother %d pos %d\n",checkother,pos);
+  bool foundgrouphas2lib=false;
+  int foundconnectingliberties=0;
+  int libpos=-1;
+  int libpos2=-1;
+  bool foundotherextension=false;
+  foreach_adjacent(pos,p,{
+    if (this->inGroup(p) && this->getColor(p)==col)
+    {
+      Go::Group *group=this->getGroup(p);
+      //if (col==group->getColor())
+      {
+        if (group->numRealLibs()==2) //group->isOneOfTwoLiberties(this,pos))
+          foundgrouphas2lib=true;
+        //else 
+        if (checkother || foundconnectingliberties<3)
+        {
+          int otherlib=group->getOtherOneOfTwoLiberties(this,pos);
+          //if (checkother && otherlib!=-1) fprintf(stderr,"pos %d otherlib %d extension %d\n",pos,otherlib,isExtension2lib(Go::Move(col,otherlib),false));
+          if (!checkother || otherlib==-1 || !isExtension2lib(Go::Move(col,otherlib),false))
+          {
+            //fprintf(stderr,"doing checkother %d otherlib %d\n",checkother,otherlib);
+            if (otherlib!=-1)
+            {
+              if (foundconnectingliberties==0)
+              {
+                foundconnectingliberties=1;
+                libpos=otherlib;
+              }
+              else if (libpos!=otherlib)
+              {
+                if (libpos2==-1) 
+                {
+                  libpos2=otherlib;
+                  foundconnectingliberties++;
+                }
+                else if (libpos2!=otherlib)
+                  foundconnectingliberties++;
+              }
+            }
+            else
+              foundconnectingliberties=3; //not sure, at least 2 but better overestimate extension chance
+          }
+          else 
+          {
+            //fprintf(stderr,"not doing checkother %d otherlib %d\n",checkother,otherlib);
+            foundotherextension=true;
+          }
+        }
+      }
+    }
+    else if (this->onBoard(p) && foundconnectingliberties<3)
     {
       if (foundconnectingliberties==0)
       {
@@ -1610,26 +2138,76 @@ bool Go::Board::isExtension(Go::Move move) const
         libpos=p;
       }
       else if (libpos!=p)
-        foundconnectingliberties=2;
+      {
+        if (libpos2==-1)
+        {
+          libpos2=p;
+          foundconnectingliberties++;
+        }
+        else if (libpos2!=p)
+            foundconnectingliberties++;
+      }
     }
   });
-  if (foundgroupinatari && foundconnectingliberties>=2)
+  //if (foundgrouphas2lib && foundconnectingliberties>=3 && !foundotherextension)
+  //  fprintf(stderr,"pos %d otherextension %d return true\n",pos,foundotherextension);
+  //else
+  //  fprintf(stderr,"pos %d otherextension %d return false\n",pos,foundotherextension);
+    
+  if (foundgrouphas2lib && foundconnectingliberties>=3 && !foundotherextension)
     return true;
   else
     return false;
 }
 
-bool Go::Board::isSelfAtari(Go::Move move) const
+
+bool Go::Board::isApproach(Go::Move move, int approach[4]) const
 {
-  return this->isSelfAtariOfSize(move,0);
+  Go::Color col=move.getColor();
+  int pos=move.getPosition();
+  int approachcount=0;
+  foreach_adjacent(pos,p,{
+    if (this->inGroup(p) && this->getColor(p)==col)
+    {
+      Go::Group *group=this->getGroup(p);
+      int otherlib=group->getOtherOneOfTwoLiberties(this,pos);
+      if (otherlib>=0) {
+        Go::Move approach_tmp=Go::Move(col,otherlib);
+        if (isSelfAtari(approach_tmp)) {
+          approach[approachcount]=approach_tmp.getPosition();
+          approachcount++;
+        }
+      }
+    }
+    else {
+      if (this->getColor(p)==Go::EMPTY) { 
+        if (isSelfAtari(Go::Move(col,p))) {
+          approach[approachcount]=p;
+          approachcount++;
+        }
+      }
+    }
+  });
+                   
+ approach[approachcount]=-1;
+ if (approachcount>0) return true;
+
+ return false;
 }
 
-bool Go::Board::isSelfAtariOfSize(Go::Move move, int minsize, bool complex) const
+//moved to Go.h
+//bool Go::Board::isSelfAtari(Go::Move move) const
+//{
+//  return this->isSelfAtariOfSize(move,0);
+//}
+
+/*
+ inline bool Go::Board::isSelfAtariOfSize(Go::Move move, int minsize, bool complex) const
 {
   Go::Color col=move.getColor();
   int pos=move.getPosition();
 
-  if (this->touchingEmpty(pos)>1)
+  if (this->touchingEmpty(pos)>1 || this->isCapture(move))
     return false;
 
   int libpos=-1;
@@ -1646,10 +2224,10 @@ bool Go::Board::isSelfAtariOfSize(Go::Move move, int minsize, bool complex) cons
       Go::Group *group=this->getGroup(p);
       if (col==group->getColor())
       {
-        attach_group_pos=p;
-        usedneighbours++;
         if (!(group->inAtari() || group->isOneOfTwoLiberties(pos)))
           return false; // attached group has more than two libs
+        attach_group_pos=p;
+        usedneighbours++;
         bool found=false;
         for (int i=0;i<groups_used_num;i++)
         {
@@ -1717,10 +2295,10 @@ bool Go::Board::isSelfAtariOfSize(Go::Move move, int minsize, bool complex) cons
     if (groupsize==5 && pseudoends!=10)
       return true; //do only play XXX
                    //             XX   form
-    /*
-     * 
-     * bent 4 handling in the corner not ok     
-    */ 
+    ///
+    //  
+    //  bent 4 handling in the corner not ok     
+    // 
     //fprintf(stderr,"debug boardsize must be 9 selfatari 4 or 5 at %s with attached %s\n",move.toString (9).c_str(),Go::Position::pos2string(attach_group_pos,9).c_str());
     if (groupsize==4)
     {
@@ -1745,17 +2323,58 @@ bool Go::Board::isSelfAtariOfSize(Go::Move move, int minsize, bool complex) cons
     return false;
   }
 }
+*/
 
-bool Go::Board::isAtari(Go::Move move) const
+bool Go::Board::isLastLib(int pos, int *groupsize) const
 {
-  Go::Color col=move.getColor();
-  int pos=move.getPosition();
   foreach_adjacent(pos,p,{
     if (this->inGroup(p))
     {
       Go::Group *group=this->getGroup(p);
-      if (col!=group->getColor() && group->isOneOfTwoLiberties(pos))
+      if (group->inAtari())
+      {
+        if (groupsize) *groupsize=group->numOfStones();
         return true;
+      }
+    }
+  });
+  return false;
+}
+
+bool Go::Board::isAtari(Go::Move move, int *groupsize) const
+{
+  Go::Color col=move.getColor();
+  int pos=move.getPosition();
+  foreach_adjacent(pos,p,{
+    if (this->inGroup(p) && this->getColor(p)!=col)
+    {
+      Go::Group *group=this->getGroup(p);
+      if (//col!=group->getColor() && 
+          group->numRealLibs()==2) //group->isOneOfTwoLiberties(this,pos))
+      {
+        if (groupsize) *groupsize=group->numOfStones();
+        return true;
+      }
+    }
+  });
+  return false;
+}
+
+bool Go::Board::isAtari(Go::Move move, int *groupsize, int other_not) const
+{
+  Go::Color col=move.getColor();
+  int pos=move.getPosition();
+  foreach_adjacent(pos,p,{
+    if (this->inGroup(p) && this->getColor(p)!=col)
+    {
+      Go::Group *group=this->getGroup(p);
+      if (//col!=group->getColor() && 
+          group->numRealLibs()==2 //group->isOneOfTwoLiberties(this,pos) 
+          && group->getOtherOneOfTwoLiberties(this,pos)!=other_not)
+      {
+        if (groupsize) *groupsize=group->numOfStones();
+        return true;
+      }
     }
   });
   return false;
@@ -1789,7 +2408,18 @@ int Go::Board::getRectDistance(int pos1, int pos2) const
   return Go::rectDist(x1,y1,x2,y2);
 }
 
-int Go::Board::getPseudoDistanceToBorder(int pos) const
+int Go::Board::getMaxDistance(int pos1, int pos2) const
+{
+  int x1=Go::Position::pos2x(pos1,size);
+  int y1=Go::Position::pos2y(pos1,size);
+  int x2=Go::Position::pos2x(pos2,size);
+  int y2=Go::Position::pos2y(pos2,size);
+  
+  return Go::maxDist(x1,y1,x2,y2);
+}
+
+/*
+ int Go::Board::getPseudoDistanceToBorder(int pos) const
 {
   int x=Go::Position::pos2x(pos,size);
   int y=Go::Position::pos2y(pos,size);
@@ -1805,7 +2435,7 @@ int Go::Board::getPseudoDistanceToBorder(int pos) const
   
   return distx+disty;
 }
-
+*/
 int Go::Board::getCircularDistance(int pos1, int pos2) const
 {
   int x1=Go::Position::pos2x(pos1,size);
@@ -1848,6 +2478,64 @@ Go::ObjectBoard<int> *Go::Board::getCFGFrom(int pos, int max) const
   }
   
   return cfgdist;
+}
+
+int Go::Board::getOtherOfEmptyTwoGroup(int pos) const
+{
+  if (this->getColor(pos)!=Go::EMPTY)
+    return -1;
+  int empnei=this->touchingEmpty(pos);
+  //not one of two empty
+  if (empnei!=1) return -1;
+  
+  Go::Color col=Go::EMPTY;
+  int empty,black,white,offboard;
+  this->countAdjacentColors(pos,empty,black,white,offboard);
+  //if (col==Go::EMPTY)
+  {
+    if (black>0 && white>0)
+      return -1;
+    else if (black>0)
+      col=Go::BLACK;
+    else if (white>0)
+      col=Go::WHITE;
+  }
+  int otherempty=-1;
+  foreach_adjacent(pos,p,{
+    if (this->getColor(p)==Go::EMPTY)
+    {
+      if (this->touchingEmpty(p)!=1)
+        return -1;
+      else
+      {
+        this->countAdjacentColors(p,empty,black,white,offboard);
+        if (col==Go::EMPTY)
+        {
+          if (black>0 && white>0)
+            return -1;
+          else if (black>0)
+            col=Go::BLACK;
+          else if (white>0)
+            col=Go::WHITE;
+        }
+        else if (col==Go::BLACK && white>0)
+          return -1;
+        else if (col==Go::WHITE && black>0)
+          return -1;
+        otherempty=p;
+      }
+    }
+    else if (this->getColor(p)!=Go::OFFBOARD)
+    {
+      Go::Color col2=this->getColor(p);
+      if (col==Go::EMPTY)
+          col=col2;
+      else if (col!=col2)
+        return -1;
+    }
+  });
+  
+  return otherempty;
 }
 
 int Go::Board::getThreeEmptyGroupCenterFrom(int pos) const
@@ -1924,9 +2612,17 @@ int Go::Board::getBent4EmptyGroupCenterFrom(int pos,bool onlycheck) const
   if (empnei==2 && this->getPseudoDistanceToBorder(pos)==1) // possibly at center
   {
     int empty,black,white,offboard;
+    int sum_touching_empties=0;
+    int op=getSecondBent4Position(pos);
+    if (this->touchingEmpty (op)!=1) return false;
     foreach_adjacent(pos,p,{
       if (this->getColor(p)==Go::EMPTY)
       {
+        if (this->getPseudoDistanceToBorder(p)==0 && this->touchingEmpty (p)!=2)
+          return false;
+        sum_touching_empties+=touchingEmpty(p);
+        if (sum_touching_empties>3)
+          return false;
         if (this->touchingEmpty(p)>2)
           return -1;
         else
@@ -2077,6 +2773,9 @@ int Go::Board::getFiveEmptyGroupCenterFrom(int pos) const
       if (this->getColor(p)==Go::EMPTY)
       {
         this->countAdjacentColors(p,tmpempty,tmpblack,tmpwhite,tmpoffboard);
+        //fprintf(stderr,"tmpempty %d pos %d p %d\n",tmpempty,pos,p);
+        if (tmpempty>2) return -1;  //the form xxx
+                                    //         xx   has not 3 touching empties
         if (col==Go::EMPTY)
         {
           if (tmpblack>0 && tmpwhite>0)
@@ -2096,7 +2795,7 @@ int Go::Board::getFiveEmptyGroupCenterFrom(int pos) const
       }
     });
     if (black>0 && white>0)
-      fprintf(stderr,"should not happen!\n");
+      fprintf(stderr,"should not happen1!\n");
     int numattached=black+white+offboard;
     // XXX
     // XX   Form has exactly 10 pseudo touches other forms not (hopefully:)
@@ -2119,6 +2818,250 @@ int Go::Board::getFiveEmptyGroupCenterFrom(int pos) const
   }
   else
     return -1;
+}
+
+bool Go::Board::isThreeEmptyGroupCenterFrom(int pos) const
+{
+  if (this->getColor(pos)!=Go::EMPTY)
+    return false;
+  
+  int empnei=this->touchingEmpty(pos);
+  Go::Color col=Go::EMPTY;
+  
+  if (empnei==2) // possibly at center
+  {
+    int empty,black,white,offboard;
+    foreach_adjacent(pos,p,{
+      if (this->getColor(p)==Go::EMPTY)
+      {
+        if (this->touchingEmpty(p)!=1)
+          return false;
+        else
+        {
+          this->countAdjacentColors(p,empty,black,white,offboard);
+          if (col==Go::EMPTY)
+          {
+            if (black>0 && white>0)
+              return false;
+            else if (black>0)
+              col=Go::BLACK;
+            else if (white>0)
+              col=Go::WHITE;
+          }
+          else if (col==Go::BLACK && white>0)
+            return false;
+          else if (col==Go::WHITE && black>0)
+            return false;
+        }
+      }
+      else if (this->getColor(p)!=Go::OFFBOARD)
+      {
+        Go::Color col2=this->getColor(p);
+        if (col==Go::EMPTY)
+            col=col2;
+        else if (col!=col2)
+          return false;
+      }
+    });
+    return true;
+  }
+  return false;
+}
+
+int Go::Board::getSecondBent4Position (int pos) const
+{
+  int x=Go::Position::pos2x(pos,size);
+  int y=Go::Position::pos2y(pos,size);
+  //fprintf(stderr,"bent4 before %d %d\n",x,y);
+  if (x==1)
+    x=0;
+  else if (x==0)
+    x=1;
+  if (y==1)
+    y=0;
+  else if (y==0)
+    y=1;
+  if (x==size-1)
+    x=size-2;
+  else if (x==size-2)
+    x=size-1;
+  if (y==size-1)
+    y=size-2;
+  else if (y==size-2)
+    y=size-1;
+  //fprintf(stderr,"bent4 after %d %d\n",x,y);
+  return Go::Position::xy2pos(x,y,size);
+}
+
+bool Go::Board::isBent4EmptyGroupCenterFrom(int pos) const
+{
+  //fprintf(stderr,"test bent4 %s\n",Go::Position::pos2string(pos,size).c_str());
+  if (this->getColor(pos)!=Go::EMPTY || this->getPseudoDistanceToBorder(pos)>2)
+    return false;
+  
+  int empnei=this->touchingEmpty(pos);
+  Go::Color col=Go::EMPTY;
+  
+  if (empnei==2 && this->getPseudoDistanceToBorder(pos)==1) // possibly at center
+  {
+    int empty,black,white,offboard;
+    int sum_touching_empties=0;
+    int op=getSecondBent4Position(pos);
+    if (this->touchingEmpty (op)!=1) return false;
+    foreach_adjacent(pos,p,{
+      if (this->getColor(p)==Go::EMPTY)
+      {
+        if (this->getPseudoDistanceToBorder(p)==0 && this->touchingEmpty (p)!=2)
+          return false;
+        sum_touching_empties+=touchingEmpty(p);
+        if (sum_touching_empties>3)
+          return false;
+        if (this->touchingEmpty(p)>2)
+          return false;
+        else
+        {
+          this->countAdjacentColors(p,empty,black,white,offboard);
+          if (col==Go::EMPTY)
+          {
+            if (black>0 && white>0)
+              return false;
+            else if (black>0)
+              col=Go::BLACK;
+            else if (white>0)
+              col=Go::WHITE;
+          }
+          else if (col==Go::BLACK && white>0)
+            return false;
+          else if (col==Go::WHITE && black>0)
+            return false;
+        }
+      }
+      else if (this->getColor(p)!=Go::OFFBOARD)
+      {
+        Go::Color col2=this->getColor(p);
+        if (col==Go::EMPTY)
+            col=col2;
+        else if (col!=col2)
+          return false;
+      }
+    });
+    return true;
+  }
+  return false;
+}
+
+bool Go::Board::isFourEmptyGroupCenterFrom(int pos) const
+{
+  // this handles the play of the 
+  // XXX
+  //  X
+  //form,
+
+  // the bent 4 is not ready yet!
+  
+  if (this->getColor(pos)!=Go::EMPTY)
+    return false;
+  
+  int empnei=this->touchingEmpty(pos);
+  Go::Color col=Go::EMPTY;
+  
+  if (empnei==3) // possibly at center
+  {
+    int empty,black,white,offboard;
+    foreach_adjacent(pos,p,{
+      if (this->getColor(p)==Go::EMPTY)
+      {
+        if (this->touchingEmpty(p)!=1)
+          return false;
+        else
+        {
+          this->countAdjacentColors(p,empty,black,white,offboard);
+          if (col==Go::EMPTY)
+          {
+            if (black>0 && white>0)
+              return false;
+            else if (black>0)
+              col=Go::BLACK;
+            else if (white>0)
+              col=Go::WHITE;
+          }
+          else if (col==Go::BLACK && white>0)
+            return false;
+          else if (col==Go::WHITE && black>0)
+            return false;
+        }
+      }
+      else if (this->getColor(p)!=Go::OFFBOARD)
+      {
+        Go::Color col2=this->getColor(p);
+        if (col==Go::EMPTY)
+            col=col2;
+        else if (col!=col2)
+          return false;
+      }
+    });
+    //fprintf(stderr,"returned by bent4 %s\n",Go::Position::pos2string(pos,9).c_str());
+    return true;
+  }
+  return false;
+}
+
+
+bool Go::Board::isFiveEmptyGroupCenterFrom(int pos) const
+{
+  //fprintf(stderr,"test 5 %s\n",Go::Position::pos2string(pos,size).c_str());
+  if (this->getColor(pos)!=Go::EMPTY)
+    return false;
+  
+  int empnei=this->touchingEmpty(pos);
+  Go::Color col=Go::EMPTY;
+  
+  if (empnei==3) // possibly at center
+  {
+    if (this->diagonalEmpty(pos)!=1)
+      return false; //not exacly 5 empties
+    int empty,black,white,offboard;
+    this->countAdjacentColors(pos,empty,black,white,offboard);
+    if (black>0 && white>0)
+      return false;
+    else if (black>0)
+      col=Go::BLACK;
+    else if (white>0)
+      col=Go::WHITE;
+    int tmpempty,tmpblack,tmpwhite,tmpoffboard;
+    foreach_adjdiag(pos,p,{
+      if (this->getColor(p)==Go::EMPTY)
+      {
+        this->countAdjacentColors(p,tmpempty,tmpblack,tmpwhite,tmpoffboard);
+        if (col==Go::EMPTY)
+        {
+          if (tmpblack>0 && tmpwhite>0)
+            return false;
+          else if (tmpblack>0)
+            col=Go::BLACK;
+          else if (tmpwhite>0)
+            col=Go::WHITE;
+        }
+        else if (col==Go::BLACK && tmpwhite>0)
+          return false;
+        else if (col==Go::WHITE && tmpblack>0)
+          return false;
+        black+=tmpblack;
+        white+=tmpwhite;
+        offboard+=tmpoffboard;
+      }
+    });
+    if (black>0 && white>0)
+      fprintf(stderr,"should not happen2!\n");
+    int numattached=black+white+offboard;
+    // XXX
+    // XX   Form has exactly 10 pseudo touches other forms not (hopefully:)
+    if (numattached==10)
+      return true;
+    else
+      return false;
+  }
+  return false;
 }
 
 void Go::Board::countAdjacentColors(int pos, int &empty, int &black, int &white, int &offboard) const
@@ -2145,6 +3088,7 @@ void Go::Board::countAdjacentColors(int pos, int &empty, int &black, int &white,
         break;
     }
   });
+  //fprintf(stderr,"%s %d %d %d\n",Go::Position::pos2string(pos,13).c_str(),black,white,offboard);
 }
 
 void Go::Board::countDiagonalColors(int pos, int &empty, int &black, int &white, int &offboard) const
@@ -2355,6 +3299,56 @@ float Go::TerritoryMap::getPositionOwner(int pos) const
   }
 }
 
+
+Go::MoveProbabilityMap::MoveProbabilityMap(int sz)
+  : size(sz),
+    sizedata(1+(sz+1)*(sz+2))
+{
+  move_num=new ObjectBoard<long>(sz);
+  count=new ObjectBoard<long>(sz);
+  played=new ObjectBoard<int>(sz);
+  move_num->fill(0);
+  count->fill(0);
+  played->fill(0);
+}
+
+Go::MoveProbabilityMap::~MoveProbabilityMap()
+{
+  delete move_num;
+  delete count;
+  delete played;
+}
+
+
+void Go::MoveProbabilityMap::setMoveAs(int pos, int move_number)
+{
+  if (pos<0) return;
+  move_num->set(pos,move_num->get(pos)+move_number);      
+  count->set(pos,count->get(pos)+1);
+//  fprintf(stderr,"pos %d move_num %f count %f\n",pos,move_num->get(pos),count->get(pos));
+}
+
+
+float Go::MoveProbabilityMap::getMoveAs(int pos) const
+{
+  float n=move_num->get(pos);
+  float c=count->get(pos);
+  if (c>0)
+    return (float)n/c;
+  else
+    return 0;
+}
+
+void Go::MoveProbabilityMap::decay(float factor)
+{
+  for (int p=0;p<sizedata;p++)
+  {
+    move_num->set(p,move_num->get(p)*factor);
+    count->set(p,move_num->get(p)*factor);
+  }
+}
+
+
 void Go::Board::updateTerritoryMap(Go::TerritoryMap *tmap) const
 {
   if (lastscoredata!=NULL)
@@ -2367,7 +3361,7 @@ void Go::Board::updateTerritoryMap(Go::TerritoryMap *tmap) const
   }
 }
 
-void Go::Board::updateCorrelationMap(Go::ObjectBoard<Go::CorrelationData> *cmap, Go::BitBoard *blacklist,Go::BitBoard *whitelist)
+void Go::Board::updateCorrelationMap(Go::ObjectBoard<Go::CorrelationData> *cmap, Go::IntBoard *blacklist,Go::IntBoard *whitelist)
 {
   if (cmap==NULL) return;
   if (lastscoredata!=NULL)
@@ -2451,7 +3445,7 @@ bool Go::Board::isLadder(Go::Group *group) const
 
 bool Go::Board::isLadderAfter(Go::Group *group, Go::Move move) const
 {
-  int libpos=group->getOtherOneOfTwoLiberties(move.getPosition());
+  int libpos=group->getOtherOneOfTwoLiberties(this,move.getPosition());
   if (libpos==-1 || move.getColor()==group->getColor())
     return false;
 
@@ -2469,7 +3463,7 @@ bool Go::Board::isLadderAfter(Go::Group *group, Go::Move move) const
 
 bool Go::Board::isProbableWorkingLadderAfter(Go::Group *group, Go::Move move) const
 {
-  int posA=group->getOtherOneOfTwoLiberties(move.getPosition());
+  int posA=group->getOtherOneOfTwoLiberties(this,move.getPosition());
   if (posA==-1 || move.getColor()==group->getColor())
     return false;
   else if (this->isSelfAtari(move))
@@ -2518,13 +3512,15 @@ bool Go::Board::isProbableWorkingLadder(Go::Group *group, int posA, int movepos)
     return false;
 
   //check for stones in atari
-  Go::list_int *adjacentgroups=group->getAdjacentGroups();
+  Go::list_short *adjacentgroups=group->getAdjacentGroups();
   if (adjacentgroups->size()>(unsigned int)this->getPositionMax())
   {
     adjacentgroups->sort();
     adjacentgroups->unique();
+    //std::sort(adjacentgroups->begin(),adjacentgroups->end());
+    //std::uni(adjacentgroups->begin(),adjacentgroups->end());
   }
-  for(Go::list_int::iterator iter=adjacentgroups->begin();iter!=adjacentgroups->end();++iter)
+  for(auto iter=adjacentgroups->begin();iter!=adjacentgroups->end();++iter)
   {
     if (this->inGroup((*iter)) && this->getGroup((*iter))->inAtari())
       return false;
@@ -2578,4 +3574,57 @@ bool Go::Board::isProbableWorkingLadder(Go::Group *group, int posA, int movepos)
   }
 
   return true;
+}
+
+
+void Go::Board::calcSlowLibertyGroups()  {
+  for(std::ourset<Go::Group*>::iterator iter=groups.begin();iter!=groups.end();++iter) 
+  {
+    (*iter)->real_libs=0;
+  }
+  for (int pos=0; pos<getPositionMax();pos++) {
+    if (getColor(pos)==Go::EMPTY) {
+      Go::Group *groups_used[4];
+      int groups_used_num=0;
+      foreach_adjacent(pos,p,{
+          if (this->inGroup(p)) {
+            Go::Group *group=this->getGroup(p);
+            bool found=false;
+            for (int i=0;i<groups_used_num;i++)
+            {
+              if (groups_used[i]==group)
+                found=true;
+            }
+            if (!found)
+            {
+              group->real_libs++;
+              groups_used[groups_used_num]=group;
+              groups_used_num++;
+            }
+          }
+      });  
+    }
+  }  
+}
+
+
+void Go::Board::connectedAtariPos(Go::Move move) //, int CApos[4], int &CAcount)
+{
+ int pos=move.getPosition ();
+ Go::Color col=move.getColor();
+ ACcount=0;
+ if (pos<0) return;
+ foreach_adjacent_debug(pos,p) { //,{
+    if (this->getColor(p)==col && this->inGroup(p) && this->getGroup(p)->numRealLibs()==2)
+    {
+      //fprintf(stderr,"pos =%d ",pos);
+      int movepos=this->getGroup(p)->getOtherOneOfTwoLiberties(this,pos);
+      if (getMaxDistance(movepos,pos)>1 && this->validMove(Go::Move(Go::otherColor(col),movepos)))
+      {
+     //   fprintf(stderr,"connected Atari %s %d for move %s on board\n%s",Go::Move(Go::otherColor(col),movepos).toString(getSize()).c_str(),CAcount,move.toString(getSize()).c_str(),toString().c_str());
+        ACpos[ACcount]=movepos;
+        ACcount++;
+      }
+    }
+  };//);
 }

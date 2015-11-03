@@ -8,6 +8,9 @@
 #include <iomanip>
 #include <boost/timer.hpp>
 #include <boost/lexical_cast.hpp>
+#include <time.h>       /* clock_t, clock, CLOCKS_PER_SEC */
+
+
 #ifdef HAVE_MPI
   #define MPIRANK0_ONLY(__body) {if (mpirank==0) { __body }}
 #else
@@ -19,9 +22,77 @@
   #include "../web/Web.h"
 #endif
 
+//had trouble putting it as static variable into the Engine class, but should only be one Engine anyway!
+Net<float> *caffe_test_net;
+int caffe_test_net_input_dim;
+Net<float> *caffe_area_net;
+		
 
 Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
 {
+  //cudaSetDeviceFlags(cudaDeviceBlockingSync);
+  //Caffe::set_mode_gpu();
+  Caffe::SetDevice(0);
+  int t1=Caffe::mode();
+  Caffe::set_mode(Caffe::GPU);
+  int t2=Caffe::mode();
+  fprintf(stderr,"%d %d\n",t1,t2);
+  Caffe::DeviceQuery();
+  //Caffe::set_phase(Caffe::TEST);
+  caffe_area_net = NULL;
+  caffe_test_net = NULL;
+  /*
+  caffe_test_net = new Net<float>("/home/detlef/oakfoam-hg/oakfoam/scripts/CNN/gobig19.prototxt",TRAIN);
+  caffe_test_net->CopyTrainedLayersFrom("/home/detlef/oakfoam-hg/oakfoam/scripts/CNN/gobig.trained");
+  int num_inputs=caffe_test_net->num_inputs();
+  int num_outputs=caffe_test_net->num_outputs();
+  Blob<float> *tmpblob=caffe_test_net->input_blobs()[0];
+  caffe_test_net_input_dim=caffe_test_net->input_blobs()[0]->shape()[1];
+  fprintf(stderr,"num of net inputs %d outputs %d axes input %d %d %d %d shape %d\n",num_inputs,num_outputs,tmpblob->shape()[0],tmpblob->shape()[1],tmpblob->shape()[2],tmpblob->shape()[3],caffe_test_net_input_dim);
+  //this is testing code, must be put to a function later!!!!
+  Blob<float> *b=new Blob<float>(1,caffe_test_net_input_dim,19,19);
+  float *data;
+  //fprintf(stderr,"1\n");
+  data= new float[caffe_test_net_input_dim*19*19];
+  //fprintf(stderr,"2\n");
+  for (int i=0;i<caffe_test_net_input_dim;i++)
+	for (int j=0;j<19;j++)
+	  for (int k=0;k<19;k++)
+		{
+	    //fprintf(stderr,"%d %d %d\n",i,j,k);
+		data[i*19*19+j*19+k]=0.0;
+		}
+  data[3*19+4]=1.0;
+  data[19*19+5*19+5]=1.0;
+  b->set_cpu_data(data);
+  vector<Blob<float>*> bottom;
+  bottom.push_back(b); 
+  const vector<Blob<float>*>& result=  caffe_test_net->Forward(bottom);
+  fprintf(stderr,"start\n");
+  clock_t tbegin = clock();
+  for (int i=0;i<50;i++) {
+    const vector<Blob<float>*>& result =  caffe_test_net->Forward(bottom);
+  }
+  clock_t tend = clock();
+  fprintf(stderr,"end %f\n",double(tend - tbegin) / CLOCKS_PER_SEC);
+  
+  for (int j=0;j<19;j++)
+	{
+	for (int k=0;k<19;k++)
+		{
+	    fprintf(stderr,"%5.3f ",result[0]->cpu_data()[j*19+k]);
+		}
+	fprintf(stderr,"\n");
+	}
+  delete[] data;
+  delete b;
+  //end of testing code!
+  */
+  
+  ACcount=0;
+
+  
+  
   gtpe=ge;
   longname=ln;
   #ifdef HAVE_WEB
@@ -40,9 +111,18 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   
   boardsize=9;
   params->board_size=boardsize;
-  currentboard=new Go::Board(boardsize);
+  currentboard=new Go::Board(boardsize); //may be to early use of params, reload later with clear board?
   komi=7.5;
   komi_handicap=0;
+  recalc_dynkomi=0;
+
+  deltawhiteoffset=boardsize*boardsize*(local_feature_num+hashto5num);
+  deltagammas = new float[2*boardsize*boardsize*(local_feature_num+hashto5num)];
+  for (int i=0;i<2*boardsize*boardsize*(local_feature_num+hashto5num);i++) deltagammas[i]=1.0;
+  deltagammaslocal = new float[2*boardsize*boardsize*(local_feature_num+hashto5num)];
+  for (int i=0;i<2*boardsize*boardsize*(local_feature_num+hashto5num);i++) deltagammaslocal[i]=1.0;
+  
+  debug_solid_group=-1;
 
   params->tree_instances=0;
   
@@ -82,6 +162,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","playout_avoid_lbmf_p",&(params->playout_avoid_lbmf_p),PLAYOUT_AVOID_LBMF_P);
   params->addParameter("playout","playout_avoid_lbrf1_p2",&(params->playout_avoid_lbrf1_p2),PLAYOUT_AVOID_LBRF1_P2);
   params->addParameter("playout","playout_avoid_lbmf_p2",&(params->playout_avoid_lbmf_p2),PLAYOUT_AVOID_LBMF_P2);
+  params->addParameter("playout","playout_avoid_bpr_p",&(params->playout_avoid_bpr_p),PLAYOUT_AVOID_BPR_P);
+  params->addParameter("playout","playout_avoid_bpr_p2",&(params->playout_avoid_bpr_p2),PLAYOUT_AVOID_BPR_P2);
   params->addParameter("playout","playout_lgpf_enabled",&(params->playout_lgpf_enabled),PLAYOUT_LGPF_ENABLED);
   params->addParameter("playout","playout_atari_enabled",&(params->playout_atari_enabled),PLAYOUT_ATARI_ENABLED);
   params->addParameter("playout","playout_lastatari_p",&(params->playout_lastatari_p),PLAYOUT_LASTATARI_P);
@@ -90,6 +172,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","playout_lastcapture_enabled",&(params->playout_lastcapture_enabled),PLAYOUT_LASTCAPTURE_ENABLED);
   params->addParameter("playout","playout_last2libatari_enabled",&(params->playout_last2libatari_enabled),PLAYOUT_LAST2LIBATARI_ENABLED);
   params->addParameter("playout","playout_last2libatari_complex",&(params->playout_last2libatari_complex),PLAYOUT_LAST2LIBATARI_COMPLEX);
+  params->addParameter("playout","playout_last2libatari_allow_different_groups",&(params->playout_last2libatari_allow_different_groups),PLAYOUT_LAST2LIBATARI_ALLOW_DIFFERENT_GROUPS);
   params->addParameter("playout","playout_nakade_enabled",&(params->playout_nakade_enabled),PLAYOUT_NAKADE_ENABLED);
   params->addParameter("playout","playout_nakade4_enabled",&(params->playout_nakade4_enabled),PLAYOUT_NAKADE4_ENABLED);
   params->addParameter("playout","playout_nakade_bent4_enabled",&(params->playout_nakade_bent4_enabled),PLAYOUT_NAKADE_BENT4_ENABLED);
@@ -97,7 +180,6 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","playout_nearby_enabled",&(params->playout_nearby_enabled),PLAYOUT_NEARBY_ENABLED);
   params->addParameter("playout","playout_fillboard_enabled",&(params->playout_fillboard_enabled),PLAYOUT_FILLBOARD_ENABLED);
   params->addParameter("playout","playout_fillboard_n",&(params->playout_fillboard_n),PLAYOUT_FILLBOARD_N);
-  params->addParameter("playout","playout_circreplace_enabled",&(params->playout_circreplace_enabled),PLAYOUT_CIRCREPLACE_ENABLED);
   params->addParameter("playout","playout_fillboard_bestcirc_enabled",&(params->playout_fillboard_bestcirc_enabled),PLAYOUT_FILLBOARD_BESTCIRC_ENABLED);
   params->addParameter("playout","playout_randomquick_bestcirc_n",&(params->playout_randomquick_bestcirc_n),PLAYOUT_RANDOMQUICK_BESTCIRC_N);
   params->addParameter("playout","playout_random_weight_territory_n",&(params->playout_random_weight_territory_n),PLAYOUT_RANDOM_WEIGHT_TERRITORY_N);
@@ -112,6 +194,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","playout_features_incremental",&(params->playout_features_incremental),PLAYOUT_FEATURES_INCREMENTAL);
   params->addParameter("playout","playout_random_chance",&(params->playout_random_chance),PLAYOUT_RANDOM_CHANCE);
   params->addParameter("playout","playout_random_approach_p",&(params->playout_random_approach_p),PLAYOUT_RANDOM_APPROACH_P);
+  params->addParameter("playout","playout_defend_approach",&(params->playout_defend_approach),PLAYOUT_DEFEND_APPROACH);
   params->addParameter("playout","playout_avoid_selfatari",&(params->playout_avoid_selfatari),PLAYOUT_AVOID_SELFATARI);
   params->addParameter("playout","playout_avoid_selfatari_size",&(params->playout_avoid_selfatari_size),PLAYOUT_AVOID_SELFATARI_SIZE);
   params->addParameter("playout","playout_avoid_selfatari_complex",&(params->playout_avoid_selfatari_complex),PLAYOUT_AVOID_SELFATARI_COMPLEX);
@@ -126,28 +209,176 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","test_p2",&(params->test_p2),0.0);
   params->addParameter("playout","test_p3",&(params->test_p3),0.0);
   params->addParameter("playout","test_p4",&(params->test_p4),0.0);
-  params->addParameter("playout","test_p5",&(params->test_p5),1.0);
+  params->addParameter("playout","test_p5",&(params->test_p5),0.0);
   params->addParameter("playout","test_p6",&(params->test_p6),0.0);
   params->addParameter("playout","test_p7",&(params->test_p7),0.0);
   params->addParameter("playout","test_p8",&(params->test_p8),0.0);
-  params->addParameter("playout","test_p9",&(params->test_p9),1.0);
+  params->addParameter("playout","test_p9",&(params->test_p9),0.0);
   params->addParameter("playout","test_p10",&(params->test_p10),0.0);
   params->addParameter("playout","test_p11",&(params->test_p11),0.0);
-  params->addParameter("playout","test_p12",&(params->test_p12),1.0);
+  params->addParameter("playout","test_p12",&(params->test_p12),0.0);
   params->addParameter("playout","test_p13",&(params->test_p13),1.0);
   params->addParameter("playout","test_p14",&(params->test_p14),1.0);
-  params->addParameter("playout","test_p15",&(params->test_p15),1.0);
-  params->addParameter("playout","test_p16",&(params->test_p16),1.0);
-  params->addParameter("playout","test_p17",&(params->test_p17),1.0);
-  params->addParameter("playout","test_p18",&(params->test_p18),1.0);
+  params->addParameter("playout","test_p15",&(params->test_p15),0.0);
+  params->addParameter("playout","test_p16",&(params->test_p16),0.0);
+  params->addParameter("playout","test_p17",&(params->test_p17),0.0);
+  params->addParameter("playout","test_p18",&(params->test_p18),0.0);
   params->addParameter("playout","test_p19",&(params->test_p19),1.0);
-  params->addParameter("playout","test_p20",&(params->test_p20),1.0);
- 
+  params->addParameter("playout","test_p20",&(params->test_p20),0.0);
+  params->addParameter("playout","test_p20",&(params->test_p20),0.0);
+  params->addParameter("playout","test_p21",&(params->test_p21),0.0);
+  params->addParameter("playout","test_p22",&(params->test_p22),1.0);
+  params->addParameter("playout","test_p23",&(params->test_p23),0.0);
+  params->addParameter("playout","test_p24",&(params->test_p24),0.0);
+  params->addParameter("playout","test_p25",&(params->test_p25),0.0);
+  params->addParameter("playout","test_p26",&(params->test_p26),0.0);
+  params->addParameter("playout","test_p27",&(params->test_p27),0.0);
+  params->addParameter("playout","test_p28",&(params->test_p28),1.0);
+  params->addParameter("playout","test_p29",&(params->test_p29),0.0);
+  params->addParameter("playout","test_p30",&(params->test_p30),0.0);
+  params->addParameter("playout","test_p31",&(params->test_p31),0.0);
+  params->addParameter("playout","test_p32",&(params->test_p32),0.0);
+  params->addParameter("playout","test_p33",&(params->test_p33),1.0);
+  params->addParameter("playout","test_p34",&(params->test_p34),1.0);
+  params->addParameter("playout","test_p35",&(params->test_p35),1.0);
+  params->addParameter("playout","test_p36",&(params->test_p36),0.0);
+  params->addParameter("playout","test_p37",&(params->test_p37),0.0);
+  params->addParameter("playout","test_p38",&(params->test_p38),0.0);
+  params->addParameter("playout","test_p39",&(params->test_p39),0.0);
+  
+  params->addParameter("playout","test_p40",&(params->test_p40),1.0);
+  params->addParameter("playout","test_p41",&(params->test_p41),0.0);
+  params->addParameter("playout","test_p42",&(params->test_p42),0.0);
+  params->addParameter("playout","test_p43",&(params->test_p43),0.0);
+  params->addParameter("playout","test_p44",&(params->test_p44),0.0);
+  params->addParameter("playout","test_p45",&(params->test_p45),1.0);
+  params->addParameter("playout","test_p46",&(params->test_p46),0.0);
+  params->addParameter("playout","test_p47",&(params->test_p47),0.0);
+  params->addParameter("playout","test_p48",&(params->test_p48),0.0);
+  params->addParameter("playout","test_p49",&(params->test_p49),0.0);
+  
+  params->addParameter("playout","test_p50",&(params->test_p50),0.0);
+  params->addParameter("playout","test_p51",&(params->test_p51),1.0);
+  params->addParameter("playout","test_p52",&(params->test_p52),0.0);
+  params->addParameter("playout","test_p53",&(params->test_p53),0.0);
+  params->addParameter("playout","test_p54",&(params->test_p54),0.0);
+  params->addParameter("playout","test_p55",&(params->test_p55),0.0);
+  params->addParameter("playout","test_p56",&(params->test_p56),0.0);
+  params->addParameter("playout","test_p57",&(params->test_p57),0.0);
+  params->addParameter("playout","test_p58",&(params->test_p58),0.0);
+  params->addParameter("playout","test_p59",&(params->test_p59),0.0);
+  
+  params->addParameter("playout","test_p60",&(params->test_p60),1.0);
+  params->addParameter("playout","test_p61",&(params->test_p61),0.0);
+  params->addParameter("playout","test_p62",&(params->test_p62),0.0);
+  params->addParameter("playout","test_p63",&(params->test_p63),0.0);
+  params->addParameter("playout","test_p64",&(params->test_p64),0.0);
+  params->addParameter("playout","test_p65",&(params->test_p65),0.0);
+  params->addParameter("playout","test_p66",&(params->test_p66),0.0);
+  params->addParameter("playout","test_p67",&(params->test_p67),0.0);
+  params->addParameter("playout","test_p68",&(params->test_p68),0.0);
+  params->addParameter("playout","test_p69",&(params->test_p69),1.0);
+
+  params->addParameter("playout","test_p70",&(params->test_p70),0.0);
+  params->addParameter("playout","test_p71",&(params->test_p71),0.0);
+  params->addParameter("playout","test_p72",&(params->test_p72),1.0);
+  params->addParameter("playout","test_p73",&(params->test_p73),0.0);
+  params->addParameter("playout","test_p74",&(params->test_p74),0.0);
+  params->addParameter("playout","test_p75",&(params->test_p75),0.0);
+  params->addParameter("playout","test_p76",&(params->test_p76),1.0);
+  params->addParameter("playout","test_p77",&(params->test_p77),0.0);
+  params->addParameter("playout","test_p78",&(params->test_p78),0.0);
+  params->addParameter("playout","test_p79",&(params->test_p79),0.0);
+  
+  params->addParameter("playout","test_p80",&(params->test_p80),0.0);
+  params->addParameter("playout","test_p81",&(params->test_p81),0.0);
+  params->addParameter("playout","test_p82",&(params->test_p82),0.0);
+  params->addParameter("playout","test_p83",&(params->test_p83),0.0);
+  params->addParameter("playout","test_p84",&(params->test_p84),0.0);
+  params->addParameter("playout","test_p85",&(params->test_p85),0.0);
+  params->addParameter("playout","test_p86",&(params->test_p86),0.0);
+  params->addParameter("playout","test_p87",&(params->test_p87),0.0);
+  params->addParameter("playout","test_p88",&(params->test_p88),0.0);
+  params->addParameter("playout","test_p89",&(params->test_p89),0.0);
+  
+  params->addParameter("playout","test_p90",&(params->test_p90),0.0);
+  params->addParameter("playout","test_p91",&(params->test_p91),0.0);
+  params->addParameter("playout","test_p92",&(params->test_p92),0.0);
+  params->addParameter("playout","test_p93",&(params->test_p93),20000.0);
+  params->addParameter("playout","test_p94",&(params->test_p94),0.0);
+  params->addParameter("playout","test_p95",&(params->test_p95),0.0);
+  params->addParameter("playout","test_p96",&(params->test_p96),0.0);
+  params->addParameter("playout","test_p97",&(params->test_p97),0.0);
+  params->addParameter("playout","test_p98",&(params->test_p98),0.0);
+  params->addParameter("playout","test_p99",&(params->test_p99),0.0);
+
+  params->addParameter("playout","test_p100",&(params->test_p100),0.0);
+  params->addParameter("playout","test_p101",&(params->test_p101),0.0);
+  params->addParameter("playout","test_p102",&(params->test_p102),0.0);
+  params->addParameter("playout","test_p103",&(params->test_p103),0.0);
+  params->addParameter("playout","test_p104",&(params->test_p104),0.0);
+  params->addParameter("playout","test_p105",&(params->test_p105),0.0);
+  params->addParameter("playout","test_p106",&(params->test_p106),0.0);
+  params->addParameter("playout","test_p107",&(params->test_p107),0.0);
+  params->addParameter("playout","test_p108",&(params->test_p108),0.0);
+  params->addParameter("playout","test_p109",&(params->test_p109),1.0);
+  params->addParameter("playout","test_p110",&(params->test_p110),0.0);
+  
+  params->addParameter("playout","test_p111",&(params->test_p111),1.0);
+  params->addParameter("playout","test_p112",&(params->test_p112),0.0);
+  params->addParameter("playout","test_p113",&(params->test_p113),0.0);
+  params->addParameter("playout","test_p114",&(params->test_p114),0.0);
+  params->addParameter("playout","test_p115",&(params->test_p115),0.0);
+  params->addParameter("playout","test_p116",&(params->test_p116),0.0);
+  params->addParameter("playout","test_p117",&(params->test_p117),0.0);
+  params->addParameter("playout","test_p118",&(params->test_p118),0.0);
+  params->addParameter("playout","test_p119",&(params->test_p119),0.0);
+  params->addParameter("playout","test_p120",&(params->test_p120),0.0);
+
+  params->addParameter("playout","csstyle_enabled",&(params->csstyle_enabled),false);
+  params->addParameter("playout","csstyle_atatarigroup",&(params->csstyle_atatarigroup),1.0);
+  params->addParameter("playout","csstyle_is2libgroup",&(params->csstyle_is2libgroup),1.0);
+  params->addParameter("playout","csstyle_attachedpos",&(params->csstyle_attachedpos),1.0);
+  params->addParameter("playout","csstyle_attachedposbutselfatari",&(params->csstyle_attachedposbutselfatari),1.0);
+  params->addParameter("playout","csstyle_saveataricapture",&(params->csstyle_saveataricapture),1.0);
+  params->addParameter("playout","csstyle_saveataricapturebutselfatari",&(params->csstyle_saveataricapturebutselfatari),1.0);
+  params->addParameter("playout","csstyle_saveatariextention",&(params->csstyle_saveatariextention),1.0);
+  params->addParameter("playout","csstyle_saveatariextentionbutselfatari",&(params->csstyle_saveatariextentionbutselfatari),1.0);
+  params->addParameter("playout","csstyle_solvekocapture",&(params->csstyle_solvekocapture),1.0);
+  params->addParameter("playout","csstyle_2libcapture",&(params->csstyle_2libcapture),1.0);
+  params->addParameter("playout","csstyle_nakade",&(params->csstyle_nakade),1.0);
+  params->addParameter("playout","csstyle_playonladder",&(params->csstyle_playonladder),1.0);
+  params->addParameter("playout","csstyle_defendapproach",&(params->csstyle_defendapproach),1.0);
+  params->addParameter("playout","csstyle_2libavoidcapture",&(params->csstyle_2libavoidcapture),1.0);
+  params->addParameter("playout","csstyle_adaptiveplayouts",&(params->csstyle_adaptiveplayouts),false);
+  params->addParameter("playout","csstyle_patterngammasnothing",&(params->csstyle_patterngammasnothing),1.0);
+  params->addParameter("playout","csstyle_01",&(params->csstyle_01),0.0);
+  params->addParameter("playout","csstyle_02",&(params->csstyle_02),0.0);
+  params->addParameter("playout","csstyle_03",&(params->csstyle_03),0.0);
+  params->addParameter("playout","csstyle_04",&(params->csstyle_04),0.0);
+  params->addParameter("playout","csstyle_05",&(params->csstyle_05),0.0);
+  params->addParameter("playout","csstyle_06",&(params->csstyle_06),0.0);
+  params->addParameter("playout","csstyle_07",&(params->csstyle_07),0.0);
+  params->addParameter("playout","csstyle_08",&(params->csstyle_08),0.0);
+  params->addParameter("playout","csstyle_09",&(params->csstyle_09),0.0);
+
+  params->addParameter("playout","localeval_01",&(params->localeval_01),0.0);
+  params->addParameter("playout","localeval_02",&(params->localeval_02),0.0);
+  params->addParameter("playout","localeval_03",&(params->localeval_03),0.0);
+  params->addParameter("playout","localeval_04",&(params->localeval_04),0.0);
+  params->addParameter("playout","localeval_05",&(params->localeval_05),0.0);
+  params->addParameter("playout","localeval_06",&(params->localeval_06),0.0);
+  params->addParameter("playout","localeval_07",&(params->localeval_07),0.0);
+  params->addParameter("playout","localeval_08",&(params->localeval_08),0.0);
+  params->addParameter("playout","localeval_09",&(params->localeval_09),0.0);
+  
   params->addParameter("tree","ucb_c",&(params->ucb_c),UCB_C);
   params->addParameter("tree","ucb_init",&(params->ucb_init),UCB_INIT);
 
   params->addParameter("tree","bernoulli_a",&(params->bernoulli_a),BERNOULLI_A);
   params->addParameter("tree","bernoulli_b",&(params->bernoulli_b),BERNOULLI_B);
+  params->addParameter("tree","kl_ucb_enabled",&(params->KL_ucb_enabled),KL_UCB_ENABLED );
+  
   params->addParameter("tree","weight_score",&(params->weight_score),WEIGHT_SCORE);
   params->addParameter("tree","random_f",&(params->random_f),RANDOM_F);
 
@@ -192,6 +423,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("tree","uct_criticality_rave_unprune_factor",&(params->uct_criticality_rave_unprune_factor),UCT_CRITICALITY_RAVE_UNPRUNE_FACTOR);
   params->addParameter("tree","uct_prior_unprune_factor",&(params->uct_prior_unprune_factor),UCT_PRIOR_UNPRUNE_FACTOR);
   params->addParameter("tree","uct_rave_unprune_factor",&(params->uct_rave_unprune_factor),UCT_RAVE_UNPRUNE_FACTOR);
+  params->addParameter("tree","uct_rave_other_unprune_factor",&(params->uct_rave_other_unprune_factor),UCT_RAVE_OTHER_UNPRUNE_FACTOR);
   params->addParameter("tree","uct_earlyrave_unprune_factor",&(params->uct_earlyrave_unprune_factor),UCT_EARLYRAVE_UNPRUNE_FACTOR);
   params->addParameter("tree","uct_rave_unprune_decay",&(params->uct_rave_unprune_decay),UCT_RAVE_UNPRUNE_DECAY);
   params->addParameter("tree","uct_rave_unprune_multiply",&(params->uct_rave_unprune_multiply),UCT_RAVE_UNPRUNE_MULTIPLY);
@@ -201,6 +433,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("tree","uct_area_owner_factor_a",&(params->uct_area_owner_factor_a),UCT_AREA_OWNER_FACTOR_A);
   params->addParameter("tree","uct_area_owner_factor_b",&(params->uct_area_owner_factor_b),UCT_AREA_OWNER_FACTOR_B);
   params->addParameter("tree","uct_area_owner_factor_c",&(params->uct_area_owner_factor_c),UCT_AREA_OWNER_FACTOR_C);
+  params->addParameter("tree","uct_area_correlation_statistics",&(params->uct_area_correlation_statistics),UCT_AREA_CORRELATION_STATISTICS);
   params->addParameter("tree","uct_reprune_factor",&(params->uct_reprune_factor),UCT_REPRUNE_FACTOR);
   params->addParameter("tree","uct_factor_circpattern",&(params->uct_factor_circpattern),UCT_FACTOR_CIRCPATTERN);
   params->addParameter("tree","uct_factor_circpattern_exponent",&(params->uct_factor_circpattern_exponent),UCT_FACTOR_CIRCPATTERN_EXPONENT);
@@ -238,6 +471,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("tree","features_pass_no_move_for_lastdist",&(params->features_pass_no_move_for_lastdist),FEATURES_PASS_NO_MOVE_FOR_LASTDIST);
 
   params->addParameter("tree","dynkomi_enabled",&(params->dynkomi_enabled),true);
+  params->addParameter("tree","recalc_dynkomi_limit",&(params->recalc_dynkomi_limit),0);
   
   params->addParameter("tree","mm_learn_enabled",&(params->mm_learn_enabled),false);
   params->addParameter("tree","mm_learn_delta",&(params->mm_learn_delta),MM_LEARN_DELTA);
@@ -272,13 +506,17 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   
   params->addParameter("other","features_only_small",&(params->features_only_small),false);
   params->addParameter("other","features_output_competitions",&(params->features_output_competitions),0.0);
+  params->addParameter("other","features_output_for_playout",&(params->features_output_for_playout),false);
   params->addParameter("other","features_output_competitions_mmstyle",&(params->features_output_competitions_mmstyle),false);
   params->addParameter("other","features_ordered_comparison",&(params->features_ordered_comparison),false);
   params->addParameter("other","features_circ_list",&(params->features_circ_list),0.0);
   params->addParameter("other","features_circ_list_size",&(params->features_circ_list_size),0);
+  params->addParameter("other","cnn_data",&(params->CNN_data),0.0);
+  params->addParameter("other","cnn_data_playouts",&(params->CNN_data_playouts),0);
   
   params->addParameter("other","auto_save_sgf",&(params->auto_save_sgf),false);
   params->addParameter("other","auto_save_sgf_prefix",&(params->auto_save_sgf_prefix),"");
+  params->addParameter("other","version_config_file",&(params->version_config_file),"");
 
   params->addParameter("other","dt_update_prob",&(params->dt_update_prob),0.00);
   params->addParameter("other","dt_split_after",&(params->dt_split_after),1000);
@@ -295,7 +533,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   #endif
   
   patterntable=new Pattern::ThreeByThreeTable();
-  patterntable->loadPatternDefaults();
+  patterntable->loadPatternDefaults2();
   
   features=new Features(params);
   features->loadGammaDefaults();
@@ -311,7 +549,16 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   hashtree=new Go::ZobristTree();
   
   territorymap=new Go::TerritoryMap(boardsize);
+  area_correlation_map=new Go::TerritoryMap*[currentboard->getPositionMax()*2];
+#warning "memory allocated for area_correlation_map"
+  for (int i=0;i<currentboard->getPositionMax()*2;i++)
+  {
+    area_correlation_map[i]=new Go::TerritoryMap(boardsize);
+  }
+  probabilitymap=new Go::MoveProbabilityMap(boardsize);
   correlationmap=new Go::ObjectBoard<Go::CorrelationData>(boardsize);
+
+  respondboard=new Go::RespondBoard(boardsize);
   
   blackOldMoves=new float[currentboard->getPositionMax()];
   whiteOldMoves=new float[currentboard->getPositionMax()];
@@ -379,6 +626,11 @@ Engine::~Engine()
   delete patterntable;
   if (movetree!=NULL)
     delete movetree;
+  for (int i=0;i<currentboard->getPositionMax()*2;i++)
+  {
+    delete area_correlation_map[i];
+  }
+  delete area_correlation_map;
   delete currentboard;
   delete movehistory;
   delete moveexplanations;
@@ -389,13 +641,206 @@ Engine::~Engine()
   delete zobristtable;
   delete playout;
   delete territorymap;
+  delete probabilitymap;
   delete correlationmap;
-  delete blackOldMoves;
-  delete whiteOldMoves;
+  delete respondboard;
+  delete[] blackOldMoves;
+  delete[] whiteOldMoves;
+  delete[] deltagammas;
+  delete[] deltagammaslocal;
+
   for (std::list<DecisionTree*>::iterator iter=decisiontrees.begin();iter!=decisiontrees.end();++iter)
   {
     delete (*iter);
   }
+  if (caffe_test_net!=NULL) delete caffe_test_net;
+  if (caffe_area_net!=NULL) delete caffe_area_net;
+}
+
+void Engine::getCNN(Go::Board *board,Go::Color col, float result[])
+{
+	//if (board->getSize()!=19) {
+	//	fprintf(stderr,"only 19x19 supported by CNN\n");
+  //  for (int i=0;i<361;i++) result[i]=0.0;
+	//	return;
+	//}
+  int size=board->getSize();
+	float *data;
+  //board->calcSlowLibertyGroups();
+	data= new float[caffe_test_net_input_dim*size*size];
+	//fprintf(stderr,"2\n");
+	if (col==Go::BLACK) {
+	  for (int j=0;j<size;j++)
+	    for (int k=0;k<size;k++)
+		  {
+        for (int l=0;l<caffe_test_net_input_dim;l++) data[l*size*size+size*j+k]=0;
+        //fprintf(stderr,"%d %d %d\n",i,j,k);
+        int pos=Go::Position::xy2pos(j,k,size);
+        int libs=0;
+        if (board->inGroup(pos)) libs=board->getGroup(pos)->numRealLibs()-1;
+        if (libs>3) libs=3; 
+        if (board->getColor(pos)==Go::BLACK)
+	          {
+			  data[(0+libs)*size*size + size*j + k]=1.0;
+			  //data[size*size+size*j+k]=0.0;
+			  }
+	      else if (board->getColor(pos)==Go::WHITE)
+		      {
+			  //data[j*size+k]=0.0;
+			  data[(4+libs)*size*size + size*j + k]=1.0;
+			  }
+	      else if (board->getColor(Go::Position::xy2pos(j,k,size))==Go::EMPTY)
+	      {
+			    data[8*size*size + size*j + k]=1.0;
+			  }
+	    }
+	}
+	if (col==Go::WHITE) {
+	  for (int j=0;j<size;j++)
+	    for (int k=0;k<size;k++)
+		  {//fprintf(stderr,"%d %d %d\n",i,j,k);
+        for (int l=0;l<caffe_test_net_input_dim;l++) data[l*size*size+size*j+k]=0;
+        //fprintf(stderr,"%d %d %d\n",i,j,k);
+        int pos=Go::Position::xy2pos(j,k,size);
+        int libs=0;
+        if (board->inGroup(pos)) libs=board->getGroup(pos)->numRealLibs()-1;
+        if (libs>3) libs=3; 
+        if (board->getColor(pos)==Go::BLACK)
+	          {
+			  data[(4+libs)*size*size + size*j + k]=1.0;
+			  //data[size*size+size*j+k]=0.0;
+			  }
+	      else if (board->getColor(pos)==Go::WHITE)
+		      {
+			  //data[j*size+k]=0.0;
+			  data[(0+libs)*size*size + size*j + k]=1.0;
+			  }
+	      else if (board->getColor(pos)==Go::EMPTY)
+	      {
+			    data[8*size*size + size*j + k]=1.0;
+			  }
+    }
+	}
+if (caffe_test_net_input_dim > 9) {
+  if (board->getLastMove().isNormal()) {
+    int j=Go::Position::pos2x(board->getLastMove().getPosition(),size);
+    int k=Go::Position::pos2y(board->getLastMove().getPosition(),size);
+    data[9*size*size+size*j+k]=1.0;
+  }
+  if (board->getSecondLastMove().isNormal()) {
+    int j=Go::Position::pos2x(board->getSecondLastMove().getPosition(),size);
+    int k=Go::Position::pos2y(board->getSecondLastMove().getPosition(),size);
+    data[10*size*size+size*j+k]=1.0;
+  }
+  if (board->getThirdLastMove().isNormal()) {
+    int j=Go::Position::pos2x(board->getThirdLastMove().getPosition(),size);
+    int k=Go::Position::pos2y(board->getThirdLastMove().getPosition(),size);
+    data[11*size*size+size*j+k]=1.0;
+  }
+  if (board->getForthLastMove().isNormal()) {
+    int j=Go::Position::pos2x(board->getForthLastMove().getPosition(),size);
+    int k=Go::Position::pos2y(board->getForthLastMove().getPosition(),size);
+    data[12*size*size+size*j+k]=1.0;
+  }
+}
+    
+
+  Blob<float> *b=new Blob<float>(1,caffe_test_net_input_dim,size,size);
+  b->set_cpu_data(data);
+  vector<Blob<float>*> bottom;
+  bottom.push_back(b); 
+  //cudaSetDeviceFlags(cudaDeviceBlockingSync);
+  Caffe::set_mode(Caffe::GPU);
+  const vector<Blob<float>*>& rr =  caffe_test_net->Forward(bottom);
+  //fprintf(stderr,"start\n");
+  //clock_t tbegin = clock();
+  //for (int i=0;i<50;i++) {
+  //  const vector<Blob<float>*>& result =  caffe_test_net->Forward(bottom);
+  //}
+  //clock_t tend = clock();
+  //fprintf(stderr,"end %f\n",double(tend - tbegin) / CLOCKS_PER_SEC);
+  //for (int j=0;j<19;j++)
+	//{
+	//for (int k=0;k<19;k++)
+	//	{
+	//    fprintf(stderr,"%5.3f ",rr[0]->cpu_data()[j*19+k]);
+	//	}
+	//fprintf(stderr,"\n");
+	//}
+  for (int i=0;i<size*size;i++) {
+	  result[i]=rr[0]->cpu_data()[i];
+    if (result[i]<0.00001) result[i]=0.00001;
+  }
+  delete[] data;
+  delete b;
+}
+
+float Engine::getCNNwr(Go::Board *board,Go::Color col)
+{
+	if (board->getSize()!=19) {
+		fprintf(stderr,"only 19x19 supported by CNN\n");
+		return 0;
+	}
+	float *data;
+	data= new float[3*19*19];
+	//fprintf(stderr,"2\n");
+	if (col==Go::BLACK) {
+	  for (int j=0;j<19;j++)
+	    for (int k=0;k<19;k++)
+		  {//fprintf(stderr,"%d %d %d\n",i,j,k);
+	      if (board->getColor(Go::Position::xy2pos(j,k,19))==Go::BLACK)
+	          {
+			  data[j*19+k]=1.0;
+			  data[19*19+19*j+k]=0.0;
+			  }
+	      else if (board->getColor(Go::Position::xy2pos(j,k,19))==Go::WHITE)
+		      {
+			  data[j*19+k]=0.0;
+			  data[19*19+19*j+k]=1.0;
+			  }
+	      else
+	          {
+			  data[j*19+k]=0.0;
+			  data[19*19+19*j+k]=0.0;
+			  }
+        data[2*19*19+j*19+k]=komi;
+	    }
+	}
+	if (col==Go::WHITE) {
+	  for (int j=0;j<19;j++)
+	    for (int k=0;k<19;k++)
+		  {//fprintf(stderr,"%d %d %d\n",i,j,k);
+	      if (board->getColor(Go::Position::xy2pos(j,k,19))==Go::BLACK)
+	          {
+			  data[j*19+k]=0.0;
+			  data[19*19+19*j+k]=1.0;
+			  }
+	      else if (board->getColor(Go::Position::xy2pos(j,k,19))==Go::WHITE)
+		      {
+			  data[j*19+k]=1.0;
+			  data[19*19+19*j+k]=0.0;
+			  }
+	      else
+	          {
+			  data[j*19+k]=0.0;
+			  data[19*19+19*j+k]=0.0;
+			  }
+        data[2*19*19+j*19+k]=-komi;
+    }
+	}
+  Blob<float> *b=new Blob<float>(1,3,19,19);
+  b->set_cpu_data(data);
+  vector<Blob<float>*> bottom;
+  bottom.push_back(b); 
+  const vector<Blob<float>*>& rr =  caffe_area_net->Forward(bottom);
+  float wr_sum=0;
+  for (int i=0;i<361;i++) {
+    wr_sum+=rr[1]->cpu_data()[i];
+  }
+  
+  delete[] data;
+  delete b;
+  return 1.0-wr_sum/361.0;
 }
 
 void Engine::run(bool web_inf, std::string web_addr, int web_port)
@@ -540,6 +985,8 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("play",this,&Engine::gtpPlay);
   gtpe->addFunctionCommand("genmove",this,&Engine::gtpGenMove);
   gtpe->addFunctionCommand("reg_genmove",this,&Engine::gtpRegGenMove);
+  gtpe->addFunctionCommand("reg_ownerat",this,&Engine::gtpRegOwnerAt);
+  gtpe->addFunctionCommand("sg_compare_float",this,&Engine::gtpSgCompareFloat);
   gtpe->addFunctionCommand("kgs-genmove_cleanup",this,&Engine::gtpGenMoveCleanup);
   gtpe->addFunctionCommand("showboard",this,&Engine::gtpShowBoard);
   gtpe->addFunctionCommand("final_score",this,&Engine::gtpFinalScore);
@@ -564,7 +1011,10 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("listallpatterns",this,&Engine::gtpListAllPatterns);
   gtpe->addFunctionCommand("loadfeaturegammas",this,&Engine::gtpLoadFeatureGammas);
   gtpe->addFunctionCommand("savefeaturegammas",this,&Engine::gtpSaveFeatureGammas);
-  gtpe->addFunctionCommand("savefeaturegammasinline",this,&Engine::gtpSaveFeatureGammasInline);
+  gtpe->addFunctionCommand("loadcnnp",this,&Engine::gtpLoadCNNp);
+  gtpe->addFunctionCommand("loadcnnt",this,&Engine::gtpLoadCNNt);
+  gtpe->addFunctionCommand("savefeaturecircbinarc",this,&Engine::gtpSaveFeatureCircularBinary);
+  gtpe->addFunctionCommand("loadfeaturecircbinarc",this,&Engine::gtpLoadFeatureCircularBinary);
   gtpe->addFunctionCommand("loadcircpatterns",this,&Engine::gtpLoadCircPatterns);
   gtpe->addFunctionCommand("loadcircpatternsnot",this,&Engine::gtpLoadCircPatternsNot);
   gtpe->addFunctionCommand("savecircpatternvalues",this,&Engine::gtpSaveCircPatternValues);
@@ -582,6 +1032,8 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("time_left",this,&Engine::gtpTimeLeft);
   
   gtpe->addFunctionCommand("donplayouts",this,&Engine::gtpDoNPlayouts);
+  gtpe->addFunctionCommand("solidgroupat",this,&Engine::gtpSolidGroupAt);
+  gtpe->addFunctionCommand("donplayoutsaround",this,&Engine::gtpDoNPlayoutsAround);
   gtpe->addFunctionCommand("outputsgf",this,&Engine::gtpOutputSGF);
   gtpe->addFunctionCommand("playoutsgf",this,&Engine::gtpPlayoutSGF);
   gtpe->addFunctionCommand("playoutsgf_pos",this,&Engine::gtpPlayoutSGF_pos);
@@ -606,10 +1058,21 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("dobenchmark",this,&Engine::gtpDoBenchmark);
   gtpe->addFunctionCommand("showcriticality",this,&Engine::gtpShowCriticality);
   gtpe->addFunctionCommand("showterritory",this,&Engine::gtpShowTerritory);
+  gtpe->addFunctionCommand("showplayoutgammas",this,&Engine::gtpShowPlayoutGammas);
+  gtpe->addFunctionCommand("showprobabilitycnn",this,&Engine::gtpShowProbabilityCNN);
+  gtpe->addFunctionCommand("showterritorycnn",this,&Engine::gtpShowTerritoryCNN);
+  gtpe->addFunctionCommand("showatarirespondat",this,&Engine::gtpShowAtariCaptureAttached);
+  gtpe->addFunctionCommand("showterritoryat",this,&Engine::gtpShowTerritoryAt);
+  gtpe->addFunctionCommand("showterritoryerror",this,&Engine::gtpShowTerritoryError);
+  
+  gtpe->addFunctionCommand("showmoveprobability",this,&Engine::gtpShowMoveProbability);
   gtpe->addFunctionCommand("showcorrelationmap",this,&Engine::gtpShowCorrelationMap);
   gtpe->addFunctionCommand("showratios",this,&Engine::gtpShowRatios);
+  gtpe->addFunctionCommand("showreallibs",this,&Engine::gtpShowRealLibs);
+  gtpe->addFunctionCommand("showtreeplayouts",this,&Engine::gtpShowTreePlayouts);
   gtpe->addFunctionCommand("showunprune",this,&Engine::gtpShowUnPrune);
   gtpe->addFunctionCommand("showunprunecolor",this,&Engine::gtpShowUnPruneColor);
+  gtpe->addFunctionCommand("showownratios",this,&Engine::gtpShowOwnRatios);
   gtpe->addFunctionCommand("showraveratios",this,&Engine::gtpShowRAVERatios);
   gtpe->addFunctionCommand("showraveratioscolor",this,&Engine::gtpShowRAVERatiosColor);
   gtpe->addFunctionCommand("showraveratiosother",this,&Engine::gtpShowRAVERatiosOther);
@@ -624,6 +1087,8 @@ void Engine::addGtpCommands()
   gtpe->addFunctionCommand("dtdistribution",this,&Engine::gtpDTDistribution);
   gtpe->addFunctionCommand("dtstats",this,&Engine::gtpDTStats);
   gtpe->addFunctionCommand("dtpath",this,&Engine::gtpDTPath);
+  gtpe->addFunctionCommand("cputime",this,&Engine::gtpCPUtime);
+  gtpe->addFunctionCommand("version",this,&Engine::gtpVERSION);
   
   //gtpe->addAnalyzeCommand("final_score","Final Score","string");
   //gtpe->addAnalyzeCommand("showboard","Show Board","string");
@@ -640,8 +1105,11 @@ void Engine::addGtpCommands()
   //gtpe->addAnalyzeCommand("showsafepositions","Show Safe Positions","gfx");
   gtpe->addAnalyzeCommand("showpatternmatches","Show Pattern Matches","sboard");
   gtpe->addAnalyzeCommand("showratios","Show Ratios","sboard");
+  gtpe->addAnalyzeCommand("showreallibs","Show Real Libs","sboard");
+  gtpe->addAnalyzeCommand("showtreeplayouts %%c","Show Tree Playouts","sboard");
   gtpe->addAnalyzeCommand("showunprune","Show UnpruneFactor","sboard");
   gtpe->addAnalyzeCommand("showunprunecolor","Show UnpruneFactor (color display)","cboard");
+  gtpe->addAnalyzeCommand("showownratios","Show Own Ratios","sboard");
   gtpe->addAnalyzeCommand("showraveratios","Show RAVE Ratios","sboard");
   gtpe->addAnalyzeCommand("showraveratioscolor","Show RAVE Ratios (color display)","cboard");
   gtpe->addAnalyzeCommand("showraveratiosother","Show RAVE Ratios (other color)","sboard");
@@ -652,6 +1120,13 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("loadfeaturegammas %%r","Load Feature Gammas","none");
   gtpe->addAnalyzeCommand("showcriticality","Show Criticality","cboard");
   gtpe->addAnalyzeCommand("showterritory","Show Territory","dboard");
+  gtpe->addAnalyzeCommand("showplayoutgammas %%c","Show Playout Gammas","sboard");
+  gtpe->addAnalyzeCommand("showterritorycnn %%c","Show Territory CNN","dboard");
+  gtpe->addAnalyzeCommand("showprobabilitycnn %%c","Show Probability CNN","dboard");
+  gtpe->addAnalyzeCommand("showatarirespondat %%p %%c","Show Atarirespond At","sboard");
+  gtpe->addAnalyzeCommand("showterritoryat %%p %%c","Show Territory At","dboard");
+  gtpe->addAnalyzeCommand("showterritoryerror","Show Territory Error","dboard");
+  gtpe->addAnalyzeCommand("showmoveprobability","Show Move Probability","dboard");
   gtpe->addAnalyzeCommand("showcorrelationmap","Show Correlation","dboard");
   gtpe->addAnalyzeCommand("showtreelivegfx","Show Tree Live Gfx","gfx");
   gtpe->addAnalyzeCommand("loadpatterns %%r","Load Patterns","none");
@@ -665,6 +1140,8 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("param time","Parameters (Time)","param");
   gtpe->addAnalyzeCommand("param rules","Parameters (Rules)","param");
   gtpe->addAnalyzeCommand("param other","Parameters (Other)","param");
+  gtpe->addAnalyzeCommand("solidgroupat %%p","Solid Group At","none");
+  gtpe->addAnalyzeCommand("donplayoutsaround %%s %%p","Do N Playouts around","none");
   gtpe->addAnalyzeCommand("donplayouts %%s","Do N Playouts","none");
   gtpe->addAnalyzeCommand("donplayouts 1","Do 1 Playout","none");
   gtpe->addAnalyzeCommand("donplayouts 100","Do 100 Playouts","none");
@@ -750,7 +1227,7 @@ void Engine::gtpKomi(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 void Engine::gtpPlay(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
-  
+  //gtpe->getOutput()->printfDebug("gtpPlay called\n");
   if (cmd->numArgs()!=2)
   {
     gtpe->getOutput()->startResponse(cmd,false);
@@ -787,6 +1264,7 @@ void Engine::gtpPlay(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 void Engine::gtpGenMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
+  //gtpe->getOutput()->printfDebug("gtpGenMove called\n");
   
   if (cmd->numArgs()!=1)
   {
@@ -807,6 +1285,7 @@ void Engine::gtpGenMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   }
   
   Go::Move *move;
+  me->probabilitymap->decay(0);
   me->generateMove((gtpcol==Gtp::BLACK ? Go::BLACK : Go::WHITE),&move,true);
   Gtp::Vertex vert={move->getX(me->boardsize),move->getY(me->boardsize)};
   delete move;
@@ -883,7 +1362,7 @@ void Engine::gtpRegGenMove(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   delete move;
   
   gtpe->getOutput()->startResponse(cmd);
-  gtpe->getOutput()->printVertex(vert);
+  gtpe->getOutput()->printVertexUpperCase(vert);
   gtpe->getOutput()->endResponse();
 }
 
@@ -913,12 +1392,12 @@ void Engine::gtpUndo(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   }
 }
 
-float Engine::getScoreKomi() const
+float Engine::getScoreKomi() 
 { 
-//own test, did not look too bad!!!
-//float dynamic_komi=7.5*komi_handicap*exp(-5.0*sqrt(komi_handicap)*(float)currentboard->getMovesMade()/boardsize/boardsize);
-//  if (dynamic_komi<5)
-//    dynamic_komi=0;  //save the end game
+  //own test, did not look too bad!!!
+  //float dynamic_komi=7.5*komi_handicap*exp(-5.0*sqrt(komi_handicap)*(float)currentboard->getMovesMade()/boardsize/boardsize);
+  //  if (dynamic_komi<5)
+  //    dynamic_komi=0;  //save the end game
   //Formula Petr Baudis dynamic komi (N=200 for 19x19 board scaled to smaller boards)
   float dynamic_komi=0;
   if (params->dynkomi_enabled)
@@ -926,8 +1405,31 @@ float Engine::getScoreKomi() const
     dynamic_komi=7.0*komi_handicap*(1-(float)currentboard->getMovesMade()/(boardsize*boardsize*200.0/19.0/19.0));
     if (dynamic_komi<0)
       dynamic_komi=0;  //save the end game
+
+    if (params->recalc_dynkomi_limit>0 && movetree!=NULL && movetree->getRobustChild()!=NULL)
+    {
+      switch (movetree->getRobustChild()->getMove().getColor())
+      {
+        case Go::BLACK:
+          recalc_dynkomi=movetree->getRobustChild()->getScoreMean()*params->test_p11;
+          //if (recalc_dynkomi<0) recalc_dynkomi=0;
+          break;
+        case Go::WHITE:
+          recalc_dynkomi=-movetree->getRobustChild()->getScoreMean()*params->test_p11;
+          //if (recalc_dynkomi>0) recalc_dynkomi=0;
+          break;
+        default:
+          break;
+      }
+      if (recalc_dynkomi>30) recalc_dynkomi=params->recalc_dynkomi_limit;
+      else
+        if (recalc_dynkomi<-params->recalc_dynkomi_limit) recalc_dynkomi=-params->recalc_dynkomi_limit;
+      return komi+komi_handicap+dynamic_komi+recalc_dynkomi;
+    } 
+    else
+      return komi+komi_handicap+dynamic_komi;
   }
-  return komi+komi_handicap+dynamic_komi; 
+  return komi+komi_handicap;
 }
 
 float Engine::getHandiKomi() const
@@ -1168,6 +1670,114 @@ void Engine::gtpShowRatios(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   gtpe->getOutput()->endResponse(true);
 }
 
+
+void Engine::gtpShowAtariCaptureAttached(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  //me->respondboard->scale(0.2);
+  //Go::Color col=me->currentboard->nextToMove();
+  if (cmd->numArgs()!=2)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("color vertex is required");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  Gtp::Vertex vert = cmd->getVertexArg(0);
+  Gtp::Color gtpcol = cmd->getColorArg(1);
+
+  int pos=Go::Position::xy2pos(vert.x,vert.y,me->boardsize);
+  int num=0;
+  int capt=0;
+  std::list<std::pair<int,int>> responds=me->respondboard->getMoves(pos,(gtpcol==Gtp::BLACK)?Go::BLACK : Go::WHITE,num,capt);
+  fprintf(stderr,"allmoves %d %d\n",num,capt);
+  float rb[me->currentboard->getPositionMax()];
+  for (int i=0;i<me->currentboard->getPositionMax();i++)
+      rb[i]=0;
+  if (num>0) {
+    for (std::list<std::pair<int,int>>::iterator it=responds.begin();it!=responds.end();++it) {
+      fprintf(stderr,"respondmoves %d %d move %s  %f\n",it->first,it->second,Go::Move((gtpcol==Gtp::BLACK)?Go::WHITE : Go::BLACK,it->first).toString(me->boardsize).c_str(),(float)it->second/num);
+      rb[it->first]=-(float)it->second/num;
+    }
+  }
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("\n");
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      int pos=Go::Position::xy2pos(x,y,me->boardsize);
+      int val=(int)(rb[pos]*1000);
+      if (val>0)
+        gtpe->getOutput()->printf("\"%d\"",(int)(rb[pos]*1000));
+      else
+        gtpe->getOutput()->printf("\"\"");  
+    }
+    gtpe->getOutput()->printf("\n");
+  }
+
+  gtpe->getOutput()->endResponse(true);
+}
+
+void Engine::gtpShowRealLibs(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+//  Go::Color col=me->currentboard->nextToMove();
+  me->currentboard->calcSlowLibertyGroups();
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("\n");
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      int pos=Go::Position::xy2pos(x,y,me->boardsize);
+      int reallibs=0;
+      if (me->currentboard->inGroup(pos)) {
+        //reallibs=me->currentboard->getGroup(pos)->real_libs;
+        reallibs=me->currentboard->getGroup(pos)->numRealLibs();
+        if (me->currentboard->getGroup(pos)->real_libs!=reallibs)
+          fprintf(stderr,"this is not correct, liberties are wrong:(\n");
+      }
+      gtpe->getOutput()->printf("\"%d\"",reallibs);
+    }
+    gtpe->getOutput()->printf("\n");
+  }
+  gtpe->getOutput()->endResponse(true);
+}
+
+void Engine::gtpShowTreePlayouts(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  Go::IntBoard *treeboardBlack=new Go::IntBoard(me->boardsize); treeboardBlack->clear();
+  Go::IntBoard *treeboardWhite=new Go::IntBoard(me->boardsize); treeboardWhite->clear();
+  me->movetree->fillTreeBoard (treeboardBlack,treeboardWhite);
+  Gtp::Color gtpcol = cmd->getColorArg(0);
+  if (gtpcol==Gtp::INVALID)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("invalid color");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  Go::IntBoard *treeboard=((gtpcol==Gtp::BLACK)?treeboardBlack:treeboardWhite);
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("\n");
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      int pos=Go::Position::xy2pos(x,y,me->boardsize);
+      gtpe->getOutput()->printf("\"%.2f\"",log(treeboard->get(pos)+1));
+    }
+    gtpe->getOutput()->printf("\n");
+  }
+
+  gtpe->getOutput()->endResponse(true);
+  delete treeboardBlack;
+  delete treeboardWhite;
+}
+
 void Engine::gtpShowUnPrune(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
@@ -1195,6 +1805,36 @@ void Engine::gtpShowUnPrune(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd
 
   gtpe->getOutput()->endResponse(true);
 }
+
+void Engine::gtpShowOwnRatios(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  Go::Color col=me->currentboard->nextToMove();
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("\n");
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      int pos=Go::Position::xy2pos(x,y,me->boardsize);
+      Go::Move move=Go::Move(col,pos);
+      Tree *tree=me->movetree->getChild(move);
+      if (tree!=NULL)
+      {
+        float ratio=tree->getSelfOwner(me->boardsize);
+        gtpe->getOutput()->printf("\"%.2f\"",ratio);
+      }
+      else
+        gtpe->getOutput()->printf("\"\"");
+    }
+    gtpe->getOutput()->printf("\n");
+  }
+
+  gtpe->getOutput()->endResponse(true);
+}
+
+
 
 void Engine::gtpShowRAVERatios(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
@@ -1494,7 +2134,8 @@ void Engine::gtpPlayoutSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     std::list<Go::Move> playoutmoves;
     std::list<std::string> movereasons;
     Tree *playouttree = me->movetree->getUrgentChild(me->threadpool->getThreadZero()->getSettings());
-    me->playout->doPlayout(me->threadpool->getThreadZero()->getSettings(),playoutboard,finalscore,playouttree,playoutmoves,col,NULL,NULL,NULL,NULL,&movereasons);
+    float cnn_winrate=-2;
+    me->playout->doPlayout(me->threadpool->getThreadZero()->getSettings(),playoutboard,finalscore,cnn_winrate,playouttree,playoutmoves,col,NULL,NULL,NULL,NULL,&movereasons);
     if (finalscore*win>=0)
     {
       foundwin=true;
@@ -1551,16 +2192,23 @@ void Engine::gtpPlayoutSGF_pos(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
 
   bool success=false;
   bool foundwin=false;
-  int how_often=0,from_often=0;;
+  int how_often=0,from_often=0,numplayoutmoves=0;
+  me->currentboard->updatePlayoutGammas(me->params, me->features);
   for (int i=0;i<1000+1000;i++)
   {
     Go::Board *playoutboard=me->currentboard->copy();
+    if (me->debug_solid_group>=0 && playoutboard->inGroup(me->debug_solid_group)) {
+      playoutboard->hasSolidGroups=true;
+      Go::Group *thegroup=playoutboard->getGroup(me->debug_solid_group);
+      thegroup->setSolid ();
+    }
     Go::Color col=me->currentboard->nextToMove();
     float finalscore;
     std::list<Go::Move> playoutmoves;
     std::list<std::string> movereasons;
-    Tree *playouttree = me->movetree->getUrgentChild(me->threadpool->getThreadZero()->getSettings());
-    me->playout->doPlayout(me->threadpool->getThreadZero()->getSettings(),playoutboard,finalscore,playouttree,playoutmoves,col,NULL,NULL,NULL,NULL,&movereasons);
+    Tree *playouttree = me->movetree; //me->movetree->getUrgentChild(me->threadpool->getThreadZero()->getSettings());
+    float cnn_winrate=-2;
+    me->playout->doPlayout(me->threadpool->getThreadZero()->getSettings(),playoutboard,finalscore,cnn_winrate,playouttree,playoutmoves,col,NULL,NULL,NULL,NULL,&movereasons);
     if (finalscore!=0 && i<1000) from_often++;
     playoutboard->score();
     //fprintf(stderr,"playoutres %d %d finalscore: %f\n",i,playoutboard->getScoredOwner(where),finalscore);
@@ -1572,6 +2220,7 @@ void Engine::gtpPlayoutSGF_pos(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
       {
         foundwin=true;
         success=me->writeSGF(sgffile,me->currentboard,playoutmoves,&movereasons);
+        numplayoutmoves=playoutmoves.size();
         break;
       }
     }
@@ -1588,7 +2237,7 @@ void Engine::gtpPlayoutSGF_pos(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
   if (success)
   {
     gtpe->getOutput()->startResponse(cmd);
-    gtpe->getOutput()->printf("wrote sgf file: %s  found within the first %d playouts: %d",sgffile.c_str(),from_often,how_often);
+    gtpe->getOutput()->printf("wrote sgf file: %s  found within the first %d playouts: %d playoutmoves %d",sgffile.c_str(),from_often,how_often,numplayoutmoves);
     gtpe->getOutput()->endResponse();
   }
   else
@@ -1597,6 +2246,81 @@ void Engine::gtpPlayoutSGF_pos(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
     gtpe->getOutput()->printf("error writing sgf file: %s",sgffile.c_str());
     gtpe->getOutput()->endResponse();
   }
+}
+
+void Engine::gtpRegOwnerAt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  // usage reg_ownerat "Info String" treshhold Position
+  Engine *me=(Engine*)instance;
+
+  if (cmd->numArgs()!=2)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("need 2 arg");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+
+  std::string treshholdstring=cmd->getStringArg(0);
+  std::string where_wins=cmd->getStringArg(1);
+
+  int where=Go::Position::string2pos(where_wins,me->boardsize);
+
+  float treshold;
+  std::istringstream(treshholdstring)>>treshold;
+
+  float ownership=me->territorymap->getPositionOwner(where);
+
+  gtpe->getOutput()->printfDebug("values %f %f\n",treshold,ownership);
+  std::string res;
+  if (ownership<treshold)
+    res="-1";
+  else
+    res="1";
+
+  gtpe->getOutput()->startResponse(cmd,true);
+  gtpe->getOutput()->printf("%s",res.c_str());
+  gtpe->getOutput()->endResponse();
+  return;
+
+}
+
+void Engine::gtpSgCompareFloat(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  // usage sg_compare_float float name
+  Engine *me=(Engine*)instance;
+
+  if (cmd->numArgs()!=2)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("need 2 arg");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+
+  std::string treshholdstring=cmd->getStringArg(0);
+  std::string name=cmd->getStringArg(1);
+
+  float treshhold;
+  std::istringstream(treshholdstring)>>treshhold;
+
+  gtpe->getOutput()->printfDebug("values %f %f\n",treshhold,me->movetree->getRobustChild()->getRatio());
+  std::string res;
+  if (name.compare("uct_value")!=0)
+    res="name not supported";
+  else
+  {
+    if (me->movetree->getRobustChild()->getRatio()<treshhold)
+      res="-1";
+    else
+      res="1";
+  }
+
+  gtpe->getOutput()->startResponse(cmd,true);
+  gtpe->getOutput()->printf("%s",res.c_str());
+  gtpe->getOutput()->endResponse();
+  return;
+
 }
 
 void Engine::gtpOutputSGF(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
@@ -1671,6 +2395,50 @@ void Engine::gtpDoNPlayouts(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd
   
   int n=cmd->getIntArg(0);
   me->doNPlayouts(n);
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->endResponse();
+}
+
+void Engine::gtpSolidGroupAt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("need 1 arg");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  Gtp::Vertex vert = cmd->getVertexArg(0);
+  int a_pos=Go::Position::xy2pos(vert.x,vert.y,me->boardsize);
+  me->debug_solid_group=a_pos;
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->endResponse();
+}
+
+
+void Engine::gtpDoNPlayoutsAround(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=2)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("need 2 arg");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  int n=cmd->getIntArg(0);
+  Gtp::Vertex vert = cmd->getVertexArg(1);
+  int a_pos=Go::Position::xy2pos(vert.x,vert.y,me->boardsize);
+  me->clearMoveTree(a_pos);
+  me->doNPlayouts(n);
+  //me->clearMoveTree();
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->endResponse();
@@ -1781,11 +2549,24 @@ void Engine::gtpFeatureMatchesAt(void *instance, Gtp::Engine* gtpe, Gtp::Command
   gtpe->getOutput()->printf("SECONDLASTDIST:    %u\n",me->features->matchFeatureClass(Features::SECONDLASTDIST,board,cfglastdist,cfgsecondlastdist,move));
   gtpe->getOutput()->printf("CFGLASTDIST:       %u\n",me->features->matchFeatureClass(Features::CFGLASTDIST,board,cfglastdist,cfgsecondlastdist,move));
   gtpe->getOutput()->printf("CFGSECONDLASTDIST: %u\n",me->features->matchFeatureClass(Features::CFGSECONDLASTDIST,board,cfglastdist,cfgsecondlastdist,move));
+  gtpe->getOutput()->printf("NAKADE:            %u\n",me->features->matchFeatureClass(Features::NAKADE,board,cfglastdist,cfgsecondlastdist,move));
+  gtpe->getOutput()->printf("APPROACH:          %u\n",me->features->matchFeatureClass(Features::APPROACH,board,cfglastdist,cfgsecondlastdist,move));
   gtpe->getOutput()->printf("PATTERN3X3:        0x%04x\n",me->features->matchFeatureClass(Features::PATTERN3X3,board,cfglastdist,cfgsecondlastdist,move));
   gtpe->getOutput()->printf("CIRCPATT:          %u\n",me->features->matchFeatureClass(Features::CIRCPATT,board,cfglastdist,cfgsecondlastdist,move));
   float gamma=me->features->getMoveGamma(board,cfglastdist,cfgsecondlastdist,move);
   float total=me->features->getBoardGamma(board,cfglastdist,cfgsecondlastdist,col);
-  gtpe->getOutput()->printf("Gamma: %.2f/%.2f (%.2f)\n",gamma,total,gamma/total);
+  float totallog=me->features->getBoardGamma(board,cfglastdist,cfgsecondlastdist,col,true);
+  gtpe->getOutput()->printf("Gamma: %.2f/%.2f (%.2f) log %.2f\n",gamma,total,gamma/total,totallog);
+
+  Tree *tree=me->movetree->getChild(move);
+  if (tree) {
+    gtpe->getOutput()->printf("SelfBlack: %.2f\n",tree->getOwnSelfBlack());
+    gtpe->getOutput()->printf("SelfWhite: %.2f\n",tree->getOwnSelfWhite());
+    gtpe->getOutput()->printf("OwnBlack: %.2f\n",tree->getOwnRatio(Go::BLACK));
+    gtpe->getOutput()->printf("OwnWhite: %.2f\n",tree->getOwnRatio(Go::WHITE));
+    gtpe->getOutput()->printf("WhiteSlope: %.5f\n",tree->getSlope(Go::WHITE));
+    gtpe->getOutput()->printf("BlackSlope: %.5f\n",tree->getSlope(Go::BLACK));
+  }
   gtpe->getOutput()->endResponse(true);
   
   if (cfglastdist!=NULL)
@@ -1927,6 +2708,110 @@ void Engine::gtpLoadFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Comman
   }
 }
 
+void Engine::gtpLoadCNNt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=2)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("need 2 arg");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  std::string filename_net=cmd->getStringArg(0);
+  std::string filename_parameters=cmd->getStringArg(1);
+
+  bool success=true;
+  //the library does not really seem to throw exceptions, but just exit :(
+  try {
+    if (caffe_area_net!=NULL) delete caffe_area_net;
+    caffe_area_net = new Net<float>(filename_net,TEST);
+    caffe_area_net->CopyTrainedLayersFrom(filename_parameters);
+//    caffe_area_net->set_mode_gpu();
+  }
+  catch (int e) {
+    gtpe->getOutput()->printf("try catch %d\n",e);
+    success=false;
+  }
+
+  if (success)
+  {
+    #ifdef HAVE_MPI
+      if (me->mpirank==0)
+      {
+        fprintf(stderr,"Attention, mpi not implemented yet!!!\n");
+      }
+    #endif
+    
+    gtpe->getOutput()->startResponse(cmd);
+    gtpe->getOutput()->printf("loaded CNN file: %s and %s learned file",filename_net.c_str(),filename_parameters.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+  else
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("error loading features gamma file: %s",filename_net.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+}
+
+void Engine::gtpLoadCNNp(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=2)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("need 2 arg");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  std::string filename_net=cmd->getStringArg(0);
+  std::string filename_parameters=cmd->getStringArg(1);
+
+  bool success=true;
+  //the library does not really seem to throw exceptions, but just exit :(
+  try {
+    if (caffe_test_net!=NULL) delete caffe_test_net;
+    fprintf(stderr,"ok, create net\n");
+    caffe_test_net = new Net<float>(filename_net,TEST);
+    fprintf(stderr,"ok, created net\n");
+    caffe_test_net->CopyTrainedLayersFrom(filename_parameters);
+    int t2=Caffe::mode();
+    caffe_test_net_input_dim=caffe_test_net->input_blobs()[0]->shape()[1];
+    fprintf(stderr,"!!!!!!!!!!!!!!!!!!!!!!!! %d shape %d\n",t2,caffe_test_net_input_dim);
+    
+//    caffe_test_net->set_mode_gpu();
+  }
+  catch (int e) {
+    gtpe->getOutput()->printf("try catch %d\n",e);
+    success=false;
+  }
+
+  if (success)
+  {
+    #ifdef HAVE_MPI
+      if (me->mpirank==0)
+      {
+        fprintf(stderr,"Attention, mpi not implemented yet!!!\n");
+      }
+    #endif
+    
+    gtpe->getOutput()->startResponse(cmd);
+    gtpe->getOutput()->printf("loaded CNN file: %s and %s learned file",filename_net.c_str(),filename_parameters.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+  else
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("error loading features gamma file: %s",filename_net.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+}
+
 void Engine::gtpSaveFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
@@ -1957,7 +2842,7 @@ void Engine::gtpSaveFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Comman
   }
 }
 
-void Engine::gtpSaveFeatureGammasInline(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+void Engine::gtpSaveFeatureCircularBinary(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
   
@@ -1971,18 +2856,48 @@ void Engine::gtpSaveFeatureGammasInline(void *instance, Gtp::Engine* gtpe, Gtp::
   
   std::string filename=cmd->getStringArg(0);
   
-  bool success=me->features->saveGammaFileInline(filename);
+  bool success=me->features->saveCircularBinary(filename);
   
   if (success)
   {
     gtpe->getOutput()->startResponse(cmd);
-    gtpe->getOutput()->printf("saveded features gamma file: %s",filename.c_str());
+    gtpe->getOutput()->printf("saveded binary circular pattern file: %s",filename.c_str());
     gtpe->getOutput()->endResponse();
   }
   else
   {
     gtpe->getOutput()->startResponse(cmd,false);
-    gtpe->getOutput()->printf("error saveing features gamma file: %s",filename.c_str());
+    gtpe->getOutput()->printf("error saveing binary circular pattern file: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+}
+
+void Engine::gtpLoadFeatureCircularBinary(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("need 1 arg");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  std::string filename=cmd->getStringArg(0);
+  
+  bool success=me->features->loadCircularBinary(filename);
+  
+  if (success)
+  {
+    gtpe->getOutput()->startResponse(cmd);
+    gtpe->getOutput()->printf("loaded binary circular pattern file: %s",filename.c_str());
+    gtpe->getOutput()->endResponse();
+  }
+  else
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printf("error loading binary circular pattern file: %s",filename.c_str());
     gtpe->getOutput()->endResponse();
   }
 }
@@ -2008,13 +2923,14 @@ void Engine::gtpLoadCircPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command
   
   if (success)
   {
-    #ifdef HAVE_MPI
-      if (me->mpirank==0)
-      {
-        me->mpiBroadcastCommand(MPICMD_LOADFEATUREGAMMAS);
-        me->mpiBroadcastString(filename);
-      }
-    #endif
+    //MPI code missing here!!!!
+    //#ifdef HAVE_MPI
+    //  if (me->mpirank==0)
+    //  {
+    //    me->mpiBroadcastCommand(MPICMD_LOADFEATUREGAMMAS);
+    //    me->mpiBroadcastString(filename);
+    //  }
+    //#endif
     
     gtpe->getOutput()->startResponse(cmd);
     gtpe->getOutput()->printf("loaded circpatterns file: %s",filename.c_str());
@@ -2155,7 +3071,7 @@ void Engine::gtpListFeatureIds(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
   Engine *me=(Engine*)instance;
   
   gtpe->getOutput()->startResponse(cmd);
-  gtpe->getOutput()->printf("\n%s",me->features->getFeatureIdList().c_str());
+  gtpe->getOutput()->printf("\n%s",me->features->getFeatureIdList(me->params->features_output_for_playout).c_str());
   gtpe->getOutput()->endResponse(true);
 }
 
@@ -2437,11 +3353,11 @@ void Engine::gtpListAdjacentGroupsOf(void *instance, Gtp::Engine* gtpe, Gtp::Com
   
   if (group!=NULL)
   {
-    std::list<int,Go::allocator_int> *adjacentgroups=group->getAdjacentGroups();
+    Go::list_short *adjacentgroups=group->getAdjacentGroups();
     
     gtpe->getOutput()->startResponse(cmd);
     gtpe->getOutput()->printf("list of size %d:\n",adjacentgroups->size());
-    for(std::list<int,Go::allocator_int>::iterator iter=adjacentgroups->begin();iter!=adjacentgroups->end();++iter)
+    for(auto iter=adjacentgroups->begin();iter!=adjacentgroups->end();++iter)
     {
       if (me->currentboard->inGroup((*iter)))
         gtpe->getOutput()->printf("%s\n",Go::Position::pos2string((*iter),me->boardsize).c_str());
@@ -2758,7 +3674,8 @@ void Engine::gtpDoBenchmark(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd
   {
     Go::Board *board=new Go::Board(me->boardsize);
     std::list<Go::Move> playoutmoves;
-    me->playout->doPlayout(me->threadpool->getThreadZero()->getSettings(),board,finalscore,NULL,playoutmoves,Go::BLACK,NULL,NULL,NULL,NULL);
+    float cnn_winrate=-2;
+    me->playout->doPlayout(me->threadpool->getThreadZero()->getSettings(),board,finalscore,cnn_winrate,NULL,playoutmoves,Go::BLACK,NULL,NULL,NULL,NULL);
     delete board;
   }
   
@@ -2807,7 +3724,6 @@ void Engine::gtpShowCriticality(void *instance, Gtp::Engine* gtpe, Gtp::Command*
       {
         float crit=tree->getCriticality();
         float plts=(me->params->uct_criticality_siblings?me->movetree->getPlayouts():tree->getPlayouts());
-        //fprintf(stderr,"%f\n",crit);
         if (crit==0 && (!move.isNormal() || plts==0))
           gtpe->getOutput()->printf("\"\" ");
         else
@@ -2841,8 +3757,8 @@ void Engine::gtpShowCriticality(void *instance, Gtp::Engine* gtpe, Gtp::Command*
 }
 
 //#define wf(A)   ((A-0.5>0)?(sqrt(2*(A-0.5))+1)/2.0:(1.0-sqrt(-2*(A-0.5)))/2.0)
-//#define wf(A)   A
-#define wf(A) pow(A,0.5)
+#define wf(A)   A
+//#define wf(A) pow(A,0.5)
 void Engine::gtpShowTerritory(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
@@ -2877,6 +3793,366 @@ void Engine::gtpShowTerritory(void *instance, Gtp::Engine* gtpe, Gtp::Command* c
     gtpe->getOutput()->printf("Territory %.1f Komi %.1f W+%.1f (with ScoreKomi %.1f) (%.1f)\n",
       territorycount,me->getHandiKomi(),-(territorycount-me->getHandiKomi()),-(territorycount-me->getScoreKomi()),me->getScoreKomi());
     
+  gtpe->getOutput()->endResponse(true);
+}
+
+void Engine::gtpShowProbabilityCNN(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  me->doNPlayouts(100);
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("color is required");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  Gtp::Color gtpcol = cmd->getColorArg(0);
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("\n");
+  //if (me->boardsize !=19)
+  //{
+  //  gtpe->getOutput()->printString("This only works on 19x19!!!!\n");
+  //  gtpe->getOutput()->endResponse(false);
+  //  return;
+  //}
+  int bsize=me->boardsize;
+  float result[bsize*bsize];
+
+  me->getCNN(me->currentboard,(gtpcol==Gtp::BLACK)?Go::BLACK:Go::WHITE,result);
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      float black=result[bsize*x+y];
+      gtpe->getOutput()->printf("%.2f ",black);
+    }
+    gtpe->getOutput()->printf("\n");
+  }
+  gtpe->getOutput()->endResponse(true);
+}
+
+void Engine::gtpShowTerritoryCNN(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  me->doNPlayouts(100);
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("color is required");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  Gtp::Color gtpcol = cmd->getColorArg(0);
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("\n");
+  if (me->boardsize !=19)
+  {
+    gtpe->getOutput()->printString("This only works on 19x19!!!!\n");
+    gtpe->getOutput()->endResponse(false);
+    return;
+  }
+  float *data;
+  //fprintf(stderr,"1\n");
+  data= new float[3*19*19];
+  for (int j=0;j<19;j++)
+	  for (int k=0;k<19;k++)
+		{
+	    int pos=Go::Position::xy2pos(j,k,me->boardsize);
+      Go::Color col=me->currentboard->getColor(pos);
+		  if (gtpcol==Gtp::BLACK) {
+        if (col==Go::BLACK)
+          data[0*19*19+j*19+k]=1.0;
+        else
+          data[0*19*19+j*19+k]=0.0;
+        if (col==Go::WHITE)  
+		      data[1*19*19+j*19+k]=1.0;
+        else
+          data[1*19*19+j*19+k]=0.0;
+      data[2*19*19+j*19+k]=me->komi;
+      }
+      else {
+        if (col==Go::WHITE)
+          data[0*19*19+j*19+k]=1.0;
+        else
+          data[0*19*19+j*19+k]=0.0;
+        if (col==Go::BLACK)  
+		      data[1*19*19+j*19+k]=1.0;
+        else
+          data[1*19*19+j*19+k]=0.0;
+      data[2*19*19+j*19+k]=-me->komi;
+      }
+    }
+
+  float result[361];
+  float diffprob[121];
+  float wr[361];
+  Blob<float> *b=new Blob<float>(1,3,19,19);
+  b->set_cpu_data(data);
+  vector<Blob<float>*> bottom;
+  bottom.push_back(b); 
+  const vector<Blob<float>*>& rr =  caffe_area_net->Forward(bottom);
+  for (int i=0;i<361;i++) {
+	  wr[i]=rr[1]->cpu_data()[i];
+    //gtpe->getOutput()->printf("wr%.3f",wr[i]);
+  }
+  //gtpe->getOutput()->printf("\n");
+  for (int i=0;i<361;i++) {
+	  result[i]=rr[2]->cpu_data()[i];
+    //gtpe->getOutput()->printf("tr%.3f",result[i]);
+  }
+  //gtpe->getOutput()->printf("\n");
+  for (int i=0;i<121;i++) {
+    diffprob[i]=rr[0]->cpu_data()[i];
+    //gtpe->getOutput()->printf("pd%.3f",diffprob[i]);
+  }
+  float territorycount=0;
+  float norm=0;
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      int pos=Go::Position::xy2pos(x,y,me->boardsize);
+      float territory=me->territorymap->getPositionOwner(pos);
+      float black=result[19*x+y];
+      if (gtpcol!=Gtp::BLACK)
+        black=-black;
+      norm+=pow(black-territory,2);
+      //float white=result[1*19*19 +19*x+y];
+      //this later if everything is working
+      //if (black>white)
+      //  gtpe->getOutput()->printf("%.2f ",black);
+      //else
+      //  gtpe->getOutput()->printf("%.2f ",-white);
+      //if (gtpcol==Gtp::BLACK)
+      //  gtpe->getOutput()->printf("%.2f ",black);
+      //else
+      //  gtpe->getOutput()->printf("%.2f ",-white);
+      territorycount+=black;
+      gtpe->getOutput()->printf("%.2f ",black);
+    }
+    gtpe->getOutput()->printf("\n");
+  }
+  float winprob=0;
+  float komipos=60+me->getScoreKomi();
+  if (gtpcol!=Gtp::BLACK)
+    komipos=60-me->getScoreKomi();
+  for (int i=0;i<121;i++) {
+    gtpe->getOutput()->printf("%3.0f ",diffprob[i]*1000.0);
+    if (i<komipos) winprob+=diffprob[i];
+    if (i==komipos) winprob+=diffprob[i]/2.0;
+  }
+  gtpe->getOutput()->printf("\n");
+  for (int i=0;i<121;i++) {
+    gtpe->getOutput()->printf("%3d ",i-60);
+  }
+  float wr_sum=0,wr_sqrt=0;
+  for (int i=0;i<361;i++) {
+    wr_sum+=wr[i];
+    wr_sqrt+=wr[i]*wr[i];
+  }
+  gtpe->getOutput()->printf("\nwinprob1: %.3f\n",1.0-winprob);
+  gtpe->getOutput()->printf("winprob2: %.3f (%.3f)\n",1.0-wr_sum/361.0,wr_sqrt/361.0-(wr_sum*wr_sum/361.0/361.0));
+  
+  if (territorycount-me->getHandiKomi()>0)
+    gtpe->getOutput()->printf("Territory %.1f Komi %.1f B+%.1f (with ScoreKomi %.1f) (%.1f) (norm %.2f)\n",
+      territorycount,me->getHandiKomi(),territorycount-me->getHandiKomi(),territorycount-me->getScoreKomi(),me->getScoreKomi(),sqrt(norm));
+  else
+    gtpe->getOutput()->printf("Territory %.1f Komi %.1f W+%.1f (with ScoreKomi %.1f) (%.1f) (norm %.2f)\n",
+      territorycount,me->getHandiKomi(),-(territorycount-me->getHandiKomi()),-(territorycount-me->getScoreKomi()),me->getScoreKomi(),sqrt(norm));
+  gtpe->getOutput()->endResponse(true);
+  delete[] data;
+  delete b;
+}
+
+void Engine::gtpShowPlayoutGammas(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  if (cmd->numArgs()!=1)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("color is required");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  Gtp::Color gtpcol = cmd->getColorArg(0);
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("\n");
+  me->currentboard->updatePlayoutGammas(me->params, me->features);
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      int pos=Go::Position::xy2pos(x,y,me->boardsize);
+      float gammaval=0;
+      if (gtpcol==Gtp::BLACK)
+        gammaval=me->currentboard->blackgammas->get(pos);
+      else
+        gammaval=me->currentboard->whitegammas->get(pos);
+        
+      gtpe->getOutput()->printf("\"%.2f\"",gammaval);
+    }
+    gtpe->getOutput()->printf("\n");
+  }
+  gtpe->getOutput()->endResponse(true);
+}
+
+
+float Engine::getAreaCorrelation(Go::Move m)
+{
+  int showpos=m.getPosition();
+  if (showpos<0) return 0;
+  int color_offset=0;
+  if (m.getColor()==Go::BLACK)
+    color_offset=currentboard->getPositionMax();
+
+  float sqrsum=0;
+  float sqrsumcol=0;
+  float playouts=area_correlation_map[showpos+color_offset]->getPlayouts();
+  for (int y=boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<boardsize;x++)
+    {
+      int pos=Go::Position::xy2pos(x,y,boardsize);
+      float tmp=area_correlation_map[showpos+color_offset]->getPositionOwner(pos)-territorymap->getPositionOwner(pos);
+      tmp*=playouts/(playouts+params->test_p43); 
+      sqrsum+=tmp*tmp;
+      if ((m.getColor()==Go::BLACK && tmp>0) || (m.getColor()==Go::WHITE && tmp<0))
+        sqrsumcol+=tmp*tmp;
+    }
+  }
+  return sqrt(sqrsumcol)/boardsize/boardsize;
+}
+
+void Engine::gtpShowTerritoryAt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  if (cmd->numArgs()!=2)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("color vertex is required");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+  
+  Gtp::Vertex vert = cmd->getVertexArg(0);
+  Gtp::Color gtpcol = cmd->getColorArg(1);
+  int color_offset=0;
+  if (gtpcol==Gtp::BLACK)
+    color_offset=me->currentboard->getPositionMax();
+  
+  if (vert.x==-3 && vert.y==-3)
+  {
+    gtpe->getOutput()->startResponse(cmd,false);
+    gtpe->getOutput()->printString("invalid vertex");
+    gtpe->getOutput()->endResponse();
+    return;
+  }
+
+  int showpos=Go::Position::xy2pos(vert.x,vert.y,me->boardsize);
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("\n");
+  float territorycount=0;
+  float sqrsum=0;
+  float sqrsumcol=0;
+  float playouts=me->area_correlation_map[showpos+color_offset]->getPlayouts();
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      int pos=Go::Position::xy2pos(x,y,me->boardsize);
+      float tmp=me->area_correlation_map[showpos+color_offset]->getPositionOwner(pos)-me->territorymap->getPositionOwner(pos);
+      tmp*=playouts/(playouts+me->params->test_p43); 
+      sqrsum+=tmp*tmp;
+      if ((gtpcol==Gtp::BLACK && tmp>0) || (gtpcol==Gtp::WHITE && tmp<0))
+        sqrsumcol+=tmp*tmp;
+      //if (tmp>0.2) territorycount++;
+      //if (tmp<-0.2) territorycount--;
+      if (tmp<0)
+        territorycount-=wf(-tmp);
+      else
+        territorycount+=wf(tmp);
+      if (tmp<0)
+        gtpe->getOutput()->printf("%.2f ",-wf(-tmp));
+      else
+        gtpe->getOutput()->printf("%.2f ",wf(tmp));  
+    }
+    gtpe->getOutput()->printf("\n");
+  }
+
+  Go::Move m=Go::Move((gtpcol==Gtp::BLACK)?Go::BLACK:Go::WHITE,showpos);
+    gtpe->getOutput()->printf("Playouts %f meandiff %f meandiff color %f check %f\n",
+                 playouts,sqrt(sqrsum)/me->boardsize/me->boardsize,sqrt(sqrsumcol)/me->boardsize/me->boardsize,me->getAreaCorrelation(m));
+
+    gtpe->getOutput()->endResponse(true);
+}
+
+void Engine::gtpShowTerritoryError(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("\n");
+
+  float maxerror=0.00000001;
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      int pos=Go::Position::xy2pos(x,y,me->boardsize);
+      Go::Move m1=Go::Move(Go::BLACK,pos);
+      Go::Move m2=Go::Move(Go::WHITE,pos);
+      
+      float tmp=me->getAreaCorrelation(m1)+me->getAreaCorrelation(m2);
+      if (tmp>maxerror) maxerror=tmp;
+      
+    }
+  }
+
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      int pos=Go::Position::xy2pos(x,y,me->boardsize);
+      Go::Move m1=Go::Move(Go::BLACK,pos);
+      Go::Move m2=Go::Move(Go::WHITE,pos);
+      
+      float tmp1=me->getAreaCorrelation(m1);
+      float tmp2=me->getAreaCorrelation(m2);
+      if (tmp2>tmp1)
+        gtpe->getOutput()->printf("%.2f ",-(tmp2+tmp1)/maxerror);
+      else
+        gtpe->getOutput()->printf("%.2f ",(tmp2+tmp1)/maxerror);
+    }
+    gtpe->getOutput()->printf("\n");
+  }
+  gtpe->getOutput()->printf("maxvalue %f\n",maxerror);
+  gtpe->getOutput()->endResponse(true);
+}
+
+void Engine::gtpShowMoveProbability(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printString("\n");
+  for (int y=me->boardsize-1;y>=0;y--)
+  {
+    for (int x=0;x<me->boardsize;x++)
+    {
+      int pos=Go::Position::xy2pos(x,y,me->boardsize);
+      float tmp=me->probabilitymap->getMoveAs(pos)/me->currentboard->numOfValidMoves();
+      gtpe->getOutput()->printf("%.2f ",tmp);  
+    }
+    gtpe->getOutput()->printf("\n");
+  }
+
   gtpe->getOutput()->endResponse(true);
 }
 
@@ -3040,15 +4316,16 @@ void Engine::gtpTimeSettings(void *instance, Gtp::Engine* gtpe, Gtp::Command* cm
 void Engine::gtpTimeLeft(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
-  
-  if (me->time->isNoTiming())
-  {
-    gtpe->getOutput()->startResponse(cmd,false);
-    gtpe->getOutput()->printString("no time settings defined");
-    gtpe->getOutput()->endResponse();
-    return;
-  }
-  else if (cmd->numArgs()!=3)
+
+//  if (me->time->isNoTiming())
+//  {
+//  gtpe->getOutput()->startResponse(cmd,false);
+//   gtpe->getOutput()->printString("no time settings defined");
+//   gtpe->getOutput()->endResponse();
+// return;
+// }
+//else 
+  if (cmd->numArgs()!=3)
   {
     gtpe->getOutput()->startResponse(cmd,false);
     gtpe->getOutput()->printString("invalid arguments");
@@ -3063,6 +4340,10 @@ void Engine::gtpTimeLeft(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     gtpe->getOutput()->printString("invalid color");
     gtpe->getOutput()->endResponse();
     return;
+  }
+  if (me->time->isNoTiming()) {
+    me->time=new Time(me->params,cmd->getIntArg(1),0,0);
+    fprintf(stderr,"time_left before time_setting\n");
   }
   Go::Color col=(gtpcol==Gtp::BLACK ? Go::BLACK : Go::WHITE);
   
@@ -3608,6 +4889,7 @@ void Engine::learnFromTree(Go::Board *tmpboard, Tree *learntree, std::ostringstr
 void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
 {
   clearStatistics();
+  respondboard->scale(0.2);
 
   if (params->book_use)
   {
@@ -3711,21 +4993,44 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     std::ostringstream ssun;
     if (params->mm_learn_enabled)
       learnFromTree (currentboard,movetree,&ssun,1);
+    else
+    {
+      ssun<<" un:(";
+      for (int nn=1;nn<=num_unpruned;nn++)
+      {
+        for(std::list<Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
+        {
+          if ((*iter)->getUnprunedNum()==nn && (*iter)->isPrimary() && !(*iter)->isPruned())
+          {
+            ssun<<(nn!=1?",":"")<<Go::Position::pos2string((*iter)->getMove().getPosition(),boardsize);
+          }
+        }
+      }
+    ssun<<")";
+    }
     ssun<<"st:(";
     for (int nn=0;nn<STATISTICS_NUM;nn++)
     {
-      ssun<<(nn!=0?",":"");
+      //ssun<<((nn!=0)?",":"");
+      if (nn!=0) ssun<<",";
+      //ssun<<nn;
+      //ssun<<"-";
       ssun<<getStatistics (nn);
     }
     ssun<<")";
     ssun<< " ravepreset: " << (presetplayouts/presetnum);
     Tree *besttree=movetree->getRobustChild();
+    if (besttree->isPruned()) {
+      fprintf(stderr,"besttree is pruned but has %f playouts ?!\n",besttree->getPlayouts()); 
+    }
     float scoresd=0;
     float scoremean=0;
     float bestratio=0;
     int   best_unpruned=0;
     float ratiodelta=-1;
     bool bestsame=false;
+    int eq_moves=0;
+    int eq_moves2=0;
     if (besttree==NULL)
     {
       fprintf(stderr,"WARNING! No move found!\n");
@@ -3735,11 +5040,15 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     {
       *move=new Go::Move(col,Go::Move::RESIGN);
       bestratio=besttree->getRatio();
+      eq_moves=besttree->countMoveCirc();
+      eq_moves2=besttree->countMoveCirc2();
     }
     else
     {
       *move=new Go::Move(col,besttree->getMove().getPosition());
       bestratio=besttree->getRatio();
+      eq_moves=besttree->countMoveCirc();
+      eq_moves2=besttree->countMoveCirc2();
       scoresd=besttree->getScoreSD();
       scoremean=besttree->getScoreMean();
       best_unpruned=besttree->getUnprunedNum();
@@ -3790,9 +5099,40 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     ss << " rd:"<<std::setprecision(3)<<ratiodelta;
     ss << " r2:"<<std::setprecision(2)<<params->uct_last_r2;
     ss << " fs:"<<std::setprecision(2)<<scoremean;
+    ss << " eq:"<<eq_moves;
+    ss << " eq2:"<<eq_moves2;
+    if (params->recalc_dynkomi_limit>0)  //do not accept loosing!
+    {
+      ss<< " dyn:"<<std::setprecision(1)<<recalc_dynkomi;
+      /*
+       * used if it is calculated from the last move
+       switch ((*move)->getColor())
+      {
+        case Go::BLACK:
+          //recalc_dynkomi+=scoremean/10.0;
+          recalc_dynkomi=scoremean/2.0;
+          if (recalc_dynkomi<0) recalc_dynkomi=0; //do not accept loosing
+          break;
+        case Go::WHITE:
+          //recalc_dynkomi-=scoremean/10.0;
+          recalc_dynkomi=-scoremean/2.0;
+          if (recalc_dynkomi>0) recalc_dynkomi=0; //do not accept loosing
+          break;
+        default:
+          break;
+      }
+      if (recalc_dynkomi>params->recalc_dynkomi_limit)
+        recalc_dynkomi=params->recalc_dynkomi_limit;
+      else
+        if (recalc_dynkomi<-params->recalc_dynkomi_limit)
+          recalc_dynkomi=-params->recalc_dynkomi_limit;
+      */
+    }
     ss << " fsd:"<<std::setprecision(2)<<scoresd;
     ss << " un:"<<best_unpruned<<"/"<<num_unpruned;
     ss << " bs:"<<bestsame;
+
+    
     
     Tree *pvtree=movetree->getRobustChild(true);
     if (pvtree!=NULL)
@@ -3824,13 +5164,88 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     *move=new Go::Move(col,Go::Move::PASS);
     Go::Board *playoutboard=currentboard->copy();
     playoutboard->turnSymmetryOff();
-    if (params->playout_features_enabled)
-      playoutboard->setFeatures(features,params->playout_features_incremental);
-    playout->getPlayoutMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,**move,NULL);
+    if (params->playout_features_enabled>0)
+      playoutboard->setFeatures(features,params->playout_features_incremental,params->test_p8==0);
+    if (params->csstyle_enabled) {
+      if (params->playout_features_enabled)
+        fprintf(stderr,"playout_features_enabled and csstyle_enabled can not be used together!!!!\n");
+      playoutboard->updatePlayoutGammas(params, features);
+    }
+    critstruct *critarray=NULL;
+    float *b_ravearray=NULL;
+    float *w_ravearray=NULL;
+    Tree *pooltree=movetree;
+    if (pooltree!=NULL)
+    {
+      critarray=new critstruct[playoutboard->getPositionMax()];
+      for (int i=0;i<playoutboard->getPositionMax ();i++)
+          critarray[i]={0,0,0,0,0};
+      b_ravearray=new float[playoutboard->getPositionMax()];
+      w_ravearray=new float[playoutboard->getPositionMax()];
+      //fprintf(stderr,"poolrave %f number children %d\n",pooltree->getRAVEPlayouts(),pooltree->getChildren()->size());
+      for(std::list<Tree*>::iterator iter=pooltree->getChildren()->begin();iter!=pooltree->getChildren()->end();++iter) 
+        {
+          if (!(*iter)->getMove().isPass())
+          {
+            critarray[(*iter)->getMove().getPosition()].crit=(*iter)->getCriticality();
+			      critarray[(*iter)->getMove().getPosition()].ownselfblack=(*iter)->getOwnSelfBlack();
+			      critarray[(*iter)->getMove().getPosition()].ownselfwhite=(*iter)->getOwnSelfWhite();
+			      critarray[(*iter)->getMove().getPosition()].ownblack=(*iter)->getOwnRatio(Go::BLACK);
+			      critarray[(*iter)->getMove().getPosition()].ownwhite=(*iter)->getOwnRatio(Go::WHITE);
+            critarray[(*iter)->getMove().getPosition()].slopeblack=(*iter)->getSlope(Go::BLACK);
+			      critarray[(*iter)->getMove().getPosition()].slopewhite=(*iter)->getSlope(Go::WHITE);
+            critarray[(*iter)->getMove().getPosition()].isbadblack=false;
+            critarray[(*iter)->getMove().getPosition()].isbadwhite=false;
+            
+            if (params->debug_on)
+            {
+              fprintf(stderr,"move %s %d crit %f ownblack %f ownwhite %f ownrationb %f ownrationw %f slopeblack %f slopewhite %f\n",
+                    (*iter)->getMove().toString(playoutboard->getSize()).c_str(),(*iter)->getMove().getPosition(),
+                    critarray[(*iter)->getMove().getPosition()].crit,
+                    critarray[(*iter)->getMove().getPosition()].ownselfblack,
+                    critarray[(*iter)->getMove().getPosition()].ownselfwhite,
+                    critarray[(*iter)->getMove().getPosition()].ownblack,
+                    critarray[(*iter)->getMove().getPosition()].ownwhite,
+                    critarray[(*iter)->getMove().getPosition()].slopeblack,
+			              critarray[(*iter)->getMove().getPosition()].slopewhite
+                      );
+            (*iter)->displayOwnerCounts();
+            }
+            if ((*iter)->getMove().getColor()==Go::BLACK)
+				    {
+				      b_ravearray[(*iter)->getMove().getPosition()]=(*iter)->getRAVERatio();
+				      w_ravearray[(*iter)->getMove().getPosition()]=(*iter)->getRAVERatioOther();
+				    }
+			      else
+			      {
+				      w_ravearray[(*iter)->getMove().getPosition()]=(*iter)->getRAVERatio();
+				      b_ravearray[(*iter)->getMove().getPosition()]=(*iter)->getRAVERatioOther();
+			      }
+			 	  }
+        }
+    }
+
+    playout->getPlayoutMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,**move,critarray,(col==Go::BLACK)?b_ravearray:w_ravearray, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0,  NULL, NULL, NULL, 0);
     if (params->playout_useless_move)
       playout->checkUselessMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,**move,(std::string *)NULL);
     delete playoutboard;
+    //if (params->playout_defend_approach)
+    //  currentboard->connectedAtariPos(**move,ACpos,ACcount);
+    if (ACcount>0) 
+    {
+      for (int i=0;i<ACcount;i++)
+        fprintf(stderr," %s ",Go::Position::pos2string(ACpos[i],currentboard->getSize()).c_str());
+      fprintf(stderr,"---\n");
+    }
+    
     this->makeMove(**move);
+    if (critarray)
+      delete[] critarray;
+    if (b_ravearray)
+      delete[] b_ravearray;
+    if (w_ravearray)
+      delete[] w_ravearray;
+  
   }
 }
 
@@ -3838,9 +5253,14 @@ void Engine::getOnePlayoutMove(Go::Board *board, Go::Color col, Go::Move *move)
 {
   Go::Board *playoutboard=board->copy();
   playoutboard->turnSymmetryOff();
-  if (params->playout_features_enabled)
-    playoutboard->setFeatures(features,params->playout_features_incremental);
-  playout->getPlayoutMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,*move,NULL);
+  if (params->playout_features_enabled>0)
+    playoutboard->setFeatures(features,params->playout_features_incremental,params->test_p8==0);
+  if (params->csstyle_enabled) {
+    if (params->playout_features_enabled)
+      fprintf(stderr,"playout_features_enabled and csstyle_enabled can not be used together!!!!\n");
+    playoutboard->updatePlayoutGammas(params, features);
+  }
+  playout->getPlayoutMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,*move,NULL,NULL);
   if (params->playout_useless_move)
     playout->checkUselessMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,*move,(std::string *)NULL);
   delete playoutboard;
@@ -3861,7 +5281,27 @@ void Engine::makeMove(Go::Move move)
     );
   #endif
 #define WITH_P(A) (A>=1.0 || (A>0 && threadpool->getThreadZero()->getSettings()->rand->getRandomReal()<A))  
-  if (WITH_P(params->features_output_competitions))
+  Engine *me=params->engine;
+  bool playoutmove_triggered=true;
+  if (params->features_output_for_playout)
+  { 
+    Go::Color col=move.getColor();
+    Go::Move movetmp=Go::Move(col,Go::Move::PASS);
+    Go::Board *playoutboard=currentboard->copy();
+    playoutboard->turnSymmetryOff();
+    if (params->playout_features_enabled>0)
+      playoutboard->setFeatures(features,params->playout_features_incremental,params->test_p8==0);
+    if (params->csstyle_enabled) {
+      if (params->playout_features_enabled)
+        fprintf(stderr,"playout_features_enabled and csstyle_enabled can not be used together!!!!\n");
+      playoutboard->updatePlayoutGammas(params, features);
+    }
+    playout->getPlayoutMove(threadpool->getThreadZero()->getSettings(),playoutboard,col,movetmp,NULL,NULL);
+    if (!movetmp.isPass())
+      playoutmove_triggered=false;
+    delete playoutboard;
+  }  
+  if (WITH_P(params->features_output_competitions) && playoutmove_triggered)
   {
     bool isawinner=true;
     Go::ObjectBoard<int> *cfglastdist=NULL;
@@ -3871,7 +5311,7 @@ void Engine::makeMove(Go::Move move)
     if (params->features_output_competitions_mmstyle)
     {
       int p=move.getPosition();
-      std::string featurestring=features->getMatchingFeaturesString(currentboard,cfglastdist,cfgsecondlastdist,move,!params->features_output_competitions_mmstyle);
+      std::string featurestring=features->getMatchingFeaturesString(currentboard,cfglastdist,cfgsecondlastdist,move,!params->features_output_competitions_mmstyle,params->features_output_for_playout);
       if (featurestring.length()>0)
       {
         gtpe->getOutput()->printfDebug("[features]:# competition (%d,%s)\n",(currentboard->getMovesMade()+1),Go::Position::pos2string(move.getPosition(),boardsize).c_str());
@@ -3880,7 +5320,17 @@ void Engine::makeMove(Go::Move move)
         gtpe->getOutput()->printfDebug("\n");
       }
       else
-        isawinner=false; 
+      { //should be not used at the moment, as all strings get a feature value, was used for calculating not attached feature value before
+      if (!params->features_output_for_playout)
+        isawinner=false;
+      else
+        {
+          gtpe->getOutput()->printfDebug("[features]:# competition (%d,%s)\n",(currentboard->getMovesMade()+1),"NN");
+          gtpe->getOutput()->printfDebug("[features]:%s*","NN");
+          gtpe->getOutput()->printfDebug("%s"," 0");
+          gtpe->getOutput()->printfDebug("\n");
+        }
+      }
     }
     else
       gtpe->getOutput()->printfDebug("[features]:# competition (%d,%s)\n",(currentboard->getMovesMade()+1),Go::Position::pos2string(move.getPosition(),boardsize).c_str());
@@ -3888,12 +5338,13 @@ void Engine::makeMove(Go::Move move)
     if (isawinner)
     {
       Go::Color col=move.getColor();
+      std::string notnearbymove="[features]:NN: 0\n";
       for (int p=0;p<currentboard->getPositionMax();p++)
       {
         Go::Move m=Go::Move(col,p);
         if (currentboard->validMove(m) || m==move)
         {
-          std::string featurestring=features->getMatchingFeaturesString(currentboard,cfglastdist,cfgsecondlastdist,m,!params->features_output_competitions_mmstyle);
+          std::string featurestring=features->getMatchingFeaturesString(currentboard,cfglastdist,cfgsecondlastdist,m,!params->features_output_competitions_mmstyle,params->features_output_for_playout);
           if (featurestring.length()>0)
           {
             gtpe->getOutput()->printfDebug("[features]:%s",Go::Position::pos2string(p,boardsize).c_str());
@@ -3904,8 +5355,15 @@ void Engine::makeMove(Go::Move move)
             gtpe->getOutput()->printfDebug("%s",featurestring.c_str());
             gtpe->getOutput()->printfDebug("\n");
           }
+          else if (params->features_output_for_playout && m==move)
+          { //should be not used at the moment, as all strings get a feature value, was used for calculating not attached feature value before
+            //not nearby move is winner
+            notnearbymove="[features]:" + Go::Position::pos2string(p,boardsize) + "* 0\n";
+          }
         }
       }
+      if (params->features_output_for_playout)
+        gtpe->getOutput()->printfDebug(notnearbymove);  //the not nearby move is added with mm id 0(not used otherwize)
       {
         Go::Move m=Go::Move(col,Go::Move::PASS);
         if (currentboard->validMove(m) || m==move)
@@ -3915,7 +5373,7 @@ void Engine::makeMove(Go::Move move)
             gtpe->getOutput()->printfDebug("*");
           else
             gtpe->getOutput()->printfDebug(":");
-          gtpe->getOutput()->printfDebug("%s",features->getMatchingFeaturesString(currentboard,cfglastdist,cfgsecondlastdist,m,!params->features_output_competitions_mmstyle).c_str());
+          gtpe->getOutput()->printfDebug("%s",features->getMatchingFeaturesString(currentboard,cfglastdist,cfgsecondlastdist,m,!params->features_output_competitions_mmstyle,params->features_output_for_playout).c_str());
           gtpe->getOutput()->printfDebug("\n");
         }
       }
@@ -3927,6 +5385,89 @@ void Engine::makeMove(Go::Move move)
       delete cfgsecondlastdist;
   }
 
+  bool did_CNN=false;
+  if (WITH_P(params->CNN_data) && move.isNormal())
+  {
+    did_CNN=true;
+    //output for the CNN training, testing
+    //one line per Position, all included in the board part, additionally the move in readable form
+    // a position 0: empty 1: black stone 2: white stone 3: black next move 4: white next move
+    
+    int size=currentboard->getSize ();
+    currentboard->calcSlowLibertyGroups();
+    for (int x=0;x<size;x++) {
+      for (int y=0;y<size;y++) {
+        Go::Color c=currentboard->getColor(Go::Position::xy2pos(x,y,size));
+        switch (c) {
+          case Go::BLACK:
+            gtpe->getOutput()->printfDebug("1,");
+            break;
+          case Go::WHITE:
+            gtpe->getOutput()->printfDebug("2,");
+            break;
+          default:
+            int p=move.getPosition();
+            if (Go::Position::pos2x(p,size)==x && Go::Position::pos2y(p,size)==y)
+            {
+              gtpe->getOutput()->printfDebug("3,");
+            }
+            else
+              gtpe->getOutput()->printfDebug("0,");
+        }
+      }
+    }
+    for (int x=0;x<size;x++) {
+      for (int y=0;y<size;y++) {
+        int pos=Go::Position::xy2pos(x,y,size);
+        if (currentboard->inGroup(pos)) {
+          gtpe->getOutput()->printfDebug("%d,",currentboard->getGroup(pos)->real_libs);
+        }
+        else
+          gtpe->getOutput()->printfDebug("0,");
+      
+      }
+    }
+    for (int x=0;x<size;x++) {
+      for (int y=0;y<size;y++) {
+        int pos=Go::Position::xy2pos(x,y,size);
+        if (currentboard->inGroup(pos)) {
+          gtpe->getOutput()->printfDebug("%d,",currentboard->getGroup(pos)->numOfStones());
+        }
+        else
+          gtpe->getOutput()->printfDebug("0,");
+      }
+    }
+    int p2=currentboard->getLastMove().getPosition();
+    int p3=currentboard->getSecondLastMove().getPosition();
+    int p4=currentboard->getThirdLastMove().getPosition();
+    int p5=currentboard->getForthLastMove().getPosition();
+    
+      gtpe->getOutput()->printfDebug("%s,%d,%d,%d,%d,%d,%d,%d,%d",move.toString(size).c_str(),
+        Go::Position::pos2x(p2,size),Go::Position::pos2y(p2,size),
+        Go::Position::pos2x(p3,size),Go::Position::pos2y(p3,size),
+        Go::Position::pos2x(p4,size),Go::Position::pos2y(p4,size),
+        Go::Position::pos2x(p5,size),Go::Position::pos2y(p5,size)
+                                   );
+    if (params->CNN_data_playouts==0) 
+      gtpe->getOutput()->printfDebug("\n");
+    
+  /* //Test code to check, if the predictor does the same as the scripts
+     
+     float result[361];
+    getCNN(currentboard,move.getColor(),result);
+    int dd=0;
+    gtpe->getOutput()->printfDebug("\n#",result[dd]);
+      
+    for (int x=0;x<size;x++) {
+      for (int y=0;y<size;y++) {
+        gtpe->getOutput()->printfDebug("%5.2f",result[dd]);
+        dd++;
+      }
+      gtpe->getOutput()->printfDebug("\n#");
+    }
+    gtpe->getOutput()->printfDebug("\n");
+    */
+  }
   if (WITH_P(params->features_circ_list))
   {
     Go::Color col=currentboard->nextToMove();
@@ -4191,6 +5732,10 @@ void Engine::makeMove(Go::Move move)
   params->uct_slow_update_last=0;
   params->uct_slow_debug_last=0;
   territorymap->decay(params->territory_decayfactor);
+
+  for (int i=0;i<currentboard->getPositionMax()*2;i++)
+    area_correlation_map[i]->decay(params->territory_decayfactor);
+  
   //was memory leak
   //blackOldMoves=new float[currentboard->getPositionMax()];
   //whiteOldMoves=new float[currentboard->getPositionMax()];
@@ -4215,6 +5760,20 @@ void Engine::makeMove(Go::Move move)
   isgamefinished=false;
   if (currentboard->getPassesPlayed()>=2 || move.isResign())
     this->gameFinished();
+  if (did_CNN && params->CNN_data_playouts>0) {
+    me->doNPlayouts(params->CNN_data_playouts);
+    for (int x=0;x<me->boardsize;x++)
+    {
+      for (int y=0;y<me->boardsize;y++)
+      {
+        int pos=Go::Position::xy2pos(x,y,me->boardsize);
+        float tmp=me->territorymap->getPositionOwner(pos);
+        gtpe->getOutput()->printf(",%.2f",tmp);
+      }
+    }
+    float ratio=me->movetree->getRobustChild()->getRatio();
+    gtpe->getOutput()->printf(",%.3f,%.1f\n",ratio,komi);
+  }
 }
 
 void Engine::setBoardSize(int s)
@@ -4232,6 +5791,13 @@ void Engine::setBoardSize(int s)
   boardsize=s;
   params->board_size=boardsize;
   this->clearBoard();
+  if (deltagammas!=NULL) delete[]deltagammas;
+  if (deltagammaslocal!=NULL) delete[]deltagammaslocal;
+  deltawhiteoffset=boardsize*boardsize*(local_feature_num+hashto5num);
+  deltagammas = new float[2*boardsize*boardsize*(local_feature_num+hashto5num)];
+  for (int i=0;i<2*boardsize*boardsize*(local_feature_num+hashto5num);i++) deltagammas[i]=1.0;
+  deltagammaslocal = new float[2*boardsize*boardsize*(local_feature_num+hashto5num)];
+  for (int i=0;i<2*boardsize*boardsize*(local_feature_num+hashto5num);i++) deltagammaslocal[i]=1.0;
 }
 
 void Engine::setKomi(float k)
@@ -4252,14 +5818,21 @@ void Engine::clearBoard()
     MPIRANK0_ONLY(this->mpiBroadcastCommand(MPICMD_CLEARBOARD););
   #endif
   bool newsize=(zobristtable->getSize()!=boardsize);
+  for (int i=0;i<currentboard->getPositionMax()*2;i++)
+  {
+    delete area_correlation_map[i];
+  }
+  delete area_correlation_map;
   delete currentboard;
   delete movehistory;
   delete moveexplanations;
   delete hashtree;
   delete territorymap;
+  delete probabilitymap;
   delete correlationmap;
-  delete blackOldMoves;
-  delete whiteOldMoves;
+  delete respondboard;
+  delete[] blackOldMoves;
+  delete[] whiteOldMoves;
   
   if (newsize)
     delete zobristtable;
@@ -4268,7 +5841,16 @@ void Engine::clearBoard()
   moveexplanations = new std::list<std::string>();
   hashtree=new Go::ZobristTree();
   territorymap=new Go::TerritoryMap(boardsize);
+  area_correlation_map=new Go::TerritoryMap*[currentboard->getPositionMax()*2];
+#warning "memory allocated for area_correlation_map"
+  for (int i=0;i<currentboard->getPositionMax()*2;i++)
+  {
+    area_correlation_map[i]=new Go::TerritoryMap(boardsize);
+  }
+
+  probabilitymap=new Go::MoveProbabilityMap (boardsize);
   correlationmap=new Go::ObjectBoard<Go::CorrelationData>(boardsize);
+  respondboard=new Go::RespondBoard(boardsize);
   blackOldMoves=new float[currentboard->getPositionMax()];
   whiteOldMoves=new float[currentboard->getPositionMax()];
   for (int i=0;i<currentboard->getPositionMax();i++)
@@ -4291,9 +5873,11 @@ void Engine::clearBoard()
   params->cleanup_in_progress=false;
   isgamefinished=false;
   komi_handicap=0;
+  recalc_dynkomi=0;
+  deltagammas = new float[2*boardsize*boardsize*(local_feature_num+hashto5num)];
 }
 
-void Engine::clearMoveTree()
+void Engine::clearMoveTree(int a_pos)
 {
   #ifdef HAVE_MPI
     MPIRANK0_ONLY(this->mpiBroadcastCommand(MPICMD_CLEARTREE););
@@ -4301,11 +5885,18 @@ void Engine::clearMoveTree()
   
   if (movetree!=NULL)
     delete movetree;
-  
-  if (currentboard->getMovesMade()>0)
-    movetree=new Tree(params,currentboard->getZobristHash(zobristtable),currentboard->getLastMove());
-  else
-    movetree=new Tree(params,0);
+  if (a_pos<0) {
+    if (currentboard->getMovesMade()>0)
+      movetree=new Tree(params,currentboard->getZobristHash(zobristtable),currentboard->getLastMove());
+    else
+      movetree=new Tree(params,0);
+  }
+  else {
+    if (currentboard->getMovesMade()>0)
+      movetree=new Tree(params,currentboard->getZobristHash(zobristtable),currentboard->getLastMove(),NULL,a_pos);
+    else
+      movetree=new Tree(params,0,Go::Move(Go::EMPTY,Go::Move::RESIGN),NULL,a_pos);
+  }
   
   params->uct_slow_update_last=0;
   params->uct_slow_debug_last=0;
@@ -4355,7 +5946,8 @@ void Engine::chooseSubTree(Go::Move move)
     this->clearMoveTree();
     return;
   }
-  
+
+// fprintf(stderr,"before devorceChild\n");
   movetree->divorceChild(subtree);
 
   //keep the childrens values
@@ -4465,7 +6057,7 @@ bool Engine::writeGameSGF(std::string filename)
 {
   std::ofstream sgffile;
   sgffile.open(filename.c_str());
-  sgffile<<"(;\nFF[4]SZ["<<boardsize<<"]KM["<<komi<<"]\n";
+  sgffile<<"(;\nFF[4]SZ["<<boardsize<<"]KM["<<komi<<"]C["<<VERSION<<params->version_config_file<<"]\n";
 
   std::list<std::string>::iterator expiter = moveexplanations->begin();
   for(std::list<Go::Move>::iterator iter=movehistory->begin();iter!=movehistory->end();++iter)
@@ -4491,6 +6083,7 @@ bool Engine::writeGameSGF(std::string filename)
 
 void Engine::doNPlayouts(int n)
 {
+  //gtpe->getOutput()->printfDebug("dddd1\n");
   if (params->move_policy==Parameters::MP_UCT || params->move_policy==Parameters::MP_ONEPLY)
   {
     stopthinking=false;
@@ -4514,11 +6107,11 @@ void Engine::doNPlayouts(int n)
   }
 }
 
-void Engine::doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::BitBoard *secondlist, Go::BitBoard *earlyfirstlist, Go::BitBoard *earlysecondlist)
+void Engine::doPlayout(Worker::Settings *settings, Go::IntBoard *firstlist, Go::IntBoard *secondlist, Go::IntBoard *earlyfirstlist, Go::IntBoard *earlysecondlist, float *score_stats)
 {
   //bool givenfirstlist,givensecondlist;
   Go::Color col=currentboard->nextToMove();
-  
+
   if (movetree->isLeaf())
   {
     this->allowContinuedPlay();
@@ -4537,6 +6130,10 @@ void Engine::doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::
     return;
   }
   std::list<Go::Move> playoutmoves=playouttree->getMovesFromRoot();
+  std::list<Go::Move> playoutmoves_only_tree;
+  if (params->uct_area_correlation_statistics)
+    playoutmoves_only_tree=playouttree->getMovesFromRoot();
+  
   if (playoutmoves.size()==0)
   {
     if (params->debug_on)
@@ -4550,9 +6147,22 @@ void Engine::doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::
   //  secondlist=new Go::BitBoard(boardsize);
   
   Go::Board *playoutboard=currentboard->copy();
+  //Go::Board *playoutboard=pool_board.construct(currentboard->getSize());
+  //currentboard->copyOver(playoutboard);
+  playoutboard->komi_grouptesting=this->komi;
   playoutboard->turnSymmetryOff();
-  if (params->playout_features_enabled)
-    playoutboard->setFeatures(features,params->playout_features_incremental);
+  if (debug_solid_group>=0 && playoutboard->inGroup(debug_solid_group)) {
+    playoutboard->hasSolidGroups=true;
+    Go::Group *thegroup=playoutboard->getGroup(debug_solid_group);
+    thegroup->setSolid ();
+  }
+  if (params->playout_features_enabled>0)
+    playoutboard->setFeatures(features,params->playout_features_incremental,params->test_p8==0);
+  if (params->csstyle_enabled) {
+    if (params->playout_features_enabled)
+      fprintf(stderr,"playout_features_enabled and csstyle_enabled can not be used together!!!!\n");
+    playoutboard->updatePlayoutGammas(params, features);
+  }
   if (params->rave_moves>0)
   {
     firstlist->clear();
@@ -4561,18 +6171,50 @@ void Engine::doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::
     earlysecondlist->clear();
   }
   Go::Color playoutcol=playoutmoves.back().getColor();
-  
+
+  //for(std::list<Go::Move>::iterator iter=playoutmoves.begin();iter!=playoutmoves.end();++iter)
+  //{
+  //    fprintf(stderr,"%s ",(*iter).toString(boardsize).c_str());
+  //}
+  //fprintf(stderr,"-\n");
   float finalscore;
-  playout->doPlayout(settings,playoutboard,finalscore,playouttree,playoutmoves,col,(params->rave_moves>0?firstlist:NULL),(params->rave_moves>0?secondlist:NULL),(params->rave_moves>0?earlyfirstlist:NULL),(params->rave_moves>0?earlysecondlist:NULL));
+  float cnn_winrate=-1;
+  playout->doPlayout(settings,playoutboard,finalscore,cnn_winrate,playouttree,playoutmoves,col,(params->rave_moves>0?firstlist:NULL),(params->rave_moves>0?secondlist:NULL),(params->rave_moves>0?earlyfirstlist:NULL),(params->rave_moves>0?earlysecondlist:NULL));
   if (this->getTreeMemoryUsage()>(params->memory_usage_max*1024*1024) && !stopthinking)
   {
       gtpe->getOutput()->printfDebug("WARNING! Memory limit reached! Stopping search right now!\n");
       this->stopThinking();
   }
+  if (cnn_winrate>-1) {
+    //params->test_p105/10.0 is added in playout.cc
+    float mwr=params->test_p105;
+    if (playoutcol!=Go::BLACK)
+      cnn_winrate=1.0-cnn_winrate;
+    playouttree->addPartialResult((params->test_p106*mwr)*cnn_winrate,params->test_p106*mwr,false,1.0-params->test_p107);
+    //fprintf(stderr,"playouttreecol %s playoutcol %s winrate %.3f playouts %f wins %f\n",(playouttree->getMove().getColor()==Go::BLACK)?"black":"white",(playoutcol==Go::BLACK)?"black":"white",cnn_winrate,playouttree->getPlayouts(),playouttree->getWins());
+
+    //this can be uncommented, to avoid a usual playout every CNN
+    //delete playoutboard;
+    //return;
+    //this does a playout after a cnn territory
+    //playoutboard=currentboard->copy();
+    //playoutboard->turnSymmetryOff();
+    //if (params->rave_moves>0)
+    //{
+    //  firstlist->clear();
+    //  secondlist->clear();
+    //  earlyfirstlist->clear();
+    //  earlysecondlist->clear();
+    //}
+    //cnn_winrate=-2;
+    //playout->doPlayout(settings,playoutboard,finalscore,cnn_winrate,playouttree,playoutmoves,col,(params->rave_moves>0?firstlist:NULL),(params->rave_moves>0?secondlist:NULL),(params->rave_moves>0?earlyfirstlist:NULL),(params->rave_moves>0?earlysecondlist:NULL));
+  }
+  
   if (!params->rules_all_stones_alive && !params->cleanup_in_progress && playoutboard->getPassesPlayed()>=2 && (playoutboard->getMovesMade()-currentboard->getMovesMade())<=2)
   {
     finalscore=playoutboard->territoryScore(territorymap,params->territory_threshold)-params->engine->getHandiKomi();
   }
+
   
   bool playoutwin=Go::Board::isWinForColor(playoutcol,finalscore);
   bool playoutjigo=(finalscore==0);
@@ -4584,7 +6226,21 @@ void Engine::doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::
     playouttree->addLose(finalscore);
   
   playoutboard->updateTerritoryMap(territorymap);
-
+  if (params->uct_area_correlation_statistics)
+  {
+    //do not count as tree move, if not at least 2 more moves in the tree
+    if (!playoutmoves_only_tree.empty())
+      playoutmoves_only_tree.pop_back();
+    if (!playoutmoves_only_tree.empty())
+      playoutmoves_only_tree.pop_back();
+    
+    for(std::list<Go::Move>::iterator iter=playoutmoves_only_tree.begin();iter!=playoutmoves_only_tree.end();++iter)
+      {
+        if (iter->getPosition()>=0)
+          playoutboard->updateTerritoryMap(area_correlation_map[iter->getPosition()+(iter->getColor()==Go::BLACK?playoutboard->getPositionMax():0)]);
+      }
+  }
+  
   //here with with firstlist and secondlist the correlationmap can be updated
   if (col==Go::BLACK)
     playoutboard->updateCorrelationMap(correlationmap,firstlist,secondlist);
@@ -4632,19 +6288,23 @@ void Engine::doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::
   
   if (params->rave_moves>0)
   {
-    if (!playoutjigo) // ignore jigos for RAVE
+    //this can not be ignored for the critarray structures
+    //if (!playoutjigo) // ignore jigos for RAVE
     {
       bool blackwin=Go::Board::isWinForColor(Go::BLACK,finalscore);
       Go::Color wincol=(blackwin?Go::BLACK:Go::WHITE);
       
       if (col==Go::BLACK)
-        playouttree->updateRAVE(wincol,firstlist,secondlist,false);
+        playouttree->updateRAVE(wincol,firstlist,secondlist,false,playoutboard);
       else
-        playouttree->updateRAVE(wincol,secondlist,firstlist,false);
-      if (col==Go::BLACK)
-        playouttree->updateRAVE(wincol,earlyfirstlist,earlysecondlist,true);
-      else
-        playouttree->updateRAVE(wincol,earlysecondlist,earlyfirstlist,true);
+        playouttree->updateRAVE(wincol,secondlist,firstlist,false,playoutboard);
+      if (params->uct_earlyrave_unprune_factor>0)
+      {
+        if (col==Go::BLACK)
+          playouttree->updateRAVE(wincol,earlyfirstlist,earlysecondlist,true,NULL);
+        else
+          playouttree->updateRAVE(wincol,earlysecondlist,earlyfirstlist,true,NULL);
+      }
     }
   }
   
@@ -4671,13 +6331,21 @@ void Engine::doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::
         {
           std::ostringstream ss;
           ss << std::fixed;
+#ifdef HAVE_MPI
+          if (mpiworldsize>1)
+            ss << "(mpi "  << mpirank << ") ";   
+#endif
           ss << "[dbg|" << std::setprecision(0)<<movetree->getPlayouts() << "]";
           Tree *robustmove=movetree->getRobustChild();
           ss << " (rm:" << Go::Position::pos2string(robustmove->getMove().getPosition(),boardsize);
           ss << " r:" << std::setprecision(2)<<robustmove->getRatio();
           ss << " r2:" << std::setprecision(2)<<robustmove->secondBestPlayoutRatio();
+          ss << " u:" << std::setprecision(2)<<robustmove->getUrgency();
+          ss << " uv:" << std::setprecision(3)<<robustmove->getUrgencyVariance();
+          ss << " p:" << std::setprecision(2)<<robustmove->getPlayouts();
+          ss << " tw:" << robustmove->isTerminalWin();
           ss << ")";
-          Tree *bestratio=movetree->getBestRatioChild();
+          Tree *bestratio=movetree->getBestRatioChild(10);
           if (bestratio!=NULL)
           {
             if (robustmove==bestratio)
@@ -4686,6 +6354,24 @@ void Engine::doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::
             {
               ss << " (br:" << Go::Position::pos2string(bestratio->getMove().getPosition(),boardsize);
               ss << " r:" << std::setprecision(2)<<bestratio->getRatio();
+              ss << " u:" << std::setprecision(2)<<bestratio->getUrgency();
+              ss << " p:" << std::setprecision(2)<<bestratio->getPlayouts();
+              ss << " tw:" << bestratio->isTerminalWin();
+              ss << ")";
+            }
+          }
+          Tree *bestcrit=movetree->getBestUrgencyChild(10);
+          if (bestcrit!=NULL)
+          {
+            if (robustmove==bestcrit)
+              ss << " (same)";
+            else
+            {
+              ss << " (bu:" << Go::Position::pos2string(bestcrit->getMove().getPosition(),boardsize);
+              ss << " r:" << std::setprecision(2)<<bestcrit->getRatio();
+              ss << " u:" << std::setprecision(2)<<bestcrit->getUrgency();
+              ss << " p:" << std::setprecision(2)<<bestcrit->getPlayouts();
+              ss << " tw:" << bestcrit->isTerminalWin();
               ss << ")";
             }
           }
@@ -4695,13 +6381,22 @@ void Engine::doPlayout(Worker::Settings *settings, Go::BitBoard *firstlist, Go::
       }
     }
   }
-  
+
   delete playoutboard;
+  //pool_board.destroy(playoutboard);
   
   //if (!givenfirstlist)
   //  delete firstlist;
   //if (!givensecondlist)
   //  delete secondlist;
+  //gtpe->getOutput()->printfDebug("dddd33a\n");
+  if (score_stats!=NULL) {
+    //gtpe->getOutput()->printfDebug("dddd33b\n");
+    int score=(int)(finalscore+params->engine->getScoreKomi()+(float)boardsize*boardsize/2);
+    if (score<0) score=0;
+    if (score>=boardsize*boardsize) score=boardsize*boardsize-1;
+    score_stats[score]+=1;
+  }
 }
 
 void Engine::displayPlayoutLiveGfx(int totalplayouts, bool livegfx)
@@ -4838,56 +6533,124 @@ void Engine::ponder()
     if (this->getTreeMemoryUsage()>(params->memory_usage_max*1024*1024))
       return;
 
-    //fprintf(stderr,"pondering starting!\n");
+   // fprintf(stderr,"pondering starting!\n");
+    #ifdef HAVE_MPI
+      MPIRANK0_ONLY(
+        unsigned int tmp1=0;// not used (unsigned int)col;
+        this->mpiBroadcastCommand(MPICMD_PONDER,&tmp1);
+      );
+
+    //must sync all are started, otherwize stopping before starting possible!!!!!
+    
+    #endif
     this->allowContinuedPlay();
     params->uct_slow_update_last=0;
     stopthinking=false;
+    #ifdef HAVE_MPI
+      params->mpi_last_update=MPI::Wtime();
+    #endif
     
     params->uct_initial_playouts=(int)movetree->getPlayouts();
     params->thread_job=Parameters::TJ_PONDER;
+    #ifdef HAVE_MPI
+    //isWaitingForStop=false;
+    #endif    
     threadpool->startAll();
     threadpool->waitAll();
+    #ifdef HAVE_MPI
+    //isWaitingForStop=true;
+    mpiSyncWaitStop();
+    #endif    
     if (movetree->isTerminalResult())
       gtpe->getOutput()->printfDebug("SOLVED! found 100%% sure result after %d plts!\n",(int)movetree->getPlayouts()-params->uct_initial_playouts);
-    //fprintf(stderr,"pondering done! %d %.0f\n",playouts,movetree->getPlayouts());
+    //gtpe->getOutput()->printfDebug("pondering done! after all threads %.0f\n",movetree->getPlayouts());
   }
 }
 
 void Engine::ponderThread(Worker::Settings *settings)
 {
+  //stoppondering=false;
+  //stopthinking=false;
   if (!(params->pondering_enabled) || (currentboard->getMovesMade()<=0) || (currentboard->getPassesPlayed()>=2) || (currentboard->getLastMove().isResign()) || (book->getMoves(boardsize,movehistory).size()>0))
     return;
   
   if (params->move_policy==Parameters::MP_UCT || params->move_policy==Parameters::MP_ONEPLY)
   {
-    //fprintf(stderr,"pondering starting!\n");
+    //fprintf(stderr,"pondering thread starting! %d rank %d stoppondering %d stopthinking %d\n",settings->thread->getID(),mpirank,stoppondering,stopthinking);
+    #ifdef HAVE_MPI
+      bool mpi_inform_others=true;
+      bool mpi_rank_other=(mpirank!=0);
+      //int mpi_update_num=0;
+    #else
+      bool mpi_rank_other=false;
+    #endif
     this->allowContinuedPlay();
     params->uct_slow_update_last=0;
+    stopthinking=false;
     
-    Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
-    Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
-    Go::BitBoard *earlyfirstlist=new Go::BitBoard(boardsize);
-    Go::BitBoard *earlysecondlist=new Go::BitBoard(boardsize);
-    long playouts;
-    
+    Go::IntBoard *firstlist=new Go::IntBoard(boardsize);
+    Go::IntBoard *secondlist=new Go::IntBoard(boardsize);
+    Go::IntBoard *earlyfirstlist=new Go::IntBoard(boardsize);
+    Go::IntBoard *earlysecondlist=new Go::IntBoard(boardsize);
+
+    long playouts=0;
+    bool initial_sync=true;
+
+    //there might be a race condition left if stoppondering and stopthinking is changed before mpiSyncUpdate ()
+    if (settings->thread->getID()==0)
+      stop_called=false; //only this thread is allowed to handle mpi calls
     while (!stoppondering && !stopthinking && (playouts=(long)movetree->getPlayouts())<(params->pondering_playouts_max))
     {
-      if (movetree->isTerminalResult())
-      {
-        stopthinking=true;
-        break;
-      }
+      //if (movetree->isTerminalResult())
+      //{
+      //  stopthinking=true;
+      //  break;
+      //}
       
       params->uct_slow_debug_last=0; // don't print out debug info when pondering
       this->doPlayout(settings,firstlist,secondlist,earlyfirstlist,earlysecondlist);
       playouts++;
+      #ifdef HAVE_MPI
+      if (settings->thread->getID()==0 && mpiworldsize>1 && (MPI::Wtime()>(params->mpi_last_update+params->mpi_update_period) || initial_sync))
+      {
+        initial_sync=false;
+        //mpi_update_num++;
+        //gtpe->getOutput()->printfDebug("update (%d) at %lf (rank: %d) start\n",mpi_update_num,MPI::Wtime(),mpirank);
+        
+        mpi_inform_others=this->mpiSyncUpdate();
+        
+        params->mpi_last_update=MPI::Wtime();
+        
+        if (!mpi_inform_others)
+        {
+          params->early_stop_occured=true;
+          break;
+        }
+      }
+      #endif
     }
-    
+
+      
     delete firstlist;
     delete secondlist;
     delete earlyfirstlist;
     delete earlysecondlist;
-    //fprintf(stderr,"pondering done! %d %.0f\n",playouts,movetree->getPlayouts());
+
+    //fprintf(stderr,"pondering done! %ld %.0f stopthinking %d stoppondering %d playouts %ld\n",playouts,movetree->getPlayouts(),stopthinking,stoppondering,playouts);
+    #ifdef HAVE_MPI
+    //gtpe->getOutput()->printfDebug("ponder on rank %d stopping... (inform: %d) threadid %d stoppondering %d\n",mpirank,mpi_inform_others,settings->thread->getID(),stoppondering);
+    if (!stop_called && settings->thread->getID()==0 && mpiworldsize>1 && mpi_inform_others)
+    {
+      stoppondering=true;
+      this->mpiSyncUpdate(true);
+      //here must be waited till all are stoped!!
+      //gtpe->getOutput()->printfDebug("mpiSyncWaitStop on rank %d stoped (inform: %d) threadid %d\n",mpirank,mpi_inform_others,settings->thread->getID());
+      //this->mpiSyncWaitStop();
+      
+      //stoppondering=false;
+    }
+    //gtpe->getOutput()->printfDebug("ponder on rank %d stoped (inform: %d) threadid %d\n",mpirank,mpi_inform_others,settings->thread->getID());
+    #endif
   }
 }
 
@@ -4918,10 +6681,13 @@ void Engine::doSlowUpdate()
             Go::Color othercol=Go::otherColor(col);
             
             bool founddead=false;
-            foreach_adjacent(pos,p,{
+            if (pos>=0)
+            {
+              foreach_adjacent(pos,p,{
               if (currentboard->getColor(p)==othercol && !currentboard->isAlive(territorymap,params->territory_threshold,p))
                 founddead=true;
-            });
+              });
+            }
             
             if (founddead)
             {
@@ -4965,6 +6731,7 @@ void Engine::generateThread(Worker::Settings *settings)
   #ifdef HAVE_MPI
     bool mpi_inform_others=true;
     bool mpi_rank_other=(mpirank!=0);
+    if (mpi_rank_other) stopthinking=false;
     //int mpi_update_num=0;
   #else
     bool mpi_rank_other=false;
@@ -4980,11 +6747,11 @@ void Engine::generateThread(Worker::Settings *settings)
   else
     time_allocated=0;
   
-  Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
-  Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
-  Go::BitBoard *earlyfirstlist=new Go::BitBoard(boardsize);
-  Go::BitBoard *earlysecondlist=new Go::BitBoard(boardsize);
-  
+  Go::IntBoard *firstlist=new Go::IntBoard(boardsize);
+  Go::IntBoard *secondlist=new Go::IntBoard(boardsize);
+  Go::IntBoard *earlyfirstlist=new Go::IntBoard(boardsize);
+  Go::IntBoard *earlysecondlist=new Go::IntBoard(boardsize);
+
   while ((totalplayouts=(long)(movetree->getPlayouts()-params->uct_initial_playouts))<(params->playouts_per_move_max))
   {
     if (totalplayouts>=(params->playouts_per_move) && time_allocated==0)
@@ -5031,24 +6798,30 @@ void Engine::generateThread(Worker::Settings *settings)
     if (settings->thread->getID()==0 && !mpi_rank_other && params->uct_stop_early && params->uct_slow_update_last==0 && totalplayouts>=(params->playouts_per_move_min))
     {
       Tree *besttree=movetree->getRobustChild();
+      //double newtotalplayouts=totalplayouts;
+      double newtotalplayouts=movetree->getPlayouts(); //fixed a long standing timing bug, which was introduced probably when reusing childtrees
       if (besttree!=NULL)
       {
-        double currentpart=(besttree->getPlayouts()-besttree->secondBestPlayouts())/totalplayouts;
+        double currentpart=(besttree->getPlayouts()-besttree->secondBestPlayouts())/newtotalplayouts;
         double overallratio,overallratiotimed;
+        double calcmax=0;
         if (time_allocated>0) // timed search
         {
-          overallratio=(double)params->playouts_per_move_max/totalplayouts;
-          overallratiotimed=(double)(time_allocated+TIME_RESOLUTION)/this->timeSince(time_start);
+          overallratio=((double)params->playouts_per_move_max+newtotalplayouts-totalplayouts)/newtotalplayouts;
+          double timeratio=(double)(time_allocated+TIME_RESOLUTION)/this->timeSince(time_start);
+          calcmax=totalplayouts*timeratio;
+          overallratiotimed=(calcmax+newtotalplayouts-totalplayouts)/newtotalplayouts;
         }
         else
         {
-          overallratio=(double)params->playouts_per_move/totalplayouts;
+          overallratio=((double)params->playouts_per_move_max+newtotalplayouts-totalplayouts)/newtotalplayouts;
           overallratiotimed=0;
         }
         
         if (((overallratio-1)<currentpart) || ((time_allocated>0) && ((overallratiotimed-1)<currentpart)))
         {
-          gtpe->getOutput()->printfDebug("best move cannot change! (%.3f %.3f)\n",currentpart,overallratio);
+          gtpe->getOutput()->printfDebug("best move cannot change! (current %.3f playratio %.3f timedratio %.3f calcmax %.3f time used %.3f total %.0f newtotal %.0f)\n",
+                                         currentpart, overallratio, overallratiotimed, calcmax, (double)this->timeSince(time_start), (double)totalplayouts, newtotalplayouts);
           stopthinking=true;
           params->early_stop_occured=true;
           break;
@@ -5071,12 +6844,14 @@ void Engine::generateThread(Worker::Settings *settings)
         livegfxupdate++;
     }
   }
-  
+  stopthinking=true;
+  params->early_stop_occured=true;
+          
   delete firstlist;
   delete secondlist;
   delete earlyfirstlist;
   delete earlysecondlist;
-    
+  
   #ifdef HAVE_MPI
   //gtpe->getOutput()->printfDebug("genmove on rank %d stopping... (inform: %d)\n",mpirank,mpi_inform_others);
   if (settings->thread->getID()==0 && mpiworldsize>1 && mpi_inform_others)
@@ -5089,12 +6864,17 @@ void Engine::generateThread(Worker::Settings *settings)
 void Engine::doNPlayoutsThread(Worker::Settings *settings)
 {
   int livegfxupdate=0;
-  Go::BitBoard *firstlist=new Go::BitBoard(boardsize);
-  Go::BitBoard *secondlist=new Go::BitBoard(boardsize);
-  Go::BitBoard *earlyfirstlist=new Go::BitBoard(boardsize);
-  Go::BitBoard *earlysecondlist=new Go::BitBoard(boardsize);
+  Go::IntBoard *firstlist=new Go::IntBoard(boardsize);
+  Go::IntBoard *secondlist=new Go::IntBoard(boardsize);
+  Go::IntBoard *earlyfirstlist=new Go::IntBoard(boardsize);
+  Go::IntBoard *earlysecondlist=new Go::IntBoard(boardsize);
   long totalplayouts;
-  
+  float *score_stats=NULL;
+  //gtpe->getOutput()->printfDebug("dddd2\n");
+  if (params->CNN_data_playouts>0) {
+    score_stats=new float[boardsize*boardsize]();
+    //gtpe->getOutput()->printfDebug("dddd3a\n");
+  }
   while ((totalplayouts=(long)(movetree->getPlayouts()-params->uct_initial_playouts))<(params->playouts_per_move))
   {
     if (movetree->isTerminalResult())
@@ -5105,7 +6885,9 @@ void Engine::doNPlayoutsThread(Worker::Settings *settings)
     else if (stopthinking)
       break;
     
-    this->doPlayout(settings,firstlist,secondlist,earlyfirstlist,earlysecondlist);
+    //gtpe->getOutput()->printfDebug("dddd3ab\n");
+    this->doPlayout(settings,firstlist,secondlist,earlyfirstlist,earlysecondlist,score_stats);
+    //gtpe->getOutput()->printfDebug("dddd3b\n");
     totalplayouts+=1;
     
     if (settings->thread->getID()==0 && params->livegfx_on)
@@ -5123,7 +6905,18 @@ void Engine::doNPlayoutsThread(Worker::Settings *settings)
         livegfxupdate++;
     }
   }
-  
+
+  //gtpe->getOutput()->printfDebug("dddd4\n");
+  if (params->CNN_data_playouts>0) {
+    //gtpe->getOutput()->printfDebug("dddd5\n");
+    float sum_stats=0;
+    for (int i=0;i<boardsize*boardsize;i++)
+      sum_stats+=score_stats[i];
+    for (int i=0;i<boardsize*boardsize;i++)
+      gtpe->getOutput()->printfDebug(",%.3f",score_stats[i]/sum_stats);
+    //gtpe->getOutput()->printfDebug("\n");
+    delete[] score_stats;
+  }
   delete firstlist;
   delete secondlist;
   delete earlyfirstlist;
@@ -5218,7 +7011,11 @@ void Engine::gameFinished()
   if (currentboard->getMovesMade()==0)
     return;
 
-  if (params->auto_save_sgf)
+  bool autosave=true;
+#ifdef HAVE_MPI
+  if (mpirank!=0) autosave=false;
+#endif      
+  if (params->auto_save_sgf && autosave)
   {
     boost::posix_time::time_facet *facet = new boost::posix_time::time_facet("_%Y-%m-%d_%H:%M:%S");
     std::ostringstream ss;
@@ -5327,6 +7124,10 @@ void Engine::mpiCommandHandler()
         this->mpiRecvBroadcastedArgs(&tmp1);
         this->mpiGenMove((Go::Color)tmp1);
         break;
+      case MPICMD_PONDER:
+        this->mpiRecvBroadcastedArgs(&tmp1);
+        this->mpiPonder((Go::Color)tmp1);
+        break;
       case MPICMD_QUIT:
       default:
         running=false;
@@ -5334,7 +7135,6 @@ void Engine::mpiCommandHandler()
     };
   }
 }
-
 
 void Engine::mpiBroadcastCommand(Engine::MPICommand cmd, unsigned int *arg1, unsigned int *arg2, unsigned int *arg3)
 {
@@ -5426,7 +7226,8 @@ void Engine::mpiGenMove(Go::Color col)
   this->allowContinuedPlay();
   this->updateTerritoryScoringInTree();
   params->uct_slow_update_last=0;
-  params->uct_slow_debug_last=0;
+  // generate immediatly on dbg line, was 0
+  params->uct_slow_debug_last=params->uct_slow_debug_interval;
   params->uct_last_r2=-1;
   
   int startplayouts=(int)movetree->getPlayouts();
@@ -5438,6 +7239,39 @@ void Engine::mpiGenMove(Go::Color col)
   threadpool->waitAll();
   
   //gtpe->getOutput()->printfDebug("genmove on rank %d done.\n",mpirank);
+}
+
+void Engine::mpiPonder(Go::Color col)
+{
+  //fprintf(stderr,"ponder on rank %d starting...\n",mpirank);
+  //gtpe->getOutput()->printfDebug("ponder on rank %d starting...\n",mpirank);
+ // currentboard->setNextToMove(col);
+  
+  movetree->pruneSuperkoViolations();
+  this->allowContinuedPlay();
+  this->updateTerritoryScoringInTree();
+  params->uct_slow_update_last=0;
+  params->uct_slow_debug_last=0;
+  params->uct_last_r2=-1;
+  
+  int startplayouts=(int)movetree->getPlayouts();
+  params->mpi_last_update=MPI::Wtime();
+  
+  params->uct_initial_playouts=startplayouts;
+  params->thread_job=Parameters::TJ_PONDER;
+  #ifdef HAVE_MPI
+  //  isWaitingForStop=false;
+  #endif
+  stoppondering=false;
+  threadpool->startAll();
+  threadpool->waitAll(); // Here it makes it impossible to interrupt, as it is not listening to mpi commands
+  #ifdef HAVE_MPI
+  //  isWaitingForStop=true;
+    mpiSyncWaitStop();
+  #endif    
+    
+  //fprintf(stderr,"ponder on rank %d done.\n",mpirank);
+  //gtpe->getOutput()->printfDebug("ponder on rank %d done.\n",mpirank);
 }
 
 void Engine::mpiBuildDerivedTypes()
@@ -5542,15 +7376,42 @@ void Engine::MpiHashTable::add(Go::ZobristHash hash, Tree *node)
   }
 }
 
+void Engine::mpiSyncWaitStop()
+{
+ //gtpe->getOutput()->printfDebug("try syncWaitStop (rank: %d)\n",mpirank);
+ MPI::COMM_WORLD.Barrier();
+ //while (true)
+ // {
+ //   params->mpi_last_update=MPI::Wtime();
+ //   int localcount=(isWaitingForStop?1:0);
+ //   int maxcount;
+ //   MPI::COMM_WORLD.Allreduce(&localcount,&maxcount,1,MPI::INT,MPI::MIN);
+    //gtpe->getOutput()->printfDebug("syncWaitStop localcount %d maxcount %d rank %d\n",localcount,maxcount,mpirank);
+ //   if (maxcount==1)
+ //     break;
+ //   boost::this_thread::sleep(boost::posix_time::seconds(params->mpi_update_period));    
+ // }
+  //gtpe->getOutput()->printfDebug("syncWaitStop (rank: %d)\n",mpirank);
+}
+
 bool Engine::mpiSyncUpdate(bool stop)
 {
   int localcount=(stop?0:1);
   int maxcount;
   
-  //gtpe->getOutput()->printfDebug("sync (rank: %d) (stop:%d)!!!!!\n",mpirank,stop);
+  //gtpe->getOutput()->printfDebug("!!!!!sync (rank: %d) (stop:%d)!!!!!\n",mpirank,stop);
   
   //TODO: should consider replacing first 2 mpi cmds with 1
   MPI::COMM_WORLD.Allreduce(&localcount,&maxcount,1,MPI::INT,MPI::MIN);
+
+  //inform others about stopthinking and stoppondering events
+  int stopping[2]={stopthinking,stoppondering};
+  int resstopping[2];
+  MPI::COMM_WORLD.Allreduce(&stopping,&resstopping,2,MPI::INT,MPI::MAX);
+  stopthinking=resstopping[0];
+  stoppondering=resstopping[1];
+  if (stopthinking || stoppondering) stop_called=true;
+
   if (maxcount==0)
   {
     //gtpe->getOutput()->printfDebug("sync (rank: %d) stopping\n",mpirank);
@@ -5618,7 +7479,7 @@ bool Engine::mpiSyncUpdate(bool stop)
       }
       else
       {
-        bool foundnode=false;
+//        bool foundnode=false;
         std::list<Tree*> *parentnodes=mpihashtable.lookup(msg->parenthash);
         if (parentnodes!=NULL)
         {
@@ -5630,7 +7491,7 @@ bool Engine::mpiSyncUpdate(bool stop)
               {
                 (*iter2)->addMpiDiff(msg->playouts,msg->wins);
                 mpihashtable.add(msg->hash,(*iter2));
-                foundnode=true;
+//                foundnode=true;
                 //fprintf(stderr,"added hash: 0x%016Lx\n",msg->hash);
               }
             }
@@ -5698,4 +7559,35 @@ float Engine::getOldMoveValue(Go::Move m)
   else
     return 0; //was a pass move
 }
-    
+
+void Engine::gtpCPUtime(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  float cpu_time=(float)clock()/CLOCKS_PER_SEC;
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printf("%f\n",cpu_time);
+  gtpe->getOutput()->endResponse();
+}
+
+void Engine::gtpVERSION(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
+{
+  Engine *me=(Engine*)instance;
+  
+  gtpe->getOutput()->startResponse(cmd);
+  gtpe->getOutput()->printf("%s(%s)\n",VERSION,me->params->version_config_file.c_str());
+  gtpe->getOutput()->endResponse();
+}
+
+void Engine::doGradientDescend(float * grad)
+{
+//  return;
+  float alpha=0.01;
+  float alphalambda=0.001*alpha;
+  float einsMinusAlphaLambda=1.0-alphalambda;
+  gradlock.lock();
+  for (int i=0;i<2*boardsize*boardsize*(local_feature_num+hashto5num);i++) 
+    //deltagammaslocal[i]=fasterpow(deltagammas[i],einsMinusAlphaLambda)*grad[i];
+    deltagammaslocal[i]=(deltagammas[i]*einsMinusAlphaLambda+alphalambda)*grad[i];  //taylor around x^(1-delta)
+  deltagammaslocal=deltagammas.exchange(deltagammaslocal);
+  gradlock.unlock();
+}

@@ -13,6 +13,7 @@ m4_include([m4/ax_boost_base.m4])
 m4_include([m4/ax_boost_system.m4])
 m4_include([m4/ax_boost_thread.m4])
 m4_include([m4/ax_boost_filesystem.m4])
+
 m4_include([m4/ax_mpi.m4])
 
 AC_ARG_WITH(hoard, [AS_HELP_STRING([--with-hoard=<srcdir>],
