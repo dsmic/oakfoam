@@ -630,7 +630,7 @@ Engine::~Engine()
   {
     delete area_correlation_map[i];
   }
-  delete area_correlation_map;
+  delete[] area_correlation_map;
   delete currentboard;
   delete movehistory;
   delete moveexplanations;

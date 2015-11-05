@@ -710,7 +710,7 @@ Features::~Features()
 {
   delete patterngammas;
   delete patternids;
-  delete patterngammas_playout;
+  free(patterngammas_playout);
   delete circdict;
   delete circgammas;
   delete circstrings;
@@ -2287,22 +2287,25 @@ bool Features::setFeatureGamma(Features::FeatureClass featclass, unsigned int le
   {
     patterngammas->setGamma(level,gamma);
 
-    //this code adds the transformed patterns, so it is not necessary to call smalestEquivalent hopefully :)
-    unsigned int leveltmp=Pattern::ThreeByThree::rotateRight(level);
-    patterngammas->setGamma(leveltmp,gamma);
-    leveltmp=Pattern::ThreeByThree::rotateRight(leveltmp);
-    patterngammas->setGamma(leveltmp,gamma);
-    leveltmp=Pattern::ThreeByThree::rotateRight(leveltmp);
-    patterngammas->setGamma(leveltmp,gamma);
+    if (params->csstyle_enabled) {
+      //this code adds the transformed patterns, so it is not necessary to call smalestEquivalent hopefully :)
+      //this is only enabled in case of csstyle_enabled, otherwize gamma training and simelar script do have a problem with it!
+      unsigned int leveltmp=Pattern::ThreeByThree::rotateRight(level);
+      patterngammas->setGamma(leveltmp,gamma);
+      leveltmp=Pattern::ThreeByThree::rotateRight(leveltmp);
+      patterngammas->setGamma(leveltmp,gamma);
+      leveltmp=Pattern::ThreeByThree::rotateRight(leveltmp);
+      patterngammas->setGamma(leveltmp,gamma);
 
-    leveltmp=Pattern::ThreeByThree::flipHorizontal(level);
-    patterngammas->setGamma(leveltmp,gamma);
-    leveltmp=Pattern::ThreeByThree::rotateRight(leveltmp);
-    patterngammas->setGamma(leveltmp,gamma);
-    leveltmp=Pattern::ThreeByThree::rotateRight(leveltmp);
-    patterngammas->setGamma(leveltmp,gamma);
-    leveltmp=Pattern::ThreeByThree::rotateRight(leveltmp);
-    patterngammas->setGamma(leveltmp,gamma);
+      leveltmp=Pattern::ThreeByThree::flipHorizontal(level);
+      patterngammas->setGamma(leveltmp,gamma);
+      leveltmp=Pattern::ThreeByThree::rotateRight(leveltmp);
+      patterngammas->setGamma(leveltmp,gamma);
+      leveltmp=Pattern::ThreeByThree::rotateRight(leveltmp);
+      patterngammas->setGamma(leveltmp,gamma);
+      leveltmp=Pattern::ThreeByThree::rotateRight(leveltmp);
+      patterngammas->setGamma(leveltmp,gamma);
+    }
     
     this->updatePatternIds();
     return true;
