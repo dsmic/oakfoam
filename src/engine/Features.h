@@ -115,6 +115,7 @@ class Features
       PATTERN3X3,
       CIRCPATT,
       PATTERN3X3playout,
+      CNN,
       INVALID
     };
     
@@ -196,7 +197,7 @@ class Features
     int learnFeatureGammaC(Features::FeatureClass featclass, unsigned int level, float learn_diff);
     
     /** Return a string of all the matching features for a move. */ 
-    std::string getMatchingFeaturesString(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool pretty=true, bool playout=false) const;
+    std::string getMatchingFeaturesString(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool pretty=true, bool playout=false, float * result=NULL) const;
     /** Return a list of all valid features and levels. */
     std::string getFeatureIdList(bool playout=false) const;
     

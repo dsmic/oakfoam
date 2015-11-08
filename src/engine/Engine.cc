@@ -5307,11 +5307,15 @@ void Engine::makeMove(Go::Move move)
     Go::ObjectBoard<int> *cfglastdist=NULL;
     Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
     features->computeCFGDist(currentboard,&cfglastdist,&cfgsecondlastdist);
-    
+    float *result=NULL;
+    if (params->test_p100>0) {
+      result= new float[currentboard->getSize()*currentboard->getSize()];
+      getCNN(currentboard,move.getColor(),result);
+    }
     if (params->features_output_competitions_mmstyle)
     {
       int p=move.getPosition();
-      std::string featurestring=features->getMatchingFeaturesString(currentboard,cfglastdist,cfgsecondlastdist,move,!params->features_output_competitions_mmstyle,params->features_output_for_playout);
+      std::string featurestring=features->getMatchingFeaturesString(currentboard,cfglastdist,cfgsecondlastdist,move,!params->features_output_competitions_mmstyle,params->features_output_for_playout, result);
       if (featurestring.length()>0)
       {
         gtpe->getOutput()->printfDebug("[features]:# competition (%d,%s)\n",(currentboard->getMovesMade()+1),Go::Position::pos2string(move.getPosition(),boardsize).c_str());
@@ -5344,7 +5348,7 @@ void Engine::makeMove(Go::Move move)
         Go::Move m=Go::Move(col,p);
         if (currentboard->validMove(m) || m==move)
         {
-          std::string featurestring=features->getMatchingFeaturesString(currentboard,cfglastdist,cfgsecondlastdist,m,!params->features_output_competitions_mmstyle,params->features_output_for_playout);
+          std::string featurestring=features->getMatchingFeaturesString(currentboard,cfglastdist,cfgsecondlastdist,m,!params->features_output_competitions_mmstyle,params->features_output_for_playout, result);
           if (featurestring.length()>0)
           {
             gtpe->getOutput()->printfDebug("[features]:%s",Go::Position::pos2string(p,boardsize).c_str());
@@ -5373,7 +5377,7 @@ void Engine::makeMove(Go::Move move)
             gtpe->getOutput()->printfDebug("*");
           else
             gtpe->getOutput()->printfDebug(":");
-          gtpe->getOutput()->printfDebug("%s",features->getMatchingFeaturesString(currentboard,cfglastdist,cfgsecondlastdist,m,!params->features_output_competitions_mmstyle,params->features_output_for_playout).c_str());
+          gtpe->getOutput()->printfDebug("%s",features->getMatchingFeaturesString(currentboard,cfglastdist,cfgsecondlastdist,m,!params->features_output_competitions_mmstyle,params->features_output_for_playout, result).c_str());
           gtpe->getOutput()->printfDebug("\n");
         }
       }
@@ -5383,6 +5387,8 @@ void Engine::makeMove(Go::Move move)
       delete cfglastdist;
     if (cfgsecondlastdist!=NULL)
       delete cfgsecondlastdist;
+    if (result!=NULL)
+      delete[] result;
   }
 
   bool did_CNN=false;
@@ -5822,7 +5828,7 @@ void Engine::clearBoard()
   {
     delete area_correlation_map[i];
   }
-  delete area_correlation_map;
+  delete[] area_correlation_map;
   delete currentboard;
   delete movehistory;
   delete moveexplanations;

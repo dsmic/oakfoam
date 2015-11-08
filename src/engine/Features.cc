@@ -14,6 +14,8 @@
 //const int playpattern[playpatterndim][playpatterndim]={{0,1,2,3},{4,7,7,7},{5,7,7,7},{6,7,7,7}};
 //const int playpatternnum=8;
 
+#define cnn_levels 1000
+
 //moved here, so it is not parsed any time feature.h is included
 const std::string FEATURES_DEFAULT=
   "pass:1 0.950848 \n"
@@ -1828,6 +1830,8 @@ Features::FeatureClass Features::getFeatureClassFromName(std::string name) const
     return Features::PATTERN3X3playout;
   else if (name=="circpatt")
     return Features::CIRCPATT;
+  else if (name=="cnn")
+    return Features::CNN;
   else
     return Features::INVALID;
 }
@@ -2323,7 +2327,7 @@ bool Features::setFeatureGamma(Features::FeatureClass featclass, unsigned int le
   }
 }
 
-std::string Features::getMatchingFeaturesString(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool pretty, bool playout) const
+std::string Features::getMatchingFeaturesString(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool pretty, bool playout, float *result) const
 {
   constructCircstrings();
   std::ostringstream ss;
@@ -2502,6 +2506,19 @@ std::string Features::getMatchingFeaturesString(Go::Board *board, Go::ObjectBoar
   }
   base+=circlevels->size();
 
+  if (result!=NULL && !move.isPass() && !move.isResign()) {
+    int x=Go::Position::pos2x(move.getPosition(), board->getSize());
+    int y=Go::Position::pos2y(move.getPosition(), board->getSize());
+    int r=result[x*board->getSize()+y]*cnn_levels;
+    if (r>=cnn_levels) r=cnn_levels-1;
+    if (r<0) r=0;
+    level=r;
+    if (pretty)
+      ss<<" cnn: "<<(base+level);
+    else
+      ss<<" "<<(base+level);
+  }
+
   if (params->features_dt_use)
   {
     std::list<int> *ids = DecisionTree::getCollectionLeafIds(params->engine->getDecisionTrees(),board,move);
@@ -2584,7 +2601,7 @@ std::string Features::getFeatureIdList(bool playout) const
     ss<<(id++)<<" cfgsecondlastdist:"<<level<<"\n";
   
   for (unsigned int level=1;level<=NAKADE_LEVELS;level++)
-    ss<<(id++)<<" nakade:"<<level<<"\n";
+    ss<<(id++)<<" nakaparde:"<<level<<"\n";
   
   for (unsigned int level=1;level<=APPROACH_LEVELS;level++)
     ss<<(id++)<<" approach:"<<level<<"\n";
@@ -2601,8 +2618,11 @@ std::string Features::getFeatureIdList(bool playout) const
   }
 
   for (unsigned int level=1;level<=circlevels->size();level++)
-    ss<<(id++)<<" circpatt:"<<(*circstrings)[level]<<"\n";
-  
+    ss<<std::dec<<(id++)<<" circpatt:"<<(*circstrings)[level]<<"\n";
+  if (params->test_p100>0) {
+    for (unsigned int level=0;level<cnn_levels;level++)
+      ss<<std::dec<<(id++)<<" cnn:"<< level<<"\n";
+  } 
   return ss.str();
 }
 

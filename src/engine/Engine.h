@@ -384,7 +384,7 @@ class Engine
 
     void addpresetplayout(float p) {presetplayouts+=p; presetnum++;}
 
-	  void getCNN(Go::Board *board,Go::Color col, float result[361]);
+	  void getCNN(Go::Board *board,Go::Color col, float result[]);
     float getCNNwr(Go::Board *board,Go::Color col);
 
 
