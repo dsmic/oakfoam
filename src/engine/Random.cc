@@ -18,7 +18,8 @@ Random::Random(unsigned long s, int threadid)
     seed=s^((unsigned long)threadid);
 }
 
-unsigned long Random::getRandomInt()
+/*
+ unsigned long Random::getRandomInt()
 {
   //Park-Miller "Minimal Standard" PRNG
   
@@ -39,7 +40,7 @@ unsigned long Random::getRandomInt(unsigned long max)
 {
   return this->getRandomInt() % max; //XXX: not uniform, but good enough
 }
-
+*/
 unsigned long Random::getRandomInt(unsigned long max, float a)
 {
   float r=getRandomInt(max);
@@ -47,10 +48,12 @@ unsigned long Random::getRandomInt(unsigned long max, float a)
   return r;
 }
 
+/*
 float Random::getRandomReal()
 {
   return (float)this->getRandomInt() / ((unsigned long)(1) << 31);
 }
+*/
 
 unsigned long Random::makeSeed(int threadid)
 {

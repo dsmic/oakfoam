@@ -9,7 +9,7 @@ Oakfoam::Oakfoam()
   engine=new Engine(gtpe,PACKAGE_NAME " : " PACKAGE_VERSION " (" BUILD_DATE " " BUILD_TIME ")");
   
   gtpe->addConstantCommand("name",PACKAGE_NAME);
-  gtpe->addConstantCommand("version",PACKAGE_VERSION);
+ // gtpe->addConstantCommand("version",PACKAGE_VERSION);
   
   book_autoload=true;
   web_interface=false;
