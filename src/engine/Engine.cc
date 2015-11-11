@@ -5583,7 +5583,14 @@ void Engine::makeMove(Go::Move move)
     Go::ObjectBoard<int> *cfglastdist=NULL;
     Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
     features->computeCFGDist(currentboard,&cfglastdist,&cfgsecondlastdist);
-
+    float *result=NULL;
+    float passresult=1;
+    if (params->test_p100>0) {
+      result= new float[currentboard->getSize()*currentboard->getSize()];
+      getCNN(currentboard,move.getColor(),result);
+      passresult=0.000001;
+    }
+    
     float weights[currentboard->getPositionMax()];
     for (int p=0;p<currentboard->getPositionMax();p++)
     {
@@ -5593,7 +5600,28 @@ void Engine::makeMove(Go::Move move)
       else
         weights[p] = -1;
     }
-  
+
+    if (params->test_p100>99999) { // only cnn usage
+      for (int p=0;p<currentboard->getPositionMax();p++)
+      {
+        int x=Go::Position::pos2x(p, currentboard->getSize());
+        int y=Go::Position::pos2y(p, currentboard->getSize());
+        float r=result[x*currentboard->getSize()+y];
+        if (r<0.0000001) r=0.0000001;
+        if (weights[p]>-1) weights[p]=r;
+      }
+    }
+    else if (params->test_p100>0) {
+      for (int p=0;p<currentboard->getPositionMax();p++)
+      {
+        int x=Go::Position::pos2x(p, currentboard->getSize());
+        int y=Go::Position::pos2y(p, currentboard->getSize());
+        float r=result[x*currentboard->getSize()+y];
+        if (r<0.000001) r=0.000001;
+        if (weights[p]>-1) weights[p]*=r;
+      }
+    }
+    
     gtpe->getOutput()->printfDebug("[feature_comparison]:# comparison (%d,%s)\n",(currentboard->getMovesMade()+1),Go::Position::pos2string(move.getPosition(),boardsize).c_str());
     
     gtpe->getOutput()->printfDebug("[feature_comparison]:");
@@ -5624,7 +5652,8 @@ void Engine::makeMove(Go::Move move)
           Go::Move m=Go::Move(col,Go::Move::PASS);
           if (currentboard->validMove(m) || m==move)
           {
-            float gamma=features->getMoveGamma(currentboard,cfglastdist,cfgsecondlastdist,m);;
+            float gamma=features->getMoveGamma(currentboard,cfglastdist,cfgsecondlastdist,m);
+            gamma*=passresult;
             if (gamma>bestgamma)
             {
               bestgamma=gamma;
@@ -5662,6 +5691,8 @@ void Engine::makeMove(Go::Move move)
       delete cfglastdist;
     if (cfgsecondlastdist!=NULL)
       delete cfgsecondlastdist;
+    if (result!=NULL)
+      delete[] result;
   }
 
   if (params->dt_ordered_comparison)

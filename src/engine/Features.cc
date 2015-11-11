@@ -2199,6 +2199,8 @@ bool Features::loadGammaLine(std::string line)
   if (!getline(issid,levelstring,' '))
     return false;
   
+  //fprintf(stderr,"debug: %s\n",levelstring.c_str());
+  
   if (levelstring.find(':') != std::string::npos)
   {
     Pattern::Circular pc = Pattern::Circular(circdict,levelstring);
@@ -2214,7 +2216,7 @@ bool Features::loadGammaLine(std::string line)
       (*circstrings)[level] = pc.toString(circdict);
     }
   }
-  else if (levelstring.at(0)=='0' && levelstring.at(1)=='x')
+  else if (levelstring.length()>1 && levelstring.at(0)=='0' && levelstring.at(1)=='x')
   {
     level=0;
     std::string hex="0123456789abcdef";
@@ -2276,6 +2278,8 @@ float *Features::getStandardGamma(Features::FeatureClass featclass) const
 
 bool Features::setFeatureGamma(Features::FeatureClass featclass, unsigned int level, float gamma)
 {
+  if (featclass==Features::CNN)
+    return true; //CNN Features are only used for training, but no real gammas are saved
   if (featclass==Features::CIRCPATT)
   {
     (*circgammas)[level] = gamma;

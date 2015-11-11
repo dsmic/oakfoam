@@ -80,7 +80,8 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
   //int ACpos[4],ACcount=0;
   
   params->engine->ProbabilityClean();
-  board->enable_changed_positions(params);
+  if (params->csstyle_enabled)
+    board->enable_changed_positions(params);
   // can not score board if not played out with playout rules
   //if (board->getPassesPlayed()>=2)
   //{
