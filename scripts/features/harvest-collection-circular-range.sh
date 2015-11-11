@@ -8,7 +8,7 @@ TEMPGAMES="harvest_range_games_`date +%F_%T`.tmp"
 TEMPGAMMAS="harvest_range_gammas_`date +%F_%T`.tmp"
 TEMPPATT="harvest_range_patt_`date +%F_%T`.tmp"
 
-THRESHOLD=$1
+THRESHOLD=${1:-100}
 END=${2:-15}
 START=${3:-3}
 
@@ -30,7 +30,7 @@ for i in `seq $END -1 $START`; do
     exit 1
   fi
 
-  PATTERNS=`cat $TEMPPATT | awk "BEGIN{m=0} {if (\\$1>=${1:-100}) m=NR} END{print m}"`
+  PATTERNS=`cat $TEMPPATT | awk "BEGIN{m=0} {if (\\$1>=${THRESHOLD}) m=NR} END{print m}"`
   echo "Preparing $PATTERNS gammas for size $i..." >&2
   set +e # disable error handling for the next command, workaround
   cat $TEMPPATT | head -n $PATTERNS | $WD/train-prepare-circular.sh >> $TEMPGAMMAS

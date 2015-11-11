@@ -8,7 +8,7 @@ possible. The following instructions can be used.
 -- Setup ----------------------------------------
 
 Install the necessary packages:
-  sudo apt-get install mingw32
+  sudo apt-get install mingw32 nsis
 
 Download the Boost libraries and build them for
 Windows:
@@ -17,6 +17,10 @@ Windows:
   ./bjam -a --user-config=user-config.jam --layout=system variant=release toolset=gcc target-os=windows threadapi=win32 link=static stage
 
 -- Building -------------------------------------
+
+./build-win.sh
+
+OR:
 
 BOOST_ROOT=/path/to/boost/for/windows ./configure --host=i586-mingw32msvc --build=`./config.guess`
 make clean

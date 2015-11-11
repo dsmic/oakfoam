@@ -31,6 +31,8 @@ DTFILE=${3:--}
 
 LADDERS=${4:-0}
 FORPLAYOUT=${5:-0}
+TACTICAL=${5:-1}
+HISTORY_AGNOSTIC=${6:-0}
 
 if ! test -x $WD/../../oakfoam; then
   echo "File $WD/../oakfoam not found" >&2
@@ -73,6 +75,8 @@ fi
 echo -e "loadfeaturegammas ${INITIALPATTERNGAMMAS}\nparam features_output_competitions 0.3\nparam features_output_competitions_mmstyle 1\n${SMALLONLY}" >> $TEMPGTP
 echo "param features_ladders $LADDERS" >> $TEMPGTP
 echo "param features_output_for_playout $FORPLAYOUT" >> $TEMPGTP
+echo "param features_tactical $TACTICAL" >> $TEMPGTP
+echo "param features_history_agnostic $HISTORY_AGNOSTIC" >> $TEMPGTP
 
 echo 'param undo_enable 0' >> $TEMPGTP # so gogui-adapter doesn't send undo commands
 

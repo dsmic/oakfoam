@@ -1,18 +1,21 @@
-x = load("cmp.txt");
-
-N = length(x(:,2));
-y(1) = x(1,1);
-
-for i = 2:N
-  y(i) = x(i,1) + y(i-1);
-endfor
-
-za = x(:,1)/max(x(:,1));
-zb = y/max(y);
+x = load(mpin);
 
 hold off;
-plot(x(:,2),za,'r');
-hold on;
-plot(x(:,2),zb,'b');
+plot(x(:,1),x(:,2),'r');
+axis([0 1 0 1], "autox");
 grid on;
-print("plot.png")
+print(mpout)
+
+
+x = load(stagesin);
+
+N = length(x(:,1));
+for i = 1:N
+  xx(i) = (x(i,1) + x(i,2)) / 2;
+endfor
+
+hold off;
+plotyy(xx,x(:,3),xx,x(:,4));
+grid on;
+print(stagesout)
+

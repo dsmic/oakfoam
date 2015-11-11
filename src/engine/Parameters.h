@@ -722,8 +722,16 @@ class Parameters
      * Used to measure feature accuracy.
      */
     bool features_ordered_comparison;
+    /** Whether to include the log evidence in the feature comparison. */
+    bool features_ordered_comparison_log_evidence;
+    /** Whether to include the move number in the feature comparison. */
+    bool features_ordered_comparison_move_num;
     /** Whether to try take ladders into account with features. */
     bool features_ladders;
+    /** Whether to enable tactical features. */
+    bool features_tactical;
+    /** Whether to only use history-agnostic features. */
+    bool features_history_agnostic;
     /** Whether to use decision trees with features. */
     bool features_dt_use;
     /** Probability that the circular patterns are listed after a move. */
@@ -743,16 +751,35 @@ class Parameters
     std::string auto_save_sgf_prefix;
     std::string version_config_file;
     
+
+    /** Query selection policies for growing decision trees. */
+    enum QuerySelectionPolicy
+    {
+      SP_WIN_LOSS_SEPARATE,
+      SP_WEIGHTED_WIN_LOSS_SEPARATE,
+      SP_WINRATE_ENTROPY,
+      SP_WEIGHTED_WINRATE_ENTROPY,
+      SP_CLASSIFICATION_SEPARATE,
+      SP_SYMMETRIC_SEPARATE,
+      SP_WEIGHTED_SYMMETRIC_SEPARATE,
+      SP_ROBUST_DESCENT_SPLIT,
+      SP_ROBUST_WIN_SPLIT,
+      SP_ROBUST_LOSS_SPLIT,
+      SP_ENTROPY_DESCENT_SPLIT,
+      SP_ENTROPY_WIN_SPLIT,
+      SP_ENTROPY_LOSS_SPLIT,
+      SP_WINRATE_SPLIT,
+      SP_DESCENT_SPLIT
+    };
+    /** String representation of the current query selection policy. */
+    std::string dt_selection_policy_string;
+    /** Current query selection policy. */
+    Parameters::QuerySelectionPolicy dt_selection_policy;
+
     /** Probability that the decision trees are updated after a move. */
     float dt_update_prob;
     /** Number of descents that must occur before a decision tree node is split. */
     int dt_split_after;
-    /** Minimum value required to make a decision tree split.
-     * Split values are in the range [0,1], with a larger value indicating a better split.
-     */
-    float dt_split_threshold;
-    /** Number of range additions before dividing a range. */
-    int dt_range_divide;
     /** Whether to return only a single leaf node from each decision tree.
      * In practice, the leaf node with the smallest leaf id will be used.
      */

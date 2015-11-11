@@ -1,0 +1,17 @@
+#!/bin/bash
+
+set -eu
+
+if (( $# < 1 )); then
+  echo "Missing command" >&2
+  exit 1
+fi
+
+CMD="${1:-}"
+
+##########################################
+# EDIT HERE
+echo "EDIT THIS PART!"
+# tsp $CMD # task-spooler
+##########################################
+

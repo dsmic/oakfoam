@@ -2105,6 +2105,8 @@ bool Tree::expandLeaf(Worker::Settings *settings)
         //}
       }
     } 
+    DecisionTree::GraphCollection *graphs = new DecisionTree::GraphCollection(DecisionTree::getCollectionTypes(params->engine->getDecisionTrees()),startboard);
+
     //int now_unpruned=this->getUnprunedNum();
     //fprintf(stderr,"debugging %d\n",now_unpruned);
     for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
@@ -2119,7 +2121,7 @@ bool Tree::expandLeaf(Worker::Settings *settings)
           //does this expensive construction twice, should be optimized later
           pattcirc_for_move = new Pattern::Circular(circdict,startboard,(*iter)->getMove().getPosition(),PATTERN_CIRC_MAXSIZE);
         }
-        float gammal=params->engine->getFeatures()->getMoveGamma(startboard,cfglastdist,cfgsecondlastdist,(*iter)->getMove(),true,true,&gamma_local_part,pattcirc_for_move,cfgaroundposdist);
+        float gammal=params->engine->getFeatures()->getMoveGamma(startboard,cfglastdist,cfgsecondlastdist,graphs,(*iter)->getMove(),true,true,&gamma_local_part,pattcirc_for_move,cfgaroundposdist);
         if (params->test_p100>0) {
           if ( (*iter)->getMove().isNormal()) {
             int p=(*iter)->getMove().getPosition();
@@ -2162,6 +2164,8 @@ bool Tree::expandLeaf(Worker::Settings *settings)
       delete cfgaroundposdist;
     //if (CNNresults!=NULL)
     //  delete[] CNNresults;
+    delete graphs;
+    
     if (params->uct_progressive_widening_enabled)
     {
       this->pruneChildren();

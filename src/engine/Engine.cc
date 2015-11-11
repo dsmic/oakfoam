@@ -506,10 +506,14 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("other","undo_enable",&(params->undo_enable),true);
   
   params->addParameter("other","features_only_small",&(params->features_only_small),false);
+  params->addParameter("other","features_tactical",&(params->features_tactical),true);
+  params->addParameter("other","features_history_agnostic",&(params->features_history_agnostic),false);
   params->addParameter("other","features_output_competitions",&(params->features_output_competitions),0.0);
   params->addParameter("other","features_output_for_playout",&(params->features_output_for_playout),false);
   params->addParameter("other","features_output_competitions_mmstyle",&(params->features_output_competitions_mmstyle),false);
   params->addParameter("other","features_ordered_comparison",&(params->features_ordered_comparison),false);
+  params->addParameter("other","features_ordered_comparison_log_evidence",&(params->features_ordered_comparison_log_evidence),false);
+  params->addParameter("other","features_ordered_comparison_move_num",&(params->features_ordered_comparison_move_num),false);
   params->addParameter("other","features_circ_list",&(params->features_circ_list),0.0);
   params->addParameter("other","features_circ_list_size",&(params->features_circ_list_size),0);
   params->addParameter("other","cnn_data",&(params->CNN_data),0.0);
@@ -519,10 +523,27 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("other","auto_save_sgf_prefix",&(params->auto_save_sgf_prefix),"");
   params->addParameter("other","version_config_file",&(params->version_config_file),"");
 
+  std::list<std::string> *spoptions = new std::list<std::string>();
+  spoptions->push_back("descent_split");
+  spoptions->push_back("robust_descent_split");
+  spoptions->push_back("robust_win_split");
+  spoptions->push_back("robust_loss_split");
+  spoptions->push_back("entropy_descent_split");
+  spoptions->push_back("entropy_win_split");
+  spoptions->push_back("entropy_loss_split");
+  spoptions->push_back("winrate_split");
+  spoptions->push_back("win_loss_separate");
+  spoptions->push_back("weighted_win_loss_separate");
+  spoptions->push_back("symmetric_separate");
+  spoptions->push_back("weighted_symmetric_separate");
+  spoptions->push_back("winrate_entropy");
+  spoptions->push_back("weighted_winrate_entropy");
+  spoptions->push_back("classification_separate");
+  params->addParameter("other","dt_selection_policy",&(params->dt_selection_policy_string),spoptions,"descent_split",&Engine::updateParameterWrapper,this);
+  params->dt_selection_policy = Parameters::SP_DESCENT_SPLIT;
+
   params->addParameter("other","dt_update_prob",&(params->dt_update_prob),0.00);
   params->addParameter("other","dt_split_after",&(params->dt_split_after),1000);
-  params->addParameter("other","dt_split_threshold",&(params->dt_split_threshold),0.00);
-  params->addParameter("other","dt_range_divide",&(params->dt_range_divide),10);
   params->addParameter("other","dt_solo_leaf",&(params->dt_solo_leaf),true);
   params->addParameter("other","dt_output_mm",&(params->dt_output_mm),0.00);
   params->addParameter("other","dt_ordered_comparison",&(params->dt_ordered_comparison),false);
@@ -975,6 +996,39 @@ void Engine::updateParameter(std::string id)
       params->playouts_per_move_max=params->playouts_per_move;
     if (params->playouts_per_move<params->playouts_per_move_min)
       params->playouts_per_move_min=params->playouts_per_move;
+  }
+  else if (id=="dt_selection_policy")
+  {
+    if (params->dt_selection_policy_string == "win_loss_separate")
+      params->dt_selection_policy = Parameters::SP_WIN_LOSS_SEPARATE;
+    else if (params->dt_selection_policy_string == "weighted_win_loss_separate")
+      params->dt_selection_policy = Parameters::SP_WEIGHTED_WIN_LOSS_SEPARATE;
+    else if (params->dt_selection_policy_string == "winrate_entropy")
+      params->dt_selection_policy = Parameters::SP_WINRATE_ENTROPY;
+    else if (params->dt_selection_policy_string == "weighted_winrate_entropy")
+      params->dt_selection_policy = Parameters::SP_WEIGHTED_WINRATE_ENTROPY;
+    else if (params->dt_selection_policy_string == "symmetric_separate")
+      params->dt_selection_policy = Parameters::SP_SYMMETRIC_SEPARATE;
+    else if (params->dt_selection_policy_string == "weighted_symmetric_separate")
+      params->dt_selection_policy = Parameters::SP_WEIGHTED_SYMMETRIC_SEPARATE;
+    else if (params->dt_selection_policy_string == "classification_separate")
+      params->dt_selection_policy = Parameters::SP_CLASSIFICATION_SEPARATE;
+    else if (params->dt_selection_policy_string == "robust_descent_split")
+      params->dt_selection_policy = Parameters::SP_ROBUST_DESCENT_SPLIT;
+    else if (params->dt_selection_policy_string == "robust_win_split")
+      params->dt_selection_policy = Parameters::SP_ROBUST_WIN_SPLIT;
+    else if (params->dt_selection_policy_string == "robust_loss_split")
+      params->dt_selection_policy = Parameters::SP_ROBUST_LOSS_SPLIT;
+    else if (params->dt_selection_policy_string == "entropy_descent_split")
+      params->dt_selection_policy = Parameters::SP_ENTROPY_DESCENT_SPLIT;
+    else if (params->dt_selection_policy_string == "entropy_win_split")
+      params->dt_selection_policy = Parameters::SP_ENTROPY_WIN_SPLIT;
+    else if (params->dt_selection_policy_string == "entropy_loss_split")
+      params->dt_selection_policy = Parameters::SP_ENTROPY_LOSS_SPLIT;
+    else if (params->dt_selection_policy_string == "winrate_split")
+      params->dt_selection_policy = Parameters::SP_WINRATE_SPLIT;
+    else
+      params->dt_selection_policy = Parameters::SP_DESCENT_SPLIT;
   }
 }
 
@@ -2537,7 +2591,8 @@ void Engine::gtpFeatureMatchesAt(void *instance, Gtp::Engine* gtpe, Gtp::Command
   Go::ObjectBoard<int> *cfglastdist=NULL;
   Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
   me->features->computeCFGDist(board,&cfglastdist,&cfgsecondlastdist);
-  
+  DecisionTree::GraphCollection *graphs = new DecisionTree::GraphCollection(DecisionTree::getCollectionTypes(&(me->decisiontrees)),board);
+
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printf("Feature Matches for %s:\n",move.toString(board->getSize()).c_str());
   gtpe->getOutput()->printf("PASS:              %u\n",me->features->matchFeatureClass(Features::PASS,board,cfglastdist,cfgsecondlastdist,move));
@@ -2554,9 +2609,9 @@ void Engine::gtpFeatureMatchesAt(void *instance, Gtp::Engine* gtpe, Gtp::Command
   gtpe->getOutput()->printf("APPROACH:          %u\n",me->features->matchFeatureClass(Features::APPROACH,board,cfglastdist,cfgsecondlastdist,move));
   gtpe->getOutput()->printf("PATTERN3X3:        0x%04x\n",me->features->matchFeatureClass(Features::PATTERN3X3,board,cfglastdist,cfgsecondlastdist,move));
   gtpe->getOutput()->printf("CIRCPATT:          %u\n",me->features->matchFeatureClass(Features::CIRCPATT,board,cfglastdist,cfgsecondlastdist,move));
-  float gamma=me->features->getMoveGamma(board,cfglastdist,cfgsecondlastdist,move);
-  float total=me->features->getBoardGamma(board,cfglastdist,cfgsecondlastdist,col);
-  float totallog=me->features->getBoardGamma(board,cfglastdist,cfgsecondlastdist,col,true);
+  float gamma=me->features->getMoveGamma(board,cfglastdist,cfgsecondlastdist,graphs,move);
+  float total=me->features->getBoardGamma(board,cfglastdist,cfgsecondlastdist,graphs,col);
+  float totallog=me->features->getBoardGamma(board,cfglastdist,cfgsecondlastdist,NULL,col,true);
   gtpe->getOutput()->printf("Gamma: %.2f/%.2f (%.2f) log %.2f\n",gamma,total,gamma/total,totallog);
 
   Tree *tree=me->movetree->getChild(move);
@@ -2574,6 +2629,7 @@ void Engine::gtpFeatureMatchesAt(void *instance, Gtp::Engine* gtpe, Gtp::Command
     delete cfglastdist;
   if (cfgsecondlastdist!=NULL)
     delete cfgsecondlastdist;
+  delete graphs;
 }
 
 void Engine::gtpFeatureProbDistribution(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
@@ -2586,8 +2642,9 @@ void Engine::gtpFeatureProbDistribution(void *instance, Gtp::Engine* gtpe, Gtp::
   Go::ObjectBoard<int> *cfglastdist=NULL;
   Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
   me->features->computeCFGDist(board,&cfglastdist,&cfgsecondlastdist);
+  DecisionTree::GraphCollection *graphs = new DecisionTree::GraphCollection(DecisionTree::getCollectionTypes(&(me->decisiontrees)),board);
   
-  float totalgamma=me->features->getBoardGamma(board,cfglastdist,cfgsecondlastdist,col);
+  float totalgamma=me->features->getBoardGamma(board,cfglastdist,cfgsecondlastdist,graphs,col);
   
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printString("\n");
@@ -2596,7 +2653,7 @@ void Engine::gtpFeatureProbDistribution(void *instance, Gtp::Engine* gtpe, Gtp::
     for (int x=0;x<me->boardsize;x++)
     {
       Go::Move move=Go::Move(col,Go::Position::xy2pos(x,y,me->boardsize)); 
-      float gamma=me->features->getMoveGamma(board,cfglastdist,cfgsecondlastdist,move);
+      float gamma=me->features->getMoveGamma(board,cfglastdist,cfgsecondlastdist,graphs,move);
       if (gamma<=0)
         gtpe->getOutput()->printf("\"\" ");
       else
@@ -2643,6 +2700,7 @@ void Engine::gtpFeatureProbDistribution(void *instance, Gtp::Engine* gtpe, Gtp::
     delete cfglastdist;
   if (cfgsecondlastdist!=NULL)
     delete cfgsecondlastdist;
+  delete graphs;
 }
 
 void Engine::gtpListAllPatterns(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
@@ -2832,13 +2890,13 @@ void Engine::gtpSaveFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Comman
   if (success)
   {
     gtpe->getOutput()->startResponse(cmd);
-    gtpe->getOutput()->printf("saveded features gamma file: %s",filename.c_str());
+    gtpe->getOutput()->printf("saved features gamma file: %s",filename.c_str());
     gtpe->getOutput()->endResponse();
   }
   else
   {
     gtpe->getOutput()->startResponse(cmd,false);
-    gtpe->getOutput()->printf("error saveing features gamma file: %s",filename.c_str());
+    gtpe->getOutput()->printf("error saving features gamma file: %s",filename.c_str());
     gtpe->getOutput()->endResponse();
   }
 }
@@ -4524,7 +4582,9 @@ void Engine::gtpDTAt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   int pos=Go::Position::xy2pos(vert.x,vert.y,me->boardsize);
   Go::Move move=Go::Move(me->currentboard->nextToMove(),pos);
 
-  float w = DecisionTree::getCollectionWeight(&(me->decisiontrees), me->currentboard, move);
+  DecisionTree::GraphCollection *graphs = new DecisionTree::GraphCollection(DecisionTree::getCollectionTypes(&(me->decisiontrees)),me->currentboard);
+  float w = DecisionTree::getCollectionWeight(&(me->decisiontrees), graphs, move);
+  delete graphs;
 
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printf("weight for %s: %.2f",move.toString(me->boardsize).c_str(),w);
@@ -4535,7 +4595,10 @@ void Engine::gtpDTUpdate(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
   Engine *me=(Engine*)instance;
   
-  DecisionTree::collectionUpdateDescent(&(me->decisiontrees),me->currentboard);
+  DecisionTree::GraphCollection *graphs = new DecisionTree::GraphCollection(DecisionTree::getCollectionTypes(&(me->decisiontrees)),me->currentboard);
+  DecisionTree::collectionUpdateDescent(&(me->decisiontrees),graphs,Go::Move(me->currentboard->nextToMove(),Go::Move::PASS));
+  delete graphs;
+
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printf("updated decision trees");
   gtpe->getOutput()->endResponse();
@@ -4570,13 +4633,14 @@ void Engine::gtpDTDistribution(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
   Go::Board *board = me->currentboard;
   Go::Color col = board->nextToMove();
 
+  DecisionTree::GraphCollection *graphs = new DecisionTree::GraphCollection(DecisionTree::getCollectionTypes(&(me->decisiontrees)),board);
   float weightmax = 0;
   for (int y=me->boardsize-1;y>=0;y--)
   {
     for (int x=0;x<me->boardsize;x++)
     {
       Go::Move move = Go::Move(col,Go::Position::xy2pos(x,y,me->boardsize)); 
-      float weight = DecisionTree::getCollectionWeight(&(me->decisiontrees), board, move);
+      float weight = DecisionTree::getCollectionWeight(&(me->decisiontrees), graphs, move);
       if (weight >= 0 && weight > weightmax)
         weightmax = weight;
     }
@@ -4589,7 +4653,7 @@ void Engine::gtpDTDistribution(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
     for (int x=0;x<me->boardsize;x++)
     {
       Go::Move move = Go::Move(col,Go::Position::xy2pos(x,y,me->boardsize)); 
-      float weight = DecisionTree::getCollectionWeight(&(me->decisiontrees), board, move);
+      float weight = DecisionTree::getCollectionWeight(&(me->decisiontrees), graphs, move);
       if (weight < 0)
         gtpe->getOutput()->printf("\"\" ");
       else
@@ -4630,6 +4694,7 @@ void Engine::gtpDTDistribution(void *instance, Gtp::Engine* gtpe, Gtp::Command* 
     }
     gtpe->getOutput()->printf("\n");
   }
+  delete graphs;
 
   gtpe->getOutput()->endResponse(true);
 }
@@ -4640,6 +4705,18 @@ void Engine::gtpDTStats(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 
   gtpe->getOutput()->startResponse(cmd);
   gtpe->getOutput()->printf("decision trees stats:");
+
+  int forest_treenodes=0;
+  int forest_leaves=0;
+  int forest_maxdepth=0;
+  int forest_sumdepth=0;
+  int forest_sumsqdepth=0;
+  int forest_maxnodes=0;
+  int forest_sumnodes=0;
+  int forest_sumsqnodes=0;
+  float forest_sumlogweights=0;
+  float forest_sumsqlogweights=0;
+
   for (std::list<DecisionTree*>::iterator iter=me->decisiontrees.begin();iter!=me->decisiontrees.end();++iter)
   {
     std::vector<std::string> *attrs = (*iter)->getAttrs();
@@ -4654,19 +4731,68 @@ void Engine::gtpDTStats(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     int treenodes;
     int leaves;
     int maxdepth;
-    float avgdepth;
+    int sumdepth;
+    int sumsqdepth;
     int maxnodes;
-    float avgnodes;
-    (*iter)->getTreeStats(treenodes,leaves,maxdepth,avgdepth,maxnodes,avgnodes);
+    int sumnodes;
+    int sumsqnodes;
+    float sumlogweights;
+    float sumsqlogweights;
+    (*iter)->getTreeStats(treenodes,leaves,maxdepth,sumdepth,sumsqdepth,maxnodes,sumnodes,sumsqnodes,sumlogweights,sumsqlogweights);
+    forest_treenodes += treenodes;
+    forest_leaves += leaves;
+    forest_sumdepth += sumdepth;
+    forest_sumsqdepth += sumsqdepth;
+    forest_sumnodes += sumnodes;
+    forest_sumsqnodes += sumsqnodes;
+    forest_sumlogweights += sumlogweights;
+    forest_sumsqlogweights += sumsqlogweights;
+    if (maxdepth > forest_maxdepth)
+      forest_maxdepth = maxdepth;
+    if (maxnodes > forest_maxnodes)
+      forest_maxnodes = maxnodes;
+
+    float avgdepth = (float)sumdepth/leaves;
+    float avgnodes = (float)sumnodes/leaves;
+
+    float vardepth = (float)sumsqdepth/leaves - avgdepth*avgdepth;
+    float varnodes = (float)sumsqnodes/leaves - avgnodes*avgnodes;
+
+    float avglogweight = sumlogweights/leaves;
+    float varlogweights = sumsqlogweights/leaves - avglogweight*avglogweight;
 
     gtpe->getOutput()->printf("\nStats for DT[%s]:\n",attrstr.c_str());
     gtpe->getOutput()->printf("  Nodes: %d\n",treenodes);
     gtpe->getOutput()->printf("  Leaves: %d\n",leaves);
     gtpe->getOutput()->printf("  Max Depth: %d\n",maxdepth);
     gtpe->getOutput()->printf("  Avg Depth: %.2f\n",avgdepth);
+    gtpe->getOutput()->printf("  Var Depth: %.2f\n",vardepth);
     gtpe->getOutput()->printf("  Max Nodes: %d\n",maxnodes);
     gtpe->getOutput()->printf("  Avg Nodes: %.2f\n",avgnodes);
+    gtpe->getOutput()->printf("  Var Nodes: %.2f\n",varnodes);
+    gtpe->getOutput()->printf("  Var LW: %.3f\n",varlogweights);
   }
+
+  float forest_avgdepth = (float)forest_sumdepth/forest_leaves;
+  float forest_avgnodes = (float)forest_sumnodes/forest_leaves;
+
+  float forest_vardepth = (float)forest_sumsqdepth/forest_leaves - forest_avgdepth*forest_avgdepth;
+  float forest_varnodes = (float)forest_sumsqnodes/forest_leaves - forest_avgnodes*forest_avgnodes;
+
+  float forest_avglogweight = forest_sumlogweights/forest_leaves;
+  float forest_varlogweights = forest_sumsqlogweights/forest_leaves - forest_avglogweight*forest_avglogweight;
+
+  gtpe->getOutput()->printf("\nStats for forest:\n");
+  gtpe->getOutput()->printf("  Nodes: %d\n",forest_treenodes);
+  gtpe->getOutput()->printf("  Leaves: %d\n",forest_leaves);
+  gtpe->getOutput()->printf("  Max Depth: %d\n",forest_maxdepth);
+  gtpe->getOutput()->printf("  Avg Depth: %.2f\n",forest_avgdepth);
+  gtpe->getOutput()->printf("  Var Depth: %.2f\n",forest_vardepth);
+  gtpe->getOutput()->printf("  Max Nodes: %d\n",forest_maxnodes);
+  gtpe->getOutput()->printf("  Avg Nodes: %.2f\n",forest_avgnodes);
+  gtpe->getOutput()->printf("  Var Nodes: %.2f\n",forest_varnodes);
+  gtpe->getOutput()->printf("  Var LW: %.3f\n",forest_varlogweights);
+
   gtpe->getOutput()->endResponse(true);
 }
 
@@ -4811,6 +4937,8 @@ void Engine::learnFromTree(Go::Board *tmpboard, Tree *learntree, std::ostringstr
   Go::ObjectBoard<int> *cfglastdist=NULL;
   Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
   getFeatures()->computeCFGDist(tmpboard,&cfglastdist,&cfgsecondlastdist);
+  DecisionTree::GraphCollection *graphs = new DecisionTree::GraphCollection(DecisionTree::getCollectionTypes(&decisiontrees),currentboard);
+
   for (int nn=1;nn<=num_unpruned;nn++)
   {
     for(std::list<Tree*>::iterator iter=learntree->getChildren()->begin();iter!=learntree->getChildren()->end();++iter) 
@@ -4819,7 +4947,7 @@ void Engine::learnFromTree(Go::Board *tmpboard, Tree *learntree, std::ostringstr
       {
         *ssun<<(nn!=1?",":"")<<Go::Position::pos2string((*iter)->getMove().getPosition(),boardsize);
         //do not use getFeatureGamma of the tree, as this might be not exactly the order of the gammas to be trained
-        ordergamma.insert(std::make_pair(getFeatures()->getMoveGamma(tmpboard,cfglastdist,cfgsecondlastdist,(*iter)->getMove())+forcesort,(*iter)->getMove()));
+        ordergamma.insert(std::make_pair(getFeatures()->getMoveGamma(tmpboard,cfglastdist,cfgsecondlastdist,graphs,(*iter)->getMove())+forcesort,(*iter)->getMove()));
         ordervalue.insert(std::make_pair((*iter)->getPlayouts()+forcesort,(*iter)->getMove()));
         orderlearntree.insert(std::make_pair((*iter)->getPlayouts()+forcesort,(*iter)));
         forcesort+=0.001012321232123;
@@ -4833,7 +4961,7 @@ void Engine::learnFromTree(Go::Board *tmpboard, Tree *learntree, std::ostringstr
     {
       //ssun<<(nn!=1?",":"")<<Go::Position::pos2string((*iter)->getMove().getPosition(),boardsize);
       //do not use getFeatureGamma of the tree, as this might be not exactly the order of the gammas to be trained
-      ordergamma.insert(std::make_pair(getFeatures()->getMoveGamma(tmpboard,cfglastdist,cfgsecondlastdist,(*iter)->getMove())+forcesort,(*iter)->getMove()));
+      ordergamma.insert(std::make_pair(getFeatures()->getMoveGamma(tmpboard,cfglastdist,cfgsecondlastdist,graphs,(*iter)->getMove())+forcesort,(*iter)->getMove()));
       ordervalue.insert(std::make_pair(0.0+forcesort,(*iter)->getMove()));
       forcesort+=0.001012321232123;
     }
@@ -4885,6 +5013,12 @@ void Engine::learnFromTree(Go::Board *tmpboard, Tree *learntree, std::ostringstr
     //learnFromTree has to be called
     learnFromTree (nextboard,it_learntree->second,ssun,movenum+1);
   }
+
+  if (cfglastdist!=NULL)
+    delete cfglastdist;
+  if (cfgsecondlastdist!=NULL)
+    delete cfgsecondlastdist;
+  delete graphs;
 }
 
 void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
@@ -5281,6 +5415,7 @@ void Engine::makeMove(Go::Move move)
       this->mpiBroadcastCommand(MPICMD_MAKEMOVE,&tmp1,&tmp2);
     );
   #endif
+
 #define WITH_P(A) (A>=1.0 || (A>0 && threadpool->getThreadZero()->getSettings()->rand->getRandomReal()<A))  
   Engine *me=params->engine;
   bool playoutmove_triggered=true;
@@ -5302,7 +5437,9 @@ void Engine::makeMove(Go::Move move)
       playoutmove_triggered=false;
     delete playoutboard;
   }  
-  if (WITH_P(params->features_output_competitions) && playoutmove_triggered)
+  DecisionTree::GraphCollection *graphs = NULL;
+
+  if (WITH_P(params->features_output_competitions)&& playoutmove_triggered)
   {
     bool isawinner=true;
     Go::ObjectBoard<int> *cfglastdist=NULL;
@@ -5313,10 +5450,13 @@ void Engine::makeMove(Go::Move move)
       result= new float[currentboard->getSize()*currentboard->getSize()];
       getCNN(currentboard,move.getColor(),result);
     }
+    if (graphs == NULL)
+      graphs = new DecisionTree::GraphCollection(DecisionTree::getCollectionTypes(&decisiontrees),currentboard);
+    
     if (params->features_output_competitions_mmstyle)
     {
       int p=move.getPosition();
-      std::string featurestring=features->getMatchingFeaturesString(currentboard,cfglastdist,cfgsecondlastdist,move,!params->features_output_competitions_mmstyle,params->features_output_for_playout, result);
+      std::string featurestring=features->getMatchingFeaturesString(currentboard,cfglastdist,cfgsecondlastdist,graphs,move,!params->features_output_competitions_mmstyle,params->features_output_for_playout, result);
       if (featurestring.length()>0)
       {
         gtpe->getOutput()->printfDebug("[features]:# competition (%d,%s)\n",(currentboard->getMovesMade()+1),Go::Position::pos2string(move.getPosition(),boardsize).c_str());
@@ -5349,7 +5489,7 @@ void Engine::makeMove(Go::Move move)
         Go::Move m=Go::Move(col,p);
         if (currentboard->validMove(m) || m==move)
         {
-          std::string featurestring=features->getMatchingFeaturesString(currentboard,cfglastdist,cfgsecondlastdist,m,!params->features_output_competitions_mmstyle,params->features_output_for_playout, result);
+          std::string featurestring=features->getMatchingFeaturesString(currentboard,cfglastdist,cfgsecondlastdist,graphs,m,!params->features_output_competitions_mmstyle,params->features_output_for_playout, result);
           if (featurestring.length()>0)
           {
             gtpe->getOutput()->printfDebug("[features]:%s",Go::Position::pos2string(p,boardsize).c_str());
@@ -5378,7 +5518,7 @@ void Engine::makeMove(Go::Move move)
             gtpe->getOutput()->printfDebug("*");
           else
             gtpe->getOutput()->printfDebug(":");
-          gtpe->getOutput()->printfDebug("%s",features->getMatchingFeaturesString(currentboard,cfglastdist,cfgsecondlastdist,m,!params->features_output_competitions_mmstyle,params->features_output_for_playout, result).c_str());
+          gtpe->getOutput()->printfDebug("%s",features->getMatchingFeaturesString(currentboard,cfglastdist,cfgsecondlastdist,graphs,m,!params->features_output_competitions_mmstyle,params->features_output_for_playout, result).c_str());
           gtpe->getOutput()->printfDebug("\n");
         }
       }
@@ -5522,18 +5662,24 @@ void Engine::makeMove(Go::Move move)
 
   if (params->dt_update_prob > 0)
   {
+    if (graphs == NULL)
+      graphs = new DecisionTree::GraphCollection(DecisionTree::getCollectionTypes(&decisiontrees),currentboard);
+
     for (std::list<DecisionTree*>::iterator iter=decisiontrees.begin();iter!=decisiontrees.end();++iter)
     {
       if (WITH_P(params->dt_update_prob))
-        (*iter)->updateDescent(currentboard);
+        (*iter)->updateDescent(graphs,move);
     }
   }
 
   if (WITH_P(params->dt_output_mm))
   {
+    if (graphs == NULL)
+      graphs = new DecisionTree::GraphCollection(DecisionTree::getCollectionTypes(&decisiontrees),currentboard);
+
     if (move.isNormal())
     {
-      std::list<int> *ids = DecisionTree::getCollectionLeafIds(&decisiontrees,currentboard,move);
+      std::list<int> *ids = DecisionTree::getCollectionLeafIds(&decisiontrees,graphs,move);
       if (ids != NULL)
       {
         gtpe->getOutput()->printfDebug("[dt]:#\n");
@@ -5552,7 +5698,7 @@ void Engine::makeMove(Go::Move move)
           Go::Move m=Go::Move(col,p);
           if (currentboard->validMove(m) || m==move)
           {
-            std::list<int> *ids = DecisionTree::getCollectionLeafIds(&decisiontrees,currentboard,m);
+            std::list<int> *ids = DecisionTree::getCollectionLeafIds(&decisiontrees,graphs,m);
             if (ids != NULL)
             {
               std::string idstring = "";
@@ -5584,6 +5730,7 @@ void Engine::makeMove(Go::Move move)
     Go::ObjectBoard<int> *cfglastdist=NULL;
     Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
     features->computeCFGDist(currentboard,&cfglastdist,&cfgsecondlastdist);
+
     float *result=NULL;
     float passresult=1;
     if (params->test_p100>0) {
@@ -5592,16 +5739,35 @@ void Engine::makeMove(Go::Move move)
       passresult=0.000001;
     }
     
-    float weights[currentboard->getPositionMax()];
+    if (graphs == NULL)
+      graphs = new DecisionTree::GraphCollection(DecisionTree::getCollectionTypes(&decisiontrees),currentboard);
+
+    float weights[currentboard->getPositionMax()+1]; // +1 for pass
+    float sumweights = 0;
     for (int p=0;p<currentboard->getPositionMax();p++)
     {
       Go::Move m = Go::Move(col,p);
       if (currentboard->validMove(m) || m==move)
-        weights[p] = features->getMoveGamma(currentboard,cfglastdist,cfgsecondlastdist,m);
+      {
+        float w = features->getMoveGamma(currentboard,cfglastdist,cfgsecondlastdist,graphs,m);
+        weights[p] = w;
+        if (w != -1)
+          sumweights += w;
+      }
       else
         weights[p] = -1;
     }
-
+    { //pass from francois
+      int p = currentboard->getPositionMax();
+      Go::Move m = Go::Move(col,Go::Move::PASS);
+      if (currentboard->validMove(m) || m==move)
+      {
+        float w = features->getMoveGamma(currentboard,cfglastdist,cfgsecondlastdist,graphs,m);
+        weights[p] = w;
+        if (w != -1)
+          sumweights += w;
+      }
+    }
     if (params->test_p100>99999) { // only cnn usage
       for (int p=0;p<currentboard->getPositionMax();p++)
       {
@@ -5622,7 +5788,6 @@ void Engine::makeMove(Go::Move move)
         if (weights[p]>-1) weights[p]*=r;
       }
     }
-    
     gtpe->getOutput()->printfDebug("[feature_comparison]:# comparison (%d,%s)\n",(currentboard->getMovesMade()+1),Go::Position::pos2string(move.getPosition(),boardsize).c_str());
     
     gtpe->getOutput()->printfDebug("[feature_comparison]:");
@@ -5653,7 +5818,7 @@ void Engine::makeMove(Go::Move move)
           Go::Move m=Go::Move(col,Go::Move::PASS);
           if (currentboard->validMove(m) || m==move)
           {
-            float gamma=features->getMoveGamma(currentboard,cfglastdist,cfgsecondlastdist,m);
+            float gamma=weights[p];
             gamma*=passresult;
             if (gamma>bestgamma)
             {
@@ -5686,7 +5851,24 @@ void Engine::makeMove(Go::Move move)
       bestgamma=-1;
     }
     gtpe->getOutput()->printfDebug("\n");
-    gtpe->getOutput()->printfDebug("[feature_comparison]:matched at: %d\n",matchedat);
+    gtpe->getOutput()->printfDebug("[feature_comparison]:matched at: ");
+    if (params->features_ordered_comparison_move_num)
+      gtpe->getOutput()->printfDebug("%d ",currentboard->getMovesMade()+1);
+    gtpe->getOutput()->printfDebug("%d",matchedat);
+    if (params->features_ordered_comparison_log_evidence)
+    {
+      float w = -1;
+      if (move.isNormal())
+        w = weights[move.getPosition()];
+      else if (move.isPass())
+        w = weights[currentboard->getPositionMax()];
+      float p = 1e-9; // prevent log(0)
+      if (w != -1)
+        p = w / sumweights;
+      float le = log(p);
+      gtpe->getOutput()->printfDebug(" %.2f",le);
+    }
+    gtpe->getOutput()->printfDebug("\n");
     
     if (cfglastdist!=NULL)
       delete cfglastdist;
@@ -5707,12 +5889,15 @@ void Engine::makeMove(Go::Move move)
     Go::Color col = move.getColor();
     int matchedat = 0;
 
+    if (graphs == NULL)
+      graphs = new DecisionTree::GraphCollection(DecisionTree::getCollectionTypes(&decisiontrees),currentboard);
+
     float weights[currentboard->getPositionMax()];
     for (int p=0;p<currentboard->getPositionMax();p++)
     {
       Go::Move m = Go::Move(col,p);
       if (currentboard->validMove(m) || m==move)
-        weights[p] = DecisionTree::getCollectionWeight(&decisiontrees,currentboard,m);
+        weights[p] = DecisionTree::getCollectionWeight(&decisiontrees,graphs,m);
       else
         weights[p] = -1;
     }
@@ -5759,6 +5944,9 @@ void Engine::makeMove(Go::Move move)
     gtpe->getOutput()->printfDebug("\n");
     gtpe->getOutput()->printfDebug("[dt_comparison]:matched at: %d\n",matchedat);
   }
+
+  if (graphs != NULL)
+    delete graphs;
   
   currentboard->makeMove(move);
   movehistory->push_back(move);

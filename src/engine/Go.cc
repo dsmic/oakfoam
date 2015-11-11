@@ -742,7 +742,6 @@ void Go::Board::makeMove(Go::Move move, Gtp::Engine* gtpe)
     lastmove=move;
     if (symmetryupdated)
       this->updateSymmetry();
-    this->updateFeatureGammas();
     return;
   }
   
@@ -865,8 +864,6 @@ void Go::Board::makeMove(Go::Move move, Gtp::Engine* gtpe)
   
   if (symmetryupdated)
     this->updateSymmetry();
-  if (features!=NULL)
-    this->updateFeatureGammas();
 }
 
 void Go::Board::refreshValidMoves()
@@ -1990,9 +1987,9 @@ void Go::Board::updateFeatureGamma(Go::ObjectBoard<int> *cfglastdist, Go::Object
   float oldgamma=(col==Go::BLACK?blackgammas:whitegammas)->get(pos);
   float gamma;
   if (pos==0) //pass
-    gamma=features->getMoveGamma(this,cfglastdist,cfgsecondlastdist,Go::Move(col,Go::Move::PASS));
+    gamma=features->getMoveGamma(this,cfglastdist,cfgsecondlastdist,NULL,Go::Move(col,Go::Move::PASS));
   else if (!this->weakEye(nexttomove,pos))
-    gamma=features->getMoveGamma(this,cfglastdist,cfgsecondlastdist,Go::Move(col,pos));
+    gamma=features->getMoveGamma(this,cfglastdist,cfgsecondlastdist,NULL,Go::Move(col,pos));
   else
     gamma=0;
   

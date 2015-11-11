@@ -51,6 +51,7 @@
 
 #include <string>
 #include <list>
+#include <cstring>
 #include <boost/cstdint.hpp>
 #include "Go.h"
 #include <fstream>
@@ -305,8 +306,7 @@ namespace Pattern
       Circular(Pattern::CircularDictionary *dict, int sz); //for binary read
       Circular(Pattern::CircularDictionary *dict, const Go::Board *board, int pos, int sz);
       Circular(Pattern::CircularDictionary *dict, std::string fromString);
-      Circular(boost::uint32_t hash_tmp[PATTERN_CIRC_32BITPARTS],int size_tmp):size(size_tmp) {
-        memcpy(hash, hash_tmp, sizeof(boost::uint32_t)*PATTERN_CIRC_32BITPARTS);} 
+      Circular(boost::uint32_t hash_tmp[PATTERN_CIRC_32BITPARTS], int size_tmp):size(size_tmp) { memcpy(hash, hash_tmp, sizeof(boost::uint32_t)*PATTERN_CIRC_32BITPARTS); };
       
       /** Get the size of this pattern. */
       int getSize() const { return size; };

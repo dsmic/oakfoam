@@ -5,6 +5,7 @@
 #include "Engine.h"
 #include "Pattern.h"
 #include "Random.h"
+#include "Features.h"
 #include "Worker.h"
 #include <time.h>
 #include "boost/container/flat_set.hpp"
@@ -2869,19 +2870,30 @@ void Playout::getFeatureMove(Worker::Settings *settings, Go::Board *board, Go::C
 {
   Random *const rand=settings->rand;
 
-  //Go::ObjectBoard<float> *gammas=new Go::ObjectBoard<float>(boardsize);
-  //float totalgamma=features->getBoardGammas(board,col,gammas);
-  float totalgamma=board->getFeatureTotalGamma();
+  Go::ObjectBoard<int> *cfglastdist=NULL;
+  Go::ObjectBoard<int> *cfgsecondlastdist=NULL;
+  params->engine->getFeatures()->computeCFGDist(board,&cfglastdist,&cfgsecondlastdist);
+  DecisionTree::GraphCollection *graphs = new DecisionTree::GraphCollection(DecisionTree::getCollectionTypes(params->engine->getDecisionTrees()),board);
+
+  Go::ObjectBoard<float> *gammas = new Go::ObjectBoard<float>(board->getSize());
+  float totalgamma=params->engine->getFeatures()->getBoardGammas(board,cfglastdist,cfgsecondlastdist,graphs,col,gammas);
+  // float totalgamma=board->getFeatureTotalGamma();
   float randomgamma=totalgamma*rand->getRandomReal();
   bool foundmove=false;
+
+  if (cfglastdist!=NULL)
+    delete cfglastdist;
+  if (cfgsecondlastdist!=NULL)
+    delete cfgsecondlastdist;
+  delete graphs;
   
   for (int p=0;p<board->getPositionMax();p++)
   {
     //Go::Move m=Go::Move(col,p);
     if (board->validMove(col,p))
     {
-      //float gamma=gammas->get(p);
-      float gamma=board->getFeatureGamma(p);
+      float gamma=gammas->get(p);
+      // float gamma=board->getFeatureGamma(p);
       if (randomgamma<gamma)
       {
         move=Go::Move(col,p);
@@ -2896,7 +2908,7 @@ void Playout::getFeatureMove(Worker::Settings *settings, Go::Board *board, Go::C
   if (!foundmove)
     move=Go::Move(col,Go::Move::PASS);
 
-  //delete gammas;
+  delete gammas;
 }
 
 void Playout::getAnyCaptureMove(Worker::Settings *settings, Go::Board *board, Go::Color col, Go::Move &move, int *posarray)

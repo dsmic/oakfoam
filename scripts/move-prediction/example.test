@@ -22,10 +22,16 @@ get_games_excl_test () { get_games_excl "$TEST_GAMES" $1; }
 GAMES_PATH="/data/go/games/gogod/"
 GAMES="`find "$GAMES_PATH" -name '*.sgf' | sort`"
 
-# boolean parameters (0:disabled, 1: enabled)
+# boolean parameters (0:disabled, 1:enabled)
+TACTICAL=1    # tactical
 PATT_3X3=0    # 3x3 patterns
 PATT_CIRC=0   # circular patterns
-DT=0          # decision trees
+DT=1          # decision trees
+TRAIN=1       # perform training (for pre-generated data)
+
+# use pre-generated data (-:disabled)
+PREGEN_GAMMAS="-"
+PREGEN_DT="-"
 
 # game lists
 TEST_GAMES="`get_games 10`"
@@ -34,7 +40,8 @@ PATT_CIRC_GAMES="`get_games_excl_test 10`"
 DT_GAMES="`get_games_excl_test 10`"
 TRAIN_GAMES="`get_games_excl_test 10`"
 
-# non-pattern
+# tactical
+HISTORY_AGNOSTIC=0
 NONPATT_LADDERS=0
 
 # 3x3 patterns
@@ -46,5 +53,15 @@ PATT_CIRC_START=3
 PATT_CIRC_END=15
 
 # decision trees
+DT_TYPES="STONE|NOCOMP STONE|CHAINCOMP"
 DT_FOREST_SIZE=2
+# possible policies:
+#   descent_split robust_descent_split robust_win_split robust_loss_split entropy_descent_split entropy_win_split entropy_loss_split winrate_split
+#   win_loss_separate weighted_win_loss_separate symmetric_separate weighted_symmetric_separate winrate_entropy weighted_winrate_entropy classification_separate
+DT_SELECTION_POLICY="descent_split"
+DT_UPDATE_PROB=0.10
+DT_SPLIT_AFTER=1000
+
+# testing
+TEST_STAGE_SIZE=30
 

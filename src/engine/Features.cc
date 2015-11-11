@@ -7,7 +7,6 @@
 #include <iomanip>
 //#include "Parameters.h"
 //#include "Pattern.h"
-#include "DecisionTree.h"
 #include "Engine.h"
 
 //#define playpatterndim 4
@@ -776,6 +775,9 @@ unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::B
   
   if (checkforvalidmove && !board->validMove(move))
     return 0;
+
+  if (!params->features_tactical && (featclass!=Features::PATTERN3X3) && (featclass!=Features::CIRCPATT))
+    return 0; // disable tactical features
   
   switch (featclass)
   {
@@ -955,6 +957,8 @@ unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::B
     }
     case Features::LASTDIST:
     {
+      if (params->features_history_agnostic)
+        return 0;
       if (board->getLastMove().isResign() || (!params->features_pass_no_move_for_lastdist && board->getLastMove().isPass()))
         return 0;
       //this returned 0 in case of pass before. This lead playing bad after a pass, as it
@@ -988,6 +992,8 @@ unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::B
     }
     case Features::SECONDLASTDIST:
     {
+      if (params->features_history_agnostic)
+        return 0;
       if (board->getSecondLastMove().isPass() || board->getSecondLastMove().isResign())
         return 0;
       //ignore second last, if last was pass
@@ -1008,6 +1014,8 @@ unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::B
     }
     case Features::CFGLASTDIST:
     {
+      if (params->features_history_agnostic)
+        return 0;
       if (board->getLastMove().isPass() || board->getLastMove().isResign())
         return 0;
       
@@ -1025,6 +1033,8 @@ unsigned int Features::matchFeatureClass(Features::FeatureClass featclass, Go::B
     }
     case Features::CFGSECONDLASTDIST:
     {
+      if (params->features_history_agnostic)
+        return 0;
       if (board->getLastMove().isPass() || board->getLastMove().isResign())
         return 0;
       
@@ -1180,7 +1190,7 @@ float Features::getFeatureGammaPlayoutCircPattern(Go::Board *board, Go::Move mov
 int Features::learnFeatureGammaC(Features::FeatureClass featclass, unsigned int level, float learn_diff)
 {
   if (level==0 && featclass!=Features::PATTERN3X3)
-      return 0;
+    return 0;
 
   
   if (featclass==Features::PATTERN3X3)
@@ -1245,35 +1255,21 @@ void Features::learnFeatureGammaMoves(Features::FeatureClass featclass, Go::Boar
             if (level==0 && featclass!=Features::PATTERN3X3)
               break;
             if (featclass==Features::PATTERN3X3)
-          {
-            //used patterns should not be done by featurelevels_used, to much ram?!
-            if (patterngammas->hasGamma(level))
             {
-              //gammaHERE=patterngammas->getGamma(level);
-              C_iM_gamma_i+=move_gamma.find(it_int->second.getPosition())->second;
-              break;
-            }
-            else
-              break;
-          }
-            else if (featclass==Features::CIRCPATT)
-          {
-            if ((int)circgammas->size()>level)
-            {
-              C_iM_gamma_i+=move_gamma.find(it_int->second.getPosition())->second;
-              break;
-            }
-            else
-              break;
-          }
-            else
-          {
-            float *gammas=this->getStandardGamma(featclass);
-            if (gammas!=NULL)
-            {
-              if (gammas[level-1]>0)
+              //used patterns should not be done by featurelevels_used, to much ram?!
+              if (patterngammas->hasGamma(level))
               {
-                //gammaHERE=gammas[level-1];
+                //gammaHERE=patterngammas->getGamma(level);
+                C_iM_gamma_i+=move_gamma.find(it_int->second.getPosition())->second;
+                break;
+              }
+              else
+                break;
+            }
+            else if (featclass==Features::CIRCPATT)
+            {
+              if ((int)circgammas->size()>level)
+              {
                 C_iM_gamma_i+=move_gamma.find(it_int->second.getPosition())->second;
                 break;
               }
@@ -1281,8 +1277,22 @@ void Features::learnFeatureGammaMoves(Features::FeatureClass featclass, Go::Boar
                 break;
             }
             else
-              break;
-          };
+            {
+              float *gammas=this->getStandardGamma(featclass);
+              if (gammas!=NULL)
+              {
+                if (gammas[level-1]>0)
+                {
+                  //gammaHERE=gammas[level-1];
+                  C_iM_gamma_i+=move_gamma.find(it_int->second.getPosition())->second;
+                  break;
+                }
+                else
+                  break;
+              }
+              else
+                break;
+            }
         }
 
 #if (1L<<16!=PATTERN_3x3_GAMMAS)
@@ -1321,16 +1331,16 @@ void Features::learnFeatureGammaMoves(Features::FeatureClass featclass, Go::Boar
           if (level_1==0 && featclass!=Features::PATTERN3X3)
             break;
           if (featclass==Features::PATTERN3X3)
-        {
-          //used patterns should not be done by featurelevels_used, to much ram?!
-          if (patterngammas->hasGamma(level_1))
           {
-            patterngammas->learnGamma(level_1,diff_gamma_i*params->mm_learn_delta);
-            break;
+            //used patterns should not be done by featurelevels_used, to much ram?!
+            if (patterngammas->hasGamma(level_1))
+            {
+              patterngammas->learnGamma(level_1,diff_gamma_i*params->mm_learn_delta);
+              break;
+            }
+            else
+              break;
           }
-          else
-            break;
-        }
           else if (featclass==Features::CIRCPATT)
           {
             if ((int)circgammas->size()>level_1)
@@ -1344,22 +1354,22 @@ void Features::learnFeatureGammaMoves(Features::FeatureClass featclass, Go::Boar
             else
               break;
           }
-            else
-        {
-          float *gammas=this->getStandardGamma(featclass);
-          if (gammas!=NULL)
+          else
           {
-            if (gammas[level_1-1]>0)
+            float *gammas=this->getStandardGamma(featclass);
+            if (gammas!=NULL)
             {
-              gammas[level_1-1]+=diff_gamma_i*params->mm_learn_delta;
-              break;
+              if (gammas[level_1-1]>0)
+              {
+                gammas[level_1-1]+=diff_gamma_i*params->mm_learn_delta;
+                break;
+              }
+              else
+                break;
             }
             else
               break;
           }
-          else
-            break;
-        };
       }
     }
   }
@@ -1370,7 +1380,6 @@ void Features::learnFeatureGamma(Features::FeatureClass featclass, unsigned int 
 {
   if (level==0 && featclass!=Features::PATTERN3X3)
       return;
-
   
   if (featclass==Features::PATTERN3X3)
   {
@@ -1425,7 +1434,7 @@ float Features::getPlayoutGamma(Go::Board *board, Go::Move move, bool checkforva
   return g;
 }
 
-float Features::getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool checkforvalidmove, bool usecircularpatterns, float *gamma_local_part, Pattern::Circular *pattcirc_p,Go::ObjectBoard<int> *cfgaroundposdist) const
+float Features::getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, DecisionTree::GraphCollection *graphs, Go::Move move, bool checkforvalidmove, bool usecircularpatterns, float *gamma_local_part, Pattern::Circular *pattcirc_p,Go::ObjectBoard<int> *cfgaroundposdist) const
 {
   float g=1.0;
   
@@ -1459,7 +1468,7 @@ float Features::getMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist
     g*=this->getFeatureGamma(Features::PATTERN3X3,this->matchFeatureClass(Features::PATTERN3X3,board,cfglastdist,cfgsecondlastdist,move,false));
   if (params->features_dt_use)
   {
-    float w = DecisionTree::getCollectionWeight(params->engine->getDecisionTrees(),board,move);
+    float w = DecisionTree::getCollectionWeight(params->engine->getDecisionTrees(),graphs,move);
     if (w != -1)
       g *= w;
   }
@@ -1704,7 +1713,7 @@ bool Features::learnMoveGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdis
   return true;
 }
 
-float Features::getBoardGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Color col, bool logarithm) const
+float Features::getBoardGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, DecisionTree::GraphCollection *graphs, Go::Color col, bool logarithm) const
 {
   float total=0;
   
@@ -1714,11 +1723,11 @@ float Features::getBoardGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdis
     {
       Go::Move move=Go::Move(col,p);
       if (board->validMove(move))
-        total+=this->getMoveGamma(board,cfglastdist,cfgsecondlastdist,move,false);
+        total+=this->getMoveGamma(board,cfglastdist,cfgsecondlastdist,graphs,move,false);
     }
     
     Go::Move passmove=Go::Move(col,Go::Move::PASS);
-    total+=this->getMoveGamma(board,cfglastdist,cfgsecondlastdist,passmove,false);
+    total+=this->getMoveGamma(board,cfglastdist,cfgsecondlastdist,graphs,passmove,false);
   }
   else
   {
@@ -1726,17 +1735,17 @@ float Features::getBoardGamma(Go::Board *board, Go::ObjectBoard<int> *cfglastdis
     {
       Go::Move move=Go::Move(col,p);
       if (board->validMove(move))
-        total+=log(this->getMoveGamma(board,cfglastdist,cfgsecondlastdist,move,false)+1.0);
+        total+=log(this->getMoveGamma(board,cfglastdist,cfgsecondlastdist,graphs,move,false)+1.0);
     }
     
     Go::Move passmove=Go::Move(col,Go::Move::PASS);
-    total+=log(this->getMoveGamma(board,cfglastdist,cfgsecondlastdist,passmove,false)+1.0);
+    total+=log(this->getMoveGamma(board,cfglastdist,cfgsecondlastdist,graphs,passmove,false)+1.0);
   }
   
   return total;
 }
 
-float Features::getBoardGammas(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Color col, Go::ObjectBoard<float> *gammas) const
+float Features::getBoardGammas(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, DecisionTree::GraphCollection *graphs, Go::Color col, Go::ObjectBoard<float> *gammas) const
 {
   float total=0;
   
@@ -1745,7 +1754,7 @@ float Features::getBoardGammas(Go::Board *board, Go::ObjectBoard<int> *cfglastdi
     Go::Move move=Go::Move(col,p);
     if (board->validMove(move))
     {
-      float gamma=this->getMoveGamma(board,cfglastdist,cfgsecondlastdist,move,false);;
+      float gamma=this->getMoveGamma(board,cfglastdist,cfgsecondlastdist,graphs,move,false);;
       gammas->set(p,gamma);
       total+=gamma;
     }
@@ -1753,7 +1762,7 @@ float Features::getBoardGammas(Go::Board *board, Go::ObjectBoard<int> *cfglastdi
   
   {
     Go::Move move=Go::Move(col,Go::Move::PASS);
-    float gamma=this->getMoveGamma(board,cfglastdist,cfgsecondlastdist,move,false);;
+    float gamma=this->getMoveGamma(board,cfglastdist,cfgsecondlastdist,graphs,move,false);;
     gammas->set(0,gamma);
     total+=gamma;
   }
@@ -2331,7 +2340,7 @@ bool Features::setFeatureGamma(Features::FeatureClass featclass, unsigned int le
   }
 }
 
-std::string Features::getMatchingFeaturesString(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, Go::Move move, bool pretty, bool playout, float *result) const
+std::string Features::getMatchingFeaturesString(Go::Board *board, Go::ObjectBoard<int> *cfglastdist, Go::ObjectBoard<int> *cfgsecondlastdist, DecisionTree::GraphCollection *graphs, Go::Move move, bool pretty, bool playout, float *result) const
 {
   constructCircstrings();
   std::ostringstream ss;
@@ -2525,7 +2534,7 @@ std::string Features::getMatchingFeaturesString(Go::Board *board, Go::ObjectBoar
 
   if (params->features_dt_use)
   {
-    std::list<int> *ids = DecisionTree::getCollectionLeafIds(params->engine->getDecisionTrees(),board,move);
+    std::list<int> *ids = DecisionTree::getCollectionLeafIds(params->engine->getDecisionTrees(),graphs,move);
     if (ids != NULL)
     {
       for (std::list<int>::iterator iter=ids->begin();iter!=ids->end();++iter)

@@ -1,4 +1,3 @@
-(DT[SPARSE|NOCOMP]
-  (STATS:)
+(DT[%TYPE%]
   (WEIGHT[1.0])
 )
