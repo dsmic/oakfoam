@@ -2105,7 +2105,9 @@ bool Tree::expandLeaf(Worker::Settings *settings)
         //}
       }
     } 
-    DecisionTree::GraphCollection *graphs = new DecisionTree::GraphCollection(DecisionTree::getCollectionTypes(params->engine->getDecisionTrees()),startboard);
+    DecisionTree::GraphCollection *graphs = NULL;
+    if (params->features_dt_use)
+      graphs = new DecisionTree::GraphCollection(DecisionTree::getCollectionTypes(params->engine->getDecisionTrees()),startboard);
 
     //int now_unpruned=this->getUnprunedNum();
     //fprintf(stderr,"debugging %d\n",now_unpruned);
@@ -2164,7 +2166,8 @@ bool Tree::expandLeaf(Worker::Settings *settings)
       delete cfgaroundposdist;
     //if (CNNresults!=NULL)
     //  delete[] CNNresults;
-    delete graphs;
+    if (graphs!=NULL)
+      delete graphs;
     
     if (params->uct_progressive_widening_enabled)
     {

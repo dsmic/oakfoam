@@ -10,7 +10,6 @@
 #include <time.h>
 #include "boost/container/flat_set.hpp"
 
-
 #define LGRFCOUNT1 1
 #define LGRFCOUNT2 1
 #define LGPF_EMPTY 0xFFFF
@@ -467,14 +466,14 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
     int p=move.getPosition();
     if ((coltomove==colfirst?firstlist:secondlist)!=NULL && !move.isPass() && !move.isResign())
     {
-      if ((params->test_p2==0 || ((coltomove==colfirst)?firstlist:secondlist)->get(p)==0))
+      if ((params->rave_only_first_move==0 || ((coltomove==colfirst)?firstlist:secondlist)->get(p)==0))
       {
         if (params->debug_on) 
-          fprintf(stderr,"set called %s test_p2 %f get(p) %d\n",Go::getColorName(coltomove),params->test_p2,((coltomove==colfirst)?firstlist:secondlist)->get(p));
+          fprintf(stderr,"set called %s rave_only_first_move %d get(p) %d\n",Go::getColorName(coltomove),params->rave_only_first_move,((coltomove==colfirst)?firstlist:secondlist)->get(p));
         //if (p==228 || p==231) fprintf(stderr,"add a move %s %d\n",Go::Move(coltomove,p).toString(size).c_str(),nonlocalmove);
         ((coltomove==colfirst)?firstlist:secondlist)->set(p,playoutmovescount,nonlocalmove);
         if (params->debug_on) 
-          fprintf(stderr,"after set %s test_p2 %f get(p) %d\n",Go::getColorName(coltomove),params->test_p2,((coltomove==colfirst)?firstlist:secondlist)->get(p));
+          fprintf(stderr,"after set %s rave_only_first_move %d get(p) %d\n",Go::getColorName(coltomove),params->rave_only_first_move,((coltomove==colfirst)?firstlist:secondlist)->get(p));
         if (((coltomove==colfirst)?earlyfirstlist:earlysecondlist)!=NULL && params->rave_moves_use>0 && playoutmovescount < (board->getSize()*board->getSize()-treemovescount)*params->rave_moves_use)
           ((coltomove==colfirst)?earlyfirstlist:earlysecondlist)->set(p);
       }
@@ -756,8 +755,8 @@ void Playout::checkUselessMove(Worker::Settings *settings, Go::Board *board, Go:
   }
 }
 
-template <typename T> string tostr(const T& t) { 
-   ostringstream os; 
+template <typename T> std::string tostr(const T& t) { 
+   std::ostringstream os; 
    os<<t; 
    return os.str(); 
 } 

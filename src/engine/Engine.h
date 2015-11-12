@@ -238,11 +238,14 @@ class DecisionTree;
 #endif
 
 //#define CPU_ONLY
-#include <cuda_runtime.h>
+//#include <cuda_runtime.h>
+
+#ifdef HAVE_CAFFE
 #include "caffe/caffe.hpp"
+using namespace caffe;
+#endif
 //#include "caffe/util/io.hpp"
 //#include "caffe/blob.hpp" 
-using namespace caffe;
 
 
 

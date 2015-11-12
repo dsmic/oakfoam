@@ -178,7 +178,7 @@ class Parameters
     int mm_learn_min_playouts;
     
     float test_p1;
-    float test_p2;
+//    float test_p2;
     float test_p3;
     float test_p4;
     float test_p5;

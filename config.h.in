@@ -15,6 +15,9 @@
 /* define if the Boost::Thread library is available */
 #undef HAVE_BOOST_THREAD
 
+/* Define if you have the CAFFE library. */
+#undef HAVE_CAFFE
+
 /* Define if you have the MPI library. */
 #undef HAVE_MPI
 

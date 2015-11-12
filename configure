@@ -608,6 +608,11 @@ CFLAGS
 CC
 BOOST_LDFLAGS
 BOOST_CPPFLAGS
+CAFFE_CPPFLAGS
+CAFFE_LIB
+CAFFE_LDFLAGS
+LLALLOC_LIB
+LLALLOC_LDFLAGS
 HOARD_LIB
 HOARD_LDFLAGS
 am__fastdepCXX_FALSE
@@ -698,6 +703,8 @@ enable_option_checking
 enable_silent_rules
 enable_dependency_tracking
 with_hoard
+with_llalloc
+with_caffe
 with_web
 with_boost
 with_boost_libdir
@@ -1347,6 +1354,11 @@ Optional Packages:
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-hoard=<srcdir>   Compile using the Hoard memory allocator. Default:
                           no
+
+  --with-llalloc=<srcdir> Compile using the llalloc memory allocator. Default:
+                          no
+
+  --with-caffe=<srcdir>   Compile with DCNN support by caffe. Default: no
 
   --with-web              Compile with web interface support. Default: no
 
@@ -2617,7 +2629,8 @@ fi
 
 ac_config_headers="$ac_config_headers config.h"
 
-CXXFLAGS="-Wall -g -O3 -std=c++0x -DTOPSRCDIR=\\\"`pwd`\\\" -fno-strict-aliasing"
+CXXFLAGS="-Wall -Wno-literal-suffix -g -O3 -std=c++11 -ffast-math -DTOPSRCDIR=\\\"`pwd`\\\" -fno-strict-aliasing"
+LIBS="-lpthread"
 
 ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
@@ -3639,6 +3652,24 @@ fi
 
 
 
+# Check whether --with-llalloc was given.
+if test "${with_llalloc+set}" = set; then :
+  withval=$with_llalloc;
+else
+  with_llalloc=no
+fi
+
+
+
+# Check whether --with-caffe was given.
+if test "${with_caffe+set}" = set; then :
+  withval=$with_caffe;
+else
+  with_caffe=no
+fi
+
+
+
 # Check whether --with-web was given.
 if test "${with_web+set}" = set; then :
   withval=$with_web;
@@ -3690,6 +3721,108 @@ fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
   LDFLAGS="$LDFLAGS_BAK"
+  LIBS="$LIBS_BAK"
+fi
+
+if test x"$with_llalloc" != xno; then
+  LDFLAGS_BAK="$LDFLAGS"
+  LIBS_BAK="$LIBS"
+  if test x"$with_llalloc" = xyes; then
+    LLALLOC_LDFLAGS=""
+  else
+    LLALLOC_LDFLAGS="-L$with_llalloc"
+  fi
+  LLALLOC_LIB="-lllalloc"
+  LDFLAGS="$LDFLAGS $LLALLOC_LDFLAGS"
+  LIBS="$LIBS $LLALLOC_LIB"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether llalloc memory allocator is available" >&5
+$as_echo_n "checking whether llalloc memory allocator is available... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "llalloc couldn't be found!
+See \`config.log' for more details" "$LINENO" 5; } #'
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+  LDFLAGS="$LDFLAGS_BAK"
+  LIBS="$LIBS_BAK"
+fi
+
+
+if test x"$with_caffe" != xno; then
+  LDFLAGS_BAK="$LDFLAGS"
+  LIBS_BAK="$LIBS"
+  CPPFLAGS_BAK="$CPPFLAGS"
+
+  if test x"$with_caffe" = xyes; then
+    CAFFE_LDFLAGS=""
+    CAFFE_CPPFLAGS=""
+    CAFFE_LIB=""
+  else
+
+$as_echo "#define HAVE_CAFFE 1" >>confdefs.h
+
+    CAFFE_LDFLAGS="-I$with_caffe/lib"
+    CAFFE_CPPFLAGS="-I$with_caffe/include -I/usr/local/cuda/include"
+    CAFFE_LIB="-lcaffe"
+  fi
+  LDFLAGS="$LDFLAGS $CAFFE_LDFLAGS"
+  LIBS="$LIBS $CAFFE_LIB"
+  CPPFLAGS="$CPPFLAGS $CAFFE_CPPFLAGS"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether caffe lib is available" >&5
+$as_echo_n "checking whether caffe lib is available... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+
+
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "Caffe couldn't be found!
+See \`config.log' for more details" "$LINENO" 5; } #'
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+  LDFLAGS="$LDFLAGS_BAK"
+  CPPFLAGS="$CPPFLAGS_BAK"
   LIBS="$LIBS_BAK"
 fi
 

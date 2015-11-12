@@ -19,9 +19,9 @@ oakfoam_SOURCES     = build.h \
                       src/engine/DecisionTree.h src/engine/DecisionTree.cc \
                       src/web/Web.h src/web/Web.cc \
                       src/gtp/Gtp.h src/gtp/Gtp.cc
-oakfoam_CPPFLAGS    = $(BOOST_CPPFLAGS) $(MPI_CPPFLAGS)
-oakfoam_LDFLAGS     = $(BOOST_LDFLAGS) $(MPI_LDFLAGS) $(HOARD_LDFLAGS)
-oakfoam_LDADD       = $(BOOST_SYSTEM_LIB) $(BOOST_THREAD_LIB) $(BOOST_FILESYSTEM_LIB) $(BOOST_ASIO_LIB) $(HOARD_LIB)
+oakfoam_CPPFLAGS    = $(BOOST_CPPFLAGS) $(MPI_CPPFLAGS) $(CAFFE_CPPFLAGS)
+oakfoam_LDFLAGS     = $(BOOST_LDFLAGS) $(MPI_LDFLAGS) $(HOARD_LDFLAGS) $(LLALLOC_LDFLAGS) $(CAFFE_LDFLAGS)
+oakfoam_LDADD       = $(BOOST_SYSTEM_LIB) $(BOOST_THREAD_LIB) $(BOOST_FILESYSTEM_LIB) $(BOOST_ASIO_LIB) $(HOARD_LIB) $(LLALLOC_LIB) $(CAFFE_LIB)
 dist_noinst_SCRIPTS = autogen.sh build-linux.sh
 EXTRA_DIST          = regression/sgf regression/*.sh regression/*.suite regression/*.tst \
                       scripts/*/README scripts/*/*.sh scripts/*/*.awk scripts/*/*.sed scripts/*/*.pl \

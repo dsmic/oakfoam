@@ -23,15 +23,17 @@
 #endif
 
 //had trouble putting it as static variable into the Engine class, but should only be one Engine anyway!
+#ifdef HAVE_CAFFE
 Net<float> *caffe_test_net;
 int caffe_test_net_input_dim;
 Net<float> *caffe_area_net;
-		
+#endif		
 
 Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
 {
   //cudaSetDeviceFlags(cudaDeviceBlockingSync);
   //Caffe::set_mode_gpu();
+#ifdef HAVE_CAFFE
   Caffe::SetDevice(0);
   int t1=Caffe::mode();
   Caffe::set_mode(Caffe::GPU);
@@ -41,6 +43,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   //Caffe::set_phase(Caffe::TEST);
   caffe_area_net = NULL;
   caffe_test_net = NULL;
+#endif
   /*
   caffe_test_net = new Net<float>("/home/detlef/oakfoam-hg/oakfoam/scripts/CNN/gobig19.prototxt",TRAIN);
   caffe_test_net->CopyTrainedLayersFrom("/home/detlef/oakfoam-hg/oakfoam/scripts/CNN/gobig.trained");
@@ -206,7 +209,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   
 
   params->addParameter("playout","test_p1",&(params->test_p1),0.0);
-  params->addParameter("playout","test_p2",&(params->test_p2),0.0);
+//  params->addParameter("playout","test_p2",&(params->test_p2),0.0);
   params->addParameter("playout","test_p3",&(params->test_p3),0.0);
   params->addParameter("playout","test_p4",&(params->test_p4),0.0);
   params->addParameter("playout","test_p5",&(params->test_p5),0.0);
@@ -675,12 +678,15 @@ Engine::~Engine()
   {
     delete (*iter);
   }
+#ifdef HAVE_CAFFE
   if (caffe_test_net!=NULL) delete caffe_test_net;
   if (caffe_area_net!=NULL) delete caffe_area_net;
+#endif
 }
 
 void Engine::getCNN(Go::Board *board,Go::Color col, float result[])
 {
+#ifdef HAVE_CAFFE
 	//if (board->getSize()!=19) {
 	//	fprintf(stderr,"only 19x19 supported by CNN\n");
   //  for (int i=0;i<361;i++) result[i]=0.0;
@@ -795,11 +801,15 @@ if (caffe_test_net_input_dim > 9) {
   }
   delete[] data;
   delete b;
+#else
+  fprintf(stderr," caffe not availible, compile with-caffe\n");
+#endif/
 }
 
 float Engine::getCNNwr(Go::Board *board,Go::Color col)
 {
-	if (board->getSize()!=19) {
+#ifdef HAVE_CAFFE
+  if (board->getSize()!=19) {
 		fprintf(stderr,"only 19x19 supported by CNN\n");
 		return 0;
 	}
@@ -863,6 +873,10 @@ float Engine::getCNNwr(Go::Board *board,Go::Color col)
   delete[] data;
   delete b;
   return 1.0-wr_sum/361.0;
+#else
+  fprintf(stderr, " caffe is not availible, compile with-caffe\n");
+  return 0;
+#endif
 }
 
 void Engine::run(bool web_inf, std::string web_addr, int web_port)
@@ -2611,7 +2625,7 @@ void Engine::gtpFeatureMatchesAt(void *instance, Gtp::Engine* gtpe, Gtp::Command
   gtpe->getOutput()->printf("CIRCPATT:          %u\n",me->features->matchFeatureClass(Features::CIRCPATT,board,cfglastdist,cfgsecondlastdist,move));
   float gamma=me->features->getMoveGamma(board,cfglastdist,cfgsecondlastdist,graphs,move);
   float total=me->features->getBoardGamma(board,cfglastdist,cfgsecondlastdist,graphs,col);
-  float totallog=me->features->getBoardGamma(board,cfglastdist,cfgsecondlastdist,NULL,col,true);
+  float totallog=me->features->getBoardGamma(board,cfglastdist,cfgsecondlastdist,graphs,col,true);
   gtpe->getOutput()->printf("Gamma: %.2f/%.2f (%.2f) log %.2f\n",gamma,total,gamma/total,totallog);
 
   Tree *tree=me->movetree->getChild(move);
@@ -2769,6 +2783,7 @@ void Engine::gtpLoadFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Comman
 
 void Engine::gtpLoadCNNt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
+#ifdef HAVE_CAFFE
   Engine *me=(Engine*)instance;
   
   if (cmd->numArgs()!=2)
@@ -2814,10 +2829,16 @@ void Engine::gtpLoadCNNt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     gtpe->getOutput()->printf("error loading features gamma file: %s",filename_net.c_str());
     gtpe->getOutput()->endResponse();
   }
+#else
+  gtpe->getOutput()->startResponse(cmd,false);
+  gtpe->getOutput()->printf("caffe not availible, compile with-caffe");
+  gtpe->getOutput()->endResponse();
+#endif  
 }
 
 void Engine::gtpLoadCNNp(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
+#ifdef HAVE_CAFFE
   Engine *me=(Engine*)instance;
   
   if (cmd->numArgs()!=2)
@@ -2869,6 +2890,11 @@ void Engine::gtpLoadCNNp(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     gtpe->getOutput()->printf("error loading features gamma file: %s",filename_net.c_str());
     gtpe->getOutput()->endResponse();
   }
+#else
+  gtpe->getOutput()->startResponse(cmd,false);
+  gtpe->getOutput()->printf("caffe not availible, compile with-caffe:");
+  gtpe->getOutput()->endResponse();
+#endif 
 }
 
 void Engine::gtpSaveFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
@@ -3894,7 +3920,8 @@ void Engine::gtpShowProbabilityCNN(void *instance, Gtp::Engine* gtpe, Gtp::Comma
 
 void Engine::gtpShowTerritoryCNN(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
-  Engine *me=(Engine*)instance;
+#ifdef HAVE_CAFFE
+ Engine *me=(Engine*)instance;
   me->doNPlayouts(100);
   if (cmd->numArgs()!=1)
   {
@@ -3945,7 +3972,6 @@ void Engine::gtpShowTerritoryCNN(void *instance, Gtp::Engine* gtpe, Gtp::Command
       data[2*19*19+j*19+k]=-me->komi;
       }
     }
-
   float result[361];
   float diffprob[121];
   float wr[361];
@@ -4025,6 +4051,10 @@ void Engine::gtpShowTerritoryCNN(void *instance, Gtp::Engine* gtpe, Gtp::Command
   gtpe->getOutput()->endResponse(true);
   delete[] data;
   delete b;
+#else
+  gtpe->getOutput()->printf("CAFFE not availible");
+  gtpe->getOutput()->endResponse(true);
+#endif
 }
 
 void Engine::gtpShowPlayoutGammas(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
