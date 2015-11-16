@@ -2522,7 +2522,7 @@ std::string Features::getMatchingFeaturesString(Go::Board *board, Go::ObjectBoar
   if (result!=NULL && !move.isPass() && !move.isResign()) {
     int x=Go::Position::pos2x(move.getPosition(), board->getSize());
     int y=Go::Position::pos2y(move.getPosition(), board->getSize());
-    int r=result[x*board->getSize()+y]*cnn_levels;
+    int r=(log(result[x*board->getSize()+y])+5)*cnn_levels/5;
     if (r>=cnn_levels) r=cnn_levels-1;
     if (r<0) r=0;
     level=r;
@@ -2614,7 +2614,7 @@ std::string Features::getFeatureIdList(bool playout) const
     ss<<(id++)<<" cfgsecondlastdist:"<<level<<"\n";
   
   for (unsigned int level=1;level<=NAKADE_LEVELS;level++)
-    ss<<(id++)<<" nakaparde:"<<level<<"\n";
+    ss<<(id++)<<" nakade:"<<level<<"\n";
   
   for (unsigned int level=1;level<=APPROACH_LEVELS;level++)
     ss<<(id++)<<" approach:"<<level<<"\n";
