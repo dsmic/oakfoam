@@ -106,6 +106,7 @@ if test x"$with_caffe" != xno; then
   if test "$ac_cv_header_cuda_h" == no
   then
     AC_DEFINE(CPU_ONLY,1,[Define if you have the CAFFE library, but no CUDA])
+    AC_MSG_RESULT([!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   CUDA not found, forcing CPU_ONLY mode for caffe  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!])
   fi
   AC_MSG_CHECKING(whether caffe lib is available)
   AC_LINK_IFELSE([AC_LANG_PROGRAM()],

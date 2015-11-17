@@ -4512,6 +4512,8 @@ fi
 
 $as_echo "#define CPU_ONLY 1" >>confdefs.h
 
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   CUDA not found, forcing CPU_ONLY mode for caffe  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" >&5
+$as_echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   CUDA not found, forcing CPU_ONLY mode for caffe  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" >&6; }
   fi
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether caffe lib is available" >&5
 $as_echo_n "checking whether caffe lib is available... " >&6; }
