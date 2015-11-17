@@ -5804,7 +5804,7 @@ void Engine::makeMove(Go::Move move)
         int x=Go::Position::pos2x(p, currentboard->getSize());
         int y=Go::Position::pos2y(p, currentboard->getSize());
         float r=result[x*currentboard->getSize()+y];
-        if (r<0.0000001) r=0.0000001;
+        if (r<0.00000001) r=0.00000001;
         if (weights[p]>-1) weights[p]=r;
       }
     }
@@ -5814,7 +5814,7 @@ void Engine::makeMove(Go::Move move)
         int x=Go::Position::pos2x(p, currentboard->getSize());
         int y=Go::Position::pos2y(p, currentboard->getSize());
         float r=result[x*currentboard->getSize()+y];
-        if (r<0.000001) r=0.000001;
+        if (r<0.00000001) r=0.00000001;
         if (weights[p]>-1) weights[p]*=r;
       }
     }

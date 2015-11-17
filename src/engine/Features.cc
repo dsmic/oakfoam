@@ -2522,7 +2522,7 @@ std::string Features::getMatchingFeaturesString(Go::Board *board, Go::ObjectBoar
   if (result!=NULL && !move.isPass() && !move.isResign()) {
     int x=Go::Position::pos2x(move.getPosition(), board->getSize());
     int y=Go::Position::pos2y(move.getPosition(), board->getSize());
-    int r=(log(result[x*board->getSize()+y])+5)*cnn_levels/5;
+    int r=(log(result[x*board->getSize()+y])+7)*cnn_levels/7;
     if (r>=cnn_levels) r=cnn_levels-1;
     if (r<0) r=0;
     level=r;

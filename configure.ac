@@ -102,6 +102,11 @@ if test x"$with_caffe" != xno; then
   LDFLAGS="$LDFLAGS $CAFFE_LDFLAGS"
   LIBS="$LIBS $CAFFE_LIB"
   CPPFLAGS="$CPPFLAGS $CAFFE_CPPFLAGS"
+  AC_CHECK_HEADER(cuda.h)
+  if test "$ac_cv_header_cuda_h" == no
+  then
+    AC_DEFINE(CPU_ONLY,1,[Define if you have the CAFFE library, but no CUDA])
+  fi
   AC_MSG_CHECKING(whether caffe lib is available)
   AC_LINK_IFELSE([AC_LANG_PROGRAM()],
     AC_MSG_RESULT(yes)
