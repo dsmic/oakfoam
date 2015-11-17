@@ -27,6 +27,10 @@ AC_ARG_WITH(llalloc, [AS_HELP_STRING([--with-llalloc=<srcdir>],
    [Compile using the llalloc memory allocator. Default: no])
 ],,[with_llalloc=no])
 
+AC_ARG_WITH(cudainc, [AS_HELP_STRING([--with-cudainc=<srcdir>],
+   [Cuda include directory location. Default: no])
+],,[with_cudainc=no])
+
 AC_ARG_WITH(caffe, [AS_HELP_STRING([--with-caffe=<srcdir>],
    [Compile with DCNN support by caffe. Default: no])
 ],,[with_caffe=no])
@@ -34,6 +38,14 @@ AC_ARG_WITH(caffe, [AS_HELP_STRING([--with-caffe=<srcdir>],
 AC_ARG_WITH(web, [AS_HELP_STRING([--with-web],
    [Compile with web interface support. Default: no])
 ],,[with_web=no])
+
+CUDA_INC="/usr/local/cuda/include"
+if test x"$with_cudainc" != xno; then
+  if test x"$with_cudainc" != xyes; then
+    CUDA_INC=$with_cudainc
+    AC_MSG_RESULT([use cuda include directory $CUDA_INC])  
+  fi
+fi
 
 if test x"$with_hoard" != xno; then
   LDFLAGS_BAK="$LDFLAGS"
@@ -96,7 +108,7 @@ if test x"$with_caffe" != xno; then
   else
     AC_DEFINE(HAVE_CAFFE,1,[Define if you have the CAFFE library.])
     CAFFE_LDFLAGS="-I$with_caffe/lib"
-    CAFFE_CPPFLAGS="-I$with_caffe/include -I/usr/local/cuda/include"
+    CAFFE_CPPFLAGS="-I$with_caffe/include -I$CUDA_INC"
     CAFFE_LIB="-lcaffe"
   fi
   LDFLAGS="$LDFLAGS $CAFFE_LDFLAGS"
@@ -106,7 +118,7 @@ if test x"$with_caffe" != xno; then
   if test "$ac_cv_header_cuda_h" == no
   then
     AC_DEFINE(CPU_ONLY,1,[Define if you have the CAFFE library, but no CUDA])
-    AC_MSG_RESULT([!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   CUDA not found, forcing CPU_ONLY mode for caffe  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!])
+    AC_MSG_RESULT([!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   CUDA not found, forcing CPU_ONLY mode for caffe  (if wrong, try --with-cudainc=<srcdir> to find the cuda include files) !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!])
   fi
   AC_MSG_CHECKING(whether caffe lib is available)
   AC_LINK_IFELSE([AC_LANG_PROGRAM()],

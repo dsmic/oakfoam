@@ -747,6 +747,7 @@ enable_silent_rules
 enable_dependency_tracking
 with_hoard
 with_llalloc
+with_cudainc
 with_caffe
 with_web
 with_boost
@@ -1402,6 +1403,8 @@ Optional Packages:
 
   --with-llalloc=<srcdir> Compile using the llalloc memory allocator. Default:
                           no
+
+  --with-cudainc=<srcdir> Cuda include directory location. Default: no
 
   --with-caffe=<srcdir>   Compile with DCNN support by caffe. Default: no
 
@@ -3979,6 +3982,15 @@ fi
 
 
 
+# Check whether --with-cudainc was given.
+if test "${with_cudainc+set}" = set; then :
+  withval=$with_cudainc;
+else
+  with_cudainc=no
+fi
+
+
+
 # Check whether --with-caffe was given.
 if test "${with_caffe+set}" = set; then :
   withval=$with_caffe;
@@ -3995,6 +4007,15 @@ else
   with_web=no
 fi
 
+
+CUDA_INC="/usr/local/cuda/include"
+if test x"$with_cudainc" != xno; then
+  if test x"$with_cudainc" != xyes; then
+    CUDA_INC=$with_cudainc
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: use cuda include directory $CUDA_INC" >&5
+$as_echo "use cuda include directory $CUDA_INC" >&6; }
+  fi
+fi
 
 if test x"$with_hoard" != xno; then
   LDFLAGS_BAK="$LDFLAGS"
@@ -4102,7 +4123,7 @@ if test x"$with_caffe" != xno; then
 $as_echo "#define HAVE_CAFFE 1" >>confdefs.h
 
     CAFFE_LDFLAGS="-I$with_caffe/lib"
-    CAFFE_CPPFLAGS="-I$with_caffe/include -I/usr/local/cuda/include"
+    CAFFE_CPPFLAGS="-I$with_caffe/include -I$CUDA_INC"
     CAFFE_LIB="-lcaffe"
   fi
   LDFLAGS="$LDFLAGS $CAFFE_LDFLAGS"
@@ -4512,8 +4533,8 @@ fi
 
 $as_echo "#define CPU_ONLY 1" >>confdefs.h
 
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   CUDA not found, forcing CPU_ONLY mode for caffe  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" >&5
-$as_echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   CUDA not found, forcing CPU_ONLY mode for caffe  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" >&6; }
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   CUDA not found, forcing CPU_ONLY mode for caffe  (if wrong, try --with-cudainc=<srcdir> to find the cuda include files) !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" >&5
+$as_echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   CUDA not found, forcing CPU_ONLY mode for caffe  (if wrong, try --with-cudainc=<srcdir> to find the cuda include files) !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" >&6; }
   fi
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether caffe lib is available" >&5
 $as_echo_n "checking whether caffe lib is available... " >&6; }
