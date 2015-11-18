@@ -377,6 +377,9 @@ class Engine
     void clearStatistics() {int i; for (i=0;i<STATISTICS_NUM;i++) statistics[i]=0;}
     long statisticsSum() {int i; long sum=0; for (i=0;i<STATISTICS_NUM;i++) sum+=statistics[i]; return sum;}
     long getStatistics(int i) {return statistics[i]*1000/(statisticsSum()+1);} //+1 avoid crash
+    float getExpandStats() {return (float)ExpandSum/((float)ExpandNum+0.0001);}
+    void clearExpandStats() {ExpandSum=0; ExpandNum=0;}
+    void addExpandStats(int num) {ExpandSum+=num; ExpandNum++;}
     Go::TerritoryMap *getTerritoryMap() const {return territorymap;}
     void ProbabilityMoveAs(int pos, int move_number) {if (pos>=0) probabilitymap->setMoveAsFirst(pos,move_number);}
     void ProbabilityClean() {probabilitymap->resetplayed();}
@@ -488,6 +491,7 @@ class Engine
     #endif
     long statistics[STATISTICS_NUM];
     boost::mutex lock_move_circ;
+    int ExpandSum,ExpandNum;
 
     
     bool isgamefinished;

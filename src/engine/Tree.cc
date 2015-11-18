@@ -1801,7 +1801,7 @@ Tree *Tree::getUrgentChild(Worker::Settings *settings)
   if (params->move_policy==Parameters::MP_UCT && besttree->isLeaf() && !besttree->isTerminal())
   {
     if (besttree->getPlayouts()>params->uct_expand_after)
-      busyexpanding=!besttree->expandLeaf(settings);
+      busyexpanding=!besttree->expandLeaf(settings, besttree->getPlayouts());
   }
   
   if (params->uct_virtual_loss)
@@ -1829,7 +1829,7 @@ void Tree::presetRaveEarly (float ravew,float ravep)
   fprintf(stderr,"ravewins %f raveplayouts %f\n",ravewins,raveplayouts);
 }
 
-bool Tree::expandLeaf(Worker::Settings *settings)
+bool Tree::expandLeaf(Worker::Settings *settings, int expand_num)
 {
   float *rwins=NULL;
   float *rplayouts=NULL;
@@ -2082,6 +2082,7 @@ bool Tree::expandLeaf(Worker::Settings *settings)
     if (params->test_p100>0 && CNNresults==NULL)
     {
       CNNresults=new float[size*size];
+      params->engine->addExpandStats(expand_num);
       params->engine->getCNN(startboard,Go::otherColor(col),CNNresults);
       if (params->test_p116>0) {
         float *CNNresults_other=new float[size*size];

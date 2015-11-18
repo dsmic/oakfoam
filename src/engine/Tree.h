@@ -247,7 +247,7 @@ class Tree
     /** Expand this leaf node.
      * Returns true if the node has been expanded or false otherwise (only applicable in multi-core situations).
      */
-    bool expandLeaf(Worker::Settings *settings);
+    bool expandLeaf(Worker::Settings *settings, int expand_num);
     /** Get this robust child of this node.
      * The robust child is the child with the most playouts through it.
      * @param descend If set, descend down the tree to a leaf node, picking the robust child at each node.

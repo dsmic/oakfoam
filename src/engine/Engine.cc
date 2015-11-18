@@ -5054,6 +5054,7 @@ void Engine::learnFromTree(Go::Board *tmpboard, Tree *learntree, std::ostringstr
 void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
 {
   clearStatistics();
+  clearExpandStats();
   respondboard->scale(0.2);
 
   if (params->book_use)
@@ -5184,6 +5185,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     }
     ssun<<")";
     ssun<< " ravepreset: " << (presetplayouts/presetnum);
+    ssun<< " expand_num: "<<getExpandStats();
     Tree *besttree=movetree->getRobustChild();
     if (besttree->isPruned()) {
       fprintf(stderr,"besttree is pruned but has %f playouts ?!\n",besttree->getPlayouts()); 
@@ -6371,7 +6373,7 @@ void Engine::doPlayout(Worker::Settings *settings, Go::IntBoard *firstlist, Go::
   if (movetree->isLeaf())
   {
     this->allowContinuedPlay();
-    movetree->expandLeaf(settings);
+    movetree->expandLeaf(settings,0);
     movetree->pruneSuperkoViolations();
   }
   
