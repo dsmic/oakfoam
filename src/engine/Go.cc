@@ -1158,6 +1158,8 @@ bool Go::Board::weakEye(Go::Color col, int pos, bool veryweak) const
         onside=true;
       else if (this->getColor(p)!=col)
         return false;
+      else if (this->getColor(p)==col && this->getGroup(p)->inAtari()) //this is not a weak eye!
+        return false;
     });
     
     foreach_diagonal(pos,p,{
@@ -1733,11 +1735,11 @@ inline void Go::Board::setPlayoutGammaAt(Parameters* params,int p)
       switch (libs) {
       case 1:
           if (col==Go::BLACK) atarib=params->csstyle_atatarigroup; else 
-          atariw*=params->csstyle_atatarigroup;
+          atariw=params->csstyle_atatarigroup;
           break;
       case 2:
           if (col==Go::BLACK) is2libb=params->csstyle_is2libgroup; else 
-          is2libw*=params->csstyle_is2libgroup;
+          is2libw=params->csstyle_is2libgroup;
           break;
       default:
           ;

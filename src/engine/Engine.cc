@@ -520,6 +520,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("other","features_circ_list",&(params->features_circ_list),0.0);
   params->addParameter("other","features_circ_list_size",&(params->features_circ_list_size),0);
   params->addParameter("other","cnn_data",&(params->CNN_data),0.0);
+  params->addParameter("other","cnn_pass_probability",&(params->CNN_pass_probability),0.05);
   params->addParameter("other","cnn_data_playouts",&(params->CNN_data_playouts),0);
   
   params->addParameter("other","auto_save_sgf",&(params->auto_save_sgf),false);

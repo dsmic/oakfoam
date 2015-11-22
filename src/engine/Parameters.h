@@ -738,6 +738,7 @@ class Parameters
     float features_circ_list;
     float CNN_data;
     int CNN_data_playouts;
+    float CNN_pass_probability;
     /** Size of circular patterns that are listed after a move.
      * @see features_circ_list
      */

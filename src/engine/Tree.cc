@@ -152,14 +152,18 @@ float Tree::getScoreSD() const
 
 float Tree::getRatio() const
 {
+  //return getRatio_intern();
+
+  //was trying this, but it had some problems. Must be rethinked if passes should be handled in more detail!
   float ratio_intern=this->getRatio_intern();
   if (!move.isPass())
     return ratio_intern;
   else {
+    return ratio_intern/2.0; //pass penaltiy
     if (ratio_intern > 1-params->resign_ratio_threshold)
       return ratio_intern;
     else 
-      return params->resign_ratio_threshold+0.01; //this does not force to do another move allways, but instead resignes some times?!
+      return ratio_intern/2.0; // params->resign_ratio_threshold-0.01; //this does not force to do another move allways, but instead resignes some times?!
   }
 }
 
@@ -1673,7 +1677,7 @@ Tree *Tree::getUrgentChild(Worker::Settings *settings)
           urgency-=params->random_f*log(settings->rand->getRandomReal());
       }
       if (debug)
-          fprintf(stderr,"urgency %s %f \n",(*iter)->getMove().toString(9).c_str(),urgency);
+          fprintf(stderr,"urgency %s %f \n",(*iter)->getMove().toString(19).c_str(),urgency);
       sum_urgency+=urgency;
       sum_urgency2+=urgency*urgency;
       var_count+=1;
@@ -2083,15 +2087,15 @@ bool Tree::expandLeaf(Worker::Settings *settings, int expand_num)
     {
       CNNresults=new float[size*size];
       params->engine->addExpandStats(expand_num);
-      params->engine->getCNN(startboard,Go::otherColor(col),CNNresults);
+      params->engine->getCNN(startboard,col,CNNresults);
       if (params->test_p116>0) {
         float *CNNresults_other=new float[size*size];
-        params->engine->getCNN(startboard,col,CNNresults_other);
+        params->engine->getCNN(startboard,Go::otherColor(col),CNNresults_other);
         for (int i=0;i<size*size;i++) {
           int pp=Go::Position::cnn2pos(i,size);
           float value=-(int(CNNresults[i]*10000)+float(i)/size/size);
           float value_other=-(int(CNNresults_other[i]*10000)+float(i)/size/size);
-          if (col==Go::BLACK) {
+          if (Go::otherColor(col)==Go::BLACK) {
             cnn_b.insert({pp,value_other});
             cnn_w.insert({pp,value});
           }
@@ -2133,7 +2137,7 @@ bool Tree::expandLeaf(Worker::Settings *settings, int expand_num)
             //fprintf(stderr,"%d %d %f\n",x,y,CNNresults[size*x+y]);
             gammal=((gammal-1.0)*params->test_p102+1.0)*(CNNresults[size*x+y]*params->test_p100+params->test_p101);
           }
-          else gammal=0.05;
+          else gammal=params->CNN_pass_probability;
         }
         (*iter)->setFeatureGamma(gammal);
         (*iter)->setFeatureGammaLocalPart(gamma_local_part);

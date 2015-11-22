@@ -9,6 +9,7 @@
 #include "Worker.h"
 #include <time.h>
 #include "boost/container/flat_set.hpp"
+//#include "boost/pool/pool_alloc.hpp"
 
 #define LGRFCOUNT1 1
 #define LGRFCOUNT2 1
@@ -400,8 +401,8 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
   bool earlymoves=true;
 
   
-  //board->resetPassesPlayed(); // if the tree plays two passes it is not guaranteed, that score can count the result!!!
-  //but it is the chinese counting, therefore the win is correct, if it is not played to the end within this counting
+  board->resetPassesPlayed(); // if the tree plays two passes it is not guaranteed, that score can count the result!!!
+  // ??? what was this comment: ???? but it is the chinese counting, therefore the win is correct, if it is not played to the end within this counting
 
   //cnn_winrate==-2 disables cnn, for other calls than genmove
   //lock can be optimized not to lock, if tree wr is used !!!!!!!!!!!!!!!!!!!!!!!!!
@@ -3688,7 +3689,7 @@ void Playout::checkAntiEyeMove(Worker::Settings *settings, Go::Board *board, Go:
   
   if (move.isPass())
     return;
-  if (board->isCapture(move)||board->isAtari(move))
+  if (board->isCapture(move)|| (board->isAtari(move) && !board->isSelfAtari(move)))
     return; //do not replace in case of capture and atari moves!!
   Go::Move tmp_move=Go::Move(col,Go::Move::PASS);
   replacemove=Go::Move(col,Go::Move::PASS);
@@ -3696,9 +3697,9 @@ void Playout::checkAntiEyeMove(Worker::Settings *settings, Go::Board *board, Go:
 
   int count_empty=0;
   foreach_adjacent(move.getPosition(),p,{
-    if (board->getColor (p)==col)
+    if (board->getColor (p)==col && !board->getGroup(p)->inAtari())
       return;  //has the own color
-    if (board->getColor(p)==Go::EMPTY)
+    if (board->getColor(p)==Go::EMPTY || (board->getColor (p)==col && board->getGroup(p)->inAtari()))
     {
       count_empty++;
       if (count_empty>1) return; //more than 1 empty surounded
