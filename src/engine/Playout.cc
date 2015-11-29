@@ -692,7 +692,7 @@ void Playout::doPlayout(Worker::Settings *settings, Go::Board *board, float &fin
     {
       bool blackwin=Go::Board::isWinForColor(Go::BLACK,finalscore);
       if (blackwin) RmB+=1.0;
-      float RmBwhite=1.0-RmB;
+      float RmBwhite=-RmB;
       float alpha=0.01;
       RmB*=alpha;
       RmBwhite*=alpha;

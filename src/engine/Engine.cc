@@ -5136,7 +5136,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     
     movetree->pruneSuperkoViolations();
     this->allowContinuedPlay();
-    this->updateTerritoryScoringInTree();
+    //no idea what this was for? seems buggy ...
+    //this->updateTerritoryScoringInTree();
     params->uct_slow_update_last=0;
     params->uct_last_r2=-1;
     
@@ -7483,7 +7484,7 @@ void Engine::mpiGenMove(Go::Color col)
   
   movetree->pruneSuperkoViolations();
   this->allowContinuedPlay();
-  this->updateTerritoryScoringInTree();
+  //this->updateTerritoryScoringInTree();
   params->uct_slow_update_last=0;
   // generate immediatly on dbg line, was 0
   params->uct_slow_debug_last=params->uct_slow_debug_interval;
@@ -7508,7 +7509,7 @@ void Engine::mpiPonder(Go::Color col)
   
   movetree->pruneSuperkoViolations();
   this->allowContinuedPlay();
-  this->updateTerritoryScoringInTree();
+  //this->updateTerritoryScoringInTree();
   params->uct_slow_update_last=0;
   params->uct_slow_debug_last=0;
   params->uct_last_r2=-1;
