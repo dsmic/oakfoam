@@ -24,7 +24,8 @@
 
 //had trouble putting it as static variable into the Engine class, but should only be one Engine anyway!
 #ifdef HAVE_CAFFE
-Net<float> *caffe_test_net;
+#define num_nets 2
+Net<float> *caffe_test_net[num_nets];
 int caffe_test_net_input_dim;
 Net<float> *caffe_area_net;
 #endif		
@@ -42,55 +43,9 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   Caffe::DeviceQuery();
   //Caffe::set_phase(Caffe::TEST);
   caffe_area_net = NULL;
-  caffe_test_net = NULL;
+  for (int i=0;i<num_nets;i++)
+    caffe_test_net[i] = NULL;
 #endif
-  /*
-  caffe_test_net = new Net<float>("/home/detlef/oakfoam-hg/oakfoam/scripts/CNN/gobig19.prototxt",TRAIN);
-  caffe_test_net->CopyTrainedLayersFrom("/home/detlef/oakfoam-hg/oakfoam/scripts/CNN/gobig.trained");
-  int num_inputs=caffe_test_net->num_inputs();
-  int num_outputs=caffe_test_net->num_outputs();
-  Blob<float> *tmpblob=caffe_test_net->input_blobs()[0];
-  caffe_test_net_input_dim=caffe_test_net->input_blobs()[0]->shape()[1];
-  fprintf(stderr,"num of net inputs %d outputs %d axes input %d %d %d %d shape %d\n",num_inputs,num_outputs,tmpblob->shape()[0],tmpblob->shape()[1],tmpblob->shape()[2],tmpblob->shape()[3],caffe_test_net_input_dim);
-  //this is testing code, must be put to a function later!!!!
-  Blob<float> *b=new Blob<float>(1,caffe_test_net_input_dim,19,19);
-  float *data;
-  //fprintf(stderr,"1\n");
-  data= new float[caffe_test_net_input_dim*19*19];
-  //fprintf(stderr,"2\n");
-  for (int i=0;i<caffe_test_net_input_dim;i++)
-	for (int j=0;j<19;j++)
-	  for (int k=0;k<19;k++)
-		{
-	    //fprintf(stderr,"%d %d %d\n",i,j,k);
-		data[i*19*19+j*19+k]=0.0;
-		}
-  data[3*19+4]=1.0;
-  data[19*19+5*19+5]=1.0;
-  b->set_cpu_data(data);
-  vector<Blob<float>*> bottom;
-  bottom.push_back(b); 
-  const vector<Blob<float>*>& result=  caffe_test_net->Forward(bottom);
-  fprintf(stderr,"start\n");
-  clock_t tbegin = clock();
-  for (int i=0;i<50;i++) {
-    const vector<Blob<float>*>& result =  caffe_test_net->Forward(bottom);
-  }
-  clock_t tend = clock();
-  fprintf(stderr,"end %f\n",double(tend - tbegin) / CLOCKS_PER_SEC);
-  
-  for (int j=0;j<19;j++)
-	{
-	for (int k=0;k<19;k++)
-		{
-	    fprintf(stderr,"%5.3f ",result[0]->cpu_data()[j*19+k]);
-		}
-	fprintf(stderr,"\n");
-	}
-  delete[] data;
-  delete b;
-  //end of testing code!
-  */
   
   ACcount=0;
 
@@ -120,8 +75,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   recalc_dynkomi=0;
 
   deltawhiteoffset=boardsize*boardsize*(local_feature_num+hashto5num);
-  deltagammas = new float[2*boardsize*boardsize*(local_feature_num+hashto5num)];
-  for (int i=0;i<2*boardsize*boardsize*(local_feature_num+hashto5num);i++) deltagammas[i]=1.0;
+//  deltagammas = new std::atomic<float>[2*boardsize*boardsize*(local_feature_num+hashto5num)];
+//  for (int i=0;i<2*boardsize*boardsize*(local_feature_num+hashto5num);i++) deltagammas[i]=1.0;
   deltagammaslocal = new float[2*boardsize*boardsize*(local_feature_num+hashto5num)];
   for (int i=0;i<2*boardsize*boardsize*(local_feature_num+hashto5num);i++) deltagammaslocal[i]=1.0;
   
@@ -354,7 +309,10 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","csstyle_defendapproach",&(params->csstyle_defendapproach),1.0);
   params->addParameter("playout","csstyle_2libavoidcapture",&(params->csstyle_2libavoidcapture),1.0);
   params->addParameter("playout","csstyle_adaptiveplayouts",&(params->csstyle_adaptiveplayouts),false);
+  params->addParameter("playout","csstyle_adaptiveplayouts_alpha",&(params->csstyle_adaptiveplayouts_alpha),0.01);
+  params->addParameter("playout","csstyle_adaptiveplayouts_lambda",&(params->csstyle_adaptiveplayouts_lambda),0.001);
   params->addParameter("playout","csstyle_patterngammasnothing",&(params->csstyle_patterngammasnothing),1.0);
+  params->addParameter("playout","csstyle_adaptiveplayouts_only_played",&(params->csstyle_adaptiveplayouts_only_played),false);
   params->addParameter("playout","csstyle_01",&(params->csstyle_01),0.0);
   params->addParameter("playout","csstyle_02",&(params->csstyle_02),0.0);
   params->addParameter("playout","csstyle_03",&(params->csstyle_03),0.0);
@@ -672,7 +630,7 @@ Engine::~Engine()
   delete respondboard;
   delete[] blackOldMoves;
   delete[] whiteOldMoves;
-  delete[] deltagammas;
+//  delete[] deltagammas;
   delete[] deltagammaslocal;
 
   for (std::list<DecisionTree*>::iterator iter=decisiontrees.begin();iter!=decisiontrees.end();++iter)
@@ -680,12 +638,14 @@ Engine::~Engine()
     delete (*iter);
   }
 #ifdef HAVE_CAFFE
-  if (caffe_test_net!=NULL) delete caffe_test_net;
+  for (int i=0;i<num_nets;i++) {
+    if (caffe_test_net[i]!=NULL) delete caffe_test_net[i];
+  }
   if (caffe_area_net!=NULL) delete caffe_area_net;
 #endif
 }
 
-void Engine::getCNN(Go::Board *board,Go::Color col, float result[])
+void Engine::getCNN(Go::Board *board,Go::Color col, float result[], int net_num)
 {
 #ifdef HAVE_CAFFE
 	//if (board->getSize()!=19) {
@@ -780,7 +740,7 @@ if (caffe_test_net_input_dim > 9) {
   bottom.push_back(b); 
   //cudaSetDeviceFlags(cudaDeviceBlockingSync);
   Caffe::set_mode(Caffe::GPU);
-  const vector<Blob<float>*>& rr =  caffe_test_net->Forward(bottom);
+  const vector<Blob<float>*>& rr =  caffe_test_net[net_num]->Forward(bottom);
   //fprintf(stderr,"start\n");
   //clock_t tbegin = clock();
   //for (int i=0;i<50;i++) {
@@ -804,7 +764,7 @@ if (caffe_test_net_input_dim > 9) {
   delete b;
 #else
   fprintf(stderr," caffe not availible, compile with-caffe\n");
-#endif/
+#endif
 }
 
 float Engine::getCNNwr(Go::Board *board,Go::Color col)
@@ -2785,7 +2745,7 @@ void Engine::gtpLoadFeatureGammas(void *instance, Gtp::Engine* gtpe, Gtp::Comman
 void Engine::gtpLoadCNNt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
 #ifdef HAVE_CAFFE
-  Engine *me=(Engine*)instance;
+//  Engine *me=(Engine*)instance;
   
   if (cmd->numArgs()!=2)
   {
@@ -2840,29 +2800,31 @@ void Engine::gtpLoadCNNt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 void Engine::gtpLoadCNNp(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
 #ifdef HAVE_CAFFE
-  Engine *me=(Engine*)instance;
+//  Engine *me=(Engine*)instance;
   
-  if (cmd->numArgs()!=2)
+  if (cmd->numArgs()!=2 && cmd->numArgs()!=3)
   {
     gtpe->getOutput()->startResponse(cmd,false);
-    gtpe->getOutput()->printf("need 2 arg");
+    gtpe->getOutput()->printf("need 2 or 3 arg");
     gtpe->getOutput()->endResponse();
     return;
   }
   
   std::string filename_net=cmd->getStringArg(0);
   std::string filename_parameters=cmd->getStringArg(1);
-
+  int net_num=0;
+  if (cmd->numArgs()==3)
+    net_num=cmd->getIntArg(2);
   bool success=true;
   //the library does not really seem to throw exceptions, but just exit :(
   try {
-    if (caffe_test_net!=NULL) delete caffe_test_net;
+    if (caffe_test_net[net_num]!=NULL) delete caffe_test_net[net_num];
     fprintf(stderr,"ok, create net\n");
-    caffe_test_net = new Net<float>(filename_net,TEST);
+    caffe_test_net[net_num] = new Net<float>(filename_net,TEST);
     fprintf(stderr,"ok, created net\n");
-    caffe_test_net->CopyTrainedLayersFrom(filename_parameters);
+    caffe_test_net[net_num]->CopyTrainedLayersFrom(filename_parameters);
     int t2=Caffe::mode();
-    caffe_test_net_input_dim=caffe_test_net->input_blobs()[0]->shape()[1];
+    caffe_test_net_input_dim=caffe_test_net[net_num]->input_blobs()[0]->shape()[1];
     fprintf(stderr,"!!!!!!!!!!!!!!!!!!!!!!!! %d shape %d\n",t2,caffe_test_net_input_dim);
     
 //    caffe_test_net->set_mode_gpu();
@@ -5188,6 +5150,14 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     ssun<<")";
     ssun<< " ravepreset: " << (presetplayouts/presetnum);
     ssun<< " expand_num: "<<getExpandStats();
+    if (params->csstyle_adaptiveplayouts) {
+      float min=1,max=1;
+      for (int i=0;i<2*boardsize*boardsize*(local_feature_num+hashto5num);i++) {
+        if (deltagammaslocal[i]<min) min=deltagammaslocal[i];
+        if (deltagammaslocal[i]>max) max=deltagammaslocal[i];
+      }
+      ssun<<" move finished min "<<min<<" max "<<max;
+    }
     Tree *besttree=movetree->getRobustChild();
     if (besttree->isPruned()) {
       fprintf(stderr,"besttree is pruned but has %f playouts ?!\n",besttree->getPlayouts()); 
@@ -6051,13 +6021,6 @@ void Engine::setBoardSize(int s)
   boardsize=s;
   params->board_size=boardsize;
   this->clearBoard();
-  if (deltagammas!=NULL) delete[]deltagammas;
-  if (deltagammaslocal!=NULL) delete[]deltagammaslocal;
-  deltawhiteoffset=boardsize*boardsize*(local_feature_num+hashto5num);
-  deltagammas = new float[2*boardsize*boardsize*(local_feature_num+hashto5num)];
-  for (int i=0;i<2*boardsize*boardsize*(local_feature_num+hashto5num);i++) deltagammas[i]=1.0;
-  deltagammaslocal = new float[2*boardsize*boardsize*(local_feature_num+hashto5num)];
-  for (int i=0;i<2*boardsize*boardsize*(local_feature_num+hashto5num);i++) deltagammaslocal[i]=1.0;
 }
 
 void Engine::setKomi(float k)
@@ -6134,7 +6097,13 @@ void Engine::clearBoard()
   isgamefinished=false;
   komi_handicap=0;
   recalc_dynkomi=0;
-  deltagammas = new float[2*boardsize*boardsize*(local_feature_num+hashto5num)];
+//  if (deltagammas!=NULL) delete[]deltagammas;
+  if (deltagammaslocal!=NULL) delete[]deltagammaslocal;
+  deltawhiteoffset=boardsize*boardsize*(local_feature_num+hashto5num);
+//  deltagammas = new std::atomic<float>[2*boardsize*boardsize*(local_feature_num+hashto5num)];
+//  for (int i=0;i<2*boardsize*boardsize*(local_feature_num+hashto5num);i++) deltagammas[i]=1.0;
+  deltagammaslocal = new float[2*boardsize*boardsize*(local_feature_num+hashto5num)];
+  for (int i=0;i<2*boardsize*boardsize*(local_feature_num+hashto5num);i++) deltagammaslocal[i]=1.0;
 }
 
 void Engine::clearMoveTree(int a_pos)
@@ -6389,6 +6358,9 @@ void Engine::doPlayout(Worker::Settings *settings, Go::IntBoard *firstlist, Go::
       gtpe->getOutput()->printfDebug("WARNING! No playout target found.\n");
     return;
   }
+  if (playouttree->isPruned()) {
+    fprintf(stderr,"playouttree is pruned\n");
+  }
   std::list<Go::Move> playoutmoves=playouttree->getMovesFromRoot();
   std::list<Go::Move> playoutmoves_only_tree;
   if (params->uct_area_correlation_statistics)
@@ -6439,6 +6411,9 @@ void Engine::doPlayout(Worker::Settings *settings, Go::IntBoard *firstlist, Go::
   //fprintf(stderr,"-\n");
   float finalscore;
   float cnn_winrate=-1;
+  if (playouttree->isPruned()) {
+    fprintf(stderr,"playouttree is pruned1\n");
+  }
   playout->doPlayout(settings,playoutboard,finalscore,cnn_winrate,playouttree,playoutmoves,col,(params->rave_moves>0?firstlist:NULL),(params->rave_moves>0?secondlist:NULL),(params->rave_moves>0?earlyfirstlist:NULL),(params->rave_moves>0?earlysecondlist:NULL));
   if (this->getTreeMemoryUsage()>(params->memory_usage_max*1024*1024) && !stopthinking)
   {
@@ -6475,11 +6450,16 @@ void Engine::doPlayout(Worker::Settings *settings, Go::IntBoard *firstlist, Go::
     finalscore=playoutboard->territoryScore(territorymap,params->territory_threshold)-params->engine->getHandiKomi();
   }
 
+  if (playouttree->isPruned()) {
+    fprintf(stderr,"playouttree is pruned2\n");
+  }
   
   bool playoutwin=Go::Board::isWinForColor(playoutcol,finalscore);
   bool playoutjigo=(finalscore==0);
-  if (playoutjigo)
-    playouttree->addPartialResult(0.5,1,false);
+  if (playoutjigo) {
+    if (!playouttree->isPruned())  //this is the case in superko violation 
+      playouttree->addPartialResult(0.5,1,false);
+  }
   else if (playoutwin)
     playouttree->addWin(finalscore);
   else
@@ -6842,7 +6822,7 @@ void Engine::ponderThread(Worker::Settings *settings)
       bool mpi_rank_other=(mpirank!=0);
       //int mpi_update_num=0;
     #else
-      bool mpi_rank_other=false;
+//      bool mpi_rank_other=false;
     #endif
     this->allowContinuedPlay();
     params->uct_slow_update_last=0;
@@ -6854,7 +6834,7 @@ void Engine::ponderThread(Worker::Settings *settings)
     Go::IntBoard *earlysecondlist=new Go::IntBoard(boardsize);
 
     long playouts=0;
-    bool initial_sync=true;
+//    bool initial_sync=true;
 
     //there might be a race condition left if stoppondering and stopthinking is changed before mpiSyncUpdate ()
     if (settings->thread->getID()==0)
@@ -7256,6 +7236,15 @@ std::string Engine::chat(bool pm,std::string name,std::string msg)
 
 void Engine::gameFinished()
 {
+  if (params->csstyle_adaptiveplayouts) {
+    float min=1,max=1;
+    for (int i=0;i<2*boardsize*boardsize*(local_feature_num+hashto5num);i++) {
+      if (deltagammaslocal[i]<min) min=deltagammaslocal[i];
+      if (deltagammaslocal[i]>max) max=deltagammaslocal[i];
+    }
+    gtpe->getOutput()->printfDebug("game finished min %f max %f\n",min,max);
+  }
+  
   if (isgamefinished)
     return;
   isgamefinished=true;
@@ -7838,16 +7827,46 @@ void Engine::gtpVERSION(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   gtpe->getOutput()->endResponse();
 }
 
-void Engine::doGradientDescend(float * grad)
+void Engine::doGradientDescend(float grad[], float alpha)
 {
 //  return;
-  float alpha=0.01;
-  float alphalambda=0.001*alpha;
+  //float alpha=0.001;
+  float alphalambda=params->csstyle_adaptiveplayouts_lambda*alpha;
   float einsMinusAlphaLambda=1.0-alphalambda;
   gradlock.lock();
+  if (DEBUG_ADAPTIVE) {
+    float min=1,max=1;
+    for (int i=0;i<2*boardsize*boardsize*(local_feature_num+hashto5num);i++) {
+      if (grad[i]<min) min=grad[i];
+      if (grad[i]>max) max=grad[i];
+    }
+    fprintf(stderr, "vor grad local min %f max %f\n",min,max);
+  }
+  if (DEBUG_ADAPTIVE) {
+    float min=1,max=1;
+    for (int i=0;i<2*boardsize*boardsize*(local_feature_num+hashto5num);i++) {
+      if (deltagammaslocal[i]<min) min=deltagammaslocal[i];
+      if (deltagammaslocal[i]>max) max=deltagammaslocal[i];
+    }
+    fprintf(stderr, "vor gammas local min %f max %f\n",min,max);
+        for (int i=0;i<hashto5num;i++) {
+          fprintf(stderr," %6.4f",deltagammaslocal[(5+3*boardsize)*(local_feature_num+hashto5num)+local_feature_num+i]);
+        } fprintf(stderr,"\n");
+  }
   for (int i=0;i<2*boardsize*boardsize*(local_feature_num+hashto5num);i++) 
-    //deltagammaslocal[i]=fasterpow(deltagammas[i],einsMinusAlphaLambda)*grad[i];
-    deltagammaslocal[i]=(deltagammas[i]*einsMinusAlphaLambda+alphalambda)*grad[i];  //taylor around x^(1-delta)
-  deltagammaslocal=deltagammas.exchange(deltagammaslocal);
+    deltagammaslocal[i]=pow(deltagammaslocal[i],einsMinusAlphaLambda)*grad[i];
+    //deltagammaslocal[i]=(deltagammas[i]*einsMinusAlphaLambda+alphalambda)*grad[i];  //taylor around x^(1-delta)
+  //deltagammaslocal=deltagammas->exchange(*deltagammaslocal);
+  if (DEBUG_ADAPTIVE) {
+    float min=1,max=1;
+    for (int i=0;i<2*boardsize*boardsize*(local_feature_num+hashto5num);i++) {
+      if (deltagammaslocal[i]<min) min=deltagammaslocal[i];
+      if (deltagammaslocal[i]>max) max=deltagammaslocal[i];
+    }
+    fprintf(stderr, "nach gammas local min %f max %f\n",min,max);
+        for (int i=0;i<hashto5num;i++) {
+          fprintf(stderr," %6.4f",deltagammaslocal[(5+3*boardsize)*(local_feature_num+hashto5num)+local_feature_num+i]);
+        } fprintf(stderr,"\n");
+  }
   gradlock.unlock();
 }

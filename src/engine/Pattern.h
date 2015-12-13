@@ -61,7 +61,7 @@
  */
 namespace Pattern
 {
-  inline int hashto5(unsigned int hash) {return (hash ^ (hash>>4) ^ (hash >> 8) ^ (hash >>12)) & 0x001F;}
+  inline int hashto5(unsigned int hash) {return (hash ^ (hash >> 3) ^ (hash >> 6) ^ (hash >> 9) ^ (hash >> 12)) & 0x003F;}
   class ThreeByThreeTable;
   
   /** Patterns of size 3x3.

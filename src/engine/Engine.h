@@ -1,6 +1,9 @@
 #ifndef DEF_OAKFOAM_ENGINE_H
 #define DEF_OAKFOAM_ENGINE_H
 
+
+#define DEBUG_ADAPTIVE false
+
 #define PLAYOUTS_PER_MOVE 10000
 #define PLAYOUTS_PER_MOVE_MAX 1000000
 #define PLAYOUTS_PER_MOVE_MIN 1000
@@ -391,7 +394,7 @@ class Engine
 
     void addpresetplayout(float p) {presetplayouts+=p; presetnum++;}
 
-	  void getCNN(Go::Board *board,Go::Color col, float result[]);
+	  void getCNN(Go::Board *board,Go::Color col, float result[],int net_num=0);
     float getCNNwr(Go::Board *board,Go::Color col);
 
 
@@ -440,18 +443,18 @@ class Engine
     inline float deltagammasGetLocalFeature(int p, Go::Color col,int i) {
       int x=Go::Position::pos2x(p,boardsize); int y=Go::Position::pos2y(p,boardsize);
       int sum=0; if (Go::WHITE==col) sum=deltawhiteoffset;
-      return deltagammas[sum+(boardsize*y+x)*(local_feature_num+hashto5num)+i];
+      return deltagammaslocal[sum+(boardsize*y+x)*(local_feature_num+hashto5num)+i];
     }
     inline float deltagammasGetPattern(int p, Go::Color col,int patt) {
       int x=Go::Position::pos2x(p,boardsize); int y=Go::Position::pos2y(p,boardsize);
       int sum=local_feature_num; if (Go::WHITE==col) sum=local_feature_num+deltawhiteoffset;
-      return deltagammas[sum+(boardsize*y+x)*(local_feature_num+hashto5num)+patt];
+      return deltagammaslocal[sum+(boardsize*y+x)*(local_feature_num+hashto5num)+patt];
       //return deltagammas[sum+Go::Position::pos2grad(p,boardsize)*(local_feature_num+hashto5num)+patt];
     }
-    void doGradientDescend(float * grad); //RmB is r-b in Adaptive Playouts Paper (8) (cited playout.cc)
+    void doGradientDescend(float * grad, float alpha); //RmB is r-b in Adaptive Playouts Paper (8) (cited playout.cc)
     std::mutex gradlock;
   private:
-    std::atomic<float*> deltagammas;  //this makes it indeed slower, mayby necessary anyway ?!
+   // std::atomic<float> *deltagammas;  //this makes it indeed slower, mayby necessary anyway ?!
     float *deltagammaslocal;
     int deltawhiteoffset;
     //boost::object_pool<Go::Board> pool_board;

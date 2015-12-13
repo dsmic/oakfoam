@@ -325,6 +325,9 @@ class Parameters
     float csstyle_defendapproach;
     float csstyle_2libavoidcapture;
     bool csstyle_adaptiveplayouts;
+    float csstyle_adaptiveplayouts_alpha;
+    float csstyle_adaptiveplayouts_lambda;
+    bool csstyle_adaptiveplayouts_only_played;
     float csstyle_patterngammasnothing;
     float csstyle_01;
     float csstyle_02;

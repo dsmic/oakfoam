@@ -15,8 +15,7 @@
 
 //adaptive playouts
 #define local_feature_num 13
-#define hashto5num 32
-
+#define hashto5num 64
 
 #define MARK {fprintf(stderr,"mark %s %d\n",__FILE__,__LINE__);}
 //can be set or unordered_set last is faster (this was probably wrong, it is only faster if fetch by value is needed, and only one is needed in erase(group))
