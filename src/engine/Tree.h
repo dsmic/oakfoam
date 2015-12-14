@@ -137,6 +137,7 @@ class Tree
     
     /** Set the feature gamma value for this node. */
     void setFeatureGamma(float g);
+    void setFeatureGammaWeak(float g) {gamma_weak=g;};
     void setFeatureGammaLocalPart(float g) {gamma_local_part=g;};
     void setStonesAround(float g);
     int getStonesAround() {return stones_around;};
@@ -411,6 +412,7 @@ class Tree
     unsigned int prunedchildren;
     unsigned int unprunedchildren;
     float gamma,childrentotalgamma,maxchildgamma,gamma_local_part,childrenlogtotalchildgamma;
+    float gamma_weak;
     float stones_around;
     float lastunprune,unprunenextchildat;
     float unprunebase;
@@ -445,7 +447,7 @@ class Tree
 
     MoveCirc *movecirc;
     EqMoves *eq_moves;
-    float *CNNresults;
+    float *CNNresults,*CNNresults_weak;
 };
 
 class MoveCirc

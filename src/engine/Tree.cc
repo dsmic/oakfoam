@@ -50,6 +50,7 @@ Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p, int a_pos
   pruned=false;
   prunedchildren=0;
   gamma=0;
+  gamma_weak=0;
   gamma_local_part=0;
   stones_around=0;
   childrentotalgamma=0;
@@ -102,6 +103,7 @@ Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p, int a_pos
   cnn_territory_done=0;
   cnn_territory_wr=-1;
   CNNresults=NULL;
+  CNNresults_weak=NULL;
 }
 
 Tree::~Tree()
@@ -117,6 +119,8 @@ Tree::~Tree()
   if (movecirc!=NULL) delete movecirc;
   if (CNNresults!=NULL)
     delete[] CNNresults;
+  if (CNNresults_weak!=NULL)
+    delete[] CNNresults_weak;
 }
 
 void Tree::addChild(Tree *node)
@@ -1398,6 +1402,16 @@ float Tree::getTreeResultsUnpruneFactor() const
 
 float Tree::getUnPruneFactor(float *moveValues,float mean, int num, float prob_local) const
 {
+  if (params->cnn_weak_gamma>0) {
+    //at the moment this disables all other handling!!! should only be used with pure CNN gammas....
+    Tree *tmp=this->getParent();
+    while (!tmp->isRoot())
+      tmp=tmp->getParent();
+    double root_playouts=tmp->getPlayouts();
+    if (playouts/root_playouts<params->cnn_weak_gamma) 
+      return gamma_weak;
+    return gamma;
+  }
   float local_part=1;
   if (params->test_p23 > 0 && prob_local > 0)
     local_part=(gamma_local_part-1.0)*(1.0-pow(prob_local,params->test_p23))+1.0;
@@ -2088,6 +2102,10 @@ bool Tree::expandLeaf(Worker::Settings *settings, int expand_num)
       CNNresults=new float[size*size];
       params->engine->addExpandStats(expand_num);
       params->engine->getCNN(startboard,col,CNNresults);
+      if (params->cnn_weak_gamma>0) {
+        CNNresults_weak=new float[size*size];
+        params->engine->getCNN(startboard,col,CNNresults_weak);
+      }
       if (params->test_p116>0) {
         float *CNNresults_other=new float[size*size];
         params->engine->getCNN(startboard,Go::otherColor(col),CNNresults_other);
@@ -2129,6 +2147,7 @@ bool Tree::expandLeaf(Worker::Settings *settings, int expand_num)
           pattcirc_for_move = new Pattern::Circular(circdict,startboard,(*iter)->getMove().getPosition(),PATTERN_CIRC_MAXSIZE);
         }
         float gammal=params->engine->getFeatures()->getMoveGamma(startboard,cfglastdist,cfgsecondlastdist,graphs,(*iter)->getMove(),true,true,&gamma_local_part,pattcirc_for_move,cfgaroundposdist);
+        float gammal2=0;
         if (params->test_p100>0) {
           if ( (*iter)->getMove().isNormal()) {
             int p=(*iter)->getMove().getPosition();
@@ -2136,10 +2155,15 @@ bool Tree::expandLeaf(Worker::Settings *settings, int expand_num)
             int y=Go::Position::pos2y(p,size);
             //fprintf(stderr,"%d %d %f\n",x,y,CNNresults[size*x+y]);
             gammal=((gammal-1.0)*params->test_p102+1.0)*(CNNresults[size*x+y]*params->test_p100+params->test_p101);
+            if (params->cnn_weak_gamma>0) gammal2=CNNresults_weak[size*x+y];
           }
-          else gammal=params->CNN_pass_probability;
+          else {
+            gammal=params->CNN_pass_probability;
+            if (params->cnn_weak_gamma>0) gammal2=params->CNN_pass_probability;
+          }            
         }
         (*iter)->setFeatureGamma(gammal);
+        (*iter)->setFeatureGammaWeak(gammal2);
         (*iter)->setFeatureGammaLocalPart(gamma_local_part);
         if (around_pos>=0)
           (*iter)->around_pos=around_pos;

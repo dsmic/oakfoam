@@ -480,6 +480,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("other","cnn_data",&(params->CNN_data),0.0);
   params->addParameter("other","cnn_pass_probability",&(params->CNN_pass_probability),0.05);
   params->addParameter("other","cnn_data_playouts",&(params->CNN_data_playouts),0);
+  params->addParameter("other","cnn_weak_gamma",&(params->cnn_weak_gamma),0);
   
   params->addParameter("other","auto_save_sgf",&(params->auto_save_sgf),false);
   params->addParameter("other","auto_save_sgf_prefix",&(params->auto_save_sgf_prefix),"");
@@ -3873,7 +3874,8 @@ void Engine::gtpShowProbabilityCNN(void *instance, Gtp::Engine* gtpe, Gtp::Comma
   {
     for (int x=0;x<me->boardsize;x++)
     {
-      float black=result[bsize*x+y];
+      float black=1.0/log(result[bsize*x+y]);
+      if (black > -0.2) black=0;
       gtpe->getOutput()->printf("%.2f ",black);
     }
     gtpe->getOutput()->printf("\n");
