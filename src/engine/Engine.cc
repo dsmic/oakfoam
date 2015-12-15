@@ -26,7 +26,7 @@
 #ifdef HAVE_CAFFE
 #define num_nets 2
 Net<float> *caffe_test_net[num_nets];
-int caffe_test_net_input_dim;
+int caffe_test_net_input_dim[num_nets];
 Net<float> *caffe_area_net;
 #endif		
 
@@ -657,13 +657,13 @@ void Engine::getCNN(Go::Board *board,Go::Color col, float result[], int net_num)
   int size=board->getSize();
 	float *data;
   //board->calcSlowLibertyGroups();
-	data= new float[caffe_test_net_input_dim*size*size];
+	data= new float[caffe_test_net_input_dim[net_num]*size*size];
 	//fprintf(stderr,"2\n");
 	if (col==Go::BLACK) {
 	  for (int j=0;j<size;j++)
 	    for (int k=0;k<size;k++)
 		  {
-        for (int l=0;l<caffe_test_net_input_dim;l++) data[l*size*size+size*j+k]=0;
+        for (int l=0;l<caffe_test_net_input_dim[net_num];l++) data[l*size*size+size*j+k]=0;
         //fprintf(stderr,"%d %d %d\n",i,j,k);
         int pos=Go::Position::xy2pos(j,k,size);
         int libs=0;
@@ -689,7 +689,7 @@ void Engine::getCNN(Go::Board *board,Go::Color col, float result[], int net_num)
 	  for (int j=0;j<size;j++)
 	    for (int k=0;k<size;k++)
 		  {//fprintf(stderr,"%d %d %d\n",i,j,k);
-        for (int l=0;l<caffe_test_net_input_dim;l++) data[l*size*size+size*j+k]=0;
+        for (int l=0;l<caffe_test_net_input_dim[net_num];l++) data[l*size*size+size*j+k]=0;
         //fprintf(stderr,"%d %d %d\n",i,j,k);
         int pos=Go::Position::xy2pos(j,k,size);
         int libs=0;
@@ -711,7 +711,7 @@ void Engine::getCNN(Go::Board *board,Go::Color col, float result[], int net_num)
 			  }
     }
 	}
-if (caffe_test_net_input_dim > 9) {
+if (caffe_test_net_input_dim[net_num] > 9) {
   if (board->getLastMove().isNormal()) {
     int j=Go::Position::pos2x(board->getLastMove().getPosition(),size);
     int k=Go::Position::pos2y(board->getLastMove().getPosition(),size);
@@ -735,7 +735,7 @@ if (caffe_test_net_input_dim > 9) {
 }
     
 
-  Blob<float> *b=new Blob<float>(1,caffe_test_net_input_dim,size,size);
+  Blob<float> *b=new Blob<float>(1,caffe_test_net_input_dim[net_num],size,size);
   b->set_cpu_data(data);
   vector<Blob<float>*> bottom;
   bottom.push_back(b); 
@@ -2825,8 +2825,8 @@ void Engine::gtpLoadCNNp(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     fprintf(stderr,"ok, created net\n");
     caffe_test_net[net_num]->CopyTrainedLayersFrom(filename_parameters);
     int t2=Caffe::mode();
-    caffe_test_net_input_dim=caffe_test_net[net_num]->input_blobs()[0]->shape()[1];
-    fprintf(stderr,"!!!!!!!!!!!!!!!!!!!!!!!! %d shape %d\n",t2,caffe_test_net_input_dim);
+    caffe_test_net_input_dim[net_num]=caffe_test_net[net_num]->input_blobs()[0]->shape()[1];
+    fprintf(stderr,"!!!!!!!!!!!!!!!!!!!!!!!! %d shape %d\n",t2,caffe_test_net_input_dim[net_num]);
     
 //    caffe_test_net->set_mode_gpu();
   }

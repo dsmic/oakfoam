@@ -1405,10 +1405,11 @@ float Tree::getUnPruneFactor(float *moveValues,float mean, int num, float prob_l
   if (params->cnn_weak_gamma>0) {
     //at the moment this disables all other handling!!! should only be used with pure CNN gammas....
     Tree *tmp=this->getParent();
+    double parent_playouts=tmp->getPlayouts();
     while (!tmp->isRoot())
       tmp=tmp->getParent();
     double root_playouts=tmp->getPlayouts();
-    if (playouts/root_playouts<params->cnn_weak_gamma) 
+    if (parent_playouts/root_playouts < params->cnn_weak_gamma) 
       return gamma_weak;
     return gamma;
   }
