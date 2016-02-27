@@ -1055,18 +1055,9 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                       }
                       else if (board->getColor(q)==col) {
                         Go::Group *checkgroup=board->getGroup(q);
-                        if (usedgroupself!=checkgroup && checkgroup->numRealLibs ()>1) {
-                          libs+=checkgroup->numRealLibs()-1;
+                        if (usedgroupself!=checkgroup && checkgroup->numRealLibs ()==1) {
+                          libs+=1;
                           usedgroupself=checkgroup;
-                        }
-                        if (checkgroup->numRealLibs()>1)                        
-                          libsother=2; //no selfatari
-                        if (checkgroup->numRealLibs ()==1) {
-                          int newsinglelibpos=checkgroup->getOtherOneOfTwoLiberties (board,q);
-                          if (newsinglelibpos!=singlelibposother) {
-                            singlelibposother=newsinglelibpos;
-                            libsother++;
-                          }
                         }
                       }
                     }//);
@@ -1106,25 +1097,18 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                       }
                       else if (board->getColor(q)==col) {
                         Go::Group *checkgroup=board->getGroup(q);
-                        if (usedgroupself!=checkgroup && checkgroup->numRealLibs ()>1) {
-                          libs+=checkgroup->numRealLibs()-1;
+                        if (usedgroupself!=checkgroup && checkgroup->numRealLibs ()==1) {
+                          libs+=1;
                           usedgroupself=checkgroup;
-                        }
-                        if (checkgroup->numRealLibs()>1)                        
-                          libsother=2; //no selfatari
-                        if (checkgroup->numRealLibs ()==1) {
-                          int newsinglelibpos=checkgroup->getOtherOneOfTwoLiberties (board,q);
-                          if (newsinglelibpos!=singlelibposother) {
-                            singlelibposother=newsinglelibpos;
-                            libsother++;
-                          }
                         }
                       }
                     }//);
                     if (libs>1) b_is_extention=true;
                     if (libsother<1) b_is_selfatari=true;
-                    if (!b_is_extention && !a_is_selfatari) LOCAL_FEATURE_POSITION(a,params->csstyle_2libcapture,7);
-                    if (!a_is_extention && !b_is_selfatari) LOCAL_FEATURE_POSITION(b,params->csstyle_2libcapture,7);
+                    //if (!b_is_extention && !a_is_selfatari) LOCAL_FEATURE_POSITION(a,params->csstyle_2libcapture,7);
+                    //if (!a_is_extention && !b_is_selfatari) LOCAL_FEATURE_POSITION(b,params->csstyle_2libcapture,7);
+                    if (!b_is_extention) LOCAL_FEATURE_POSITION(a,params->csstyle_2libcapture,7);
+                    if (!a_is_extention) LOCAL_FEATURE_POSITION(b,params->csstyle_2libcapture,7);
                   };
                 iter++;
                 }
@@ -1459,7 +1443,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     //fprintf(stderr,"%f\n",gamma_sum);
     //int max_num=size*size/5;  //this should make sure, that all moves with not used here have a probability of 1/5 to be seen
 
-    float min_gamma=1.0+rand->getRandomReal();
+    float min_gamma=params->csstyle_pattern_min_gamma_sort; //+rand->getRandomReal();
     int pick_num=10;
 
     std::vector<std::pair<float,int>> sorted_pos;
@@ -2836,7 +2820,8 @@ bool Playout::isBadMove(Worker::Settings *settings, Go::Board *board, Go::Color 
       || (lbpr_p > 0.0 && (passes>1 || rand->getRandomReal() < lbpr_p) && (board->getLastMove().isPass() && this->isBadPassAnswer(col,pos)))
       || (lbm_p > 0.0 && (rand->getRandomReal() < lbm_p) && this->hasLBM (col,pos)));
 
-  
+  if (!isBad && params->csstyle_bad_move_reduce2libs)
+    isBad=board->reduceTwoLibs(Go::Move(col,pos));
    if (params->debug_on && critarray)
   {
     if (pos==22||pos==11)

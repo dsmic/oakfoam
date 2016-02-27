@@ -743,6 +743,7 @@ namespace Go
        */
       inline int getAtariPosition() const { if (this->inAtari()) return *all_liberties.begin(); else return -1; };
       inline bool get2libPositions(int &a, int &b) const { if (this->numRealLibs()==2) {a=*all_liberties.begin(); b=*(++all_liberties.begin()); return true;} else return false; };
+      inline bool get3libPositions(int &a, int &b, int &c) const { if (this->numRealLibs()==3) {a=*all_liberties.begin(); b=*(++all_liberties.begin());c=*(++(++all_liberties.begin())); return true;} else return false; };
       //inline int getAtariPositionNotCompleted() const { if (this->inAtariNotCompleted()) return libpossum/pseudoliberties; else return -1; };
       /** Add the orthogonally adjacent empty pseudo liberties. */
       inline void addTouchingEmpties(Go::Board *);
@@ -868,6 +869,8 @@ namespace Go
       Go::Move getSecondLastMove() const { return secondlastmove; };
       Go::Move getThirdLastMove() const { return thirdlastmove; };
       Go::Move getForthLastMove() const { return forthlastmove; };
+      Go::Move getFifthLastMove() const { return fifthlastmove; };
+      Go::Move getSixLastMove() const { return sixlastmove; };
       /** Get the number of prisoners for a given color. */
       int getStoneCapturesOf(Go::Color col) const { return (col==Go::BLACK?blackcaptures:whitecaptures); };
       /** Reset the number of prisoners.
@@ -1016,6 +1019,33 @@ namespace Go
       bool isExtension2lib(Go::Move move, bool checkother=true) const;
       bool isApproach(Go::Move move, int other[4]) const;
       /** Determine is the given move is a self-atari. */
+
+      bool reduceTwoLibs(Go::Move move,int groupsize=4) { 
+        Go::Color col=move.getColor();
+        int pos=move.getPosition();
+        if (this->touchingEmpty(pos)>1 || this->isCapture(move))
+          return false;
+        foreach_adjacent_debug(pos,p) { //,{
+          if (this->inGroup(p))
+           {
+            Go::Group *group=this->getGroup(p);
+            if (group->numOfStones()<=groupsize)
+               break;
+            int a,b,c;
+            if (group->get3libPositions (a,b,c)) {
+              int num_val_moves=0;
+              if (a==p || validMoveCheck(Go::otherColor(col),a))
+                  num_val_moves++;
+              if (b==p || validMoveCheck(Go::otherColor(col),b))
+                  num_val_moves++;
+              if (c==p || validMoveCheck(Go::otherColor(col),c))
+                  num_val_moves++;
+              if (num_val_moves>2) return true;
+            }
+           }
+        }
+        return false;
+      }
       inline bool isSelfAtari(Go::Move move) const {return this->isSelfAtariOfSize(move,0);};
       /** Determine is the given move is a self-atari of a group of a minimum size. */
       inline bool isSelfAtariOfSize(Go::Move move, int minsize=0, bool complex=false) const
@@ -1268,7 +1298,7 @@ namespace Go
       Go::Color nexttomove;
       int simpleko;
       int wassimpleko;
-      Go::Move lastmove,secondlastmove,thirdlastmove,forthlastmove;
+      Go::Move lastmove,secondlastmove,thirdlastmove,forthlastmove,fifthlastmove,sixlastmove;
       bool symmetryupdated;
       Go::Board::Symmetry currentsymmetry;
       int blackvalidmovecount,whitevalidmovecount;

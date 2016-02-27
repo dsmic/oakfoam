@@ -28,6 +28,8 @@
 Net<float> *caffe_test_net[num_nets];
 int caffe_test_net_input_dim[num_nets];
 Net<float> *caffe_area_net;
+bool disable_last_move_from_cnn;
+bool double_second_last_move_from_cnn;
 #endif		
 
 Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
@@ -70,6 +72,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   boardsize=9;
   params->board_size=boardsize;
   currentboard=new Go::Board(boardsize); //may be to early use of params, reload later with clear board?
+  for (int i=0;i<historyboards_num;i++)
+    historyboards[i]=NULL;
   komi=7.5;
   komi_handicap=0;
   recalc_dynkomi=0;
@@ -312,6 +316,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","csstyle_adaptiveplayouts_alpha",&(params->csstyle_adaptiveplayouts_alpha),0.01);
   params->addParameter("playout","csstyle_adaptiveplayouts_lambda",&(params->csstyle_adaptiveplayouts_lambda),0.001);
   params->addParameter("playout","csstyle_patterngammasnothing",&(params->csstyle_patterngammasnothing),1.0);
+  params->addParameter("playout","csstyle_pattern_min_gamma_sort",&(params->csstyle_pattern_min_gamma_sort),1.0);
+  params->addParameter("playout","csstyle_bad_move_reduce2libs",&(params->csstyle_bad_move_reduce2libs),true);
   params->addParameter("playout","csstyle_adaptiveplayouts_only_played",&(params->csstyle_adaptiveplayouts_only_played),false);
   params->addParameter("playout","csstyle_01",&(params->csstyle_01),0.0);
   params->addParameter("playout","csstyle_02",&(params->csstyle_02),0.0);
@@ -372,6 +378,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("tree","uct_length_bonus",&(params->uct_length_bonus),UCT_LENGTH_BONUS);
   params->addParameter("tree","uct_progressive_bias_enabled",&(params->uct_progressive_bias_enabled),UCT_PROGRESSIVE_BIAS_ENABLED);
   params->addParameter("tree","uct_progressive_bias_h",&(params->uct_progressive_bias_h),UCT_PROGRESSIVE_BIAS_H);
+  params->addParameter("tree","uct_progressive_bias_log_add",&(params->uct_progressive_bias_log_add),0.0);
   params->addParameter("tree","uct_progressive_bias_scaled",&(params->uct_progressive_bias_scaled),UCT_PROGRESSIVE_BIAS_SCALED);
   params->addParameter("tree","uct_progressive_bias_relative",&(params->uct_progressive_bias_relative),UCT_PROGRESSIVE_BIAS_RELATIVE);
   params->addParameter("tree","uct_progressive_bias_moves",&(params->uct_progressive_bias_moves),UCT_PROGRESSIVE_BIAS_MOVES);
@@ -462,6 +469,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("other","outputsgf_maxchildren",&(params->outputsgf_maxchildren),OUTPUTSGF_MAXCHILDREN);
   
   params->addParameter("other","debug",&(params->debug_on),DEBUG_ON);
+  params->addParameter("other","play_n_passes_first",&(params->play_n_passes_first),0);
   
   params->addParameter("other","interrupts_enabled",&(params->interrupts_enabled),INTERRUPTS_ENABLED,&Engine::updateParameterWrapper,this);
   params->addParameter("other","undo_enable",&(params->undo_enable),true);
@@ -478,9 +486,11 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("other","features_circ_list",&(params->features_circ_list),0.0);
   params->addParameter("other","features_circ_list_size",&(params->features_circ_list_size),0);
   params->addParameter("other","cnn_data",&(params->CNN_data),0.0);
+  params->addParameter("other","cnn_data_predict_future",&(params->CNN_data_predict_future),0);
   params->addParameter("other","cnn_pass_probability",&(params->CNN_pass_probability),0.05);
   params->addParameter("other","cnn_data_playouts",&(params->CNN_data_playouts),0);
   params->addParameter("other","cnn_weak_gamma",&(params->cnn_weak_gamma),0);
+  params->addParameter("other","cnn_lastmove_decay",&(params->cnn_lastmove_decay),0);
   
   params->addParameter("other","auto_save_sgf",&(params->auto_save_sgf),false);
   params->addParameter("other","auto_save_sgf_prefix",&(params->auto_save_sgf_prefix),"");
@@ -646,7 +656,7 @@ Engine::~Engine()
 #endif
 }
 
-void Engine::getCNN(Go::Board *board,Go::Color col, float result[], int net_num)
+void Engine::getCNN(Go::Board *board,Go::Color col, float result[], int net_num, float *v)
 {
 #ifdef HAVE_CAFFE
 	//if (board->getSize()!=19) {
@@ -683,7 +693,7 @@ void Engine::getCNN(Go::Board *board,Go::Color col, float result[], int net_num)
 	      {
 			    data[8*size*size + size*j + k]=1.0;
 			  }
-	    }
+      }
 	}
 	if (col==Go::WHITE) {
 	  for (int j=0;j<size;j++)
@@ -711,26 +721,142 @@ void Engine::getCNN(Go::Board *board,Go::Color col, float result[], int net_num)
 			  }
     }
 	}
-if (caffe_test_net_input_dim[net_num] > 9) {
-  if (board->getLastMove().isNormal()) {
-    int j=Go::Position::pos2x(board->getLastMove().getPosition(),size);
-    int k=Go::Position::pos2y(board->getLastMove().getPosition(),size);
+if (caffe_test_net_input_dim[net_num] == 20) {
+int komiplane=-1;
+if (col==Go::BLACK) {
+  if (komi==0.5) komiplane=0;
+  if (komi==6.5) komiplane=1;
+  if (komi==7.5) komiplane=2;
+}
+if (col==Go::WHITE) {
+  if (komi==0.5) komiplane=3;
+  if (komi==6.5) komiplane=4;
+  if (komi==7.5) komiplane=5;
+}
+if (komiplane>=0) {
+  for (int j=0;j<size;j++)
+    for (int k=0;k<size;k++) {
+      data[(14+komiplane)*size*size+size*j+k]=1.0;
+    }
+}
+}
+
+if (caffe_test_net_input_dim[net_num] == 13 ) {
+  if (double_second_last_move_from_cnn) {
+  if (board->getSecondLastMove().isNormal()) {
+    int j=Go::Position::pos2x(board->getSecondLastMove().getPosition(),size);
+    int k=Go::Position::pos2y(board->getSecondLastMove().getPosition(),size);
     data[9*size*size+size*j+k]=1.0;
+  }
+  }
+  else 
+  {
+    if (!disable_last_move_from_cnn) {
+      if (board->getLastMove().isNormal()) {
+        int j=Go::Position::pos2x(board->getLastMove().getPosition(),size);
+        int k=Go::Position::pos2y(board->getLastMove().getPosition(),size);
+        data[9*size*size+size*j+k]=1.0;
+      }
+    }
   }
   if (board->getSecondLastMove().isNormal()) {
     int j=Go::Position::pos2x(board->getSecondLastMove().getPosition(),size);
     int k=Go::Position::pos2y(board->getSecondLastMove().getPosition(),size);
-    data[10*size*size+size*j+k]=1.0;
+    if (params->cnn_lastmove_decay>0)
+      data[10*size*size+size*j+k]=exp(-0.0*params->cnn_lastmove_decay);
+    else
+      data[10*size*size+size*j+k]=1.0;
   }
-  if (board->getThirdLastMove().isNormal()) {
-    int j=Go::Position::pos2x(board->getThirdLastMove().getPosition(),size);
-    int k=Go::Position::pos2y(board->getThirdLastMove().getPosition(),size);
-    data[11*size*size+size*j+k]=1.0;
+  if (params->cnn_lastmove_decay>0) {
+    if (board->getThirdLastMove().isNormal()) {
+      int j=Go::Position::pos2x(board->getThirdLastMove().getPosition(),size);
+      int k=Go::Position::pos2y(board->getThirdLastMove().getPosition(),size);
+      data[9*size*size+size*j+k]=exp(-2.0*params->cnn_lastmove_decay);
+    }
+    if (board->getForthLastMove().isNormal()) {
+      int j=Go::Position::pos2x(board->getForthLastMove().getPosition(),size);
+      int k=Go::Position::pos2y(board->getForthLastMove().getPosition(),size);
+      data[10*size*size+size*j+k]=exp(-2.0*params->cnn_lastmove_decay);
+    }
+    if (board->getFifthLastMove().isNormal()) {
+      int j=Go::Position::pos2x(board->getFifthLastMove().getPosition(),size);
+      int k=Go::Position::pos2y(board->getFifthLastMove().getPosition(),size);
+      data[9*size*size+size*j+k]=exp(-4.0*params->cnn_lastmove_decay);
+    }
+    if (board->getSixLastMove().isNormal()) {
+      int j=Go::Position::pos2x(board->getSixLastMove().getPosition(),size);
+      int k=Go::Position::pos2y(board->getSixLastMove().getPosition(),size);
+      data[10*size*size+size*j+k]=exp(-4.0*params->cnn_lastmove_decay);
+    }
   }
-  if (board->getForthLastMove().isNormal()) {
-    int j=Go::Position::pos2x(board->getForthLastMove().getPosition(),size);
-    int k=Go::Position::pos2y(board->getForthLastMove().getPosition(),size);
-    data[12*size*size+size*j+k]=1.0;
+  else {
+    if (board->getThirdLastMove().isNormal()) {
+      int j=Go::Position::pos2x(board->getThirdLastMove().getPosition(),size);
+      int k=Go::Position::pos2y(board->getThirdLastMove().getPosition(),size);
+      data[11*size*size+size*j+k]=1.0;
+    }
+    if (board->getForthLastMove().isNormal()) {
+      int j=Go::Position::pos2x(board->getForthLastMove().getPosition(),size);
+      int k=Go::Position::pos2y(board->getForthLastMove().getPosition(),size);
+      data[12*size*size+size*j+k]=1.0;
+    }
+  }
+}
+else if (caffe_test_net_input_dim[net_num] == 14 || caffe_test_net_input_dim[net_num] == 20) {
+  if (double_second_last_move_from_cnn) {
+   fprintf(stderr," disable not supported!!\n");
+  }
+  if (board->getSimpleKo()>=0) {
+    int j=Go::Position::pos2x(board->getSimpleKo(),size);
+    int k=Go::Position::pos2y(board->getSimpleKo(),size);
+    data[9*size*size+size*j+k]=1.0;
+  }
+  if (board->getLastMove().isNormal()) {
+        int j=Go::Position::pos2x(board->getLastMove().getPosition(),size);
+        int k=Go::Position::pos2y(board->getLastMove().getPosition(),size);
+        data[10*size*size+size*j+k]=1.0;
+      }
+  if (board->getSecondLastMove().isNormal()) {
+    int j=Go::Position::pos2x(board->getSecondLastMove().getPosition(),size);
+    int k=Go::Position::pos2y(board->getSecondLastMove().getPosition(),size);
+    if (params->cnn_lastmove_decay>0)
+      data[11*size*size+size*j+k]=exp(-0.0*params->cnn_lastmove_decay);
+    else
+      data[11*size*size+size*j+k]=1.0;
+  }
+  if (params->cnn_lastmove_decay>0) {
+    if (board->getThirdLastMove().isNormal()) {
+      int j=Go::Position::pos2x(board->getThirdLastMove().getPosition(),size);
+      int k=Go::Position::pos2y(board->getThirdLastMove().getPosition(),size);
+      data[10*size*size+size*j+k]=exp(-2.0*params->cnn_lastmove_decay);
+    }
+    if (board->getForthLastMove().isNormal()) {
+      int j=Go::Position::pos2x(board->getForthLastMove().getPosition(),size);
+      int k=Go::Position::pos2y(board->getForthLastMove().getPosition(),size);
+      data[11*size*size+size*j+k]=exp(-2.0*params->cnn_lastmove_decay);
+    }
+    if (board->getFifthLastMove().isNormal()) {
+      int j=Go::Position::pos2x(board->getFifthLastMove().getPosition(),size);
+      int k=Go::Position::pos2y(board->getFifthLastMove().getPosition(),size);
+      data[10*size*size+size*j+k]=exp(-4.0*params->cnn_lastmove_decay);
+    }
+    if (board->getSixLastMove().isNormal()) {
+      int j=Go::Position::pos2x(board->getSixLastMove().getPosition(),size);
+      int k=Go::Position::pos2y(board->getSixLastMove().getPosition(),size);
+      data[11*size*size+size*j+k]=exp(-4.0*params->cnn_lastmove_decay);
+    }
+  }
+  else {
+    if (board->getThirdLastMove().isNormal()) {
+      int j=Go::Position::pos2x(board->getThirdLastMove().getPosition(),size);
+      int k=Go::Position::pos2y(board->getThirdLastMove().getPosition(),size);
+      data[12*size*size+size*j+k]=1.0;
+    }
+    if (board->getForthLastMove().isNormal()) {
+      int j=Go::Position::pos2x(board->getForthLastMove().getPosition(),size);
+      int k=Go::Position::pos2y(board->getForthLastMove().getPosition(),size);
+      data[13*size*size+size*j+k]=1.0;
+    }
   }
 }
     
@@ -761,6 +887,9 @@ if (caffe_test_net_input_dim[net_num] > 9) {
 	  result[i]=rr[0]->cpu_data()[i];
     if (result[i]<0.00001) result[i]=0.00001;
   }
+float value=rr[1]->cpu_data()[0];
+//fprintf(stderr,"value cnn %f\n",value);
+if (v!=NULL) *v=value;
   delete[] data;
   delete b;
 #else
@@ -2816,6 +2945,30 @@ void Engine::gtpLoadCNNp(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
   int net_num=0;
   if (cmd->numArgs()==3)
     net_num=cmd->getIntArg(2);
+  disable_last_move_from_cnn=false;
+  double_second_last_move_from_cnn=false;
+  if (net_num==2) {
+    fprintf(stderr,"disabling last move for net 0!!!\n");
+    net_num=0;
+    disable_last_move_from_cnn=true;
+  }
+  if (net_num==3) {
+    fprintf(stderr,"enable double second last move for net 0!!!\n");
+    net_num=0;
+    double_second_last_move_from_cnn=true;
+  }
+  caffe_test_net_input_dim[0]=13; //since cudnn v4 supported caffe this did not work :(
+
+  if (net_num==4) {
+    fprintf(stderr,"enable ko and 4 last moves for net 0!!!\n");
+    net_num=0;
+    caffe_test_net_input_dim[0]=14;
+  }
+  if (net_num==5) {
+    fprintf(stderr,"enable ko and 4 last moves and komiplanes for net 0!!!\n");
+    net_num=0;
+    caffe_test_net_input_dim[0]=20;
+  }
   bool success=true;
   //the library does not really seem to throw exceptions, but just exit :(
   try {
@@ -2826,7 +2979,8 @@ void Engine::gtpLoadCNNp(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     caffe_test_net[net_num]->CopyTrainedLayersFrom(filename_parameters);
     int t2=Caffe::mode();
     caffe_test_net_input_dim[net_num]=caffe_test_net[net_num]->input_blobs()[0]->shape()[1];
-    fprintf(stderr,"!!!!!!!!!!!!!!!!!!!!!!!! %d shape %d\n",t2,caffe_test_net_input_dim[net_num]);
+    caffe_test_net_input_dim[1]=9; //since cudnn v4 supported caffe this did not work :(
+    fprintf(stderr,"Attention, fixed coded as caffe support broken?!   --->>> !!!!!!!!!!!!!!!!!!!!!!!! %d shape %d\n",t2,caffe_test_net_input_dim[net_num]);
     
 //    caffe_test_net->set_mode_gpu();
   }
@@ -3868,8 +4022,8 @@ void Engine::gtpShowProbabilityCNN(void *instance, Gtp::Engine* gtpe, Gtp::Comma
   //}
   int bsize=me->boardsize;
   float result[bsize*bsize];
-
-  me->getCNN(me->currentboard,(gtpcol==Gtp::BLACK)?Go::BLACK:Go::WHITE,result);
+  float value=-1;
+  me->getCNN(me->currentboard,(gtpcol==Gtp::BLACK)?Go::BLACK:Go::WHITE,result,0,&value);
   for (int y=me->boardsize-1;y>=0;y--)
   {
     for (int x=0;x<me->boardsize;x++)
@@ -3880,6 +4034,7 @@ void Engine::gtpShowProbabilityCNN(void *instance, Gtp::Engine* gtpe, Gtp::Comma
     }
     gtpe->getOutput()->printf("\n");
   }
+  fprintf(stderr,"value is %f\n",value);
   gtpe->getOutput()->endResponse(true);
 }
 
@@ -5022,6 +5177,12 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
   clearExpandStats();
   respondboard->scale(0.2);
 
+  if (params->play_n_passes_first>0) {
+    //for the MFGO1998 challange
+    *move=new Go::Move(col,Go::Move::PASS);
+    params->play_n_passes_first--;
+    return;
+  }
   if (params->book_use)
   {
     std::list<Go::Move> bookmoves=book->getMoves(boardsize,movehistory);
@@ -5122,6 +5283,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
       gtpe->getOutput()->printfDebug("SOLVED! found 100%% sure result after %d plts!\n",totalplayouts);
 
     int num_unpruned=movetree->getNumUnprunedChildren();
+    int sko=movetree->superKoChildViolation(); 
     std::ostringstream ssun;
     if (params->mm_learn_enabled)
       learnFromTree (currentboard,movetree,&ssun,1);
@@ -5270,7 +5432,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
       */
     }
     ss << " fsd:"<<std::setprecision(2)<<scoresd;
-    ss << " un:"<<best_unpruned<<"/"<<num_unpruned;
+    ss << " un:"<<best_unpruned<<"/"<<num_unpruned<<"(-"<<sko<<")";
     ss << " bs:"<<bestsame;
 
     
@@ -5545,81 +5707,103 @@ void Engine::makeMove(Go::Move move)
     //output for the CNN training, testing
     //one line per Position, all included in the board part, additionally the move in readable form
     // a position 0: empty 1: black stone 2: white stone 3: black next move 4: white next move
-    
-    int size=currentboard->getSize ();
-    currentboard->calcSlowLibertyGroups();
-    for (int x=0;x<size;x++) {
-      for (int y=0;y<size;y++) {
-        Go::Color c=currentboard->getColor(Go::Position::xy2pos(x,y,size));
-        switch (c) {
-          case Go::BLACK:
-            gtpe->getOutput()->printfDebug("1,");
-            break;
-          case Go::WHITE:
-            gtpe->getOutput()->printfDebug("2,");
-            break;
-          default:
-            int p=move.getPosition();
-            if (Go::Position::pos2x(p,size)==x && Go::Position::pos2y(p,size)==y)
-            {
-              gtpe->getOutput()->printfDebug("3,");
-            }
-            else
-              gtpe->getOutput()->printfDebug("0,");
+    Go::Board * useboard=currentboard;
+    //gtpe->getOutput()->printfDebug("test");
+    if (params->CNN_data_predict_future>0) {
+      useboard=historyboards[params->CNN_data_predict_future-1];
+    //  gtpe->getOutput()->printfDebug("_in_");
+    }
+    if (useboard!=NULL) {  //CNN_data_playouts not compatible with historyboards at the moment 
+      int size=useboard->getSize ();
+      useboard->calcSlowLibertyGroups();
+      for (int x=0;x<size;x++) {
+        for (int y=0;y<size;y++) {
+          Go::Color c=useboard->getColor(Go::Position::xy2pos(x,y,size));
+          switch (c) {
+            case Go::BLACK:
+              gtpe->getOutput()->printfDebug("1,");
+              break;
+            case Go::WHITE:
+              gtpe->getOutput()->printfDebug("2,");
+              break;
+            default:
+              int p=move.getPosition();
+              if (Go::Position::pos2x(p,size)==x && Go::Position::pos2y(p,size)==y)
+              {
+                gtpe->getOutput()->printfDebug("3,");
+              }
+              else
+                gtpe->getOutput()->printfDebug("0,");
+          }
         }
       }
-    }
-    for (int x=0;x<size;x++) {
-      for (int y=0;y<size;y++) {
-        int pos=Go::Position::xy2pos(x,y,size);
-        if (currentboard->inGroup(pos)) {
-          gtpe->getOutput()->printfDebug("%d,",currentboard->getGroup(pos)->real_libs);
+      for (int x=0;x<size;x++) {
+        for (int y=0;y<size;y++) {
+          int pos=Go::Position::xy2pos(x,y,size);
+          if (useboard->inGroup(pos)) {
+            gtpe->getOutput()->printfDebug("%d,",useboard->getGroup(pos)->real_libs);
+          }
+          else
+            gtpe->getOutput()->printfDebug("0,");
+        
         }
-        else
-          gtpe->getOutput()->printfDebug("0,");
+      }
+      for (int x=0;x<size;x++) {
+        for (int y=0;y<size;y++) {
+          int pos=Go::Position::xy2pos(x,y,size);
+          if (useboard->inGroup(pos)) {
+            gtpe->getOutput()->printfDebug("%d,",useboard->getGroup(pos)->numOfStones());
+          }
+          else
+            gtpe->getOutput()->printfDebug("0,");
+        }
+      }
+      int p1=move.getPosition();
+      int p2=currentboard->getLastMove().getPosition();
+      int p3=currentboard->getSecondLastMove().getPosition();
+      int p4=currentboard->getThirdLastMove().getPosition();
+      int p5=currentboard->getForthLastMove().getPosition();
+      int p6=currentboard->getFifthLastMove().getPosition();
+      int p7=currentboard->getSixLastMove().getPosition();
+      int sko=useboard->getSimpleKo();
       
-      }
-    }
-    for (int x=0;x<size;x++) {
-      for (int y=0;y<size;y++) {
-        int pos=Go::Position::xy2pos(x,y,size);
-        if (currentboard->inGroup(pos)) {
-          gtpe->getOutput()->printfDebug("%d,",currentboard->getGroup(pos)->numOfStones());
+        gtpe->getOutput()->printfDebug("%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",move.toString(size).c_str(),
+          Go::Position::pos2x(p1,size),Go::Position::pos2y(p1,size),
+          Go::Position::pos2x(p2,size),Go::Position::pos2y(p2,size),
+          Go::Position::pos2x(p3,size),Go::Position::pos2y(p3,size),
+          Go::Position::pos2x(p4,size),Go::Position::pos2y(p4,size),
+          Go::Position::pos2x(p5,size),Go::Position::pos2y(p5,size),
+          Go::Position::pos2x(p6,size),Go::Position::pos2y(p6,size),
+          Go::Position::pos2x(p7,size),Go::Position::pos2y(p7,size),
+          Go::Position::pos2x(sko,size),Go::Position::pos2y(sko,size)
+                                     );
+      if (params->CNN_data_playouts==0) 
+        gtpe->getOutput()->printfDebug("\n");
+      
+    /* //Test code to check, if the predictor does the same as the scripts
+       
+       float result[361];
+      getCNN(useboard,move.getColor(),result);
+      int dd=0;
+      gtpe->getOutput()->printfDebug("\n#",result[dd]);
+        
+      for (int x=0;x<size;x++) {
+        for (int y=0;y<size;y++) {
+          gtpe->getOutput()->printfDebug("%5.2f",result[dd]);
+          dd++;
         }
-        else
-          gtpe->getOutput()->printfDebug("0,");
+        gtpe->getOutput()->printfDebug("\n#");
       }
-    }
-    int p2=currentboard->getLastMove().getPosition();
-    int p3=currentboard->getSecondLastMove().getPosition();
-    int p4=currentboard->getThirdLastMove().getPosition();
-    int p5=currentboard->getForthLastMove().getPosition();
-    
-      gtpe->getOutput()->printfDebug("%s,%d,%d,%d,%d,%d,%d,%d,%d",move.toString(size).c_str(),
-        Go::Position::pos2x(p2,size),Go::Position::pos2y(p2,size),
-        Go::Position::pos2x(p3,size),Go::Position::pos2y(p3,size),
-        Go::Position::pos2x(p4,size),Go::Position::pos2y(p4,size),
-        Go::Position::pos2x(p5,size),Go::Position::pos2y(p5,size)
-                                   );
-    if (params->CNN_data_playouts==0) 
       gtpe->getOutput()->printfDebug("\n");
-    
-  /* //Test code to check, if the predictor does the same as the scripts
-     
-     float result[361];
-    getCNN(currentboard,move.getColor(),result);
-    int dd=0;
-    gtpe->getOutput()->printfDebug("\n#",result[dd]);
-      
-    for (int x=0;x<size;x++) {
-      for (int y=0;y<size;y++) {
-        gtpe->getOutput()->printfDebug("%5.2f",result[dd]);
-        dd++;
-      }
-      gtpe->getOutput()->printfDebug("\n#");
+      */
     }
-    gtpe->getOutput()->printfDebug("\n");
-    */
+    if (params->CNN_data_predict_future>0) {
+      if (historyboards[params->CNN_data_predict_future-1]!=NULL)
+        delete historyboards[params->CNN_data_predict_future-1];
+      for (int i=params->CNN_data_predict_future-1;i>0;i--)
+        historyboards[i]=historyboards[i-1];
+      historyboards[0]=currentboard->copy();
+    }
   }
   if (WITH_P(params->features_circ_list))
   {
@@ -6062,6 +6246,11 @@ void Engine::clearBoard()
   if (newsize)
     delete zobristtable;
   currentboard = new Go::Board(boardsize);
+  for (int i=0;i<historyboards_num;i++)
+  {
+    if (historyboards[i]!=NULL) delete historyboards[i];
+    historyboards[i]=NULL;
+  }
   movehistory = new std::list<Go::Move>();
   moveexplanations = new std::list<std::string>();
   hashtree=new Go::ZobristTree();
@@ -6933,7 +7122,7 @@ void Engine::doSlowUpdate()
             
             if (founddead)
             {
-              (*iter)->setPruned(false);
+              movetree->unprunefromchild(*iter); // (*iter)->setPruned(false);
               (*iter)->setProgressiveBiasBonus(params->surewin_touchdead_bonus);
             }
           }

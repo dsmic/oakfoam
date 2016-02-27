@@ -261,9 +261,9 @@ void Tree::addWin(int fscore, Tree *source)
     delete lock;
   this->passPlayoutUp(fscore,true,source);
   this->checkForUnPruning();
-  if (this->isPruned()) {
+  if (this->isPruned() && parent!=NULL) {
     fprintf(stderr,"updateing pruned child win %s\n",move.toString(params->board_size).c_str());
-    this->setPruned (false);
+    parent->unprunefromchild (this); //this->setPruned (false);
   }
 }
 
@@ -286,9 +286,9 @@ void Tree::addLose(int fscore, Tree *source)
     delete lock;
   this->passPlayoutUp(fscore,false,source);
   this->checkForUnPruning();
-  if (this->isPruned()) {
+  if (this->isPruned() && parent!=NULL) {
     fprintf(stderr,"updateing pruned child loss %s\n",move.toString(params->board_size).c_str());
-    this->setPruned (false);
+    parent->unprunefromchild (this); //this->setPruned (false);
   }
 }
 
@@ -458,9 +458,9 @@ void Tree::addPartialResult(float win, float playout, bool invertwin, float deca
       parent->addPartialResult(decayfactor*(playout-win),decayfactor*playout,invertwin,decayfactor);
   }
   this->checkForUnPruning();
-  if (this->isPruned()) {
+  if (this->isPruned() && parent!=NULL) {
     fprintf(stderr,"updateing pruned child Partial %s\n",move.toString(params->board_size).c_str());
-    this->setPruned (false);
+    parent->unprunefromchild (this); //this->setPruned (false);
   }
 }
 
@@ -2384,6 +2384,29 @@ void Tree::updateRAVE(Go::Color wincol,Go::IntBoard *blacklist,Go::IntBoard *whi
 
 float Tree::getProgressiveBias() const
 {
+  if (params->uct_progressive_bias_log_add>0) {
+    float bias=0;
+    float gamma_use=gamma;
+    if (params->cnn_weak_gamma>0) {
+      //at the moment this disables all other handling!!! should only be used with pure CNN gammas....
+      Tree *tmp=getParent();
+      double parent_playouts=tmp->getPlayouts();
+      while (!tmp->isRoot())
+        tmp=tmp->getParent();
+      double root_playouts=tmp->getPlayouts();
+      if (parent_playouts/root_playouts < params->cnn_weak_gamma) 
+        gamma_use=gamma_weak;
+    }
+  
+    if (parent == NULL) return 0;
+    
+    float po=parent->getPlayouts();
+    if (gamma_use>0) bias=log(gamma_use)+params->uct_progressive_bias_log_add;
+    if (bias<0) bias=0;
+    bias*=params->uct_progressive_bias_h;
+    return (bias+biasbonus)/sqrt(po+1);
+  }
+    
   float bias=params->uct_progressive_bias_h*gamma;
   if (params->uct_progressive_bias_scaled>0.0 && !this->isRoot())
     bias/=parent->getChildrenTotalFeatureGamma();

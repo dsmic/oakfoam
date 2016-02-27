@@ -329,6 +329,8 @@ class Parameters
     float csstyle_adaptiveplayouts_lambda;
     bool csstyle_adaptiveplayouts_only_played;
     float csstyle_patterngammasnothing;
+    float csstyle_pattern_min_gamma_sort;
+    bool csstyle_bad_move_reduce2libs;
     float csstyle_01;
     float csstyle_02;
     float csstyle_03;
@@ -503,6 +505,7 @@ class Parameters
     /** Constant for progressive bias.
      * @see uct_progressive_bias_enabled
      */
+    float uct_progressive_bias_log_add;
     bool uct_progressive_bias_scaled;
     /** Constant for progressive bias.
      * @see uct_progressive_bias_enabled
@@ -705,6 +708,8 @@ class Parameters
     /** Whether to output debug info. */
     bool debug_on;
 
+    int play_n_passes_first;
+
     /** Is undo naively supported, or are undo commands ignored? */
     bool undo_enable;
     
@@ -740,9 +745,11 @@ class Parameters
     /** Probability that the circular patterns are listed after a move. */
     float features_circ_list;
     float CNN_data;
+    int CNN_data_predict_future; // predict the future moves to, thus take a old position in output
     int CNN_data_playouts;
     float CNN_pass_probability;
     float cnn_weak_gamma;
+    float cnn_lastmove_decay;
     /** Size of circular patterns that are listed after a move.
      * @see features_circ_list
      */

@@ -134,6 +134,7 @@ class Tree
     void unPruneNow();
     /** Determnie if this node has children that can be unpruned for progressive widening. */
     bool hasPrunedChildren() const { return (prunedchildren-superkochildrenviolations)>0; };
+    int superKoChildViolation() {return superkochildrenviolations;}
     
     /** Set the feature gamma value for this node. */
     void setFeatureGamma(float g);
@@ -339,6 +340,8 @@ class Tree
     void setUnprunedNum(int num) { unprunednum=num; };
     /** Get the number of unpruned children. */
     unsigned int getNumUnprunedChildren() const { return unprunedchildren; };
+    void unprunefromchild(Tree *child) {child->setPruned(false);child->setUnprunedNum(unprunedchildren-superkochildrenviolations+1);
+      unprunedchildren++;}
 
     #ifdef HAVE_MPI
       /** Get the difference between now and the last sync for MPI-shared stats. */

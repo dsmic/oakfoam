@@ -286,6 +286,8 @@ Go::Board::Board(int s)
   secondlastmove=Go::Move(Go::WHITE,Go::Move::PASS);
   thirdlastmove=Go::Move(Go::WHITE,Go::Move::PASS);
   forthlastmove=Go::Move(Go::WHITE,Go::Move::PASS);
+  fifthlastmove=Go::Move(Go::WHITE,Go::Move::PASS);
+  sixlastmove=Go::Move(Go::WHITE,Go::Move::PASS);
   
   blackvalidmoves=new Go::BitBoard(size);
   whitevalidmoves=new Go::BitBoard(size);
@@ -388,6 +390,8 @@ void Go::Board::copyOver(Go::Board *copyboard) const
   copyboard->secondlastmove=this->secondlastmove;
   copyboard->thirdlastmove=this->thirdlastmove;
   copyboard->forthlastmove=this->forthlastmove;
+  copyboard->fifthlastmove=this->fifthlastmove;
+  copyboard->sixlastmove=this->sixlastmove;
 
   copyboard->features=this->features;
   
@@ -736,6 +740,8 @@ void Go::Board::makeMove(Go::Move move, Gtp::Engine* gtpe)
       lastchanges->set(secondlastmove.getPosition());
     if (markchanges && !lastmove.isPass() && !lastmove.isResign())
       lastchanges->set(lastmove.getPosition());
+    sixlastmove=fifthlastmove;
+    fifthlastmove=forthlastmove;
     forthlastmove=thirdlastmove;
     thirdlastmove=secondlastmove;
     secondlastmove=lastmove;
@@ -766,6 +772,8 @@ void Go::Board::makeMove(Go::Move move, Gtp::Engine* gtpe)
     lastchanges->set(secondlastmove.getPosition());
   if (markchanges && !lastmove.isPass() && !lastmove.isResign())
     lastchanges->set(lastmove.getPosition());
+  sixlastmove=fifthlastmove;
+  fifthlastmove=forthlastmove;
   forthlastmove=thirdlastmove;
   thirdlastmove=secondlastmove;
   secondlastmove=lastmove;

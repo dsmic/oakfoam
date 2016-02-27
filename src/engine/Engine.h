@@ -394,10 +394,8 @@ class Engine
 
     void addpresetplayout(float p) {presetplayouts+=p; presetnum++;}
 
-	  void getCNN(Go::Board *board,Go::Color col, float result[],int net_num=0);
+	  void getCNN(Go::Board *board,Go::Color col, float result[],int net_num=0, float *v=NULL);
     float getCNNwr(Go::Board *board,Go::Color col);
-
-
     EqMoves  * addMoveCirc(MoveCirc *m, Tree *t)  
       { 
         lock_move_circ.lock();
@@ -461,6 +459,8 @@ class Engine
     Gtp::Engine *gtpe;
     std::string longname;
     Go::Board *currentboard;
+#define historyboards_num 2    
+    Go::Board *historyboards[historyboards_num];
     float komi;
     float komi_handicap;
     float recalc_dynkomi;
