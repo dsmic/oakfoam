@@ -241,6 +241,13 @@ float Tree::getRAVERatioOtherForPool() const
     return 0;
 }
 
+void Tree::addPriorValue(float v)
+{
+  wins+=v*params->cnn_preset_playouts;
+  playouts+=params->cnn_preset_playouts;
+  if (!this->isRoot ())
+    parent->addPriorValue (1.0-v);
+}
 void Tree::addWin(int fscore, Tree *source)
 {
   boost::mutex::scoped_lock *lock=(params->uct_lock_free?NULL:new boost::mutex::scoped_lock(updatemutex));
@@ -2102,10 +2109,14 @@ bool Tree::expandLeaf(Worker::Settings *settings, int expand_num)
     {
       CNNresults=new float[size*size];
       params->engine->addExpandStats(expand_num);
-      params->engine->getCNN(startboard,col,CNNresults);
+      float value=-1;
+      params->engine->getCNN(startboard,col,CNNresults,0,&value);
+      if (params->cnn_preset_playouts>0 && value>0) {
+        this->addPriorValue (1.0-value);
+      }
       if (params->cnn_weak_gamma>0) {
         CNNresults_weak=new float[size*size];
-        params->engine->getCNN(startboard,col,CNNresults_weak);
+        params->engine->getCNN(startboard,col,CNNresults_weak,1);
       }
       if (params->test_p116>0) {
         float *CNNresults_other=new float[size*size];

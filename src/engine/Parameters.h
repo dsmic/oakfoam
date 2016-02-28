@@ -750,6 +750,7 @@ class Parameters
     float CNN_pass_probability;
     float cnn_weak_gamma;
     float cnn_lastmove_decay;
+    float cnn_preset_playouts;
     /** Size of circular patterns that are listed after a move.
      * @see features_circ_list
      */

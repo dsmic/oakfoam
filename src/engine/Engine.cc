@@ -491,6 +491,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("other","cnn_data_playouts",&(params->CNN_data_playouts),0);
   params->addParameter("other","cnn_weak_gamma",&(params->cnn_weak_gamma),0);
   params->addParameter("other","cnn_lastmove_decay",&(params->cnn_lastmove_decay),0);
+  params->addParameter("other","cnn_preset_playouts",&(params->cnn_preset_playouts),0);
   
   params->addParameter("other","auto_save_sgf",&(params->auto_save_sgf),false);
   params->addParameter("other","auto_save_sgf_prefix",&(params->auto_save_sgf_prefix),"");

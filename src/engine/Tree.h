@@ -211,6 +211,7 @@ class Tree
      * @param source The child that this result is coming from.
      */
     void addWin(int fscore, Tree *source=NULL);
+    void addPriorValue(float v);
     /** Add a loss to this node.
      * @param fscore The final score of the playout.
      * @param source The child that this result is coming from.
