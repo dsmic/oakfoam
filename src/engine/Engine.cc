@@ -96,6 +96,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   mpoptions->push_back("playout");
   mpoptions->push_back("1-ply");
   mpoptions->push_back("uct");
+  mpoptions->push_back("cnn");
   params->addParameter("general","move_policy",&(params->move_policy_string),mpoptions,"uct",&Engine::updateParameterWrapper,this);
   params->move_policy=Parameters::MP_UCT;
   
@@ -167,167 +168,167 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","playout_fill_weak_eyes",&(params->playout_fill_weak_eyes),PLAYOUT_FILL_WEAK_EYES);
   
 
-  params->addParameter("playout","test_p1",&(params->test_p1),0.0);
-//  params->addParameter("playout","test_p2",&(params->test_p2),0.0);
-  params->addParameter("playout","test_p3",&(params->test_p3),0.0);
-  params->addParameter("playout","test_p4",&(params->test_p4),0.0);
-  params->addParameter("playout","test_p5",&(params->test_p5),0.0);
-  params->addParameter("playout","test_p6",&(params->test_p6),0.0);
-  params->addParameter("playout","test_p7",&(params->test_p7),0.0);
-  params->addParameter("playout","test_p8",&(params->test_p8),0.0);
-  params->addParameter("playout","test_p9",&(params->test_p9),0.0);
-  params->addParameter("playout","test_p10",&(params->test_p10),0.0);
-  params->addParameter("playout","test_p11",&(params->test_p11),0.0);
-  params->addParameter("playout","test_p12",&(params->test_p12),0.0);
-  params->addParameter("playout","test_p13",&(params->test_p13),1.0);
-  params->addParameter("playout","test_p14",&(params->test_p14),1.0);
-  params->addParameter("playout","test_p15",&(params->test_p15),0.0);
-  params->addParameter("playout","test_p16",&(params->test_p16),0.0);
-  params->addParameter("playout","test_p17",&(params->test_p17),0.0);
-  params->addParameter("playout","test_p18",&(params->test_p18),0.0);
-  params->addParameter("playout","test_p19",&(params->test_p19),1.0);
-  params->addParameter("playout","test_p20",&(params->test_p20),0.0);
-  params->addParameter("playout","test_p20",&(params->test_p20),0.0);
-  params->addParameter("playout","test_p21",&(params->test_p21),0.0);
-  params->addParameter("playout","test_p22",&(params->test_p22),1.0);
-  params->addParameter("playout","test_p23",&(params->test_p23),0.0);
-  params->addParameter("playout","test_p24",&(params->test_p24),0.0);
-  params->addParameter("playout","test_p25",&(params->test_p25),0.0);
-  params->addParameter("playout","test_p26",&(params->test_p26),0.0);
-  params->addParameter("playout","test_p27",&(params->test_p27),0.0);
-  params->addParameter("playout","test_p28",&(params->test_p28),1.0);
-  params->addParameter("playout","test_p29",&(params->test_p29),0.0);
-  params->addParameter("playout","test_p30",&(params->test_p30),0.0);
-  params->addParameter("playout","test_p31",&(params->test_p31),0.0);
-  params->addParameter("playout","test_p32",&(params->test_p32),0.0);
-  params->addParameter("playout","test_p33",&(params->test_p33),1.0);
-  params->addParameter("playout","test_p34",&(params->test_p34),1.0);
-  params->addParameter("playout","test_p35",&(params->test_p35),1.0);
-  params->addParameter("playout","test_p36",&(params->test_p36),0.0);
-  params->addParameter("playout","test_p37",&(params->test_p37),0.0);
-  params->addParameter("playout","test_p38",&(params->test_p38),0.0);
-  params->addParameter("playout","test_p39",&(params->test_p39),0.0);
+  params->addParameter("test","test_p1",&(params->test_p1),0.0);
+//  params->addParameter("test","test_p2",&(params->test_p2),0.0);
+  params->addParameter("test","test_p3",&(params->test_p3),0.0);
+  params->addParameter("test","test_p4",&(params->test_p4),0.0);
+  params->addParameter("test","test_p5",&(params->test_p5),0.0);
+  params->addParameter("test","test_p6",&(params->test_p6),0.0);
+  params->addParameter("test","test_p7",&(params->test_p7),0.0);
+  params->addParameter("test","test_p8",&(params->test_p8),0.0);
+  params->addParameter("test","test_p9",&(params->test_p9),0.0);
+  params->addParameter("test","test_p10",&(params->test_p10),0.0);
+  params->addParameter("test","test_p11",&(params->test_p11),0.0);
+  params->addParameter("test","test_p12",&(params->test_p12),0.0);
+  params->addParameter("test","test_p13",&(params->test_p13),1.0);
+  params->addParameter("test","test_p14",&(params->test_p14),1.0);
+  params->addParameter("test","test_p15",&(params->test_p15),0.0);
+  params->addParameter("test","test_p16",&(params->test_p16),0.0);
+  params->addParameter("test","test_p17",&(params->test_p17),0.0);
+  params->addParameter("test","test_p18",&(params->test_p18),0.0);
+  params->addParameter("test","test_p19",&(params->test_p19),1.0);
+  params->addParameter("test","test_p20",&(params->test_p20),0.0);
+  params->addParameter("test","test_p20",&(params->test_p20),0.0);
+  params->addParameter("test","test_p21",&(params->test_p21),0.0);
+  params->addParameter("test","test_p22",&(params->test_p22),1.0);
+  params->addParameter("test","test_p23",&(params->test_p23),0.0);
+  params->addParameter("test","test_p24",&(params->test_p24),0.0);
+  params->addParameter("test","test_p25",&(params->test_p25),0.0);
+  params->addParameter("test","test_p26",&(params->test_p26),0.0);
+  params->addParameter("test","test_p27",&(params->test_p27),0.0);
+  params->addParameter("test","test_p28",&(params->test_p28),1.0);
+  params->addParameter("test","test_p29",&(params->test_p29),0.0);
+  params->addParameter("test","test_p30",&(params->test_p30),0.0);
+  params->addParameter("test","test_p31",&(params->test_p31),0.0);
+  params->addParameter("test","test_p32",&(params->test_p32),0.0);
+  params->addParameter("test","test_p33",&(params->test_p33),1.0);
+  params->addParameter("test","test_p34",&(params->test_p34),1.0);
+  params->addParameter("test","test_p35",&(params->test_p35),1.0);
+  params->addParameter("test","test_p36",&(params->test_p36),0.0);
+  params->addParameter("test","test_p37",&(params->test_p37),0.0);
+  params->addParameter("test","test_p38",&(params->test_p38),0.0);
+  params->addParameter("test","test_p39",&(params->test_p39),0.0);
   
-  params->addParameter("playout","test_p40",&(params->test_p40),1.0);
-  params->addParameter("playout","test_p41",&(params->test_p41),0.0);
-  params->addParameter("playout","test_p42",&(params->test_p42),0.0);
-  params->addParameter("playout","test_p43",&(params->test_p43),0.0);
-  params->addParameter("playout","test_p44",&(params->test_p44),0.0);
-  params->addParameter("playout","test_p45",&(params->test_p45),1.0);
-  params->addParameter("playout","test_p46",&(params->test_p46),0.0);
-  params->addParameter("playout","test_p47",&(params->test_p47),0.0);
-  params->addParameter("playout","test_p48",&(params->test_p48),0.0);
-  params->addParameter("playout","test_p49",&(params->test_p49),0.0);
+  params->addParameter("test","test_p40",&(params->test_p40),1.0);
+  params->addParameter("test","test_p41",&(params->test_p41),0.0);
+  params->addParameter("test","test_p42",&(params->test_p42),0.0);
+  params->addParameter("test","test_p43",&(params->test_p43),0.0);
+  params->addParameter("test","test_p44",&(params->test_p44),0.0);
+  params->addParameter("test","test_p45",&(params->test_p45),1.0);
+  params->addParameter("test","test_p46",&(params->test_p46),0.0);
+  params->addParameter("test","test_p47",&(params->test_p47),0.0);
+  params->addParameter("test","test_p48",&(params->test_p48),0.0);
+  params->addParameter("test","test_p49",&(params->test_p49),0.0);
   
-  params->addParameter("playout","test_p50",&(params->test_p50),0.0);
-  params->addParameter("playout","test_p51",&(params->test_p51),1.0);
-  params->addParameter("playout","test_p52",&(params->test_p52),0.0);
-  params->addParameter("playout","test_p53",&(params->test_p53),0.0);
-  params->addParameter("playout","test_p54",&(params->test_p54),0.0);
-  params->addParameter("playout","test_p55",&(params->test_p55),0.0);
-  params->addParameter("playout","test_p56",&(params->test_p56),0.0);
-  params->addParameter("playout","test_p57",&(params->test_p57),0.0);
-  params->addParameter("playout","test_p58",&(params->test_p58),0.0);
-  params->addParameter("playout","test_p59",&(params->test_p59),0.0);
+  params->addParameter("test","test_p50",&(params->test_p50),0.0);
+  params->addParameter("test","test_p51",&(params->test_p51),1.0);
+  params->addParameter("test","test_p52",&(params->test_p52),0.0);
+  params->addParameter("test","test_p53",&(params->test_p53),0.0);
+  params->addParameter("test","test_p54",&(params->test_p54),0.0);
+  params->addParameter("test","test_p55",&(params->test_p55),0.0);
+  params->addParameter("test","test_p56",&(params->test_p56),0.0);
+  params->addParameter("test","test_p57",&(params->test_p57),0.0);
+  params->addParameter("test","test_p58",&(params->test_p58),0.0);
+  params->addParameter("test","test_p59",&(params->test_p59),0.0);
   
-  params->addParameter("playout","test_p60",&(params->test_p60),1.0);
-  params->addParameter("playout","test_p61",&(params->test_p61),0.0);
-  params->addParameter("playout","test_p62",&(params->test_p62),0.0);
-  params->addParameter("playout","test_p63",&(params->test_p63),0.0);
-  params->addParameter("playout","test_p64",&(params->test_p64),0.0);
-  params->addParameter("playout","test_p65",&(params->test_p65),0.0);
-  params->addParameter("playout","test_p66",&(params->test_p66),0.0);
-  params->addParameter("playout","test_p67",&(params->test_p67),0.0);
-  params->addParameter("playout","test_p68",&(params->test_p68),0.0);
-  params->addParameter("playout","test_p69",&(params->test_p69),1.0);
+  params->addParameter("test","test_p60",&(params->test_p60),1.0);
+  params->addParameter("test","test_p61",&(params->test_p61),0.0);
+  params->addParameter("test","test_p62",&(params->test_p62),0.0);
+  params->addParameter("test","test_p63",&(params->test_p63),0.0);
+  params->addParameter("test","test_p64",&(params->test_p64),0.0);
+  params->addParameter("test","test_p65",&(params->test_p65),0.0);
+  params->addParameter("test","test_p66",&(params->test_p66),0.0);
+  params->addParameter("test","test_p67",&(params->test_p67),0.0);
+  params->addParameter("test","test_p68",&(params->test_p68),0.0);
+  params->addParameter("test","test_p69",&(params->test_p69),1.0);
 
-  params->addParameter("playout","test_p70",&(params->test_p70),0.0);
-  params->addParameter("playout","test_p71",&(params->test_p71),0.0);
-  params->addParameter("playout","test_p72",&(params->test_p72),1.0);
-  params->addParameter("playout","test_p73",&(params->test_p73),0.0);
-  params->addParameter("playout","test_p74",&(params->test_p74),0.0);
-  params->addParameter("playout","test_p75",&(params->test_p75),0.0);
-  params->addParameter("playout","test_p76",&(params->test_p76),1.0);
-  params->addParameter("playout","test_p77",&(params->test_p77),0.0);
-  params->addParameter("playout","test_p78",&(params->test_p78),0.0);
-  params->addParameter("playout","test_p79",&(params->test_p79),0.0);
+  params->addParameter("test","test_p70",&(params->test_p70),0.0);
+  params->addParameter("test","test_p71",&(params->test_p71),0.0);
+  params->addParameter("test","test_p72",&(params->test_p72),1.0);
+  params->addParameter("test","test_p73",&(params->test_p73),0.0);
+  params->addParameter("test","test_p74",&(params->test_p74),0.0);
+  params->addParameter("test","test_p75",&(params->test_p75),0.0);
+  params->addParameter("test","test_p76",&(params->test_p76),1.0);
+  params->addParameter("test","test_p77",&(params->test_p77),0.0);
+  params->addParameter("test","test_p78",&(params->test_p78),0.0);
+  params->addParameter("test","test_p79",&(params->test_p79),0.0);
   
-  params->addParameter("playout","test_p80",&(params->test_p80),0.0);
-  params->addParameter("playout","test_p81",&(params->test_p81),0.0);
-  params->addParameter("playout","test_p82",&(params->test_p82),0.0);
-  params->addParameter("playout","test_p83",&(params->test_p83),0.0);
-  params->addParameter("playout","test_p84",&(params->test_p84),0.0);
-  params->addParameter("playout","test_p85",&(params->test_p85),0.0);
-  params->addParameter("playout","test_p86",&(params->test_p86),0.0);
-  params->addParameter("playout","test_p87",&(params->test_p87),0.0);
-  params->addParameter("playout","test_p88",&(params->test_p88),0.0);
-  params->addParameter("playout","test_p89",&(params->test_p89),0.0);
+  params->addParameter("test","test_p80",&(params->test_p80),0.0);
+  params->addParameter("test","test_p81",&(params->test_p81),0.0);
+  params->addParameter("test","test_p82",&(params->test_p82),0.0);
+  params->addParameter("test","test_p83",&(params->test_p83),0.0);
+  params->addParameter("test","test_p84",&(params->test_p84),0.0);
+  params->addParameter("test","test_p85",&(params->test_p85),0.0);
+  params->addParameter("test","test_p86",&(params->test_p86),0.0);
+  params->addParameter("test","test_p87",&(params->test_p87),0.0);
+  params->addParameter("test","test_p88",&(params->test_p88),0.0);
+  params->addParameter("test","test_p89",&(params->test_p89),0.0);
   
-  params->addParameter("playout","test_p90",&(params->test_p90),0.0);
-  params->addParameter("playout","test_p91",&(params->test_p91),0.0);
-  params->addParameter("playout","test_p92",&(params->test_p92),0.0);
-  params->addParameter("playout","test_p93",&(params->test_p93),20000.0);
-  params->addParameter("playout","test_p94",&(params->test_p94),0.0);
-  params->addParameter("playout","test_p95",&(params->test_p95),0.0);
-  params->addParameter("playout","test_p96",&(params->test_p96),0.0);
-  params->addParameter("playout","test_p97",&(params->test_p97),0.0);
-  params->addParameter("playout","test_p98",&(params->test_p98),0.0);
-  params->addParameter("playout","test_p99",&(params->test_p99),0.0);
+  params->addParameter("test","test_p90",&(params->test_p90),0.0);
+  params->addParameter("test","test_p91",&(params->test_p91),0.0);
+  params->addParameter("test","test_p92",&(params->test_p92),0.0);
+  params->addParameter("test","test_p93",&(params->test_p93),20000.0);
+  params->addParameter("test","test_p94",&(params->test_p94),0.0);
+  params->addParameter("test","test_p95",&(params->test_p95),0.0);
+  params->addParameter("test","test_p96",&(params->test_p96),0.0);
+  params->addParameter("test","test_p97",&(params->test_p97),0.0);
+  params->addParameter("test","test_p98",&(params->test_p98),0.0);
+  params->addParameter("test","test_p99",&(params->test_p99),0.0);
 
-  params->addParameter("playout","test_p100",&(params->test_p100),0.0);
-  params->addParameter("playout","test_p101",&(params->test_p101),0.0);
-  params->addParameter("playout","test_p102",&(params->test_p102),0.0);
-  params->addParameter("playout","test_p103",&(params->test_p103),0.0);
-  params->addParameter("playout","test_p104",&(params->test_p104),0.0);
-  params->addParameter("playout","test_p105",&(params->test_p105),0.0);
-  params->addParameter("playout","test_p106",&(params->test_p106),0.0);
-  params->addParameter("playout","test_p107",&(params->test_p107),0.0);
-  params->addParameter("playout","test_p108",&(params->test_p108),0.0);
-  params->addParameter("playout","test_p109",&(params->test_p109),1.0);
-  params->addParameter("playout","test_p110",&(params->test_p110),0.0);
+  params->addParameter("test","test_p100",&(params->test_p100),0.0);
+  params->addParameter("test","test_p101",&(params->test_p101),0.0);
+  params->addParameter("test","test_p102",&(params->test_p102),0.0);
+  params->addParameter("test","test_p103",&(params->test_p103),0.0);
+  params->addParameter("test","test_p104",&(params->test_p104),0.0);
+  params->addParameter("test","test_p105",&(params->test_p105),0.0);
+  params->addParameter("test","test_p106",&(params->test_p106),0.0);
+  params->addParameter("test","test_p107",&(params->test_p107),0.0);
+  params->addParameter("test","test_p108",&(params->test_p108),0.0);
+  params->addParameter("test","test_p109",&(params->test_p109),1.0);
+  params->addParameter("test","test_p110",&(params->test_p110),0.0);
   
-  params->addParameter("playout","test_p111",&(params->test_p111),1.0);
-  params->addParameter("playout","test_p112",&(params->test_p112),0.0);
-  params->addParameter("playout","test_p113",&(params->test_p113),0.0);
-  params->addParameter("playout","test_p114",&(params->test_p114),0.0);
-  params->addParameter("playout","test_p115",&(params->test_p115),0.0);
-  params->addParameter("playout","test_p116",&(params->test_p116),0.0);
-  params->addParameter("playout","test_p117",&(params->test_p117),0.0);
-  params->addParameter("playout","test_p118",&(params->test_p118),0.0);
-  params->addParameter("playout","test_p119",&(params->test_p119),0.0);
-  params->addParameter("playout","test_p120",&(params->test_p120),0.0);
+  params->addParameter("test","test_p111",&(params->test_p111),1.0);
+  params->addParameter("test","test_p112",&(params->test_p112),0.0);
+  params->addParameter("test","test_p113",&(params->test_p113),0.0);
+  params->addParameter("test","test_p114",&(params->test_p114),0.0);
+  params->addParameter("test","test_p115",&(params->test_p115),0.0);
+  params->addParameter("test","test_p116",&(params->test_p116),0.0);
+  params->addParameter("test","test_p117",&(params->test_p117),0.0);
+  params->addParameter("test","test_p118",&(params->test_p118),0.0);
+  params->addParameter("test","test_p119",&(params->test_p119),0.0);
+  params->addParameter("test","test_p120",&(params->test_p120),0.0);
 
-  params->addParameter("playout","csstyle_enabled",&(params->csstyle_enabled),false);
-  params->addParameter("playout","csstyle_atatarigroup",&(params->csstyle_atatarigroup),1.0);
-  params->addParameter("playout","csstyle_is2libgroup",&(params->csstyle_is2libgroup),1.0);
-  params->addParameter("playout","csstyle_attachedpos",&(params->csstyle_attachedpos),1.0);
-  params->addParameter("playout","csstyle_attachedposbutselfatari",&(params->csstyle_attachedposbutselfatari),1.0);
-  params->addParameter("playout","csstyle_saveataricapture",&(params->csstyle_saveataricapture),1.0);
-  params->addParameter("playout","csstyle_saveataricapturebutselfatari",&(params->csstyle_saveataricapturebutselfatari),1.0);
-  params->addParameter("playout","csstyle_saveatariextention",&(params->csstyle_saveatariextention),1.0);
-  params->addParameter("playout","csstyle_saveatariextentionbutselfatari",&(params->csstyle_saveatariextentionbutselfatari),1.0);
-  params->addParameter("playout","csstyle_solvekocapture",&(params->csstyle_solvekocapture),1.0);
-  params->addParameter("playout","csstyle_2libcapture",&(params->csstyle_2libcapture),1.0);
-  params->addParameter("playout","csstyle_nakade",&(params->csstyle_nakade),1.0);
-  params->addParameter("playout","csstyle_playonladder",&(params->csstyle_playonladder),1.0);
-  params->addParameter("playout","csstyle_defendapproach",&(params->csstyle_defendapproach),1.0);
-  params->addParameter("playout","csstyle_2libavoidcapture",&(params->csstyle_2libavoidcapture),1.0);
-  params->addParameter("playout","csstyle_adaptiveplayouts",&(params->csstyle_adaptiveplayouts),false);
-  params->addParameter("playout","csstyle_adaptiveplayouts_alpha",&(params->csstyle_adaptiveplayouts_alpha),0.01);
-  params->addParameter("playout","csstyle_adaptiveplayouts_lambda",&(params->csstyle_adaptiveplayouts_lambda),0.001);
-  params->addParameter("playout","csstyle_patterngammasnothing",&(params->csstyle_patterngammasnothing),1.0);
-  params->addParameter("playout","csstyle_pattern_min_gamma_sort",&(params->csstyle_pattern_min_gamma_sort),1.0);
-  params->addParameter("playout","csstyle_bad_move_reduce2libs",&(params->csstyle_bad_move_reduce2libs),true);
-  params->addParameter("playout","csstyle_adaptiveplayouts_only_played",&(params->csstyle_adaptiveplayouts_only_played),false);
-  params->addParameter("playout","csstyle_01",&(params->csstyle_01),0.0);
-  params->addParameter("playout","csstyle_02",&(params->csstyle_02),0.0);
-  params->addParameter("playout","csstyle_03",&(params->csstyle_03),0.0);
-  params->addParameter("playout","csstyle_04",&(params->csstyle_04),0.0);
-  params->addParameter("playout","csstyle_05",&(params->csstyle_05),0.0);
-  params->addParameter("playout","csstyle_06",&(params->csstyle_06),0.0);
-  params->addParameter("playout","csstyle_07",&(params->csstyle_07),0.0);
-  params->addParameter("playout","csstyle_08",&(params->csstyle_08),0.0);
-  params->addParameter("playout","csstyle_09",&(params->csstyle_09),0.0);
+  params->addParameter("csplayout","csstyle_enabled",&(params->csstyle_enabled),false);
+  params->addParameter("csplayout","csstyle_atatarigroup",&(params->csstyle_atatarigroup),1.0);
+  params->addParameter("csplayout","csstyle_is2libgroup",&(params->csstyle_is2libgroup),1.0);
+  params->addParameter("csplayout","csstyle_attachedpos",&(params->csstyle_attachedpos),1.0);
+  params->addParameter("csplayout","csstyle_attachedposbutselfatari",&(params->csstyle_attachedposbutselfatari),1.0);
+  params->addParameter("csplayout","csstyle_saveataricapture",&(params->csstyle_saveataricapture),1.0);
+  params->addParameter("csplayout","csstyle_saveataricapturebutselfatari",&(params->csstyle_saveataricapturebutselfatari),1.0);
+  params->addParameter("csplayout","csstyle_saveatariextention",&(params->csstyle_saveatariextention),1.0);
+  params->addParameter("csplayout","csstyle_saveatariextentionbutselfatari",&(params->csstyle_saveatariextentionbutselfatari),1.0);
+  params->addParameter("csplayout","csstyle_solvekocapture",&(params->csstyle_solvekocapture),1.0);
+  params->addParameter("csplayout","csstyle_2libcapture",&(params->csstyle_2libcapture),1.0);
+  params->addParameter("csplayout","csstyle_nakade",&(params->csstyle_nakade),1.0);
+  params->addParameter("csplayout","csstyle_playonladder",&(params->csstyle_playonladder),1.0);
+  params->addParameter("csplayout","csstyle_defendapproach",&(params->csstyle_defendapproach),1.0);
+  params->addParameter("csplayout","csstyle_2libavoidcapture",&(params->csstyle_2libavoidcapture),1.0);
+  params->addParameter("csplayout","csstyle_adaptiveplayouts",&(params->csstyle_adaptiveplayouts),false);
+  params->addParameter("csplayout","csstyle_adaptiveplayouts_alpha",&(params->csstyle_adaptiveplayouts_alpha),0.01);
+  params->addParameter("csplayout","csstyle_adaptiveplayouts_lambda",&(params->csstyle_adaptiveplayouts_lambda),0.001);
+  params->addParameter("csplayout","csstyle_patterngammasnothing",&(params->csstyle_patterngammasnothing),1.0);
+  params->addParameter("csplayout","csstyle_pattern_min_gamma_sort",&(params->csstyle_pattern_min_gamma_sort),1.0);
+  params->addParameter("csplayout","csstyle_bad_move_reduce2libs",&(params->csstyle_bad_move_reduce2libs),true);
+  params->addParameter("csplayout","csstyle_adaptiveplayouts_only_played",&(params->csstyle_adaptiveplayouts_only_played),false);
+  params->addParameter("csplayout","csstyle_01",&(params->csstyle_01),0.0);
+  params->addParameter("csplayout","csstyle_02",&(params->csstyle_02),0.0);
+  params->addParameter("csplayout","csstyle_03",&(params->csstyle_03),0.0);
+  params->addParameter("csplayout","csstyle_04",&(params->csstyle_04),0.0);
+  params->addParameter("csplayout","csstyle_05",&(params->csstyle_05),0.0);
+  params->addParameter("csplayout","csstyle_06",&(params->csstyle_06),0.0);
+  params->addParameter("csplayout","csstyle_07",&(params->csstyle_07),0.0);
+  params->addParameter("csplayout","csstyle_08",&(params->csstyle_08),0.0);
+  params->addParameter("csplayout","csstyle_09",&(params->csstyle_09),0.0);
 
   params->addParameter("playout","localeval_01",&(params->localeval_01),0.0);
   params->addParameter("playout","localeval_02",&(params->localeval_02),0.0);
@@ -487,15 +488,18 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("other","features_circ_list_size",&(params->features_circ_list_size),0);
   params->addParameter("other","cnn_data",&(params->CNN_data),0.0);
   params->addParameter("other","cnn_data_predict_future",&(params->CNN_data_predict_future),0);
-  params->addParameter("other","cnn_pass_probability",&(params->CNN_pass_probability),0.05);
-  params->addParameter("other","cnn_data_playouts",&(params->CNN_data_playouts),0);
-  params->addParameter("other","cnn_weak_gamma",&(params->cnn_weak_gamma),0);
-  params->addParameter("other","cnn_lastmove_decay",&(params->cnn_lastmove_decay),0);
-  params->addParameter("other","cnn_preset_playouts",&(params->cnn_preset_playouts),0);
+
+  params->addParameter("cnn","cnn_pass_probability",&(params->CNN_pass_probability),0.05);
+  params->addParameter("cnn","cnn_data_playouts",&(params->CNN_data_playouts),0);
+  params->addParameter("cnn","cnn_weak_gamma",&(params->cnn_weak_gamma),0);
+  params->addParameter("cnn","cnn_weak_gamma_not_first",&(params->cnn_weak_gamma_not_first),false);
+  params->addParameter("cnn","cnn_lastmove_decay",&(params->cnn_lastmove_decay),0);
+  params->addParameter("cnn","cnn_preset_playouts",&(params->cnn_preset_playouts),0);
+  params->addParameter("cnn","cnn_random_for_only_cnn",&(params->cnn_random_for_only_cnn),0);
   
   params->addParameter("other","auto_save_sgf",&(params->auto_save_sgf),false);
-  params->addParameter("other","auto_save_sgf_prefix",&(params->auto_save_sgf_prefix),"");
-  params->addParameter("other","version_config_file",&(params->version_config_file),"");
+  params->addParameter("other","auto_save_sgf_prefix",&(params->auto_save_sgf_prefix),"game");
+  params->addParameter("other","version_config_file",&(params->version_config_file),"1.0");
 
   std::list<std::string> *spoptions = new std::list<std::string>();
   spoptions->push_back("descent_split");
@@ -888,9 +892,11 @@ else if (caffe_test_net_input_dim[net_num] == 14 || caffe_test_net_input_dim[net
 	  result[i]=rr[0]->cpu_data()[i];
     if (result[i]<0.00001) result[i]=0.00001;
   }
-float value=rr[1]->cpu_data()[0];
+
 //fprintf(stderr,"value cnn %f\n",value);
-if (v!=NULL) *v=value;
+if (v!=NULL) {
+  *v=rr[1]->cpu_data()[0];
+}
   delete[] data;
   delete b;
 #else
@@ -1058,8 +1064,10 @@ void Engine::updateParameter(std::string id)
       params->move_policy=Parameters::MP_UCT;
     else if (params->move_policy_string=="1-ply")
       params->move_policy=Parameters::MP_ONEPLY;
-    else
+    else if (params->move_policy_string=="playout")
       params->move_policy=Parameters::MP_PLAYOUT;
+    else
+      params->move_policy=Parameters::MP_CNN;
   }
   else if (id=="uct_keep_subtree")
   {
@@ -1298,9 +1306,12 @@ void Engine::addGtpCommands()
   gtpe->addAnalyzeCommand("param general","Parameters (General)","param");
   gtpe->addAnalyzeCommand("param tree","Parameters (Tree)","param");
   gtpe->addAnalyzeCommand("param playout","Parameters (Playout)","param");
+  gtpe->addAnalyzeCommand("param csplayout","Parameters (CS - Playout)","param");
   gtpe->addAnalyzeCommand("param time","Parameters (Time)","param");
   gtpe->addAnalyzeCommand("param rules","Parameters (Rules)","param");
   gtpe->addAnalyzeCommand("param other","Parameters (Other)","param");
+  gtpe->addAnalyzeCommand("param test","Parameters (Test)","param");
+  gtpe->addAnalyzeCommand("param cnn","Parameters (CNN)","param");
   gtpe->addAnalyzeCommand("solidgroupat %%p","Solid Group At","none");
   gtpe->addAnalyzeCommand("donplayoutsaround %%s %%p","Do N Playouts around","none");
   gtpe->addAnalyzeCommand("donplayouts %%s","Do N Playouts","none");
@@ -2958,8 +2969,9 @@ void Engine::gtpLoadCNNp(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     net_num=0;
     double_second_last_move_from_cnn=true;
   }
-  caffe_test_net_input_dim[0]=13; //since cudnn v4 supported caffe this did not work :(
-
+  if (net_num==0) {
+    caffe_test_net_input_dim[0]=13; //since cudnn v4 supported caffe this did not work :(
+  }
   if (net_num==4) {
     fprintf(stderr,"enable ko and 4 last moves for net 0!!!\n");
     net_num=0;
@@ -4432,7 +4444,6 @@ void Engine::gtpParam(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
       return;
       }
     }
-    
     if (me->params->setParameter(param,cmd->getStringArg(1)))
     {
       #ifdef HAVE_MPI
@@ -5178,6 +5189,49 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
   clearExpandStats();
   respondboard->scale(0.2);
 
+  if (params->move_policy==Parameters::MP_CNN) {
+    float *CNNresults=new float[boardsize*boardsize];
+    float value=-1;
+    params->engine->getCNN(currentboard,col,CNNresults,0,&value);
+    std::vector<std::pair<float,int>> m;
+    for (int x=0;x<boardsize;x++)
+      for (int y=0;y<boardsize;y++) {
+        int p=Go::Position::xy2pos(x,y,boardsize);
+        if (currentboard->validMove (col,p) && !currentboard->strongEye(col,p) && !currentboard->isSelfAtariOfSize (Go::Move(col,p),6)) {
+          m.push_back({-CNNresults[boardsize*x+y],p});
+        }
+      }
+    int play_pos=0;
+    if (m.size()>1) {
+      std::sort(m.begin(),m.end());
+      if (params->cnn_random_for_only_cnn>1) {
+        int num=m.size();
+        if (params->cnn_random_for_only_cnn<num) num=params->cnn_random_for_only_cnn;
+        float sum=0;
+        for (int i=0;i<num;i++)
+          sum-=m[i].first;
+        float tosum=sum*threadpool->getThreadZero()->getSettings()->rand->getRandomReal();
+        float sum_now=0;
+        while (play_pos<num) {
+          sum_now-=m[play_pos].first;
+          if (sum_now>tosum)
+            break;
+          play_pos++;
+        }
+        if (play_pos==num)
+          play_pos=num-1;
+      }
+      *move=new Go::Move(col,m[play_pos].second);
+      fprintf(stderr," move %s p: %f v: %f\n",(*move)->toString(boardsize).c_str(),-m[play_pos].first,value);
+      
+    }
+    else
+      *move=new Go::Move(col,Go::Move::PASS);
+    if (playmove)
+            this->makeMove(**move);
+          
+    return;
+  }
   if (params->play_n_passes_first>0) {
     //for the MFGO1998 challange
     *move=new Go::Move(col,Go::Move::PASS);
@@ -5798,14 +5852,14 @@ void Engine::makeMove(Go::Move move)
       gtpe->getOutput()->printfDebug("\n");
       */
     }
-    if (params->CNN_data_predict_future>0) {
+  }
+  if (params->CNN_data_predict_future>0) {
       if (historyboards[params->CNN_data_predict_future-1]!=NULL)
         delete historyboards[params->CNN_data_predict_future-1];
       for (int i=params->CNN_data_predict_future-1;i>0;i--)
         historyboards[i]=historyboards[i-1];
       historyboards[0]=currentboard->copy();
     }
-  }
   if (WITH_P(params->features_circ_list))
   {
     Go::Color col=currentboard->nextToMove();
@@ -7461,7 +7515,6 @@ void Engine::gameFinished()
     boost::posix_time::time_facet *facet = new boost::posix_time::time_facet("_%Y-%m-%d_%H:%M:%S");
     std::ostringstream ss;
     ss << params->auto_save_sgf_prefix;
-    ss << "game";
     ss.imbue(std::locale(ss.getloc(),facet));
     ss << boost::posix_time::second_clock::local_time();
     ss << ".sgf";

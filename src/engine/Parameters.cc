@@ -241,11 +241,15 @@ bool Parameters::setParameterUnsignedLong(Parameters::Parameter *param, std::str
 
 void Parameters::printParametersForGTP(Gtp::Engine *gtpe, std::string category)
 {
+  bool printed=false;
   for(std::list<Parameters::Parameter *>::iterator iter=paramlist.begin();iter!=paramlist.end();++iter)
   {
-    if (category=="" || (*iter)->category==category)
+    if (category=="" || (*iter)->category==category) {
       this->printParameterForGTP(gtpe,(*iter));
+      printed=true;
+    }
   }
+  if (!printed) gtpe->getOutput()->printf("\n"); //otherwize loop
 }
 
 void Parameters::printParameterForGTP(Gtp::Engine *gtpe, Parameters::Parameter *param)

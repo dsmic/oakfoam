@@ -36,7 +36,8 @@ class Parameters
     {
       MP_PLAYOUT,
       MP_ONEPLY,
-      MP_UCT
+      MP_UCT,
+      MP_CNN
     };
     /** String representation of the current move policy. */
     std::string move_policy_string;
@@ -749,8 +750,10 @@ class Parameters
     int CNN_data_playouts;
     float CNN_pass_probability;
     float cnn_weak_gamma;
+    bool cnn_weak_gamma_not_first;
     float cnn_lastmove_decay;
     float cnn_preset_playouts;
+    int cnn_random_for_only_cnn;
     /** Size of circular patterns that are listed after a move.
      * @see features_circ_list
      */

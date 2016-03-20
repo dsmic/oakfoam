@@ -400,6 +400,7 @@ class Tree
     Go::Move move;
     double playouts,raveplayouts,earlyraveplayouts;
     double wins,ravewins,earlyravewins;
+    float cnn_value;
     double bestLCBwins,bestLCBplayouts;
     double raveplayoutsother;
     double ravewinsother;

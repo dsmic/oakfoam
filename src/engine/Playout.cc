@@ -1592,7 +1592,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
       }
       if (select<sorted_pos.size()) {
         move=Go::Move(col,sorted_pos[select].second);
-        if (board->validMove (move) && !this->isBadMove(settings,board,col,sorted_pos[select].second,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes, NULL, 0, critarray)) {
+        if (board->validMove (move)) {// this should not be needed in local gamma, features should do this!! && !this->isBadMove(settings,board,col,sorted_pos[select].second,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes, NULL, 0, critarray)) {
           params->engine->statisticsPlus(Engine::CSSTYLE_LOCAL);
           if (params->csstyle_adaptiveplayouts && gamma_gradient_local!=NULL) {
             int p=move.getPosition();

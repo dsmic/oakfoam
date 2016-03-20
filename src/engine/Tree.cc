@@ -29,6 +29,7 @@ Tree::Tree(Parameters *prms, Go::ZobristHash h, Go::Move mov, Tree *p, int a_pos
   move=mov;
   playouts=0;
   wins=0;
+  cnn_value=-1;
   bestLCBwins=0;
   bestLCBplayouts=0;
   scoresum=0;
@@ -839,6 +840,8 @@ std::string Tree::toSGFString() const
     else
     {
       ss<<"Wins/Playouts: "<<wins<<"/"<<playouts<<"("<<((playouts>0)?wins/playouts:0)<<")\n";
+      if (cnn_value>=0)
+        ss<<"CNN value: "<<move.toString(params->board_size)<<" "<<cnn_value<<"\n";
       if (params->uct_decay_alpha!=1 || params->uct_decay_k!=0)
         ss<<"Decayed Playouts: "<<decayedplayouts<<"\n";
       if (params->test_p75>0)
@@ -946,6 +949,8 @@ std::string Tree::toSGFString() const
     if (this->isSuperkoViolation())
       ss<<"Superko Violation!\n";
     ss<<"Wins/Playouts: "<<wins<<"/"<<playouts<<"("<<wins/playouts<<")\n";
+    if (cnn_value>=0)
+      ss<<"CNN value: "<<move.toString(params->board_size)<<" "<<cnn_value<<"\n";
     if (params->uct_decay_alpha!=1 || params->uct_decay_k!=0)
       ss<<"Decayed Playouts: "<<decayedplayouts<<"\n";
     if (params->test_p75>0)
@@ -2109,10 +2114,11 @@ bool Tree::expandLeaf(Worker::Settings *settings, int expand_num)
     {
       CNNresults=new float[size*size];
       params->engine->addExpandStats(expand_num);
-      float value=-1;
-      params->engine->getCNN(startboard,col,CNNresults,0,&value);
-      if (params->cnn_preset_playouts>0 && value>0) {
-        this->addPriorValue (1.0-value);
+      //float value=-1;
+      params->engine->getCNN(startboard,col,CNNresults,0,&cnn_value);
+      //fprintf(stderr,"%s %f\n",move.toString(size).c_str(),cnn_value);
+      if (params->cnn_preset_playouts>0 && cnn_value>0) {
+        this->addPriorValue (1.0-cnn_value);
       }
       if (params->cnn_weak_gamma>0) {
         CNNresults_weak=new float[size*size];
@@ -2405,7 +2411,7 @@ float Tree::getProgressiveBias() const
       while (!tmp->isRoot())
         tmp=tmp->getParent();
       double root_playouts=tmp->getPlayouts();
-      if (parent_playouts/root_playouts < params->cnn_weak_gamma) 
+      if ((!this->isRoot() || !params->cnn_weak_gamma_not_first) && (parent_playouts/root_playouts < params->cnn_weak_gamma)) 
         gamma_use=gamma_weak;
     }
   
@@ -2794,6 +2800,7 @@ void Tree::resetNode()
 {
   playouts=0;
   wins=0;
+  cnn_value=-1;
   scoresum=0;
   scoresumsq=0;
   urgency_variance=0;
