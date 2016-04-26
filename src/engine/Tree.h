@@ -211,6 +211,7 @@ class Tree
      * @param source The child that this result is coming from.
      */
     void addWin(int fscore, Tree *source=NULL);
+    void correctPriorValue(float v);
     void addPriorValue(float v);
     /** Add a loss to this node.
      * @param fscore The final score of the playout.
@@ -390,7 +391,7 @@ class Tree
     float cnn_territory_wr;
     boost::bimap <int,float> cnn_b,cnn_w;
     int around_pos;
-    
+    float getCNNvalue() {if (cnn_value>-1) return cnn_value; else return -1;}
   private:
     Tree *parent;
     std::list<Tree*> *children;

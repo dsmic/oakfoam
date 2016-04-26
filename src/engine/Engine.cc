@@ -318,6 +318,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("csplayout","csstyle_adaptiveplayouts_lambda",&(params->csstyle_adaptiveplayouts_lambda),0.001);
   params->addParameter("csplayout","csstyle_patterngammasnothing",&(params->csstyle_patterngammasnothing),1.0);
   params->addParameter("csplayout","csstyle_pattern_min_gamma_sort",&(params->csstyle_pattern_min_gamma_sort),1.0);
+  params->addParameter("csplayout","csstyle_pattern_weak_gamma_pick",&(params->csstyle_pattern_weak_gamma_pick),10);
+  params->addParameter("csplayout","csstyle_rate_of_gamma_moves",&(params->csstyle_rate_of_gamma_moves),1.0);
   params->addParameter("csplayout","csstyle_bad_move_reduce2libs",&(params->csstyle_bad_move_reduce2libs),true);
   params->addParameter("csplayout","csstyle_adaptiveplayouts_only_played",&(params->csstyle_adaptiveplayouts_only_played),false);
   params->addParameter("csplayout","csstyle_01",&(params->csstyle_01),0.0);
@@ -492,9 +494,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("cnn","cnn_pass_probability",&(params->CNN_pass_probability),0.05);
   params->addParameter("cnn","cnn_data_playouts",&(params->CNN_data_playouts),0);
   params->addParameter("cnn","cnn_weak_gamma",&(params->cnn_weak_gamma),0);
-  params->addParameter("cnn","cnn_weak_gamma_not_first",&(params->cnn_weak_gamma_not_first),false);
   params->addParameter("cnn","cnn_lastmove_decay",&(params->cnn_lastmove_decay),0);
-  params->addParameter("cnn","cnn_preset_playouts",&(params->cnn_preset_playouts),0);
+  params->addParameter("cnn","cnn_value_lambda",&(params->cnn_value_lambda),0);
   params->addParameter("cnn","cnn_random_for_only_cnn",&(params->cnn_random_for_only_cnn),0);
   
   params->addParameter("other","auto_save_sgf",&(params->auto_save_sgf),false);
@@ -895,7 +896,7 @@ else if (caffe_test_net_input_dim[net_num] == 14 || caffe_test_net_input_dim[net
 
 //fprintf(stderr,"value cnn %f\n",value);
 if (v!=NULL) {
-  *v=rr[1]->cpu_data()[0];
+  *v=1.0-rr[1]->cpu_data()[0];
 }
   delete[] data;
   delete b;
@@ -4047,7 +4048,7 @@ void Engine::gtpShowProbabilityCNN(void *instance, Gtp::Engine* gtpe, Gtp::Comma
     }
     gtpe->getOutput()->printf("\n");
   }
-  fprintf(stderr,"value is %f\n",value);
+  fprintf(stderr,"value is %f\n",1.0-value);
   gtpe->getOutput()->endResponse(true);
 }
 
@@ -5193,6 +5194,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     float *CNNresults=new float[boardsize*boardsize];
     float value=-1;
     params->engine->getCNN(currentboard,col,CNNresults,0,&value);
+    std::string lastexplanation="cnn";
+    std::ostringstream stringStream;
     std::vector<std::pair<float,int>> m;
     for (int x=0;x<boardsize;x++)
       for (int y=0;y<boardsize;y++) {
@@ -5222,13 +5225,17 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
           play_pos=num-1;
       }
       *move=new Go::Move(col,m[play_pos].second);
-      fprintf(stderr," move %s p: %f v: %f\n",(*move)->toString(boardsize).c_str(),-m[play_pos].first,value);
-      
+      fprintf(stderr," move %s p: %f v: %f\n",(*move)->toString(boardsize).c_str(),-m[play_pos].first,1.0-value);
+      stringStream << "cnn-move " << (*move)->toString(boardsize) << " p:" << -m[play_pos].first << " v:" << (1.0-value);
+      lastexplanation=stringStream.str();
     }
     else
       *move=new Go::Move(col,Go::Move::PASS);
-    if (playmove)
-            this->makeMove(**move);
+    if (playmove) {
+      this->makeMove(**move);
+      moveexplanations->back()=lastexplanation;
+      gtpe->getOutput()->printfDebug("[genmove]: %s\n",lastexplanation.c_str());
+    }
           
     return;
   }
@@ -5384,6 +5391,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     float scoresd=0;
     float scoremean=0;
     float bestratio=0;
+    float cnn_value_display=-1;
     int   best_unpruned=0;
     float ratiodelta=-1;
     bool bestsame=false;
@@ -5398,6 +5406,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     {
       *move=new Go::Move(col,Go::Move::RESIGN);
       bestratio=besttree->getRatio();
+      cnn_value_display=besttree->getCNNvalue();
       eq_moves=besttree->countMoveCirc();
       eq_moves2=besttree->countMoveCirc2();
     }
@@ -5405,6 +5414,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     {
       *move=new Go::Move(col,besttree->getMove().getPosition());
       bestratio=besttree->getRatio();
+      cnn_value_display=besttree->getCNNvalue();
       eq_moves=besttree->countMoveCirc();
       eq_moves2=besttree->countMoveCirc2();
       scoresd=besttree->getScoreSD();
@@ -5442,6 +5452,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     std::ostringstream ss;
     ss << std::fixed;
     ss << "r:"<<std::setprecision(3)<<bestratio;
+    if (cnn_value_display>-1)
+      ss << " v:"<<std::setprecision(3)<<cnn_value_display;
     if (!time->isNoTiming())
     {
       ss << " tl:"<<std::setprecision(3)<<time->timeLeft(col);
@@ -6825,6 +6837,8 @@ void Engine::doPlayout(Worker::Settings *settings, Go::IntBoard *firstlist, Go::
           Tree *robustmove=movetree->getRobustChild();
           ss << " (rm:" << Go::Position::pos2string(robustmove->getMove().getPosition(),boardsize);
           ss << " r:" << std::setprecision(2)<<robustmove->getRatio();
+          if (robustmove->getCNNvalue()>-1)
+            ss << " v:"<<std::setprecision(3)<<robustmove->getCNNvalue();
           ss << " r2:" << std::setprecision(2)<<robustmove->secondBestPlayoutRatio();
           ss << " u:" << std::setprecision(2)<<robustmove->getUrgency();
           ss << " uv:" << std::setprecision(3)<<robustmove->getUrgencyVariance();
@@ -6840,6 +6854,8 @@ void Engine::doPlayout(Worker::Settings *settings, Go::IntBoard *firstlist, Go::
             {
               ss << " (br:" << Go::Position::pos2string(bestratio->getMove().getPosition(),boardsize);
               ss << " r:" << std::setprecision(2)<<bestratio->getRatio();
+              if (bestratio->getCNNvalue()>-1)
+                ss << " v:"<<std::setprecision(3)<<bestratio->getCNNvalue();
               ss << " u:" << std::setprecision(2)<<bestratio->getUrgency();
               ss << " p:" << std::setprecision(2)<<bestratio->getPlayouts();
               ss << " tw:" << bestratio->isTerminalWin();
@@ -6855,6 +6871,8 @@ void Engine::doPlayout(Worker::Settings *settings, Go::IntBoard *firstlist, Go::
             {
               ss << " (bu:" << Go::Position::pos2string(bestcrit->getMove().getPosition(),boardsize);
               ss << " r:" << std::setprecision(2)<<bestcrit->getRatio();
+              if (bestcrit->getCNNvalue()>-1)
+                ss << " v:"<<std::setprecision(3)<<bestcrit->getCNNvalue();
               ss << " u:" << std::setprecision(2)<<bestcrit->getUrgency();
               ss << " p:" << std::setprecision(2)<<bestcrit->getPlayouts();
               ss << " tw:" << bestcrit->isTerminalWin();

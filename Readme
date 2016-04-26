@@ -1,24 +1,4 @@
-use of
-http://caffe.berkeleyvision.org/
-export PYTHONPATH=~/caffe-master/python
-
-after caffe framework install
-
-1. make text file included all sgf file name
---> find your_sgf_files_folder -name '*.sgf' > allgamenames.txt
-
-2. make position file
---> cat allgamenames.txt | ./CNN-data-collection.sh initial.gamma 13 > allPositions.txt
-the initial.gamma and size(13) are not necessary, it just minimalized differences to the scripts in /scripts/features
-
-3. produce leveldb database 
-cat allPositions.txt | python ./generate_sample_data_leveldb.py
-
-4. training on caffe 
-./train-lenet.sh
-
-if you have snapshot file, ./train-lenet.sh --snapshots=snapshot_file.solverstate
-
+If you want to use oakfoam with deep convolutional neural networks you have to configure with-caffe:
 
 
 oakfoam configure
@@ -42,5 +22,4 @@ if you have libcaffe.so.1.0.0-rc3, this file make link too.
 4. ./configure --with-caffe=/home/user_name/caffe/distribute
 
 5. successful configure, you start make
-
 

@@ -242,13 +242,19 @@ float Tree::getRAVERatioOtherForPool() const
     return 0;
 }
 
+void Tree::correctPriorValue(float v)
+{
+  wins+=v;
+  if (!this->isRoot()) parent->correctPriorValue(-v);
+}
+
 void Tree::addPriorValue(float v)
 {
-  wins+=v*params->cnn_preset_playouts;
-  playouts+=params->cnn_preset_playouts;
-  if (!this->isRoot ())
-    parent->addPriorValue (1.0-v);
+  float value_wins=playouts*v;
+  float new_wins=(1-params->cnn_value_lambda)*wins+params->cnn_value_lambda*value_wins;
+  correctPriorValue (new_wins-wins);
 }
+
 void Tree::addWin(int fscore, Tree *source)
 {
   boost::mutex::scoped_lock *lock=(params->uct_lock_free?NULL:new boost::mutex::scoped_lock(updatemutex));
@@ -1421,7 +1427,7 @@ float Tree::getUnPruneFactor(float *moveValues,float mean, int num, float prob_l
     while (!tmp->isRoot())
       tmp=tmp->getParent();
     double root_playouts=tmp->getPlayouts();
-    if (parent_playouts/root_playouts < params->cnn_weak_gamma) 
+    if ((parent_playouts/root_playouts < params->cnn_weak_gamma)) 
       return gamma_weak;
     return gamma;
   }
@@ -2117,8 +2123,8 @@ bool Tree::expandLeaf(Worker::Settings *settings, int expand_num)
       //float value=-1;
       params->engine->getCNN(startboard,col,CNNresults,0,&cnn_value);
       //fprintf(stderr,"%s %f\n",move.toString(size).c_str(),cnn_value);
-      if (params->cnn_preset_playouts>0 && cnn_value>0) {
-        this->addPriorValue (1.0-cnn_value);
+      if (params->cnn_value_lambda>0 && cnn_value>0) {
+        this->addPriorValue (cnn_value);
       }
       if (params->cnn_weak_gamma>0) {
         CNNresults_weak=new float[size*size];
@@ -2411,7 +2417,7 @@ float Tree::getProgressiveBias() const
       while (!tmp->isRoot())
         tmp=tmp->getParent();
       double root_playouts=tmp->getPlayouts();
-      if ((!this->isRoot() || !params->cnn_weak_gamma_not_first) && (parent_playouts/root_playouts < params->cnn_weak_gamma)) 
+      if ((parent_playouts/root_playouts < params->cnn_weak_gamma)) 
         gamma_use=gamma_weak;
     }
   

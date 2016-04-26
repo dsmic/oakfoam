@@ -331,6 +331,8 @@ class Parameters
     bool csstyle_adaptiveplayouts_only_played;
     float csstyle_patterngammasnothing;
     float csstyle_pattern_min_gamma_sort;
+    float csstyle_rate_of_gamma_moves;
+    int csstyle_pattern_weak_gamma_pick;
     bool csstyle_bad_move_reduce2libs;
     float csstyle_01;
     float csstyle_02;
@@ -750,9 +752,8 @@ class Parameters
     int CNN_data_playouts;
     float CNN_pass_probability;
     float cnn_weak_gamma;
-    bool cnn_weak_gamma_not_first;
     float cnn_lastmove_decay;
-    float cnn_preset_playouts;
+    float cnn_value_lambda;
     int cnn_random_for_only_cnn;
     /** Size of circular patterns that are listed after a move.
      * @see features_circ_list

@@ -1444,7 +1444,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     //int max_num=size*size/5;  //this should make sure, that all moves with not used here have a probability of 1/5 to be seen
 
     float min_gamma=params->csstyle_pattern_min_gamma_sort; //+rand->getRandomReal();
-    int pick_num=10;
+    int pick_num=params->csstyle_pattern_weak_gamma_pick;
 
     std::vector<std::pair<float,int>> sorted_pos;
     sorted_pos.reserve(30);
@@ -1594,6 +1594,8 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
         move=Go::Move(col,sorted_pos[select].second);
         if (board->validMove (move)) {// this should not be needed in local gamma, features should do this!! && !this->isBadMove(settings,board,col,sorted_pos[select].second,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes, NULL, 0, critarray)) {
           params->engine->statisticsPlus(Engine::CSSTYLE_LOCAL);
+          if (reason!=NULL)
+            *reason="csstyle local";
           if (params->csstyle_adaptiveplayouts && gamma_gradient_local!=NULL) {
             int p=move.getPosition();
             int x=Go::Position::pos2x(p,size);
@@ -1674,6 +1676,8 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     }
     //fprintf(stderr,"size2 %d %f\n",sorted_pos.size(),sum_used_gammas);
 
+    if (rand->getRandomReal()>params->csstyle_rate_of_gamma_moves)
+      goto random2;
     while (sorted_pos.size()>0) {
       float rand_sum=rand->getRandomReal()*(gamma_sum);
       unsigned int select;
@@ -1690,6 +1694,8 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
         if (board->validMove (move) && !this->isBadMove(settings,board,col,sorted_pos[select].second,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes, NULL, 0, critarray)) {
           if (params->debug_on)
             gtpe->getOutput()->printfDebug(" strong gamma %s ->%f\n",Go::Position::pos2string(sorted_pos[select].second,size).c_str(),sorted_pos[select].first);
+          if (reason!=NULL)
+            *reason="csstyle strong gamma";
           params->engine->statisticsPlus(Engine::CSSTYLE_NONLOCAL);
           if (params->csstyle_adaptiveplayouts && gamma_gradient_local!=NULL) {
             int p=move.getPosition();
@@ -1745,6 +1751,8 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
       move=Go::Move(col,patternmove);
       if (params->debug_on)
             gtpe->getOutput()->printfDebug(" weak gamma %s ->%f\n",Go::Position::pos2string(patternmove,size).c_str(),bestvalue);
+      if (reason!=NULL)
+        *reason="csstyle weak gamma";
       params->engine->statisticsPlus(Engine::CSSTYLE_NONLOCAL_PICK);
       if (gamma_gradient_local!=NULL) {
         int p=move.getPosition();
