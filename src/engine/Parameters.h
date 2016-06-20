@@ -112,6 +112,7 @@ class Parameters
      * If the last move created an eye of size 3, play in the center of that eye.
      */
     bool playout_nakade_enabled;
+    bool playout_nakade2_enabled;
     bool playout_nakade4_enabled;
     bool playout_nakade_bent4_enabled;
     bool playout_nakade5_enabled;
@@ -755,6 +756,9 @@ class Parameters
     float cnn_lastmove_decay;
     float cnn_value_lambda;
     int cnn_random_for_only_cnn;
+    bool cnn_mutex_wait_lock;
+    int cnn_num_of_gpus; //0 is standard blocking code, >0 does one net per thread and distributes them over the gpus
+    
     /** Size of circular patterns that are listed after a move.
      * @see features_circ_list
      */

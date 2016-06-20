@@ -24,7 +24,7 @@
 
 //had trouble putting it as static variable into the Engine class, but should only be one Engine anyway!
 #ifdef HAVE_CAFFE
-#define num_nets 2
+#define num_nets 50
 Net<float> *caffe_test_net[num_nets];
 int caffe_test_net_input_dim[num_nets];
 Net<float> *caffe_area_net;
@@ -137,6 +137,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","playout_last2libatari_complex",&(params->playout_last2libatari_complex),PLAYOUT_LAST2LIBATARI_COMPLEX);
   params->addParameter("playout","playout_last2libatari_allow_different_groups",&(params->playout_last2libatari_allow_different_groups),PLAYOUT_LAST2LIBATARI_ALLOW_DIFFERENT_GROUPS);
   params->addParameter("playout","playout_nakade_enabled",&(params->playout_nakade_enabled),PLAYOUT_NAKADE_ENABLED);
+  params->addParameter("playout","playout_nakade2_enabled",&(params->playout_nakade4_enabled),1);
   params->addParameter("playout","playout_nakade4_enabled",&(params->playout_nakade4_enabled),PLAYOUT_NAKADE4_ENABLED);
   params->addParameter("playout","playout_nakade_bent4_enabled",&(params->playout_nakade_bent4_enabled),PLAYOUT_NAKADE_BENT4_ENABLED);
   params->addParameter("playout","playout_nakade5_enabled",&(params->playout_nakade5_enabled),PLAYOUT_NAKADE5_ENABLED);
@@ -497,6 +498,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("cnn","cnn_lastmove_decay",&(params->cnn_lastmove_decay),0);
   params->addParameter("cnn","cnn_value_lambda",&(params->cnn_value_lambda),0);
   params->addParameter("cnn","cnn_random_for_only_cnn",&(params->cnn_random_for_only_cnn),0);
+  params->addParameter("cnn","cnn_mutex_wait_lock",&(params->cnn_mutex_wait_lock),0);
+  params->addParameter("cnn","cnn_num_of_gpus",&(params->cnn_num_of_gpus),0);
   
   params->addParameter("other","auto_save_sgf",&(params->auto_save_sgf),false);
   params->addParameter("other","auto_save_sgf_prefix",&(params->auto_save_sgf_prefix),"game");
@@ -662,7 +665,7 @@ Engine::~Engine()
 #endif
 }
 
-void Engine::getCNN(Go::Board *board,Go::Color col, float result[], int net_num, float *v)
+void Engine::getCNN(Go::Board *board, int thread_id, Go::Color col, float result[], int net_num, float *v)
 {
 #ifdef HAVE_CAFFE
 	//if (board->getSize()!=19) {
@@ -671,6 +674,10 @@ void Engine::getCNN(Go::Board *board,Go::Color col, float result[], int net_num,
 	//	return;
 	//}
   int size=board->getSize();
+  int net_num_multi_gpu=net_num;
+  if (params->cnn_num_of_gpus>0) {
+    net_num_multi_gpu=thread_id; //only one gpu but mutliple threads at the moment
+  }
 	float *data;
   //board->calcSlowLibertyGroups();
 	data= new float[caffe_test_net_input_dim[net_num]*size*size];
@@ -873,7 +880,7 @@ else if (caffe_test_net_input_dim[net_num] == 14 || caffe_test_net_input_dim[net
   bottom.push_back(b); 
   //cudaSetDeviceFlags(cudaDeviceBlockingSync);
   Caffe::set_mode(Caffe::GPU);
-  const vector<Blob<float>*>& rr =  caffe_test_net[net_num]->Forward(bottom);
+  const vector<Blob<float>*>& rr =  caffe_test_net[net_num_multi_gpu]->Forward(bottom);
   //fprintf(stderr,"start\n");
   //clock_t tbegin = clock();
   //for (int i=0;i<50;i++) {
@@ -2943,7 +2950,7 @@ void Engine::gtpLoadCNNt(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 void Engine::gtpLoadCNNp(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
 {
 #ifdef HAVE_CAFFE
-//  Engine *me=(Engine*)instance;
+  Engine *me=(Engine*)instance;
   
   if (cmd->numArgs()!=2 && cmd->numArgs()!=3)
   {
@@ -2960,6 +2967,8 @@ void Engine::gtpLoadCNNp(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     net_num=cmd->getIntArg(2);
   disable_last_move_from_cnn=false;
   double_second_last_move_from_cnn=false;
+  //net_num==1 is for weak gamma, it is not allowed to be combined with one net per thread at the moment!!
+  
   if (net_num==2) {
     fprintf(stderr,"disabling last move for net 0!!!\n");
     net_num=0;
@@ -2991,6 +3000,16 @@ void Engine::gtpLoadCNNp(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     caffe_test_net[net_num] = new Net<float>(filename_net,TEST);
     fprintf(stderr,"ok, created net\n");
     caffe_test_net[net_num]->CopyTrainedLayersFrom(filename_parameters);
+    if (me->params->cnn_num_of_gpus>1) fprintf(stderr,"num of gpu >1 not yet supported\n");
+    if (net_num==0 && me->params->cnn_num_of_gpus>0) {
+      for (int j=1;j<me->params->thread_count;j++) {
+        if (caffe_test_net[j]!=NULL) delete caffe_test_net[net_num];
+        caffe_test_net[j] = new Net<float>(filename_net,TEST);
+        caffe_test_net[j]->CopyTrainedLayersFrom(filename_parameters);
+        fprintf(stderr,"additional net created %d\n",j);
+      }
+    }
+
     int t2=Caffe::mode();
     caffe_test_net_input_dim[net_num]=caffe_test_net[net_num]->input_blobs()[0]->shape()[1];
     caffe_test_net_input_dim[1]=9; //since cudnn v4 supported caffe this did not work :(
@@ -4037,7 +4056,7 @@ void Engine::gtpShowProbabilityCNN(void *instance, Gtp::Engine* gtpe, Gtp::Comma
   int bsize=me->boardsize;
   float result[bsize*bsize];
   float value=-1;
-  me->getCNN(me->currentboard,(gtpcol==Gtp::BLACK)?Go::BLACK:Go::WHITE,result,0,&value);
+  me->getCNN(me->currentboard,0,(gtpcol==Gtp::BLACK)?Go::BLACK:Go::WHITE,result,0,&value);
   for (int y=me->boardsize-1;y>=0;y--)
   {
     for (int x=0;x<me->boardsize;x++)
@@ -5193,7 +5212,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
   if (params->move_policy==Parameters::MP_CNN) {
     float *CNNresults=new float[boardsize*boardsize];
     float value=-1;
-    params->engine->getCNN(currentboard,col,CNNresults,0,&value);
+    params->engine->getCNN(currentboard,0,col,CNNresults,0,&value);
     std::string lastexplanation="cnn";
     std::ostringstream stringStream;
     std::vector<std::pair<float,int>> m;
@@ -5683,7 +5702,7 @@ void Engine::makeMove(Go::Move move)
     float *result=NULL;
     if (params->test_p100>0) {
       result= new float[currentboard->getSize()*currentboard->getSize()];
-      getCNN(currentboard,move.getColor(),result);
+      getCNN(currentboard,0,move.getColor(),result);
     }
     if (graphs == NULL)
       graphs = new DecisionTree::GraphCollection(DecisionTree::getCollectionTypes(&decisiontrees),currentboard);
@@ -5992,7 +6011,7 @@ void Engine::makeMove(Go::Move move)
     float passresult=1;
     if (params->test_p100>0) {
       result= new float[currentboard->getSize()*currentboard->getSize()];
-      getCNN(currentboard,move.getColor(),result);
+      getCNN(currentboard,0,move.getColor(),result);
       passresult=0.000001;
     }
     

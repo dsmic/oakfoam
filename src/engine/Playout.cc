@@ -3326,6 +3326,7 @@ void Playout::getNakadeMove(Worker::Settings *settings, Go::Board *board, Go::Co
   if (board->getLastMove().isNormal())
   {
     int size=board->getSize();
+    if (params->playout_nakade2_enabled) {
     foreach_adjacent(board->getLastMove().getPosition(),p,{
       int twogroupotherpos=board->getOtherOfEmptyTwoGroup(p);
       if (twogroupotherpos>=0) {
@@ -3342,6 +3343,7 @@ void Playout::getNakadeMove(Worker::Settings *settings, Go::Board *board, Go::Co
         possiblemovescount++;
       }
     });
+    }
     if (params->playout_nakade4_enabled)
     {
       foreach_adjacent(board->getLastMove().getPosition(),p,{

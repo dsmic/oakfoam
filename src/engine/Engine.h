@@ -394,7 +394,7 @@ class Engine
 
     void addpresetplayout(float p) {presetplayouts+=p; presetnum++;}
 
-	  void getCNN(Go::Board *board,Go::Color col, float result[],int net_num=0, float *v=NULL);
+	  void getCNN(Go::Board *board, int thread_id, Go::Color col, float result[],int net_num=0, float *v=NULL);
     float getCNNwr(Go::Board *board,Go::Color col);
     EqMoves  * addMoveCirc(MoveCirc *m, Tree *t)  
       { 

@@ -1881,10 +1881,14 @@ bool Tree::expandLeaf(Worker::Settings *settings, int expand_num)
   
   //boost::mutex::scoped_try_lock lock(expandmutex);
   //expandmutex.lock();
-  if (params->test_p100>0) {
+  if (params->test_p100>0 && params->cnn_num_of_gpus==0) {
     //now we need an extended lock, as not two nodes may be expanded at the same time now!
-    if (!params->engine->CNNmutex.try_lock())
-      return false;
+    if (params->cnn_mutex_wait_lock)
+      params->engine->CNNmutex.lock();
+    else {
+      if (!params->engine->CNNmutex.try_lock())
+        return false;
+    }
   } 
   else if (!expandmutex.try_lock())
     return false;
@@ -1893,7 +1897,7 @@ bool Tree::expandLeaf(Worker::Settings *settings, int expand_num)
   if (!this->isLeaf())
   {
     //fprintf(stderr,"Node was already expanded!\n");
-    if (params->test_p100>0) 
+    if (params->test_p100>0 && params->cnn_num_of_gpus==0) 
       params->engine->CNNmutex.unlock();
     else
       expandmutex.unlock();
@@ -1912,7 +1916,7 @@ bool Tree::expandLeaf(Worker::Settings *settings, int expand_num)
     {
       delete startboard;
       fprintf(stderr,"WARNING! Trying to expand a terminal node? (passes:%d)\n",startboard->getPassesPlayed());
-      if (params->test_p100>0) 
+      if (params->test_p100>0 && params->cnn_num_of_gpus==0) 
         params->engine->CNNmutex.unlock();
       else
         expandmutex.unlock();
@@ -2121,18 +2125,18 @@ bool Tree::expandLeaf(Worker::Settings *settings, int expand_num)
       CNNresults=new float[size*size];
       params->engine->addExpandStats(expand_num);
       //float value=-1;
-      params->engine->getCNN(startboard,col,CNNresults,0,&cnn_value);
+      params->engine->getCNN(startboard,settings->thread->getID(),col,CNNresults,0,&cnn_value);
       //fprintf(stderr,"%s %f\n",move.toString(size).c_str(),cnn_value);
       if (params->cnn_value_lambda>0 && cnn_value>0) {
         this->addPriorValue (cnn_value);
       }
       if (params->cnn_weak_gamma>0) {
         CNNresults_weak=new float[size*size];
-        params->engine->getCNN(startboard,col,CNNresults_weak,1);
+        params->engine->getCNN(startboard,settings->thread->getID(),col,CNNresults_weak,1);
       }
       if (params->test_p116>0) {
         float *CNNresults_other=new float[size*size];
-        params->engine->getCNN(startboard,Go::otherColor(col),CNNresults_other);
+        params->engine->getCNN(startboard,settings->thread->getID(),Go::otherColor(col),CNNresults_other);
         for (int i=0;i<size*size;i++) {
           int pp=Go::Position::cnn2pos(i,size);
           float value=-(int(CNNresults[i]*10000)+float(i)/size/size);
@@ -2236,7 +2240,7 @@ bool Tree::expandLeaf(Worker::Settings *settings, int expand_num)
   
   beenexpanded=true;
   delete startboard;
-  if (params->test_p100>0) 
+  if (params->test_p100>0 && params->cnn_num_of_gpus==0) 
       params->engine->CNNmutex.unlock();
     else
       expandmutex.unlock();
