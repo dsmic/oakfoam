@@ -137,7 +137,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("playout","playout_last2libatari_complex",&(params->playout_last2libatari_complex),PLAYOUT_LAST2LIBATARI_COMPLEX);
   params->addParameter("playout","playout_last2libatari_allow_different_groups",&(params->playout_last2libatari_allow_different_groups),PLAYOUT_LAST2LIBATARI_ALLOW_DIFFERENT_GROUPS);
   params->addParameter("playout","playout_nakade_enabled",&(params->playout_nakade_enabled),PLAYOUT_NAKADE_ENABLED);
-  params->addParameter("playout","playout_nakade2_enabled",&(params->playout_nakade4_enabled),1);
+  params->addParameter("playout","playout_nakade2_enabled",&(params->playout_nakade2_enabled),1);
   params->addParameter("playout","playout_nakade4_enabled",&(params->playout_nakade4_enabled),PLAYOUT_NAKADE4_ENABLED);
   params->addParameter("playout","playout_nakade_bent4_enabled",&(params->playout_nakade_bent4_enabled),PLAYOUT_NAKADE_BENT4_ENABLED);
   params->addParameter("playout","playout_nakade5_enabled",&(params->playout_nakade5_enabled),PLAYOUT_NAKADE5_ENABLED);
@@ -383,6 +383,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("tree","uct_progressive_bias_enabled",&(params->uct_progressive_bias_enabled),UCT_PROGRESSIVE_BIAS_ENABLED);
   params->addParameter("tree","uct_progressive_bias_h",&(params->uct_progressive_bias_h),UCT_PROGRESSIVE_BIAS_H);
   params->addParameter("tree","uct_progressive_bias_log_add",&(params->uct_progressive_bias_log_add),0.0);
+  params->addParameter("tree","uct_progressive_bias_count_offset",&(params->uct_progressive_bias_count_offset),1.0);
   params->addParameter("tree","uct_progressive_bias_scaled",&(params->uct_progressive_bias_scaled),UCT_PROGRESSIVE_BIAS_SCALED);
   params->addParameter("tree","uct_progressive_bias_relative",&(params->uct_progressive_bias_relative),UCT_PROGRESSIVE_BIAS_RELATIVE);
   params->addParameter("tree","uct_progressive_bias_moves",&(params->uct_progressive_bias_moves),UCT_PROGRESSIVE_BIAS_MOVES);
@@ -500,6 +501,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("cnn","cnn_random_for_only_cnn",&(params->cnn_random_for_only_cnn),0);
   params->addParameter("cnn","cnn_mutex_wait_lock",&(params->cnn_mutex_wait_lock),0);
   params->addParameter("cnn","cnn_num_of_gpus",&(params->cnn_num_of_gpus),0);
+  params->addParameter("cnn","cnn_prior_values_treshhold",&(params->cnn_prior_values_treshhold),0.0);
   
   params->addParameter("other","auto_save_sgf",&(params->auto_save_sgf),false);
   params->addParameter("other","auto_save_sgf_prefix",&(params->auto_save_sgf_prefix),"game");
@@ -3003,7 +3005,7 @@ void Engine::gtpLoadCNNp(void *instance, Gtp::Engine* gtpe, Gtp::Command* cmd)
     if (me->params->cnn_num_of_gpus>1) fprintf(stderr,"num of gpu >1 not yet supported\n");
     if (net_num==0 && me->params->cnn_num_of_gpus>0) {
       for (int j=1;j<me->params->thread_count;j++) {
-        if (caffe_test_net[j]!=NULL) delete caffe_test_net[net_num];
+        if (caffe_test_net[j]!=NULL) delete caffe_test_net[j];
         caffe_test_net[j] = new Net<float>(filename_net,TEST);
         caffe_test_net[j]->CopyTrainedLayersFrom(filename_parameters);
         fprintf(stderr,"additional net created %d\n",j);

@@ -510,6 +510,8 @@ class Parameters
      * @see uct_progressive_bias_enabled
      */
     float uct_progressive_bias_log_add;
+    float uct_progressive_bias_count_offset;
+
     bool uct_progressive_bias_scaled;
     /** Constant for progressive bias.
      * @see uct_progressive_bias_enabled
@@ -758,7 +760,7 @@ class Parameters
     int cnn_random_for_only_cnn;
     bool cnn_mutex_wait_lock;
     int cnn_num_of_gpus; //0 is standard blocking code, >0 does one net per thread and distributes them over the gpus
-    
+    float cnn_prior_values_treshhold;
     /** Size of circular patterns that are listed after a move.
      * @see features_circ_list
      */

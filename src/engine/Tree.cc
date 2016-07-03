@@ -250,6 +250,14 @@ void Tree::correctPriorValue(float v)
 
 void Tree::addPriorValue(float v)
 {
+  if (params->cnn_prior_values_treshhold>0) {
+    float rate=wins/playouts;
+    if (rate>0.5) rate=1.0-rate;
+    if (rate<params->resign_ratio_threshold * params->cnn_prior_values_treshhold) 
+      //if just params->resign_ratio_threshold, 
+      //it weakens to about 40% winrate with 15% threshold, probably because of to often not using the value net
+      return; //in this case we thrust the playouts and do not take the value net...
+  }
   float value_wins=playouts*v;
   float new_wins=(1-params->cnn_value_lambda)*wins+params->cnn_value_lambda*value_wins;
   correctPriorValue (new_wins-wins);
@@ -1890,8 +1898,14 @@ bool Tree::expandLeaf(Worker::Settings *settings, int expand_num)
         return false;
     }
   } 
-  else if (!expandmutex.try_lock())
-    return false;
+  else {
+    if (params->cnn_mutex_wait_lock)
+      expandmutex.lock();
+    else {
+      if (!expandmutex.try_lock())
+        return false;
+    }
+  }
 
   //this is never executed? It is in race conditions I think.
   if (!this->isLeaf())
@@ -2431,7 +2445,7 @@ float Tree::getProgressiveBias() const
     if (gamma_use>0) bias=log(gamma_use)+params->uct_progressive_bias_log_add;
     if (bias<0) bias=0;
     bias*=params->uct_progressive_bias_h;
-    return (bias+biasbonus)/sqrt(po+1);
+    return (bias+biasbonus)/sqrt(po+params->uct_progressive_bias_count_offset);
   }
     
   float bias=params->uct_progressive_bias_h*gamma;
