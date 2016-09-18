@@ -876,13 +876,15 @@ else if (caffe_test_net_input_dim[net_num] == 14 || caffe_test_net_input_dim[net
 }
     
 
-  Blob<float> *b=new Blob<float>(1,caffe_test_net_input_dim[net_num],size,size);
-  b->set_cpu_data(data);
-  vector<Blob<float>*> bottom;
-  bottom.push_back(b); 
+  //Blob<float> *b=new Blob<float>(1,caffe_test_net_input_dim[net_num],size,size);
+  //b->set_cpu_data(data);
+  //vector<Blob<float>*> bottom;
+  caffe_test_net[net_num_multi_gpu]->input_blobs()[0]->set_cpu_data(data);
+  //bottom.push_back(b);
+  //bottom[0]=b;
   //cudaSetDeviceFlags(cudaDeviceBlockingSync);
   Caffe::set_mode(Caffe::GPU);
-  const vector<Blob<float>*>& rr =  caffe_test_net[net_num_multi_gpu]->Forward(bottom);
+  const vector<Blob<float>*>& rr =  caffe_test_net[net_num_multi_gpu]->Forward();
   //fprintf(stderr,"start\n");
   //clock_t tbegin = clock();
   //for (int i=0;i<50;i++) {
@@ -908,7 +910,7 @@ if (v!=NULL) {
   *v=1.0-rr[1]->cpu_data()[0];
 }
   delete[] data;
-  delete b;
+//  delete b;
 #else
   fprintf(stderr," caffe not availible, compile with-caffe\n");
 #endif
@@ -968,18 +970,19 @@ float Engine::getCNNwr(Go::Board *board,Go::Color col)
         data[2*19*19+j*19+k]=-komi;
     }
 	}
-  Blob<float> *b=new Blob<float>(1,3,19,19);
-  b->set_cpu_data(data);
-  vector<Blob<float>*> bottom;
-  bottom.push_back(b); 
-  const vector<Blob<float>*>& rr =  caffe_area_net->Forward(bottom);
+  caffe_area_net->input_blobs()[0]->set_cpu_data(data);
+  //Blob<float> *b=new Blob<float>(1,3,19,19);
+  //b->set_cpu_data(data);
+  //vector<Blob<float>*> bottom;
+  //bottom.push_back(b); 
+  const vector<Blob<float>*>& rr =  caffe_area_net->Forward();
   float wr_sum=0;
   for (int i=0;i<361;i++) {
     wr_sum+=rr[1]->cpu_data()[i];
   }
   
   delete[] data;
-  delete b;
+  //delete b;
   return 1.0-wr_sum/361.0;
 #else
   fprintf(stderr, " caffe is not availible, compile with-caffe\n");
@@ -4130,11 +4133,12 @@ void Engine::gtpShowTerritoryCNN(void *instance, Gtp::Engine* gtpe, Gtp::Command
   float result[361];
   float diffprob[121];
   float wr[361];
-  Blob<float> *b=new Blob<float>(1,3,19,19);
-  b->set_cpu_data(data);
-  vector<Blob<float>*> bottom;
-  bottom.push_back(b); 
-  const vector<Blob<float>*>& rr =  caffe_area_net->Forward(bottom);
+  caffe_area_net->input_blobs()[0]->set_cpu_data(data);
+  //Blob<float> *b=new Blob<float>(1,3,19,19);
+  //b->set_cpu_data(data);
+  //vector<Blob<float>*> bottom;
+  //bottom.push_back(b);
+  const vector<Blob<float>*>& rr =  caffe_area_net->Forward();
   for (int i=0;i<361;i++) {
 	  wr[i]=rr[1]->cpu_data()[i];
     //gtpe->getOutput()->printf("wr%.3f",wr[i]);
@@ -4205,7 +4209,7 @@ void Engine::gtpShowTerritoryCNN(void *instance, Gtp::Engine* gtpe, Gtp::Command
       territorycount,me->getHandiKomi(),-(territorycount-me->getHandiKomi()),-(territorycount-me->getScoreKomi()),me->getScoreKomi(),sqrt(norm));
   gtpe->getOutput()->endResponse(true);
   delete[] data;
-  delete b;
+  //delete b;
 #else
   gtpe->getOutput()->printf("CAFFE not availible");
   gtpe->getOutput()->endResponse(true);
