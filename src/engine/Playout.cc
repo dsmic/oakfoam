@@ -856,8 +856,6 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     // for 9. Nakade we use a different approach, if empty nakade shape is around last move, the killing move has this feature
     // 10. Continous to last move but selfatari
     // 11. Defend an approach move
-
-    // planed features
     // 12. 2-point semeai heuristic: if the last move reduces a string to two liberties any move which prevents it from beeing killed by opponent playing on one of the liberties has this feature
     
     
