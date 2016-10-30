@@ -812,7 +812,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
    */
 
   //this should replace all other code here later
-  bool doapproachmoves;
+  bool doapproachmoves=false;
   int best_gamma=0;
   int best_pos=-1;
   int blevel=0;
@@ -1018,12 +1018,12 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                     //now from libs a and b the lib which kills has to be found
                     bool a_is_extention=false;
                     bool b_is_extention=false;
-                    bool a_is_selfatari=false;
-                    bool b_is_selfatari=false;
+                    //bool a_is_selfatari=false;
+                    //bool b_is_selfatari=false;
                     int libs=0;
                     int libsother=0;
                     int singlelibpos=-1;
-                    int singlelibposother=-1;
+                    //int singlelibposother=-1;
                     Go::Color colattached=attachedgroup->getColor();
                     Go::list_short attachedpos;
                     Go::Group *usedgroup=NULL;
@@ -1062,11 +1062,11 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                       }
                     }//);
                     if (libs>1) a_is_extention=true;
-                    if (libsother<1) a_is_selfatari=true;
+                    //if (libsother<1) a_is_selfatari=true;
                     libs=0;
                     libsother=0;
                     singlelibpos=-1;
-                    singlelibposother=-1;
+                    //singlelibposother=-1;
                     attachedpos.clear();
                     usedgroup=NULL;
                     usedgroupself=NULL;
@@ -1104,7 +1104,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                       }
                     }//);
                     if (libs>1) b_is_extention=true;
-                    if (libsother<1) b_is_selfatari=true;
+                    //if (libsother<1) b_is_selfatari=true;
                     //if (!b_is_extention && !a_is_selfatari) LOCAL_FEATURE_POSITION(a,params->csstyle_2libcapture,7);
                     //if (!a_is_extention && !b_is_selfatari) LOCAL_FEATURE_POSITION(b,params->csstyle_2libcapture,7);
                     if (!b_is_extention) LOCAL_FEATURE_POSITION(a,params->csstyle_2libcapture,7);
@@ -1581,6 +1581,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
 
     //here we decide the probability to play a local versus a non local move and play the local move in case
 
+    if (params->debug_only_best_cs_playout) std::sort(sorted_pos.begin(),sorted_pos.end());
     while (sorted_pos.size()>0) {
       float rand_sum=rand->getRandomReal()*(gamma_sum_local+gamma_sum);
       unsigned int select;
@@ -1590,6 +1591,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
         if (sum>rand_sum)
           break;
       }
+      if (params->debug_only_best_cs_playout) select=0;
       if (select<sorted_pos.size()) {
         move=Go::Move(col,sorted_pos[select].second);
         if (board->validMove (move)) {// this should not be needed in local gamma, features should do this!! && !this->isBadMove(settings,board,col,sorted_pos[select].second,params->playout_avoid_lbrf1_p,params->playout_avoid_lbmf_p, params->playout_avoid_bpr_p, passes, NULL, 0, critarray)) {

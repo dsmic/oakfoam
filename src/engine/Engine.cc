@@ -474,6 +474,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("other","outputsgf_maxchildren",&(params->outputsgf_maxchildren),OUTPUTSGF_MAXCHILDREN);
   
   params->addParameter("other","debug",&(params->debug_on),DEBUG_ON);
+  params->addParameter("other","debug_only_best_cs_playout",&(params->debug_only_best_cs_playout),false);
   params->addParameter("other","play_n_passes_first",&(params->play_n_passes_first),0);
   
   params->addParameter("other","interrupts_enabled",&(params->interrupts_enabled),INTERRUPTS_ENABLED,&Engine::updateParameterWrapper,this);

@@ -713,6 +713,7 @@ class Parameters
     
     /** Whether to output debug info. */
     bool debug_on;
+    bool debug_only_best_cs_playout;
 
     int play_n_passes_first;
 
