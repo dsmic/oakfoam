@@ -14,7 +14,7 @@
 #include "../gtp/Gtp.h"
 
 //adaptive playouts
-#define local_feature_num 13
+#define local_feature_num 14
 #define hashto5num 64
 
 #define MARK {fprintf(stderr,"mark %s %d\n",__FILE__,__LINE__);}
@@ -716,6 +716,7 @@ namespace Go
       /** Get the number of pseudo liberties for this group. */
       inline int numOfPseudoLiberties() const { return pseudoliberties; };
       inline int numOfRealLiberties() const { return all_liberties.size(); };
+      std::ourset<int> getRealLiberties() {return all_liberties;}
       inline int numOfPseudoEnds() const { return pseudoends; };
       inline int numOfPseudoBorderDist() const { return pseudoborderdist; };
       
@@ -764,6 +765,7 @@ namespace Go
       bool isSolid() {return solid;}
       void setSolid(bool t=true) {solid=t;}
       int numRealLibs() const {return all_liberties.size();}
+      std::ourset<int> getExtendingLibs(const Go::Board *board) ;
       int changedAtariAt() {
         if ((changed_atari_pos>=0)!=inAtari()) 
           {
@@ -1046,6 +1048,8 @@ namespace Go
         }
         return false;
       }
+
+      //SelfAtari counts captures allways as one additional liberty, even if it are more!!!
       inline bool isSelfAtari(Go::Move move) const {return this->isSelfAtariOfSize(move,0);};
       /** Determine is the given move is a self-atari of a group of a minimum size. */
       inline bool isSelfAtariOfSize(Go::Move move, int minsize=0, bool complex=false) const

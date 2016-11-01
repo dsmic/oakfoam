@@ -57,11 +57,12 @@ param CNN_pass_probability 0.001
 
 param csstyle_attachedpos 30.0
 param csstyle_saveataricapture 500000.0
-param csstyle_saveatariextention 104.0
-param csstyle_solvekocapture 103.0
-param csstyle_2libcapture 102.0
+param csstyle_saveatariextention 204.0
+param csstyle_solvekocapture 203.0
+param csstyle_2libcapture 202.0
+param csstyle_2libcapturebutselfatari 0.01
 param csstyle_2libavoidcapture 205.0
-
+param csstyle_345libheuristic 206.0
 
 param ucb_c 0.9
 param uct_symmetry_use 0

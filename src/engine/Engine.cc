@@ -314,6 +314,8 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("csplayout","csstyle_playonladder",&(params->csstyle_playonladder),1.0);
   params->addParameter("csplayout","csstyle_defendapproach",&(params->csstyle_defendapproach),1.0);
   params->addParameter("csplayout","csstyle_2libavoidcapture",&(params->csstyle_2libavoidcapture),1.0);
+  params->addParameter("csplayout","csstyle_2libcapturebutselfatari",&(params->csstyle_2libcapturebutselfatari),1.0);
+  params->addParameter("csplayout","csstyle_345libheuristic",&(params->csstyle_345libheuristic),1.0);
   params->addParameter("csplayout","csstyle_adaptiveplayouts",&(params->csstyle_adaptiveplayouts),false);
   params->addParameter("csplayout","csstyle_adaptiveplayouts_alpha",&(params->csstyle_adaptiveplayouts_alpha),0.01);
   params->addParameter("csplayout","csstyle_adaptiveplayouts_lambda",&(params->csstyle_adaptiveplayouts_lambda),0.001);

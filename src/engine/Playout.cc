@@ -830,6 +830,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     params->csstyle_attachedposbutselfatari,//10
     params->csstyle_defendapproach, //11
     params->csstyle_2libavoidcapture //12
+    params->csstyle_2libcapturebutselfatari //13
   }; */
   int ncirc=0;
 
@@ -857,7 +858,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
     // 10. Continous to last move but selfatari
     // 11. Defend an approach move
     // 12. 2-point semeai heuristic: if the last move reduces a string to two liberties any move which prevents it from beeing killed by opponent playing on one of the liberties has this feature
-    
+    // 13. feature 7 but selfatari
     
     int size=board->getSize();
 
@@ -1105,8 +1106,22 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                     //if (libsother<1) b_is_selfatari=true;
                     //if (!b_is_extention && !a_is_selfatari) LOCAL_FEATURE_POSITION(a,params->csstyle_2libcapture,7);
                     //if (!a_is_extention && !b_is_selfatari) LOCAL_FEATURE_POSITION(b,params->csstyle_2libcapture,7);
-                    if (!b_is_extention) LOCAL_FEATURE_POSITION(a,params->csstyle_2libcapture,7);
-                    if (!a_is_extention) LOCAL_FEATURE_POSITION(b,params->csstyle_2libcapture,7);
+                    if (!b_is_extention) {
+                      if (board->isSelfAtari(Go::Move(col,a))) {
+                        LOCAL_FEATURE_POSITION(a,params->csstyle_2libcapturebutselfatari,13);
+                      }
+                      else {
+                        LOCAL_FEATURE_POSITION(a,params->csstyle_2libcapture,7);
+                      }
+                    }
+                    if (!a_is_extention) {
+                      if (board->isSelfAtari(Go::Move(col,b))) {
+                        LOCAL_FEATURE_POSITION(b,params->csstyle_2libcapturebutselfatari,13);
+                      }
+                      else {
+                        LOCAL_FEATURE_POSITION(b,params->csstyle_2libcapture,7);
+                      }
+                    }
                   };
                 iter++;
                 }
@@ -1235,6 +1250,41 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                     if (!b_is_extention && !a_is_extention && a_possible_extandable && !a_is_selfatari) LOCAL_FEATURE_POSITION(a,params->csstyle_2libavoidcapture,12);
                     if (!b_is_extention && !a_is_extention && b_possible_extendable && !b_is_selfatari) LOCAL_FEATURE_POSITION(b,params->csstyle_2libavoidcapture,12);
                   };
+            }
+            else {
+              int libs=group->numRealLibs();
+              if (libs<6) {
+                gtpe->getOutput()->printfDebug("more than 2 libs %d\n",libs);
+                Go::list_short *adjacentgroups=group->getAdjacentGroups();
+                if (adjacentgroups->size()>(unsigned int)board->getPositionMax())
+                {
+                  adjacentgroups->sort();
+                  adjacentgroups->unique();
+                }
+                for(auto iter=adjacentgroups->begin();iter!=adjacentgroups->end();iter++)
+                {
+                  if (board->inGroup((*iter)))
+                  {
+                    Go::Group *attachedgroup=board->getGroup((*iter));
+                    gtpe->getOutput()->printfDebug("attached group has libs %d and %d extending\n",attachedgroup->numRealLibs (),attachedgroup->getExtendingLibs (board).size());
+                    if (attachedgroup->numRealLibs()==libs) {
+                      std::ourset<int> extendlibs=attachedgroup->getExtendingLibs (board);
+                      if (extendlibs.size()==1) {
+                        LOCAL_FEATURE_POSITION(*extendlibs.begin(),params->csstyle_345libheuristic,8);
+                      }
+                      else if (extendlibs.size()==0) {
+                        std::ourset<int> ttt=attachedgroup->getRealLiberties();
+                        gtpe->getOutput()->printfDebug("---");
+                        for (auto lll=ttt.begin();lll!=ttt.end();++lll) {
+                          LOCAL_FEATURE_POSITION(*lll,params->csstyle_345libheuristic,8);
+                          gtpe->getOutput()->printfDebug("added %d\n",*lll);
+                        }
+                        gtpe->getOutput()->printfDebug("++++");
+                      }
+                    }
+                  }
+                }
+              }
             }
           }
         }//);

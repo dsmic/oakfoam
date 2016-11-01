@@ -228,6 +228,38 @@ int Go::Group::getOtherOneOfTwoLiberties(const Go::Board *board,int pos) const
   if (*all_liberties.begin()==pos) return *(++(all_liberties.begin()));
   return *all_liberties.begin();
 }
+
+std::ourset<int> Go::Group::getExtendingLibs(const Go::Board *board) 
+{
+  int size=board->getSize();
+  std::ourset<int> extlibs;
+  for (auto lib=all_liberties.begin();lib!=all_liberties.end();++lib) {
+    std::ourset<int> touchempt_nolib;
+    int lll=*lib;
+    bool found_connection=false;
+    foreach_adjacent_debug(lll,p)
+    {
+      if (board->getColor(p)==Go::EMPTY) {
+        if (all_liberties.count(p)==0) //none of the liberties
+          touchempt_nolib.insert(p);
+      }
+      else if (board->getColor(p)==color) {
+        if (board->inGroup(p)) {
+          Go::Group *g= board->getGroup(p);
+          if (g->find() != find() && g->numRealLibs()>2)
+            found_connection=true;
+        }
+      }
+    }
+    if (found_connection || touchempt_nolib.size()>1) {
+      extlibs.insert(lll);
+      //fprintf(stderr,"added lib %d - %d %d\n",lll,found_connection,touchempt_nolib.size());
+    }
+
+  }
+  
+  return extlibs;
+}
 /*
 int Go::Group::getOtherOneOfTwoLiberties(const Go::Board *board,int pos) const
 {

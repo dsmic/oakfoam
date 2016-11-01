@@ -326,6 +326,8 @@ class Parameters
     float csstyle_playonladder;
     float csstyle_defendapproach;
     float csstyle_2libavoidcapture;
+    float csstyle_2libcapturebutselfatari;
+    float csstyle_345libheuristic;
     bool csstyle_adaptiveplayouts;
     float csstyle_adaptiveplayouts_alpha;
     float csstyle_adaptiveplayouts_lambda;
