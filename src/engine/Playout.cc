@@ -1254,7 +1254,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
             else {
               int libs=group->numRealLibs();
               if (libs<6) {
-                gtpe->getOutput()->printfDebug("more than 2 libs %d\n",libs);
+                if (params->debug_on) gtpe->getOutput()->printfDebug("more than 2 libs %d\n",libs);
                 Go::list_short *adjacentgroups=group->getAdjacentGroups();
                 if (adjacentgroups->size()>(unsigned int)board->getPositionMax())
                 {
@@ -1266,7 +1266,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                   if (board->inGroup((*iter)))
                   {
                     Go::Group *attachedgroup=board->getGroup((*iter));
-                    gtpe->getOutput()->printfDebug("attached group has libs %d and %d extending\n",attachedgroup->numRealLibs (),attachedgroup->getExtendingLibs (board).size());
+                    if (params->debug_on) gtpe->getOutput()->printfDebug("attached group has libs %d and %d extending\n",attachedgroup->numRealLibs (),attachedgroup->getExtendingLibs (board).size());
                     if (attachedgroup->numRealLibs()==libs) {
                       std::ourset<int> extendlibs=attachedgroup->getExtendingLibs (board);
                       if (extendlibs.size()==1) {
