@@ -1274,12 +1274,12 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                       }
                       else if (extendlibs.size()==0) {
                         std::ourset<int> ttt=attachedgroup->getRealLiberties();
-                        gtpe->getOutput()->printfDebug("---");
+                        if (params->debug_on) gtpe->getOutput()->printfDebug("---");
                         for (auto lll=ttt.begin();lll!=ttt.end();++lll) {
                           LOCAL_FEATURE_POSITION(*lll,params->csstyle_345libheuristic,8);
-                          gtpe->getOutput()->printfDebug("added %d\n",*lll);
+                          if (params->debug_on) gtpe->getOutput()->printfDebug("added %d\n",*lll);
                         }
-                        gtpe->getOutput()->printfDebug("++++");
+                        if (params->debug_on) gtpe->getOutput()->printfDebug("++++");
                       }
                     }
                   }
