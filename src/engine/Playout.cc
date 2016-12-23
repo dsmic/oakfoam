@@ -1394,7 +1394,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
               }
               else if (board->getColor(q)==col) {
                 if (board->getGroup(q)->numRealLibs()<3)
-                  a_is_atari=true;
+                  b_is_atari=true;
                 Go::Group *checkgroup=board->getGroup(q);
                 if (checkgroup!=attachedgroup && checkgroup!=usedgroupSelfatari && checkgroup->numRealLibs()>1) {
                   libsSelfatari+=checkgroup->numRealLibs()-1;

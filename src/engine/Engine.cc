@@ -6260,7 +6260,7 @@ void Engine::makeMove(Go::Move move)
   blackOldMovesNum=0;
   whiteOldMovesNum=0;
 
-  if (params->uct_keep_subtree)
+  if (params->uct_keep_subtree && !move.isPass()) // not sure why it crashed with pass sometimes, but anyway it is end of game probably
     this->chooseSubTree(move);
   else
     this->clearMoveTree();

@@ -37,12 +37,12 @@ param uct_expand_after 20
 param localeval_01 10.0
 param localeval_02 7.0
 
-param csstyle_attachedposbutselfatari 0.01
-param csstyle_saveataricapturebutselfatari 0.01
-param csstyle_saveatariextentionbutselfatari 0.01
-param csstyle_nakade 100.0
+param csstyle_attachedposbutselfatari 0.001
+param csstyle_saveataricapturebutselfatari 0.001
+param csstyle_saveatariextentionbutselfatari 0.001
+param csstyle_nakade 15.0
 param csstyle_playonladder 2000000000
-param csstyle_defendapproach 101.0
+param csstyle_defendapproach 15.0
 param test_p4 10
 
 param csstyle_adaptiveplayouts 0
@@ -55,14 +55,14 @@ param rave_moves 0
 param ucb_init 100.0
 param CNN_pass_probability 0.001
 
-param csstyle_attachedpos 30.0
+param csstyle_attachedpos 10.0
 param csstyle_saveataricapture 500000.0
-param csstyle_saveatariextention 204.0
-param csstyle_solvekocapture 203.0
-param csstyle_2libcapture 202.0
-param csstyle_2libcapturebutselfatari 0.01
-param csstyle_2libavoidcapture 205.0
-param csstyle_345libheuristic 206.0
+param csstyle_saveatariextention 30.0
+param csstyle_solvekocapture 30.0
+param csstyle_2libcapture 30.0
+param csstyle_2libcapturebutselfatari 0.001
+param csstyle_2libavoidcapture 30.0
+param csstyle_345libheuristic 30.0
 
 param ucb_c 0.9
 param uct_symmetry_use 0
