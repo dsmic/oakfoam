@@ -477,6 +477,7 @@ class Engine
     Go::ZobristTable *zobristtable;
     Go::ZobristTree *hashtree;
     Playout *playout;
+    int cnn_calls;
     volatile bool stopthinking;
     volatile bool stoppondering;
     volatile bool stop_called;

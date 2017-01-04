@@ -1889,17 +1889,19 @@ bool Tree::expandLeaf(Worker::Settings *settings, int expand_num)
   
   //boost::mutex::scoped_try_lock lock(expandmutex);
   //expandmutex.lock();
-  if (params->test_p100>0 && params->cnn_num_of_gpus==0) {
-    //now we need an extended lock, as not two nodes may be expanded at the same time now!
-    if (params->cnn_mutex_wait_lock)
-      params->engine->CNNmutex.lock();
-    else {
-      if (!params->engine->CNNmutex.try_lock())
-        return false;
-    }
-  } 
-  else {
-    if (params->cnn_mutex_wait_lock)
+  //if (params->test_p100>0 && params->cnn_num_of_gpus==0) {
+  //  //now we need an extended lock, as not two nodes may be expanded at the same time now!
+  //  if (params->cnn_mutex_wait_lock) {
+  //    params->engine->CNNmutex.lock();
+  //  }
+  //  else {
+  //    if (!params->engine->CNNmutex.try_lock())
+  //      return false;
+  //  }
+  //} 
+  //else 
+  {
+    if (params->cnn_mutex_wait_lock) 
       expandmutex.lock();
     else {
       if (!expandmutex.try_lock())
@@ -1911,9 +1913,9 @@ bool Tree::expandLeaf(Worker::Settings *settings, int expand_num)
   if (!this->isLeaf())
   {
     //fprintf(stderr,"Node was already expanded!\n");
-    if (params->test_p100>0 && params->cnn_num_of_gpus==0) 
-      params->engine->CNNmutex.unlock();
-    else
+    //if (params->test_p100>0 && params->cnn_num_of_gpus==0) 
+    //  params->engine->CNNmutex.unlock();
+    //else
       expandmutex.unlock();
     return true;
   }
@@ -1930,9 +1932,9 @@ bool Tree::expandLeaf(Worker::Settings *settings, int expand_num)
     {
       delete startboard;
       fprintf(stderr,"WARNING! Trying to expand a terminal node? (passes:%d)\n",startboard->getPassesPlayed());
-      if (params->test_p100>0 && params->cnn_num_of_gpus==0) 
-        params->engine->CNNmutex.unlock();
-      else
+      //if (params->test_p100>0 && params->cnn_num_of_gpus==0) 
+      //  params->engine->CNNmutex.unlock();
+      //else
         expandmutex.unlock();
       return true;
     }
@@ -2254,9 +2256,9 @@ bool Tree::expandLeaf(Worker::Settings *settings, int expand_num)
   
   beenexpanded=true;
   delete startboard;
-  if (params->test_p100>0 && params->cnn_num_of_gpus==0) 
-      params->engine->CNNmutex.unlock();
-    else
+  //if (params->test_p100>0 && params->cnn_num_of_gpus==0) 
+  //    params->engine->CNNmutex.unlock();
+  //  else
       expandmutex.unlock();
   return true;
 }

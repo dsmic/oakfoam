@@ -50,7 +50,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
 #endif
   
   ACcount=0;
-
+  cnn_calls=0;
   
   
   gtpe=ge;
@@ -672,6 +672,7 @@ Engine::~Engine()
 
 void Engine::getCNN(Go::Board *board, int thread_id, Go::Color col, float result[], int net_num, float *v)
 {
+  cnn_calls++;
 #ifdef HAVE_CAFFE
 	//if (board->getSize()!=19) {
 	//	fprintf(stderr,"only 19x19 supported by CNN\n");
@@ -882,27 +883,12 @@ else if (caffe_test_net_input_dim[net_num] == 14 || caffe_test_net_input_dim[net
   //Blob<float> *b=new Blob<float>(1,caffe_test_net_input_dim[net_num],size,size);
   //b->set_cpu_data(data);
   //vector<Blob<float>*> bottom;
+
+  if (params->cnn_num_of_gpus==0) CNNmutex.lock();
   caffe_test_net[net_num_multi_gpu]->input_blobs()[0]->set_cpu_data(data);
-  //bottom.push_back(b);
-  //bottom[0]=b;
-  //cudaSetDeviceFlags(cudaDeviceBlockingSync);
+  //Caffe::set_mode(Caffe::CPU);
   Caffe::set_mode(Caffe::GPU);
   const vector<Blob<float>*>& rr =  caffe_test_net[net_num_multi_gpu]->Forward();
-  //fprintf(stderr,"start\n");
-  //clock_t tbegin = clock();
-  //for (int i=0;i<50;i++) {
-  //  const vector<Blob<float>*>& result =  caffe_test_net->Forward(bottom);
-  //}
-  //clock_t tend = clock();
-  //fprintf(stderr,"end %f\n",double(tend - tbegin) / CLOCKS_PER_SEC);
-  //for (int j=0;j<19;j++)
-	//{
-	//for (int k=0;k<19;k++)
-	//	{
-	//    fprintf(stderr,"%5.3f ",rr[0]->cpu_data()[j*19+k]);
-	//	}
-	//fprintf(stderr,"\n");
-	//}
   for (int i=0;i<size*size;i++) {
 	  result[i]=rr[0]->cpu_data()[i];
     if (result[i]<0.00001) result[i]=0.00001;
@@ -912,6 +898,8 @@ else if (caffe_test_net_input_dim[net_num] == 14 || caffe_test_net_input_dim[net
 if (v!=NULL) {
   *v=1.0-rr[1]->cpu_data()[0];
 }
+  if (params->cnn_num_of_gpus==0) CNNmutex.unlock();
+
   delete[] data;
 //  delete b;
 #else
@@ -5357,6 +5345,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     params->uct_last_r2=-1;
     
     int startplayouts=(int)movetree->getPlayouts();
+    int start_cnn_calls=cnn_calls;
     #ifdef HAVE_MPI
       params->mpi_last_update=MPI::Wtime();
     #endif
@@ -5368,6 +5357,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     
     totalplayouts=(int)movetree->getPlayouts()-startplayouts;
     //fprintf(stderr,"tplts: %d\n",totalplayouts);
+    int total_cnn_calls=cnn_calls-start_cnn_calls;
     
     if (movetree->isTerminalResult())
       gtpe->getOutput()->printfDebug("SOLVED! found 100%% sure result after %d plts!\n",totalplayouts);
@@ -5470,10 +5460,14 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     
     float time_used=this->timeSince(time_start);
     //fprintf(stderr,"tu: %f\n",time_used);
-    if (time_used>0)
+    float cnn_calls_per_second=-1;
+    if (time_used>0) {
       playouts_per_milli=(float)totalplayouts/(time_used*1000);
-    else
+      cnn_calls_per_second=(float)total_cnn_calls/(time_used);
+    }
+    else {
       playouts_per_milli=-1;
+    }
     if (!time->isNoTiming())
       time->useTime(col,time_used);
     
@@ -5494,6 +5488,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     if (!time->isNoTiming() || params->early_stop_occured)
       ss << " plts:"<<totalplayouts;
     ss << " ppms:"<<std::setprecision(2)<<playouts_per_milli;
+    ss << " cnncs:"<<total_cnn_calls;
+    ss << " cnnps:"<<std::setprecision(2)<<cnn_calls_per_second;
     ss << " rd:"<<std::setprecision(3)<<ratiodelta;
     ss << " r2:"<<std::setprecision(2)<<params->uct_last_r2;
     ss << " fs:"<<std::setprecision(2)<<scoremean;
