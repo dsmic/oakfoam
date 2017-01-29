@@ -505,6 +505,9 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("cnn","cnn_mutex_wait_lock",&(params->cnn_mutex_wait_lock),0);
   params->addParameter("cnn","cnn_num_of_gpus",&(params->cnn_num_of_gpus),0);
   params->addParameter("cnn","cnn_prior_values_treshhold",&(params->cnn_prior_values_treshhold),0.0);
+  params->addParameter("cnn","cnn_widening_p0",&(params->cnn_widening_p0),0.0);
+  params->addParameter("cnn","cnn_widening_pow",&(params->cnn_widening_pow),0.0);
+  params->addParameter("cnn","cnn_widening_relative",&(params->cnn_widening_relative),false);
   
   params->addParameter("other","auto_save_sgf",&(params->auto_save_sgf),false);
   params->addParameter("other","auto_save_sgf_prefix",&(params->auto_save_sgf_prefix),"game");
@@ -4053,16 +4056,21 @@ void Engine::gtpShowProbabilityCNN(void *instance, Gtp::Engine* gtpe, Gtp::Comma
   float result[bsize*bsize];
   float value=-1;
   me->getCNN(me->currentboard,0,(gtpcol==Gtp::BLACK)?Go::BLACK:Go::WHITE,result,0,&value);
+  std::vector<float> probs;
   for (int y=me->boardsize-1;y>=0;y--)
   {
     for (int x=0;x<me->boardsize;x++)
     {
+      probs.push_back(-result[bsize*x+y]);
       float black=1.0/log(result[bsize*x+y]);
       if (black > -0.2) black=0;
       gtpe->getOutput()->printf("%.2f ",black);
     }
     gtpe->getOutput()->printf("\n");
   }
+  std::sort(probs.begin(),probs.end());
+  for (int i = 0;i<10;i++)
+    fprintf(stderr,"%d %f\n",i,-probs[i]);
   fprintf(stderr,"value is %f\n",1.0-value);
   gtpe->getOutput()->endResponse(true);
 }
@@ -5210,6 +5218,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     float *CNNresults=new float[boardsize*boardsize];
     float value=-1;
     params->engine->getCNN(currentboard,0,col,CNNresults,0,&value);
+    std::vector<float> probs;
+    
     std::string lastexplanation="cnn";
     std::ostringstream stringStream;
     std::vector<std::pair<float,int>> m;
@@ -5219,7 +5229,9 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
         if (currentboard->validMove (col,p) && !currentboard->strongEye(col,p) && !currentboard->isSelfAtariOfSize (Go::Move(col,p),6)) {
           m.push_back({-CNNresults[boardsize*x+y],p});
         }
+        probs.push_back(-CNNresults[boardsize*x+y]);
       }
+    std::sort(probs.begin(),probs.end());
     int play_pos=0;
     if (m.size()>1) {
       std::sort(m.begin(),m.end());
@@ -5241,8 +5253,10 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
           play_pos=num-1;
       }
       *move=new Go::Move(col,m[play_pos].second);
-      fprintf(stderr," move %s p: %f v: %f\n",(*move)->toString(boardsize).c_str(),-m[play_pos].first,1.0-value);
-      stringStream << "cnn-move " << (*move)->toString(boardsize) << " p:" << -m[play_pos].first << " v:" << (1.0-value);
+      fprintf(stderr," move %s p: %f v: %f probs",(*move)->toString(boardsize).c_str(),-m[play_pos].first,1.0-value);
+      stringStream << "cnn-move " << (*move)->toString(boardsize) << " p:" << -m[play_pos].first << " v:" << (1.0-value) << " probs";
+      for (int i=0;i<20;i++)
+        stringStream << "," << -probs[i];
       lastexplanation=stringStream.str();
     }
     else

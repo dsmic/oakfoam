@@ -1179,6 +1179,7 @@ void Tree::unPruneNextChild()
   {
     Tree *bestchild=NULL;
     float bestfactor=-1;
+    float second_bestfactor=-1;
     unsigned int unpruned=0;
 
     //moves of the same color two levels higher in the tree
@@ -1223,7 +1224,8 @@ void Tree::unPruneNextChild()
         if (local_prob>1) local_prob=1;
       }
     }
-    for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
+    
+  for(std::list<Tree*>::iterator iter=children->begin();iter!=children->end();++iter) 
     {
       if ((*iter)->isPrimary() && !(*iter)->isSuperkoViolation())
       {
@@ -1231,8 +1233,15 @@ void Tree::unPruneNextChild()
         {
           if ((*iter)->getUnPruneFactor(moveValues,mean,num,local_prob)>bestfactor || bestchild==NULL)
           {
+            second_bestfactor=bestfactor;
             bestfactor=(*iter)->getUnPruneFactor(moveValues,mean,num,local_prob);
             bestchild=(*iter);
+            if ((params->cnn_widening_p0 >0 ) &&((*iter)->getUnPruneFactor(moveValues,mean,num,local_prob) != (*iter)->getFeatureGamma() / childrentotalgamma))
+              fprintf(stderr," this is debugging: full cnn support it should not happen!!! unprune values %f %f %f %d\n",(*iter)->getUnPruneFactor(moveValues,mean,num,local_prob),(*iter)->getFeatureGamma(),childrentotalgamma,isLeaf());       
+          }
+          else {
+            if ((*iter)->getUnPruneFactor(moveValues,mean,num,local_prob) > second_bestfactor)
+              second_bestfactor=(*iter)->getUnPruneFactor(moveValues,mean,num,local_prob);
           }
           //  fprintf(stderr,"%s %5.3f %5.3f (%5.0f) %5.3f",(*iter)->getMove().toString(params->board_size).c_str(),(*iter)->getUnPruneFactor(),(*iter)->getRAVERatio(),(*iter)->getRAVEPlayouts(),(*iter)->getFeatureGamma());
           // Following is commented out because is cannot be disabled
@@ -1287,7 +1296,19 @@ void Tree::unPruneNextChild()
       bestchild->setUnprunedNum(unpruned+1);
       unprunedchildren++;
       float correct_b=childrenlogtotalchildgamma;//(childrenlogtotalchildgamma-params->test_p67>0)?childrenlogtotalchildgamma-params->test_p67 : 0;
-      unprunebase=params->uct_progressive_widening_a*pow(params->uct_progressive_widening_b-params->test_p66*correct_b,unpruned);
+
+      if (params->cnn_widening_p0 >0 ) {
+        if (params->cnn_widening_relative)
+          unprunebase=params->cnn_widening_p0 * pow( bestfactor / second_bestfactor , -params->cnn_widening_pow);
+        else
+          unprunebase=params->cnn_widening_p0 * pow( second_bestfactor , -params->cnn_widening_pow);
+          
+//        fprintf(stderr,"debugging unpruned: %d unprunebase_before %10.0f after %10.0f second_bestfactor %f bestfactor %f\n",unpruned,params->uct_progressive_widening_a*pow(params->uct_progressive_widening_b-params->test_p66*correct_b,unpruned),unprunebase,second_bestfactor,bestfactor);
+      }
+      else 
+      {
+        unprunebase=params->uct_progressive_widening_a*pow(params->uct_progressive_widening_b-params->test_p66*correct_b,unpruned);
+      }
       lastunprune=this->unPruneMetric();
       this->updateUnPruneAt();
       prunedchildren--;
@@ -1373,6 +1394,10 @@ void Tree::updateUnPruneAt()
 
 void Tree::checkForUnPruning()
 {
+  if (params->cnn_mutex_wait_lock) { //this was not correct, during expanding unprunning is not ready !!
+    expandmutex.lock();
+    expandmutex.unlock();
+  }
   this->updateUnPruneAt();
   if (this->unPruneMetric()>=unprunenextchildat)
   {
@@ -1387,8 +1412,7 @@ void Tree::checkForUnPruning()
 }
 
 void Tree::unPruneNow()
-{
-  float tmp=unprunenextchildat=this->unPruneMetric();
+{float tmp=unprunenextchildat=this->unPruneMetric();
   //boost::mutex::scoped_lock lock(unprunemutex);
   unprunemutex.lock();
   if (tmp==unprunenextchildat)

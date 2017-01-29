@@ -764,6 +764,10 @@ class Parameters
     bool cnn_mutex_wait_lock;
     int cnn_num_of_gpus; //0 is standard blocking code, >0 does one net per thread and distributes them over the gpus
     float cnn_prior_values_treshhold;
+    float cnn_widening_p0;
+    float cnn_widening_pow;
+    bool cnn_widening_relative;
+    
     /** Size of circular patterns that are listed after a move.
      * @see features_circ_list
      */
