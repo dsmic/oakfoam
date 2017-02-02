@@ -754,14 +754,14 @@ void Engine::getCNN(Go::Board *board, int thread_id, Go::Color col, float result
 if (caffe_test_net_input_dim[net_num] == 20) {
 int komiplane=-1;
 if (col==Go::BLACK) {
-  if (komi==0.5) komiplane=0;
-  if (komi==6.5) komiplane=1;
-  if (komi==7.5) komiplane=2;
+  if (komi<5.5) komiplane=0;
+  if ((komi>=5.5) && (komi<=6.5)) komiplane=1;
+  if (komi>6.5) komiplane=2;
 }
 if (col==Go::WHITE) {
-  if (komi==0.5) komiplane=3;
-  if (komi==6.5) komiplane=4;
-  if (komi==7.5) komiplane=5;
+  if (komi<5.5) komiplane=3;
+  if ((komi>=5.5) && (komi<=6.5)) komiplane=4;
+  if (komi>6.5) komiplane=5;
 }
 if (komiplane>=0) {
   for (int j=0;j<size;j++)
