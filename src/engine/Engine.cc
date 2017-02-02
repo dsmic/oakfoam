@@ -37,12 +37,16 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   //cudaSetDeviceFlags(cudaDeviceBlockingSync);
   //Caffe::set_mode_gpu();
 #ifdef HAVE_CAFFE
-  Caffe::SetDevice(0);
   int t1=Caffe::mode();
+#ifdef CPU_ONLY
+  Caffe::set_mode(Caffe::CPU);
+#else
   Caffe::set_mode(Caffe::GPU);
+  Caffe::SetDevice(0);
+  Caffe::DeviceQuery();
+#endif
   int t2=Caffe::mode();
   fprintf(stderr,"%d %d\n",t1,t2);
-  Caffe::DeviceQuery();
   //Caffe::set_phase(Caffe::TEST);
   caffe_area_net = NULL;
   for (int i=0;i<num_nets;i++)
@@ -508,7 +512,11 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("cnn","cnn_widening_p0",&(params->cnn_widening_p0),0.0);
   params->addParameter("cnn","cnn_widening_pow",&(params->cnn_widening_pow),0.0);
   params->addParameter("cnn","cnn_widening_relative",&(params->cnn_widening_relative),false);
-  
+#ifdef CPU_ONLY
+  params->addParameter("cnn","cnn_CPU_ONLY",&(params->cnn_CPU_ONLY),true);
+#else
+  params->addParameter("cnn","cnn_CPU_ONLY",&(params->cnn_CPU_ONLY),false);
+#endif  
   params->addParameter("other","auto_save_sgf",&(params->auto_save_sgf),false);
   params->addParameter("other","auto_save_sgf_prefix",&(params->auto_save_sgf_prefix),"game");
   params->addParameter("other","version_config_file",&(params->version_config_file),"1.0");
@@ -889,8 +897,10 @@ else if (caffe_test_net_input_dim[net_num] == 14 || caffe_test_net_input_dim[net
 
   if (params->cnn_num_of_gpus==0) CNNmutex.lock();
   caffe_test_net[net_num_multi_gpu]->input_blobs()[0]->set_cpu_data(data);
-  //Caffe::set_mode(Caffe::CPU);
-  Caffe::set_mode(Caffe::GPU);
+  if (params->cnn_CPU_ONLY)
+    Caffe::set_mode(Caffe::CPU);
+  else
+    Caffe::set_mode(Caffe::GPU);
   const vector<Blob<float>*>& rr =  caffe_test_net[net_num_multi_gpu]->Forward();
   for (int i=0;i<size*size;i++) {
 	  result[i]=rr[0]->cpu_data()[i];

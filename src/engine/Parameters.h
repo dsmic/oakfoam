@@ -767,6 +767,7 @@ class Parameters
     float cnn_widening_p0;
     float cnn_widening_pow;
     bool cnn_widening_relative;
+    bool cnn_CPU_ONLY;
     
     /** Size of circular patterns that are listed after a move.
      * @see features_circ_list
