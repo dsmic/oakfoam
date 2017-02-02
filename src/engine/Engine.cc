@@ -513,9 +513,9 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("cnn","cnn_widening_pow",&(params->cnn_widening_pow),0.0);
   params->addParameter("cnn","cnn_widening_relative",&(params->cnn_widening_relative),false);
 #ifdef CPU_ONLY
-  params->addParameter("cnn","cnn_CPU_ONLY",&(params->cnn_CPU_ONLY),true);
+  params->addParameter("cnn","cnn_cpu_only",&(params->cnn_CPU_ONLY),true);
 #else
-  params->addParameter("cnn","cnn_CPU_ONLY",&(params->cnn_CPU_ONLY),false);
+  params->addParameter("cnn","cnn_cpu_only",&(params->cnn_CPU_ONLY),false);
 #endif  
   params->addParameter("other","auto_save_sgf",&(params->auto_save_sgf),false);
   params->addParameter("other","auto_save_sgf_prefix",&(params->auto_save_sgf_prefix),"game");
