@@ -658,6 +658,8 @@ class Parameters
      * @see rules_all_stones_alive_playouts
      */
     bool rules_all_stones_alive;
+    bool rules_passout_if_win;
+    
     /** Minimum number of playouts for considering alive and dead stones. */
     int rules_all_stones_alive_playouts;
     

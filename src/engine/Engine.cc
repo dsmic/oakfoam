@@ -463,6 +463,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("rules","rules_superko_at_playout",&(params->rules_superko_at_playout),RULES_SUPERKO_AT_PLAYOUT);
   params->addParameter("rules","rules_all_stones_alive",&(params->rules_all_stones_alive),RULES_ALL_STONES_ALIVE);
   params->addParameter("rules","rules_all_stones_alive_playouts",&(params->rules_all_stones_alive_playouts),RULES_ALL_STONES_ALIVE_PLAYOUTS);
+  params->addParameter("rules","rules_passout_if_win",&(params->rules_passout_if_win),false);
   
   params->addParameter("time","time_k",&(params->time_k),TIME_K);
   params->addParameter("time","time_buffer",&(params->time_buffer),TIME_BUFFER);
@@ -547,7 +548,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("other","dt_ordered_comparison",&(params->dt_ordered_comparison),false);
   
   #ifdef HAVE_MPI
-    params->addParameter("mpi","mpi_update_period",&(params->mpi_update_period),MPI_UPDATE_PERIOD);
+    params->addParameter("mpi","mpi_update_period",&(rule_params->mpi_update_period),MPI_UPDATE_PERIOD);
     params->addParameter("mpi","mpi_update_depth",&(params->mpi_update_depth),MPI_UPDATE_DEPTH);
     params->addParameter("mpi","mpi_update_threshold",&(params->mpi_update_threshold),MPI_UPDATE_THRESHOLD);
   #endif
@@ -5439,12 +5440,23 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     bool bestsame=false;
     int eq_moves=0;
     int eq_moves2=0;
-    if (besttree==NULL)
+
+    //this is, because cnn can unprune selfatari moves only in cleanup
+    bool would_selfatari=false;
+    if (besttree!=NULL && currentboard->isSelfAtariOfSize (besttree->getMove(),5,true)) {
+      would_selfatari=true;
+    }
+
+    if (params->rules_passout_if_win && besttree!=NULL && currentboard->getLastMove().isPass() && besttree->getRatio()> 1.0 - params->resign_ratio_threshold) {
+        fprintf(stderr,"WARNING! passout!\n");
+      *move=new Go::Move(col,Go::Move::PASS);
+    }          
+    else if (besttree==NULL)
     {
       fprintf(stderr,"WARNING! No move found!\n");
       *move=new Go::Move(col,Go::Move::RESIGN);
     }
-    else if (!besttree->isTerminalWin() && besttree->getRatio()<params->resign_ratio_threshold && currentboard->getMovesMade()>(params->resign_move_factor_threshold*boardsize*boardsize))
+    else if (!besttree->isTerminalWin() && besttree->getRatio()<params->resign_ratio_threshold && currentboard->getMovesMade()>(params->resign_move_factor_threshold*boardsize*boardsize) && !would_selfatari )
     {
       *move=new Go::Move(col,Go::Move::RESIGN);
       bestratio=besttree->getRatio();
@@ -5454,7 +5466,6 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
     }
     else
     {
-      *move=new Go::Move(col,besttree->getMove().getPosition());
       bestratio=besttree->getRatio();
       cnn_value_display=besttree->getCNNvalue();
       eq_moves=besttree->countMoveCirc();
@@ -5465,6 +5476,44 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
       
       ratiodelta=besttree->bestChildRatioDiff();
       bestsame=(besttree==(movetree->getBestRatioChild(10)));
+
+      if (besttree->getMove().isPass()&& (params->cleanup_in_progress || params->rules_all_stones_alive)) {
+        //find touching dead stone with no selfatari
+        int size=boardsize;
+        bool touchmove=false;        
+          for(std::list<Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
+          {
+            int pos=(*iter)->getMove().getPosition();
+            Go::Color col=(*iter)->getMove().getColor();
+            Go::Color othercol=Go::otherColor(col);
+            
+            bool founddead=false;
+            if (pos>=0)
+            {
+              foreach_adjacent(pos,p,{
+              if (currentboard->getColor(p)==othercol && !currentboard->isAlive(territorymap,params->territory_threshold,p))
+                founddead=true;
+              });
+            }
+            
+            if (founddead && !currentboard->isSelfAtariOfSize ((*iter)->getMove(),5,true))
+            {
+              touchmove=true;
+              movetree->unprunefromchild(*iter); // (*iter)->setPruned(false);
+              *move=new Go::Move(col,(*iter)->getMove().getPosition ());
+              break;
+            }
+          }
+        if (!touchmove) {
+          *move=new Go::Move(col,besttree->getMove().getPosition());
+        }
+      }
+      else {
+        if (would_selfatari) 
+            *move=new Go::Move(col,Go::Move::PASS); //cnn can suggest this abough pass probability  
+          else
+            *move=new Go::Move(col,besttree->getMove().getPosition());
+      }
     }
     
     if (params->uct_slow_update_last!=0)
