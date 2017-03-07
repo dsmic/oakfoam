@@ -5447,72 +5447,92 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
       would_selfatari=true;
     }
 
+    bool didpassout=false;
     if (params->rules_passout_if_win && besttree!=NULL && currentboard->getLastMove().isPass() && besttree->getRatio()> 1.0 - params->resign_ratio_threshold) {
-        fprintf(stderr,"WARNING! passout!\n");
-      *move=new Go::Move(col,Go::Move::PASS);
-    }          
-    else if (besttree==NULL)
-    {
-      fprintf(stderr,"WARNING! No move found!\n");
-      *move=new Go::Move(col,Go::Move::RESIGN);
-    }
-    else if (!besttree->isTerminalWin() && besttree->getRatio()<params->resign_ratio_threshold && currentboard->getMovesMade()>(params->resign_move_factor_threshold*boardsize*boardsize) && !would_selfatari )
-    {
-      *move=new Go::Move(col,Go::Move::RESIGN);
-      bestratio=besttree->getRatio();
-      cnn_value_display=besttree->getCNNvalue();
-      eq_moves=besttree->countMoveCirc();
-      eq_moves2=besttree->countMoveCirc2();
-    }
-    else
-    {
-      bestratio=besttree->getRatio();
-      cnn_value_display=besttree->getCNNvalue();
-      eq_moves=besttree->countMoveCirc();
-      eq_moves2=besttree->countMoveCirc2();
-      scoresd=besttree->getScoreSD();
-      scoremean=besttree->getScoreMean();
-      best_unpruned=besttree->getUnprunedNum();
-      
-      ratiodelta=besttree->bestChildRatioDiff();
-      bestsame=(besttree==(movetree->getBestRatioChild(10)));
-
-      if (besttree->getMove().isPass()&& (params->cleanup_in_progress || params->rules_all_stones_alive)) {
-        //find touching dead stone with no selfatari
-        int size=boardsize;
-        bool touchmove=false;        
-          for(std::list<Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
-          {
-            int pos=(*iter)->getMove().getPosition();
-            Go::Color col=(*iter)->getMove().getColor();
-            Go::Color othercol=Go::otherColor(col);
-            
-            bool founddead=false;
-            if (pos>=0)
-            {
-              foreach_adjacent(pos,p,{
-              if (currentboard->getColor(p)==othercol && !currentboard->isAlive(territorymap,params->territory_threshold,p))
-                founddead=true;
-              });
-            }
-            
-            if (founddead && !currentboard->isSelfAtariOfSize ((*iter)->getMove(),5,true))
-            {
-              touchmove=true;
-              movetree->unprunefromchild(*iter); // (*iter)->setPruned(false);
-              *move=new Go::Move(col,(*iter)->getMove().getPosition ());
-              break;
-            }
-          }
-        if (!touchmove) {
-          *move=new Go::Move(col,besttree->getMove().getPosition());
-        }
+      //check if scoring will indicate win
+      float score;
+      if (!params->rules_all_stones_alive)
+      {
+        int plts=params->rules_all_stones_alive_playouts-movetree->getPlayouts();
+        if (plts>0)
+          doNPlayouts(plts);
       }
-      else {
-        if (would_selfatari) 
-            *move=new Go::Move(col,Go::Move::PASS); //cnn can suggest this abough pass probability  
-          else
+      
+      if (params->rules_all_stones_alive || params->cleanup_in_progress)
+        score=currentboard->score()-komi-komi_handicap;
+      else
+        score=currentboard->territoryScore(territorymap,params->territory_threshold)-komi-komi_handicap;
+
+      if ((col==Go::BLACK && score>0) || (col==Go::WHITE && score<0)) {
+        didpassout=true;
+        fprintf(stderr,"WARNING! passout!\n");
+        *move=new Go::Move(col,Go::Move::PASS);
+      }
+    }
+    if (!didpassout) {
+      if (besttree==NULL)
+      {
+        fprintf(stderr,"WARNING! No move found!\n");
+        *move=new Go::Move(col,Go::Move::RESIGN);
+      }
+      else if (!besttree->isTerminalWin() && besttree->getRatio()<params->resign_ratio_threshold && currentboard->getMovesMade()>(params->resign_move_factor_threshold*boardsize*boardsize) && !would_selfatari )
+      {
+        *move=new Go::Move(col,Go::Move::RESIGN);
+        bestratio=besttree->getRatio();
+        cnn_value_display=besttree->getCNNvalue();
+        eq_moves=besttree->countMoveCirc();
+        eq_moves2=besttree->countMoveCirc2();
+      }
+      else
+      {
+        bestratio=besttree->getRatio();
+        cnn_value_display=besttree->getCNNvalue();
+        eq_moves=besttree->countMoveCirc();
+        eq_moves2=besttree->countMoveCirc2();
+        scoresd=besttree->getScoreSD();
+        scoremean=besttree->getScoreMean();
+        best_unpruned=besttree->getUnprunedNum();
+        
+        ratiodelta=besttree->bestChildRatioDiff();
+        bestsame=(besttree==(movetree->getBestRatioChild(10)));
+
+        if (besttree->getMove().isPass()&& (params->cleanup_in_progress || params->rules_all_stones_alive)) {
+          //find touching dead stone with no selfatari
+          int size=boardsize;
+          bool touchmove=false;        
+            for(std::list<Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
+            {
+              int pos=(*iter)->getMove().getPosition();
+              Go::Color col=(*iter)->getMove().getColor();
+              Go::Color othercol=Go::otherColor(col);
+              
+              bool founddead=false;
+              if (pos>=0)
+              {
+                foreach_adjacent(pos,p,{
+                if (currentboard->getColor(p)==othercol && !currentboard->isAlive(territorymap,params->territory_threshold,p))
+                  founddead=true;
+                });
+              }
+              
+              if (founddead && !currentboard->isSelfAtariOfSize ((*iter)->getMove(),5,true))
+              {
+                touchmove=true;
+                movetree->unprunefromchild(*iter); // (*iter)->setPruned(false);
+                *move=new Go::Move(col,(*iter)->getMove().getPosition ());
+                break;
+              }
+            }
+          if (!touchmove) {
             *move=new Go::Move(col,besttree->getMove().getPosition());
+          }
+        }
+        else {
+          if (would_selfatari) 
+              *move=new Go::Move(col,Go::Move::PASS); //cnn can suggest this abough pass probability  
+            else
+              *move=new Go::Move(col,besttree->getMove().getPosition());
+        }
       }
     }
     
