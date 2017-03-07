@@ -463,6 +463,7 @@ class Engine
     Go::Board *historyboards[historyboards_num];
     float komi;
     float komi_handicap;
+    bool resign_because_high_handi;
     float recalc_dynkomi;
     int boardsize;
     int debug_solid_group;

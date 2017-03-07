@@ -80,6 +80,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
     historyboards[i]=NULL;
   komi=7.5;
   komi_handicap=0;
+  resign_because_high_handi=false;
   recalc_dynkomi=0;
 
   deltawhiteoffset=boardsize*boardsize*(local_feature_num+hashto5num);
@@ -464,6 +465,7 @@ Engine::Engine(Gtp::Engine *ge, std::string ln) : params(new Parameters())
   params->addParameter("rules","rules_all_stones_alive",&(params->rules_all_stones_alive),RULES_ALL_STONES_ALIVE);
   params->addParameter("rules","rules_all_stones_alive_playouts",&(params->rules_all_stones_alive_playouts),RULES_ALL_STONES_ALIVE_PLAYOUTS);
   params->addParameter("rules","rules_passout_if_win",&(params->rules_passout_if_win),false);
+  params->addParameter("rules","rules_resign_high_handi",&(params->rules_resign_high_handi),0);
   
   params->addParameter("time","time_k",&(params->time_k),TIME_K);
   params->addParameter("time","time_buffer",&(params->time_buffer),TIME_BUFFER);
@@ -5101,7 +5103,9 @@ void Engine::gtpSetFreeHandicap(void *instance, Gtp::Engine* gtpe, Gtp::Command*
     gtpe->getOutput()->endResponse();
     return;
   }
-
+  if (me->params->rules_resign_high_handi>0 && numVertices>me->params->rules_resign_high_handi) {
+    me->resign_because_high_handi=true;
+  }
   gtpe->getOutput()->startResponse(cmd);
   for (int x=0;x<numVertices;x++)
   {
@@ -5225,6 +5229,12 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
   clearExpandStats();
   respondboard->scale(0.2);
 
+  if (params->rules_resign_high_handi>0 && resign_because_high_handi) {
+    fprintf(stderr,"WARNING! handi_to_high!!!!\n");
+    *move=new Go::Move(col,Go::Move::RESIGN);
+    resign_because_high_handi=false;
+    return;
+    }
   if (params->move_policy==Parameters::MP_CNN) {
     float *CNNresults=new float[boardsize*boardsize];
     float value=-1;
@@ -5282,6 +5292,8 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
   }
   if (params->play_n_passes_first>0) {
     //for the MFGO1998 challange
+    if (komi_handicap==0) 
+      komi_handicap=params->play_n_passes_first;
     *move=new Go::Move(col,Go::Move::PASS);
     params->play_n_passes_first--;
     return;
@@ -6472,6 +6484,7 @@ void Engine::clearBoard()
   isgamefinished=false;
   komi_handicap=0;
   recalc_dynkomi=0;
+  resign_because_high_handi=false;
 //  if (deltagammas!=NULL) delete[]deltagammas;
   if (deltagammaslocal!=NULL) delete[]deltagammaslocal;
   deltawhiteoffset=boardsize*boardsize*(local_feature_num+hashto5num);
