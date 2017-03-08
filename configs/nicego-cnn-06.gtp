@@ -62,7 +62,7 @@ param csstyle_saveataricapture 500000.0
 param csstyle_saveatariextention 100.0
 param csstyle_solvekocapture 100.0
 param csstyle_2libcapture 100.0
-param csstyle_2libcapturebutselfatari 100.0
+param csstyle_2libcapturebutselfatari 0.01
 param csstyle_2libavoidcapture 100.0
 param csstyle_345libheuristic 100.0
 
