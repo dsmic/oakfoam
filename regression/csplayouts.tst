@@ -23,10 +23,11 @@ loadsgf debugging_cs_style.sgf 26
 1026004 reg_genmove w
 #? [A15]
 
+#not sure if this really must happen
 clear_board
 loadsgf debugging_cs_style.sgf 34
 1034007 reg_genmove w
-#? [E19|F19]
+#? [E19|F19]*
 
 clear_board
 loadsgf debugging_cs_style.sgf 57
@@ -72,5 +73,10 @@ clear_board
 loadsgf debugging_cs_style.sgf 160
 1160005 reg_genmove w
 #? [!S16]
+
+clear_board
+loadsgf debugging_cs_style.sgf 182
+1170008 reg_genmove w
+#? [T10]
 
 #----------------------------------------------

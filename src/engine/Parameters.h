@@ -328,6 +328,7 @@ class Parameters
     float csstyle_2libavoidcapture;
     float csstyle_2libcapturebutselfatari;
     float csstyle_345libheuristic;
+    bool csstyle_345libheuristic_shared;
     bool csstyle_adaptiveplayouts;
     float csstyle_adaptiveplayouts_alpha;
     float csstyle_adaptiveplayouts_lambda;

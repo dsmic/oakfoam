@@ -62,7 +62,8 @@ param csstyle_solvekocapture 30.0
 param csstyle_2libcapture 30.0
 param csstyle_2libcapturebutselfatari 0.001
 param csstyle_2libavoidcapture 30.0
-param csstyle_345libheuristic 30.0
+param csstyle_345libheuristic 50.0
+param csstyle_345libheuristic_shared 1
 
 param ucb_c 0.9
 param uct_symmetry_use 0

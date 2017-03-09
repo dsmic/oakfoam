@@ -1254,7 +1254,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
             else {
               int libs=group->numRealLibs();
               if (libs<6) {
-                if (params->debug_on) gtpe->getOutput()->printfDebug("more than 2 libs %d\n",libs);
+                if (params->debug_on) gtpe->getOutput()->printfDebug("more %d than 2 libs %d\n",group->getPosition (),libs);
                 Go::list_short *adjacentgroups=group->getAdjacentGroups();
                 if (adjacentgroups->size()>(unsigned int)board->getPositionMax())
                 {
@@ -1266,7 +1266,7 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                   if (board->inGroup((*iter)))
                   {
                     Go::Group *attachedgroup=board->getGroup((*iter));
-                    if (params->debug_on) gtpe->getOutput()->printfDebug("attached group has libs %d and %d extending\n",attachedgroup->numRealLibs (),attachedgroup->getExtendingLibs (board).size());
+                    if (params->debug_on) gtpe->getOutput()->printfDebug("attached group %d has libs %d and %d extending\n",attachedgroup->getPosition(),attachedgroup->numRealLibs (),attachedgroup->getExtendingLibs (board).size());
                     if (attachedgroup->numRealLibs()==libs) {
                       std::ourset<int> extendlibs=attachedgroup->getExtendingLibs (board);
                       if (extendlibs.size()==1) {
@@ -1280,6 +1280,24 @@ void Playout::getPlayoutMove(Worker::Settings *settings, Go::Board *board, Go::C
                           if (params->debug_on) gtpe->getOutput()->printfDebug("added %d\n",*lll);
                         }
                         if (params->debug_on) gtpe->getOutput()->printfDebug("++++");
+                      }
+                    }
+                    else if (params->csstyle_345libheuristic_shared &&
+                             (attachedgroup->numRealLibs()+1==libs) &&
+                             attachedgroup->getExtendingLibs (board).size()==0) {
+                      std::ourset<int> shared_libs;
+                      //intersect needs sorted items, unordered set does not work
+                      std::set<int> g1; g1.insert(group->getRealLiberties().begin(),group->getRealLiberties().end());
+                      std::set<int> g2; g2.insert(attachedgroup->getRealLiberties().begin(),attachedgroup->getRealLiberties().end());
+                        
+                      std::set_intersection(g1.begin(),
+                                              g1.end(),
+                                              g2.begin(),
+                                              g2.end(),
+                                              std::inserter(shared_libs,shared_libs.begin()));
+                      if (params->debug_on) gtpe->getOutput()->printfDebug("shared libs %d\n",shared_libs.size());
+                      if (shared_libs.size()==1) {
+                        LOCAL_FEATURE_POSITION(*shared_libs.begin(),params->csstyle_345libheuristic,8);
                       }
                     }
                   }
