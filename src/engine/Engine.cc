@@ -5456,7 +5456,7 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
 
     //this is, because cnn can unprune selfatari moves only in cleanup
     bool would_selfatari=false;
-    if (besttree!=NULL && currentboard->isSelfAtariOfSize (besttree->getMove(),5,true)) {
+    if (besttree!=NULL && besttree->getMove().isNormal() && currentboard->isSelfAtariOfSize (besttree->getMove(),5,true)) {
       would_selfatari=true;
     }
 
