@@ -5509,8 +5509,9 @@ void Engine::generateMove(Go::Color col, Go::Move **move, bool playmove)
         ratiodelta=besttree->bestChildRatioDiff();
         bestsame=(besttree==(movetree->getBestRatioChild(10)));
 
-        if (besttree->getMove().isPass()&& (params->cleanup_in_progress || params->rules_all_stones_alive)) {
+        if ((besttree->getMove().isPass() || would_selfatari) && (params->cleanup_in_progress || params->rules_all_stones_alive)) {
           //find touching dead stone with no selfatari
+          would_selfatari=false;
           int size=boardsize;
           bool touchmove=false;        
             for(std::list<Tree*>::iterator iter=movetree->getChildren()->begin();iter!=movetree->getChildren()->end();++iter) 
