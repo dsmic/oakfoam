@@ -1,0 +1,93 @@
+param csstyle_enabled 1
+param cnn_mutex_wait_lock 1
+loadfeaturegammas /home/detlef/gomill/trained_playout_and_circ_for_cnn.gamma
+loadcnnp /media/detlef/Large/detlef/ReinforcmentLearning/gomill/selfplay.prototxt /media/detlef/Large/detlef/ReinforcmentLearning/gomill/selfplay-test4d.trained 5
+param time_k 20.000
+param time_buffer 2.000
+param time_move_minimum 2
+param other auto_save_sgf 0
+param surewin_pass_bonus 0.5
+param surewin_touchdead_bonus 190.0
+param playouts_per_move 150
+param playouts_per_move_max 150
+param playouts_per_move_min 75
+param pondering_enabled 0
+param pondering_playouts_max 2000000
+param rules_all_stones_alive 1
+param thread_count 1
+param tree resign_ratio_threshold 0.15
+param book_use 1
+param playout_useless_move 1
+param playout playout_fill_weak_eyes 1
+param playout_nakade5_enabled 1
+param playout_nakade4_enabled 1
+param playout_nakade_bent4_enabled 1
+param playout_avoid_selfatari_complex 1
+param playout_random_approach_p 1.0
+param playout_avoid_bpr_p 0.66
+param playout_avoid_bpr_p2 0.0
+param uct_terminal_handling 0
+param undo_enable 0
+param playout_defend_approach 1
+param uct_terminal_handling 0
+
+param version_config_file "fix"
+
+
+param uct_expand_after 3
+
+param localeval_01 10.0
+param localeval_02 7.0
+
+param csstyle_attachedposbutselfatari 0.01
+param csstyle_saveataricapturebutselfatari 0.01
+param csstyle_saveatariextentionbutselfatari 0.01
+param csstyle_nakade 50.0
+param csstyle_playonladder 2000000000
+param csstyle_defendapproach 50.0
+param test_p4 10
+
+param csstyle_adaptiveplayouts 0
+
+param test_p100 1.0
+param test_p101 0.0
+param test_p102 0.0
+
+param rave_moves 0
+param ucb_init 100.0
+param CNN_pass_probability 0.001
+
+param csstyle_attachedpos 15.0
+param csstyle_saveataricapture 500000.0
+param csstyle_saveatariextention 100.0
+param csstyle_solvekocapture 100.0
+param csstyle_2libcapture 100.0
+param csstyle_2libcapturebutselfatari 0.01
+param csstyle_2libavoidcapture 100.0
+param csstyle_345libheuristic 100.0
+param csstyle_345libheuristic_shared 1
+
+param ucb_c 0.8
+param uct_symmetry_use 0
+param uct_progressive_widening_a 10.0
+param uct_progressive_bias_enabled 1
+param uct_progressive_bias_log_add 10.0
+param uct_progressive_bias_h 0.8
+param cnn_weak_gamma 0.0
+param cnn_lastmove_decay 0.0
+param cnn_value_lambda 0.5
+param cnn_random_for_only_cnn 10
+
+param csstyle_pattern_weak_gamma_pick 0
+param csstyle_pattern_min_gamma_sort 1.6
+
+param playout_nakade2_enabled 0
+param cnn_prior_values_treshhold 0.3
+param surewin_threshold 1.1
+param uct_progressive_bias_count_offset 25.0
+param uct_progressive_widening_c 0.0
+
+param cnn_widening_p0 0.0
+param cnn_widening_pow 1.22
+
+

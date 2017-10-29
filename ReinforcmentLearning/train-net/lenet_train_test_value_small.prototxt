@@ -1,0 +1,1000 @@
+name: "LogReg"
+layers {
+  name: "mnist"
+  type: DATA
+  top: "data_1"
+  top: "label"
+  data_param {
+#    source: "train_komi_result/"
+#    source: "train_pro_value_transform_big/"
+#    source: "/media/detlef/Large/detlef/GoDatabase/train_4d_fixed"
+    source: "train_leveldb_new"
+    batch_size: 64
+  }
+  include: { phase: TRAIN }
+}
+layers {
+  name: "mnist"
+  type: DATA
+  top: "data_1"
+  top: "label"
+  data_param {
+#    source: "/media/detlef/Large/detlef/GoDatabase/test_4d_fixed/"
+    source: "test_leveldb_new"
+    batch_size: 32
+  }
+  include: { phase: TEST }
+}
+
+
+layers {
+  name: "slice"
+  type: SLICE
+  bottom: "data_1"
+  top: "data"
+  top: "data_2a"
+  slice_param {
+	slice_dim: 1
+	slice_point : 20
+  }
+}
+layers {
+  name: "slice"
+  type: SLICE
+  bottom: "data_2a"
+  top: "data_3b"
+  top: "data_3c"
+  slice_param {
+	slice_dim: 1
+	slice_point : 1
+  }
+}
+
+layers {
+  name: "slice"
+  type: SLICE
+  bottom: "data_3c"
+  top: "data_3"
+  top: "data_3a"
+  slice_param {
+	slice_dim: 1
+	slice_point : 1
+  }
+}
+
+#this part should be the same in learning and prediction network
+layers {
+  name: "conv1_3x3_96"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "data"
+  top: "conv2"
+  convolution_param {
+    num_output: 96
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "gaussian" # initialize the filters from a Gaussian
+      std: 0.003        # distribution with stdev 0.003 (default mean: 0)
+      }
+    }
+}
+
+layers {
+  name: "relu2"
+  type: RELU
+  relu_param {
+    negative_slope: 0.01
+  }
+  bottom: "conv2"
+  top: "conv2"
+}
+
+layers {
+  name: "conv2_3x3_96"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "conv2"
+  top: "conv3"
+  convolution_param {
+    num_output: 96
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "gaussian" # initialize the filters from a Gaussian
+      std: 0.003        # distribution with stdev 0.003 (default mean: 0)
+      }
+    }
+}
+
+layers {
+  name: "relu3"
+  type: RELU
+  relu_param {
+    negative_slope: 0.01
+  }
+  bottom: "conv3"
+  top: "conv3"
+}
+
+layers {
+  name: "conv3_3x3_96"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "conv3"
+  top: "conv4"
+  convolution_param {
+    num_output: 96
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "gaussian" # initialize the filters from a Gaussian
+      std: 0.003        # distribution with stdev 0.003 (default mean: 0)
+      }
+    }
+}
+
+layers {
+  name: "relu4"
+  type: RELU
+  relu_param {
+    negative_slope: 0.01
+  }
+  bottom: "conv4"
+  top: "conv4"
+}
+
+layers {
+  name: "conv4_3x3_96"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "conv4"
+  top: "conv5"
+  convolution_param {
+    num_output: 96
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "gaussian" # initialize the filters from a Gaussian
+      std: 0.003        # distribution with stdev 0.003 (default mean: 0)
+      }
+    }
+}
+
+layers {
+  name: "relu5"
+  type: RELU
+  relu_param {
+    negative_slope: 0.01
+  }
+  bottom: "conv5"
+  top: "conv5"
+}
+
+layers {
+  name: "conv5_3x3_96"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "conv5"
+  top: "conv6"
+  convolution_param {
+    num_output: 96
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "gaussian" # initialize the filters from a Gaussian
+      std: 0.003        # distribution with stdev 0.003 (default mean: 0)
+      }
+    }
+}
+
+layers {
+  name: "relu6"
+  type: RELU
+  relu_param {
+    negative_slope: 0.01
+  }
+  bottom: "conv6"
+  top: "conv6"
+}
+
+
+layers {
+  name: "conv6_3x3_96"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "conv6"
+  top: "conv7"
+  convolution_param {
+    num_output: 96
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "gaussian" # initialize the filters from a Gaussian
+      std: 0.003        # distribution with stdev 0.003 (default mean: 0)
+      }
+    }
+}
+
+layers {
+  name: "relu7"
+  type: RELU
+  relu_param {
+    negative_slope: 0.01
+  }
+  bottom: "conv7"
+  top: "conv7"
+}
+
+
+layers {
+  name: "conv7_3x3_96"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "conv7"
+  top: "conv8"
+  convolution_param {
+    num_output: 96
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "gaussian" # initialize the filters from a Gaussian
+      std: 0.003        # distribution with stdev 0.003 (default mean: 0)
+      }
+    }
+}
+
+layers {
+  name: "relu8"
+  type: RELU
+  relu_param {
+    negative_slope: 0.01
+  }
+  bottom: "conv8"
+  top: "conv8"
+}
+
+
+layers {
+  name: "conv8_3x3_96"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "conv8"
+  top: "conv9"
+  convolution_param {
+    num_output: 96
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "gaussian" # initialize the filters from a Gaussian
+      std: 0.003        # distribution with stdev 0.003 (default mean: 0)
+      }
+    }
+}
+
+layers {
+  name: "relu9"
+  type: RELU
+  relu_param {
+    negative_slope: 0.01
+  }
+  bottom: "conv9"
+  top: "conv9"
+}
+
+layers {
+  name: "conv9_3x3_96"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "conv9"
+  top: "conv10"
+  convolution_param {
+    num_output: 96
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "gaussian" # initialize the filters from a Gaussian
+      std: 0.003        # distribution with stdev 0.003 (default mean: 0)
+      }
+    }
+}
+
+layers {
+  name: "relu10"
+  type: RELU
+  relu_param {
+    negative_slope: 0.01
+  }
+  bottom: "conv10"
+  top: "conv10"
+}
+
+layers {
+  name: "conv10_3x3_96"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "conv10"
+  top: "conv11"
+  convolution_param {
+    num_output: 96
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "gaussian" # initialize the filters from a Gaussian
+      std: 0.003        # distribution with stdev 0.003 (default mean: 0)
+      }
+    }
+}
+
+layers {
+  name: "relu11"
+  type: RELU
+  relu_param {
+    negative_slope: 0.01
+  }
+  bottom: "conv11"
+  top: "conv11"
+}
+
+layers {
+  name: "conv11_3x3_96"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "conv11"
+  top: "conv12"
+  convolution_param {
+    num_output: 96
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "gaussian" # initialize the filters from a Gaussian
+      std: 0.003        # distribution with stdev 0.003 (default mean: 0)
+      }
+    }
+}
+
+layers {
+  name: "relu12"
+  type: RELU
+  relu_param {
+    negative_slope: 0.01
+  }
+  bottom: "conv12"
+  top: "conv12"
+}
+
+layers {
+  name: "conv12_3x3_96"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "conv12"
+  top: "conv19"
+  convolution_param {
+    num_output: 96
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "gaussian" # initialize the filters from a Gaussian
+      std: 0.003        # distribution with stdev 0.003 (default mean: 0)
+      }
+    }
+}
+
+layers {
+  name: "relu19"
+  type: RELU
+  relu_param {
+    negative_slope: 0.01
+  }
+  bottom: "conv19"
+  top: "conv19"
+}
+
+layers {
+  name: "conv19_3x3_1"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "conv19"
+  top: "conv20"
+  convolution_param {
+    num_output: 1
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "gaussian" # initialize the filters from a Gaussian
+      std: 0.003        # distribution with stdev 0.003 (default mean: 0)
+      }
+    }
+}
+
+layers {
+  name: "flat"
+  type: FLATTEN
+  bottom: "conv20"
+  top: "ip_zw"
+}
+
+layers {
+  name: "concat"
+  bottom: "conv10"
+  bottom: "data"
+  top: "data_conv19"
+  type: CONCAT
+  concat_param {
+    axis: 1
+  }
+}
+
+
+
+layers {
+  name: "value1_7x7_64"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "data_conv19"
+  top: "value1"
+  convolution_param {
+    num_output: 64
+    kernel_size: 7
+    pad: 3
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "gaussian" # initialize the filters from a Gaussian
+      std: 0.003        # distribution with stdev 0.003 (default mean: 0)
+      }
+    }
+}
+
+layers {
+  name: "reluval1"
+  type: RELU
+  relu_param {
+    negative_slope: 0.01
+  }
+  bottom: "value1"
+  top: "value1"
+}
+
+layers {
+  name: "value2_3x3_64"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "value1"
+  top: "value2"
+  convolution_param {
+    num_output: 64
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "gaussian" # initialize the filters from a Gaussian
+      std: 0.003        # distribution with stdev 0.003 (default mean: 0)
+      }
+    }
+}
+
+layers {
+  name: "reluval2"
+  type: RELU
+  relu_param {
+    negative_slope: 0.01
+  }
+  bottom: "value2"
+  top: "value2"
+}
+
+layers {
+  name: "value3_3x3_64"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "value2"
+  top: "value3"
+  convolution_param {
+    num_output: 64
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "gaussian" # initialize the filters from a Gaussian
+      std: 0.003        # distribution with stdev 0.003 (default mean: 0)
+      }
+    }
+}
+
+layers {
+  name: "reluval3"
+  type: RELU
+  relu_param {
+    negative_slope: 0.01
+  }
+  bottom: "value3"
+  top: "value3"
+}
+
+layers {
+  name: "value4_3x3_64"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "value3"
+  top: "value4"
+  convolution_param {
+    num_output: 64
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "gaussian" # initialize the filters from a Gaussian
+      std: 0.003        # distribution with stdev 0.003 (default mean: 0)
+      }
+    }
+}
+
+layers {
+  name: "reluval4"
+  type: RELU
+  relu_param {
+    negative_slope: 0.01
+  }
+  bottom: "value4"
+  top: "value4"
+}
+
+layers {
+  name: "value5_3x3_64"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "value4"
+  top: "value5"
+  convolution_param {
+    num_output: 64
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "gaussian" # initialize the filters from a Gaussian
+      std: 0.003        # distribution with stdev 0.003 (default mean: 0)
+      }
+    }
+}
+
+layers {
+  name: "reluval5"
+  type: RELU
+  relu_param {
+    negative_slope: 0.01
+  }
+  bottom: "value5"
+  top: "value5"
+}
+
+layers {
+  name: "value6_3x3_64"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "value5"
+  top: "value6"
+  convolution_param {
+    num_output: 64
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "gaussian" # initialize the filters from a Gaussian
+      std: 0.003        # distribution with stdev 0.003 (default mean: 0)
+      }
+    }
+}
+
+layers {
+  name: "reluval6"
+  type: RELU
+  relu_param {
+    negative_slope: 0.01
+  }
+  bottom: "value6"
+  top: "value6"
+}
+
+
+layers {
+  name: "fc256"
+  type: INNER_PRODUCT
+  bottom: "value6"
+  top: "vvv"
+  inner_product_param {
+    num_output: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+
+layers {
+  name: "sigmoid19"
+  type: SIGMOID
+  bottom: "vvv"
+  top: "vvv"
+}
+
+#only learning framework
+layers {
+  name: "pool1"
+  type: POOLING
+  bottom: "data_3b"
+  top: "pool1"
+  pooling_param {
+    pool: AVE
+    kernel_size: 19 # pool over a 3x3 region
+    stride: 1      # step two pixels (in the bottom blob) between pooling regions
+  }
+}
+
+layers {
+  name: "flat_pool"
+  type: FLATTEN
+  bottom: "pool1"
+  top: "pool1b"
+}
+
+layers {
+  name: "power_soll"
+  type: POWER
+  power_param {
+    power: 1
+    scale: 1.4
+    shift: -0.7
+  }
+  bottom: "pool1b"
+  top: "pool2"
+}
+
+
+layers {
+  name: "conv19b_3x3_1"
+  type: CONVOLUTION
+  blobs_lr: 0.
+  blobs_lr: 0.
+  bottom: "conv19"
+  top: "conv20b"
+  convolution_param {
+    num_output: 1
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "constant"
+      }
+    }
+}
+
+layers {
+  name: "conv19c_3x3_1"
+  type: CONVOLUTION
+  blobs_lr: 0.
+  blobs_lr: 0.
+  bottom: "conv19"
+  top: "conv20c"
+  convolution_param {
+    num_output: 1
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "constant"
+      }
+    }
+}
+
+
+layers {
+name: "accuracy"
+type: ACCURACY
+bottom: "ip_zw"
+bottom: "label"
+top: "accuracy"
+}
+
+layers {
+  name: "loss1"
+  type: SOFTMAX_LOSS
+#  loss_weight: 0.0
+  loss_weight: 2.0
+  bottom: "ip_zw"
+  bottom: "label"
+  top: "accloss1"
+}
+
+layers {
+  name: "loss2"
+  type: SIGMOID_CROSS_ENTROPY_LOSS
+  loss_weight: 0.0
+#  loss_weight: 0.2
+  bottom: "conv20b"
+  bottom: "data_3"
+  top: "accloss2"
+}
+
+layers {
+  name: "loss3"
+  type: SIGMOID_CROSS_ENTROPY_LOSS
+  loss_weight: 0.0
+#  loss_weight: 0.1
+  bottom: "conv20c"
+  bottom: "data_3a"
+  top: "accloss3"
+}
+
+
+# the result is -value net in the range from -1 to 1 here
+layers {
+  name: "power_ist"
+  type: POWER
+  power_param {
+    power: 1
+    scale: -2.0
+    shift: 1.0
+  }
+  bottom: "vvv"
+  top: "vvv2"
+}
+
+layers {
+  name: "power_ist"
+  type: POWER
+  power_param {
+    power: 1
+    scale: 2.0
+    shift: -1.0
+  }
+  bottom: "vvv"
+  top: "vvv2b"
+}
+
+layers {
+  name: "s-v"
+  type: ELTWISE
+  bottom: "vvv2"
+  bottom: "pool2"
+  top: "res_s-v"
+  eltwise_param { operation: SUM }
+}
+
+layers {
+  name: "power_ist"
+  type: POWER
+  power_param {
+    power: 1
+    scale: -1.0
+    shift: 0.0
+  }
+  bottom: "res_s-v"
+  top: "res_v-s"
+}
+
+layers {
+  name: "power_soll2"
+  type: POWER
+  power_param {
+    power: 1
+    scale: 1000.0
+    shift: 0.0
+  }
+  bottom: "pool2"
+  top: "soll"
+}
+
+layers {
+  name: "soll_tanh"
+  type: TANH
+  bottom: "soll"
+  top: "soll_tanh"
+}
+
+layers {
+  name: "power_soll3"
+  type: POWER
+  power_param {
+    power: 1
+    scale: -1.0
+    shift: 0.0
+  }
+  bottom: "soll_tanh"
+  top: "soll_tanhm"
+}
+
+#soll_tanh should be +1 with a win and -1 with a loss and soll_tanhm vice verse
+
+layers {
+  name: "concat_ist"
+  bottom: "res_s-v"
+  bottom: "res_v-s"
+  top: "res_both"
+  type: CONCAT
+  concat_param {
+    axis: 1
+  }
+}
+
+layers {
+  name: "concat_ist"
+  bottom: "soll_tanh"
+  bottom: "soll_tanhm"
+  top: "soll_both"
+  type: CONCAT
+  concat_param {
+    axis: 1
+  }
+}
+
+layers {
+  name: "s-v"
+  type: ELTWISE
+  bottom: "res_both"
+  bottom: "soll_both"
+  top: "result"
+  eltwise_param { operation: PROD }
+}
+
+layers {
+  name: "reluresult"
+  type: RELU
+  relu_param {
+    negative_slope: 0.00
+  }
+  bottom: "result"
+  top: "result"
+}
+
+layers {
+  name: "power_0"
+  type: POWER
+  power_param {
+    power: 1
+    scale: 0.0
+    shift: 0.0
+  }
+  bottom: "result"
+  top: "result0"
+}
+
+
+layers {
+  name: "loss4"
+  type:  EUCLIDEAN_LOSS
+  loss_weight: 1.0
+  bottom: "result"
+  bottom: "result0"
+  top: "accloss4"
+}
+
+layers {
+  name: "loss5"
+  type:  EUCLIDEAN_LOSS
+  loss_weight: 0.0
+  bottom: "pool2"
+  bottom: "vvv2b"
+  top: "accloss5"
+}
+
+
+layers {
+  name: "power_soll2"
+  type: POWER
+  power_param {
+    power: 1
+    scale: 200.0
+    shift: -100.0
+  }
+  bottom: "pool1b"
+  top: "pool2d"
+}
+
+layers {
+  name: "tanh3"
+  type: TANH
+  bottom: "pool2d"
+  top: "pool2d"
+}
+
+layers {
+  name: "power_soll3"
+  type: POWER
+  power_param {
+    power: 1
+    scale: 0.7
+    shift: 0.0
+  }
+  bottom: "pool2d"
+  top: "pool2e"
+}
+
+
+layers {
+  name: "loss6"
+  type:  EUCLIDEAN_LOSS
+  loss_weight: 1.0
+  bottom: "pool2e"
+  bottom: "vvv2b"
+  top: "accloss6"
+}
+

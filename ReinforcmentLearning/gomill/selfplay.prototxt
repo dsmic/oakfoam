@@ -1,0 +1,648 @@
+name: "LogReg"
+input: "data"
+input_dim: 1
+input_dim: 20
+input_dim: 19
+input_dim: 19
+
+#this part should be the same in learning and prediction network
+
+layers {
+  name: "conv1_3x3_96"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "data"
+  top: "conv2"
+  convolution_param {
+    num_output: 96
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "gaussian" # initialize the filters from a Gaussian
+      std: 0.003        # distribution with stdev 0.003 (default mean: 0)
+      }
+    }
+}
+
+layers {
+  name: "relu2"
+  type: RELU
+  relu_param {
+    negative_slope: 0.01
+  }
+  bottom: "conv2"
+  top: "conv2"
+}
+
+layers {
+  name: "conv2_3x3_96"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "conv2"
+  top: "conv3"
+  convolution_param {
+    num_output: 96
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "gaussian" # initialize the filters from a Gaussian
+      std: 0.003        # distribution with stdev 0.003 (default mean: 0)
+      }
+    }
+}
+
+layers {
+  name: "relu3"
+  type: RELU
+  relu_param {
+    negative_slope: 0.01
+  }
+  bottom: "conv3"
+  top: "conv3"
+}
+
+layers {
+  name: "conv3_3x3_96"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "conv3"
+  top: "conv4"
+  convolution_param {
+    num_output: 96
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "gaussian" # initialize the filters from a Gaussian
+      std: 0.003        # distribution with stdev 0.003 (default mean: 0)
+      }
+    }
+}
+
+layers {
+  name: "relu4"
+  type: RELU
+  relu_param {
+    negative_slope: 0.01
+  }
+  bottom: "conv4"
+  top: "conv4"
+}
+
+layers {
+  name: "conv4_3x3_96"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "conv4"
+  top: "conv5"
+  convolution_param {
+    num_output: 96
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "gaussian" # initialize the filters from a Gaussian
+      std: 0.003        # distribution with stdev 0.003 (default mean: 0)
+      }
+    }
+}
+
+layers {
+  name: "relu5"
+  type: RELU
+  relu_param {
+    negative_slope: 0.01
+  }
+  bottom: "conv5"
+  top: "conv5"
+}
+
+layers {
+  name: "conv5_3x3_96"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "conv5"
+  top: "conv6"
+  convolution_param {
+    num_output: 96
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "gaussian" # initialize the filters from a Gaussian
+      std: 0.003        # distribution with stdev 0.003 (default mean: 0)
+      }
+    }
+}
+
+layers {
+  name: "relu6"
+  type: RELU
+  relu_param {
+    negative_slope: 0.01
+  }
+  bottom: "conv6"
+  top: "conv6"
+}
+
+
+layers {
+  name: "conv6_3x3_96"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "conv6"
+  top: "conv7"
+  convolution_param {
+    num_output: 96
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "gaussian" # initialize the filters from a Gaussian
+      std: 0.003        # distribution with stdev 0.003 (default mean: 0)
+      }
+    }
+}
+
+layers {
+  name: "relu7"
+  type: RELU
+  relu_param {
+    negative_slope: 0.01
+  }
+  bottom: "conv7"
+  top: "conv7"
+}
+
+
+layers {
+  name: "conv7_3x3_96"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "conv7"
+  top: "conv8"
+  convolution_param {
+    num_output: 96
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "gaussian" # initialize the filters from a Gaussian
+      std: 0.003        # distribution with stdev 0.003 (default mean: 0)
+      }
+    }
+}
+
+layers {
+  name: "relu8"
+  type: RELU
+  relu_param {
+    negative_slope: 0.01
+  }
+  bottom: "conv8"
+  top: "conv8"
+}
+
+
+layers {
+  name: "conv8_3x3_96"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "conv8"
+  top: "conv9"
+  convolution_param {
+    num_output: 96
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "gaussian" # initialize the filters from a Gaussian
+      std: 0.003        # distribution with stdev 0.003 (default mean: 0)
+      }
+    }
+}
+
+layers {
+  name: "relu9"
+  type: RELU
+  relu_param {
+    negative_slope: 0.01
+  }
+  bottom: "conv9"
+  top: "conv9"
+}
+
+layers {
+  name: "conv9_3x3_96"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "conv9"
+  top: "conv10"
+  convolution_param {
+    num_output: 96
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "gaussian" # initialize the filters from a Gaussian
+      std: 0.003        # distribution with stdev 0.003 (default mean: 0)
+      }
+    }
+}
+
+layers {
+  name: "relu10"
+  type: RELU
+  relu_param {
+    negative_slope: 0.01
+  }
+  bottom: "conv10"
+  top: "conv10"
+}
+
+layers {
+  name: "conv10_3x3_96"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "conv10"
+  top: "conv11"
+  convolution_param {
+    num_output: 96
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "gaussian" # initialize the filters from a Gaussian
+      std: 0.003        # distribution with stdev 0.003 (default mean: 0)
+      }
+    }
+}
+
+layers {
+  name: "relu11"
+  type: RELU
+  relu_param {
+    negative_slope: 0.01
+  }
+  bottom: "conv11"
+  top: "conv11"
+}
+
+layers {
+  name: "conv11_3x3_96"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "conv11"
+  top: "conv12"
+  convolution_param {
+    num_output: 96
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "gaussian" # initialize the filters from a Gaussian
+      std: 0.003        # distribution with stdev 0.003 (default mean: 0)
+      }
+    }
+}
+
+layers {
+  name: "relu12"
+  type: RELU
+  relu_param {
+    negative_slope: 0.01
+  }
+  bottom: "conv12"
+  top: "conv12"
+}
+
+layers {
+  name: "conv12_3x3_96"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "conv12"
+  top: "conv19"
+  convolution_param {
+    num_output: 96
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "gaussian" # initialize the filters from a Gaussian
+      std: 0.003        # distribution with stdev 0.003 (default mean: 0)
+      }
+    }
+}
+
+layers {
+  name: "relu19"
+  type: RELU
+  relu_param {
+    negative_slope: 0.01
+  }
+  bottom: "conv19"
+  top: "conv19"
+}
+
+layers {
+  name: "conv19_3x3_1"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "conv19"
+  top: "conv20"
+  convolution_param {
+    num_output: 1
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "gaussian" # initialize the filters from a Gaussian
+      std: 0.003        # distribution with stdev 0.003 (default mean: 0)
+      }
+    }
+}
+
+layers {
+  name: "flat"
+  type: FLATTEN
+  bottom: "conv20"
+  top: "ip_zw"
+}
+
+layers {
+  name: "concat"
+  bottom: "conv10"
+  bottom: "data"
+  top: "data_conv19"
+  type: CONCAT
+  concat_param {
+    axis: 1
+  }
+}
+
+
+
+layers {
+  name: "value1_7x7_64"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "data_conv19"
+  top: "value1"
+  convolution_param {
+    num_output: 64
+    kernel_size: 7
+    pad: 3
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "gaussian" # initialize the filters from a Gaussian
+      std: 0.003        # distribution with stdev 0.003 (default mean: 0)
+      }
+    }
+}
+
+layers {
+  name: "reluval1"
+  type: RELU
+  relu_param {
+    negative_slope: 0.01
+  }
+  bottom: "value1"
+  top: "value1"
+}
+
+layers {
+  name: "value2_3x3_64"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "value1"
+  top: "value2"
+  convolution_param {
+    num_output: 64
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "gaussian" # initialize the filters from a Gaussian
+      std: 0.003        # distribution with stdev 0.003 (default mean: 0)
+      }
+    }
+}
+
+layers {
+  name: "reluval2"
+  type: RELU
+  relu_param {
+    negative_slope: 0.01
+  }
+  bottom: "value2"
+  top: "value2"
+}
+
+layers {
+  name: "value3_3x3_64"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "value2"
+  top: "value3"
+  convolution_param {
+    num_output: 64
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "gaussian" # initialize the filters from a Gaussian
+      std: 0.003        # distribution with stdev 0.003 (default mean: 0)
+      }
+    }
+}
+
+layers {
+  name: "reluval3"
+  type: RELU
+  relu_param {
+    negative_slope: 0.01
+  }
+  bottom: "value3"
+  top: "value3"
+}
+
+layers {
+  name: "value4_3x3_64"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "value3"
+  top: "value4"
+  convolution_param {
+    num_output: 64
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "gaussian" # initialize the filters from a Gaussian
+      std: 0.003        # distribution with stdev 0.003 (default mean: 0)
+      }
+    }
+}
+
+layers {
+  name: "reluval4"
+  type: RELU
+  relu_param {
+    negative_slope: 0.01
+  }
+  bottom: "value4"
+  top: "value4"
+}
+
+layers {
+  name: "value5_3x3_64"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "value4"
+  top: "value5"
+  convolution_param {
+    num_output: 64
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "gaussian" # initialize the filters from a Gaussian
+      std: 0.003        # distribution with stdev 0.003 (default mean: 0)
+      }
+    }
+}
+
+layers {
+  name: "reluval5"
+  type: RELU
+  relu_param {
+    negative_slope: 0.01
+  }
+  bottom: "value5"
+  top: "value5"
+}
+
+layers {
+  name: "value6_3x3_64"
+  type: CONVOLUTION
+  blobs_lr: 1.
+  blobs_lr: 2.
+  bottom: "value5"
+  top: "value6"
+  convolution_param {
+    num_output: 64
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "xavier"
+      }
+      bias_filler {
+      type: "gaussian" # initialize the filters from a Gaussian
+      std: 0.003        # distribution with stdev 0.003 (default mean: 0)
+      }
+    }
+}
+
+layers {
+  name: "reluval6"
+  type: RELU
+  relu_param {
+    negative_slope: 0.01
+  }
+  bottom: "value6"
+  top: "value6"
+}
+
+
+layers {
+  name: "fc256"
+  type: INNER_PRODUCT
+  bottom: "value6"
+  top: "vvv"
+  inner_product_param {
+    num_output: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+
+layers {
+  name: "sigmoid19"
+  type: SIGMOID
+  bottom: "vvv"
+  top: "vvv"
+}
+
+
+
+#only prediction
+layers {
+  name: "softmax"
+  type: SOFTMAX
+  bottom: "ip_zw"
+  top: "ip"
+}
+
