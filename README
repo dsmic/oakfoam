@@ -1,7 +1,7 @@
 -------------------------------------------------
   Oakfoam
 -------------------------------------------------
-  <oakfoam@gmail.com>
+  <oakfoam@gmail.com> and <dschmicker@physik.de>
 -------------------------------------------------
 
 This is a Computer Go player.
@@ -11,9 +11,12 @@ Please contact me if you have any questions.
 -- Online ---------------------------------------
 
 Website: http://oakfoam.com
-Code:    http://bitbucket.org/francoisvn/oakfoam
-Discuss: http://groups.google.com/group/oakfoam
+Code:    https://github.com/dsmic/oakfoam
 
+it moved from http://bitbucket.org/francoisvn/oakfoam
+to github, as the support of hg was stopped, sorry.
+Issues and Pull history is lost, but it was not very
+active the last 2 years anyway:(
 -- Build ----------------------------------------
 
 Running the commands "./configure" and "make"
